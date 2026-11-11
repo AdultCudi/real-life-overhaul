@@ -755,7 +755,8 @@ internal static partial class Program
         }
         Check(keys, "studio sources: every money key of the studio is in BizMan's lists, takings, costs or capital");
         string people = ModSource(@"Tech\TechDirector.People.cs");
-        Check(people.Contains("StudioPull(p.Place, day)") && people.Contains("StudioPoacher(p.Place, day)"), "studio sources: the people part's rivals pull at a studio whose hit paid no bonus, and a rival studio courts them");
+        Check(people.Contains("StudioPull(place, day)") && people.Contains("_places.PullAt(here, p.Place, day)") && people.Contains("StudioPoacher(p.Place, day)"),
+            "studio sources: the people part's rivals pull at a studio whose hit paid no bonus (asked once for the place), and a rival studio courts them");
     }
 
     // ---------------------------------------------------------------- the texts

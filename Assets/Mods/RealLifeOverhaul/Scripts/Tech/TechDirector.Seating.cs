@@ -6,39 +6,61 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>What a pass of seating hires found and did: the hires looked at, those seated with their shifts and hours, the weight of demands broken, and those not seated, by why.</summary>
+    /// <summary>
+    /// What a pass of seating hires found and did: the hires found without a seat, those seated with their shifts and hours, the weight of demands
+    /// broken, and those not seated, by why.
+    /// </summary>
     internal struct SeatReport
     {
         public int Seen, Seated, Shifts, Hours, Unmet, Closed, NoDesk, Full, Wrong;
     }
 
     /// <summary>
-    /// The seating part: a professional hired at one of the player's tech firms, by the game's job board, recruitment office or headhunter or by the
-    /// jobs board of the mod, is given a free desk and a week of shifts (SeatPlan, SeatShifts) so they work from their first day, as the player
-    /// would otherwise do by hand in BizMan for each of them (the rota planner refuses a business of over 64 stations or 120 staff, so a large firm
-    /// could not be planned at all). It runs on the game's hour, for the hires made in the last SeatPlan.Window days who have no shift at a desk, a
-    /// batch of SeatPlan.Batch at most, and a hire for whom there is no desk is tried again once a day; the player is told once. Nothing of anyone
-    /// else's schedule is moved, only the player's own firms are read, and it is switched off by its option. No frame cost: nothing runs per frame,
-    /// and an hour with nobody to seat costs a pass over the people with a few comparisons each.
+    /// The seating part: a professional of the player's tech firms who has no shift at a desk (a hire made by the game's job board, recruitment office or
+    /// headhunter or by the jobs board of the mod, or one hired long before) is given a free desk and a week of shifts (SeatPlan, SeatShifts) so they work,
+    /// as the player would otherwise do by hand in BizMan for each of them (the rota planner refuses a business of over 64 stations or 120 staff, so a
+    /// large firm could not be planned at all). It runs on the game's hour, the newest hires first, at most SeatPlan.Batch hires seated (those seated:
+    /// a hire for whom there is no room does not use the batch up) and SeatPlan.Look looked at in an hour (SeatRound). A business that has no room for a
+    /// skill is asked once a day, not for each hire waiting there, and the player is told once for it (SeatLedger). One who is found with a shift is not
+    /// looked at again in the session, so the shifts the player takes away afterwards stay taken away. Nothing of anyone else's schedule is moved, only the
+    /// player's own firms are read, and it is switched off by its option. No frame cost: nothing runs per frame, and an hour with nobody to seat costs one
+    /// look at each professional's flags; the first hours after a load read each business's shifts once (a pass over its week) and look at a thousand at most.
     /// </summary>
     public sealed partial class TechDirector
     {
-        private readonly Dictionary<string, int> _seatTried = new Dictionary<string, int>(16);   // a hire's id: the day no desk could be found for them
-        private readonly HashSet<string> _seatTold = new HashSet<string>();                      // the hires the player was told could not be seated
-        private readonly HashSet<string> _seatQuiet = new HashSet<string>();                     // the hires the start note already said are being seated
-        private readonly HashSet<string> _seatHad = new HashSet<string>();                       // the hires found with a shift at a desk, not looked at again within the window
-        private const int SeatHadMost = 4096;                                                    // ids kept in the set above before it starts afresh
-        private readonly List<Person> _seatWho = new List<Person>(32);
-        private readonly List<BuildingRegistration> _seatAt = new List<BuildingRegistration>(32);   // the business each of them is assigned to now
+        private readonly SeatLedger _seatLedger = new SeatLedger();
+        private readonly HashSet<string> _seatQuiet = new HashSet<string>();                                                  // the hires the start note already said are being seated
+        private readonly Dictionary<string, BuildingRegistration> _seatReg = new Dictionary<string, BuildingRegistration>(32);   // the businesses met in a pass, by place key
+        private readonly Dictionary<string, HashSet<string>> _seatHolders = new Dictionary<string, HashSet<string>>(32);          // each business's people with a shift at a desk, by place key
+        private readonly Stack<HashSet<string>> _seatSpare = new Stack<HashSet<string>>(8);
+        private readonly Dictionary<string, int> _seatToldDay = new Dictionary<string, int>(32);                              // the day the player was last told of hires seated at a business
+        private int _seatHoldersDay = -1;
+        private SeatSource _seatBoard;
         private bool _seatBroken;
 
         /// <summary>
-        /// A hire the mod has just started at a business: true if the hour's pass will seat them (the option is on and the business is a tech firm with
-        /// shifts), so the start note says so and the pass does not tell the player again. Their id is noted.
+        /// True if the hour's pass gives a hire of a skill at a business a desk and shifts (the option is on, nothing has broken it, and
+        /// <see cref="SeatsAt"/>). What the start note and the hire form promise is asked here, so it is what the pass does.
+        /// </summary>
+        internal bool SeatsHire(BuildingRegistration at, string skill)
+        {
+            return Settings.TechSeatHires && !_seatBroken && SeatsAt(at, skill);
+        }
+
+        // The business is the player's own tech firm with shifts, and the skill one it hires under: the pass seats them. A lawyer or an HR manager at a
+        // software studio, an account manager at the game's web development agency, and anyone at a law firm, a headquarters or a bank are not.
+        private static bool SeatsAt(BuildingRegistration at, string skill)
+        {
+            return at != null && GoingPublic.Mine(at) && TalentGame.Shifts(at) && SeatRules.Seats(FirmsGame.KindOf(TalentGame.TypeOf(at)), skill);
+        }
+
+        /// <summary>
+        /// A hire the mod has just started at a business: true if the hour's pass will seat them, so the start note says so and the pass does not tell the
+        /// player again. Their id is noted.
         /// </summary>
         private bool SeatsNew(EmployeeInstance e, BuildingRegistration at)
         {
-            if (!Settings.TechSeatHires || _seatBroken || e == null || at == null || FirmsGame.KindOf(TalentGame.TypeOf(at)) < 0 || !TalentGame.Shifts(at))
+            if (e == null || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0 || !SeatsHire(at, TalentGame.Skill(e)))
             {
                 return false;
             }
@@ -49,15 +71,26 @@ namespace RealLifeOverhaul.Tech
         // What the part remembers is let go when the people part stops.
         private void ForgetSeating()
         {
-            _seatTried.Clear();
-            _seatTold.Clear();
+            _seatLedger.Clear();
             _seatQuiet.Clear();
-            _seatHad.Clear();
-            _seatWho.Clear();
-            _seatAt.Clear();
+            _seatReg.Clear();
+            _seatToldDay.Clear();
+            ReleaseHolders();
         }
 
-        // Each game hour, with the people read: those lately hired are seated. A fault switches this one off for the session, not the sector.
+        // The shifts read for the day are let go: each business is read again the next time a professional of it is looked at.
+        private void ReleaseHolders()
+        {
+            foreach (KeyValuePair<string, HashSet<string>> held in _seatHolders)
+            {
+                held.Value.Clear();
+                _seatSpare.Push(held.Value);
+            }
+            _seatHolders.Clear();
+            _seatHoldersDay = -1;
+        }
+
+        // Each game hour, with the people read: those without a seat are seated. A fault switches this one off for the session, not the sector.
         private void SeatHour(int day)
         {
             if (!Settings.TechSeatHires || _seatBroken)
@@ -80,106 +113,160 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// Seats the player's professionals at tech firms who have no shift at a desk: those hired within SeatPlan.Window days, at most SeatPlan.Batch
-        /// (all of them, at most SeatPlan.TestMost, when <paramref name="all"/> is set for the test). The player is told once for a business, and not
-        /// again for a hire who stays unseated.
+        /// Seats the player's professionals at tech firms who have no shift at a desk, from the newest hire back: at most SeatPlan.Batch seated and
+        /// SeatPlan.Look looked at (every one found, at most SeatPlan.TestMost seated, when <paramref name="all"/> is set for the test). A business that
+        /// has no room for a skill is asked once for the day (SeatRound), and the player is told once for it, not again for the hires who stay unseated.
         /// </summary>
         private SeatReport SeatPass(int day, bool all)
         {
-            var report = new SeatReport();
-            _seatWho.Clear();
-            _seatAt.Clear();
-            int most = all ? SeatPlan.TestMost : SeatPlan.Batch;
-            for (int i = 0; i < _people.Count && _seatWho.Count < most; i++)
+            if (_seatBoard == null)
             {
-                Person person = _people[i];
+                _seatBoard = new SeatSource(this);
+            }
+            if (all || _seatHoldersDay != day)
+            {
+                ReleaseHolders();   // the shifts are read again each day, and for the test as they stand
+                _seatHoldersDay = day;
+            }
+            SeatSource board = _seatBoard;
+            board.Start(day, all);
+            SeatTally tally;
+            try
+            {
+                tally = SeatRound.Run(board, _seatLedger, day, all ? SeatPlan.TestMost : SeatPlan.Batch, all ? int.MaxValue : SeatPlan.Look, all);
+            }
+            finally
+            {
+                _seatReg.Clear();
+            }
+            SeatReport report = board.Report;
+            report.Seen = tally.Seen;
+            report.Seated = tally.Seated;
+            report.Closed = tally.Closed;
+            report.NoDesk = tally.NoDesk;
+            report.Full = tally.Full;
+            return report;
+        }
+
+        // The people part's professionals as the seating rounds look at them, and the game's side of seating one: a business read, a hire given their
+        // shifts, the game told, the player told. One instance, kept; the counts of the business being seated are kept in it between Begin and End.
+        private sealed class SeatSource : ISeatBoard
+        {
+            private readonly TechDirector _d;
+            private int _day;
+            private bool _everyone;
+            private BuildingRegistration _reg;
+            private string _place, _business, _first;
+            private int _group, _done, _shifts, _hours, _unmet, _wrong, _closed, _noDesk, _full;
+            public SeatReport Report;
+
+            public SeatSource(TechDirector director)
+            {
+                _d = director;
+            }
+
+            public void Start(int day, bool everyone)
+            {
+                _day = day;
+                _everyone = everyone;
+                Report = default(SeatReport);
+            }
+
+            public int Count => _d._people.Count;
+
+            public bool Open(int i, bool everyone)
+            {
+                Person person = _d._people[i];
+                return person.Game != null && person.At != null && !ReferenceEquals(person.SeatNoAt, person.At) && (everyone || !person.File.SeatKnown);
+            }
+
+            public string Place(int i) => _d._people[i].File.Place;
+
+            public string Skill(int i) => _d._people[i].Skill;
+
+            public bool Idle(int i, out string place)
+            {
+                place = null;
+                Person person = _d._people[i];
                 EmployeeInstance e = person.Game;
-                if (e == null || e.IsTraining || (!all && !SeatPlan.Newcomer(e.dayHired, day)))
+                if (e == null || e.IsTraining)
                 {
-                    continue;
-                }
-                if (!all && (_seatHad.Contains(e.id) || (_seatTried.TryGetValue(e.id, out int tried) && tried >= day)))
-                {
-                    continue;
+                    return false;
                 }
                 BuildingRegistration at = TalentGame.Business(e);   // where they are assigned now: the read of the people may be an hour old
-                int kind = at != null ? FirmsGame.KindOf(TalentGame.TypeOf(at)) : -1;
-                if (kind < 0 || !GoingPublic.Mine(at) || !TalentGame.Shifts(at) || Array.IndexOf(SeatRules.PrimaryOf(kind), TalentGame.Skill(e)) < 0)
+                if (!SeatsAt(at, person.Skill))
                 {
-                    continue;   // not at a tech firm of the player's with shifts, or hired under a skill the firm does not hire under (a lawyer, an HR manager)
+                    person.SeatNoAt = at;   // not a hire the pass seats, until they are somewhere else
+                    return false;
+                }
+                string key = TalentGame.Place(at);
+                HashSet<string> holders = HoldersOf(key, at);
+                if (holders.Contains(e.id))
+                {
+                    person.File.SeatKnown = true;
+                    return false;
                 }
                 if (TalentGame.StationShift(e, at))
                 {
-                    _seatHad.Add(e.id);   // seated by the player or by the game's rota: not looked for again
-                    continue;
+                    person.File.SeatKnown = true;   // given one since the day's read (by the player, or the game's rota)
+                    holders.Add(e.id);
+                    return false;
                 }
-                _seatWho.Add(person);
-                _seatAt.Add(at);
+                place = key;
+                return true;
             }
-            report.Seen = _seatWho.Count;
-            if (_seatHad.Count > SeatHadMost)
+
+            public void Begin(string place)
             {
-                _seatHad.Clear();
+                _place = place;
+                _reg = _d._seatReg[place];
+                _business = TalentGame.NameOf(_reg);
+                _first = null;
+                _group = _done = _shifts = _hours = _unmet = _wrong = _closed = _noDesk = _full = 0;
+                SeatShifts.Begin(_reg);
             }
-            for (int i = 0; i < _seatWho.Count; i++)
+
+            public int Seat(int i)
             {
-                if (_seatWho[i] == null)
+                Person person = _d._people[i];
+                EmployeeInstance e = person.Game;
+                int result = SeatShifts.Seat(e, out int n, out int h, out int broken);
+                _group++;
+                if (result == SeatPlan.Seated)
                 {
-                    continue;
-                }
-                BuildingRegistration reg = _seatAt[i];
-                string business = TalentGame.NameOf(reg), first = null;
-                int group = 0, done = 0, shifts = 0, hours = 0, unmet = 0, wrong = 0, closed = 0, noDesk = 0, full = 0, toldClosed = 0, toldNoDesk = 0, toldFull = 0;
-                SeatShifts.Begin(reg);
-                try
-                {
-                    for (int k = i; k < _seatWho.Count; k++)
+                    _wrong += TalentGame.StationShift(e, _reg) ? 0 : 1;   // the shifts are in the business's days, at a desk that is placed
+                    _shifts += n;
+                    _hours += h;
+                    _unmet += broken;
+                    person.File.SeatKnown = true;
+                    if (_d._seatHolders.TryGetValue(_place, out HashSet<string> holders))
                     {
-                        Person person = _seatWho[k];
-                        if (person == null || _seatAt[k] != reg)
-                        {
-                            continue;
-                        }
-                        _seatWho[k] = null;
-                        group++;
-                        EmployeeInstance e = person.Game;
-                        int result = SeatShifts.Seat(e, out int n, out int h, out int broken);
-                        if (result == SeatPlan.Seated)
-                        {
-                            _seatTried.Remove(e.id);
-                            wrong += TalentGame.StationShift(e, reg) ? 0 : 1;   // the shifts are in the business's days, at a desk that is placed
-                            shifts += n;
-                            hours += h;
-                            unmet += broken;
-                            if (!_seatQuiet.Remove(e.id))
-                            {
-                                done++;
-                                first = first ?? TalentGame.NameOf(e);
-                            }
-                            continue;
-                        }
-                        _seatTried[e.id] = day;
-                        _seatQuiet.Remove(e.id);   // the start note said a desk would follow and none was free: a later seat is told
-                        bool tell = _seatTold.Add(e.id);
-                        closed += result == SeatPlan.Closed ? 1 : 0;
-                        noDesk += result == SeatPlan.NoDesk ? 1 : 0;
-                        full += result == SeatPlan.Full ? 1 : 0;
-                        toldClosed += tell && result == SeatPlan.Closed ? 1 : 0;
-                        toldNoDesk += tell && result == SeatPlan.NoDesk ? 1 : 0;
-                        toldFull += tell && result == SeatPlan.Full ? 1 : 0;
+                        holders.Add(e.id);
                     }
+                    if (!_d._seatQuiet.Remove(e.id))
+                    {
+                        _done++;
+                        _first = _first ?? TalentGame.NameOf(e);
+                    }
+                    return result;
                 }
-                finally
+                _d._seatQuiet.Remove(e.id);   // the start note said a desk would follow and none was free: a later seat is told
+                _closed += result == SeatPlan.Closed ? 1 : 0;
+                _noDesk += result == SeatPlan.NoDesk ? 1 : 0;
+                _full += result == SeatPlan.Full ? 1 : 0;
+                return result;
+            }
+
+            public void End(string place)
+            {
+                SeatShifts.End();
+                int seated = _group - _closed - _noDesk - _full;
+                if (Verbose || _wrong > 0)
                 {
-                    SeatShifts.End();
-                }
-                int seated = group - closed - noDesk - full;
-                if (Verbose || wrong > 0)
-                {
-                    string line = "Tech check (seat, " + business + ", day " + day + "): " + seated + " of " + group + " hire(s) given a desk and shifts (" + shifts + " shift(s), "
-                                  + hours + " hour(s) a week, demands broken: " + unmet + "), " + closed + " with the business closed, " + noDesk + " with no desk they may use, " + full
-                                  + " with every desk taken: " + (wrong == 0 ? "PASS" : "FAIL (" + wrong + " without a shift at a desk after it)");
-                    if (wrong == 0)
+                    string line = "Tech check (seat, " + _business + ", day " + _day + "): " + seated + " of " + _group + " hire(s) given a desk and shifts (" + _shifts + " shift(s), "
+                                  + _hours + " hour(s) a week, demands broken: " + _unmet + "), " + _closed + " with the business closed, " + _noDesk + " with no desk they may use, " + _full
+                                  + " with every desk taken: " + (_wrong == 0 ? "PASS" : "FAIL (" + _wrong + " without a shift at a desk after it)");
+                    if (_wrong == 0)
                     {
                         Logger?.Info(line);
                     }
@@ -188,39 +275,64 @@ namespace RealLifeOverhaul.Tech
                         Logger?.Warn(line);
                     }
                 }
-                report.Seated += seated;
-                report.Shifts += shifts;
-                report.Hours += hours;
-                report.Unmet += unmet;
-                report.Wrong += wrong;
-                report.Closed += closed;
-                report.NoDesk += noDesk;
-                report.Full += full;
-                if (all)
+                Report.Shifts += _shifts;
+                Report.Hours += _hours;
+                Report.Unmet += _unmet;
+                Report.Wrong += _wrong;
+                if (_everyone)
                 {
-                    continue;   // the test tells the player once, for all of them
+                    return;   // the test tells the player once, for all of them
                 }
-                if (done > 0)
+                bool toldToday = _d._seatToldDay.TryGetValue(place, out int toldOn) && toldOn == _day;
+                if (_done > 0 && !toldToday)
                 {
-                    Tell(NotificationType.Success, done == 1 ? "reallife_hire_note_seated_one" : "reallife_hire_note_seated",
-                        Data("name", first, "count", done.ToString(CultureInfo.InvariantCulture), "business", business), TabTeam, null);
+                    _d._seatToldDay[place] = _day;   // once a business a day: the backlog of a large firm is worked off over many hours
+                    _d.Tell(NotificationType.Success, _done == 1 ? "reallife_hire_note_seated_one" : "reallife_hire_note_seated",
+                        Data("name", _first, "count", _done.ToString(CultureInfo.InvariantCulture), "business", _business), TabTeam, null);
                 }
-                if (toldClosed > 0)
+                Warn(place, _closed, SeatPlan.Closed, "reallife_hire_note_seat_closed");
+                Warn(place, _noDesk, SeatPlan.NoDesk, "reallife_hire_note_seat_no_desk");
+                Warn(place, _full, SeatPlan.Full, "reallife_hire_note_seat_full");
+            }
+
+            // The player is told once that a business has no room for its hires, with how many wait there; again only after it has seated somebody.
+            private void Warn(string place, int failed, int reason, string key)
+            {
+                if (failed > 0 && _d._seatLedger.Tell(place, reason))
                 {
-                    Tell(NotificationType.Warning, "reallife_hire_note_seat_closed", Data("count", toldClosed.ToString(CultureInfo.InvariantCulture), "business", business), TabTeam, null);
-                }
-                if (toldNoDesk > 0)
-                {
-                    Tell(NotificationType.Warning, "reallife_hire_note_seat_no_desk", Data("count", toldNoDesk.ToString(CultureInfo.InvariantCulture), "business", business), TabTeam, null);
-                }
-                if (toldFull > 0)
-                {
-                    Tell(NotificationType.Warning, "reallife_hire_note_seat_full", Data("count", toldFull.ToString(CultureInfo.InvariantCulture), "business", business), TabTeam, null);
+                    _d.Tell(NotificationType.Warning, key, Data("count", _d.SeatWaiting(place, _reg).ToString(CultureInfo.InvariantCulture), "business", _business), TabTeam, null);
                 }
             }
-            _seatWho.Clear();
-            _seatAt.Clear();
-            return report;
+
+            // The shifts of a business, read once a day: everyone with a shift at a placed desk, so each of thousands is asked of a set and not of the schedule.
+            private HashSet<string> HoldersOf(string key, BuildingRegistration at)
+            {
+                if (!_d._seatHolders.TryGetValue(key, out HashSet<string> set))
+                {
+                    set = _d._seatSpare.Count > 0 ? _d._seatSpare.Pop() : new HashSet<string>();
+                    TalentGame.StationHolders(at, set);
+                    _d._seatHolders[key] = set;
+                }
+                _d._seatReg[key] = at;
+                return set;
+            }
+        }
+
+        // How many professionals of a business the pass would seat have no shift at a desk now: the number the player is told. One pass over the people, once for a business.
+        private int SeatWaiting(string place, BuildingRegistration reg)
+        {
+            int kind = FirmsGame.KindOf(TalentGame.TypeOf(reg));
+            _seatHolders.TryGetValue(place, out HashSet<string> holders);
+            int n = 0;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                if (person.Game != null && person.File.Place == place && SeatRules.Seats(kind, person.Skill) && (holders == null || !holders.Contains(person.Game.id)))
+                {
+                    n++;
+                }
+            }
+            return Math.Max(1, n);
         }
 
         /// <summary>

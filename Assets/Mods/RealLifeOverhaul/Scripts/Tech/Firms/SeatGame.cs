@@ -92,28 +92,78 @@ namespace RealLifeOverhaul.Tech
         /// <summary>How many placed workstations of a business list a skill of the employee: the desks the game could seat them at. 0 if it cannot be read.</summary>
         public static int DesksFor(EmployeeInstance employee, BuildingRegistration business)
         {
-            int n = 0;
-            try
+            var desks = new Desks();
+            desks.Read(business);
+            return desks.For(employee);
+        }
+
+        /// <summary>
+        /// A business's placed workstations by the skills they list, read once in a pass over its items: how many desks each list of skills stands for (the
+        /// game's items share one list among all of a kind). Asked of each of thousands of professionals on a page, it is a few comparisons for each, with
+        /// nothing made, where a pass over the items with a delegate made for each was millions of both.
+        /// </summary>
+        public sealed class Desks
+        {
+            private readonly List<string[]> _lists = new List<string[]>(8);
+            private readonly List<int> _counts = new List<int>(8);
+
+            /// <summary>Counts the business's placed workstations. Nothing is left if they cannot be read.</summary>
+            public void Read(BuildingRegistration business)
             {
-                Dictionary<string, ItemInstance> placed = employee != null && business != null ? business.itemInstances : null;
-                if (placed == null)
+                _lists.Clear();
+                _counts.Clear();
+                try
                 {
-                    return 0;
-                }
-                foreach (ItemInstance placedItem in placed.Values)
-                {
-                    Item item = placedItem != null ? placedItem.ItemCached : null;
-                    if (item != null && item.assignable && item.suitableSkills != null && Array.Exists(item.suitableSkills, employee.HasSkill))
+                    Dictionary<string, ItemInstance> placed = business != null ? business.itemInstances : null;
+                    if (placed == null)
                     {
-                        n++;
+                        return;
+                    }
+                    foreach (ItemInstance placedItem in placed.Values)
+                    {
+                        Item item = placedItem != null ? placedItem.ItemCached : null;
+                        if (item == null || !item.assignable || item.suitableSkills == null)
+                        {
+                            continue;
+                        }
+                        int at = _lists.IndexOf(item.suitableSkills);
+                        if (at < 0)
+                        {
+                            _lists.Add(item.suitableSkills);
+                            _counts.Add(1);
+                        }
+                        else
+                        {
+                            _counts[at]++;
+                        }
                     }
                 }
+                catch (Exception e)
+                {
+                    _lists.Clear();
+                    _counts.Clear();
+                    Logger?.Error(e);
+                }
             }
-            catch (Exception e)
+
+            /// <summary>How many of the workstations list a skill the employee has.</summary>
+            public int For(EmployeeInstance employee)
             {
-                Logger?.Error(e);
+                int n = 0;
+                for (int i = 0; employee != null && i < _lists.Count; i++)
+                {
+                    string[] skills = _lists[i];
+                    for (int k = 0; k < skills.Length; k++)
+                    {
+                        if (employee.HasSkill(skills[k]))
+                        {
+                            n += _counts[i];
+                            break;
+                        }
+                    }
+                }
+                return n;
             }
-            return n;
         }
 
         // The game's items, or null before they are loaded: a small method of its own, since it names members a game update could move.

@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Tech
         public int Going;                // the going rate for the role and skill, cents an hour
         public int WeekHours;            // hours worked this week, as the game counts them
         public bool Seen;
+        public bool SeatKnown;           // found with a shift at a desk, or given one, in this session: the hour's seating does not look at them again
 
         public bool Payroll => Id.StartsWith("pro:", System.StringComparison.Ordinal);
 
@@ -102,7 +103,21 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
-        /// <summary>Every file by its id (the first of an id, as <see cref="Of"/> finds it), so a read of 600 people asks a dictionary, not a pass each.</summary>
+        /// <summary>
+        /// How many of the files are of the mod's own payroll (not the game's employees): what <see cref="TalentStore.PayrollMost"/> bounds.
+        /// A pass over the files, asked when somebody is to be put on the payroll.
+        /// </summary>
+        public int PayrollCount()
+        {
+            int n = 0;
+            for (int i = 0; i < People.Count; i++)
+            {
+                n += People[i].Payroll ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>Every file by its id (the first of an id, as <see cref="Of"/> finds it), so a read of thousands of people asks a dictionary, not a pass each.</summary>
         public void Index(Dictionary<string, Profile> into)
         {
             into.Clear();

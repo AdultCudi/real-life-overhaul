@@ -374,7 +374,7 @@ namespace RealLifeOverhaul.Tech
         // payroll full it can hire nobody: it keeps the one it has, warns, and replaces them at the next target missed.
         private void ReplaceChief(Cap c, FirmPlace firm, int day)
         {
-            if (_talent.People.Count >= TalentStore.PeopleMost)
+            if (_talent.PayrollCount() >= TalentStore.PayrollMost)
             {
                 VentureRules.ChiefKept(c);
                 TellTech(NotificationType.Warning, "reallife_vc_note_target_missed", Data("firm", firm.File.Name, "target", TechText.Cents(Level(c.TargetMrr))),

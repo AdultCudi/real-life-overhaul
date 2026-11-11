@@ -20,8 +20,16 @@ namespace RealLifeOverhaul.Tech
 
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
-        /// <summary>The line that says a role sits at a desk: with Seat new hires on, that a free desk and shifts are found for a hire; off, that the player gives them.</summary>
-        public static string SeatDesk() => T(Settings.TechSeatHires ? "reallife_hire_seat_desk_auto" : "reallife_hire_seat_desk");
+        /// <summary>
+        /// The line that says a role sits at a desk: that a free desk and shifts are found for the hire when the hour's seating gives a hire of this role at this place
+        /// a seat (the option on, a tech firm of the player's with shifts, a skill it hires under: TechDirector.SeatsHire, which the start note and the pass ask too);
+        /// otherwise that the player gives them the shifts in BizMan.
+        /// </summary>
+        public static string SeatDesk(BuildingRegistration place, RoleDef role)
+        {
+            TechDirector director = TechDirector.Instance;
+            return T(director != null && role != null && director.SeatsHire(place, role.GameSkill) ? "reallife_hire_seat_desk_auto" : "reallife_hire_seat_desk");
+        }
 
         /// <summary>Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line short enough for a notification.</summary>
         public static string IdleLine(Idle why, in FirmFacts f, bool yesterday)

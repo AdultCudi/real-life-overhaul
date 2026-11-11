@@ -1124,9 +1124,24 @@ internal static partial class Program
         }
         if (args.Length == 1 && args[0] == "--tech-staff")
         {
-            TechStaff();   // (the professionals' files without a cap, the seat rule for a new hire, its wiring and texts alone: TechStaffChecks.cs)
-            TechSeats();   // (with the two older checks this work changed: the hire form's desk line, SeatChecks.cs, and the professionals' line at its bound, WorkPaceChecks.cs)
+            TechStaff();   // (the professionals' files without a bound, the hour's seating, the day's and the hour's cost at a save's size, the studio's people, the texts: TechStaffChecks.cs)
+            TechSeats();   // (with the older checks this work changed: the hire form's desk line, SeatChecks.cs, and the professionals' line of ten thousand, WorkPaceChecks.cs)
             WorkPace();
+            Hiring();      // (the candidate files in the hiring part's save, and the sources of the day and the hour that read the people part)
+            Buyout();
+            Tech();
+            TechFixes();
+            DataEngineers();
+            StaffCentres();
+            Studio();      // (the game studio's experience list, its index and its save)
+            Sessions();    // (the older checks that read the people part's sources: the team meeting's week, the names, the wages, the rivals' offers and pull, the moves)
+            HeadhunterAndProducts();
+            Wages();
+            StaffWageChecks();
+            StaffLeaving();
+            RivalOffers();
+            StartupRivalsChecks();
+            TechMoves();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }

@@ -122,10 +122,10 @@ internal static partial class Program
         Check(MethodText(game, "private static bool IsDesk(Item item)").Contains("ItemType.Computer | ItemType.EmployeeWorkstation") && MethodText(game, "private static bool IsDesk(Item item)").Contains("item.assignable")
               && !game.Contains("Update()") && !game.Contains("LateUpdate()"),
             "tech seats: a desk is an assignable computer workstation that programmers sit at, found by its type and skills and not by name; nothing runs per frame");
-        Check(team.Contains("SeatGame.DesksFor(person.Game, person.At)") && team.Contains("TalentGame.StationShift(person.Game, person.At)") && team.Contains("reallife_roles_state_no_desk")
+        Check(team.Contains("read.Desks.For(person.Game)") && team.Contains("TalentGame.StationHolders(person.At, read.Holders)") && team.Contains("reallife_roles_state_no_desk")
               && team.Contains("reallife_roles_file_no_desk") && team.Contains("reallife_roles_file_no_shift"),
             "tech seats: the Team tab says why a professional of the game's has no seat, no desk placed or no shift at one");
-        Check(Occurs(hiring, "TechText.SeatDesk()") == 2 && Occurs(hiring, "reallife_hire_seat_payroll") == 2 && table.Contains("reallife_staff_t_seat_desk") && table.Contains("reallife_staff_t_seat_payroll")
+        Check(Occurs(hiring, "TechText.SeatDesk(_places[_adPlace], r)") == 2 && Occurs(hiring, "reallife_hire_seat_payroll") == 2 && table.Contains("reallife_staff_t_seat_desk") && table.Contains("reallife_staff_t_seat_payroll")
               && ModSource(@"Tech\TechText.cs").Contains("\"reallife_hire_seat_desk_auto\" : \"reallife_hire_seat_desk\""),
             "tech seats: the job ad page, the search firm's page and the Staff and roles reference say which workstation a role needs");
 

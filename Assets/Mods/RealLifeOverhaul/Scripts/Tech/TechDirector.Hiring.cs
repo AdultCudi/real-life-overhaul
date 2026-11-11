@@ -291,7 +291,7 @@ namespace RealLifeOverhaul.Tech
                     }
                     if (ok)
                     {
-                        File(HiringGame.Id(candidate), s.P, day, ad.Work);
+                        File(HiringGame.Id(candidate), s.P, day, ad.Work, true);   // a hire's role is never dropped for want of room
                         HiringGame.Arrived(candidate, at, s.P.Name, day);
                         seating = SeatsNew(candidate, at);   // the hour's pass gives them a desk and shifts; the note below says so
                     }
@@ -328,9 +328,9 @@ namespace RealLifeOverhaul.Tech
 
         private bool StartPayroll(Seeker s, JobAd ad, Applicant a, int day)
         {
-            if (_talent == null || _talent.People.Count >= TalentStore.PeopleMost)
+            if (_talent == null || _talent.PayrollCount() >= TalentStore.PayrollMost)
             {
-                return false;
+                return false;   // the mod's own payroll is full: no other file counts, so the game's employees, however many, never fill it
             }
             Profile p = Copy(s.P);
             p.Id = "pro:" + _talent.NextPro++;
@@ -356,12 +356,25 @@ namespace RealLifeOverhaul.Tech
             };
         }
 
-        /// <summary>A file made ahead for a candidate of the game's: the people part takes it when they are hired.</summary>
-        private void File(string candidateId, Profile from, int day, int work)
+        /// <summary>
+        /// A file made ahead for a candidate of the game's: the people part takes it when they are hired. It is the only thing that carries the role a hire
+        /// was made for (a data engineer hired for an AI lab is a programmer to the game), so the file of a hire is always kept: where the files of the
+        /// office's waiting candidates fill the table the oldest of them is let go to make room (<paramref name="hire"/>), and those candidates, hired
+        /// later, are given a role as any employee of the game's is. A file for a candidate only waiting is not made over the bound.
+        /// </summary>
+        private void File(string candidateId, Profile from, int day, int work, bool hire = false)
         {
-            if (string.IsNullOrEmpty(candidateId) || _hiring.CandidateOf(candidateId) != null || _hiring.Candidates.Count >= 64)
+            if (string.IsNullOrEmpty(candidateId) || _hiring.CandidateOf(candidateId) != null)
             {
                 return;
+            }
+            if (_hiring.Candidates.Count >= HiringCatalogue.CandidatesMost)
+            {
+                if (!hire)
+                {
+                    return;
+                }
+                _hiring.Candidates.RemoveAt(0);   // the oldest: files are added in the order they are made
             }
             Profile p = Copy(from);
             p.Id = candidateId;

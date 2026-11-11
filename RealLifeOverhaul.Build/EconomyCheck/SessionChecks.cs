@@ -321,7 +321,7 @@ internal static partial class Program
               && links.Contains("return SessionDirector.Effect(place, MeetingRules.Id, day, out output, out burnout);"),
             "sessions sources: under Living population and its own switch; off, no desk is clicked and no effect is read, so the firms work as before");
         Check(firms.Contains("TechBridges.TeamWeekAt(firm.File.Place, Save.Day, out int week, out _);") && firms.Contains("MeetingRules.Points(TalentRules.Output(p, person.MainPoints, Save.Day)")
-              && people.Contains("p.Burnout = MeetingRules.Day(p.Burnout, hours, pushed);") && people.IndexOf("TalentRules.Mood(p, d);", StringComparison.Ordinal) < people.IndexOf("MeetingRules.Day(", StringComparison.Ordinal),
+              && people.Contains("p.Burnout = MeetingRules.Day(p.Burnout, hours, here.Pushed);") && people.IndexOf("TalentRules.Mood(p, d);", StringComparison.Ordinal) < people.IndexOf("MeetingRules.Day(", StringComparison.Ordinal),
             "sessions sources: the meeting's week reaches the firms' work points and the professionals' day after the people part's own mood");
         Check(day.Contains("SessionRules.ManagerHolds(") && day.Contains("SessionRules.ManagerChoices(def, ask, _file.Seed, KindIndex(def), _picks)") && day.Contains("SessionRules.Remind(waiting, _file.Reminded, day, hour)")
               && day.Contains("\"reallife_session_note_manager\"") && day.Contains("Sessions check (manager): "),

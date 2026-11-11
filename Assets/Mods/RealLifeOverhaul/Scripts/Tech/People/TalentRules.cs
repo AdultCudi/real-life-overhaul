@@ -510,12 +510,21 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
+        /// True if a rival could come for them today: a senior or above, not working a notice, with no earlier approach resting. Asked before the market's
+        /// shortage and the rivals' pull at their workplace are looked up, which most professionals (juniors and mids) never need.
+        /// </summary>
+        public static bool Approachable(Profile p, int day)
+        {
+            return p.Level >= TalentCatalogue.PoachLevel && p.NoticeEnd <= 0 && p.PoachDay <= day;
+        }
+
+        /// <summary>
         /// Whether a rival comes for a senior or above today; <paramref name="pull"/>, thousandths, is how hard rivals pull at
         /// their workplace (a game studio whose hit paid its team no bonus pulls hard: StudioRules.Pull).
         /// </summary>
         public static bool Approached(int seed, Profile p, int day, int shortage, int esteem, int paid, int going, int pull = 1000)
         {
-            if (p.Level < TalentCatalogue.PoachLevel || p.NoticeEnd > 0 || p.PoachDay > day)
+            if (!Approachable(p, day))
             {
                 return false;
             }

@@ -100,8 +100,8 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class SeatPlan
     {
-        public const int Window = 30;       // days after the hire a professional of a tech firm is looked after
-        public const int Batch = 20;        // hires seated in one hour at most, so a backlog is worked off over several
+        public const int Batch = 20;        // hires seated in one hour at most (those seated: a hire for whom no desk was free is not counted), so a backlog is worked off over several hours
+        public const int Look = 1000;       // professionals looked at for a shift at a desk in one hour at most, so the first hours after a load, with thousands to look at, stay short
         public const int TestMost = 200;    // hires the test in Options seats in one press
         public const int ShiftLeast = 2;    // hours: the shortest shift worth writing
         public const int ShiftMost = 12;    // hours in one shift at most (the game's ScheduleHelper.ShiftLengthCap)
@@ -112,12 +112,6 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>How many days a week is tried with, the usual first.</summary>
         public static readonly int[] DayCounts = { 5, 4, 6, 3, 7, 2, 1 };
-
-        /// <summary>True for a hire made within the window: the day hired is known (a game employee's), not in the future, and under <see cref="Window"/> days ago.</summary>
-        public static bool Newcomer(int hired, int day)
-        {
-            return hired > 0 && hired <= day && day - hired <= Window;
-        }
 
         /// <summary>
         /// Plans a week for a hire in a space. Returns <see cref="Seated"/> with the shifts in <paramref name="into"/> (at least seven long) and their

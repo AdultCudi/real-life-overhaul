@@ -48,6 +48,14 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The game skills a firm of a kind (<see cref="FirmKind"/>) is hired under. Empty for a kind this does not know.</summary>
         public static string[] PrimaryOf(int kind) => kind >= 0 && kind < Primary.Length ? Primary[kind] : Array.Empty<string>();
 
+        /// <summary>
+        /// True if the hour's seating gives a hire a desk and shifts: the business is a tech firm (<paramref name="kind"/> is not -1) and the hire
+        /// holds a skill it is hired under. A lawyer or an HR manager at a software studio, an account manager at the game's web development agency,
+        /// and anyone at a law firm, a headquarters or a bank are left to the player. The one question the start note, the hire form's line and the
+        /// pass itself all ask, so what they promise is what the pass does.
+        /// </summary>
+        public static bool Seats(int kind, string skill) => !string.IsNullOrEmpty(skill) && Array.IndexOf(PrimaryOf(kind), skill) >= 0;
+
         /// <summary>The workstation a role is seated at: none for a role on the mod's payroll (no job of the game's), a desk for every other.</summary>
         public static Workstation Needs(RoleDef role) => role == null || !role.InGame ? Workstation.None : Workstation.Desk;
 

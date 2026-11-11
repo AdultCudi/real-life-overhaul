@@ -6,9 +6,12 @@ using RealLifeOverhaul.Tech;
 // Programmers hired at IT companies and game studios were not placed in the roles and seats their firms need, and data centre crews never arrived
 // (a player's report, 9 Nov 2026, from a save of some six thousand employees). Two causes, both held here. The professionals' files stopped at 600
 // people, so a hire after the 600th got no role, was left out of every crew and the Team tab, and a payroll start (a data centre's crew) was
-// refused until somebody left: the file is now kept for every professional the game holds. And no hire was ever given a shift, the rota planner
-// refusing a business of over 64 stations or 120 staff: a hire at a tech firm is now seated at a free desk with a week of shifts that keeps to
-// their demands (Tech/Firms/SeatPlan, SeatShifts), for every way of hiring, as the hour's pass finds them. The rules, the sources and the texts.
+// refused until somebody left: the file is now kept for every professional the game holds, with no bound to be met as a save grows. And no hire was
+// ever given a shift, the rota planner refusing a business of over 64 stations or 120 staff: a professional at a tech firm is now seated at a free desk
+// with a week of shifts that keeps to their demands (Tech/Firms/SeatPlan, SeatShifts, SeatRound), whenever they were hired and for every way of
+// hiring, as the hour's rounds find them, newest first, a business with no room asked once a day and not for each hire waiting. The reviewers'
+// faults in that work are held too: the studio's genre experience that stopped at 1,200 people, the rounds and the files at a save's scale, the
+// candidate files that dropped a hire's role, and the texts that promised a seat the pass did not give. The rules, the sources and the texts.
 internal static partial class Program
 {
     private static void TechStaff()
@@ -16,6 +19,11 @@ internal static partial class Program
         TechStaffFiles();
         TechStaffSeatRules();
         TechStaffSeatRandom();
+        TechStaffSeatRounds();
+        TechStaffPlaces();
+        TechStaffDayRules();
+        TechStaffStudio();
+        TechStaffCandidates();
         TechStaffSources();
         TechStaffTexts();
     }
@@ -38,8 +46,9 @@ internal static partial class Program
 
     private static void TechStaffFiles()
     {
-        // a save past the old 600: written and read whole, the last of them there (the line held 600 and dropped the rest)
-        foreach (int people in new[] { 601, 2000, 6100 })
+        // a save past the old 600 and past the 10,000 that followed it (a save of a player's own grows by some forty employees a day): written and read
+        // whole, the last of them there, whatever their number
+        foreach (int people in new[] { 601, 2000, 6100, 10001, 30000 })
         {
             TalentFile file = TechStaffFile(people);
             string line = TalentStore.Write(file);
@@ -47,8 +56,14 @@ internal static partial class Program
             Check(back.People.Count == people && back.People[people - 1].Id == "emp_" + (people - 1) && version == TalentStore.Version && TalentStore.Write(back) == line,
                 "tech staff: a save of " + people + " professionals is written and read back whole, the last of them there (" + back.People.Count + " read)");
         }
-        Check(TalentStore.PeopleMost >= 6100 + 24 && TalentStore.PeopleMost > 600,
-            "tech staff: the bound on files (" + TalentStore.PeopleMost + ") is above the employees of the largest save seen, some 6,024 in all, and no longer the old 600");
+
+        // the mod's own payroll is the one thing bounded, and only by what the player adds: the game's employees, however many, never fill it
+        TalentFile staff = TechStaffFile(20000);
+        TalentFile mixed = TechStaffFile(20000);
+        mixed.People.Add(new Profile { Id = "pro:1", Name = "Rack Hand" });
+        mixed.People.Add(new Profile { Id = "pro:2", Name = "Rack Hand" });
+        Check(staff.PayrollCount() == 0 && mixed.PayrollCount() == 2 && TalentStore.PayrollMost > 2 && TalentStore.PayrollMost >= 10000,
+            "tech staff: 20,000 of the game's employees on file leave the mod's payroll empty, and its own files are counted alone (" + mixed.PayrollCount() + ")");
 
         // the rules a read keeps: the first of an id is the one, and a record with no id is no file
         TalentFile dup = TechStaffFile(5);
@@ -58,14 +73,57 @@ internal static partial class Program
         Check(v2 == TalentStore.Version && kept.People.Count == 3 && kept.People[0].Id == "emp_0" && kept.People[1].Id == "emp_1" && kept.People[2].Id == "emp_2",
             "tech staff: a file's id twice leaves the first, and a record with no id is dropped, as before");
 
-        // a read is a pass over the line with a set of the ids, not a search of the files read so far for each (it was a square of the number of files)
-        var watch = Stopwatch.StartNew();
-        TalentFile big = TechStaffFile(TalentStore.PeopleMost);
-        string bigLine = TalentStore.Write(big);
-        TalentFile bigBack = TalentStore.Read(bigLine, out int v3);
-        double ms = watch.Elapsed.TotalMilliseconds;
-        Check(bigBack.People.Count == TalentStore.PeopleMost && v3 == TalentStore.Version && ms < 4000.0,
-            "tech staff: a line of " + TalentStore.PeopleMost + " professionals (" + bigLine.Length + " characters) is written and read in " + ms.ToString("0") + " ms (wanted under 4,000)");
+        // A read is a pass over the line with a set of the ids, not a search of the files read so far for each (it was a square of the number of files).
+        // A limit on the time cannot tell the two apart at ten thousand short ids (the square read measured 99 ms in a scratch harness, well under any limit a
+        // machine under load allows), so the read is timed at two sizes of ids that share a long stem, where each compare of the square costs most: four times
+        // the files is about four times the time for a pass over the line, and sixteen times for the square.
+        TalentStore.Read(TalentStore.Write(TechStaffStemmed(2000)), out _);   // (the code compiled and the allocator warm)
+        string small = TalentStore.Write(TechStaffStemmed(5000)), large = TalentStore.Write(TechStaffStemmed(20000));
+        double fast = TechStaffReadMs(small), slow = TechStaffReadMs(large);
+        TalentFile readBack = TalentStore.Read(large, out int v3);
+        Check(readBack.People.Count == 20000 && v3 == TalentStore.Version && slow < fast * 9.0 + 10.0,
+            "tech staff: a line of 20,000 professionals (" + large.Length + " characters) is read in " + slow.ToString("0") + " ms, against " + fast.ToString("0") + " ms for 5,000: four times the files, under nine times the time (a square would be sixteen)");
+
+        // the people's read finds each employee's file the same way: the index of the files by id, made once for a read, is a pass over them
+        var index = new Dictionary<string, Profile>();
+        TalentFile fewFiles = TechStaffStemmed(5000), manyFiles = TechStaffStemmed(20000);
+        double indexFew = double.MaxValue, indexMany = double.MaxValue;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            var timer = Stopwatch.StartNew();
+            fewFiles.Index(index);
+            indexFew = Math.Min(indexFew, timer.Elapsed.TotalMilliseconds);
+            timer.Restart();
+            manyFiles.Index(index);
+            indexMany = Math.Min(indexMany, timer.Elapsed.TotalMilliseconds);
+        }
+        Check(index.Count == 20000 && ReferenceEquals(index[manyFiles.People[19999].Id], manyFiles.People[19999]) && indexMany < indexFew * 9.0 + 10.0,
+            "tech staff: the index of 20,000 files by id is made in " + indexMany.ToString("0.0") + " ms, against " + indexFew.ToString("0.0") + " ms for 5,000: four times the files, under nine times the time");
+    }
+
+    // Files whose ids share a long stem, as a save's guids share their length: every compare of one id with another runs the stem through.
+    private static TalentFile TechStaffStemmed(int people)
+    {
+        string stem = new string('x', 120) + ":";
+        var f = new TalentFile { Seed = 11, FirstDay = 1, LastDay = 300, NextPro = 3 };
+        for (int i = 0; i < people; i++)
+        {
+            f.People.Add(new Profile { Id = stem + i, Role = i % TalentCatalogue.RoleCount, Level = i % TalentCatalogue.Levels, Main = 40000 + i, Place = PlaceRules.Key("Main Street", 1 + i % 60), Name = "Staff " + i });
+        }
+        return f;
+    }
+
+    // The fastest of three reads of a line, in milliseconds.
+    private static double TechStaffReadMs(string line)
+    {
+        double best = double.MaxValue;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            var watch = Stopwatch.StartNew();
+            TalentStore.Read(line, out _);
+            best = Math.Min(best, watch.Elapsed.TotalMilliseconds);
+        }
+        return best;
     }
 
     // ---------------------------------------------------------------- the seat rule
@@ -285,10 +343,25 @@ internal static partial class Program
         }
         Check(same && firstResult == SeatPlan.Seated, "tech staff, seat rule: the same business and hire give the same week every time");
 
-        // the window the hour's pass looks after a hire
-        Check(!SeatPlan.Newcomer(0, 10) && !SeatPlan.Newcomer(-5, 10) && SeatPlan.Newcomer(10, 10) && SeatPlan.Newcomer(10, 10 + SeatPlan.Window) && !SeatPlan.Newcomer(10, 11 + SeatPlan.Window)
-              && !SeatPlan.Newcomer(12, 10),
-            "tech staff, seat rule: a hire is looked after from the day they were hired for " + SeatPlan.Window + " days; one with no day hired, or hired in the future, is not");
+        // what the hour's pass seats, the one question the start note, the hire form and the pass itself ask: a hire under a skill the tech firm hires under
+        // (a lawyer, an HR manager, an account manager at the game's web development agency, and anyone at a firm that is no tech firm, are left to the player)
+        int software = (int)FirmKind.Software, games = (int)FirmKind.Games, web = (int)FirmKind.WebAgency, design = (int)FirmKind.Design;
+        Check(SeatRules.Seats(software, TalentCatalogue.Programmer) && SeatRules.Seats(software, TalentCatalogue.CustomerService) && SeatRules.Seats(games, TalentCatalogue.GraphicDesigner)
+              && SeatRules.Seats(web, TalentCatalogue.Programmer) && SeatRules.Seats(design, TalentCatalogue.GraphicDesigner),
+            "tech staff, seat rule: a programmer, a designer or a support hire is seated at a tech firm that hires under the skill");
+        Check(!SeatRules.Seats(software, TalentCatalogue.Lawyer) && !SeatRules.Seats(software, TalentCatalogue.HrManager) && !SeatRules.Seats(web, TalentCatalogue.CustomerService)
+              && !SeatRules.Seats(design, TalentCatalogue.CustomerService) && !SeatRules.Seats(web, TalentCatalogue.GraphicDesigner) && !SeatRules.Seats(-1, TalentCatalogue.Programmer)
+              && !SeatRules.Seats(software, null) && !SeatRules.Seats(software, string.Empty),
+            "tech staff, seat rule: a lawyer or an HR manager at a software studio, an account manager at the web agency or the design studio, and anyone at a law firm, headquarters or bank are not seated");
+        bool every = true;
+        for (int kind = 0; kind < (int)FirmKind.Count; kind++)
+        {
+            foreach (string skill in SeatRules.PrimaryOf(kind))
+            {
+                every &= SeatRules.Seats(kind, skill);
+            }
+        }
+        Check(every, "tech staff, seat rule: every skill a kind of tech firm is hired under is seated there");
 
         // a hundred and twenty hires' worth of planning on a large firm's desks stays cheap
         SeatSpace large = TechStaffRoom(300, 0, 5, 8, 16);
@@ -375,6 +448,405 @@ internal static partial class Program
             + "and the same twice (" + seated + " seated, " + other + " not; " + (fault.Length == 0 ? "no fault" : fault) + ")");
     }
 
+    // ---------------------------------------------------------------- the hour's rounds
+
+    // The professionals of a pretend save as the rounds look at them, oldest first: where each is assigned, their skill, whether they hold a shift, and what
+    // each business has room for. A business with no room answers that every desk is taken; one with room gives a seat each and loses the room.
+    private sealed class SeatFake : ISeatBoard
+    {
+        public readonly List<string> Places = new List<string>(), Skills = new List<string>();
+        public readonly List<bool> Shift = new List<bool>(), Known = new List<bool>();
+        public readonly Dictionary<string, int> Room = new Dictionary<string, int>(), Tries = new Dictionary<string, int>(), Given = new Dictionary<string, int>();
+        public int Begun, Ended, Opened;
+        private string _place;
+
+        public void Add(string place, string skill, int hires, bool shift)
+        {
+            for (int i = 0; i < hires; i++)
+            {
+                Places.Add(place);
+                Skills.Add(skill);
+                Shift.Add(shift);
+                Known.Add(false);
+            }
+        }
+
+        public int Count => Places.Count;
+
+        public bool Open(int i, bool everyone)
+        {
+            Opened++;
+            return everyone || !Known[i];
+        }
+
+        public string Place(int i) => Places[i];
+
+        public string Skill(int i) => Skills[i];
+
+        public bool Idle(int i, out string place)
+        {
+            place = Places[i];
+            if (Shift[i])
+            {
+                Known[i] = true;
+                return false;
+            }
+            return true;
+        }
+
+        public void Begin(string place)
+        {
+            _place = place;
+            Begun++;
+        }
+
+        public int Seat(int i)
+        {
+            Tries[_place] = (Tries.TryGetValue(_place, out int tried) ? tried : 0) + 1;
+            if (Room.TryGetValue(_place, out int room) && room > 0)
+            {
+                Room[_place] = room - 1;
+                Shift[i] = true;
+                Known[i] = true;
+                Given[_place] = (Given.TryGetValue(_place, out int given) ? given : 0) + 1;
+                return SeatPlan.Seated;
+            }
+            return SeatPlan.Full;
+        }
+
+        public void End(string place)
+        {
+            Ended++;
+        }
+
+        public int TriesAt(string place) => Tries.TryGetValue(place, out int t) ? t : 0;
+
+        public int GivenAt(string place) => Given.TryGetValue(place, out int g) ? g : 0;
+    }
+
+    // The reviewers' case, both ways round: a large firm with hundreds of hires waiting and not a desk free, and a firm beside it with desks.
+    private static void TechStaffSeatRounds()
+    {
+        const string A = "ba:street_first~1", B = "ba:street_second~2";
+        string skill = TalentCatalogue.Programmer;
+        int day = 700;
+
+        foreach (bool aNewer in new[] { true, false })
+        {
+            var fake = new SeatFake();
+            if (aNewer)
+            {
+                fake.Add(B, skill, 100, false);
+                fake.Add(A, skill, 500, false);
+            }
+            else
+            {
+                fake.Add(A, skill, 500, false);
+                fake.Add(B, skill, 100, false);
+            }
+            fake.Room[B] = 100;
+            var ledger = new SeatLedger();
+            int reached = -1;
+            for (int hour = 0; hour < 24; hour++)
+            {
+                SeatRound.Run(fake, ledger, day, SeatPlan.Batch, SeatPlan.Look, false);
+                reached = reached < 0 && fake.GivenAt(B) == 100 ? hour + 1 : reached;
+            }
+            int onDayOne = fake.TriesAt(A);
+            SeatRound.Run(fake, ledger, day + 1, SeatPlan.Batch, SeatPlan.Look, false);
+            Check(reached == 5 && onDayOne == 1 && fake.GivenAt(B) == 100 && fake.GivenAt(A) == 0 && fake.TriesAt(A) == 2,
+                "tech staff, rounds: with 500 hires at a firm with no desk free " + (aNewer ? "newer" : "older") + " than the 100 at one with desks, those 100 are all seated in the fifth hour (" + reached
+                + "), and the full firm is asked once a day, not for each hire (" + onDayOne + " on the first, " + fake.TriesAt(A) + " after the second)");
+        }
+
+        // the batch is the hires seated: twenty hires of a firm with no room do not use it up
+        var batch = new SeatFake();
+        batch.Add(B, skill, 30, false);
+        batch.Add(A, skill, 600, false);
+        batch.Room[B] = 30;
+        var led = new SeatLedger();
+        SeatTally first = SeatRound.Run(batch, led, day, SeatPlan.Batch, SeatPlan.Look, false);
+        SeatTally second = SeatRound.Run(batch, led, day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(first.Seated == SeatPlan.Batch && second.Seated == 10 && batch.TriesAt(A) == 1 && batch.GivenAt(B) == 30,
+            "tech staff, rounds: the batch of " + SeatPlan.Batch + " is the hires seated (" + first.Seated + " in the first hour, " + second.Seated + " in the next), though 600 waited at a firm with no room");
+
+        // the test: every one found without a seat is counted, those of a business with no room too, and each business is still asked once
+        var test = new SeatFake();
+        test.Add(A, skill, 50, false);
+        test.Add(B, skill, 10, false);
+        test.Room[B] = 10;
+        SeatTally all = SeatRound.Run(test, new SeatLedger(), day, SeatPlan.TestMost, int.MaxValue, true);
+        Check(all.Seen == 60 && all.Seated == 10 && all.Full == 50 && all.Seen == all.Seated + all.Unseated && test.TriesAt(A) == 1 && test.TriesAt(B) == 10,
+            "tech staff, rounds: the test finds 60 without a seat, seats the 10 who can be and counts the 50 of the full firm, asking it once (" + all.Seated + " seated, " + all.Full + " full, " + test.TriesAt(A) + " asked)");
+
+        // a hire is looked at once: those found with a shift are not looked at again, and an hour looks at a thousand at most
+        var seated = new SeatFake();
+        seated.Add(A, skill, 5000, true);
+        var ledgerSeated = new SeatLedger();
+        int looks = 0, passes = 0;
+        for (; passes < 8; passes++)
+        {
+            SeatTally t = SeatRound.Run(seated, ledgerSeated, day, SeatPlan.Batch, SeatPlan.Look, false);
+            looks += t.Looked;
+            if (t.Looked == 0)
+            {
+                break;
+            }
+        }
+        seated.Opened = 0;
+        SeatRound.Run(seated, ledgerSeated, day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(looks == 5000 && passes == 5 && seated.Begun == 0 && seated.Opened == seated.Count,
+            "tech staff, rounds: 5,000 professionals with shifts are looked at 1,000 an hour, once each (" + looks + " looks in " + passes + " hours), then an hour costs one cheap question each (" + seated.Opened + ")");
+
+        // many firms with no room, a hire waiting at each: every firm is asked once and the rounds end
+        var many = new SeatFake();
+        for (int i = 0; i < 300; i++)
+        {
+            many.Add("ba:street_many~" + i, skill, 1 + i % 3, false);
+        }
+        SeatTally manyTally = SeatRound.Run(many, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
+        int asked = 0;
+        foreach (KeyValuePair<string, int> t in many.Tries)
+        {
+            asked += t.Value;
+        }
+        Check(manyTally.Seated == 0 && asked == 300 && many.Begun == 300 && many.Ended == 300,
+            "tech staff, rounds: 300 firms with no room are each asked once, every one read is let go, and the hour ends (" + asked + " asked)");
+
+        // a different skill at a full firm is its own question: the customer service hires are asked though the programmers were told no
+        var skills = new SeatFake();
+        skills.Add(A, TalentCatalogue.CustomerService, 5, false);
+        skills.Add(A, skill, 5, false);
+        skills.Room[A] = 0;
+        SeatRound.Run(skills, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(skills.TriesAt(A) == 2, "tech staff, rounds: a firm with no desk for one skill is asked again for another (" + skills.TriesAt(A) + " asked)");
+
+        // what is told: once for a business until it seats somebody, and what a business answered today is not today's tomorrow
+        var l = new SeatLedger();
+        bool toldFirst = l.Tell(A, SeatPlan.Full), toldAgain = l.Tell(A, SeatPlan.Full), toldOther = l.Tell(A, SeatPlan.NoDesk), toldElse = l.Tell(B, SeatPlan.Full);
+        l.Seated(A);
+        bool toldAfter = l.Tell(A, SeatPlan.Full);
+        l.Answer(A, skill, 5, SeatPlan.Full);
+        Check(toldFirst && !toldAgain && toldOther && toldElse && toldAfter && l.Answered(A, skill, 5) == SeatPlan.Full && l.Answered(A, skill, 6) == SeatPlan.Seated
+              && l.Answered(B, skill, 5) == SeatPlan.Seated && l.Answered(A, TalentCatalogue.CustomerService, 5) == SeatPlan.Seated,
+            "tech staff, rounds: the player is told once for a business (not for every twenty hires), told again only after it has seated somebody, and its answer holds for the day and one skill");
+
+        // a save's worth of hours: 6,000 professionals, an hour with nobody to seat
+        var big = new SeatFake();
+        big.Add(A, skill, 6000, true);
+        var ledgerBig = new SeatLedger();
+        for (int i = 0; i < 6; i++)
+        {
+            SeatRound.Run(big, ledgerBig, day, SeatPlan.Batch, SeatPlan.Look, false);
+        }
+        var watch = Stopwatch.StartNew();
+        for (int i = 0; i < 24; i++)
+        {
+            SeatRound.Run(big, ledgerBig, day, SeatPlan.Batch, SeatPlan.Look, false);
+        }
+        double ms = watch.Elapsed.TotalMilliseconds;
+        Check(ms < 200.0, "tech staff, rounds: 24 hours with nobody to seat among 6,000 professionals take " + ms.ToString("0.0") + " ms in all (wanted under 200)");
+    }
+
+    // ---------------------------------------------------------------- what the day asks of the rest of the mod
+
+    private static void TechStaffPlaces()
+    {
+        int comfort = 0, team = 0, pull = 0;
+        var days = new PlaceDays(place => { comfort++; return place.Length; },
+            (string place, int day, out int output, out int burnout) => { team++; output = 0; burnout = day; },
+            (place, day) => { pull++; return 1000 + place.Length; });
+        long sum = 0;
+        for (int i = 0; i < 6000; i++)
+        {
+            string place = "ba:street_" + i % 40 + "~" + i % 40;
+            PlaceDays.Entry e = days.Of(place, 700);
+            sum += e.Comfort + e.Pushed;
+            if (i % 7 == 0)
+            {
+                sum += days.PullAt(e, place, 700);
+            }
+        }
+        Check(comfort == 40 && team == 40 && pull == 40 && days.Asked == 120 && sum > 0,
+            "tech staff, the day: 6,000 professionals at 40 places ask the rest of the mod 40 times for the comfort, 40 for the team week and 40 for the rivals' pull, not once each (" + comfort + ", " + team + ", " + pull + ")");
+        for (int i = 0; i < 6000; i++)
+        {
+            string place = "ba:street_" + i % 40 + "~" + i % 40;
+            days.Of(place, 701);
+        }
+        Check(comfort == 80 && team == 80 && pull == 40, "tech staff, the day: the next day asks for each place again, and the pull only where somebody can be approached (" + comfort + ", " + team + ", " + pull + ")");
+
+        // an approach is asked about only for those a rival could come for, and the answer is the old one's for them
+        var junior = new Profile { Id = "emp_1", Level = TalentCatalogue.Junior };
+        var senior = new Profile { Id = "emp_2", Level = TalentCatalogue.Senior };
+        var noticed = new Profile { Id = "emp_3", Level = TalentCatalogue.Senior, NoticeEnd = 710 };
+        var resting = new Profile { Id = "emp_4", Level = TalentCatalogue.Senior, PoachDay = 750 };
+        bool same = true;
+        foreach (Profile p in new[] { junior, senior, noticed, resting })
+        {
+            for (int day = 700; day < 760; day += 3)
+            {
+                bool approachable = TalentRules.Approachable(p, day);
+                same &= approachable == (p.Level >= TalentCatalogue.PoachLevel && p.NoticeEnd <= 0 && p.PoachDay <= day);
+                same &= approachable || !TalentRules.Approached(11, p, day, 1000, 0, 1000, 1000, 1000000);
+            }
+        }
+        Check(same && !TalentRules.Approachable(junior, 700) && TalentRules.Approachable(senior, 700) && !TalentRules.Approachable(noticed, 700) && !TalentRules.Approachable(resting, 700)
+              && TalentRules.Approachable(resting, 750),
+            "tech staff, the day: only a senior or above, not on notice and with no offer resting, can be approached, and nobody else ever is");
+    }
+
+    // The rules the day runs for each professional (the director's loop without the game's calls: learning, mood, burnout, sickness, a course's end, a review, a
+    // rival's approach), over a save of 6,000 for ten days. The day itself cannot run here (it holds the game's employees and its notifications), so this is
+    // the share that can: it is held to half the time the whole day is wanted under, the other half being the game's calls and the reads.
+    private static void TechStaffDayRules()
+    {
+        const int people = 6000, days = 10, seed = 11, year = 365;
+        TalentFile file = TechStaffFile(people);
+        for (int i = 0; i < people; i++)
+        {
+            Profile p = file.People[i];
+            p.ReviewDay = 700 + i % 40;
+            p.Morale = 300 + i % 600;
+            p.Burnout = i % 11 * 90;
+            p.GameWage = 2000 + i % 500;
+            p.Going = 2300;
+        }
+        var places = new PlaceDays(place => place.Length % 40, (string place, int day, out int output, out int burnout) => { output = 0; burnout = place.Length % 3; }, (place, day) => 1000);
+        int reviews = 0, approached = 0, sick = 0, noticed = 0;
+        var watch = Stopwatch.StartNew();
+        for (int day = 700; day < 700 + days; day++)
+        {
+            for (int i = 0; i < people; i++)
+            {
+                Profile p = file.People[i];
+                PlaceDays.Entry here = places.Of(p.Place, day);
+                int hours = 8;
+                TalentRules.Learn(p, hours, i % 5 == 0);
+                var d = new WorkDay { Day = day, Year = year, Hours = hours, WeekHours = 40, MainPoints = 50, Mentored = false, Paid = p.GameWage, Going = p.Going, Esteem = 0, OnCall = false,
+                                      Wanted = TalentRules.Content(p, seed), Comfort = here.Comfort };
+                TalentRules.Mood(p, d);
+                p.Burnout = MeetingRules.Day(p.Burnout, hours, here.Pushed);
+                p.Sick = false;
+                sick += TechRandom.Mille(seed, TechRandom.Of(p.Id), day, 91) < TalentRules.SickChance(p) ? 1 : 0;
+                TalentRules.EndCourse(p, seed, day);
+                if (p.NoticeEnd == 0 && day >= p.ReviewDay)
+                {
+                    reviews++;
+                    TalentRules.Review(p, seed, day, year, 50);
+                    TalentRules.CanPromote(p, day, year, 50);
+                }
+                if (TalentRules.BurnsOut(seed, p, day))
+                {
+                    TalentRules.Notice(p, day, year, LeaveKind.BurntOut);
+                    noticed++;
+                }
+                else if (TalentRules.Approachable(p, day) && TalentRules.Approached(seed, p, day, 1000, 0, p.GameWage, p.Going, places.PullAt(here, p.Place, day)))
+                {
+                    approached++;
+                    TalentRules.Offer(p, "Rival", day);
+                }
+            }
+        }
+        double ms = watch.Elapsed.TotalMilliseconds, perDay = ms / days;
+        int wanted = TalentCatalogue.DayMs(people);
+        Console.WriteLine("  tech staff: the rules of a day for " + people + " professionals take " + perDay.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms (" + reviews + " reviews, "
+                          + approached + " approaches, " + sick + " sick days, " + noticed + " notices in " + days + " days; the day is wanted under " + wanted + " ms)");
+        Check(reviews > 0 && approached > 0 && perDay < wanted / 2.0 && places.Asked <= days * (2 * 60 + 60),   // (sixty places: the bridges are asked of them, not of the professionals)
+            "tech staff, the day: the rules of a day for 6,000 professionals take " + perDay.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms, under half of the " + wanted
+            + " ms the day is wanted under, and ask the rest of the mod " + places.Asked + " times in " + days + " days");
+    }
+
+    // ---------------------------------------------------------------- the game studio's people
+
+    private static double TechStaffLookupMs(int people)
+    {
+        string stem = new string('x', 120) + ":";
+        var file = new StudioFile();
+        for (int i = 0; i < people; i++)
+        {
+            file.AddExperience(new GenreExperience { Id = stem + i });
+        }
+        double best = double.MaxValue;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            var watch = Stopwatch.StartNew();
+            int found = 0;
+            for (int i = 0; i < people; i++)
+            {
+                found += file.ExperienceOf(stem + i) != null ? 1 : 0;
+            }
+            best = Math.Min(best, watch.Elapsed.TotalMilliseconds);
+            if (found != people)
+            {
+                return double.MaxValue;
+            }
+        }
+        return best;
+    }
+
+    // A game studio's programmers beyond the 1,200th kept no experience days (the list stopped there and was never pruned): each gives up to twelve points of craft.
+    private static void TechStaffStudio()
+    {
+        StudioFile f = StudioFileFor(5);
+        for (int i = 0; i < 6000; i++)
+        {
+            for (int d = 0; d < 100 && (i == 0 || i == 1500 || i == 5999); d++)
+            {
+                StudioRules.Learn(f, "emp_" + i, (int)Genre.Rpg, 8);
+            }
+            StudioRules.Learn(f, "emp_" + i, (int)Genre.Action, 8);
+        }
+        int firstDays = StudioRules.ExperienceDays(f, "emp_0", (int)Genre.Rpg), middleDays = StudioRules.ExperienceDays(f, "emp_1500", (int)Genre.Rpg), lastDays = StudioRules.ExperienceDays(f, "emp_5999", (int)Genre.Rpg);
+        Check(f.People.Count == 6000 && firstDays == 100 && middleDays == 100 && lastDays == 100 && StudioRules.ExperienceDays(f, "emp_5999", (int)Genre.Action) == 1
+              && StudioRules.Craft(50, 1, lastDays) == StudioRules.Craft(50, 1, firstDays) && StudioRules.Craft(50, 1, lastDays) > StudioRules.Craft(50, 1, 0),
+            "tech staff, studio: 6,000 professionals who worked on games all have their days in a genre recorded, the last as the first (" + f.People.Count + " recorded, " + lastDays + " days, craft "
+            + StudioRules.Craft(50, 1, lastDays) + " against " + StudioRules.Craft(50, 1, 0) + " with none)");
+
+        string line = StudioStore.Write(f);
+        StudioFile back = StudioStore.Read(line, out _);
+        Check(back.People.Count == 6000 && StudioRules.ExperienceDays(back, "emp_5999", (int)Genre.Rpg) == 100 && StudioStore.Write(back) == line,
+            "tech staff, studio: the save reads all 6,000 back with their days (" + back.People.Count + " read)");
+
+        var files = new Dictionary<string, Profile>();
+        for (int i = 0; i < 6000; i += 2)
+        {
+            files["emp_" + i] = new Profile { Id = "emp_" + i };
+        }
+        int gone = StudioRules.Prune(back, files);
+        Check(gone == 3000 && back.People.Count == 3000 && StudioRules.ExperienceDays(back, "emp_1500", (int)Genre.Rpg) == 100 && StudioRules.ExperienceDays(back, "emp_5999", (int)Genre.Rpg) == 0
+              && back.People[0].Id == "emp_0" && back.People[1].Id == "emp_2" && StudioRules.Prune(back, files) == 0,
+            "tech staff, studio: the experience of 3,000 professionals who have gone is let go with their files, the order kept (" + gone + " let go, " + back.People.Count + " left)");
+
+        var direct = new StudioFile();
+        var once = new GenreExperience { Id = "pro:7" };
+        direct.People.Add(once);
+        var twice = new GenreExperience { Id = "pro:7" };
+        direct.AddExperience(twice);
+        Check(ReferenceEquals(direct.ExperienceOf("pro:7"), once) && direct.ExperienceOf("pro:8") == null && direct.ExperienceOf(null) == null,
+            "tech staff, studio: a list added to from outside is found all the same, and the first of an id stands");
+
+        TechStaffLookupMs(1000);   // (the code compiled and the allocator warm)
+        double few = TechStaffLookupMs(2000), many = TechStaffLookupMs(8000);
+        Check(many < few * 9.0 + 10.0, "tech staff, studio: finding 8,000 professionals' experience takes " + many.ToString("0") + " ms against " + few.ToString("0")
+                                       + " ms for 2,000: four times the people, under nine times the time (a pass over the list for each would be sixteen)");
+    }
+
+    // ---------------------------------------------------------------- the files made ahead for hires
+
+    private static void TechStaffCandidates()
+    {
+        var h = new HiringFile { Seed = 3, FirstDay = 1, LastDay = 10, NextId = 5 };
+        for (int i = 0; i < HiringCatalogue.CandidatesMost + 40; i++)
+        {
+            h.Candidates.Add(new CandidateFile { Id = "cand_" + i, Day = i % 30, P = new Profile { Id = "cand_" + i, Role = i % TalentCatalogue.RoleCount, Level = i % TalentCatalogue.Levels } });
+        }
+        HiringFile back = HiringStore.Read(HiringStore.Write(h), out _);
+        Check(HiringCatalogue.CandidatesMost > 64 && back.Candidates.Count == HiringCatalogue.CandidatesMost && back.Candidates[HiringCatalogue.CandidatesMost - 1].Id == "cand_" + (HiringCatalogue.CandidatesMost - 1)
+              && back.Candidates[7].P.Role == 7 % TalentCatalogue.RoleCount,
+            "tech staff, hiring: " + HiringCatalogue.CandidatesMost + " files made ahead for candidates are kept and read back, not the 64 of before (" + back.Candidates.Count + " read)");
+    }
+
     // ---------------------------------------------------------------- the sources
 
     private static void TechStaffSources()
@@ -389,25 +861,68 @@ internal static partial class Program
         string tree = ModSource(@"Meta\OptionsTree.cs");
         string list = ModSource(@"Meta\FeatureList.Economy.cs");
 
-        // the files: no silent stop at a number a player reaches, the bound told when it is met, a read that is one pass
-        string read = MethodText(people, "private int ReadPeople(int day)");
-        Check(read.Contains("_peopleFullTold") && read.Contains("Logger?.Warn(") && read.Contains("ReadShortages();") && read.Contains("continue;"),
-            "tech staff sources: a professional past the files' bound is told in the log, once, and not dropped in silence; the shortages are asked once for the read");
-        Check(store.Contains("seen.Add(p.Id)") && !store.Contains("f.Of(p.Id)") && store.Contains("HashSet<string>"),
-            "tech staff sources: the people's line is read with a set of the ids, not a search of the files already read for each");
-        string payroll = MethodText(hiring, "private bool StartPayroll(");
-        Check(payroll.Contains("_talent.People.Count >= TalentStore.PeopleMost") && TalentStore.PeopleMost > 6024,
-            "tech staff sources: a hire on the payroll (a data centre's crew) is refused only at the bound, which no save reaches");
+        string foundingSource = ModSource(@"Tech\TechDirector.Founding.cs"), moneySource = ModSource(@"Tech\TechDirector.Money.cs"), ventureSource = ModSource(@"Tech\TechDirector.Venture.cs");
+        string teamSource = ModSource(@"Tech\People\RolesApp.Team.cs"), deskSource = ModSource(@"Tech\Firms\SeatGame.cs"), talentGame = ModSource(@"Tech\People\TalentGame.cs");
+        string roleForm = ModSource(@"Tech\People\RolesApp.Hiring.cs"), workForm = ModSource(@"Ui\Work\RolesLive.cs"), techText = ModSource(@"Tech\TechText.cs");
 
-        // the hour: the people are read, a hire the game's own hiring made is found, and the lately hired are seated, whichever way they were hired
+        // the files: no bound for the game's employees to meet as a save grows (a bound met is a defect that comes back with the save's growth, and one
+        // met in silence at that), only the mod's own payroll bounded, counted alone; a read that is one pass, the shortages asked once for it
+        string read = MethodText(people, "private int ReadPeople(int day)");
+        Check(!store.Contains("PeopleMost") && !people.Contains("PeopleMost") && !hiring.Contains("PeopleMost") && !foundingSource.Contains("PeopleMost") && !moneySource.Contains("PeopleMost")
+              && !ventureSource.Contains("PeopleMost") && !people.Contains("_peopleFullTold") && read.Contains("p = NewFile(e, day);") && read.Contains("ReadShortages();") && !read.Contains("TalentStore."),
+            "tech staff sources: no file is refused for want of room, and no bound is left to be met in silence: a professional of the game's always has a file");
+        Check(store.Contains("seen.Add(p.Id)") && !store.Contains("f.Of(p.Id)") && store.Contains("HashSet<string>") && !store.Contains("i < PeopleMost") && !store.Contains("i < PayrollMost"),
+            "tech staff sources: the people's line is read with a set of the ids, not a search of the files already read for each, and written whole");
+        string payroll = MethodText(hiring, "private bool StartPayroll(");
+        string join = MethodText(people, "internal int JoinPayroll(");
+        Check(payroll.Contains("_talent.PayrollCount() >= TalentStore.PayrollMost") && !payroll.Contains("_talent.People.Count") && join.Contains("payroll + joined < TalentStore.PayrollMost")
+              && foundingSource.Contains("_talent.PayrollCount() >= TalentStore.PayrollMost") && moneySource.Contains("_talent.PayrollCount() < TalentStore.PayrollMost")
+              && ventureSource.Contains("_talent.PayrollCount() >= TalentStore.PayrollMost"),
+            "tech staff sources: a hire on the payroll (a data centre's crew, a co-founder, a startup's chief) is refused only when the mod's own payroll is full, counted without the game's employees");
+
+        // the hour: the people are read, a hire the game's own hiring made is found, who is on a shift is asked of a set read once for the business and not of the
+        // game's scan of the day's shifts for each of thousands, and the professionals without a seat are seated, whichever way they were hired
         string hour = MethodText(people, "private void PeopleHour()");
+        string onShift = MethodText(people, "private bool OnShiftNow(EmployeeInstance e)");
         Check(hour.Contains("TalentGame.Employees(_employees)") && hour.Contains("ReadPeople(day);") && hour.Contains("SeatHour(day);")
               && CodeAt(hour, "ReadPeople(day);") >= 0 && CodeAt(hour, "SeatHour(day);") > CodeAt(hour, "ReadPeople(day);"),
             "tech staff sources: each hour a hire the game's recruitment office, job board or headhunter made, or the mod's own jobs board or search firm, is read as a new professional and then seated");
+        Check(hour.Contains("OnShiftNow(e)") && !hour.Contains("TalentGame.Working(") && hour.Contains("ReleaseCrews();") && hour.Contains("HourTimed(day, started);") && onShift.Contains("TalentGame.WorkingNow(reg, crew);")
+              && onShift.Contains("crew.Contains(e.id)") && onShift.Contains("TalentGame.Available(e)") && talentGame.Contains("public static void WorkingNow(") && talentGame.Contains("TimeHelper.GetDayOfWeek(save.Day)")
+              && talentGame.Contains("e.IsEmployeeAvailable()") && !talentGame.Contains("IsWorking()"),
+            "tech staff sources: who is on a shift this hour is asked of a set read once for the business, as the game's IsWorking finds it, and the hour's time is written to the log when over its share");
         string starts = MethodText(hiring, "private int Starts(int day)");
         Check(starts.Contains("seating = SeatsNew(candidate, at);") && starts.Contains("seating ? \"reallife_hire_note_started_seat\" : \"reallife_hire_note_started\"")
               && starts.Contains("HiringGame.Arrived(candidate, at, s.P.Name, day)"),
             "tech staff sources: a hire the mod's jobs board starts is noted as being seated, so its start note says a desk follows");
+        string file = MethodText(hiring, "private void File(string candidateId, Profile from, int day, int work, bool hire = false)");
+        Check(file.Contains("HiringCatalogue.CandidatesMost") && file.Contains("if (!hire)") && file.Contains("_hiring.Candidates.RemoveAt(0);") && !file.Contains(">= 64") && starts.Contains("ad.Work, true);"),
+            "tech staff sources: the file that carries the role a hire was made for is always kept: where the office's waiting candidates fill the table, the oldest of them gives way");
+
+        // the day: what is asked of the rest of the mod is asked once for a place and not for each professional, an approach's lookups only for those a rival could come for,
+        // the notices beyond the first few of a kind told together, the studio's experience of those who have gone let go, and the time written as PASS or FAIL
+        string day = MethodText(people, "private void PeopleDay(int day)");
+        Check(day.Contains("_places.Of(p.Place, day)") && !day.Contains("TechBridges.ComfortAt(") && !day.Contains("TechBridges.TeamWeekAt(") && !day.Contains("Shortage(") && !day.Contains("StudioPull(") && !day.Contains("SectorPull(")
+              && day.Contains("_shortageRead[(int)p.Def.Family]") && day.Contains("TalentRules.Approachable(p, day)") && day.Contains("_places.PullAt(here, p.Place, day)")
+              && CodeAt(day, "TalentRules.Approachable(p, day)") >= 0 && CodeAt(day, "_places.PullAt(here, p.Place, day)") > CodeAt(day, "TalentRules.Approachable(p, day)"),
+            "tech staff sources: the day asks the comfort and the team week of a place once, the market's shortage once for the read, and the rivals' pull only for one who can be approached");
+        Check(day.Contains("reviews <= TalentCatalogue.NoticesMost") && day.Contains("approached <= TalentCatalogue.NoticesMost") && day.Contains("reallife_talent_note_reviews_many") && day.Contains("reallife_talent_note_poach_many")
+              && day.Contains("StudioRules.Prune(_studio, _fileOf)") && day.Contains("TalentCatalogue.DayMs(_people.Count)") && day.Contains("ms <= wanted ? \"PASS\" : \"FAIL\""),
+            "tech staff sources: only the first " + TalentCatalogue.NoticesMost + " reviews and offers of a day are told by name and the rest together, the studio's experience of those who left is let go, and the day's time is written as PASS or FAIL against its share");
+        Check(ModSource(@"Tech\TechDirector.cs").Contains("_places = new PlaceDays(TechBridges.ComfortAt, TechBridges.TeamWeekAt, PullOfPlace);")
+              && people.Contains("private int PullOfPlace(string place, int day) => Math.Max(StudioPull(place, day), SectorPull(place, day));"),
+            "tech staff sources: the place's cache asks the same bridges the day asked for each professional");
+
+        // the Team tab: whether a professional has a desk and a shift is asked of the business's set of who has one, read once for a page, and its desks counted once
+        Check(teamSource.Contains("TalentGame.StationHolders(person.At, read.Holders)") && teamSource.Contains("read.Desks.For(person.Game)") && !teamSource.Contains("SeatGame.DesksFor(")
+              && !teamSource.Contains("TalentGame.StationShift(") && !deskSource.Contains("Array.Exists(") && deskSource.Contains("_lists.IndexOf(item.suitableSkills)") && talentGame.Contains("public static void StationHolders("),
+            "tech staff sources: the Team tab reads a business's shifts and desks once for a page and asks them of each row, with no delegate made for a desk of a professional");
+
+        // the game studio's people have no bound either, and the experience of those who left is let go
+        string catalogue = ModSource(@"Tech\Studio\StudioCatalogue.cs"), rules = ModSource(@"Tech\Studio\StudioRules.cs"), studioStore = ModSource(@"Tech\Studio\StudioStore.cs");
+        Check(!catalogue.Contains("PeopleStored") && !rules.Contains("PeopleStored") && !studioStore.Contains("PeopleStored") && rules.Contains("f.AddExperience(e);") && studioStore.Contains("f.AddExperience(e);")
+              && rules.Contains("public static int Prune(StudioFile f, Dictionary<string, Profile> files)"),
+            "tech staff sources: the studio keeps every professional's experience of a genre, however many, and lets go that of those who have gone");
 
         // the seating part
         string hourPass = MethodText(seating, "private void SeatHour(int day)");
@@ -415,13 +930,17 @@ internal static partial class Program
         string test = MethodText(seating, "public void TestSeatHires()");
         Check(hourPass.Contains("Settings.TechSeatHires") && hourPass.Contains("_seatBroken") && hourPass.Contains("catch (Exception e)") && hourPass.Contains("SeatPass(day, false)"),
             "tech staff sources: the hour's seating is behind its option and its own fault guard, which switches seating off and leaves the sector running");
-        Check(pass.Contains("SeatPlan.Batch") && pass.Contains("SeatPlan.TestMost") && pass.Contains("SeatPlan.Newcomer(e.dayHired, day)") && pass.Contains("TalentGame.StationShift(e, at)")
-              && pass.Contains("TalentGame.Business(e)") && pass.Contains("FirmsGame.KindOf(TalentGame.TypeOf(at))") && pass.Contains("!TalentGame.Shifts(at)") && pass.Contains("e.IsTraining")
-              && pass.Contains("Array.IndexOf(SeatRules.PrimaryOf(kind), TalentGame.Skill(e)) < 0")
-              && pass.Contains("SeatShifts.Begin(reg);") && pass.Contains("finally") && pass.Contains("SeatShifts.End();") && pass.Contains("_seatTried") && pass.Contains("_seatTold")
-              && pass.Contains("_seatHad.Add(e.id)"),
-            "tech staff sources: the pass takes a batch of the lately hired at the business they are assigned to now, a tech firm with shifts, with no shift at a desk, not those in training, one business read at a time, and keeps what it told");
-        Check(pass.Contains("GoingPublic.Mine(at)") && people.Contains("TalentGame.Employees(_employees);") && CodeAt(pass, "SeatShifts.Begin(reg);") > CodeAt(pass, "GoingPublic.Mine(at)"),
+        Check(pass.Contains("SeatRound.Run(board, _seatLedger, day, all ? SeatPlan.TestMost : SeatPlan.Batch, all ? int.MaxValue : SeatPlan.Look, all)") && !seating.Contains("Newcomer") && !seating.Contains("dayHired")
+              && !seating.Contains("_seatTried") && !seating.Contains("_seatHad") && !seating.Contains("SeatPlan.Window") && !ModSource(@"Tech\Firms\SeatPlan.cs").Contains("Newcomer")
+              && seating.Contains("TalentGame.StationShift(e, at)") && seating.Contains("TalentGame.Business(e)") && seating.Contains("e.IsTraining") && seating.Contains("holders.Contains(e.id)")
+              && seating.Contains("TalentGame.StationHolders(at, set)") && seating.Contains("SeatShifts.Begin(_reg);") && seating.Contains("SeatShifts.End();") && seating.Contains("_d._seatLedger.Tell(place, reason)")
+              && pass.Contains("finally"),
+            "tech staff sources: the pass seats from the newest back whenever they were hired, takes its batch as hires seated, asks a business with no room once a day, tells the player once for it, and reads each business's shifts once");
+        Check(seating.Contains("SeatRules.Seats(FirmsGame.KindOf(TalentGame.TypeOf(at)), skill)") && seating.Contains("SeatsHire(at, TalentGame.Skill(e))") && seating.Contains("SeatsAt(at, person.Skill)")
+              && !seating.Contains("Array.IndexOf(SeatRules.PrimaryOf(kind)") && techText.Contains("director.SeatsHire(place, role.GameSkill)")
+              && Occurs(roleForm, "TechText.SeatDesk(_places[_adPlace], r)") == 2 && workForm.Contains("TechText.SeatDesk(_places[place], r)") && !roleForm.Contains("TechText.SeatDesk()") && !workForm.Contains("TechText.SeatDesk()"),
+            "tech staff sources: the start note, the hire form (the ad, the search, the work form) and the pass ask one question, SeatsHire, so what they promise at a place for a role is what the pass does");
+        Check(seating.Contains("GoingPublic.Mine(at)") && people.Contains("TalentGame.Employees(_employees);") && CodeAt(seating, "SeatShifts.Begin(_reg);") > CodeAt(seating, "GoingPublic.Mine(at)"),
             "tech staff sources: the pass reads only the professionals the people part holds for the player and only a business that is the player's, never another player's in a Going Public session");
         Check(test.Contains("SeatPass(Save.Day, true)") && test.Contains("Tech check (seat test)") && test.Contains("\"PASS\" : \"FAIL\"") && test.Contains("reallife_hire_test_seat_none")
               && test.Contains("reallife_talent_test_off"),
@@ -454,7 +973,8 @@ internal static partial class Program
         string[] notices =
         {
             "reallife_hire_note_started_seat", "reallife_hire_note_seated", "reallife_hire_note_seated_one", "reallife_hire_note_seat_closed", "reallife_hire_note_seat_no_desk",
-            "reallife_hire_note_seat_full", "reallife_hire_test_seat_pass", "reallife_hire_test_seat_fail", "reallife_hire_test_seat_none"
+            "reallife_hire_note_seat_full", "reallife_hire_test_seat_pass", "reallife_hire_test_seat_fail", "reallife_hire_test_seat_none",
+            "reallife_talent_note_reviews_many", "reallife_talent_note_poach_many"
         };
         string[] others = { "reallife_hire_opt_seat", "reallife_opt_tip_tech_seat_hires", "reallife_hire_test_seat", "reallife_hire_seat_desk_auto" };
         string missing = "none missing";
@@ -505,11 +1025,14 @@ internal static partial class Program
         string pass = en.TryGetValue("reallife_hire_test_seat_pass", out string s4) ? s4 : string.Empty;
         string fail = en.TryGetValue("reallife_hire_test_seat_fail", out string s5) ? s5 : string.Empty;
         holes &= pass.Contains("{seated}") && pass.Contains("{count}") && pass.Contains("{left}") && fail.Contains("{short}") && fail.Contains("{count}");
+        string reviews = en.TryGetValue("reallife_talent_note_reviews_many", out string s6) ? s6 : string.Empty;
+        string offers = en.TryGetValue("reallife_talent_note_poach_many", out string s7) ? s7 : string.Empty;
+        holes &= reviews.Contains("{count}") && offers.Contains("{count}") && offers.Contains("{days}") && reviews.Contains("Team tab") && offers.Contains("Team tab");
         Check(holes, "tech staff texts: each notice keeps the {names} the code fills");
-        Check(ModSource(@"Tech\TechText.cs").Contains("Settings.TechSeatHires ? \"reallife_hire_seat_desk_auto\" : \"reallife_hire_seat_desk\"")
+        Check(ModSource(@"Tech\TechText.cs").Contains("director.SeatsHire(place, role.GameSkill) ? \"reallife_hire_seat_desk_auto\" : \"reallife_hire_seat_desk\"")
               && en.TryGetValue("reallife_hire_seat_desk", out string byHand) && byHand.Contains("give the hire a shift")
               && en.TryGetValue("reallife_hire_seat_desk_auto", out string byRule) && !byRule.Contains("give the hire a shift") && byRule.Contains("shifts"),
-            "tech staff texts: the hire form says the player gives the shift only with the option off, and that one is found for the hire with it on");
+            "tech staff texts: the hire form says a free desk and shifts are found for the hire only where the pass seats a hire of that role at that place, and that the player gives the shift where it does not");
 
         // a language that has the texts keeps their names too (one that lacks them reads them in English until translated, and is not held to them)
         bool translated = true;
@@ -520,7 +1043,7 @@ internal static partial class Program
             {
                 if (texts.TryGetValue(key, out string v) && en.TryGetValue(key, out string english))
                 {
-                    foreach (string hole in new[] { "{name}", "{role}", "{business}", "{count}", "{seated}", "{left}", "{short}" })
+                    foreach (string hole in new[] { "{name}", "{role}", "{business}", "{count}", "{seated}", "{left}", "{short}", "{days}" })
                     {
                         translated &= english.Contains(hole) == v.Contains(hole);
                     }
@@ -529,11 +1052,12 @@ internal static partial class Program
         }
         Check(translated, "tech staff texts: a language that has the notices keeps the same {names} as the English");
 
-        // What's new tells of both fixes, with their fix marks, in some row
+        // What's new tells of the fixes, with their fix marks, in some row
         string[] lines =
         {
             "Fixed: programmers and other professionals hired at your tech firms had no role once your save held 600 of them",
-            "Fixed: a data centre crew found through a search firm never started once your save held 600 professionals"
+            "Fixed: a data centre crew found through a search firm never started once your save held 600 professionals",
+            "Fixed: tech staff hired before the update who still have no shift are now seated too"
         };
         bool every = true, clean = true;
         foreach (string line in lines)
@@ -547,7 +1071,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(every, "tech staff texts: What's new tells of the two fixes, with their fix marks, in some row of the English");
+        Check(every, "tech staff texts: What's new tells of the three fixes, with their fix marks, in some row of the English");
         Check(clean, "tech staff texts: each fix line is said once in its row, with no double spaces, exclamation marks or dashes");
     }
 

@@ -308,9 +308,9 @@ namespace RealLifeOverhaul.Tech
                 {
                     e.Days[g] = StudioRules.Clamp(x.Int(), 0, StudioCatalogue.ExperienceMost);
                 }
-                if (e.Id.Length > 0 && f.People.Count < StudioCatalogue.PeopleStored)
+                if (e.Id.Length > 0 && f.ExperienceOf(e.Id) == null)
                 {
-                    f.People.Add(e);
+                    f.AddExperience(e);   // every professional's experience is read back, however many there are (the first of an id stands)
                 }
             }
             foreach (Fields x in r.Records('e'))
