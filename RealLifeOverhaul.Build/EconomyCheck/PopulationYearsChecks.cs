@@ -151,18 +151,28 @@ internal static partial class Program
 
     private static void PopulationCosts()
     {
-        PopulationState s = PopulationCity(out List<BusinessSeed> seeds);
-        var sim = new PopulationSim();
-        sim.BeginGenerate(s, 99, 1, 60, seeds);
-        double worstGenerate = SlicedWorst(sim, 3, out int generateSteps, out double generateMs);
-        double worstDay = 0, dayMs = 0;
-        int daySteps = 0;
-        for (int day = 2; day <= 4; day++)
+        // The least of three rounds, each on a fresh city of the same seed: late in the full run the heap is large, and one
+        // collection landing in a timed slice reads tens of milliseconds that are not this code's. Slow code is slow in every round.
+        double worstGenerate = double.MaxValue, generateMs = double.MaxValue, worstDay = double.MaxValue, dayMs = double.MaxValue;
+        int generateSteps = 0, daySteps = 0;
+        for (int round = 0; round < 3; round++)
         {
-            sim.BeginDay(day, Ordinary, seeds);
-            worstDay = Math.Max(worstDay, SlicedWorst(sim, 0, out int steps, out double ms));
-            daySteps += steps;
-            dayMs = Math.Max(dayMs, ms);
+            PopulationState s = PopulationCity(out List<BusinessSeed> seeds);
+            var sim = new PopulationSim();
+            sim.BeginGenerate(s, 99, 1, 60, seeds);
+            worstGenerate = Math.Min(worstGenerate, SlicedWorst(sim, 3, out generateSteps, out double genMs));
+            generateMs = Math.Min(generateMs, genMs);
+            double roundWorstDay = 0, roundDayMs = 0;
+            daySteps = 0;
+            for (int day = 2; day <= 4; day++)
+            {
+                sim.BeginDay(day, Ordinary, seeds);
+                roundWorstDay = Math.Max(roundWorstDay, SlicedWorst(sim, 0, out int steps, out double ms));
+                daySteps += steps;
+                roundDayMs = Math.Max(roundDayMs, ms);
+            }
+            worstDay = Math.Min(worstDay, roundWorstDay);
+            dayMs = Math.Min(dayMs, roundDayMs);
         }
         if (Environment.GetEnvironmentVariable("RLO_POPULATION_REPORT") == "1")
         {
