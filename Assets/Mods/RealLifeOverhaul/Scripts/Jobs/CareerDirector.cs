@@ -73,6 +73,9 @@ namespace RealLifeOverhaul
             _cast.Dispose();
         }
 
+        /// <summary>True once the employers have been given their boards (the boards are up): <see cref="DepotOf"/> then answers for good.</summary>
+        public bool Mapped => _mapped;
+
         /// <summary>The board an employer's office is at, or -1 if it has none in this city.</summary>
         public int DepotOf(int employer)
         {

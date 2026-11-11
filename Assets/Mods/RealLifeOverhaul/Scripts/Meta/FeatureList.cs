@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Meta
             Giving.GivingGuide.Register();
             Health.HealthGuide.Register();
             ParkSpaces.SpaceGuide.Register();
+            SideJobs.SideJobGuide.Register();
             Economy.Dealership.CarSupplyGuide.Register();
             Suppliers.SupplierGuide.Register();
             RivalsSeen.SeenGuide.Register();

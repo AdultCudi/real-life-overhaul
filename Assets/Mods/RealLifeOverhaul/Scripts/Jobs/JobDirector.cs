@@ -94,10 +94,12 @@ namespace RealLifeOverhaul
             _context.Rental = _rental;
             _context.Animations = new ClipJobAnimations();   // the mod's own clips where the bundle has them, the game's gestures where not
             _context.Logger = Logger;
+            PoliceAttention.Stopped += OnStopped;
         }
 
         private void OnDestroy()
         {
+            PoliceAttention.Stopped -= OnStopped;
             SaveHook.Drop(_onSave);
             if (_job != null)
             {
@@ -424,12 +426,91 @@ namespace RealLifeOverhaul
             return HeavyAvailable(def, out reasonKey) && StartJob(def, false, out reasonKey, heavy: true);
         }
 
+        /// <summary>True while the shift that is on was signed on for at a firm's desk (Scripts/SideJobs).</summary>
+        public bool OnDeskShift => _job != null && _context.Desk != null;
+
+        /// <summary>
+        /// Starts a gig as a shift signed on for at a firm's desk, in the player's own vehicle: the gig's own licence, record and
+        /// energy are asked as on the Gig Line, but not the Gig Line's day (the desk keeps its own, <see cref="DeskShift.Left"/>)
+        /// and never a hired van. False with the reason if it cannot be started.
+        /// </summary>
+        public bool TakeDesk(JobDef def, DeskShift desk, out string reasonKey)
+        {
+            reasonKey = null;
+            if (def == null || desk == null || _broken || !Settings.Jobs || !JobState.Loaded)
+            {
+                reasonKey = "reallife_job_no_off";
+            }
+            else if (_job != null)
+            {
+                reasonKey = "reallife_job_no_busy";
+            }
+            else if (!Free(out reasonKey, def))
+            {
+            }
+            else if (desk.Test)
+            {
+            }
+            else if (JobState.Sacked(def, TimeHelper.CurrentDay))
+            {
+                reasonKey = "reallife_job_no_sacked";
+            }
+            else if (desk.Left() <= 0)
+            {
+                reasonKey = "reallife_job_no_daily";
+            }
+            else if (SaveGameManager.Current.Energy < JobCatalogue.MinEnergy)
+            {
+                reasonKey = "reallife_job_no_energy";
+            }
+            else if (def.Id == JobCatalogue.Taxi && !Licences.Driving.Has(LicenceClass.Taxi))   // carrying passengers for hire needs the taxi endorsement, at a desk as on the Gig Line
+            {
+                reasonKey = "reallife_job_no_taxi_licence";
+            }
+            else if ((def.Needs & JobNeed.CleanRecord) != 0 && !JobState.CleanRecord(TimeHelper.CurrentDay))
+            {
+                reasonKey = "reallife_job_no_record";
+            }
+            return reasonKey == null && StartJob(def, desk.Test, out reasonKey, desk: desk);
+        }
+
+        // The police booked the player at a stop: the job on hears how many offences were on the bill (a passenger was watching).
+        private void OnStopped(int booked, bool fled)
+        {
+            if (_job == null || _broken)
+            {
+                return;
+            }
+            try
+            {
+                int offences = 0;
+                for (int bits = booked; bits != 0; bits &= bits - 1)
+                {
+                    offences++;
+                }
+                _job.OnOffences(offences, fled);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
         /// <summary>The player stops the job themselves (phone, or the test button).</summary>
         public void Quit()
         {
             if (_job != null)
             {
                 EndJob(JobEnd.Quit, null);
+            }
+        }
+
+        /// <summary>A desk shift ends now through nobody's fault (its option switched off, or its feature cleaned up): paid for what was driven.</summary>
+        public void QuitDesk()
+        {
+            if (OnDeskShift)
+            {
+                EndJob(JobEnd.Interrupted, "reallife_job_end_off");
             }
         }
 
@@ -468,7 +549,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private bool StartJob(JobDef def, bool test, out string reasonKey, CareerShift shift = null, BookedGig gig = null, bool heavy = false)
+        private bool StartJob(JobDef def, bool test, out string reasonKey, CareerShift shift = null, BookedGig gig = null, bool heavy = false, DeskShift desk = null)
         {
             reasonKey = "reallife_job_no_now";
             Job job = Create(def.Id);
@@ -481,10 +562,12 @@ namespace RealLifeOverhaul
             _context.HeavyLoad = heavy;
             _context.Shift = shift;
             _context.Gig = gig;
+            _context.Desk = desk;
             float scale = PayScale();
             _context.Level = JobState.Level(def);
             // A freelance gig is worked as the Gig Line quoted it; the rest at the table's figures.
-            bool freelance = shift == null && gig == null && !test && !JobCatalogue.IsTrade(def);   // a trade's shifts are varied by its site and its own game
+            // A trade's shifts are varied by its site and its own game; a desk's meter is the table's.
+            bool freelance = shift == null && gig == null && desk == null && !test && !JobCatalogue.IsTrade(def);
             _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
             _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Piece : 1f) * _context.Offer.Fee;
             if (shift != null)
@@ -510,6 +593,7 @@ namespace RealLifeOverhaul
                 _context.Body = null;
                 _context.Shift = null;
                 _context.Gig = null;
+                _context.Desk = null;
                 return false;
             }
             _job = job;

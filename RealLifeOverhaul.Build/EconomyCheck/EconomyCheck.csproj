@@ -818,6 +818,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\TaxiComfortRules.cs" Link="Mod\TaxiComfortRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ShiftFactsRules.cs" Link="Mod\ShiftFactsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobRules.cs" Link="Mod\SideJobs\SideJobRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobState.cs" Link="Mod\SideJobs\SideJobState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobStore.cs" Link="Mod\SideJobs\SideJobStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OfferLineRules.cs" Link="Mod\OfferLineRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Leisure\Shops\ClothesSeen.cs" Link="Mod\ClothesSeen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Activity\FuneralRules.cs" Link="Mod\FuneralRules.cs" />

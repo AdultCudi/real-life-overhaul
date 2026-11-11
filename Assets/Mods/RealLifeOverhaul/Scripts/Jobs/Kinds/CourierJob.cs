@@ -47,6 +47,9 @@ namespace RealLifeOverhaul
             public DoorSpot Spot;
             public bool Done;
             public bool NoOne;      // nobody could be put at this door: the parcel is left at it
+            public float Leg;       // metres of the planned road to it from the door before (a desk shift pays and times each drop by it)
+            public float DueIn;     // seconds from loading within which a desk shift's drop here is on time
+            public float DueAt;     // ...as a time, once the vehicle is loaded
         }
 
         private readonly JobDef _def = JobCatalogue.Find(JobCatalogue.Courier);
@@ -98,24 +101,26 @@ namespace RealLifeOverhaul
 
         public override bool OwnsInteractKey => _panel.Up;
 
-        public override bool QuitIsFailure => _delivered * 2 < Mathf.Max(1, _count);
+        public override bool QuitIsFailure => !DeskIdle && _delivered * 2 < Mathf.Max(1, _count);
 
         protected override bool OnBegin(float now)
         {
-            int want = ShiftSize() + (Ctx.Shift != null ? Mathf.Clamp(Ctx.Shift.Rank.ExtraUnits, 0, MostExtra) : 0);   // the offer's round, and a senior courier's extra
+            int want = Ctx.Desk != null ? DeskRoom()   // a desk shift: what the vehicle signed on with has room for
+                : ShiftSize() + (Ctx.Shift != null ? Mathf.Clamp(Ctx.Shift.Rank.ExtraUnits, 0, MostExtra) : 0);   // the offer's round, and a senior courier's extra
             if (want <= 0)
             {
                 Refusal = "reallife_job_no_daily";
                 return false;
             }
-            if (!JobSpots.RandomDoor(Ctx.PlayerPosition, 12f, DepotMax, null, LaneWithin, out _depot) || !PlanRound(want))
+            if (!(Ctx.Desk != null ? DeskRun(want) : JobSpots.RandomDoor(Ctx.PlayerPosition, 12f, DepotMax, null, LaneWithin, out _depot) && PlanRound(want)))
             {
                 Refusal = "reallife_job_no_here";
                 return false;
             }
             // Last of all, once nothing else can refuse: the player's own car, or a van hired for the day; for a heavy load a heavy truck.
             string noCar;
-            CarController wheels = Ctx.HeavyLoad ? Ctx.Director.HeavyFor(Ctx.Test, out noCar)
+            CarController wheels = Ctx.Desk != null ? DeskCar(out noCar)   // the vehicle signed on with, never a hired one
+                : Ctx.HeavyLoad ? Ctx.Director.HeavyFor(Ctx.Test, out noCar)
                 : Ctx.Director.CarFor(Ctx.Test || Ctx.Perk(CareerPerk.CompanyVan), out noCar);   // the firm's van costs a senior courier nothing
             if (wheels == null)
             {
@@ -125,6 +130,7 @@ namespace RealLifeOverhaul
             _hired = ReferenceEquals(Ctx.Rental.Car, wheels);
             // Any courier round driven in a heavy truck by a licensed driver is a heavy load, the Gig Line's or an employer's.
             _heavy = HeavyRules.IsLoad(JobDirector.IsHeavyTruck(wheels), Ctx.Test || Licences.Driving.Has(LicenceClass.Heavy));
+            _heavy &= Ctx.Desk == null;   // the depot's desk pays every vehicle by its own rule (SideJobRules)
             if (_heavy)
             {
                 _window *= HeavyRules.LoadTime;
@@ -201,6 +207,7 @@ namespace RealLifeOverhaul
                 }
                 visited |= 1 << next;
                 _route += best;
+                DeskLeg(next, leg, best);
                 at = _drops[next].Spot.Front;
             }
             _window = 70f + _route / 4.5f + 38f * _count;
@@ -246,13 +253,13 @@ namespace RealLifeOverhaul
         {
             _figures.Objective(Objective);
             _figures.Units(_delivered, _count);
-            int seconds = _step == Step.Round ? Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) : -1;
+            int seconds = _step != Step.Round ? -1 : Ctx.Desk != null ? DeskSeconds(now) : Mathf.Max(0, Mathf.CeilToInt(_endsAt - now));
             if (seconds != _shownSeconds)
             {
                 _shownSeconds = seconds;
                 _figures.Limit(seconds < 0 ? null : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)), seconds >= 0 && seconds <= 60 ? WorldPanel.Yellow() : _panel.White);
             }
-            _figures.Money(_delivered * DropPay() + (_count > 0 ? RoundPay(_route * _delivered / _count) : 0), Mathf.RoundToInt(_tips * Ctx.TipFactor));
+            _figures.Money(Ctx.Desk != null ? DeskEarned() : _delivered * DropPay() + (_count > 0 ? RoundPay(_route * _delivered / _count) : 0), Mathf.RoundToInt(_tips * Ctx.TipFactor));
             _figures.Time(-1);
         }
 
@@ -320,6 +327,7 @@ namespace RealLifeOverhaul
         private void Loaded(float now)
         {
             _endsAt = now + _window;
+            DeskLoaded(now);
             _step = Step.Round;
             _hint = -1;
             _shownTarget = -2;
@@ -490,6 +498,7 @@ namespace RealLifeOverhaul
             TakeBox();   // out of the player's hands first, so the arm is free to reach
             _drops[_target].Done = true;
             _delivered++;
+            DeskDelivered(_target, now);
             UnitDone(_delivered, DropPay());   // the round's big tipper, if the offer drew one
             if (Meta.Dev.Verbose)
             {
@@ -616,6 +625,10 @@ namespace RealLifeOverhaul
         {
             bool all = _delivered >= _count;
             Settle(all && !late && _endsAt - now >= _window * 0.25f);
+            if (all && DeskNextRun(now))
+            {
+                return;   // a desk shift goes on: the depot has the next run
+            }
             Finish(all || _delivered * 2 >= _count ? JobEnd.Done : JobEnd.Failed);
         }
 
@@ -627,6 +640,7 @@ namespace RealLifeOverhaul
             }
             _paid = true;
             Ctx.Pay(this, slip, "reallife_job_courier_slip");
+            DeskBooked(slip);
         }
 
         // A round that stops early has not beaten the clock.
@@ -650,6 +664,7 @@ namespace RealLifeOverhaul
                 // A crash shakes every parcel aboard and a stop holds the round up: each costs two doors' pay.
                 Penalty = Mathf.RoundToInt(each * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut) * 2f)
             };
+            DeskSlip(ref slip);   // a desk shift's run: each drop by its own leg and punctuality
             return true;
         }
 

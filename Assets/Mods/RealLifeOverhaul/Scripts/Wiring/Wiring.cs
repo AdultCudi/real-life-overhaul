@@ -99,6 +99,7 @@ namespace RealLifeOverhaul
             Step("giving", GivingLinks.Connect);   // after the schools' and the rivals': its piece of the paper goes on top of theirs
             Step("health", HealthLinks.Connect);   // after giving's, the careers', the economy's and Home's: it wraps their doors
             Step("the smaller business asks", BizAsksLinks.Connect);   // parking spaces and the showroom's suppliers: wraps nothing
+            Step("taxi and delivery shifts", SideJobLinks.Connect);   // wraps nothing: it asks the jobs' director and the pump's price
             Step("suppliers", SupplierLinks.Connect);   // after giving's: its piece of the paper goes on top of it
             Step("the stock market's extras", StockExtrasLinks.Connect);   // after the listing's and the rivals': it wraps the company's books and adds to the rivals' page
             Step("rivals seen", SeenLinks.Connect);   // after giving's: its society lines go on top of its piece of the paper
@@ -130,6 +131,7 @@ namespace RealLifeOverhaul
             Step("the stock market's extras", StockExtrasLinks.Disconnect);   // first: the books it wrapped go back before the listing's own
             Step("health", HealthLinks.Disconnect);   // before giving's: what it wrapped goes back first
             Step("the smaller business asks", BizAsksLinks.Disconnect);
+            Step("taxi and delivery shifts", SideJobLinks.Disconnect);
             Step("suppliers", SupplierLinks.Disconnect);   // before giving's: what it wrapped of the paper goes back first
             Step("rivals seen", SeenLinks.Disconnect);   // before giving's: what it wrapped of the paper goes back first
             Step("the dynasty", DynastyLinks.Disconnect);   // before giving's: what it wrapped of the paper and the debts goes back first
