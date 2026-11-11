@@ -229,13 +229,17 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// What a product's next feature still waits for. A feature is done when its work is in and, for an AI model, when its
         /// generation's training has come too (<see cref="Build"/>), and the work keeps building while a model waits: a lab making
-        /// 529 points a day on the default 50 units of training a day had its work 211, then 882 points past a feature's cost, which
-        /// a page that wrote the cost less the work read as a negative number of points to go. This gives the pages three figures,
-        /// none below zero: the work still to put in, the work past the cost (kept for the features after it), and the training
-        /// still to come with the days it takes at the model's level. COST: a few sums, asked when a page is written, never per frame.
+        /// 529 points a day on the default 50 units of training a day had its work 882 points past a feature's cost, which a page
+        /// that wrote the cost less the work read as a negative number of points to go. This gives the pages three figures, none
+        /// below zero: the work still to put in, the work past the cost, and the training still to come with its days. A withdrawn
+        /// product waits for nothing (the day and the cloud skip it). COST: a few sums when a page is written, never per frame.
         /// </summary>
         public static FeatureWait Wait(Product p)
         {
+            if (p.Stage >= 2)
+            {
+                return new FeatureWait(0, 0, 0L, 0, 0, true);
+            }
             int cost = FeatureCost(p.Features), work = Math.Max(0, p.Progress);
             long need = 0, training = 0;
             int days = 0;

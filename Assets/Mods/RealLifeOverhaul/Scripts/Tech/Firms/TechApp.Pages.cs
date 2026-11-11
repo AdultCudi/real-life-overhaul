@@ -510,15 +510,15 @@ namespace RealLifeOverhaul.Tech
             else if (_director.SectorOn)
             {
                 // under the sector a product has no rival of its own and no top on its features: its market's section below names the rivals
-                box.Line(TechText.NextFeature(p, true));
+                SayIf(box, TechText.NextFeature(p, true));
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
-                SayOffSale(box, p);
+                SayIf(box, TechText.OffSale(p));
             }
             else
             {
-                box.Line(TechText.NextFeature(p, false));
+                SayIf(box, TechText.NextFeature(p, false));
                 if (p.Features >= FirmsCatalogue.FeaturesMost)
                 {
                     box.Line(TechText.Fill("reallife_tech_product_features_full", "most", FirmsCatalogue.FeaturesMost.ToString()), CellTone.Yellow);
@@ -526,7 +526,7 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
-                SayOffSale(box, p);
+                SayIf(box, TechText.OffSale(p));
                 if (p.K == ProductKind.Licence && p.Stage < 2 && firm != null)
                 {
                     // How often it sells as things stand: a licence's deals are few and large, so the page says when to expect the next.
@@ -539,16 +539,16 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute),
                     "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
-                string training = TechText.TrainingWait(p);
+                ViewLine training = ProductViews.TrainingWait(p);
                 if (training != null)
                 {
-                    if (FirmsRules.Wait(p).Days < 0)
+                    if (training.Tone == ViewTone.Warn)
                     {
-                        box.Line(training, CellTone.Yellow);   // switched off: nothing will come until the level is raised
+                        box.Line(TechText.Say(training), CellTone.Yellow);   // switched off: nothing will come until the level is raised
                     }
                     else
                     {
-                        box.Note(training);
+                        box.Note(TechText.Say(training));
                     }
                 }
             }
@@ -598,10 +598,9 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        // Why a product that is not on sale yet has no customers: it has to be launched first.
-        private static void SayOffSale(InfoBox box, Product p)
+        // A line of the product's page that some products have none of (a withdrawn one's next feature, an on-sale one's reason for no customers).
+        private static void SayIf(InfoBox box, string words)
         {
-            string words = TechText.OffSale(p);
             if (words != null)
             {
                 box.Line(words);

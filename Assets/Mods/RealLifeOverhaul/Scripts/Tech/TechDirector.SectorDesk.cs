@@ -597,7 +597,10 @@ namespace RealLifeOverhaul.Tech
             return t;
         }
 
-        /// <summary>A product's market as a section of its page under the sector; null while the sector is off or for a game.</summary>
+        /// <summary>
+        /// A product's market as a section of its page under the sector; null while the sector is off or for a game. A live product of a founded firm is weighed in its niche, as
+        /// the sale weighs it (NicheFrame), so the page says what the sale does; a market the day has not counted yet (a save just loaded) gets no heading or deals from the section.
+        /// </summary>
         internal ViewSection SectorMarketSection(Product p, IStudioFormat fmt)
         {
             if (!_sectorOn || p == null || SectorRules.MarketOf(p) < 0 || Save == null)
@@ -605,10 +608,22 @@ namespace RealLifeOverhaul.Tech
                 return null;
             }
             FirmPlace firm = FirmOf(p.Place);
+            SectorMarketDay md = _sector.Markets[SectorRules.MarketOf(p)], frame = null;
             int at = _firmsFile.Products.IndexOf(p);
-            int appeal = at >= 0 && at < _appeals.Length && _appeals[at] > 0 ? _appeals[at] : firm != null ? SectorRules.Appeal(p, firm.File, firm.Crew, _sector.Markets[SectorRules.MarketOf(p)]) : 0;
+            int appeal = at >= 0 && at < _appeals.Length && _appeals[at] > 0 ? _appeals[at] : firm != null ? SectorRules.Appeal(p, firm.File, firm.Crew, md) : 0;
             int aware = at >= 0 && at < _aware.Length && _aware[at] > 0 ? _aware[at] : 0;
-            return SectorViews.Market(_sector, p, appeal, aware, fmt, firm != null ? firm.Crew.Selling : -1);
+            int selling = firm != null ? firm.Crew.Selling : -1;
+            if (firm != null && p.Live && _founding != null && md.Buyers > 0)
+            {
+                Crew crew = firm.Crew;
+                SectorMarketDay view = NicheFrame(firm, p, md, Save.Day, SectorRules.Attraction(appeal, aware), _nicheShown, ref appeal, ref aware, ref crew, out _);
+                if (!ReferenceEquals(view, md))
+                {
+                    frame = view;
+                    selling = crew.Selling;
+                }
+            }
+            return SectorViews.Market(_sector, p, appeal, aware, fmt, selling, frame);
         }
 
         /// <summary>The data centres' markets as a section of the Infra tab under the sector; null while the sector is off.</summary>

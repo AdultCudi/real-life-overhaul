@@ -144,54 +144,18 @@ namespace RealLifeOverhaul.Tech
             return b.Length > 0 ? b.ToString() : T("reallife_talent_none");
         }
 
-        /// <summary>
-        /// The line about a product's next feature, for the old pages and the kit's alike: what it costs in points still to put in,
-        /// or, once the work is in and a model's training is all it waits for, that it waits. Never a negative count of points: the
-        /// work goes on building while a model trains (<see cref="FirmsRules.Wait"/>). <paramref name="markets"/> is the tech
-        /// markets' wording, which names no rival of the product's own.
-        /// </summary>
-        public static string NextFeature(Product p, bool markets)
-        {
-            FeatureWait wait = FirmsRules.Wait(p);
-            string features = p.Features.ToString(Inv);
-            if (markets)
-            {
-                return wait.Trains ? Fill("reallife_tech_mkt_product_build_wait", "features", features, "ahead", Whole(wait.Ahead))
-                    : Fill("reallife_tech_mkt_product_build", "features", features, "next", Whole(wait.Points));
-            }
-            string rival = FirmsCatalogue.RivalName(FirmsCatalogue.RivalStock(p.K, p.S)), theirs = p.RivalFeatures.ToString(Inv);
-            return wait.Trains ? Fill("reallife_tech_product_build_wait", "features", features, "rival", rival, "theirs", theirs, "ahead", Whole(wait.Ahead))
-                : Fill("reallife_tech_product_build", "features", features, "rival", rival, "theirs", theirs, "next", Whole(wait.Points));
-        }
+        /// <summary>A line of a screen written in the game's words (its key filled with its names and values); null for no line.</summary>
+        public static string Say(ViewLine line) => line == null ? null : Fill(line.Key, line.Pairs ?? System.Array.Empty<string>());
 
         /// <summary>
-        /// An AI model's training in words while any is still to come: what training is, and the days it takes at the model's daily
-        /// level or that it is switched off. Null when nothing is short: any other product, or a model whose training is in.
+        /// The words about a product's next feature, for the old pages and the kit's alike (<see cref="ProductViews.NextFeature"/> chooses
+        /// the line): its points still to put in, or that a model's work is done and the training is what it waits for. Null for a
+        /// withdrawn product.
         /// </summary>
-        public static string TrainingWait(Product p)
-        {
-            FeatureWait wait = FirmsRules.Wait(p);
-            if (p.K != ProductKind.Model || wait.Training <= 0)
-            {
-                return null;
-            }
-            int level = InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)];
-            return wait.Days < 0 ? T("reallife_tech_product_training_off") : Fill("reallife_tech_product_training_days", "units", level.ToString(Inv), "days", Whole(wait.Days));
-        }
+        public static string NextFeature(Product p, bool markets) => Say(ProductViews.NextFeature(p, markets));
 
-        /// <summary>
-        /// Why a product that is not on sale yet has no customers, and what puts it on sale. Null for a product on sale, a withdrawn
-        /// one and a game, whose page (the studio's) says it.
-        /// </summary>
-        public static string OffSale(Product p)
-        {
-            if (p.Stage != 0 || p.K == ProductKind.Game)
-            {
-                return null;
-            }
-            return FirmsRules.CanLaunch(p) ? T("reallife_tech_product_off_sale_ready")
-                : Fill("reallife_tech_product_off_sale_short", "launch", FirmsCatalogue.LaunchFeatures.ToString(Inv), "features", p.Features.ToString(Inv));
-        }
+        /// <summary>The words about why a product not on sale yet has no customers (<see cref="ProductViews.OffSale"/>); null for any other.</summary>
+        public static string OffSale(Product p) => Say(ProductViews.OffSale(p));
 
         /// <summary>A game day as the Finance app writes one.</summary>
         public static string Day(int day) => FinanceText.Day(day);

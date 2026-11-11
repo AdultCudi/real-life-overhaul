@@ -215,7 +215,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     card.Say(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute), "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference",
                         InfraRules.Inference(p).ToString(Inv)));
-                    card.Say(TechText.TrainingWait(p), FirmsRules.Wait(p).Days < 0 ? UiRole.WarnText : UiRole.Text2);
+                    ViewLine training = ProductViews.TrainingWait(p);
+                    card.Say(TechText.Say(training), training != null && training.Tone == ViewTone.Warn ? UiRole.WarnText : UiRole.Text2);
                 }
                 if (_d.SectorOn)
                 {
