@@ -37204,7 +37204,7 @@
   "reallife_tech_mkt_product_build_wait": "{features} funkcji. Prace nad następną są skończone, z zapasem {ahead} punktów. Czeka na trening modelu.",
   "reallife_tech_product_training_days": "Każda nowa generacja wymaga treningu na mocy obliczeniowej AI, z własnych szafek AI albo wynajętej. Dni do końca przy {units} jednostkach dziennie: {days}. Wyższy poziom na tej stronie idzie szybciej.",
   "reallife_tech_product_training_off": "Każda nowa generacja wymaga treningu na mocy obliczeniowej AI, z własnych szafek AI albo wynajętej. Trening jest wyłączony, więc żadna nie powstaje. Podnieś poziom na tej stronie.",
-  "reallife_tech_product_off_sale_ready": "Jeszcze nie jest w sprzedaży, więc nie ma klientów. Naciśnij Uruchom, a zacznie się sprzedawać.",
+  "reallife_tech_product_off_sale_ready": "Jeszcze nie jest w sprzedaży, więc nie ma klientów. Naciśnij Wypuść, a zacznie się sprzedawać.",
   "reallife_tech_product_off_sale_short": "Jeszcze nie jest w sprzedaży, więc nie ma klientów. Można je uruchomić przy {launch} funkcjach, a ma {features}.",
   "reallife_tech_mkt_product_deals_full": "Jego siła przyciągania przynosi około {target} {who}, a ma {have}, więc nie zawiera się już żadnych umów, dopóki siła przyciągania nie wzrośnie. Więcej funkcji, marketing albo lepsza cena to zrobią."
 }

@@ -37204,7 +37204,7 @@
   "reallife_tech_mkt_product_build_wait": "{features}项功能。下一项的工作已完成，领先{ahead}点。它在等待模型的训练。",
   "reallife_tech_product_training_days": "每个新一代都需要用AI算力训练，可以来自你自己的AI机架，也可以租用。每天{units}单位时，还需{days}天。本页更高的等级会更快。",
   "reallife_tech_product_training_off": "每个新一代都需要用AI算力训练，可以来自你自己的AI机架，也可以租用。训练已关闭，所以没有新一代出现。请提高本页的等级。",
-  "reallife_tech_product_off_sale_ready": "尚未上市，所以没有客户。按下上市，它就开始销售。",
+  "reallife_tech_product_off_sale_ready": "尚未上市，所以没有客户。按下发行，它就开始销售。",
   "reallife_tech_product_off_sale_short": "尚未上市，所以没有客户。功能达到{launch}项即可上市，目前有{features}项。",
   "reallife_tech_mkt_product_deals_full": "它的吸引力带来约{target} {who}，而它已有{have}，因此在吸引力增长前不会再有新的成交。增加功能、营销或更好的价格都能做到。"
 }

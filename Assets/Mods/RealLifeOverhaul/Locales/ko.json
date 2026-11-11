@@ -37200,11 +37200,11 @@
   "reallife_transaction_scheme_fund_fee_label": "펀드 서류를 읽은 변호인 수수료",
   "reallife_scheme_file_cost": "지금 파일을 갚으려면 {amount}가 듭니다.",
   "reallife_opt_sec_schemes": "수법과 수사",
-  "reallife_tech_product_build_wait": "기능 {features}, {rival}은(는) {theirs}. 다음 기능의 작업은 끝났고 {ahead}점을 앞서 있다. 모델의 학습을 기다리는 중이다.",
-  "reallife_tech_mkt_product_build_wait": "기능 {features}개. 다음 기능의 작업은 끝났고 {ahead}점을 앞서 있다. 모델의 학습을 기다리는 중이다.",
-  "reallife_tech_product_training_days": "새 세대마다 AI 연산 능력으로 학습이 필요하다. 자체 AI 랙이나 임대한 장비에서 가져온다. 하루 {units} 단위일 때 남은 날: {days}. 이 페이지의 레벨을 올리면 더 빨라진다.",
-  "reallife_tech_product_training_off": "새 세대마다 AI 연산 능력으로 학습이 필요하다. 자체 AI 랙이나 임대한 장비에서 가져온다. 학습이 꺼져 있어서 아무것도 나오지 않는다. 이 페이지의 레벨을 올려라.",
-  "reallife_tech_product_off_sale_ready": "아직 판매하지 않아서 고객이 없다. 출시를 누르면 판매가 시작된다.",
-  "reallife_tech_product_off_sale_short": "아직 판매하지 않아서 고객이 없다. 기능이 {launch}개면 출시할 수 있고, 지금은 {features}개다.",
-  "reallife_tech_mkt_product_deals_full": "매력으로 약 {target} {who}을(를) 얻는데 {have}을(를) 가지고 있어서, 매력이 커질 때까지 새 거래가 성사되지 않는다. 기능을 늘리거나, 마케팅을 하거나, 가격을 더 좋게 하면 매력이 커진다."
+  "reallife_tech_product_build_wait": "기능 {features}, {rival}은(는) {theirs}. 다음 기능의 작업은 끝났고 {ahead}점을 앞서 있습니다. 모델의 학습을 기다리는 중입니다.",
+  "reallife_tech_mkt_product_build_wait": "기능 {features}개. 다음 기능의 작업은 끝났고 {ahead}점을 앞서 있습니다. 모델의 학습을 기다리는 중입니다.",
+  "reallife_tech_product_training_days": "새 세대마다 AI 연산 능력으로 학습이 필요합니다. 자체 AI 랙이나 임대한 장비에서 가져옵니다. 하루 {units} 단위일 때 남은 날: {days}. 이 페이지의 레벨을 올리면 더 빨라집니다.",
+  "reallife_tech_product_training_off": "새 세대마다 AI 연산 능력으로 학습이 필요합니다. 자체 AI 랙이나 임대한 장비에서 가져옵니다. 학습이 꺼져 있어서 아무것도 나오지 않습니다. 이 페이지의 레벨을 올려 주십시오.",
+  "reallife_tech_product_off_sale_ready": "아직 판매하지 않아서 고객이 없습니다. 출시를 누르면 판매가 시작됩니다.",
+  "reallife_tech_product_off_sale_short": "아직 판매하지 않아서 고객이 없습니다. 기능이 {launch}개면 출시할 수 있고, 지금은 {features}개입니다.",
+  "reallife_tech_mkt_product_deals_full": "매력으로 약 {target} {who}을(를) 얻는데 {have}을(를) 가지고 있어서, 매력이 커질 때까지 새 거래가 성사되지 않습니다. 기능을 늘리거나, 마케팅을 하거나, 가격을 더 좋게 하면 매력이 커집니다."
 }
