@@ -162,6 +162,8 @@
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
         public const string EconomyLevelId = "economy_level";
+        public const string StartDebtId = "start_debt";                     // a new game begins owing a student loan (Economy/Banking/Terms/StartDebtRules)
+        public const string StartDebtDegreeId = "start_debt_degree";        // ...and what the loan paid for
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
         public const string EconomyAppId = "economy_app";                   // the Economy app on the phone (Scripts/Outlook)
@@ -554,6 +556,8 @@
         public static bool EconomyShark = true;          // the lender of last resort
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
+        public static bool StartDebt = false;            // a game begun from now on starts owing a student loan (off: it starts owing nothing, as before)
+        public static int StartDebtDegree = 1;           // ...what the loan paid for: 0 a diploma, 1 a bachelor's degree, 2 a master's degree, 3 a bachelor's degree and an MBA
         public static bool EconomyCity = true;           // the city's economy (off: every figure is the game's own and the model stands still)
         public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects
         public static bool EconomyApp = true;            // the Economy app: the city's economy, jobs, districts, markets and books as dashboards, with a daily history and advice
@@ -1000,6 +1004,8 @@
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
+            StartDebt = Bool(modId, StartDebtId, StartDebt);
+            StartDebtDegree = Int(modId, StartDebtDegreeId, StartDebtDegree);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             EconomyApp = Bool(modId, EconomyAppId, EconomyApp);

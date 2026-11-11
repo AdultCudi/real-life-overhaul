@@ -33,10 +33,10 @@ namespace RealLifeOverhaul.Economy
         public const int Fixed = 4;     // refinanced to a fixed daily interest: a later multiplier does not reprice it
     }
 
-    /// <summary>What one of the game's loans was taken for, where the mod made it.</summary>
+    /// <summary>What one of the game's loans was taken for, where the mod made it. Saved as a number: add at the end, never renumber.</summary>
     public static class LoanPurpose
     {
-        public const int Plain = 0, Business = 1, Consolidation = 2;
+        public const int Plain = 0, Business = 1, Consolidation = 2, Student = 3;   // Student: the loan a new game starts with (StartDebtRules)
     }
 
     /// <summary>A loan as it stands in the game now, read for one comparison.</summary>

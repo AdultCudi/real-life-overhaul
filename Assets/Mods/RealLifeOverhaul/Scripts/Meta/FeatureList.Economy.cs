@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
                 .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId,
                     Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId, Settings.EconomyGoalRewardsId)
+                .Owns(Settings.StartDebtId, Settings.StartDebtDegreeId)   // a new game's student loan: no preset sets these, as they are the player's choice for the next game begun
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)

@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
                 case FinanceTables.FirstProduct + (int)ProductKind.Mortgage: return UiIcon.Home;
                 case FinanceTables.FirstProduct + (int)ProductKind.Arrears: return UiIcon.Warning;
                 case FinanceTables.Private: return UiIcon.Handshake;
+                case FinanceTables.Student: return UiIcon.Cap;
                 default: return UiIcon.Bank;
             }
         }
@@ -41,7 +42,7 @@ namespace RealLifeOverhaul.Ui
             FaceSources.Player(player);   // the HUD's own picture of the player character, drawn under their name by the host
             o.Player = player;
             var rows = new List<FinanceRow>(8);
-            var sums = new float[FinanceTables.Approval + 1];
+            var sums = new float[FinanceTables.DebtKinds.Length];
             float owed = DebtRows(rows, sums, file, save);
             o.Debts = FinanceKitTables.Make(FinanceKitTables.DebtColumns(w), rows, -1, w.T("reallife_fin_no_debts", "You owe nothing"), string.Empty, UiIcon.Bank);
             o.Cash = Money(save.Money);

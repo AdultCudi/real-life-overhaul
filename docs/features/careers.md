@@ -38,6 +38,7 @@ Working for yourself: a client's freelance contract comes on the game's day (`Ca
 - The employers' optional doors are in `Jobs/CareerLinks.cs`. [`Wiring/LifeLinks.cs`](../reference/wiring.md) fills in the record on a CV and the sick note from Home; nobody fills in the social life's acquaintances (the social cast is a fixed eight).
 - Education and the professions ask the others through `Careers/CareersBridges.cs`, filled in by `Wiring/CareersLinks.cs`: the home's internet for online classes (Utilities), a driving refresher (Licences), Standing, the city's economy for vacancies, the record, the student loan on the credit file, the council's grants, restraint clause claims as civil suits (Justice) and the tech sector's labour market.
 - A shift in progress at a save is carried by the jobs' own line: see [A shift across a save](jobs.md#a-shift-across-a-save-jobsave-payslip).
+- A new game may also start owing a student loan at a bank, by the option "New games start with a student loan" (Money, Debt). That is one of the game's own loans, paid a day at a time and read by the credit side like any loan, and not this student loan, which is repaid from pay: see [A new game that starts in debt](economy-credit-products.md#a-new-game-that-starts-in-debt).
 
 ## Employers behind the help-wanted boards
 

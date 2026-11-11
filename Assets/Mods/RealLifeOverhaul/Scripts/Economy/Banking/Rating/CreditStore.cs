@@ -268,7 +268,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Street = c[0], Number = I(c, 1), Total = F(c, 2), FirstDay = I(c, 3), Remaining = F(c, 4), Payment = I(c, 5), Interest = I(c, 6),
                     Held = Count(c, 19) & (LoanHold.Penalty | LoanHold.Frozen), OwnInterest = Count(c, 20), OwnPayment = Count(c, 21),
-                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Consolidation), Security = c.Length > 23 ? c[23] : string.Empty
+                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Student), Security = c.Length > 23 ? c[23] : string.Empty
                 };
                 Standing(mark.Ladder, c, 7);
                 f.Loans.Add(mark);
