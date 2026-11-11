@@ -37209,5 +37209,6 @@
   "reallife_own_pick_title": "Работа за этим столом",
   "reallife_own_pick_body": "Работать по контракту для {client} или над делами {firm}?",
   "reallife_own_pick_contract": "Контракт",
-  "reallife_own_pick_firm": "Фирма"
+  "reallife_own_pick_firm": "Фирма",
+  "reallife_own_place_home": "Твой дом"
 }

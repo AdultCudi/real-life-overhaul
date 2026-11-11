@@ -25,6 +25,15 @@ namespace RealLifeOverhaul.Careers
         Ask = 2         // both can be worked: the player says which
     }
 
+    /// <summary>Where Show on map leads for a taken contract's work (<see cref="OwnPlaceRules.PlaceFor"/>).</summary>
+    public enum ContractPlace
+    {
+        None = 0,     // no place it can be worked is known: the page says what is missing
+        Client = 1,   // a trade's: the client's building
+        Office = 2,   // the first office business of the player's it can be done in
+        Home = 3      // their home, where a freelancer with no office works it at the computer
+    }
+
     /// <summary>
     /// Where a freelance contract's work is started, as rules with no game types (checked offline). A contract is worked where the player sits down to it, never
     /// from an app button while something at the place can be clicked: at the computer at home, or at a free desk of an office business of theirs. The Career app
@@ -77,6 +86,25 @@ namespace RealLifeOverhaul.Careers
         public static DeskChoice ChoiceAt(bool contract, bool firm)
         {
             return contract ? (firm ? DeskChoice.Ask : DeskChoice.Contract) : DeskChoice.Firm;
+        }
+
+        /// <summary>
+        /// The place Show on map leads to for a taken contract: a trade's client, else the first office business of the player's it fits, else their home (the computer's own button
+        /// starts it there, so a freelancer with no office is led home), else none.
+        /// </summary>
+        public static ContractPlace PlaceFor(bool trade, bool office, bool home)
+        {
+            return trade ? ContractPlace.Client : office ? ContractPlace.Office : home ? ContractPlace.Home : ContractPlace.None;
+        }
+
+        /// <summary>
+        /// True if a computer in the player's home carries the contract's button on its panel (and the working day's, and a class's): its chair stands by it and the game opens its panel
+        /// for it, which it does only while nothing the computer needs is missing (CustomizableButtonsOverlay.ShouldShow). A home with no such computer has nothing to click for a
+        /// contract, so <see cref="StartOf"/> leaves the Career app to start it.
+        /// </summary>
+        public static bool ComputerPanel(bool chair, bool opens)
+        {
+            return chair && opens;
         }
 
         /// <summary>True if a contract can be worked at a desk or a computer now: taken, with work left, of a profession the game knows, and desk work (a trade is done at the client's).</summary>

@@ -37209,5 +37209,6 @@
   "reallife_own_pick_title": "Bu masada çalışın",
   "reallife_own_pick_body": "{client} sözleşmesi üzerinde mi, yoksa {firm} işi üzerinde mi çalışacaksınız?",
   "reallife_own_pick_contract": "Sözleşme",
-  "reallife_own_pick_firm": "Firma"
+  "reallife_own_pick_firm": "Firma",
+  "reallife_own_place_home": "Senin evin"
 }

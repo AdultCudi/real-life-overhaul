@@ -384,6 +384,28 @@ internal static partial class Program
               && OwnPlaceRules.StartOf(false, false, true, true, true, true) == ContractStart.App && OwnPlaceRules.StartOf(true, false, false, false, false, false) == ContractStart.Elsewhere,
             "own work places: a trade's work (at the client's) and the desk way switched off are the app's; away from home and from an office of theirs the page says where to go");
 
+        // The computer at home is a way in only while the game opens its panel for it (CustomizableButtonsOverlay.ShouldShow: the home is the player's and nothing the computer needs is
+        // missing), whatever chair stands by it. A home whose every computer is shut out of that has nothing to click for a contract, so the app starts it there: a computer with its chair
+        // that the game opens no panel for used to count (DeskGame.HomeComputer asked for the chair alone), and the contract could then be started nowhere in that room.
+        bool HomeHas(params bool[] pairs)   // each pair: a computer's chair by it, and whether the game opens its panel
+        {
+            for (int k = 0; k + 1 < pairs.Length; k += 2)
+            {
+                if (OwnPlaceRules.ComputerPanel(pairs[k], pairs[k + 1]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        Check(OwnPlaceRules.ComputerPanel(true, true) && !OwnPlaceRules.ComputerPanel(true, false) && !OwnPlaceRules.ComputerPanel(false, true) && !OwnPlaceRules.ComputerPanel(false, false),
+            "own work places: a computer at home carries the contract's button only with its chair by it and its panel opened by the game");
+        Check(!HomeHas() && !HomeHas(true, false) && !HomeHas(false, true) && !HomeHas(true, false, false, true) && HomeHas(true, false, true, true) && HomeHas(false, false, false, true, true, true),
+            "own work places: a home is a way in when one of its computers has both its chair and an opened panel, and not when each lacks one");
+        Check(OwnPlaceRules.StartOf(true, false, true, HomeHas(true, false), false, false) == ContractStart.App && OwnPlaceRules.StartOf(true, false, true, HomeHas(), false, false) == ContractStart.App
+              && OwnPlaceRules.StartOf(true, false, true, HomeHas(true, false, true, true), false, false) == ContractStart.Computer,
+            "own work places: at a home whose computers the game opens no panel for the app starts the contract, and the computer's panel does once one does");
+
         // Which click leads to the contract in an office business: all 32 states of the five facts.
         int clicks = 0, bad = 0, silent = 0;
         for (int bits = 0; bits < 32; bits++)
@@ -422,6 +444,13 @@ internal static partial class Program
         Check(OwnPlaceRules.AtDesk(taken) && !OwnPlaceRules.AtDesk(offered) && !OwnPlaceRules.AtDesk(done) && !OwnPlaceRules.AtDesk(late) && !OwnPlaceRules.AtDesk(wire) && !OwnPlaceRules.AtDesk(unknown)
               && !OwnPlaceRules.AtDesk(null),
             "own work places: a desk or a computer takes a contract that is taken, has work left and is desk work, not an offer, a finished or late one, a trade's or a profession the game lost");
+
+        // Show on map: a trade is led to the client, other desk work to the first office business of theirs it fits, and a freelancer with no office to their home, not to a refusal.
+        Check(OwnPlaceRules.PlaceFor(true, false, false) == ContractPlace.Client && OwnPlaceRules.PlaceFor(true, true, false) == ContractPlace.Client
+              && OwnPlaceRules.PlaceFor(true, false, true) == ContractPlace.Client && OwnPlaceRules.PlaceFor(true, true, true) == ContractPlace.Client
+              && OwnPlaceRules.PlaceFor(false, true, false) == ContractPlace.Office && OwnPlaceRules.PlaceFor(false, true, true) == ContractPlace.Office
+              && OwnPlaceRules.PlaceFor(false, false, true) == ContractPlace.Home && OwnPlaceRules.PlaceFor(false, false, false) == ContractPlace.None,
+            "own work places: Show on map leads a trade's contract to the client, desk work to the first office business of the player's it fits, and a freelancer with no office to their home");
     }
 
     // The sources: one rule for every path, the click on the second place, the tech firm's click first sharing the desk, the home computer, the panel's slider, the app only as a fallback, the cost.
@@ -552,6 +581,15 @@ internal static partial class Program
             "own work sources: the app starts a stint by the one rule: the way off, a trade at the client's, a home with no computer button, an office no click leads to; never at home with the computer to click");
         Check(home.Contains("_homeComputer = CareersGame.AtHome() ? DeskGame.HomeComputer() : null;") && home.Contains("Time.realtimeSinceStartup - _homeComputerAt >= 1f"),
             "own work sources: the home's items are looked through at most once a second for a page of the Career app");
+        string gameDesk = ModSource(@"Careers\DeskGame.cs");
+        Check(MethodText(gameDesk, "public static ComputerController HomeComputer()").Contains("OwnPlaceRules.ComputerPanel(computer.FindChair() != null, Usable(computer))")
+              && gameDesk.Contains("public static bool Usable(ComputerController computer)"),
+            "own work sources: the home's computer that counts is one with its chair that the game opens a panel for (DeskGame.HomeComputer), for the working day's fallback and the contract's alike");
+        string mapPlace = MethodText(stint, "internal string ShowContractPlace(int id)");
+        Check(mapPlace.Contains("OwnPlaceRules.PlaceFor(trade, office != null, home != null)") && mapPlace.Contains("CareersGame.Home()") && mapPlace.Contains("case ContractPlace.Client:")
+              && mapPlace.Contains("case ContractPlace.Office:") && mapPlace.Contains("case ContractPlace.Home:") && mapPlace.Contains("CareersText.KeyName(\"reallife_own_place_home\")")
+              && mapPlace.Contains("return \"reallife_own_why_no_office\";"),
+            "own work sources: Show on map leads to the client, an office of the player's it fits, else their home, and says there is no office only when they have none of the three");
 
         // Cost: one look a second, nothing per frame, nothing searched.
         Check(!Regex.IsMatch(stint + contract + home + slider, @"\b(Update|LateUpdate|FixedUpdate|OnGUI)\s*\(") && !stint.Contains("FindObject") && !stint.Contains("GetComponent") && !stint.Contains("Physics.")
@@ -588,7 +626,7 @@ internal static partial class Program
     private static void OwnWorkTexts()
     {
         Dictionary<string, string> en = LocaleFile("en");
-        string[] keys = { "reallife_own_opt_desk", "reallife_opt_tip_careers_own_desk", "reallife_own_opt_hours", "reallife_opt_tip_careers_own_hours", "reallife_own_where_desk", "reallife_own_why_no_office" };
+        string[] keys = { "reallife_own_opt_desk", "reallife_opt_tip_careers_own_desk", "reallife_own_opt_hours", "reallife_opt_tip_careers_own_hours", "reallife_own_where_desk", "reallife_own_why_no_office", "reallife_own_place_home" };
         bool all = true;
         foreach (string key in keys)
         {
@@ -599,12 +637,32 @@ internal static partial class Program
               && en["reallife_own_where_desk"].Contains("Start"),
             "own work texts: the reason for a contract with no office to work it in and the line that says where to work it are within 240 characters, and say desk, home and Start");
         string source = ModSource(@"Careers\CareersDirector.OwnStint.cs") + ModSource(@"Careers\CareersDirector.Own.cs") + ModSource(@"Careers\CareerApp.Own.cs") + ModSource(@"Ui\Work\CareerLive.Manage.cs");
-        foreach (string key in new[] { "reallife_own_where_desk", "reallife_own_why_no_office" })
+        foreach (string key in new[] { "reallife_own_where_desk", "reallife_own_why_no_office", "reallife_own_place_home" })
         {
             Check(source.Contains("\"" + key + "\""), "own work texts: " + key + " is read by the code");
         }
         Check(WhatsNewHas(en, "choose how long a stint of Own work on a freelance contract lasts") && WhatsNewHas(en, "Own work on a freelance contract can now be started at a desk")
               && WhatsNewHas(en, "Fixed: Own work kept up only Leadership and Delivery after a management degree"),
             "own work texts: What's new tells of the slider, the desk and the fix, the fix behind its fix mark, in some row (the next row, or the version row it is numbered into)");
+
+        // What's new is true of every contract: its slider runs from one hour to twelve hours or what the contract has left, if that is less, whatever its size (8, 12, 16, 24 or 32 hours)
+        // and however much of it is left (a part hour counted), which is the rule's range and not what the contract has left alone.
+        bool claimed = WhatsNewHas(en, "from one hour up to twelve hours, or what is left of the contract if that is less") && OwnRules.SittingHoursLeast == 1 && OwnRules.SittingHoursMost == 12;
+        foreach (int size in OwnRules.HoursOf)
+        {
+            claimed &= OwnRules.StintMostHours(size * 60) == Math.Min(12, size) && OwnRules.StintHours(1, size * 60) == 1;
+        }
+        for (int left = 1; left <= 32 * 60; left++)
+        {
+            claimed &= OwnRules.StintMostHours(left) == Math.Min(12, (left + 59) / 60);
+        }
+        Check(claimed, "own work texts: What's new says a stint runs from one hour up to twelve hours or what is left of the contract if that is less, which is the slider's range for every size and every amount left");
+
+        // ...and of where it is started: a desk, the computer at home, and the app only at a client's building and where nothing can be clicked.
+        bool placed = WhatsNewHas(en, "click a free desk inside an office business of yours, a software firm or a law firm included, or your computer at home, and press Start in the game's work panel")
+                      && WhatsNewHas(en, "the Career app still starts it at a client's building and where nothing can be clicked")
+                      && OwnPlaceRules.StartOf(true, false, false, false, true, true) == ContractStart.Desk && OwnPlaceRules.StartOf(true, false, true, true, false, false) == ContractStart.Computer
+                      && OwnPlaceRules.StartOf(true, true, false, false, false, false) == ContractStart.App && OwnPlaceRules.StartOf(true, false, false, false, true, false) == ContractStart.App;
+        Check(placed, "own work texts: What's new says a contract is started at a free desk of an office business or the computer at home, and by the app at a client's building and where nothing can be clicked, as the rule has it");
     }
 }

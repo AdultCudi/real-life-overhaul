@@ -37209,5 +37209,6 @@
   "reallife_own_pick_title": "Travailler à ce bureau",
   "reallife_own_pick_body": "Travailler sur le contrat de {client} ou pour {firm} ?",
   "reallife_own_pick_contract": "Le contrat",
-  "reallife_own_pick_firm": "L'entreprise"
+  "reallife_own_pick_firm": "L'entreprise",
+  "reallife_own_place_home": "Ta maison"
 }

@@ -37209,5 +37209,6 @@
   "reallife_own_pick_title": "Trabalhar nesta mesa",
   "reallife_own_pick_body": "Trabalhar no contrato de {client} ou no trabalho de {firm}?",
   "reallife_own_pick_contract": "O contrato",
-  "reallife_own_pick_firm": "A empresa"
+  "reallife_own_pick_firm": "A empresa",
+  "reallife_own_place_home": "Sua casa"
 }

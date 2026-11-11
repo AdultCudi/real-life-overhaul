@@ -59,7 +59,10 @@ namespace RealLifeOverhaul.Careers
             return OwnPlaceRules.StartOf(OwnWay, !deskWork, home, computer, office, click) == ContractStart.App;
         }
 
-        /// <summary>Show on map for a taken contract's work: a trade's client, else the first office business of the player's it can be done in. Null if done, else a reason key.</summary>
+        /// <summary>
+        /// Show on map for a taken contract's work (<see cref="OwnPlaceRules.PlaceFor"/>): a trade's client, else the first office business of the player's it can be done in, else their
+        /// home, where the computer's own button starts it. Null if done, else a reason key.
+        /// </summary>
         internal string ShowContractPlace(int id)
         {
             Contract c = ContractOf(id);
@@ -68,19 +71,20 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_own_why_no_contract";
             }
-            if (OwnRules.IsTrade(p))
+            bool trade = OwnRules.IsTrade(p);
+            BuildingRegistration office = trade ? null : OwnOffice(p);
+            BuildingRegistration home = trade || office != null ? null : CareersGame.Home();
+            switch (OwnPlaceRules.PlaceFor(trade, office != null, home != null))
             {
-                return ShowPlace(c.Client, c.Street, c.Number);
+                case ContractPlace.Client:
+                    return ShowPlace(c.Client, c.Street, c.Number);
+                case ContractPlace.Office:
+                    return ShowPlace(TalentGame.NameOf(office), office.StreetName, office.StreetNumber);
+                case ContractPlace.Home:
+                    return ShowPlace(CareersText.KeyName("reallife_own_place_home"), home.StreetName, home.StreetNumber);
+                default:
+                    return "reallife_own_why_no_office";
             }
-            ReadMine();
-            for (int i = 0; i < _mine.Count; i++)
-            {
-                if (OfficeFits(p, _mine[i]))
-                {
-                    return ShowPlace(TalentGame.NameOf(_mine[i]), _mine[i].StreetName, _mine[i].StreetNumber);
-                }
-            }
-            return "reallife_own_why_no_office";
         }
 
         // Once a second while the working life runs: the business of the player's they stand in, a free desk of it to click for a contract of theirs, and a stint watched.

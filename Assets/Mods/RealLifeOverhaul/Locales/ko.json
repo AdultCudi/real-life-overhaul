@@ -37209,5 +37209,6 @@
   "reallife_own_pick_title": "이 책상에서 작업",
   "reallife_own_pick_body": "{client}의 계약을 작업할까요, 아니면 {firm}의 일을 할까요?",
   "reallife_own_pick_contract": "계약",
-  "reallife_own_pick_firm": "회사"
+  "reallife_own_pick_firm": "회사",
+  "reallife_own_place_home": "당신의 집"
 }
