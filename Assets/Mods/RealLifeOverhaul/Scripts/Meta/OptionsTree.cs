@@ -270,6 +270,9 @@ namespace RealLifeOverhaul.Meta
                     .Buttons("reallife_phone_layout_reset", "reallife_windows_reset")
                     .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange")
                     .Also("group groups category categories tabs family friends people services money city sort"),
+                S("notices").Guide("phone").Opts("notice_show_road", "notice_show_money", "notice_show_property", "notice_show_work", "notice_show_business",
+                        "notice_show_tech", "notice_show_news", "notice_show_people", "notice_show_other")
+                    .Also("notification notifications popup popups toast toasts mute muted silence silent quiet alert alerts stutter hitch busy filter kinds"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",

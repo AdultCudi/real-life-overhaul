@@ -112,6 +112,10 @@ namespace RealLifeOverhaul.Ui
         // Heard after the game made the toast: its newest entry is this notice, and its key says its kind.
         private static void Shown(NotificationType type, string key, Dictionary<string, string> data, float seconds, string duplicate, Action click, bool sound, bool track)
         {
+            if (NoticeMute.KeptBack(key, data))
+            {
+                return;   // kept from popping up (Options, the kinds' switches): no entry was made, and the newest one is an older notice's
+            }
             NotificationsUI toasts = Toasts();
             Transform stack = toasts != null ? toasts.container : null;
             if (stack == null || stack.childCount == 0)
