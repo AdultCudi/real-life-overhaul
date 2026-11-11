@@ -139,7 +139,7 @@ namespace RealLifeOverhaul.Uptown
             });
         }
 
-        // "Uptown: the subway": why the district has no station of its own, and the stops beside the two entrances nearest it.
+        // "Uptown: the subway": how many stations of the districts' own stand (Scripts/Subway has their own check), and the stops beside the two entrances of Manhattan nearest them.
         private void Subway()
         {
             if (!Settings.Buses || !TransitMap.Ready || TransitMap.Places.Count == 0)
@@ -154,15 +154,16 @@ namespace RealLifeOverhaul.Uptown
             bool pass = west != null && east != null && westAt <= StationNear && eastAt <= StationNear;
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Uptown check (subway): no station of the district's own: a station's name is its SubwayStation.stationName, one of the game's fixed list "
-                             + "(SubwayStationName), so a copy of an entrance is listed, shown over the street and named for a taxi as the station it was copied from, and a new value "
-                             + "throws in the game's own EnumHelpers.ToStringFast, which the travel list sorts by; the buses instead: "
-                             + (west != null ? west.stationName + " " + StopWords(westAt, westLines) : "Midtown North West Station not found") + "; "
-                             + (east != null ? east.stationName + " " + StopWords(eastAt, eastLines) : "the station by 2nd Street not found") + " (wanted within " + Metres(StationNear)
+                Logger?.Info("Uptown check (subway): " + OwnStations.Count + " station(s) of the districts' own stand among the game's (Scripts/Subway: a copy of an entrance "
+                             + "with the game's own station on it, named by its own key, since the game names its stations from a fixed list); the buses beside the two entrances "
+                             + "of Manhattan nearest the districts: "
+                             + (west != null ? OwnStations.LogName(west) + " " + StopWords(westAt, westLines) : "Midtown North West Station not found") + "; "
+                             + (east != null ? OwnStations.LogName(east) + " " + StopWords(eastAt, eastLines) : "the station by 2nd Street not found") + " (wanted within " + Metres(StationNear)
                              + " m): " + (pass ? "PASS" : "FAIL") + ".");
             }
-            Notice(StreetsText.SubwayDone, new Dictionary<string, string>(4)
+            Notice(StreetsText.SubwayDone, new Dictionary<string, string>(5)
             {
+                { "count", OwnStations.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) },
                 { "first", west != null ? Metres(westAt) : "?" },
                 { "station1", west != null ? GameMembers.NameKey(west).GetLocalization() : "?" },
                 { "second", east != null ? Metres(eastAt) : "?" },
@@ -179,7 +180,7 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < city.subwayStations.Count; i++)
             {
                 SubwayStation station = city.subwayStations[i];
-                if (station != null && CitySpots.Flat(station.transform.position - new Vector3(x, 0f, z)) <= StationFind * StationFind)
+                if (station != null && !OwnStations.Is(station) && CitySpots.Flat(station.transform.position - new Vector3(x, 0f, z)) <= StationFind * StationFind)
                 {
                     return station;
                 }

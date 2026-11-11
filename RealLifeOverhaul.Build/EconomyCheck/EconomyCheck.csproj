@@ -395,6 +395,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdRules.cs" Link="Mod\HouseholdRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdState.cs" Link="Mod\HouseholdState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdStore.cs" Link="Mod\HouseholdStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Subway\StationsRules.cs" Link="Mod\Subway\StationsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Subway\StationsGoing.cs" Link="Mod\Subway\StationsGoing.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\SubwayRideRules.cs" Link="Mod\SubwayRideRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingCatalogue.cs" Link="Mod\Giving\GivingCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingState.cs" Link="Mod\Giving\GivingState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingStore.cs" Link="Mod\Giving\GivingStore.cs" />

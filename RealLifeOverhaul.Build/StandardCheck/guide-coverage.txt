@@ -64,6 +64,7 @@ permadeath	reallife_guide_permadeath	permadeath
 phone	reallife_guide_phone	the phone
 planner	reallife_guide_planner	the Planner
 schools	reallife_guide_schools	Birchwood School
+subway-uptown	reallife_guide_uptown_subway,reallife_guide_uptown_subway_about	subway stations in Uptown and Cedar Heights
 seasons	reallife_guide_seasons	seasons
 shops	reallife_guide_shops	new kinds of shop
 social	reallife_guide_social	social life

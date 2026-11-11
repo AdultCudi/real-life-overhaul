@@ -139,6 +139,13 @@ ENGLISH_OK = {
     'reallife_newbuildings_street_uptown_summitavenue', 'reallife_newbuildings_street_uptown_crestavenue'
 }
 
+# Texts that may stay as the English in some languages only (the key, then the languages whose text really is the English: nothing else is excused).
+ENGLISH_OK_IN = {
+    # 11 Nov 2026, the subway stations of Uptown and Cedar Heights: a district, a place and the word for station, which German keeps as the English has them
+    # (as the game itself does in the German names of its own stations); every other language writes the word for station in its own
+    'reallife_subway_station_birchwood': ('de',), 'reallife_subway_station_summit': ('de',), 'reallife_subway_station_east': ('de',)
+}
+
 TAG = re.compile(r'</?[a-zA-Z][^<>]*>')
 PLACEHOLDER = re.compile(r'\{[^{}]*\}')
 DASH = re.compile('[–—]| - ')   # the style sheet's dashes: none in any language
@@ -205,7 +212,7 @@ def text_faults(code, key, v, t, notices=()):
         bad.append('%d fixes marked %s, the English marks %d' % (t.count(FIXED[code]), json.dumps(FIXED[code], ensure_ascii=False), v.count(FIXED['en'])))
     if key == 'reallife_changes_next' and v == NOTHING['en'] and t != NOTHING.get(code, t):
         bad.append("What's new's empty next row must be exactly %s" % json.dumps(NOTHING[code], ensure_ascii=False))
-    if key not in ENGLISH_OK:
+    if key not in ENGLISH_OK and code not in ENGLISH_OK_IN.get(key, ()):
         if code in SCRIPT:
             if latin_words(t) >= SCRIPT_WORDS[code] and (t == v or not re.search(SCRIPT[code], t)):
                 bad.append('not translated (no %s letters; if the text is only a name, its key goes on ENGLISH_OK in locales.py)' % dict(LANGUAGES)[code])

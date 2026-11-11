@@ -111,6 +111,7 @@ internal static partial class Program
         Uptowns(Array.IndexOf(args, "--uptown") >= 0);   // Uptown's ground: the band's lots, the first block's streets through 1st Avenue, its walking ground (UptownCheck.cs)
         UptownStreets(Array.IndexOf(args, "--uptown") >= 0);  // Uptown's streets: its buses' two routes and their reach over every block, its street furniture at Manhattan's spacing (UptownStreetsCheck.cs)
         UptownParks(Array.IndexOf(args, "--parks") >= 0);    // Uptown's parks: laid in their squares, walked end to end, the search for the game's pieces, the sources and the texts (UptownParksCheck.cs)
+        UptownSubway(Array.IndexOf(args, "--subway") >= 0);   // the districts' subway stations: off every lot and carriageway, clear of what stands there, their riders up on both walking plans (UptownSubwayCheck.cs)
         GroundSurveys();  // "What is this ground?": the bare blocks, every lot read back as itself, the streets, the game's own city, the sources, the texts (GroundSurveyCheck.cs)
         HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)

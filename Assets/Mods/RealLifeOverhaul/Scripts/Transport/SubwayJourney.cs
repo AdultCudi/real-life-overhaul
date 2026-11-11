@@ -21,7 +21,6 @@ namespace RealLifeOverhaul
     public sealed class SubwayJourney
     {
         private const float Reach = 7.5f;            // metres from the middle of an entrance: its stairs are that long
-        private const float MetresPerStop = 650f;    // metres between stations, for counting the stops
         private const float MinutesPerStop = 2f;     // game minutes
         private const float StartWithin = 10f;       // seconds after the game's ride in which the clock is moved on (another scene may be closing)
 
@@ -32,12 +31,19 @@ namespace RealLifeOverhaul
         private int _shownKey = int.MinValue;
         private int _tick;
 
-        // The game's ride while it runs, and then what is still to be added.
+        // The game's ride while it runs, and then what is still to be added. A ride is recorded whole when it begins (where it began and ended,
+        // by their points and their names): a station of the districts' own may be taken away before it lands, and its name then reads as the
+        // entrance it was copied from.
         private bool _gameRide;
-        private SubwayStation _rideFrom, _rideTo;
+        private SubwayStation _seen;                         // the station the game's map was last open at, while no ride was under way
+        private Vector3 _rideFromAt, _rideToAt;
+        private string _rideFromLog, _rideToLog;             // for the log
+        private string _rideToName;                          // as the player reads it
+        private bool _rideKnown;                             // the ride's end was found when it began (its start is always known: the camera's own)
         private int _rideBegan;
-        private SubwayStation _to;
+        private string _toName;
         private float _minutes;
+        private readonly List<float> _stationX = new List<float>(32), _stationZ = new List<float>(32);
         private float _more;
         private int _took;
         private float _startBy = -1f;
@@ -110,13 +116,13 @@ namespace RealLifeOverhaul
             return GameMembers.NameKey(station).GetLocalization();
         }
 
-        private static int StopsBetween(SubwayStation from, SubwayStation to)
+        private static int StopsBetween(Vector3 from, Vector3 to)
         {
-            return Mathf.Max(1, Mathf.RoundToInt(Vector3.Distance(from.transform.position, to.transform.position) / MetresPerStop));
+            return SubwayRideRules.Stops(Vector3.Distance(from, to));
         }
 
         // Game minutes of the whole journey: the wait for a train, delays, the ride.
-        private static float JourneyMinutes(SubwayStation from, SubwayStation to, out int wait)
+        private static float JourneyMinutes(Vector3 from, Vector3 to, out int wait)
         {
             int frequency = Frequency();
             wait = 1 + Hash(Window * 61 + (int)TimeHelper.CurrentMinute / 2) % frequency + Delay();
@@ -192,7 +198,7 @@ namespace RealLifeOverhaul
         private void ShowStation()
         {
             int delay = Delay();
-            int key = (int)_at.stationName * 4096 + Frequency() * 64 + delay * 2;
+            int key = (_at.GetInstanceID() & 0x3ffff) * 4096 + Frequency() * 64 + delay * 2;   // the station itself: one of the mod's own shares its name value with the entrance it was copied from
             if (key != _shownKey)
             {
                 _shownKey = key;
@@ -217,6 +223,8 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
+            CityManager seen = InstanceBehavior<CityManager>.Instance;
+            _seen = seen != null && seen.subwaySystem != null ? seen.subwaySystem.lastSubwayStation : null;   // null once the map is shut: the game lets go of it then
             if (_gameRide)
             {
                 _gameRide = false;
@@ -246,11 +254,10 @@ namespace RealLifeOverhaul
             CityManager city = InstanceBehavior<CityManager>.Instance;
             SubwaySystem system = city != null ? city.subwaySystem : null;
             _gameRide = true;
-            _rideFrom = system != null ? system.lastSubwayStation : null;
-            _rideTo = system != null ? system.destinationSubwayStation : null;
             _rideBegan = Now();
             _startBy = -1f;   // a ride begun while the last one's time was still to be added lets that time go
-            _to = null;
+            _toName = null;
+            RecordRide(city, system);
             Hide();
             TransitState.SubwayRides++;
             bool pass = TransitState.HasPass;
@@ -259,25 +266,53 @@ namespace RealLifeOverhaul
                 // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine).
                 RealLifeOverhaul.Economy.BizBooks.Book(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
             }
-            TransitDirector.Logger?.Info("Transit: the game's subway ride from " + (_rideFrom != null ? _rideFrom.stationName.ToString() : "?") + " to "
-                                         + (_rideTo != null ? _rideTo.stationName.ToString() : "?") + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");
+            TransitDirector.Logger?.Info("Transit: the game's subway ride from " + _rideFromLog + " to "
+                                         + _rideToLog + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");
+        }
+
+        // Where the ride began and where it ends, by their points and names, taken now: the game has already forgotten its origin (the map's close set
+        // lastSubwayStation to null in the same call that began the ride), and a station of the districts' own may go before the ride lands.
+        private void RecordRide(CityManager city, SubwaySystem system)
+        {
+            SubwayStation to = system != null ? system.destinationSubwayStation : null;
+            SubwayStation known = system != null && system.lastSubwayStation != null ? system.lastSubwayStation : _seen;
+            _stationX.Clear();
+            _stationZ.Clear();
+            int knownAt = -1;
+            for (int i = 0; city != null && city.subwayStations != null && i < city.subwayStations.Count; i++)
+            {
+                SubwayStation station = city.subwayStations[i];
+                Vector3 at = station != null ? station.transform.position : new Vector3(float.NaN, 0f, float.NaN);
+                _stationX.Add(at.x);
+                _stationZ.Add(at.z);
+                knownAt = station != null && ReferenceEquals(station, known) ? i : knownAt;
+            }
+            Vector3 start = SubwaySystem.CurrentPosition;   // the origin's own position when the ride began, the camera a few metres on by the time this is seen
+            int from = SubwayRideRules.Origin(start.x, start.z, _stationX, _stationZ, knownAt);
+            SubwayStation origin = from >= 0 ? city.subwayStations[from] : null;
+            _rideFromAt = origin != null ? origin.transform.position : start;
+            _rideFromLog = origin != null ? OwnStations.LogName(origin) : "?";
+            _rideToAt = to != null ? to.transform.position : start;
+            _rideToLog = to != null ? OwnStations.LogName(to) : "?";
+            _rideToName = to != null ? Name(to) : null;
+            _rideKnown = to != null;
         }
 
         private void Landed(float now)
         {
-            SubwayStation from = _rideFrom, to = _rideTo;
-            _rideFrom = _rideTo = null;
-            if (from == null || to == null || !Settings.SubwayJourney)
+            bool known = _rideKnown;
+            _rideKnown = false;
+            if (!known || !Settings.SubwayJourney)
             {
                 return;
             }
-            float all = JourneyMinutes(from, to, out int wait);
+            float all = JourneyMinutes(_rideFromAt, _rideToAt, out int wait);
             _took = Mathf.Max(0, Now() - _rideBegan);
-            _to = to;
+            _toName = _rideToName;
             _minutes = all;
             _more = all - _took;
-            TransitDirector.Logger?.Info("Transit check (subway journey): the game's ride from " + from.stationName + " to " + to.stationName + " came up after " + _took
-                                         + " game minute(s); the journey takes " + all.ToString("F0") + " (" + StopsBetween(from, to) + " stop(s), a wait of " + wait
+            TransitDirector.Logger?.Info("Transit check (subway journey): the game's ride from " + _rideFromLog + " to " + _rideToLog + " came up after " + _took
+                                         + " game minute(s); the journey takes " + all.ToString("F0") + " (" + StopsBetween(_rideFromAt, _rideToAt) + " stop(s), a wait of " + wait
                                          + " min, a train every " + Frequency() + ", delays " + Delay() + "): "
                                          + (_more >= 1f ? "the clock moves on " + _more.ToString("F0") + " minutes more" : "nothing more to add") + ": PASS.");
             if (_more >= 1f)
@@ -292,14 +327,14 @@ namespace RealLifeOverhaul
 
         private void Arrived()
         {
-            SubwayStation to = _to;
-            _to = null;
-            if (to == null)
+            string name = _toName;
+            _toName = null;
+            if (name == null)
             {
                 return;
             }
             Notifications.Show(NotificationType.Info, "reallife_subway_arrived",
-                new Dictionary<string, string>(2) { { "name", Name(to) }, { "minutes", Mathf.RoundToInt(_minutes).ToString() } }, 7f);
+                new Dictionary<string, string>(2) { { "name", name }, { "minutes", Mathf.RoundToInt(_minutes).ToString() } }, 7f);
         }
 
         // Delays go to the phone when they begin, once a window.
@@ -336,6 +371,7 @@ namespace RealLifeOverhaul
                 _panel.Hide();
                 _startBy = -1f;
                 _gameRide = false;
+                _rideKnown = false;
             }
             catch (Exception e)
             {

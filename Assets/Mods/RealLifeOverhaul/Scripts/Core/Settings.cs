@@ -389,6 +389,7 @@
         public const string PermadeathId = "permadeath";
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
         public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
+        public const string UptownSubwayId = "uptown_subway";   // ...its subway stations, joined to the game's network (Scripts/Subway)
         public const string LandmarksId = "uptown_landmarks";   // Uptown's landmarks: the tower, the mall and the stadium (Scripts/Landmarks)
         public const string SchoolsId = "uptown_campus";        // Birchwood School's campus on Uptown's west square and the city's schools (Scripts/Schools)
 
@@ -784,6 +785,7 @@
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
         public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
         public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
+        public static bool UptownSubway = true;          // three subway stations in Uptown and Cedar Heights among the game's own; acts at once
         public static bool Landmarks = true;             // Uptown's three landmarks: announced, tendered, built, opened, and what they do for the district
         public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
@@ -1205,6 +1207,7 @@
             Designs = Bool(modId, DesignsId, Designs);
             NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
             Uptown = Bool(modId, UptownId, Uptown);
+            UptownSubway = Bool(modId, UptownSubwayId, UptownSubway);
             Landmarks = Bool(modId, LandmarksId, Landmarks);
             Schools = Bool(modId, SchoolsId, Schools);
             NewShops = Bool(modId, NewShopsId, NewShops);
