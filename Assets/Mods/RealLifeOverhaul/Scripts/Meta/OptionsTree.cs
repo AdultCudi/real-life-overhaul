@@ -297,8 +297,14 @@ namespace RealLifeOverhaul.Meta
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls")
                     .Also("crash collision ambulance paramedics fire service notification notifications sound waypoint marker pin"),
                 S("police").Guide("crime").Main("police").Opt("police_presence", "people").Opt("patrol_officers", "people").Opt("patrol_frequency", "patrol_officers")
-                    .Opts("police_pursuit", "player_offences").FreeOpts("police_caps").Also("cop cops officers chase fine fines speeding")
+                    .Opts("police_pursuit").FreeOpts("police_caps").Also("cop cops officers chase")
                     .Also("police_caps", "hat hats cap caps headwear bareheaded hide"),
+                S("offences").Guide("crime").Need("police")
+                    .Opts("offence_red_light", "offence_speeding", "offence_pavement", "offence_wrong_way", "offence_drink", "offence_jaywalk", "offence_cross_red", "offence_horn")
+                    .Also("ticket tickets fine fines pulled over stopped warning warnings officer patrol")
+                    .Also("offence_red_light", "traffic light lights signal").Also("offence_pavement", "sidewalk kerb curb")
+                    .Also("offence_drink", "drunk alcohol drinking beer wine pub bar").Also("offence_jaywalk", "walking road street kerb")
+                    .Also("offence_cross_red", "pedestrian crossing crosswalk light signal walk").Also("offence_horn", "honk beep"),
                 S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_station_furniture", "law_station").Opt("law_map_markers", "map_places_shown")
                     .Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
                     .Also("precinct cell custody arrest record"),

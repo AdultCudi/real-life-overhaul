@@ -128,7 +128,24 @@
         public const string CharacterNewLooksId = "character_new_looks";
         public const string CharacterSkinId = "character_skin";
         public const string CrimeAgainstPlayerId = "crime_against_player";
-        public const string PlayerOffencesId = "player_offences";
+        public const string OffenceRedLightId = "offence_red_light";
+        public const string OffenceSpeedingId = "offence_speeding";
+        public const string OffencePavementId = "offence_pavement";
+        public const string OffenceWrongWayId = "offence_wrong_way";
+        public const string OffenceDrinkId = "offence_drink";
+        public const string OffenceJaywalkId = "offence_jaywalk";
+        public const string OffenceCrossRedId = "offence_cross_red";
+        public const string OffenceHornId = "offence_horn";
+        internal const string OffencesOlderSwitch = "player_offences";   // the one switch an older version had for all of these: each takes its value (MoveOffences) and it is deleted
+
+        /// <summary>
+        /// The ids of the eight traffic offence options, the horn last: what the older switch's value is handed to (MoveOffences),
+        /// and what an older settings file's line for it stands for (Presets.Import).
+        /// </summary>
+        internal static readonly string[] OffenceIds =
+        {
+            OffenceRedLightId, OffenceSpeedingId, OffencePavementId, OffenceWrongWayId, OffenceDrinkId, OffenceJaywalkId, OffenceCrossRedId, OffenceHornId
+        };
         public const string PolicePresenceId = "police_presence";
         public const string CityLifeId = "city_life";
         public const string CityDensityId = "city_density";
@@ -536,8 +553,20 @@
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
         public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
-        public static bool PlayerOffences = true;        // red lights, speeding and reckless driving can get the player pulled over
+        public static bool OffenceRedLight = true;       // running a red light can get the player pulled over
+        public static bool OffenceSpeeding = true;       // so can speeding
+        public static bool OffencePavement = true;       // so can driving fast on the pavement
+        public static bool OffenceWrongWay = true;       // so can driving fast against the traffic
+        public static bool OffenceDrink = true;          // driving after drinks (Leisure reports it) can start a stop, and adds a fine to any stop
+        public static bool OffenceJaywalk = true;        // an officer shouts at the player walking in the road, and now and then fines them
+        public static bool OffenceCrossRed = true;       // and at the player crossing against the light
+        public static bool OffenceHorn = true;           // the horn at people with the right of way earns a warning, then a fine (People/HornReactions)
         public static int PolicePresence = 5;            // 0 = no police standing or walking about; 10 = somebody nearly always in sight
+
+        /// <summary>The traffic offences the police act on now, one switch each. Read from the fields: nothing is allocated.</summary>
+        internal static OffenceSwitches Offences =>
+            new OffenceSwitches(OffenceRedLight, OffenceSpeeding, OffencePavement, OffenceWrongWay, OffenceJaywalk, OffenceCrossRed, OffenceDrink);
+
         public static bool CityLife = true;              // people at work and going about their day on the pavements near the player
         public static int CityDensity = 5;               // 1 = one site now and then, 10 = three sites nearly always (never more than eight people)
         public static bool CityWorkers = true;           // sweepers, road crews, window cleaners, leaflets, the coffee cart
@@ -995,7 +1024,15 @@
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
-            PlayerOffences = Bool(modId, PlayerOffencesId, PlayerOffences);
+            MoveOffences(modId);   // before the eight are read: the older single switch becomes their own saved values
+            OffenceRedLight = Bool(modId, OffenceRedLightId, OffenceRedLight);
+            OffenceSpeeding = Bool(modId, OffenceSpeedingId, OffenceSpeeding);
+            OffencePavement = Bool(modId, OffencePavementId, OffencePavement);
+            OffenceWrongWay = Bool(modId, OffenceWrongWayId, OffenceWrongWay);
+            OffenceDrink = Bool(modId, OffenceDrinkId, OffenceDrink);
+            OffenceJaywalk = Bool(modId, OffenceJaywalkId, OffenceJaywalk);
+            OffenceCrossRed = Bool(modId, OffenceCrossRedId, OffenceCrossRed);
+            OffenceHorn = Bool(modId, OffenceHornId, OffenceHorn);
             PolicePresence = Int(modId, PolicePresenceId, PolicePresence);
             CityLife = Bool(modId, CityLifeId, CityLife);
             CityDensity = Int(modId, CityDensityId, CityDensity);
@@ -1352,6 +1389,36 @@
                 return global::RealLifeOverhaul.Interiors.InteriorRules.Was(was, UnityEngine.PlayerPrefs.GetInt(old, 0));
             }
             return Bool(modId, switchWas, true) ? fallback : 0;
+        }
+
+        /// <summary>
+        /// Once: the one switch an older version kept for all the traffic offences is written as the saved value of each of the eight
+        /// that has none of its own, and deleted (OffenceRules.TakeOlderSwitch). Written, because the game's toggle on the options page
+        /// shows an option with no saved value as the shipped "on" and sets it so, and its reset deletes the eight but not a key that
+        /// is no option. Nothing is written for a new player, or at any start after the first.
+        /// </summary>
+        private static void MoveOffences(string modId)
+        {
+            OffenceRules.TakeOlderSwitch(new OffencePrefs(modId), OffencesOlderSwitch, OffenceIds);
+        }
+
+        // The offence options in PlayerPrefs, under the key the game's own controls use.
+        private readonly struct OffencePrefs : IOffenceStore
+        {
+            private readonly string _modId;
+
+            public OffencePrefs(string modId)
+            {
+                _modId = modId;
+            }
+
+            public bool Has(string id) => UnityEngine.PlayerPrefs.HasKey(Key(_modId, id));
+
+            public int Get(string id) => UnityEngine.PlayerPrefs.GetInt(Key(_modId, id), 0);
+
+            public void Set(string id, int value) => UnityEngine.PlayerPrefs.SetInt(Key(_modId, id), value);
+
+            public void Clear(string id) => UnityEngine.PlayerPrefs.DeleteKey(Key(_modId, id));
         }
 
         // The key format the game uses when it saves mod options.

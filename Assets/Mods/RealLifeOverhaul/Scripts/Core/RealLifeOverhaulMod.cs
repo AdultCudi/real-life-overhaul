@@ -306,8 +306,22 @@ namespace RealLifeOverhaul
                     v => Settings.CrimeFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CrimeAgainstPlayerId, "reallife_crime_against_player", Settings.CrimeAgainstPlayer,
                     v => Settings.CrimeAgainstPlayer = v)
-                .AddToggle(Settings.PlayerOffencesId, "reallife_player_offences", Settings.PlayerOffences,
-                    v => Settings.PlayerOffences = v)
+                .AddToggle(Settings.OffenceRedLightId, "reallife_offence_red_light", Settings.OffenceRedLight,
+                    v => Settings.OffenceRedLight = v)
+                .AddToggle(Settings.OffenceSpeedingId, "reallife_offence_speeding", Settings.OffenceSpeeding,
+                    v => Settings.OffenceSpeeding = v)
+                .AddToggle(Settings.OffencePavementId, "reallife_offence_pavement", Settings.OffencePavement,
+                    v => Settings.OffencePavement = v)
+                .AddToggle(Settings.OffenceWrongWayId, "reallife_offence_wrong_way", Settings.OffenceWrongWay,
+                    v => Settings.OffenceWrongWay = v)
+                .AddToggle(Settings.OffenceDrinkId, "reallife_offence_drink", Settings.OffenceDrink,
+                    v => Settings.OffenceDrink = v)
+                .AddToggle(Settings.OffenceJaywalkId, "reallife_offence_jaywalk", Settings.OffenceJaywalk,
+                    v => Settings.OffenceJaywalk = v)
+                .AddToggle(Settings.OffenceCrossRedId, "reallife_offence_cross_red", Settings.OffenceCrossRed,
+                    v => Settings.OffenceCrossRed = v)
+                .AddToggle(Settings.OffenceHornId, "reallife_offence_horn", Settings.OffenceHorn,
+                    v => Settings.OffenceHorn = v)
                 .AddButton("reallife_test_crime", () => CrimeDirector.Instance?.StageNow(0))
                 .AddButton("reallife_test_crime_traffic", () => CrimeDirector.Instance?.StageNow(1))
                 .AddButton("reallife_test_crime_shop", () => CrimeDirector.Instance?.StageNow(2))

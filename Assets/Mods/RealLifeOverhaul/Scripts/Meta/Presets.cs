@@ -313,18 +313,27 @@ namespace RealLifeOverhaul.Meta
                     applied++;
                     continue;
                 }
+                if (id == Settings.OffencesOlderSwitch)
+                {
+                    // A file an older version wrote: its one switch for all the traffic offences stands for each of the eight, here.
+                    foreach (string offence in Settings.OffenceIds)
+                    {
+                        OptionInfo each = SettingsTable.Get(offence);
+                        if (each != null)
+                        {
+                            Put(each, value, reload);
+                            applied++;
+                        }
+                    }
+                    continue;
+                }
                 OptionInfo info = SettingsTable.Get(id);
                 if (info == null)
                 {
                     skipped++;
                     continue;
                 }
-                value = SettingsTable.Clamp(info, value);
-                if (SettingsTable.Current(info) != value && Features.NeedsReload(info.Id))
-                {
-                    reload.Add(Label(info));
-                }
-                SettingsTable.Write(info, value);
+                Put(info, value, reload);
                 applied++;
             }
             UnityEngine.PlayerPrefs.Save();
@@ -339,6 +348,17 @@ namespace RealLifeOverhaul.Meta
                 .Replace("{file}", path));
             AppendReload(text, reload);
             return text.ToString();
+        }
+
+        // One option's value from a file: held to its range, and written as the options page writes it.
+        private static void Put(OptionInfo info, int value, List<string> reload)
+        {
+            value = SettingsTable.Clamp(info, value);
+            if (SettingsTable.Current(info) != value && Features.NeedsReload(info.Id))
+            {
+                reload.Add(Label(info));
+            }
+            SettingsTable.Write(info, value);
         }
 
         /// <summary>The preset table as the guide prints it: one line per option the presets cover.</summary>
