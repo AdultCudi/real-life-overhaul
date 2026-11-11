@@ -640,6 +640,13 @@ Energy [Image StatBarBackground, black at 30 %; Button (opens Persona); ButtonEf
   size), hung under the game's bars, and beside the accessories tab while that is open. The copies lose their
   `Button` and every raycast target. As children of the top bar they follow it: `Topbar` switches its own object off
   while the full menu is open.
+- They show whenever the top bar does (`HomeBarRules.Shows`: the two options and nothing about the player). The
+  tab's own state is never touched for a screen, because the game switches the `Topbar` object itself:
+  `GlobalEvents.onFullMenuToggle`, `TimeMachine.ToggleUiVisibility` (every time skip, a shower's or a sleep's),
+  `BuildingPreview.Toggle`, `UIs.HideUiMiniMenu` and `UIs.HideUiInteriorDesigner`. The tab's own `activeSelf` stays
+  true through all of them, so it is back when the top bar is.
+- With no home of the player's own the third bar is switched off and the tab's bars are 840 wide instead of 1,266
+  (`Reach`, the right edge of each game bar from the first one's left edge, read when the tab is built).
 - Texts in the top bar are TMP 36, white (`Date/Label` has a `TextLocalizationComponent`: the one copied for a word).
 
 Proven: the objects, sizes and members. Inferred: how the second tab looks, and which pictures are in memory
