@@ -186,13 +186,15 @@ namespace RealLifeOverhaul.Economy
                     afford += SaleRules.RivalCanBid(_bidders[i].Purse, b.Value) ? 1 : 0;
                 }
                 string place = ServicesGame.Place(reg);
-                SaleListing l = _state.Listing(place) ?? SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, ServicesCatalogue.AskingDefault, Save.Day);
+                SaleListing l = _state.Listing(place)
+                                ?? SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, ServicesCatalogue.AskingDefault, Save.Day, BooksLift(place));
                 if (l == null || _state.SaleOffers.Count >= ServicesCatalogue.OffersKept)
                 {
                     _bidders.Clear();
                     TestRefusals.TellKey(Logger, "Rival offer", "reallife_svc_refuse_listings_full");
                     return;
                 }
+                l.Lift = BooksLift(place);   // the offer is made from the books as they stand now
                 int made = l.OffersMade, next = l.NextOfferDay;
                 SaleOffer offer = afford > 0 ? SaleRules.Offer(_state, l, Save.Day, _bidders) : null;
                 _bidders.Clear();

@@ -147,9 +147,9 @@ internal static partial class Program
         SchemePage looked = SchemePages.Fund(w, "Rival", "Holding", fund, 1000);
         Check(offer.Count == 3 && SchemePressIs(offer, 0, SchemeDo.FundPut, null, 0, 0) && SchemePressIs(offer, 1, SchemeDo.FundLook, null, 0, 0)
             && SchemePressIs(offer, 2, SchemeDo.FundDown, null, 0, 0)
-              && offer.Body == "reallife_scheme_fund_body(rival,Rival,holding,Holding,amount,$12000,back,$12960,days," + SchemeCatalogue.FundDays + ",day,507)"
+              && offer.Body == "reallife_scheme_fund_body(rival,Rival,holding,Holding,amount,$12000,back,$12720,days," + SchemeCatalogue.FundDays + ",day,507)"
               && SchemeLine(offer, 0, 0) == "reallife_scheme_fund_put_cost(amount,$12000)" && SchemeTone(offer, 0, 0) == UiConsequence.Loss && SchemeTone(offer, 0, 1) == 0
-              && SchemeLine(offer, 1, 0) == "reallife_scheme_fund_look_cost(amount,$360)" && SchemeTone(offer, 1, 0) == UiConsequence.Loss,
+              && SchemeLine(offer, 1, 0) == "reallife_scheme_fund_look_cost(amount,$720)" && SchemeTone(offer, 1, 0) == UiConsequence.Loss,
             "schemes pages: a rival's fund says what goes in, what comes out and when, and offers to put the money in, to have it looked at for its fee, or to turn it down");
         Check(looked.Count == 2 && SchemePressIs(looked, 0, SchemeDo.FundPut, null, 0, 0) && SchemePressIs(looked, 1, SchemeDo.FundDown, null, 0, 0)
               && looked.Body.EndsWith("\n\nreallife_scheme_fund_look_sham(holding,Holding)", StringComparison.Ordinal) && SchemeTone(looked, 0, 1) == SchemePages.Risk,
@@ -190,24 +190,7 @@ internal static partial class Program
         Check(Array.IndexOf(UiSamples.SceneStates, "scheme_offer") >= 0 && Array.IndexOf(UiSamples.SceneStates, "scheme_fund") >= 0,
             "schemes pages: a scheme's page and a rival's fund are among the kit's sample scenes, so the screens' own checks lay them out");
 
-        // Each press reaches its call.
-        string press = SchemeSource("SchemeDirector.Pages.cs");
-        var wanted = new Dictionary<SchemeDo, string>
-        {
-            { SchemeDo.Claim, "DoClaim(p.Place, p.A, p.B);" }, { SchemeDo.Expense, "DoExpense(p.B);" }, { SchemeDo.OpenLift, "ShowLift(p.Place);" }, { SchemeDo.OpenWash, "ShowWash(p.Place);" },
-            { SchemeDo.Lift, "SetLift(p.Place, p.A);" }, { SchemeDo.Wash, "SetWash(p.Place, p.A);" }, { SchemeDo.Club, "DoClub(p.Place, p.B);" }, { SchemeDo.FundPut, "Answer(FundPut());" },
-            { SchemeDo.FundLook, "Answer(FundLook());" }, { SchemeDo.FundDown, "Answer(FundTurnDown());" }
-        };
-        foreach (SchemeDo what in Enum.GetValues(typeof(SchemeDo)))
-        {
-            if (what == SchemeDo.Leave)
-            {
-                Check(!press.Contains("case SchemeDo.Leave:"), "schemes pages: leaving a page does nothing");
-                continue;
-            }
-            Check(wanted.ContainsKey(what) && Regex.IsMatch(press, @"case SchemeDo\." + what + @":\s*" + Regex.Escape(wanted[what])),
-                "schemes pages: the answer " + what + " reaches its call in the director");
-        }
+        // Each press reaches its call: SchemeDispatchChecks (SchemeChecks.Fixes.cs) hands every answer to a stand-in for the director and sees which call it reaches.
         string panel = SchemeSource("SchemePanel.cs");
         Check(panel.Contains("_press?.Invoke(press);") && panel.Contains("list.Locked = false;") && panel.Contains("Time.unscaledTime - _shownAt < InputDelay")
               && SchemeSource("SchemeDirector.cs").Contains("_panel = new SchemePanel(Press, "),
@@ -304,65 +287,27 @@ internal static partial class Program
         Check(!Regex.IsMatch(all + links, @"UnityEngine\.Random|System\.Random|new Random\(|DateTime\.(Now|UtcNow)|Guid\.|\.GetHashCode\(\)|Environment\.TickCount"),
             "schemes sources: no roll but the seeded one, and nothing from the clock on the wall");
         Check(SchemeSource("SchemeDirector.cs").Contains("SchemeStore.Load(save.modData, SchemeRules.SeedOf(SchemeGame.SeedText), out int version)")
-              && game.Contains("!string.IsNullOrEmpty(Save.seed) ? Save.seed : Save.characterId"),
-            "schemes sources: a save's seed is the game's own for the playthrough, so no reload draws anything afresh");
-        string cases = ModSource(@"Justice\SchemeCases.cs");
-        Check(cases.Contains("opened.Seed = JusticeLaw.Hash(\"scheme\") ^ seed;") && cases.Contains("Justice.Summon(new JusticeReport(charge)")
-              && SchemeSource("SchemeDirector.Day.cs").Contains("SchemeBridges.Charge(e.Text, q.Evidence, e.Amount + e.Net, _state.Seed ^ q.Id * 7919)"),
-            "schemes sources: a file goes to the mod's own courts on a summons with the evidence the inquiry gathered, and the court's doubt is the save's, never a fresh roll");
+              && game.Contains("SchemeRules.PlaythroughOf(Save.seed, Save.characterId)"),
+            "schemes wiring: the save's seed is made of the game's seed and the playthrough's own id by the rule SchemeChecks.Fixes.cs drives");
         string director = SchemeSource("SchemeDirector.cs");
         Check(director.Contains("public static bool On => Settings.LivingPopulation && Settings.LivingSchemes && Instance != null")
               && director.Contains("if (Settings.LivingPopulation && Settings.LivingSchemes || _state.CarriesOn)") && director.Contains("SaveHook.Keep(_onSave);"),
             "schemes sources: the option off, no new scheme starts, what is open still runs its course, and the line is still written, so nothing is forgotten");
 
-        // Every refusal comes before any money.
+        // Every refusal comes before any money: the refusals are rules (SchemeRules.*Refusal) the director asks before it books anything, driven by SchemeRefusalChecks
+        // (SchemeChecks.Fixes.cs); what is left here are the lines of wiring a stand-in cannot reach.
         string acts = SchemeSource("SchemeDirector.Acts.cs"), people = SchemeSource("SchemeDirector.People.cs"), day = SchemeSource("SchemeDirector.Day.cs");
-        Check(SchemeInOrder(SchemeMethod(acts, "private void DoClub("), "!shop.Mine || !shop.Cash", "SchemeGame.InSession || SchemeBridges.People == null || !SchemeBridges.People()",
-                "SchemeRules.MayClub(kept, day)", "SchemeBridges.Club(shop.District", "SchemeRules.ClubSold("),
-            "schemes sources: a club is refused in a Going Public session, and wherever the city's people are not this machine's own, before any household is asked for anything");
-        Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid FundPut("), "SchemeGame.InSession || !SchemeRules.FundStands(_state, day)", "!Affords(f.Amount)",
-                "!SchemeGame.Pay(f.Amount, SchemeGame.FundKey)", "SchemeRules.FundPlace(_state, day);", "SchemeBridges.RivalMoney?.Invoke(f.Tycoon, f.Amount);"),
-            "schemes sources: money goes into a fund only outside a session, while the offer stands and above the investors' floor, is paid first, and the rival then has exactly it");
-        Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid FundLook("), "SchemeGame.InSession", "!Affords(fee) || !SchemeGame.Pay(fee, SchemeGame.FundFeeKey)",
-            "SchemeRules.FundCheck(_state);"),
-            "schemes sources: a fund is looked at once its fee is paid, and never in a session");
-        Check(SchemeInOrder(SchemeMethod(acts, "private void DoClaim("), "(shop.Covers & (1 << cover)) == 0", "SchemeRules.MayClaim(kept, day)", "SchemeBridges.Claim(place, cover, loss",
-                "SchemeRules.Claimed(_state, place, day, payout, size, id);"),
-            "schemes sources: an invented claim needs a cover in force and its wait, is put in by the insurer's own rules, and only then goes on the trail");
-        Check(SchemeInOrder(SchemeMethod(acts, "private void DoExpense("), "percent <= 0 || SchemeBridges.Taxed == null || !SchemeBridges.Taxed()", "SchemeRules.MayExpense(_state, day)",
-                "SchemeGame.Give(gain, SchemeGame.ExpenseKey);", "SchemeRules.Expensed(_state, day, gain, size);"),
-            "schemes sources: an invented expense needs the game's tax to fall due and its wait, and what it pays is what goes on the trail");
-        Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid Repay("), "SchemeRules.RepayCost(_state, kind, day, unpaid)", "!Affords(cost - cash)",
-                "SchemeRules.Repay(_state, kind, day, unpaid, out long fromCash)", "SchemeGame.Pay(paid - fromCash, SchemeGame.RepayKey)", "GiveBack(paid);",
-                "SchemeBridges.ClaimRefuse?.Invoke(unpaid[i]);"),
-            "schemes sources: paying a file back is refused whole above the investors' floor, pays what the rules say, gives a club's stakes back and withdraws a claim not yet paid");
-        Check(SchemeInOrder(SchemeMethod(people, "private FavourAnswer Offered("), "if (!cash && !Affords(price))", "SchemeRules.TemperOf(s.Seed, Office.Contact, contact)",
-                "favour == Favour.Vote && SchemeGame.InSession", "theirs == Temper.Takes && !Deliver(favour, person, inquiry, courtCase)",
-                "SchemeRules.Offer(s, favour, office, who, price, cash, day)",
-                "SchemeGame.Take(price, SchemeGame.FavourKey);"),
-            "schemes sources: a favour is refused before any money when the wallet or the investors' floor cannot pay it or it cannot be had, and their own temper is asked before anybody else's");
         Check(people.Contains("if (!SchemeGame.InSession && d.SeatFor() != null)") && SchemeMethod(acts, "private static bool Affords(").Contains("SchemeRules.Affords(SchemeGame.Cash, amount, ")
               && links.Contains("SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? SchemeRules.FloorOf(Tech.TechDirector.Instance.FloorNow) : 0L;")
               && ModSource(@"Tech\TechDirector.Money.cs").Contains("long wallet = (long)(Math.Max(0.0, now) * 100.0), drop = (long)((was - now) * 100.0);"),
             "schemes sources: a council vote is not for sale in a Going Public session, and no scheme's money touches what the wallet holds for a firm's investors,"
             + " which the firms count in cents");
-        Check(SchemeInOrder(SchemeMethod(day, "private void Findings("), "SchemeGame.Take(e.Amount - e.FromCash, SchemeGame.FoundKey);", "SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);",
-                "GiveBack(e.Amount);", "SchemeBridges.ClaimRefuse?.Invoke(_state.Acts[i].Ref);", "SchemeBridges.Charge(e.Text", "SchemeBridges.Exposed?.Invoke(felony);",
-                "SchemeBridges.Story?.Invoke(")
-              && SchemeMethod(game, "public static void Take(").Contains("null, null, true, false"),
-            "schemes sources: the findings take back what the rules found whatever the wallet holds, give a club's stakes back, end a cheated cover, go to court, and are exposed");
-        Check(Regex.IsMatch(day, @"case SchemeEventKind\.Washed:\s*SchemeGame\.Give\(e\.Net, SchemeGame\.WashKey\);")
-              && Regex.IsMatch(day, @"case SchemeEventKind\.Caution:\s*SchemeGame\.Take\(e\.Net, SchemeGame\.SurchargeKey\);"),
-            "schemes sources: washed cash is booked to the player as the rules net it, and a caution takes its half surcharge");
+        Check(SchemeMethod(game, "public static void Take(").Contains("null, null, true, false") && day.Contains("SchemeRules.FindingsDue(") && day.Contains("SchemeRules.FileCase("),
+            "schemes wiring: what an inquiry takes is booked by force, whatever the wallet holds, in the amounts the rules give and through the rules' own filing of the case");
         Check(SchemeInOrder(SchemeMethod(day, "private void GiveBack("), "SchemeBridges.People != null && SchemeBridges.People()", "SchemeBridges.Restore(place, amount)")
               && links.Contains("PurseRules.Take(s, at, households, id => SchemeRules.ClubDraw(seed, club, id), savings => SchemeRules.ClubStake(savings, level), out joined)")
               && links.Contains("return PurseRules.Give(s, shop != null ? s.DistrictOf(shop.District) : -1, amount);"),
             "schemes sources: a club's stakes leave and reach the households through the people's one purse, by the rules' own draw and stake");
-        Check(day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, e.Amount);") && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Amount);")
-            && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Net);")
-              && day.Contains("SchemeBridges.RivalBarred?.Invoke(e.Tycoon, SchemeCatalogue.RivalBarDays, SchemeCatalogue.RivalQuietDays);") && day.Contains("SchemeRules.FineOf(charge,"),
-            "schemes sources: a rival's scheme, findings, fine and fund move their own worth, and a conviction bars and quiets them");
-
         // The rivals by the same rules.
         string rivals = SchemeSource("SchemeRules.Rivals.cs");
         foreach (string rule in new[] { "HeatOf(", "Line(seed, r.NewsKind, day, r.Opened)", "Tried(seed, r.Opened, r.Evidence, r.Convictions", "TemperOf(s.Seed, Office.Councillor, seat)", "Spotted(",
@@ -411,7 +356,7 @@ internal static partial class Program
         Check(reset && links.Contains("SchemeBridges.Reset();") && Regex.Matches(bridges, @" = null;").Count == Regex.Matches(bridges, @"public static [\w<>, ]+ \w+;").Count,
             "schemes sources: every bridge the wiring fills is emptied again, and every one there is, is reset (" + set.Count + ")");
         foreach (string hook in new[] { "CompanyBridges.QuietLabel = null;", "CompanyBridges.Quiet = null;", "ServicesBridges.BooksShown = null;", "ServicesBridges.SeesThrough = null;",
-                     "ServicesBridges.Sold = _soldBefore;", "SocialPhone.QuietLabel = null;", "SocialPhone.QuietAsk = null;", "NetworkBridges.Bought = null;", "NetworkBridges.BoughtUsed = null;",
+                     "ServicesBridges.BooksLift = null;", "ServicesBridges.SoldBooks = null;", "SocialPhone.QuietLabel = null;", "SocialPhone.QuietAsk = null;", "NetworkBridges.Bought = null;", "NetworkBridges.BoughtUsed = null;",
                      "Justice.Bridges.FileLines = null;", "Justice.Bridges.FileActs = null;", "News.Extra = _paperBefore;" })
         {
             Check(links.Contains(hook), "schemes sources: the hook is taken off again: " + hook);
@@ -466,7 +411,7 @@ internal static partial class Program
             keys.Add("reallife_scheme_news_own_" + kind.ToString().ToLowerInvariant());
         }
         var transactions = new List<string>();
-        foreach (Match m in Regex.Matches(SchemeSource("SchemeGame.cs"), "\"(reallife_transaction_scheme_[a-z_]+)\""))
+        foreach (Match m in Regex.Matches(SchemeSource("SchemeGame.cs") + SchemeSource("SchemeCatalogue.cs"), "\"(reallife_transaction_scheme_[a-z_]+)\""))
         {
             transactions.Add(m.Groups[1].Value);
             keys.Add(m.Groups[1].Value + "_label");

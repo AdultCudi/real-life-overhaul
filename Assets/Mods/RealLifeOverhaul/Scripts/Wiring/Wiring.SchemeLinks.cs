@@ -38,7 +38,6 @@ namespace RealLifeOverhaul
         {
             private static readonly List<Favour> Asked = new List<Favour>(6);
             private static Action<int, List<NewsItem>> _paperBefore;
-            private static Action<string, int> _soldBefore;
 
             internal static void Connect()
             {
@@ -55,7 +54,7 @@ namespace RealLifeOverhaul
                 SchemeBridges.Club = Club;
                 SchemeBridges.Restore = Restore;
                 SchemeBridges.Court = () => Justice.Active;
-                SchemeBridges.Charge = (charge, evidence, amount, seed) => SchemeCases.File(charge, evidence / 1000f, amount, seed, evidence >= SchemeCatalogue.CoopEvidence);
+                SchemeBridges.Charge = (charge, evidence, amount, seed, coop) => SchemeCases.File(charge, evidence / 1000f, amount, seed, coop);
                 SchemeBridges.CaseEnd = CaseEnd;
                 SchemeBridges.NextCase = SchemeCases.Next;
                 SchemeBridges.Lean = (number, less) => SchemeCases.Lean(number, less / 1000f);
@@ -80,9 +79,9 @@ namespace RealLifeOverhaul
                 CompanyBridges.QuietLabel = SchemeDirector.QuietLabel;
                 CompanyBridges.Quiet = SchemeDirector.QuietOpen;
                 ServicesBridges.BooksShown = (reg, profit) => reg != null ? SchemeDirector.BooksShown(CompanyGame.Place(reg), profit) : profit;
+                ServicesBridges.BooksLift = SchemeDirector.BooksLift;
                 ServicesBridges.SeesThrough = SchemeDirector.SaleSeen;
-                _soldBefore = ServicesBridges.Sold;
-                ServicesBridges.Sold = Sold;
+                ServicesBridges.SoldBooks = SchemeDirector.SaleDone;
                 SocialPhone.QuietLabel = PersonLabel;
                 SocialPhone.QuietAsk = PersonAsk;
                 NetworkBridges.Bought = SchemeDirector.Bought;
@@ -99,9 +98,9 @@ namespace RealLifeOverhaul
                 CompanyBridges.QuietLabel = null;
                 CompanyBridges.Quiet = null;
                 ServicesBridges.BooksShown = null;
+                ServicesBridges.BooksLift = null;
                 ServicesBridges.SeesThrough = null;
-                ServicesBridges.Sold = _soldBefore;   // the stock market's own takes its off next
-                _soldBefore = null;
+                ServicesBridges.SoldBooks = null;
                 SocialPhone.QuietLabel = null;
                 SocialPhone.QuietAsk = null;
                 NetworkBridges.Bought = null;
@@ -347,18 +346,6 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("SchemeLinks.RivalBarred", e);
-                }
-            }
-
-            private static void Sold(string place, int price)
-            {
-                try
-                {
-                    _soldBefore?.Invoke(place, price);
-                }
-                finally
-                {
-                    SchemeDirector.SaleDone(place, price);
                 }
             }
 

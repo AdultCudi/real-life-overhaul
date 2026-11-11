@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Economy
         public int Step = ServicesCatalogue.AskingDefault;   // the asking price, as an index of ServicesCatalogue.AskingPct
         public int Asking;
         public int Value;                        // what it was worth when last valued
+        public int Lift;                         // thousandths the business's books showed over the truth when it was last valued (the schemes' dressed books); an offer carries it
         public int NextOfferDay;
         public int OffersMade;
     }
@@ -118,6 +119,7 @@ namespace RealLifeOverhaul.Economy
         public string Who = string.Empty;        // the buyer: a rival's id of the game's, an employee's id, a listed company's id, an investor's name; empty before named buyers
         public string WhoName = string.Empty;    // their name when the offer was made
         public int WhoCount;                     // a rival's businesses, a company's id, the staff's number; 0 for an investor
+        public int Lift;                         // thousandths the books showed over the truth when this price was made: the buyer's look and the schemes' act go by it, never by the books now
 
         /// <summary>True for an offer from somebody by name; one made before named buyers has only its kind.</summary>
         public bool Named => WhoName.Length > 0;

@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 SaleBreakdown b = Value(reg);
                 bool was = _state.Listing(place) != null;
-                SaleListing l = SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, step, Save.Day);
+                SaleListing l = SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, step, Save.Day, BooksLift(place));
                 if (l == null)
                 {
                     Notifications.ShowError("reallife_svc_refuse_listings_full");
@@ -144,24 +144,42 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            if (SeesThrough(o))
+            if (SeesThrough(o.Place, o.Buyer, o.Id, o.Lift, o))
             {
                 return;
             }
-            Ask(o.Place, o.Price, o.Parts, o.KeepsStaff, o.ClauseDays, o.Buyer, ServicesText.Buyer(o), rival);
+            Ask(o.Place, o.Price, o.Parts, o.KeepsStaff, o.ClauseDays, o.Buyer, ServicesText.Buyer(o), rival, o.Lift);
         }
 
-        // A buyer who looks closely before paying may see through dressed books (ServicesBridges.SeesThrough): the offer is withdrawn, and no money has moved.
-        private bool SeesThrough(SaleOffer o)
+        // The lift of a business's books right now, from whoever dresses them (ServicesBridges.BooksLift); 0 for plain books.
+        private static int BooksLift(string place)
+        {
+            try
+            {
+                return ServicesBridges.BooksLift != null ? Math.Max(0, ServicesBridges.BooksLift(place)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;   // a bridge that throws dresses nothing
+            }
+        }
+
+        // A buyer who looks closely before paying may see through dressed books (ServicesBridges.SeesThrough): they look by the lift stamped when the
+        // price was made, whatever the books show now. The offer (if there is one) is withdrawn, and no money has moved.
+        private bool SeesThrough(string place, int buyer, int lookId, int lift, SaleOffer offer)
         {
             bool seen = false;
             SaleGuard("a buyer's look at the books", () =>
             {
-                seen = ServicesBridges.SeesThrough != null && ServicesBridges.SeesThrough(o.Place, o.Buyer, o.Id);
+                seen = lift > 0 && ServicesBridges.SeesThrough != null && ServicesBridges.SeesThrough(place, buyer, lookId, lift);
                 if (seen)
                 {
-                    _state.SaleOffers.Remove(o);
-                    Logger?.Info("Selling a business: " + o.WhoName + " looked at the books of '" + o.Place + "' before paying, saw through them and withdrew the offer.");
+                    if (offer != null)
+                    {
+                        _state.SaleOffers.Remove(offer);
+                    }
+                    Logger?.Info("Selling a business: " + (offer != null ? offer.WhoName : "the dealer") + " looked at the books of '" + place + "' before paying, saw through them and withdrew"
+                                 + (offer != null ? " the offer." : " the quick offer."));
                     Changed();
                 }
             });
@@ -201,11 +219,16 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             BuildingRegistration reg = ServicesGame.Find(place);
-            Ask(place, SaleRules.Quick(ServicesGame.IsSellable(reg) ? Value(reg).Value : 0), 0, false, 0, (int)BuyerKind.Investor, ServicesText.T("reallife_svc_buyer_quick"), null);
+            int price = SaleRules.Quick(ServicesGame.IsSellable(reg) ? Value(reg).Value : 0), lift = BooksLift(place);   // priced from the books as they stand now: that is the stamp
+            if (SeesThrough(place, (int)BuyerKind.Investor, SaleRules.QuickLookId(price), lift, null))
+            {
+                return;
+            }
+            Ask(place, price, 0, false, 0, (int)BuyerKind.Investor, ServicesText.T("reallife_svc_buyer_quick"), null, lift);
         }
 
         // The game's question before the step that cannot be undone. Everything is checked again on its answer.
-        private void Ask(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival)
+        private void Ask(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival, int lift)
         {
             SaleGuard("asking before a sale", () =>
             {
@@ -235,7 +258,7 @@ namespace RealLifeOverhaul.Economy
                     : ServicesText.T("reallife_svc_confirm_paid_once");
                 string body = ServicesText.Fill("reallife_svc_confirm_sell_body", "business", name, "buyer", buyerName, "price", ServicesText.Money(price), "paid", paid, "terms", terms);
                 GameConfirm.Show("reallife_svc_confirm_sell_title".Localize(new { business = name }), "reallife_svc_confirm_sell_text".Localize(new { text = body }),
-                    () => SaleGuard("completing a sale", () => Sell(place, price, parts, keepsStaff, clauseDays, buyer, buyerName, rival)), null, null, null, false, true);
+                    () => SaleGuard("completing a sale", () => Sell(place, price, parts, keepsStaff, clauseDays, buyer, buyerName, rival, lift)), null, null, null, false, true);
             });
         }
 
@@ -266,7 +289,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The sale itself, once the game's question was answered with yes.
-        private void Sell(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival)
+        private void Sell(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival, int lift)
         {
             if (!Ready(false))
             {
@@ -317,6 +340,14 @@ namespace RealLifeOverhaul.Economy
             catch (Exception e)
             {
                 Logger?.Warn("Selling a business: the stock market could not be told that '" + name + "' was sold (" + e.Message + ").");
+            }
+            try
+            {
+                ServicesBridges.SoldBooks?.Invoke(place, price, lift);   // the part of the price the books' lift made, for whoever dressed them
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Selling a business: the schemes could not be told what '" + name + "' was sold on (" + e.Message + ").");
             }
             try
             {
@@ -510,6 +541,7 @@ namespace RealLifeOverhaul.Economy
             BuildingRegistration reg = ServicesGame.Find(l.Place);
             SaleBreakdown b = Value(reg);
             l.Value = b.Value;
+            l.Lift = BooksLift(l.Place);   // the books this value was read from: stamped on the listing and on the offer made from it
             l.Asking = SaleRules.Asking(l.Value, l.Step);
             _investors.Clear();
             ServicesBridges.Investors?.Invoke(_investors);

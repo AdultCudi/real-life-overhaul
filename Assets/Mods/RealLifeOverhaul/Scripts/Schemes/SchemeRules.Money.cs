@@ -110,16 +110,38 @@ namespace RealLifeOverhaul.Schemes
             return Roll(seed, DrawDiligence, Text(place), offer) < chance;
         }
 
-        /// <summary>A business sold on dressed books: the part of the price the lift made goes on the trail, and the books are plain again.</summary>
-        public static SchemeAct Sold(SchemeState s, string place, long price, int day)
+        /// <summary>
+        /// A buyer looks at the books a price was made from, before paying: <paramref name="lift"/> is the lift stamped on the offer or the
+        /// quick sale when its price was made, never what the books show now. Seen through, the buyer walks, the books are plain again and
+        /// the walk heats the trail. True if they walked.
+        /// </summary>
+        public static bool Looked(SchemeState s, string place, int buyerKind, int lift, int offer)
+        {
+            if (!SeenThrough(s.Seed, place, buyerKind, lift, offer))
+            {
+                return false;
+            }
+            Walked(s, place);
+            return true;
+        }
+
+        /// <summary>
+        /// A business sold at a price made from books lifted by <paramref name="lift"/> (the stamp on the offer, whatever the books show
+        /// now): the part of the price the lift made goes on the trail, and the business's books are plain from here. Null for a price made
+        /// from plain books.
+        /// </summary>
+        public static SchemeAct Sold(SchemeState s, string place, long price, int lift, int day)
         {
             SchemeShop shop = s.Shop(place, false);
-            int lift = shop != null ? shop.Lift : 0;
+            if (shop != null)
+            {
+                shop.Lift = 0;
+            }
+            lift = SchemeCatalogue.Clamp(lift, 0, SchemeCatalogue.LiftMost);
             if (lift <= 0)
             {
                 return null;
             }
-            shop.Lift = 0;
             return Record(s, SchemeKind.Books, day, Over(price, lift), lift * 1000 / SchemeCatalogue.LiftMost, 0, true, place, day);
         }
 
@@ -171,27 +193,170 @@ namespace RealLifeOverhaul.Schemes
         }
 
         /// <summary>
-        /// Money goes back to the households the clubs took from, oldest club first; never more than they are still out.
-        /// Returns what went back: the caller gives exactly that to the households.
+        /// Money goes back to the households the clubs took from; never more than they are still out. The ledger of what they are out
+        /// (<see cref="SchemeState.ClubTaken"/> less <see cref="SchemeState.ClubBack"/>) is all it touches: another kind's finding
+        /// (a till that washed their money) makes no club's act look repaid. Returns what went back: the caller gives exactly that to
+        /// the households.
         /// </summary>
         public static long Recover(SchemeState s, long amount)
         {
-            long left = Math.Min(Math.Max(0L, amount), Math.Max(0L, s.ClubTaken - s.ClubBack));
-            long done = 0;
-            for (int i = 0; i < s.Acts.Count && left > 0; i++)
-            {
-                SchemeAct a = s.Acts[i];
-                if (a.Kind != SchemeKind.Club || a.Owed <= 0)
-                {
-                    continue;
-                }
-                long part = Math.Min(left, a.Owed);
-                a.Back += part;
-                left -= part;
-                done += part;
-            }
+            long done = Math.Min(Math.Max(0L, amount), Math.Max(0L, s.ClubTaken - s.ClubBack));
             s.ClubBack += done;
             return done;
+        }
+
+        /// <summary>What the households are still out of the clubs' takings.</summary>
+        public static long ClubOwed(SchemeState s)
+        {
+            return Math.Max(0L, s.ClubTaken - s.ClubBack);
+        }
+
+        /// <summary>Why a press is refused before anything moves; the director says it in a notice. None: the press may go on.</summary>
+        public enum Refusal
+        {
+            None = 0,
+            NotNow = 1,     // not the player's, nothing there for it, or the option off
+            TooSoon = 2,    // its wait is not over
+            NoPeople = 3,   // the city's people are not this machine's own: a Going Public session, or the population off or followed
+            NoTax = 4,      // the game's tax does not fall due
+            Short = 5       // the wallet cannot pay it and still keep what belongs to the investors of the player's firms
+        }
+
+        /// <summary>A club: refused in a Going Public session and wherever the city's people are not this machine's own, before any household is asked.</summary>
+        public static Refusal ClubRefusal(bool on, bool mine, bool cash, bool inSession, bool peopleMine, bool door, SchemeShop kept, int day)
+        {
+            if (!on || !mine || !cash)
+            {
+                return Refusal.NotNow;
+            }
+            if (inSession || !peopleMine || !door)
+            {
+                return Refusal.NoPeople;
+            }
+            return MayClub(kept, day) ? Refusal.None : Refusal.TooSoon;
+        }
+
+        /// <summary>An invented claim: a cover in force, the insurer's door, and its wait.</summary>
+        public static Refusal ClaimRefusal(bool on, bool mine, bool covered, bool door, SchemeShop kept, int day)
+        {
+            if (!on || !mine || !covered || !door)
+            {
+                return Refusal.NotNow;
+            }
+            return MayClaim(kept, day) ? Refusal.None : Refusal.TooSoon;
+        }
+
+        /// <summary>An invented expense: the game's tax must fall due at all, and its wait.</summary>
+        public static Refusal ExpenseRefusal(bool on, int taxPercent, bool taxed, SchemeState s, int day)
+        {
+            if (!on || taxPercent <= 0 || !taxed)
+            {
+                return Refusal.NoTax;
+            }
+            return MayExpense(s, day) ? Refusal.None : Refusal.TooSoon;
+        }
+
+        /// <summary>The money in a rival's fund: not in a session, only while the offer stands and its rival can pay the return, and never under the investors' floor.</summary>
+        public static Refusal FundPutRefusal(SchemeState s, int day, bool inSession, long rivalWorth, long cash, long floor)
+        {
+            if (inSession || !FundOpenFor(s, day, rivalWorth))
+            {
+                return Refusal.NotNow;
+            }
+            return Affords(cash, s.Fund.Amount, floor) ? Refusal.None : Refusal.Short;
+        }
+
+        /// <summary>Having a fund looked at: not in a session, while the offer stands and was not looked at yet, and the fee above the investors' floor.</summary>
+        public static Refusal FundLookRefusal(SchemeState s, int day, bool inSession, long fee, long cash, long floor)
+        {
+            if (inSession || !FundStands(s, day) || s.Fund.Checked)
+            {
+                return Refusal.NotNow;
+            }
+            return Affords(cash, fee, floor) ? Refusal.None : Refusal.Short;
+        }
+
+        /// <summary>
+        /// Paying a kind's file back: something to pay, and the wallet's part (the cost less the cash in hand that covers it) above the
+        /// investors' floor, refused whole otherwise. <paramref name="wallet"/> is what the wallet would pay.
+        /// </summary>
+        public static Refusal RepayRefusal(SchemeState s, SchemeKind kind, int day, List<int> unpaid, long cash, long floor, out long cost, out long wallet)
+        {
+            cost = RepayCost(s, kind, day, unpaid);
+            wallet = Math.Max(0L, cost - RepayCash(s, kind, cost));
+            if (cost <= 0)
+            {
+                return Refusal.NotNow;
+            }
+            return Affords(cash, wallet, floor) ? Refusal.None : Refusal.Short;
+        }
+
+        /// <summary>
+        /// Money offered to somebody: refused before anything moves for one already cold to the player, a favour not priced, or a price the
+        /// wallet cannot pay above the investors' floor.
+        /// </summary>
+        public static Refusal FavourRefusal(SchemeState s, string contact, long price, bool cash, long wallet, long floor)
+        {
+            if (IsCold(s, contact) || price <= 0)
+            {
+                return Refusal.NotNow;
+            }
+            return cash || Affords(wallet, price, floor) ? Refusal.None : Refusal.Short;
+        }
+
+        /// <summary>Nobody to take the money now: no one to ask, or a council vote in a Going Public session. Nothing is offered and no money moves.</summary>
+        public static bool NobodyToAsk(Favour favour, string who, bool inSession)
+        {
+            return who == null || (favour == Favour.Vote && inSession);
+        }
+
+        /// <summary>
+        /// A file goes to the court on a summons: the charge, the evidence the inquiry gathered, the sum it is about, the case's own seed
+        /// and whether the player told the investigators everything (<see cref="SchemeInquiry.Coop"/>, never how much evidence there is).
+        /// <paramref name="charge"/> is the courts' door; its number, or 0 with no court.
+        /// </summary>
+        public static int FileCase(SchemeState s, SchemeInquiry q, string chargeId, long amount, Func<string, int, long, int, bool, int> charge)
+        {
+            return charge != null ? charge(chargeId, q.Evidence, amount, s.Seed ^ q.Id * 7919, q.Coop) : 0;
+        }
+
+        /// <summary>What a settlement moves: out of the wallet by force, the penalty on top, and the part that goes back into the households' savings.</summary>
+        public struct Due
+        {
+            public long Wallet, Surcharge, Households;
+        }
+
+        /// <summary>
+        /// What an inquiry's findings move: what was found less what the cash in hand covered comes out of the wallet whatever it holds, the
+        /// penalty with it, and what a club or a till took from the households goes back to them. The director carries it out and the
+        /// simulations count it, from this one rule.
+        /// </summary>
+        public static Due FindingsDue(SchemeKind kind, long found, long fromCash, long surcharge)
+        {
+            return new Due
+            {
+                Wallet = Math.Max(0L, found - fromCash), Surcharge = Math.Max(0L, surcharge),
+                Households = (kind == SchemeKind.Club || kind == SchemeKind.Wash) && found > 0 ? found : 0L
+            };
+        }
+
+        /// <summary>What a file paid back moves: the wallet pays what the cash in hand did not cover, and a club's stakes go back to its households.</summary>
+        public static Due RepayDue(SchemeKind kind, long paid, long fromCash)
+        {
+            return new Due { Wallet = Math.Max(0L, paid - fromCash), Households = kind == SchemeKind.Club && paid > 0 ? paid : 0L };
+        }
+
+        /// <summary>The ids of the invented claims an inquiry's findings took in: the insurer refuses one not yet paid and will not write that cover again.</summary>
+        public static void ClaimsFound(SchemeState s, SchemeInquiry q, List<int> into)
+        {
+            into.Clear();
+            for (int i = 0; q.Kind == SchemeKind.Claim && i < s.Acts.Count; i++)
+            {
+                if (s.Acts[i].Kind == SchemeKind.Claim && s.Acts[i].Inquiry == q.Id)
+                {
+                    into.Add(s.Acts[i].Ref);
+                }
+            }
         }
 
         /// <summary>The investors' floor as the schemes count it: the firms keep it in cents; whole money, rounded up, so it is never under theirs.</summary>
@@ -241,7 +406,16 @@ namespace RealLifeOverhaul.Schemes
                 SchemeAct a = s.Acts[i];
                 sum += OnFile(a, kind, day) && !Unpaid(a, unpaid) ? a.Owed : 0L;
             }
-            return sum;
+            return kind == SchemeKind.Club ? Math.Min(sum, ClubOwed(s)) : sum;   // a till's finding may have given some of it back already
+        }
+
+        /// <summary>
+        /// The part of paying a kind's file back that comes out of the cash in hand: a club's stakes are the cash in hand, as far as it goes,
+        /// whether it is watched or not (the investigators take what is handed over). The rest is the wallet's.
+        /// </summary>
+        public static long RepayCash(SchemeState s, SchemeKind kind, long cost)
+        {
+            return kind == SchemeKind.Club ? Math.Max(0L, Math.Min(s.Dirty, cost)) : 0L;
         }
 
         /// <summary>
@@ -260,7 +434,7 @@ namespace RealLifeOverhaul.Schemes
             }
             if (kind == SchemeKind.Club)
             {
-                fromCash = s.Watched ? 0L : Math.Min(s.Dirty, cost);
+                fromCash = RepayCash(s, kind, cost);
                 s.Dirty -= fromCash;
                 s.ClubBack += cost;
             }

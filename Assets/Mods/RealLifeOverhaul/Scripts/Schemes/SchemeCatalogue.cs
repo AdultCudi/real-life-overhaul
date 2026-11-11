@@ -103,6 +103,20 @@ namespace RealLifeOverhaul.Schemes
         public const int OpenSpread = 400;             // ...between OpenLeast and OpenLeast + OpenSpread - 1
         public const int OpenPeriodDays = 90;          // days a drawn line stands: none is safe for ever
 
+        // ---- the bookings an inquiry makes by force: what the firms' investors' rules must never count as misuse of a firm's money
+        public const string RepayKey = "reallife_transaction_scheme_repay";           // paid back by the player
+        public const string FoundKey = "reallife_transaction_scheme_found";           // taken back after an inquiry's findings
+        public const string SurchargeKey = "reallife_transaction_scheme_surcharge";   // the penalty on top of it
+
+        /// <summary>
+        /// True for what an inquiry takes by force (a file's findings, its penalty, a file paid back). The court's money is its own consequence:
+        /// the investors' floor and the startup money suspicion (Tech/TechDirector.Money) skip it, so one act never has two chains of consequence.
+        /// </summary>
+        public static bool IsFinding(string transactionType)
+        {
+            return transactionType == FoundKey || transactionType == SurchargeKey || transactionType == RepayKey;
+        }
+
         // ---- an inquiry: evidence gathered over days, then what is found
         public const int EvidenceBase = 350;           // what investigators start from: the papers that made them look
         public const int EvidenceAct = 90;             // for each act on file
@@ -193,10 +207,10 @@ namespace RealLifeOverhaul.Schemes
         public const int FundFirstDays = 10;           // days after the file opens before the first
         public const int FundSharePermille = 20;       // of the player's worth
         public const int FundLeast = 2000, FundMost = 50000;   // at the start's prices
-        public const int FundReturn = 80;              // thousandths an honest fund pays on top
+        public const int FundReturn = 60;              // thousandths an honest fund pays on top, out of the rival's worth: under the look's fee, so looking first never pays on average
         public const int FundDays = 30;                // days the money is placed
         public const int FundAnswerDays = 7;
-        public const int FundFeePermille = 30;         // of the sum: what having it looked at costs
+        public const int FundFeePermille = 60;         // of the sum: what having it looked at costs
         public const int FundFeeLeast = 250;           // at the start's prices
         public const int FundShamShare = 1000;         // thousandths of a rival's bent that an offer of theirs is a sham: as likely as a scheme of theirs on a look
         public const int FundRecoverPermille = 600;    // of a sham's sum that comes back when its rival is found out: the rest was spent

@@ -87,14 +87,62 @@ namespace RealLifeOverhaul.Schemes
         }
     }
 
+    // What an event moves in the player's wallet and in a rival's worth: one rule for the director that carries it out and the simulations that count it.
+    public static partial class SchemeRules
+    {
+        /// <summary>
+        /// What an event moves in the player's wallet, signed: washed cash in (never into a business's own figures), a caution's half surcharge
+        /// out, a fund's return and a sham's recovered money in. 0 for the rest; a finding's money is <see cref="FindingsDue"/>.
+        /// </summary>
+        public static long WalletOf(SchemeEvent e)
+        {
+            switch (e.Kind)
+            {
+                case SchemeEventKind.Washed:
+                case SchemeEventKind.FundPaid:
+                    return Math.Max(0L, e.Net);
+                case SchemeEventKind.Caution:
+                    return -Math.Max(0L, e.Net);
+                case SchemeEventKind.FundRecovered:
+                    return Math.Max(0L, e.Amount);
+                default:
+                    return 0L;
+            }
+        }
+
+        /// <summary>What an event moves in a rival's worth, signed: a scheme brings, being found takes back with its quarter, a fund pays its return out of it.</summary>
+        public static long RivalMove(SchemeEvent e)
+        {
+            switch (e.Kind)
+            {
+                case SchemeEventKind.RivalActed:
+                    return Math.Max(0L, e.Amount);
+                case SchemeEventKind.RivalFound:
+                    return -Math.Max(0L, e.Amount);
+                case SchemeEventKind.FundPaid:
+                    return -Math.Max(0L, e.Net);
+                default:
+                    return 0L;
+            }
+        }
+
+        /// <summary>The charge a rival convicted of a kind answers: the court's own ids, by kind.</summary>
+        public static string RivalCharge(SchemeKind kind)
+        {
+            return kind == SchemeKind.Graft ? JusticeLaw.Bribery : kind == SchemeKind.Expense ? JusticeLaw.TaxEvasion : JusticeLaw.Fraud;
+        }
+    }
+
     // The day: the trails fade, the tills wash, people talk, inquiries open, gather evidence and end, and the rivals do the same.
     public static partial class SchemeRules
     {
-        public const int CatchUpDays = 7;   // days a skipped stretch is played back at most
+        public const int CatchUpMost = 20000;   // days a skipped stretch is played back at most: more than any game has days, so in effect every one
 
         /// <summary>
-        /// Plays every day since the last one played (a week at most), each exactly as it would have been. The first call on
-        /// a save only sets the clock. The director and the checks both call this and nothing else to move the schemes on.
+        /// Plays every day since the last one played, each exactly as it would have been, so a stretch nobody played ends as the same days
+        /// played one at a time would have ended it: an inquiry that would have charged is charged, never dropped for the gap. A day costs a
+        /// few loops over the state, so even a long gap is milliseconds. The first call on a save only sets the clock. The director and the
+        /// checks both call this and nothing else to move the schemes on.
         /// </summary>
         public static void Day(SchemeState s, int day, SchemeWorld w, List<SchemeEvent> events)
         {
@@ -104,7 +152,7 @@ namespace RealLifeOverhaul.Schemes
                 s.Day = day;
                 return;
             }
-            for (int d = Math.Max(s.Day + 1, day - CatchUpDays + 1); d <= day; d++)
+            for (int d = Math.Max(s.Day + 1, day - CatchUpMost + 1); d <= day; d++)
             {
                 One(s, d, w, events);
             }
@@ -148,7 +196,7 @@ namespace RealLifeOverhaul.Schemes
                 {
                     continue;   // sold, closed or not read today: nothing is washed and nothing is shown there
                 }
-                if (shop.Lift > 0)
+                if (shop.Lift > 0 && w.On)
                 {
                     AddHeat(s, SchemeKind.Books, shop.Lift / SchemeCatalogue.LiftHeatDivisor);
                 }
@@ -355,14 +403,14 @@ namespace RealLifeOverhaul.Schemes
                 paid += a.Paid;
                 if (q.Kind != SchemeKind.Club)
                 {
-                    found += a.Owed;
-                    a.Back = a.Gain;
+                    found += a.Owed;   // a club's is what the households are still out (the ledger), taken below
                 }
+                a.Back = a.Gain;
             }
             long surchargeOn;
             if (q.Kind == SchemeKind.Club)
             {
-                found = Recover(s, Math.Max(0L, s.ClubTaken - s.ClubBack));
+                found = Recover(s, ClubOwed(s));
                 surchargeOn = found;
             }
             else if (q.Kind == SchemeKind.Wash)
@@ -419,6 +467,24 @@ namespace RealLifeOverhaul.Schemes
             }
             SchemeInquiry club = s.OpenOf(SchemeKind.Club), wash = s.OpenOf(SchemeKind.Wash);
             s.Watched = (club != null && club.Stage >= InquiryStage.Visit) || (wash != null && wash.Stage >= InquiryStage.Visit);
+        }
+
+        /// <summary>
+        /// How an inquiry that was charged ends today: 0 while its case is still to be heard, else the <see cref="InquiryEnd"/> as a number.
+        /// With no court running (justice switched off, the courts not loaded) or no case opened there is nothing left to wait for, and the
+        /// inquiry ends as settled, so the cash in hand it watched is free again. Otherwise the court's own answer (<paramref name="caseEnd"/>).
+        /// </summary>
+        public static int Verdict(SchemeInquiry q, bool courtRuns, int caseEnd)
+        {
+            if (q == null || q.Stage != InquiryStage.Charged)
+            {
+                return 0;
+            }
+            if (!courtRuns || q.Case <= 0)
+            {
+                return (int)InquiryEnd.Settled;
+            }
+            return caseEnd == 0 ? 0 : SchemeCatalogue.Clamp(caseEnd, (int)InquiryEnd.Dropped, (int)InquiryEnd.Settled);
         }
 
         /// <summary>The player tells the investigators everything: the file is complete at once, and the charge is the lesser one.</summary>

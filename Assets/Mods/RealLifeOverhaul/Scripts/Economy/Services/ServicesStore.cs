@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Economy
             {
                 SaleListing l = s.Listings[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(l.Place)).Append('|').Append(Clean(l.Name)).Append('|');
-                Join(t, l.ListedDay, l.Step, l.Asking, l.Value, l.NextOfferDay, l.OffersMade);
+                Join(t, l.ListedDay, l.Step, l.Asking, l.Value, l.NextOfferDay, l.OffersMade, l.Lift);
             }
             t.Append("^f:");
             for (int i = Math.Max(0, s.SaleOffers.Count - ServicesCatalogue.OffersKept), n = 0; i < s.SaleOffers.Count; i++, n++)
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(o.Place)).Append('|');
                 Join(t, o.Buyer, o.Price, o.Ceiling, o.KeepsStaff ? 1 : 0, o.Parts, o.ClauseDays, o.Deadline, o.Countered ? 1 : 0, o.Face);
                 t.Append('|').Append(Clean(o.Who)).Append('|').Append(Clean(o.WhoName)).Append('|');
-                Join(t, o.WhoCount);
+                Join(t, o.WhoCount, o.Lift);
             }
             t.Append("^d:");
             for (int i = Math.Max(0, s.Dues.Count - ServicesCatalogue.DuesMost), n = 0; i < s.Dues.Count; i++, n++)
@@ -208,7 +208,8 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Place = c[0], Name = c[1], ListedDay = Math.Max(0, I(c, 2)),
                                         Step = ServicesCatalogue.Clamp(I(c, 3, ServicesCatalogue.AskingDefault), 0, ServicesCatalogue.AskingPct.Length - 1),
-                                        Asking = Math.Max(0, I(c, 4)), Value = Math.Max(0, I(c, 5)), NextOfferDay = Math.Max(0, I(c, 6)), OffersMade = Math.Max(0, I(c, 7))
+                                        Asking = Math.Max(0, I(c, 4)), Value = Math.Max(0, I(c, 5)), NextOfferDay = Math.Max(0, I(c, 6)), OffersMade = Math.Max(0, I(c, 7)),
+                                        Lift = Math.Max(0, I(c, 8))
                                     });
                                 }
                             }
@@ -226,7 +227,7 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Buyer = buyer, Price = price, Ceiling = Math.Max(price, I(c, 4)), KeepsStaff = I(c, 5) != 0,
                                         Parts = ServicesCatalogue.Clamp(I(c, 6), 0, 12), ClauseDays = Math.Max(0, I(c, 7)), Deadline = Math.Max(0, I(c, 8)), Countered = I(c, 9) != 0,
-                                        Face = Math.Max(0, I(c, 10)), Who = S(c, 11), WhoName = S(c, 12), WhoCount = Math.Max(0, I(c, 13))
+                                        Face = Math.Max(0, I(c, 10)), Who = S(c, 11), WhoName = S(c, 12), WhoCount = Math.Max(0, I(c, 13)), Lift = Math.Max(0, I(c, 14))
                                     });
                                 }
                             }

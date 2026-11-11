@@ -20,12 +20,65 @@ namespace RealLifeOverhaul.Schemes
         FundDown = 10  // the fund on offer is turned down
     }
 
+    /// <summary>What the director does for a press: one call for each answer a page can offer. The checks stand in for the director and see which call each press reaches.</summary>
+    public interface ISchemeActs
+    {
+        void Claim(string place, int cover, int size);
+        void Expense(int size);
+        void OpenLift(string place);
+        void OpenWash(string place);
+        void Lift(string place, int permille);
+        void Wash(string place, int permille);
+        void Club(string place, int size);
+        void FundPut();
+        void FundLook();
+        void FundDown();
+    }
+
     /// <summary>One press: what it does, where, and its figures.</summary>
     public struct SchemePress
     {
         public SchemeDo Do;
         public string Place;
         public int A, B;
+
+        /// <summary>The one map from what a page offers to what is done. Leaving a page does nothing: it only closes.</summary>
+        public void Carry(ISchemeActs acts)
+        {
+            switch (Do)
+            {
+                case SchemeDo.Claim:
+                    acts.Claim(Place, A, B);
+                    break;
+                case SchemeDo.Expense:
+                    acts.Expense(B);
+                    break;
+                case SchemeDo.OpenLift:
+                    acts.OpenLift(Place);
+                    break;
+                case SchemeDo.OpenWash:
+                    acts.OpenWash(Place);
+                    break;
+                case SchemeDo.Lift:
+                    acts.Lift(Place, A);
+                    break;
+                case SchemeDo.Wash:
+                    acts.Wash(Place, A);
+                    break;
+                case SchemeDo.Club:
+                    acts.Club(Place, B);
+                    break;
+                case SchemeDo.FundPut:
+                    acts.FundPut();
+                    break;
+                case SchemeDo.FundLook:
+                    acts.FundLook();
+                    break;
+                case SchemeDo.FundDown:
+                    acts.FundDown();
+                    break;
+            }
+        }
 
         public static SchemePress Of(SchemeDo what, string place = null, int a = 0, int b = 0)
         {

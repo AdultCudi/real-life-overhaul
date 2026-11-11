@@ -17,12 +17,11 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Policy p = shop.File.Cover[kind];
-            Claim claim = CoverRules.Open(_state, p, shop.File.Place, shop.Name, kind, loss, Save.Day);
+            Claim claim = CoverRules.OpenInvented(_state, p, shop.File.Place, shop.Name, kind, loss, Save.Day);
             if (claim == null)
             {
                 return false;
             }
-            CoverRules.File(claim, p, Save.Day);
             id = claim.Id;
             payout = claim.Payout;
             payDay = claim.PayDay;

@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(c.Place)).Append('|');
                 Join(t, c.Kind, c.Insurer, c.Day, c.Loss, c.Excess, c.Payout, (int)c.Stage, c.PayDay);
                 t.Append('|').Append(Clean(c.Name));
+                t.Append('|').Append(c.Invented ? '1' : '0');
             }
             t.Append("^r:");
             for (int i = Math.Max(0, s.Reports.Count - CompanyCatalogue.ReportsKept), n = 0; i < s.Reports.Count; i++, n++)
@@ -195,7 +196,7 @@ namespace RealLifeOverhaul.Economy
                                         Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Kind = kind, Insurer = insurer, Day = Math.Max(0, I(c, 4)), Loss = Math.Max(0, I(c, 5)),
                                         Excess = Math.Max(0, I(c, 6)), Payout = Math.Max(0, I(c, 7)),
                                         Stage = stage >= 0 && stage <= (int)ClaimStage.Lapsed ? (ClaimStage)stage : ClaimStage.Lapsed, PayDay = Math.Max(0, I(c, 9)),
-                                        Name = c.Length > 10 ? c[10] : string.Empty
+                                        Name = c.Length > 10 ? c[10] : string.Empty, Invented = I(c, 11) != 0
                                     });
                                 }
                             }

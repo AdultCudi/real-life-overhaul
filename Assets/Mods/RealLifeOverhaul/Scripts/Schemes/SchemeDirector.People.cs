@@ -159,14 +159,15 @@ namespace RealLifeOverhaul.Schemes
             string contact = SchemeRules.Contact(person);
             long price = PriceOf(favour, out bool cash);
             var answer = new FavourAnswer { Key = "reallife_scheme_talk_not_now" };
-            if (SchemeRules.IsCold(s, contact) || price <= 0)
-            {
-                return answer;
-            }
-            if (!cash && !Affords(price))
+            SchemeRules.Refusal no = SchemeRules.FavourRefusal(s, contact, price, cash, SchemeGame.Cash, Floor());
+            if (no == SchemeRules.Refusal.Short)
             {
                 answer.Key = "reallife_scheme_talk_short";
                 answer.Pairs = new[] { "amount", SchemeText.Money(price) };
+                return answer;
+            }
+            if (no != SchemeRules.Refusal.None)
+            {
                 return answer;
             }
             // Their own temper first: somebody who would not take money will not carry it to another either.
@@ -192,7 +193,7 @@ namespace RealLifeOverhaul.Schemes
                 courtCase = SchemeBridges.NextCase != null ? SchemeBridges.NextCase() : 0;
                 who = courtCase > 0 ? SchemeRules.Judge(courtCase) : null;
             }
-            if (who == null || (favour == Favour.Vote && SchemeGame.InSession))
+            if (SchemeRules.NobodyToAsk(favour, who, SchemeGame.InSession))
             {
                 return answer;   // nobody to ask now: nothing is offered and no money moves
             }
@@ -266,7 +267,7 @@ namespace RealLifeOverhaul.Schemes
             }
             if (favour == Favour.Judge && SchemeBridges.Charge != null && SchemeBridges.Court != null && SchemeBridges.Court())
             {
-                int number = SchemeBridges.Charge(JusticeLaw.PervertingJustice, 900, price, _state.Seed ^ courtCase * 104729);
+                int number = SchemeBridges.Charge(JusticeLaw.PervertingJustice, 900, price, _state.Seed ^ courtCase * 104729, false);
                 Logger?.Info("Schemes: the judge of case " + courtCase + " reported the offer: " + (number > 0 ? "case " + number : "no case could be opened") + ".");
             }
         }

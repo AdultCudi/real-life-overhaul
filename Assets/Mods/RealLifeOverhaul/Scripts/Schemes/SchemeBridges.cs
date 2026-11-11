@@ -63,8 +63,11 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>True while the courts take a case. Default: no court.</summary>
         public static Func<bool> Court;
 
-        /// <summary>A file goes to the court: the charge, the evidence in thousandths, the sum it is about, the case's own seed. Its number, or 0.</summary>
-        public static Func<string, int, long, int, int> Charge;
+        /// <summary>
+        /// A file goes to the court: the charge, the evidence in thousandths, the sum it is about, the case's own seed, and whether the player
+        /// told the investigators everything (the inquiry's own cooperation, never read from how much evidence there is). Its number, or 0.
+        /// </summary>
+        public static Func<string, int, long, int, bool, int> Charge;
 
         /// <summary>How a case stands: 0 while it is open, else how it ended as an <see cref="InquiryEnd"/>. Default: open.</summary>
         public static Func<int, int> CaseEnd;

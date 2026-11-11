@@ -15,6 +15,18 @@ namespace RealLifeOverhaul.Schemes
         private const int DrawLine = 11, DrawSpot = 12, DrawTemper = 13, DrawTalk = 14, DrawDiligence = 15, DrawBent = 16, DrawRival = 17, DrawRivalKind = 18;
         private const int DrawRivalSize = 19, DrawFundWho = 20, DrawFundSham = 21, DrawDoubt = 22, DrawSeat = 23, DrawClub = 24;
 
+        /// <summary>
+        /// The game's name for a playthrough, for the schemes' seed: the city's seed and the playthrough's own id (the character's unique id).
+        /// The city's seed alone is the same for every playthrough on one city, so a second save would meet the same temper draws and the same
+        /// lines and could learn the answers from the first. The same save always gives the same text, on every load and every machine that
+        /// holds that save. With no city seed the id alone stands, and with neither a fixed word.
+        /// </summary>
+        public static string PlaythroughOf(string citySeed, string playthroughId)
+        {
+            bool city = !string.IsNullOrEmpty(citySeed), own = !string.IsNullOrEmpty(playthroughId);
+            return city && own ? citySeed + "|" + playthroughId : city ? citySeed : own ? playthroughId : "city";
+        }
+
         /// <summary>A save's seed for the schemes, from the game's own name for the playthrough: never 0, and the same on every load.</summary>
         public static int SeedOf(string playthrough)
         {

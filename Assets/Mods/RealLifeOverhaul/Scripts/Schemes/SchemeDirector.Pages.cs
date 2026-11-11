@@ -70,44 +70,35 @@ namespace RealLifeOverhaul.Schemes
             return _panel.Show(SchemePages.Fund(Words, RivalName(f.Tycoon), RivalHolding(f.Tycoon), f, SchemeGame.Level));
         }
 
-        // An answer's press, carried out: the one map from what a page offers to what the director does.
+        // An answer's press, carried out: the map from what a page offers to what the director does is SchemePress.Carry.
         private void Press(SchemePress p)
         {
-            switch (p.Do)
-            {
-                case SchemeDo.Claim:
-                    DoClaim(p.Place, p.A, p.B);
-                    break;
-                case SchemeDo.Expense:
-                    DoExpense(p.B);
-                    break;
-                case SchemeDo.OpenLift:
-                    ShowLift(p.Place);
-                    break;
-                case SchemeDo.OpenWash:
-                    ShowWash(p.Place);
-                    break;
-                case SchemeDo.Lift:
-                    SetLift(p.Place, p.A);
-                    break;
-                case SchemeDo.Wash:
-                    SetWash(p.Place, p.A);
-                    break;
-                case SchemeDo.Club:
-                    DoClub(p.Place, p.B);
-                    break;
-                case SchemeDo.FundPut:
-                    Answer(FundPut());
-                    break;
-                case SchemeDo.FundLook:
-                    Answer(FundLook());
-                    ShowFund();
-                    break;
-                case SchemeDo.FundDown:
-                    Answer(FundTurnDown());
-                    break;
-            }
+            p.Carry(this);
         }
+
+        void ISchemeActs.Claim(string place, int cover, int size) => DoClaim(place, cover, size);
+
+        void ISchemeActs.Expense(int size) => DoExpense(size);
+
+        void ISchemeActs.OpenLift(string place) => ShowLift(place);
+
+        void ISchemeActs.OpenWash(string place) => ShowWash(place);
+
+        void ISchemeActs.Lift(string place, int permille) => SetLift(place, permille);
+
+        void ISchemeActs.Wash(string place, int permille) => SetWash(place, permille);
+
+        void ISchemeActs.Club(string place, int size) => DoClub(place, size);
+
+        void ISchemeActs.FundPut() => Answer(FundPut());
+
+        void ISchemeActs.FundLook()
+        {
+            Answer(FundLook());
+            ShowFund();
+        }
+
+        void ISchemeActs.FundDown() => Answer(FundTurnDown());
 
         // What a press came to, as one of the game's notices.
         private static void Answer(SchemeSaid said)

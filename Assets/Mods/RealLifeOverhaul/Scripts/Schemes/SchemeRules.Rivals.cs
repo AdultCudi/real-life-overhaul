@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>What having a fund looked at costs.</summary>
         public static long FundFee(long amount, int level)
         {
-            return Round(Math.Max(SchemeCatalogue.AtPrices(SchemeCatalogue.FundFeeLeast, level), SchemeCatalogue.Share(amount, SchemeCatalogue.FundFeePermille)));
+            long fee = Math.Max(SchemeCatalogue.AtPrices(SchemeCatalogue.FundFeeLeast, level), SchemeCatalogue.Share(amount, SchemeCatalogue.FundFeePermille));
+            return (fee + 9) / 10 * 10;   // rounded up to tens, never under the share, so the fee is never under the return an honest fund pays
         }
 
         /// <summary>What an honest fund pays back.</summary>
@@ -48,16 +49,34 @@ namespace RealLifeOverhaul.Schemes
             return amount + SchemeCatalogue.Share(amount, SchemeCatalogue.FundReturn);
         }
 
+        /// <summary>Whether a rival of this worth can pay an honest fund's return: the money comes out of their worth, so a rival who cannot pay it offers no fund and takes none.</summary>
+        public static bool FundPayable(long rivalWorth, long amount)
+        {
+            return rivalWorth >= FundBack(amount);
+        }
+
+        /// <summary>What an honest fund really pays on its day: its return, never more than the rival is worth (the money comes out of their worth, never from nowhere).</summary>
+        public static long FundPaidOut(long amount, long rivalWorth)
+        {
+            return Math.Min(FundBack(amount), Math.Max(0L, rivalWorth));
+        }
+
+        /// <summary>Whether the player may put money into the fund on offer today: it stands, and the rival who offered it can still pay its return. Refused before any money moves.</summary>
+        public static bool FundOpenFor(SchemeState s, int day, long rivalWorth)
+        {
+            return FundStands(s, day) && FundPayable(rivalWorth, s.Fund.Amount);
+        }
+
         private static void RivalsDay(SchemeState s, int day, SchemeWorld w, List<SchemeEvent> events)
         {
             for (int i = 0; i < s.Rival.Length; i++)
             {
                 SchemeRival r = s.Rival[i];
-                r.Heat = Math.Max(0, r.Heat - SchemeCatalogue.HeatDecay);
                 if (w.Session)
                 {
-                    continue;   // the rivals rest in a session: nothing of theirs moves, and nothing is forgotten
+                    continue;   // the rivals rest in a session: nothing of theirs moves, their heat included, and nothing is forgotten
                 }
+                r.Heat = Math.Max(0, r.Heat - SchemeCatalogue.HeatDecay);
                 if (w.RivalActive[i] && w.On && r.Stage == InquiryStage.Closed && r.TrialDay == 0 && (day + i * 10) % SchemeCatalogue.RivalEveryDays == 0)
                 {
                     RivalLook(s, r, i, day, w, events);
@@ -211,7 +230,9 @@ namespace RealLifeOverhaul.Schemes
                 else
                 {
                     f.State = FundState.Paid;
-                    events.Add(new SchemeEvent { Kind = SchemeEventKind.FundPaid, Tycoon = f.Tycoon, Amount = f.Amount, Net = FundBack(f.Amount) });
+                    int who = SchemeCatalogue.Clamp(f.Tycoon, 0, w.RivalWorth.Length - 1);
+                    long worth = w.RivalActive[who] ? w.RivalWorth[who] : 0L;   // a rival who is gone has no worth to pay out of: the game's own worth moves only for an active one
+                    events.Add(new SchemeEvent { Kind = SchemeEventKind.FundPaid, Tycoon = f.Tycoon, Amount = f.Amount, Net = FundPaidOut(f.Amount, worth) });
                 }
             }
             bool free = f.State != FundState.Open && f.State != FundState.Placed;
@@ -219,19 +240,24 @@ namespace RealLifeOverhaul.Schemes
             {
                 return;
             }
+            if (w.Worth <= 0)
+            {
+                return;
+            }
+            long amount = FundAmount(w.Worth, w.Level);
             int active = 0;
             for (int i = 0; i < w.RivalActive.Length; i++)
             {
-                active += w.RivalActive[i] && s.Rival[i].Stage == InquiryStage.Closed && s.Rival[i].TrialDay == 0 ? 1 : 0;
+                active += Offers(s, w, i, amount) ? 1 : 0;
             }
-            if (active == 0 || w.Worth <= 0)
+            if (active == 0)
             {
                 return;
             }
             int pick = Roll(s.Seed, DrawFundWho, f.Number, 0) % active, tycoon = -1;
             for (int i = 0; i < w.RivalActive.Length && tycoon < 0; i++)
             {
-                if (w.RivalActive[i] && s.Rival[i].Stage == InquiryStage.Closed && s.Rival[i].TrialDay == 0 && pick-- == 0)
+                if (Offers(s, w, i, amount) && pick-- == 0)
                 {
                     tycoon = i;
                 }
@@ -240,12 +266,18 @@ namespace RealLifeOverhaul.Schemes
             f.State = FundState.Open;
             f.Day = day;
             f.Due = day + SchemeCatalogue.FundAnswerDays;
-            f.Amount = FundAmount(w.Worth, w.Level);
+            f.Amount = amount;
             f.Sham = Roll(s.Seed, DrawFundSham, f.Number, tycoon) < Bent(s.Seed, tycoon) * SchemeCatalogue.FundShamShare / 1000;
             f.Checked = false;
             f.Reported = false;
             f.Number++;
             events.Add(new SchemeEvent { Kind = SchemeEventKind.FundOffered, Tycoon = tycoon, Amount = f.Amount });
+        }
+
+        // Whether a rival is free to offer a fund of this sum: active, not under inquiry or before the court, and worth enough to pay its return.
+        private static bool Offers(SchemeState s, SchemeWorld w, int rival, long amount)
+        {
+            return w.RivalActive[rival] && s.Rival[rival].Stage == InquiryStage.Closed && s.Rival[rival].TrialDay == 0 && FundPayable(w.RivalWorth[rival], amount);
         }
 
         /// <summary>For the tests: the wait between two offers is waived and a fund is offered now, if a rival is free to. True if one was.</summary>

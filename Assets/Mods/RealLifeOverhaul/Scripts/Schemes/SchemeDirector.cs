@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Schemes
     /// Update; a one-second timer on the real clock comparing the day; a game day's turn reads the player's businesses
     /// once and plays the rules; everything else runs on a press.
     /// </summary>
-    public sealed partial class SchemeDirector : MonoBehaviour
+    public sealed partial class SchemeDirector : MonoBehaviour, ISchemeActs
     {
         private static readonly int HotTick = HotSpots.Slot("Schemes: SchemeDirector.Tick");
 

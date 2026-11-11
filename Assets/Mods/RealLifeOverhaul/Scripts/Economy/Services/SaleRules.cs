@@ -102,10 +102,13 @@ namespace RealLifeOverhaul.Economy
             return ServicesCatalogue.Round10(ServicesCatalogue.Pct(Math.Max(0, value), ServicesCatalogue.AskingPct[ServicesCatalogue.Clamp(step, 0, ServicesCatalogue.AskingPct.Length - 1)]));
         }
 
+        /// <summary>The id a quick sale's look is drawn by: minus its price, so the same quick sale is always seen through or never, and no offer's id is ever its own.</summary>
+        public static int QuickLookId(int price) => -Math.Max(1, price);
+
         public static int Quick(int value) => ServicesCatalogue.Round10(ServicesCatalogue.Pct(Math.Max(0, value), ServicesCatalogue.QuickPct));
 
         /// <summary>Puts a business on the market at a step of the asking price, or changes its step. The first offer can come the next day.</summary>
-        public static SaleListing List(ServicesState s, string place, string name, int value, int step, int day)
+        public static SaleListing List(ServicesState s, string place, string name, int value, int step, int day, int lift = 0)
         {
             SaleListing l = s.Listing(place);
             if (l == null)
@@ -120,6 +123,7 @@ namespace RealLifeOverhaul.Economy
             l.Name = name ?? string.Empty;
             l.Step = ServicesCatalogue.Clamp(step, 0, ServicesCatalogue.AskingPct.Length - 1);
             l.Value = Math.Max(0, value);
+            l.Lift = Math.Max(0, lift);
             l.Asking = Asking(value, l.Step);
             return l;
         }
@@ -195,7 +199,7 @@ namespace RealLifeOverhaul.Economy
                 KeepsStaff = ServicesCatalogue.BuyerKeepsStaff[kind], Parts = parts, ClauseDays = ServicesCatalogue.BuyerClauseDays[kind],
                 Deadline = day + ServicesCatalogue.OfferDaysLeast + ServicesCatalogue.Roll(s.Seed, place, n, PurposeDays, ServicesCatalogue.OfferDaysMost - ServicesCatalogue.OfferDaysLeast + 1),
                 Face = ServicesCatalogue.Roll(s.Seed, place, n, PurposeFace, 3),
-                Who = ServicesStore.Clean(who.Id), WhoName = ServicesStore.Clean(who.Name), WhoCount = Math.Max(0, who.Count)
+                Who = ServicesStore.Clean(who.Id), WhoName = ServicesStore.Clean(who.Name), WhoCount = Math.Max(0, who.Count), Lift = Math.Max(0, l.Lift)
             };
             s.SaleOffers.Add(offer);
             return offer;

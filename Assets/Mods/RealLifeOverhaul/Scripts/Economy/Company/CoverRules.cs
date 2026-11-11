@@ -159,6 +159,23 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// A loss that never happened (the schemes) put in as a claim by the insurer's own rules and marked as invented, before anything
+        /// else can see it: counted in the policy's term and paid on the insurer's day, but never the "newest theft" a police report of a
+        /// real break-in is attached to. Null, with nothing done, where no policy would pay.
+        /// </summary>
+        public static Claim OpenInvented(CompanyState state, Policy p, string place, string name, int kind, int loss, int day)
+        {
+            Claim claim = Open(state, p, place, name, kind, loss, day);
+            if (claim == null)
+            {
+                return null;
+            }
+            claim.Invented = true;
+            File(claim, p, day);
+            return claim;
+        }
+
+        /// <summary>
         /// The newest theft claim of the last <paramref name="days"/> days that is still to be paid (put in or not), or null.
         /// A police report is about the newest break-in, so it is that claim's.
         /// </summary>
@@ -168,7 +185,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; claims != null && i < claims.Count; i++)
             {
                 Claim c = claims[i];
-                if (c.Kind == (int)CoverKind.Theft && (c.Stage == ClaimStage.Open || c.Stage == ClaimStage.Filed) && day - c.Day <= days
+                if (c.Kind == (int)CoverKind.Theft && !c.Invented && (c.Stage == ClaimStage.Open || c.Stage == ClaimStage.Filed) && day - c.Day <= days
                     && (newest == null || c.Id > newest.Id))
                 {
                     newest = c;
@@ -183,7 +200,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static bool Reported(Claim c)
         {
-            if (c == null || c.Kind != (int)CoverKind.Theft || (c.Stage != ClaimStage.Open && c.Stage != ClaimStage.Filed) || c.Excess <= 0)
+            if (c == null || c.Invented || c.Kind != (int)CoverKind.Theft || (c.Stage != ClaimStage.Open && c.Stage != ClaimStage.Filed) || c.Excess <= 0)
             {
                 return false;
             }

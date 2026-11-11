@@ -101,15 +101,13 @@ namespace RealLifeOverhaul.Schemes
         private void DoClaim(string place, int cover, int size)
         {
             int day = SchemeGame.Day;
-            if (!On || !Shop(place, out SchemeShopInfo shop) || !shop.Mine || (shop.Covers & (1 << cover)) == 0 || SchemeBridges.Claim == null || SchemeBridges.CoverMost == null)
+            bool found = Shop(place, out SchemeShopInfo shop);
+            SchemeShop kept = found && shop.Mine ? _state.Shop(place, true) : null;
+            SchemeRules.Refusal no = SchemeRules.ClaimRefusal(On, found && shop.Mine, found && (shop.Covers & (1 << cover)) != 0,
+                SchemeBridges.Claim != null && SchemeBridges.CoverMost != null, kept, day);
+            if (no != SchemeRules.Refusal.None)
             {
-                Say(NotificationType.Warning, "reallife_scheme_note_not_now");
-                return;
-            }
-            SchemeShop kept = _state.Shop(place, true);
-            if (!SchemeRules.MayClaim(kept, day))
-            {
-                Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(kept.ClaimDay + SchemeCatalogue.ClaimGapDays));
+                Refused(no, kept != null ? kept.ClaimDay + SchemeCatalogue.ClaimGapDays : 0);
                 return;
             }
             int loss = SchemeRules.ClaimLoss(SchemeBridges.CoverMost(cover), size);
@@ -128,14 +126,10 @@ namespace RealLifeOverhaul.Schemes
         private void DoExpense(int size)
         {
             int day = SchemeGame.Day, percent = SchemeBridges.TaxPercent != null ? SchemeBridges.TaxPercent() : 0;
-            if (!On || percent <= 0 || SchemeBridges.Taxed == null || !SchemeBridges.Taxed())
+            SchemeRules.Refusal no = SchemeRules.ExpenseRefusal(On, percent, SchemeBridges.Taxed != null && SchemeBridges.Taxed(), _state, day);
+            if (no != SchemeRules.Refusal.None)
             {
-                Say(NotificationType.Warning, "reallife_scheme_note_expense_no_tax");
-                return;
-            }
-            if (!SchemeRules.MayExpense(_state, day))
-            {
-                Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(_state.ExpenseDay + SchemeCatalogue.ExpenseGapDays));
+                Refused(no, _state.ExpenseDay + SchemeCatalogue.ExpenseGapDays);
                 return;
             }
             long amount = SchemeRules.ExpenseAmount(AverageTakings(), size), gain = SchemeRules.ExpenseGain(amount, percent);
@@ -194,20 +188,13 @@ namespace RealLifeOverhaul.Schemes
         private void DoClub(string place, int size)
         {
             int day = SchemeGame.Day;
-            if (!On || !Shop(place, out SchemeShopInfo shop) || !shop.Mine || !shop.Cash)
+            bool found = Shop(place, out SchemeShopInfo shop);
+            SchemeShop kept = found && shop.Mine ? _state.Shop(place, true) : null;
+            SchemeRules.Refusal no = SchemeRules.ClubRefusal(On, found && shop.Mine, found && shop.Cash, SchemeGame.InSession,
+                SchemeBridges.People != null && SchemeBridges.People(), SchemeBridges.Club != null, kept, day);
+            if (no != SchemeRules.Refusal.None)
             {
-                Say(NotificationType.Warning, "reallife_scheme_note_not_now");
-                return;
-            }
-            if (SchemeGame.InSession || SchemeBridges.People == null || !SchemeBridges.People() || SchemeBridges.Club == null)
-            {
-                Say(NotificationType.Warning, "reallife_scheme_note_club_no_people");
-                return;
-            }
-            SchemeShop kept = _state.Shop(place, true);
-            if (!SchemeRules.MayClub(kept, day))
-            {
-                Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(kept.ClubDay + SchemeCatalogue.ClubGapDays));
+                Refused(no, kept != null ? kept.ClubDay + SchemeCatalogue.ClubGapDays : 0);   // refused before any household is asked for anything
                 return;
             }
             if (!SchemeBridges.Club(shop.District, _state.Acted, SchemeRules.ClubHouseholds(size), SchemeGame.Level, out long taken, out int joined) || taken <= 0)
@@ -236,24 +223,24 @@ namespace RealLifeOverhaul.Schemes
             }
             int day = SchemeGame.Day;
             List<int> unpaid = Unpaid(_unpaid);
-            long cost = SchemeRules.RepayCost(_state, kind, day, unpaid);
-            if (cost <= 0)
+            SchemeRules.Refusal no = SchemeRules.RepayRefusal(_state, kind, day, unpaid, SchemeGame.Cash, Floor(), out long cost, out long wallet);
+            if (no == SchemeRules.Refusal.NotNow)
             {
                 return SchemeSaid.Of("reallife_scheme_file_repay_nothing");
             }
-            long cash = kind == SchemeKind.Club && !_state.Watched ? Math.Min(_state.Dirty, cost) : 0L;
-            if (!Affords(cost - cash))
+            if (no == SchemeRules.Refusal.Short)
             {
-                return SchemeSaid.Of("reallife_scheme_file_repay_short", "amount", SchemeText.Money(cost - cash));
+                return SchemeSaid.Of("reallife_scheme_file_repay_short", "amount", SchemeText.Money(wallet));   // refused whole: a club's stakes come out of the cash in hand, watched or not
             }
             long paid = SchemeRules.Repay(_state, kind, day, unpaid, out long fromCash);
-            if (!SchemeGame.Pay(paid - fromCash, SchemeGame.RepayKey))
+            SchemeRules.Due due = SchemeRules.RepayDue(kind, paid, fromCash);
+            if (!SchemeGame.Pay(due.Wallet, SchemeGame.RepayKey))
             {
-                SchemeGame.Take(paid - fromCash, SchemeGame.RepayKey);   // the wallet moved since it was counted: what is settled on the file is paid all the same
+                SchemeGame.Take(due.Wallet, SchemeGame.RepayKey);   // the wallet moved since it was counted: what is settled on the file is paid all the same
             }
-            if (kind == SchemeKind.Club)
+            if (due.Households > 0)
             {
-                GiveBack(paid);
+                GiveBack(due.Households);
             }
             for (int i = 0; kind == SchemeKind.Claim && i < unpaid.Count; i++)
             {
@@ -293,32 +280,33 @@ namespace RealLifeOverhaul.Schemes
         }
 
         /// <summary>
-        /// A buyer is about to pay for a business: true if they see through its dressed books, by how hard their kind looks.
-        /// They then walk and say why, the books are plain again, and no money has moved.
+        /// A buyer is about to pay for a business at a price: true if they see through the books it was made from, by how hard their kind
+        /// looks. <paramref name="lift"/> is the lift stamped on the offer (or the quick sale) when its price was made, never what the books
+        /// show now, so taking the lift off after the price was made changes nothing. They then walk and say why, the books are plain
+        /// again, and no money has moved.
         /// </summary>
-        public static bool SaleSeen(string place, int buyerKind, int offer)
+        public static bool SaleSeen(string place, int buyerKind, int offer, int lift)
         {
             SchemeDirector d = Instance;
-            SchemeShop shop = d != null && d._state != null && !d._broken ? d._state.Shop(place, false) : null;
-            if (shop == null || shop.Lift <= 0 || !SchemeRules.SeenThrough(d._state.Seed, place, buyerKind, shop.Lift, offer))
+            if (d == null || d._state == null || d._broken || !SchemeRules.Looked(d._state, place, buyerKind, lift, offer))
             {
                 return false;
             }
-            SchemeRules.Walked(d._state, place);
             Say(NotificationType.Error, "reallife_scheme_note_sale_seen");
-            Logger?.Info("Schemes: a buyer (kind " + buyerKind + ") saw through the books at " + place + " and walked; heat " + d._state.Heat[(int)SchemeKind.Books] + ".");
+            Logger?.Info("Schemes: a buyer (kind " + buyerKind + ") saw through the books at " + place + " (lifted " + lift + " when the price was made) and walked; heat "
+                         + d._state.Heat[(int)SchemeKind.Books] + ".");
             return true;
         }
 
-        /// <summary>A business was sold: the part of its price the dressed books made goes on the trail.</summary>
-        public static void SaleDone(string place, long price)
+        /// <summary>A business was sold at a price made from books lifted by <paramref name="lift"/>: the part of its price the lift made goes on the trail.</summary>
+        public static void SaleDone(string place, long price, int lift)
         {
             SchemeDirector d = Instance;
             if (d == null || d._state == null || d._broken)
             {
                 return;
             }
-            SchemeAct act = SchemeRules.Sold(d._state, place, price, SchemeGame.Day);
+            SchemeAct act = SchemeRules.Sold(d._state, place, price, lift, SchemeGame.Day);
             if (act != null)
             {
                 Logger?.Info("Schemes: a business sold on dressed books for " + price + ": " + act.Gain + " of it was for sales that never happened; heat "
@@ -333,11 +321,13 @@ namespace RealLifeOverhaul.Schemes
         {
             SchemeFund f = Ready("a fund") ? _state.Fund : null;
             int day = SchemeGame.Day;
-            if (f == null || SchemeGame.InSession || !SchemeRules.FundStands(_state, day))
+            SchemeRules.Refusal no = f == null ? SchemeRules.Refusal.NotNow
+                : SchemeRules.FundPutRefusal(_state, day, SchemeGame.InSession, RivalWorthNow(f.Tycoon), SchemeGame.Cash, Floor());   // a session rests the rivals; one who cannot pay takes nothing
+            if (no == SchemeRules.Refusal.NotNow)
             {
-                return SchemeSaid.Of("reallife_scheme_note_not_now");   // the rivals rest in a session: refused before any money moves
+                return SchemeSaid.Of("reallife_scheme_note_not_now");
             }
-            if (!Affords(f.Amount))
+            if (no == SchemeRules.Refusal.Short)
             {
                 return SchemeSaid.Of("reallife_scheme_fund_short", "amount", SchemeText.Money(f.Amount));
             }
@@ -355,12 +345,13 @@ namespace RealLifeOverhaul.Schemes
         public SchemeSaid FundLook()
         {
             SchemeFund f = Ready("a fund") ? _state.Fund : null;
-            if (f == null || SchemeGame.InSession || !SchemeRules.FundStands(_state, SchemeGame.Day) || f.Checked)
+            long fee = f != null ? SchemeRules.FundFee(f.Amount, SchemeGame.Level) : 0L;
+            SchemeRules.Refusal no = f == null ? SchemeRules.Refusal.NotNow : SchemeRules.FundLookRefusal(_state, SchemeGame.Day, SchemeGame.InSession, fee, SchemeGame.Cash, Floor());
+            if (no == SchemeRules.Refusal.NotNow)
             {
                 return SchemeSaid.Of("reallife_scheme_note_not_now");
             }
-            long fee = SchemeRules.FundFee(f.Amount, SchemeGame.Level);
-            if (!Affords(fee) || !SchemeGame.Pay(fee, SchemeGame.FundFeeKey))
+            if (no == SchemeRules.Refusal.Short || !SchemeGame.Pay(fee, SchemeGame.FundFeeKey))
             {
                 return SchemeSaid.Of("reallife_scheme_fund_short", "amount", SchemeText.Money(fee));
             }
@@ -383,10 +374,46 @@ namespace RealLifeOverhaul.Schemes
             return SchemeSaid.Of("reallife_scheme_fund_tell_done", "holding", RivalHolding(_state.Fund.Tycoon));
         }
 
+        private readonly SchemeWorld _peek = new SchemeWorld();   // the rivals as they stand at a press, apart from the day's own reading
+
+        // What a rival is worth now, read afresh: a fund is only taken while the rival behind it can pay its return.
+        private long RivalWorthNow(int tycoon)
+        {
+            _peek.Clear();
+            SchemeBridges.Rivals?.Invoke(_peek);
+            return tycoon >= 0 && tycoon < _peek.RivalWorth.Length && _peek.RivalActive[tycoon] ? _peek.RivalWorth[tycoon] : 0L;   // a rival who is gone can pay nothing
+        }
+
+        // What the wallet must keep for the investors of the player's firms, whole money.
+        private static long Floor()
+        {
+            return SchemeBridges.Floor != null ? SchemeBridges.Floor() : 0L;
+        }
+
         // Whether the wallet can pay a sum and still keep what belongs to the investors of the player's firms.
         private static bool Affords(long amount)
         {
-            return SchemeRules.Affords(SchemeGame.Cash, amount, SchemeBridges.Floor != null ? SchemeBridges.Floor() : 0L);
+            return SchemeRules.Affords(SchemeGame.Cash, amount, Floor());
+        }
+
+        // A press refused before anything moved, said in a notice. soonest is the day its wait is over.
+        private static void Refused(SchemeRules.Refusal no, int soonest)
+        {
+            switch (no)
+            {
+                case SchemeRules.Refusal.TooSoon:
+                    Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(soonest));
+                    break;
+                case SchemeRules.Refusal.NoPeople:
+                    Say(NotificationType.Warning, "reallife_scheme_note_club_no_people");
+                    break;
+                case SchemeRules.Refusal.NoTax:
+                    Say(NotificationType.Warning, "reallife_scheme_note_expense_no_tax");
+                    break;
+                default:
+                    Say(NotificationType.Warning, "reallife_scheme_note_not_now");
+                    break;
+            }
         }
     }
 }

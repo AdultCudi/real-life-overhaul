@@ -138,10 +138,10 @@ internal static partial class Program
         switch (e.Kind)
         {
             case SchemeEventKind.Washed:
-                r.Wallet += e.Net;
-                r.Gains += e.Net;
+                r.Wallet += SchemeRules.WalletOf(e);   // the director's own rule for what an event moves in the wallet
+                r.Gains += SchemeRules.WalletOf(e);
                 r.WashedOut += e.Amount;
-                r.WashedIn += e.Net;
+                r.WashedIn += SchemeRules.WalletOf(e);
                 break;
             case SchemeEventKind.Opened:
                 r.Opened++;
@@ -154,8 +154,8 @@ internal static partial class Program
                 r.DroppedOwn += (SchemeKind)e.A == plan.Kind ? 1 : 0;
                 break;
             case SchemeEventKind.Caution:
-                r.Wallet -= e.Net;
-                r.Surcharges += e.Net;
+                r.Wallet += SchemeRules.WalletOf(e);
+                r.Surcharges -= SchemeRules.WalletOf(e);
                 r.Cautions++;
                 break;
             case SchemeEventKind.Findings:
@@ -167,18 +167,20 @@ internal static partial class Program
     private static void SchemeSimFindings(SchemeRun r, SchemeEvent e, int day)
     {
         SchemeInquiry q = r.S.Inquiry(e.Inquiry);
-        long fromWallet = e.Amount - e.FromCash;
-        r.Wallet -= fromWallet + e.Net;
-        r.TakenBack += fromWallet;
-        r.Surcharges += e.Net;
+        SchemeRules.Due due = SchemeRules.FindingsDue(q.Kind, e.Amount, e.FromCash, e.Net);   // the director's own rule for what the findings move
+        r.Wallet -= due.Wallet + due.Surcharge;
+        r.TakenBack += due.Wallet;
+        r.Surcharges += due.Surcharge;
         r.Found++;
-        if ((q.Kind == SchemeKind.Club || q.Kind == SchemeKind.Wash) && e.Amount > 0)
+        if (due.Households > 0)
         {
-            r.PeopleOut -= PurseRules.Give(r.People, 0, e.Amount);
+            r.PeopleOut -= PurseRules.Give(r.People, 0, due.Households);
         }
-        for (int i = 0; q.Kind == SchemeKind.Claim && i < r.S.Acts.Count; i++)
+        var found = new List<int>(4);
+        SchemeRules.ClaimsFound(r.S, q, found);
+        for (int i = 0; i < found.Count; i++)
         {
-            Claim c = r.S.Acts[i].Kind == SchemeKind.Claim && r.S.Acts[i].Inquiry == q.Id ? r.Company.ClaimOf(r.S.Acts[i].Ref) : null;
+            Claim c = r.Company.ClaimOf(found[i]);
             if (c == null)
             {
                 continue;
@@ -236,11 +238,12 @@ internal static partial class Program
         {
             SchemeUnpaid(r, r.W.Unpaid);
             long paid = SchemeRules.Repay(r.S, q.Kind, day, r.W.Unpaid, out long fromCash);
-            r.Wallet -= paid - fromCash;
-            r.PaidBack += paid - fromCash;
-            if (q.Kind == SchemeKind.Club && paid > 0)
+            SchemeRules.Due due = SchemeRules.RepayDue(q.Kind, paid, fromCash);   // the director's own rule for what paying back moves
+            r.Wallet -= due.Wallet;
+            r.PaidBack += due.Wallet;
+            if (due.Households > 0)
             {
-                r.PeopleOut -= PurseRules.Give(r.People, 0, paid);
+                r.PeopleOut -= PurseRules.Give(r.People, 0, due.Households);
             }
             for (int i = 0; q.Kind == SchemeKind.Claim && paid > 0 && i < r.W.Unpaid.Count; i++)
             {
@@ -266,12 +269,11 @@ internal static partial class Program
                 {
                     return;
                 }
-                Claim c = CoverRules.Open(r.Company, r.Cover, SchemeRun.Place, "Shop", 0, SchemeRules.ClaimLoss(CompanyCatalogue.CoverMost[0], plan.Size), day);
+                Claim c = CoverRules.OpenInvented(r.Company, r.Cover, SchemeRun.Place, "Shop", 0, SchemeRules.ClaimLoss(CompanyCatalogue.CoverMost[0], plan.Size), day);   // as the company's door does
                 if (c == null)
                 {
                     return;
                 }
-                CoverRules.File(c, r.Cover, day);
                 SchemeRules.Claimed(s, SchemeRun.Place, day, c.Payout, plan.Size, c.Id);
                 break;
             }
@@ -292,13 +294,12 @@ internal static partial class Program
                 int lift = SchemeRules.LiftStep(plan.Size >= SchemeCatalogue.Large ? SchemeCatalogue.LiftMost : SchemeCatalogue.LiftSteps[1]);
                 shop.Lift = lift;
                 int offer = r.Sales++;
-                if (SchemeRules.SeenThrough(s.Seed, SchemeRun.Place, (offer + s.Seed) & 3, lift, offer))
+                if (SchemeRules.Looked(s, SchemeRun.Place, (offer + s.Seed) & 3, lift, offer))
                 {
-                    SchemeRules.Walked(s, SchemeRun.Place);
                     r.Walked++;
                     return;
                 }
-                SchemeAct sold = SchemeRules.Sold(s, SchemeRun.Place, (long)SchemeRules.Lifted(SchemeRun.SaleValue, lift), day);
+                SchemeAct sold = SchemeRules.Sold(s, SchemeRun.Place, (long)SchemeRules.Lifted(SchemeRun.SaleValue, lift), lift, day);
                 r.Wallet += sold.Gain;   // only what the lift made: the honest price is no scheme's
                 r.Gains += sold.Gain;
                 break;
@@ -592,6 +593,7 @@ internal static partial class Program
         public readonly int[] LetterDay = new int[SchemeState.Rivals], FoundDay = new int[SchemeState.Rivals];
         public long Wallet, Fees;
         public int Offers, Shams, Placed, Paid, Lost, Recovered, Lapsed, Declined, Stream;
+        public int Overdrawn;            // a fund paid more than its rival was worth that day: the return must come out of their worth, never from nowhere
         public bool Timely = true;       // every rival's findings came the same days after the letter as a player's, and the trial as the court sets it
         public int LostDay, WaitMost;    // the day the last sham failed, and the longest wait from there to the money coming back
     }
@@ -633,8 +635,8 @@ internal static partial class Program
         switch (e.Kind)
         {
             case SchemeEventKind.RivalActed:
-                c.Worth[t] += e.Amount;
-                c.Net[t] += e.Amount;
+                c.Worth[t] += SchemeRules.RivalMove(e);
+                c.Net[t] += SchemeRules.RivalMove(e);
                 c.Acts[t]++;
                 break;
             case SchemeEventKind.RivalLetter:
@@ -642,8 +644,8 @@ internal static partial class Program
                 c.LetterDay[t] = day;
                 break;
             case SchemeEventKind.RivalFound:
-                c.Worth[t] = Math.Max(0L, c.Worth[t] - e.Amount);
-                c.Net[t] -= e.Amount;
+                c.Worth[t] = Math.Max(0L, c.Worth[t] + SchemeRules.RivalMove(e));
+                c.Net[t] += SchemeRules.RivalMove(e);
                 c.Found[t]++;
                 c.Timely &= day - c.LetterDay[t] == SchemeCatalogue.ChargeAfter - SchemeCatalogue.LetterAfter && c.S.Rival[t].TrialDay == day + JusticeLaw.DaysToCourt(ChargeClass.Felony);
                 c.FoundDay[t] = day;
@@ -655,7 +657,7 @@ internal static partial class Program
                 c.Timely &= day == c.FoundDay[t] + JusticeLaw.DaysToCourt(ChargeClass.Felony);
                 if (e.B != 0)
                 {
-                    string charge = (SchemeKind)e.A == SchemeKind.Graft ? JusticeLaw.Bribery : (SchemeKind)e.A == SchemeKind.Expense ? JusticeLaw.TaxEvasion : JusticeLaw.Fraud;
+                    string charge = SchemeRules.RivalCharge((SchemeKind)e.A);
                     int fine = SchemeRules.FineOf(charge, Math.Max(0, c.S.Rival[t].Convictions - 1), c.Worth[t]);
                     c.Worth[t] = Math.Max(0L, c.Worth[t] - fine);
                     c.Net[t] -= fine;
@@ -677,7 +679,7 @@ internal static partial class Program
                 }
                 if (plan == SchemeFundPlan.Always || plan == SchemeFundPlan.Reports || (plan == SchemeFundPlan.Looks && !c.S.Fund.Sham))
                 {
-                    if (SchemeRules.FundStands(c.S, day))
+                    if (SchemeRules.FundOpenFor(c.S, day, c.Worth[t]))   // as the director asks it before any money moves
                     {
                         c.Wallet -= e.Amount;
                         c.Worth[t] += e.Amount;
@@ -694,8 +696,9 @@ internal static partial class Program
                 c.Lapsed++;
                 break;
             case SchemeEventKind.FundPaid:
-                c.Wallet += e.Net;
-                c.Worth[t] = Math.Max(0L, c.Worth[t] - e.Net);
+                c.Wallet += SchemeRules.WalletOf(e);
+                c.Overdrawn += -SchemeRules.RivalMove(e) > c.Worth[t] ? 1 : 0;
+                c.Worth[t] += SchemeRules.RivalMove(e);
                 c.Paid++;
                 break;
             case SchemeEventKind.FundLost:
@@ -707,7 +710,7 @@ internal static partial class Program
                 }
                 break;
             case SchemeEventKind.FundRecovered:
-                c.Wallet += e.Amount;
+                c.Wallet += SchemeRules.WalletOf(e);
                 c.Recovered++;
                 c.WaitMost = Math.Max(c.WaitMost, day - c.LostDay);
                 break;
@@ -720,6 +723,7 @@ internal static partial class Program
         const int saves = 150, days = 1800;
         int clean = 0, bent = 0, cleanActed = 0, bentFound = 0, bentAhead = 0, found = 0, tried = 0, convicted = 0, dropped = 0, acts = 0;
         long bentNet = 0;
+        int overdrawn = 0;
         bool timely = true, same = true;
         var totals = new int[4, 6];      // by plan: offers, shams, placed, lost, recovered, paid
         var waits = new int[4];          // by plan: the longest wait for a sham's money
@@ -740,6 +744,7 @@ internal static partial class Program
                 wallets[p] += c.Wallet;
                 waits[p] = Math.Max(waits[p], c.WaitMost);
                 fees[p] += c.Fees;
+                overdrawn += c.Overdrawn;
                 if (p != 0)
                 {
                     continue;
@@ -785,10 +790,9 @@ internal static partial class Program
         Check(wallets[always] < 0 && totals[always, 3] > 0 && totals[always, 4] <= totals[always, 3],
             "schemes fund: putting money into every fund loses on average: " + wallets[always] / saves + " a save, " + totals[always, 3] + " shams, " + totals[always, 4]
             + " of them partly recovered");
-        long best = (long)totals[looks, 0] * (SchemeRules.FundBack(SchemeRules.FundAmount(SchemeCity.PlayerWorth, 1000)) - SchemeRules.FundAmount(SchemeCity.PlayerWorth, 1000));
-        Check(wallets[looks] > 0 && totals[looks, 3] == 0 && fees[looks] > 0 && wallets[looks] < best,
-            "schemes fund: having each fund looked at first never loses the stake, costs its fee, and pays a little: " + wallets[looks] / saves + " a save, fees " + fees[looks] / saves
-            + ", no sham entered (" + totals[looks, 3] + ")");
+        Check(wallets[looks] <= 0 && wallets[looks] > wallets[always] && totals[looks, 3] == 0 && fees[looks] > 0 && overdrawn == 0,
+            "schemes fund: having each fund looked at first never loses the stake but nets zero or less once the fees are paid (the return is out of the rival's worth, and under the fee): "
+            + wallets[looks] / saves + " a save over " + days + " days, fees " + fees[looks] / saves + ", no sham entered (" + totals[looks, 3] + "), no fund paid more than its rival was worth (" + overdrawn + ")");
         int wait = SchemeCatalogue.ChargeAfter + JusticeLaw.DaysToCourt(ChargeClass.Felony) + SchemeCatalogue.ChargeAfter + 2;   // at worst they are before the court when it is reported
         Check(totals[reports, 3] > 0 && totals[reports, 4] >= totals[reports, 3] - saves && waits[reports] <= wait && totals[always, 4] < totals[always, 3]
               && totals[reports, 4] * totals[always, 3] > totals[always, 4] * totals[reports, 3] && wallets[reports] < 0 && wallets[reports] < wallets[looks],

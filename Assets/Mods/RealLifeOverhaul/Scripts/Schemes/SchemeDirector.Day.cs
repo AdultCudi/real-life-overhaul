@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Schemes
             switch (e.Kind)
             {
                 case SchemeEventKind.Washed:
-                    SchemeGame.Give(e.Net, SchemeGame.WashKey);   // to the player, never into the business's own figures: no buyer, bank or investor reads it
+                    SchemeGame.Give(SchemeRules.WalletOf(e), SchemeGame.WashKey);   // to the player, never into the business's own figures: no buyer, bank or investor reads it
                     break;
                 case SchemeEventKind.BankReport:
                 case SchemeEventKind.Pattern:
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Schemes
                     SchemeGame.Tell(NotificationType.Success, "reallife_scheme_note_dropped", Data("what", SchemeText.Kind((SchemeKind)e.A)));
                     break;
                 case SchemeEventKind.Caution:
-                    SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);
+                    SchemeGame.Take(-SchemeRules.WalletOf(e), SchemeGame.SurchargeKey);
                     SchemeGame.Tell(NotificationType.Info, "reallife_scheme_note_caution", Data("what", SchemeText.Kind((SchemeKind)e.A), "more", SchemeText.Money(e.Net)));
                     Logger?.Info("Schemes: inquiry " + e.Inquiry + " into " + (SchemeKind)e.A + " ended with a caution: " + e.Net + " taken on top of what was paid back.");
                     break;
@@ -128,13 +128,13 @@ namespace RealLifeOverhaul.Schemes
                     SchemeGame.Tell(NotificationType.Warning, "reallife_scheme_note_talked", null);
                     break;
                 case SchemeEventKind.RivalActed:
-                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, e.Amount);
+                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, SchemeRules.RivalMove(e));
                     break;
                 case SchemeEventKind.RivalLetter:
                     Logger?.Info("Schemes: " + RivalName(e.Tycoon) + " is being looked into (" + (SchemeKind)e.A + ").");
                     break;
                 case SchemeEventKind.RivalFound:
-                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Amount);
+                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, SchemeRules.RivalMove(e));
                     Logger?.Info("Schemes: " + RivalName(e.Tycoon) + " was found out (" + (SchemeKind)e.A + "): " + e.Amount + " taken back with its surcharge.");
                     break;
                 case SchemeEventKind.RivalTried:
@@ -145,15 +145,15 @@ namespace RealLifeOverhaul.Schemes
                         "day", SchemeText.Whole(_state.Fund.Due)), 14f, () => ShowFund());
                     break;
                 case SchemeEventKind.FundPaid:
-                    SchemeGame.Give(e.Net, SchemeGame.FundBackKey);
-                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Net);
+                    SchemeGame.Give(SchemeRules.WalletOf(e), SchemeGame.FundBackKey);
+                    SchemeBridges.RivalMoney?.Invoke(e.Tycoon, SchemeRules.RivalMove(e));   // the return is out of the rival's worth, never from nowhere
                     SchemeGame.Tell(NotificationType.Success, "reallife_scheme_note_fund_paid", Data("holding", RivalHolding(e.Tycoon), "amount", SchemeText.Money(e.Net)));
                     break;
                 case SchemeEventKind.FundLost:
                     SchemeGame.Tell(NotificationType.Error, "reallife_scheme_note_fund_lost", Data("holding", RivalHolding(e.Tycoon), "amount", SchemeText.Money(e.Amount)), 14f);
                     break;
                 case SchemeEventKind.FundRecovered:
-                    SchemeGame.Give(e.Amount, SchemeGame.FundBackKey);
+                    SchemeGame.Give(SchemeRules.WalletOf(e), SchemeGame.FundBackKey);
                     SchemeGame.Tell(NotificationType.Success, "reallife_scheme_note_fund_back", Data("holding", RivalHolding(e.Tycoon), "amount", SchemeText.Money(e.Amount)));
                     break;
             }
@@ -193,22 +193,19 @@ namespace RealLifeOverhaul.Schemes
                 return;
             }
             var kind = (SchemeKind)e.A;
-            SchemeGame.Take(e.Amount - e.FromCash, SchemeGame.FoundKey);
-            SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);
-            if ((kind == SchemeKind.Club || kind == SchemeKind.Wash) && e.Amount > 0)
+            SchemeRules.Due due = SchemeRules.FindingsDue(kind, e.Amount, e.FromCash, e.Net);
+            SchemeGame.Take(due.Wallet, SchemeGame.FoundKey);
+            SchemeGame.Take(due.Surcharge, SchemeGame.SurchargeKey);
+            if (due.Households > 0)
             {
-                GiveBack(e.Amount);
+                GiveBack(due.Households);
             }
-            for (int i = 0; kind == SchemeKind.Claim && i < _state.Acts.Count; i++)
+            SchemeRules.ClaimsFound(_state, q, _unpaid);
+            for (int i = 0; i < _unpaid.Count; i++)
             {
-                if (_state.Acts[i].Kind == SchemeKind.Claim && _state.Acts[i].Inquiry == q.Id)
-                {
-                    SchemeBridges.ClaimRefuse?.Invoke(_state.Acts[i].Ref);
-                }
+                SchemeBridges.ClaimRefuse?.Invoke(_unpaid[i]);
             }
-            int number = SchemeBridges.Court != null && SchemeBridges.Court() && SchemeBridges.Charge != null
-                ? SchemeBridges.Charge(e.Text, q.Evidence, e.Amount + e.Net, _state.Seed ^ q.Id * 7919)
-                : 0;
+            int number = SchemeBridges.Court != null && SchemeBridges.Court() ? SchemeRules.FileCase(_state, q, e.Text, e.Amount + e.Net, SchemeBridges.Charge) : 0;
             bool felony = e.B != 0;
             SchemeBridges.Exposed?.Invoke(felony);
             SchemeBridges.Story?.Invoke(SchemeKeys.NewsOwn[(int)kind]);
@@ -254,7 +251,7 @@ namespace RealLifeOverhaul.Schemes
             if (convicted)
             {
                 SchemeRival r = _state.Rival[SchemeCatalogue.Clamp(e.Tycoon, 0, _state.Rival.Length - 1)];
-                string charge = (SchemeKind)e.A == SchemeKind.Graft ? JusticeLaw.Bribery : (SchemeKind)e.A == SchemeKind.Expense ? JusticeLaw.TaxEvasion : JusticeLaw.Fraud;
+                string charge = SchemeRules.RivalCharge((SchemeKind)e.A);
                 int fine = SchemeRules.FineOf(charge, Math.Max(0, r.Convictions - 1), _world.RivalWorth[SchemeCatalogue.Clamp(e.Tycoon, 0, SchemeState.Rivals - 1)]);
                 SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -fine);
                 SchemeBridges.RivalBarred?.Invoke(e.Tycoon, SchemeCatalogue.RivalBarDays, SchemeCatalogue.RivalQuietDays);
@@ -262,27 +259,29 @@ namespace RealLifeOverhaul.Schemes
             Logger?.Info("Schemes: " + RivalName(e.Tycoon) + " was tried (" + (SchemeKind)e.A + "): " + (convicted ? "convicted." : "cleared."));
         }
 
-        // The court's answer on each file it holds: the inquiry ends as the case ended, and Standing hears of a conviction.
+        // The court's answer on each file it holds: the inquiry ends as the case ended, and Standing hears of a conviction. With no court
+        // running there is nothing to wait for (SchemeRules.Verdict): the inquiry ends as settled and the watch on the cash in hand ends.
         private void Verdicts(int day)
         {
+            bool court = SchemeBridges.Court != null && SchemeBridges.Court();
             for (int i = 0; i < _state.Cases.Count; i++)
             {
                 SchemeInquiry q = _state.Cases[i];
-                if (q.Stage != InquiryStage.Charged || q.Case <= 0)
+                if (q.Stage != InquiryStage.Charged)
                 {
                     continue;
                 }
-                int end = SchemeBridges.CaseEnd != null ? SchemeBridges.CaseEnd(q.Case) : (int)InquiryEnd.Settled;   // no court any more: nothing left to wait for
+                int end = SchemeRules.Verdict(q, court, court && q.Case > 0 && SchemeBridges.CaseEnd != null ? SchemeBridges.CaseEnd(q.Case) : (int)InquiryEnd.Settled);
                 if (end == 0)
                 {
                     continue;
                 }
-                SchemeRules.Close(_state, q, (InquiryEnd)SchemeCatalogue.Clamp(end, (int)InquiryEnd.Dropped, (int)InquiryEnd.Settled), day);
+                SchemeRules.Close(_state, q, (InquiryEnd)end, day);
                 if (q.End == InquiryEnd.Convicted)
                 {
                     SchemeBridges.Integrity?.Invoke(-3);
                 }
-                Logger?.Info("Schemes: inquiry " + q.Id + " into " + q.Kind + " is over: case " + q.Case + " ended " + q.End + ".");
+                Logger?.Info("Schemes: inquiry " + q.Id + " into " + q.Kind + " is over: case " + q.Case + " ended " + q.End + (court ? "." : " (no court is running to hear it)."));
             }
         }
     }

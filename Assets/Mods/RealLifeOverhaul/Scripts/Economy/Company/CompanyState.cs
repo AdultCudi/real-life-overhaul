@@ -124,6 +124,7 @@ namespace RealLifeOverhaul.Economy
         public int Payout;
         public ClaimStage Stage;
         public int PayDay;
+        public bool Invented;               // a loss that never happened (the schemes): no police report of a real break-in is ever its report
     }
 
     /// <summary>What a campaign did, by the game's own figures; the game may keep fewer days than it ran.</summary>

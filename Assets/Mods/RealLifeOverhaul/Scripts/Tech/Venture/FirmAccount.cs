@@ -209,6 +209,10 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static long Shortfall(IList<Cap> caps, long wallet, long drop, int day, bool burning, string key, bool routine = false, string name = "")
         {
+            if (Schemes.SchemeCatalogue.IsFinding(key))
+            {
+                return 0L;   // what an inquiry takes by force is the court's own consequence of a scheme, never also misuse of a firm's money
+            }
             long left = Math.Min(Math.Max(0L, drop), Math.Max(0L, FloorOf(caps, day) - wallet)), counted = 0L;
             while (left > 0)
             {

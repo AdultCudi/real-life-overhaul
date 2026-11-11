@@ -16,9 +16,9 @@ namespace RealLifeOverhaul.Schemes
     {
         public const string ExpenseKey = "reallife_transaction_scheme_expense";       // the tax an invented expense saved: money in
         public const string WashKey = "reallife_transaction_scheme_wash";             // cash sales through a till, after the cut and the tax: money in
-        public const string RepayKey = "reallife_transaction_scheme_repay";           // paid back by the player
-        public const string FoundKey = "reallife_transaction_scheme_found";           // taken back after an inquiry's findings
-        public const string SurchargeKey = "reallife_transaction_scheme_surcharge";   // the penalty on top of it
+        public const string RepayKey = SchemeCatalogue.RepayKey;                      // paid back by the player
+        public const string FoundKey = SchemeCatalogue.FoundKey;                      // taken back after an inquiry's findings
+        public const string SurchargeKey = SchemeCatalogue.SurchargeKey;              // the penalty on top of it
         public const string FavourKey = "reallife_transaction_scheme_favour";         // paid to somebody through the bank account
         public const string FundKey = "reallife_transaction_scheme_fund";             // placed in a rival's fund
         public const string FundBackKey = "reallife_transaction_scheme_fund_back";    // a fund's money back, with its return or by the court
@@ -31,8 +31,8 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>The cash in the wallet, whole money, never under nothing.</summary>
         public static long Cash => Save != null ? (long)Mathf.Max(0f, Mathf.Floor(Save.Money)) : 0L;
 
-        /// <summary>The game's own name for the playthrough: what every draw of the schemes starts from, the same on every load.</summary>
-        public static string SeedText => Save == null ? "city" : !string.IsNullOrEmpty(Save.seed) ? Save.seed : Save.characterId ?? "city";
+        /// <summary>The game's own name for the playthrough (the city's seed and the playthrough's own id): what every draw of the schemes starts from, the same on every load.</summary>
+        public static string SeedText => Save == null ? "city" : SchemeRules.PlaythroughOf(Save.seed, Save.characterId);
 
         public static int Level => Prices.Level;
 

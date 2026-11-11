@@ -24,8 +24,7 @@ internal static partial class Program
         var policy = new Policy();
         CoverRules.Buy(policy, 1, 20, 1, 60);
         int loss = SchemeRules.ClaimLoss(CompanyCatalogue.CoverMost[0], SchemeCatalogue.Small);
-        Claim claim = CoverRules.Open(company, policy, SchemePlace, "Shop", 0, loss, 10);
-        CoverRules.File(claim, policy, 10);
+        Claim claim = CoverRules.OpenInvented(company, policy, SchemePlace, "Shop", 0, loss, 10);
         Check(loss == CompanyCatalogue.CoverMost[0] / 4 && claim.Payout == loss - CoverRules.Excess(1, loss) && claim.PayDay == 10 + CompanyCatalogue.InsurerPayDays[1] && policy.Claims == 1,
             "schemes money: a small invented claim names a quarter of the most the cover counts, and the insurer pays it less its excess, on its own day, counted in the term");
         Check(SchemeRules.ClaimLoss(CompanyCatalogue.CoverMost[0], SchemeCatalogue.Large) == CompanyCatalogue.CoverMost[0] && SchemeRules.ClaimLoss(8000, SchemeCatalogue.Small) == 2000
@@ -92,9 +91,9 @@ internal static partial class Program
         Check(!SchemeRules.SeenThrough(seed, SchemePlace, 1, 0, 3) && SchemeRules.SeenThrough(seed, SchemePlace, 99, 300, 5) == SchemeRules.SeenThrough(seed, SchemePlace, 3, 300, 5),
             "schemes money: plain books are never seen through, and a kind of buyer out of range is read as the last");
         shop.Lift = SchemeRules.LiftStep(100);
-        SchemeAct sold = SchemeRules.Sold(s, SchemePlace, 39600, 30);
+        SchemeAct sold = SchemeRules.Sold(s, SchemePlace, 39600, 100, 30);
         Check(sold != null && sold.Kind == SchemeKind.Books && sold.Gain == 3600 && sold.Size == 100 * 1000 / SchemeCatalogue.LiftMost && sold.Paper && shop.Lift == 0
-              && SchemeRules.Sold(s, SchemePlace, 39600, 31) == null && SchemeRules.Sold(s, "Oak~1", 5000, 31) == null,
+              && SchemeRules.Sold(s, SchemePlace, 39600, 0, 31) == null && SchemeRules.Sold(s, "Oak~1", 5000, 0, 31) == null,
             "schemes money: a business sold on dressed books puts the part the lift made on the trail, the books are plain again, and a sale on plain books is no act");
         shop.Lift = SchemeCatalogue.LiftMost;
         int booksHeat = SchemeHeat(s, SchemeKind.Books);
@@ -206,11 +205,11 @@ internal static partial class Program
         SchemeRules.ClubSold(recover, SchemePlace, 3000, 50, SchemeCatalogue.Small, 10);
         SchemeRules.ClubSold(recover, "Oak~1", 2000, 50, SchemeCatalogue.Small, 12);
         long firstPart = SchemeRules.Recover(recover, 3500);
-        bool oldestFirst = recover.Acts[0].Owed == 0 && recover.Acts[1].Owed == 1500;
+        bool actsAsTheyWere = recover.Acts[0].Owed == 3000 && recover.Acts[1].Owed == 2000 && recover.Acts[0].Back == 0 && recover.Acts[1].Back == 0;
         long rest = SchemeRules.Recover(recover, 99999);
-        Check(firstPart == 3500 && oldestFirst && recover.Acts[1].Owed == 0 && rest == 1500 && recover.ClubBack == 5000 && SchemeRules.Recover(recover, 1) == 0
+        Check(firstPart == 3500 && SchemeRules.ClubOwed(recover) == 0 && actsAsTheyWere && rest == 1500 && recover.ClubBack == 5000 && SchemeRules.Recover(recover, 1) == 0
               && SchemeRules.Recover(recover, -5) == 0,
-            "schemes money: money goes back to the oldest club first, and never more than the households are still out");
+            "schemes money: money goes back to the households only as far as they are still out, and touches no club's act: another kind's finding never makes a club look repaid");
 
         // Watched: from the visit of an inquiry into a club or cash sales, the cash in hand does not move.
         SchemeState watched = SchemeStateOf(calm, 10, w);
@@ -224,9 +223,11 @@ internal static partial class Program
         events.Clear();
         SchemeRules.Day(watched, day + 1, w, events);
         long cost = SchemeRules.RepayCost(watched, SchemeKind.Club, day + 1, null);
+        long handedOver = SchemeRules.RepayCash(watched, SchemeKind.Club, cost);   // what the director's own question takes out of the cash in hand
         SchemeRules.Repay(watched, SchemeKind.Club, day + 1, null, out long fromCash);
-        Check(visit == 10 + SchemeCatalogue.VisitAfter && watched.Watched && watched.Dirty == inHand && events.Count == 0 && cost == 9000 && fromCash == 0 && watched.ClubBack == 9000,
-            "schemes money: from the visit the cash in hand is watched: the till takes none of it, and paying the club back then comes from the wallet alone");
+        Check(visit == 10 + SchemeCatalogue.VisitAfter && watched.Watched && watched.Dirty == inHand - fromCash && events.Count == 0 && cost == 9000
+              && fromCash == Math.Min(inHand, cost) && fromCash == handedOver && fromCash > 0 && watched.ClubBack == 9000,
+            "schemes money: from the visit the cash in hand is watched: the till takes none of it, and paying the club back hands over the cash in hand, which falls by what was repaid");
         SchemeRules.Close(watched, wq, InquiryEnd.Settled, day + 2);
         Check(!watched.Watched, "schemes money: the cash in hand is free again once nobody is looking at it");
         SchemeState unwatched = SchemeStateOf(calm, 10, w);
@@ -582,8 +583,8 @@ internal static partial class Program
         Check(SchemeRules.FundAmount(600000, 1000) == 12000 && SchemeRules.FundAmount(10, 1000) == SchemeCatalogue.FundLeast && SchemeRules.FundAmount(100000000L, 1000) == SchemeCatalogue.FundMost
               && SchemeRules.FundAmount(10, 2000) == 2 * SchemeCatalogue.FundLeast && SchemeRules.FundAmount(617777, 1000) == 12300,
             "schemes fund: a fund asks a fiftieth of the player's worth, between its least and its most at today's prices, in round hundreds");
-        Check(SchemeRules.FundFee(12000, 1000) == 360 && SchemeRules.FundFee(2000, 1000) == SchemeCatalogue.FundFeeLeast && SchemeRules.FundFee(2000, 2000) == 2 * SchemeCatalogue.FundFeeLeast
-              && SchemeRules.FundBack(12000) == 12960 && SchemeRules.FundBack(0) == 0,
+        Check(SchemeRules.FundFee(12000, 1000) == 720 && SchemeRules.FundFee(2000, 1000) == SchemeCatalogue.FundFeeLeast && SchemeRules.FundFee(2000, 2000) == 2 * SchemeCatalogue.FundFeeLeast
+              && SchemeRules.FundBack(12000) == 12720 && SchemeRules.FundBack(0) == 0,
             "schemes fund: having a fund looked at costs a share of its sum, a stated fee at least, and an honest fund pays " + SchemeCatalogue.FundReturn / 10 + "% on top");
         Check(SchemeRules.RivalGain(40000000L, SchemeCatalogue.Small, 1000) == 20000 && SchemeRules.RivalGain(40000000L, SchemeCatalogue.Large, 1000) == 160000
               && SchemeRules.RivalGain(90000000L, SchemeCatalogue.Large, 1000) == SchemeCatalogue.RivalGainMost && SchemeRules.RivalGain(90000000L, SchemeCatalogue.Large, 2000) == 360000
@@ -634,7 +635,7 @@ internal static partial class Program
             "schemes fund: money placed stays for " + SchemeCatalogue.FundDays + " days, and is placed once");
         int day = 503;
         int paid = SchemeUntil(s, ref day, 600, w, SchemeEventKind.FundPaid, out SchemeEvent pay);
-        Check(paid == 503 + SchemeCatalogue.FundDays && pay.Amount == 12000 && pay.Net == 12960 && pay.Tycoon == f.Tycoon && f.State == FundState.Paid,
+        Check(paid == 503 + SchemeCatalogue.FundDays && pay.Amount == 12000 && pay.Net == 12720 && pay.Tycoon == f.Tycoon && f.State == FundState.Paid,
             "schemes fund: an honest fund pays the sum back with its return on its day");
         int next = SchemeUntil(s, ref day, 700, w, SchemeEventKind.FundOffered, out _);
         Check(next == 500 + SchemeCatalogue.FundEveryDays && f.Number == 2 && f.State == FundState.Open && !f.Checked,
@@ -699,6 +700,48 @@ internal static partial class Program
             events.Clear();
             Check(!SchemeRules.FundNow(n, 500, x, events) && n.Fund.State == FundState.None && events.Count == 0, "schemes fund: no fund is offered with " + why);
         }
+
+        // The return comes out of the rival's worth: a rival who cannot pay it offers no fund, takes none, and pays no more than they are worth.
+        long payBack = SchemeRules.FundBack(12000);
+        SchemeWorld poor = SchemeCityWorld();
+        poor.RivalWorth[0] = payBack - 1;
+        poor.RivalWorth[1] = 5;
+        bool poorOffered = false, richOffered = false;
+        for (int i = 1; i < 120; i++)
+        {
+            SchemeState x = SchemeStateOf(SchemeRules.SeedOf("poor " + i.ToString(CultureInfo.InvariantCulture)), 500, poor);
+            events.Clear();
+            if (SchemeRules.FundNow(x, 500, poor, events))
+            {
+                poorOffered |= x.Fund.Tycoon != 2;
+                richOffered |= x.Fund.Tycoon == 2;
+            }
+        }
+        Check(richOffered && !poorOffered, "schemes fund: a rival worth less than the fund would pay back (the return comes out of their worth) never offers one: only the one who can pay does");
+        poor.RivalWorth[2] = payBack - 1;
+        SchemeState nobody = SchemeStateOf(honestSeed, 500, poor);
+        events.Clear();
+        Check(!SchemeRules.FundNow(nobody, 500, poor, events) && nobody.Fund.State == FundState.None && events.Count == 0,
+            "schemes fund: when no rival is rich enough to pay a fund's return no fund is offered at all");
+        SchemeState open = SchemeStateOf(honestSeed, 500, w);
+        events.Clear();
+        SchemeRules.FundNow(open, 500, w, events);
+        Check(SchemeRules.FundOpenFor(open, 500, payBack) && !SchemeRules.FundOpenFor(open, 500, payBack - 1) && !SchemeRules.FundOpenFor(open, 500 + SchemeCatalogue.FundAnswerDays + 1, payBack)
+              && SchemeRules.FundPaidOut(12000, payBack) == payBack && SchemeRules.FundPaidOut(12000, 12300) == 12300 && SchemeRules.FundPaidOut(12000, -5) == 0
+              && SchemeRules.FundPaidOut(12000, 40000000L) == payBack,
+            "schemes fund: money goes into a fund only while its rival can still pay the return, and what a fund pays is never more than the rival is worth");
+        SchemeRules.FundPlace(open, 500);
+        SchemeWorld thin = SchemeCityWorld();
+        thin.RivalWorth[open.Fund.Tycoon] = 12300;
+        events.Clear();
+        for (int d = 501; d <= 530; d++)
+        {
+            SchemeRules.Day(open, d, thin, events);
+        }
+        SchemeEvent thinPaid = events.Find(e => e.Kind == SchemeEventKind.FundPaid);
+        Check(thinPaid.Kind == SchemeEventKind.FundPaid && thinPaid.Net == 12300 && thinPaid.Net <= thin.RivalWorth[open.Fund.Tycoon],
+            "schemes fund: a rival who has fallen to 12300 pays no more than 12300 on the day, so the carried money is exactly the rival's loss");
+
         SchemeWorld resting = SchemeCityWorld(true, true);
         SchemeState held = SchemeStateOf(honestSeed, 500, w);
         events.Clear();
@@ -963,7 +1006,7 @@ internal static partial class Program
                 shop.Lift = SchemeCatalogue.LiftSteps[1 + day / 45 % 2];
                 break;
             case 40:
-                SchemeRules.Sold(s, SchemePlace, 40000, day);
+                SchemeRules.Sold(s, SchemePlace, 40000, shop.Lift, day);
                 break;
         }
     }

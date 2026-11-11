@@ -31,6 +31,7 @@ internal static partial class Program
         SchemeSimChecks();
         SchemeRivalChecks();
         SchemePageChecks();
+        SchemeFixChecks();
         SchemeSourceChecks();
         SchemeTextChecks();
         SchemeTimingChecks();
@@ -141,7 +142,7 @@ internal static partial class Program
               && SchemeCatalogue.GiveUpAfter == 30 && SchemeCatalogue.ChargeAtOnce == 800 && SchemeCatalogue.LostFile == 400 && SchemeCatalogue.TrailDays == 720
               && SchemeCatalogue.FelonyFrom == 5000 && SchemeCatalogue.WashCut == 150 && SchemeCatalogue.ReportFrom == 2500 && SchemeCatalogue.PatternFrom == 25000
               && SchemeCatalogue.PatternDays == 30 && SchemeCatalogue.HoldDays == 180 && SchemeCatalogue.TalkPermille == 2 && SchemeCatalogue.TalkPressed == 20
-              && SchemeCatalogue.FundReturn == 80 && SchemeCatalogue.FundDays == 30 && SchemeCatalogue.FundEveryDays == 60 && SchemeCatalogue.FundRecoverPermille == 600
+              && SchemeCatalogue.FundReturn == 60 && SchemeCatalogue.FundFeePermille == 60 && SchemeCatalogue.FundDays == 30 && SchemeCatalogue.FundEveryDays == 60 && SchemeCatalogue.FundRecoverPermille == 600
               && SchemeCatalogue.RivalEveryDays == 60 && SchemeCatalogue.RivalCleanPermille == 300 && SchemeCatalogue.InvestigatorShare == 600 && SchemeCatalogue.JudgeLean == 200,
             "schemes figures: the figures are the ones the feature's page, the Guide and the texts were written for: whoever changes one changes those with it");
         Check(SchemeCatalogue.Share(1000, 250) == 250 && SchemeCatalogue.Share(999, 250) == 249 && SchemeCatalogue.Share(-5, 250) == 0 && SchemeCatalogue.Share(100, -5) == 0,
@@ -150,9 +151,9 @@ internal static partial class Program
             "schemes figures: a sum written at the start's prices is asked at today's level");
         Check(SchemeState.Rivals == 3 && ModSource(@"Rivals\RivalCatalogue.cs").Contains("public const int TycoonCount = 3"),
             "schemes figures: the schemes keep a trail for each rival tycoon there is");
-        Check(SchemeCatalogue.FundReturn > SchemeCatalogue.FundFeePermille && SchemeCatalogue.FundRecoverPermille < 1000 && SchemeCatalogue.FundAnswerDays < SchemeCatalogue.FundDays
+        Check(SchemeCatalogue.FundReturn <= SchemeCatalogue.FundFeePermille && SchemeCatalogue.FundRecoverPermille < 1000 && SchemeCatalogue.FundAnswerDays < SchemeCatalogue.FundDays
               && SchemeCatalogue.FundDays < SchemeCatalogue.FundEveryDays,
-            "schemes figures: an honest fund pays more than having it looked at costs, a sham's money never comes back whole, and one fund is over before the next is offered");
+            "schemes figures: an honest fund never pays more than having it looked at costs (so looking first never pays on average), a sham's money never comes back whole, and one fund is over before the next is offered");
         foreach (string id in new[] { JusticeLaw.Fraud, JusticeLaw.FalseAccounting, JusticeLaw.MoneyLaundering, JusticeLaw.PervertingJustice, JusticeLaw.Bribery, JusticeLaw.TaxEvasion })
         {
             ChargeDef def = JusticeLaw.Find(id);
@@ -305,8 +306,8 @@ internal static partial class Program
         Check(SchemeHeat(fade, SchemeKind.Books) == 0 && SchemeHeat(fade, SchemeKind.Graft) == 200 - 3 * SchemeCatalogue.HeatDecay && events.Count == 0,
             "schemes trail: heat fades by " + SchemeCatalogue.HeatDecay + " a day and never under nothing, and heat with nothing on file opens no inquiry");
         SchemeRules.Day(fade, 50, w, events);
-        Check(SchemeHeat(fade, SchemeKind.Graft) == 200 - (3 + SchemeRules.CatchUpDays) * SchemeCatalogue.HeatDecay && fade.Day == 50,
-            "schemes trail: a stretch nobody played is caught up by a week at most (" + SchemeRules.CatchUpDays + " days)");
+        Check(SchemeHeat(fade, SchemeKind.Graft) == Math.Max(0, 200 - (3 + 37) * SchemeCatalogue.HeatDecay) && fade.Day == 50,
+            "schemes trail: a stretch nobody played is caught up day by day, every one of its 37 days");
         var fresh = new SchemeState { Seed = plain };
         SchemeRules.Day(fresh, 300, w, events);
         Check(fresh.Day == 300 && fresh.StartDay == 300 && events.Count == 0, "schemes trail: the first day on a save only sets the clock");
@@ -488,7 +489,7 @@ internal static partial class Program
               && SchemeRules.Count(lost, SchemeKind.Expense, at) == 1 && lq.Evidence < SchemeCatalogue.ChargeFrom,
             "schemes inquiry: with the investigator bought a single act's file never stands, and the inquiry is dropped after " + SchemeCatalogue.GiveUpAfter
             + " days; the act stays on file for the next one");
-        SchemeState pattern = SchemeStateOf(seed, 10, w);
+        SchemeState pattern = SchemeStateOf(seed, 40, w);   // the clock stands where the last act is, as it would have run day by day
         SchemeRules.Expensed(pattern, 10, 3000, SchemeCatalogue.Small);
         SchemeRules.Expensed(pattern, 25, 3000, SchemeCatalogue.Small);
         SchemeRules.Expensed(pattern, 40, 3000, SchemeCatalogue.Small);
