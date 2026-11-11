@@ -244,11 +244,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         internal bool Manages(string place, ManagerTask task, string employee = null)
         {
-            if (!ManagersOn || _mgr == null || place == null)
-            {
-                return false;
-            }
-            return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee) && PolicyAllows(ManagedAt(place), task);
+            return CompanyDay.Manages(this, place, task, employee);
         }
 
         /// <summary>

@@ -45,11 +45,8 @@ namespace RealLifeOverhaul.Economy
             return mp != null && mp.Place.Reg != null && GoingPublic.Mine(mp.Place.Reg);
         }
 
-        bool ICompanyDay.PolicyAllows(string place, ManagerTask task)
-        {
-            ManagedPlace mp = ManagedAt(place);
-            return mp != null && PolicyAllows(mp, task);
-        }
+        // A place nobody manages is held to the company's own rule, as the director's questions of who answers a kind of thing have always asked it; a decision also needs Mine.
+        bool ICompanyDay.PolicyAllows(string place, ManagerTask task) => PolicyAllows(ManagedAt(place), task);
 
         bool ICompanyDay.Decider(string place, out int skill, out int review, out string who)
         {

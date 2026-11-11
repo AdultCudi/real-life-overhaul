@@ -339,7 +339,7 @@ namespace RealLifeOverhaul.Ui
             if (employee != null && ObjectOf(GameContract.KitWage) != null && ObjectOf(GameContract.KitWage).activeInHierarchy && !(candidate && OpenTerms(c) != null))
             {
                 // The wage as it is paid, in the words the offer's own form uses; an open offer's answer carries it instead.
-                float paid = WageShown.Ours(employee) ? PaidWage.NowMoney(employee.hourlyWage, employee.id) : employee.hourlyWage;
+                float paid = WageShown.PaidMoney(employee);
                 details.Add(new UiPairModel { Key = ContactsRules.Label(UiText.T("dialog_candidate_salary_offer_input_hourly_wage")), Value = UiText.Money(paid) });
             }
             _m.DetailsTitle = UiText.T("reallife_ui_contacts_details");

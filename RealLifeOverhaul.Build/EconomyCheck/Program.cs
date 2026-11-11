@@ -946,6 +946,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--staff-wage")
+        {
+            StaffWageChecks();   // (one wage everywhere, alone: what a page, the game's screens and an employee's panel show is what a day charges: StaffWageChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--hierarchy")
         {
             Hierarchy();   // (the company's hierarchy alone, while working on it: HierarchyChecks.cs)

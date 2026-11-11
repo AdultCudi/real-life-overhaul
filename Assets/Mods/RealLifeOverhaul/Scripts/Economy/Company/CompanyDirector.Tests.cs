@@ -132,16 +132,16 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < _state.Staff.Count && f == null; i++)
                 {
                     StaffFile x = _state.Staff[i];
-                    f = x.AskDay == 0 && x.PoachDay == 0 && x.LeaveDay == 0 && !RaiseWithOthers(x) ? x : null;
+                    f = x.AskDay == 0 && x.PoachDay == 0 && x.LeaveDay == 0 && !CompanyDay.RaiseWithOthers(this, x) ? x : null;
                 }
-                int paid = f != null ? f.Paid : 0;
+                int paid = f != null ? f.Paid : 0, standing = f != null ? f.Standing : 0, raise = 0;
                 if (f != null)
                 {
                     BeforeTest();
                     f.AskDay = Save.Day;
                     f.AskTo = paid + System.Math.Max(1, paid * limit / 100);   // the limit's share of the pay, or a hundredth more on a wage too small for one
                 }
-                if (f == null || !AgreesByItself(f, limit))
+                if (f == null || !CompanyDay.AgreeByItself(this, f, limit, Save.Day, out raise))
                 {
                     if (f != null)
                     {
@@ -150,7 +150,10 @@ namespace RealLifeOverhaul.Economy
                     TestRefusals.TellKey(Logger, "Company agreement", "reallife_co_test_agree_none");
                     return;
                 }
-                int raise = AgreeNow(f, limit, Save.Day);
+                if (Verbose)
+                {
+                    AgreedLine(f, limit, raise, standing);
+                }
                 Recount();
                 TestDone(f.Name + " asked for " + raise + " an hour more (hundredths) on " + paid + ", inside the limit of " + limit + "%, and it was agreed by itself",
                     TabStaff, "emp:" + f.Id);

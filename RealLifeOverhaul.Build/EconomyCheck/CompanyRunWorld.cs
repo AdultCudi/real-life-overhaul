@@ -109,7 +109,7 @@ internal static partial class Program
         }
 
         // The hierarchy's rounds and a lease's day are CompanyDay's (HandDownRound, HandleRound, LeaseShop): the run answers only what they ask of the world.
-        public bool Managed(string place) => true;
+        public bool Managed(string place) => !_w.Unmanaged.Contains(place);
 
         public ExecutiveFile ExecutiveOf(ExecSeat seat) => _w.H.Executives.Find(x => x.Area == (int)seat);
 

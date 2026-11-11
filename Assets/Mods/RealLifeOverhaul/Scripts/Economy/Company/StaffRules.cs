@@ -199,6 +199,44 @@ namespace RealLifeOverhaul.Economy
             return f.AskDay > 0 && percent > 0 && asked > 0 && (long)asked * 100 <= (long)Math.Max(1, f.Paid) * percent;
         }
 
+        /// <summary>
+        /// The least limit, whole per cent of the pay, that can agree any request at this strictness. Somebody asks once they are
+        /// <see cref="CompanyCatalogue.RaiseGap"/> thousandths under the going rate, and <see cref="Day"/> drops the request when they no longer are, so the smallest
+        /// request that can wait asks g / (1000 - g) of the pay: a limit under that share agrees nothing.
+        /// </summary>
+        public static int LimitLeast(int level)
+        {
+            int gap = CompanyCatalogue.RaiseGap[CompanyCatalogue.Level(level)];
+            return (100 * gap + (1000 - gap) - 1) / (1000 - gap);
+        }
+
+        /// <summary>Whether a limit that is on (above 0) agrees no request at all at this strictness, being under <see cref="LimitLeast"/>.</summary>
+        public static bool AgreesNothing(int limit, int level)
+        {
+            return limit > 0 && limit < LimitLeast(level);
+        }
+
+        /// <summary>
+        /// Every request for a raise waiting answered at once, as each one's own answer is (<see cref="Answer"/>). Returns how many were answered, and in
+        /// <paramref name="raise"/> what they add an hour in all, hundredths. A bonus is paid one by one, so it is not an answer for all: nothing is answered.
+        /// </summary>
+        public static int AnswerAll(IList<StaffFile> staff, RaiseAnswer answer, int day, out int raise)
+        {
+            raise = 0;
+            int count = 0;
+            for (int i = 0; answer != RaiseAnswer.Bonus && staff != null && i < staff.Count; i++)
+            {
+                StaffFile f = staff[i];
+                if (f.AskDay > 0)
+                {
+                    raise += RaiseFor(f, answer);
+                    Answer(f, answer, day);
+                    count++;
+                }
+            }
+            return count;
+        }
+
         public static void Answer(StaffFile f, RaiseAnswer answer, int day)
         {
             if (f.AskDay == 0)
