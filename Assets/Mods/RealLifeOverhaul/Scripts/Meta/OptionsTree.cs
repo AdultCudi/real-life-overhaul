@@ -354,7 +354,8 @@ namespace RealLifeOverhaul.Meta
                         + "retirement options shares conflict interest"),
                 S("ladder").For("careers_ladder").Opt("careers_ladder", "careers_life")
                     .Also("management ladder manager supervisor store regional executive coo chro cfo staff schedule rota gap hire raise escalation policy permissions performance"),
-                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
+                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own").Opt("careers_own_desk", "careers_own")
+                    .Opt("careers_own_hours", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
                 S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays"),

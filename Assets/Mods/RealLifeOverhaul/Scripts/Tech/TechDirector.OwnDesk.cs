@@ -136,7 +136,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // A click on the desk: why not, in the game's notification; else the player walks to it and the game's work panel offers a stint.
+        // A click on the desk: a contract of the player's first, if Careers can work one here (paid work for a client); else why not, in the game's
+        // notification, or the player walks to it and the game's work panel offers a stint for the firm.
         private void DeskClicked(EntityController e)
         {
             BuildingRegistration reg = FirmsGame.InsideFirm();
@@ -145,6 +146,10 @@ namespace RealLifeOverhaul.Tech
             if (firm == null || desk == null || _stint != null || !_firmsOn || Save == null)
             {
                 return;
+            }
+            if (TechBridges.ContractAt(desk))
+            {
+                return;   // Careers took the click for a contract (CareersDirector.OwnStint): the firm's own work waits
             }
             string why = DeskRefusal(firm, out OwnerStanding standing, out string professions);
             if (why != null)

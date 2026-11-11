@@ -99,10 +99,10 @@ internal static partial class Program
             }
         }
         callers.Sort(StringComparer.Ordinal);
-        string known = "DeskWork.cs, OwnBankDirector.Branches.cs, SessionPanel.cs, TechDirector.DeskSeat.cs, TechDirector.OwnDesk.cs";
+        string known = "CareersDirector.OwnStint.cs, DeskWork.cs, OwnBankDirector.Branches.cs, SessionPanel.cs, TechDirector.DeskSeat.cs, TechDirector.OwnDesk.cs";
         Check(string.Join(", ", callers) == known,
-            "desk seat: the callers of a seat are the job's desk, the bank counter, a desk session at the owner's desk, the own firm's stint and its test; a new one is checked for its ends here first ("
-            + string.Join(", ", callers) + ")");
+            "desk seat: the callers of a seat are a contract's stint at an office business's desk, the job's desk, the bank counter, a desk session at the owner's desk, the own firm's stint and its test;"
+            + " a new one is checked for its ends here first (" + string.Join(", ", callers) + ")");
         Check(bare.Count == 0, "desk seat: no caller drops a seat's answer: a seat refused ends the work at once (" + string.Join(", ", bare) + ")");
         Check(unreleased.Count == 0, "desk seat: every file that seats the player also stands them up (" + string.Join(", ", unreleased) + ")");
     }
@@ -126,6 +126,24 @@ internal static partial class Program
               && own.Contains("_director.EndStint(this, true);"),
             "desk seat: every end of the stint goes through EndStint: Stop, the time up, the skip and fast forward (SkipEnded), the panel letting it go,"
             + " leaving the firm, the desk's employee arriving, the firms standing down");
+
+        // A contract's stint at a desk of an office business of the player's (Careers/CareersDirector.OwnStint).
+        string contract = ModSource(@"Careers\CareersDirector.OwnStint.cs");
+        string cStarted = MethodText(contract, "internal void OwnStintStarted(ContractStint stint)");
+        int cRefused = cStarted.IndexOf("if (!DeskGame.SitAt(stint.Desk))", StringComparison.Ordinal);
+        Check(ComesBefore(cStarted, "stint.Begun = true;", "if (!DeskGame.SitAt(stint.Desk))") && cRefused > 0
+              && cStarted.IndexOf("FinishOwnStint(stint, 0, false);", cRefused, StringComparison.Ordinal) > cRefused && cStarted.IndexOf("stint.Skip?.Close();", cRefused, StringComparison.Ordinal) > cRefused
+              && ComesBefore(cStarted, "if (!DeskGame.SitAt(stint.Desk))", "stint.Started = true;") && ComesBefore(cStarted, "stint.Started = true;", "stint.Sitting.SkipStarted();"),
+            "desk seat: a contract's stint is begun before the seat, so every end stands the player up; a seat refused closes the panel and ends it at once, before its sitting begins or any energy is spent");
+        string cEnd = MethodText(contract, "private void FinishOwnStint(ContractStint stint, int minutes, bool whole)");
+        Check(ComesBefore(cEnd, "if (stint.Begun && desk != null)", "DeskGame.StandFrom(desk);") && ComesBefore(cEnd, "DeskGame.StandFrom(desk);", "stint.Sitting.SkipEnded(minutes, whole);")
+              && !cEnd.Contains("PlayerAt(desk) ? desk : null"),
+            "desk seat: a contract's stint stands the player up whenever it began, before its minutes are settled, the desk let go only while they are at it (StandFrom decides)");
+        string cWatch = MethodText(contract, "private void WatchOwnStint(BuildingRegistration reg, string place)");
+        Check(Occurs(cWatch, "FinishOwnStint(stint, ") == 2 && MethodText(contract, "private void OwnDeskDown(string why)").Contains("FinishOwnStint(stint, stint.Worked, false);")
+              && MethodText(contract, "internal void OwnStintEnded(ContractStint stint, int minutes, bool whole)").Contains("FinishOwnStint(stint, minutes, whole);"),
+            "desk seat: every end of a contract's stint goes through FinishOwnStint: Stop, the time up, the skip and fast forward (SkipEnded), the panel letting it go, leaving the business,"
+            + " the desk's employee arriving, own work standing down");
 
         // The bank counter.
         string bank = ModSource(@"Economy\OwnBank\Branch\OwnBankDirector.Branches.cs");

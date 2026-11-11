@@ -393,8 +393,9 @@ internal static partial class Program
         Check(standing.Contains("!_workOn || !OwnOn") && standing.Contains("OwnRules.FirmProfession(_study, type, Save.Day, Year, out int rank)") && standing.Contains("\"reallife_tech_own_why_none\""),
             "own desk sources: Careers picks the profession from what the player has learnt, or says what is missing");
         string worked = MethodText(careers, "internal void FirmWorked(int prof, int rank, int minutes)");
-        Check(worked.Contains("LearnAtWork(a, hours, day);") && worked.Contains("Burn(w.Job, w.Job.WeekMinutes, minutes);") && worked.Contains("TestRestraint(false);") && !worked.Contains("Pay("),
-            "own desk sources: the hours teach, make a job's week long and test a restraint clause, unpaid");
+        Check(worked.Contains("OwnWorked(p, rank, Math.Max(1, minutes / 60), day);") && worked.Contains("Burn(w.Job, w.Job.WeekMinutes, minutes);") && worked.Contains("TestRestraint(false);")
+              && !worked.Contains("Pay(") && !worked.Contains("SkillsOf("),
+            "own desk sources: the hours teach and keep the trade up through the one rule of own work (OwnWorked, as a contract's do), make a job's week long and test a restraint clause, unpaid");
         Check(desk.Contains("public void TestOwnDesk()") && mod.Contains("\"reallife_tech_test_own_desk\", () => Tech.TechDirector.Instance?.TestOwnDesk()")
               && list.Contains("\"reallife_tech_test_net\", \"reallife_tech_test_own_desk\"") && desk.Contains("\"reallife_tech_test_own_none\"") && desk.Contains("\"reallife_tech_test_own_fail\""),
             "own desk sources: the test is in Options, on the tech sector's list, and says why when it cannot run");

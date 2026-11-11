@@ -383,6 +383,10 @@ namespace RealLifeOverhaul
                     v => Settings.CareersOwn = v)
                 .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,
                     v => Settings.CareersOwnOfferNotes = v)
+                .AddToggle(Settings.CareersOwnDeskId, "reallife_own_opt_desk", Settings.CareersOwnDesk,
+                    v => Settings.CareersOwnDesk = v)
+                .AddToggle(Settings.CareersOwnHoursId, "reallife_own_opt_hours", Settings.CareersOwnHours,
+                    v => Settings.CareersOwnHours = v)
                 .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
                 .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()

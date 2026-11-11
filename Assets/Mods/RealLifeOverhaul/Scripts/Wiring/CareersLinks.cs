@@ -68,6 +68,7 @@ namespace RealLifeOverhaul
                 TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
                 TechBridges.Owner = Owner;
                 TechBridges.OwnerWorked = (prof, rank, minutes) => CareersDirector.Instance?.FirmWorked(prof, rank, minutes);
+                TechBridges.ContractDesk = ContractDesk;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 FitOut.FitDesks.Wanted = CareersDirector.DeskWanted;
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul
                 TechBridges.Founder = null;
                 TechBridges.Owner = null;
                 TechBridges.OwnerWorked = null;
+                TechBridges.ContractDesk = null;
                 TechBridges.AcademyType = null;
                 TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
@@ -333,6 +335,21 @@ namespace RealLifeOverhaul
                 why = "reallife_tech_own_why_off";
                 professions = string.Empty;
                 return false;
+            }
+
+            // A contract of the player's worked at a free desk of their own tech firm: the click the firm's own work waits on (Careers/CareersDirector.OwnStint).
+            private static bool ContractDesk(EmployeeStationController desk)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    return d != null && d.ContractAtDesk(desk);
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.ContractDesk", e);
+                    return false;
+                }
             }
 
             // The banking licence's qualified person: the player with a finance qualification, or a senior professional of theirs in finance.

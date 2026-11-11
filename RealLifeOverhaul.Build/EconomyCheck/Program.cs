@@ -508,6 +508,16 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--own-work")
+        {
+            OwnWork();            // own work keeps up the skills of the work done, starts at a desk and has its hours picked (OwnWorkChecks.cs)
+            Own();                // (and the rules of working for oneself it builds on: OwnChecks.cs)
+            OwnDesk();            // (the desk of one's own tech firm, whose learning it shares: OwnDeskChecks.cs)
+            DeskSeat();           // (every seat held or given back, one more caller of it: DeskSeatChecks.cs)
+            OwnContractOffice();  // (where a contract's desk work can be done: BusinessFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--own-ai")
         {
             TextsService();   // (Your own AI's checks alone, while working on them: TextsServiceChecks.cs)
@@ -1305,6 +1315,7 @@ internal static partial class Program
         ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
         ExitStockChecks();   // a firm that listed on its own is a stock: the shares kept once, the lock-up one, the money lawful, every ending, the city's startups, the saves (ExitStockChecks.cs)
         OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
+        OwnWork();      // own work keeps up the skills of the work done, can be started at a desk of an office business and has its hours picked on the panel's slider (OwnWorkChecks.cs)
         DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
         DeskScreens();  // the screens at a computer desk lit while somebody is seated there to work and dark when they stand up, for the player and the staff the mod seats (DeskScreenChecks.cs)
         Careers();

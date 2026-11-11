@@ -479,7 +479,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddOwnFacts(Features.Add("careers_own", "reallife_meta_title_careers_own")
                 .About("reallife_guide_careers_own_about").Help("reallife_guide_careers_own")
-                .Owns(Settings.CareersOwnId, Settings.CareersOwnOfferNotesId)
+                .Owns(Settings.CareersOwnId, Settings.CareersOwnOfferNotesId, Settings.CareersOwnDeskId, Settings.CareersOwnHoursId)
                 .Test("reallife_own_test_contract", "reallife_own_test_found")
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
