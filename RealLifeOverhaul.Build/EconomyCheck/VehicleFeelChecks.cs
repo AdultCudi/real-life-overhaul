@@ -13,8 +13,11 @@ using RealLifeOverhaul;
 //     per g (the game's soft cars 4), so the wobble the handling adds had nothing to show on. A car whose type is not the game's and rides
 //     stiffer than the game's cars of its kind is now given their ride (the option "Soft ride for other mods' cars"), in the first steps
 //     of its design: the softest ride its travel at rest carries, the front keeping a third of it at the full pedal's dive and each
-//     axle's outer spring a third at 1 g of roll (HandlingModel.RideCarries). The first version asked 0.8 Hz of every kind but a sports
-//     car whatever the travel, and put the front of a 1700 kg saloon on 6 cm of travel 3.5 cm past its stops.
+//     axle's outer spring a third in the hardest turn the car can take, the swing of a sudden turn counted (HandlingModel.RideCarries,
+//     DiveCarries, RollCarries). The first version asked 0.8 Hz of every kind but a sports car whatever the travel, and put the front of
+//     a 1700 kg saloon on 6 cm of travel 3.5 cm past its stops; the next counted the roll at 1 g of cornering, where the log's cars hold
+//     about 3.6 g on their tyres as sports cars, and gave the Audi R8 of the log, as a saloon, 1.005 Hz, on which its outer springs would
+//     go past their stops in the hardest turn.
 //
 // (2) "Better brakes, there are some bugs while going fast and suddenly braking (especially the Ford pick up)." The handling's dampers are
 //     lighter than the game's, so the body's first swing in a full-pedal dive goes about 40% further than the settled dive, and nothing
@@ -23,7 +26,10 @@ using RealLifeOverhaul;
 //     (HandlingModel.DiveForTravel); the first version stopped there, and the pickup kept 4 cm. Now the front dampers' compression rate
 //     firms up as far as it takes (HandlingModel.FirmFront), the full pedal is planned for the custom shop's parts that are on the car,
 //     and what the parts add to the car's own brakes is held where the front springs would be put on their stops (HandlingModel.HeldForTravel).
-//     The figures kept for the self-check line are those of the dive the car came to, the anti-squat's limits counted.
+//     The figures kept for the self-check line are those of the dive the car came to, the anti-squat's limits counted. The parts are read off
+//     the car as the handling goes on; when the Garage lays them on the car being driven after that (brakes bought sitting in it, the road
+//     turning wet or dry, a save loaded), the handling is now worked out again for them (GarageBridges.PartsLaid): it kept the pedal of a car
+//     with no parts, and the shop's brakes came on top of it unheld.
 //
 // The cars are built from the figures of the game's files as NavCheck's HandlingCheck has them, and from the player's log for the three
 // cars of other mods. Offline: run with --vehicle-feel (RLO_FEEL_REPORT=1 prints the figures).
@@ -244,13 +250,11 @@ internal static partial class Program
         return left;
     }
 
-    // Whether each axle's outer spring keeps a third of its travel at RollG of cornering on the roll the level asks (the game's own car's and the level's more, the slider's
-    // share): worked out here from the design's figures, apart from HandlingModel.RideCarries. The roll the car ends with can be less, where rolling over holds it back.
-    private static bool FeelRollKept(CarChassis car, HandlingSetup setup, in HandlingTarget target)
+    // What each axle's outer spring keeps of its travel at rest in the hardest turn a finished design's tyres hold, the swing of a sudden turn counted
+    // (HandlingModel.RollLeft at the design's own HandlingSetup.Hold, the custom shop's tyres on top): the rule the self-check line reads.
+    private static float FeelRollLeft(CarChassis car, HandlingSetup setup)
     {
-        float roll = (Math.Max(0f, setup.GameRollPerG) + target.RollAdd) * target.RollScale / 57.29578f * HandlingModel.RollG;
-        float spare = 1f - HandlingModel.FrontKeep;
-        return roll * 0.5f * car.Front.Track <= spare * setup.Front.RestLength + 1e-3f && roll * 0.5f * car.Rear.Track <= spare * setup.Rear.RestLength + 1e-3f;
+        return HandlingModel.RollLeft(car, setup, setup.Hold * car.PartsGrip);
     }
 
     // Whether two cars have the same springs, to the bit.
@@ -311,6 +315,25 @@ internal static partial class Program
         Check(HandlingModel.PartsFactor(1500f, 1000f, 1f) == 1.5f && HandlingModel.PartsFactor(900f, 1000f, 1f) == 0.9f && HandlingModel.PartsFactor(1200f, 0f, 1f) == 1f
               && HandlingModel.PartsFactor(1.2f, 1f, 0.01f) == 1.2f && HandlingModel.PartsFactor(1f, 0.005f, 0.01f) == 1f,
             "vehicle feel: a custom shop part's factor is the value with the parts on over the value under them, 1 where nothing is under them to tell it by");
+
+        // The roll's use of the springs' travel: 2 degrees per g, a sudden turn swinging the body 1.2 times as far, a track of 1.6 m on 6 cm of travel at
+        // the front and 8 at the rear. At 1 g the front's outer spring gives 0.042 rad x 0.8 m = 3.35 cm and keeps 0.44 of its travel; at 3 g, where the
+        // game's tyres still hold, it would give 10 cm of its 6, and the rule says so: counted at 1 g it would not.
+        var rollCar = new CarChassis();
+        rollCar.Front.Track = 1.6f;
+        rollCar.Rear.Track = 1.6f;
+        var roll = new HandlingSetup { RollPerG = 2f, Overshoot = 1.2f };
+        roll.Front.RestLength = 0.06f;
+        roll.Rear.RestLength = 0.08f;
+        float atOne = HandlingModel.RollLeft(rollCar, roll, 1f);
+        float atThree = HandlingModel.RollLeft(rollCar, roll, 3f);
+        Check(Math.Abs(atOne - 0.441495f) < 1e-4f && Math.Abs(atThree + 0.67552f) < 1e-4f && HandlingModel.RollKept(rollCar, roll, 1f) && !HandlingModel.RollKept(rollCar, roll, 3f),
+            "vehicle feel: the outer spring of the shorter travel keeps " + FeelF(atOne) + " of it at 1 g of cornering and " + FeelF(atThree) + " (past its stops) at 3 g; a third kept passes, less fails");
+        roll.Overshoot = 0.5f;
+        float noSwing = HandlingModel.RollLeft(rollCar, roll, 1f);
+        roll.RollPerG = -1f;
+        Check(Math.Abs(noSwing - (1f - 2f / 57.29578f * 0.8f / 0.06f)) < 1e-4f && HandlingModel.RollLeft(rollCar, roll, 3f) == 1f,
+            "vehicle feel: a swing below the steady lean counts as none (" + FeelF(noSwing) + "), and a car that does not lean keeps all its travel");
     }
 
     // ---------------------------------------------------------------- (1) the soft ride, on the three sports cars of the log
@@ -322,6 +345,7 @@ internal static partial class Program
         var softSetup = new HandlingSetup();
         var lightSetup = new HandlingSetup();
         var scratch = new HandlingSetup();
+        int whole = 0;
         for (int which = 0; which < FeelLoggedNames.Length; which++)
         {
             string name = FeelLoggedNames[which];
@@ -351,7 +375,8 @@ internal static partial class Program
             CarChassis off = FeelLogged(which);
             Check(!HandlingModel.Soften(off, 0f) && FeelSameSprings(off, stock), "vehicle feel: with no ride asked the " + name + " keeps the springs its mod gave it");
 
-            // The design: a sports car's travel at rest carries the ride the game's softest sports car has.
+            // The design: the ride the game's softest sports car has, where the car's travel at rest carries it, and where it does not the softest
+            // ride it carries (on 6 cm the roll in the hardest turn its tyres hold can be what holds it).
             HandlingTarget asked = HandlingRules.Target(CarKind.Sports, HandlingLevel.Full, FeelNeutral, true);
             CarChassis stiff = FeelLogged(which);
             CarChassis soft = FeelLogged(which);
@@ -368,12 +393,18 @@ internal static partial class Program
             FeelSay("  " + name + " as a sports car at Full: ride " + FeelF(stiffSetup.Front.Frequency) + " -> " + FeelF(softSetup.Front.Frequency) + " Hz, front keeps " + FeelCm(stiffSetup.FrontLeft)
                     + " -> " + FeelCm(softSetup.FrontLeft) + " of " + FeelCm(softSetup.Front.RestLength) + " cm, roll " + FeelF(stiffSetup.RollPerG) + " -> " + FeelF(softSetup.RollPerG)
                     + ", dive " + FeelF(stiffSetup.DivePerG) + " -> " + FeelF(softSetup.DivePerG) + ", firm " + FeelF(softSetup.FrontFirm));
-            Check(softSetup.Softened && !softSetup.SoftHeld && !stiffSetup.Softened && FeelSameSprings(soft, plain),
-                "vehicle feel: the " + name + " is given the whole ride of the game's sports car, 1.7 Hz, for its travel at rest carries it (softened " + softSetup.Softened + ", held " + softSetup.SoftHeld + ")");
-            Check(softSetup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.RideCarries(soft, asked, scratch),
-                "vehicle feel: the " + name + " softened keeps " + FeelCm(softSetup.FrontLeft) + " of its " + FeelCm(softSetup.Front.RestLength) + " cm at the full pedal (a third: " + FeelCm(keep) + ")");
-            Check(softSetup.Front.Frequency >= ceiling - 0.05f && softSetup.Front.Frequency <= ceiling + 0.05f && stiffSetup.Front.Frequency >= 3.5f,
-                "vehicle feel: the " + name + "'s ride in the finished design is " + FeelF(stiffSetup.Front.Frequency) + " Hz stiff and " + FeelF(softSetup.Front.Frequency) + " softened");
+            bool carried = HandlingModel.RideCarries(plain, asked, scratch);
+            whole += carried ? 1 : 0;
+            Check(softSetup.Softened && softSetup.SoftHeld == !carried && (softSetup.SoftHeld || FeelSameSprings(soft, plain)) && !stiffSetup.Softened,
+                "vehicle feel: the " + name + " is given the ride of the game's sports car, 1.7 Hz, " + (carried ? "for its travel at rest carries it" : "as far as its travel at rest carries it")
+                + " (softened " + softSetup.Softened + ", held " + softSetup.SoftHeld + ")");
+            float rollLeft = FeelRollLeft(soft, softSetup);
+            Check(softSetup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.RideCarries(soft, asked, scratch) && rollLeft >= HandlingModel.FrontKeep - 0.01f,
+                "vehicle feel: the " + name + " softened keeps " + FeelCm(softSetup.FrontLeft) + " of its " + FeelCm(softSetup.Front.RestLength) + " cm at the full pedal (a third: " + FeelCm(keep)
+                + "), and its outer springs " + FeelF(rollLeft) + " of their travel in the hardest turn its tyres hold (" + FeelF(softSetup.Hold) + " g)");
+            Check(softSetup.Front.Frequency >= ceiling - 0.05f && softSetup.Front.Frequency <= 0.75f * stiffSetup.Front.Frequency && stiffSetup.Front.Frequency >= 3.5f,
+                "vehicle feel: the " + name + "'s ride in the finished design is " + FeelF(stiffSetup.Front.Frequency) + " Hz stiff and " + FeelF(softSetup.Front.Frequency) + " softened (asked "
+                + FeelF(ceiling) + ")");
             Check(Math.Abs(softSetup.Front.Zeta - 0.55f) <= 0.06f && Math.Abs(softSetup.Rear.Zeta - 0.55f) <= 0.06f,
                 "vehicle feel: the " + name + "'s dampers are set for a damping ratio of 0.55 on the softer springs (" + FeelF(softSetup.Front.Zeta) + "/" + FeelF(softSetup.Rear.Zeta) + ")");
             Check(Math.Abs(softSetup.Front.RestLength - stiffSetup.Front.RestLength) < 1e-3f && Math.Abs(softSetup.ComHeight - stiffSetup.ComHeight) < 1e-3f,
@@ -398,6 +429,7 @@ internal static partial class Program
                   && lightSetup.Front.Frequency == stiffSetup.Front.Frequency,
                 "vehicle feel: at Light the " + name + " has the design of its own springs");
         }
+        FeelSay("  the log's three cars as sports cars: " + whole + " of " + FeelLoggedNames.Length + " given the whole 1.7 Hz, the rest the softest ride their travel carries");
 
         // The game's own softest cars are left as they are (a ride within a tenth of the ceiling is not a change anyone sees).
         CarChassis supercar = FeelSupercar();
@@ -465,9 +497,14 @@ internal static partial class Program
                     FeelSay("  " + name + ": rides " + FeelF(ride) + " Hz (asked " + FeelF(asked.RideHz) + ", its own " + FeelF(own) + "), front keeps " + FeelCm(setup.FrontLeft) + " of " + FeelCm(setup.Front.RestLength)
                             + " cm, at the ceiling on the level's dampers it would keep " + FeelCm(bare) + " (" + FeelCm(unguarded.FrontLeft) + " with them firmed), roll " + FeelF(setup.RollPerG) + ", dive " + FeelF(setup.DivePerG) + " (game " + FeelF(setup.GameDivePerG)
                             + "), held " + setup.SoftHeld + ", firm " + FeelF(setup.FrontFirm));
-                    Check(setup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.TravelKept(setup, setup.FrontLeft) && HandlingModel.RideCarries(car, asked, scratch) && FeelRollKept(car, setup, asked),
+                    float rollLeft = FeelRollLeft(car, setup);
+                    Check(HandlingModel.TravelKept(setup, setup.FrontLeft)
+                          && (setup.Softened
+                              ? setup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.RideCarries(car, asked, scratch) && rollLeft >= HandlingModel.FrontKeep - 0.01f
+                              : FeelSameSprings(car, stock)),
                         "vehicle feel: " + name + " keeps " + FeelCm(setup.FrontLeft) + " of its " + FeelCm(setup.Front.RestLength) + " cm of travel at the full pedal's dive on the ride it was given, "
-                        + FeelF(ride) + " Hz (a third: " + FeelCm(keep) + "; asked " + FeelF(asked.RideHz) + ")");
+                        + FeelF(ride) + " Hz (a third: " + FeelCm(keep) + "; asked " + FeelF(asked.RideHz) + "), and its outer springs " + FeelF(rollLeft) + " of theirs in the hardest turn its tyres hold ("
+                        + FeelF(setup.Hold) + " g)");
                     Check(ride >= asked.RideHz - 0.03f && ride <= own + 0.03f && (setup.Softened || setup.SoftHeld),
                         "vehicle feel: " + name + " rides between the ride asked (" + FeelF(asked.RideHz) + ") and its own (" + FeelF(own) + ") Hz: " + FeelF(ride));
                     Check(setup.SoftHeld == !HandlingModel.RideCarries(plain, asked, scratch) || plainWhy != null,
@@ -477,11 +514,10 @@ internal static partial class Program
                         // No softer than it must be: a ride a tenth softer than the one it was given is one the travel does not carry.
                         CarChassis softer = FeelLogged(which);
                         HandlingModel.Soften(softer, ride * 0.9f);
-                        string softerWhy = HandlingModel.Design(softer, plainTarget, unguarded);
-                        float softerLeft = softerWhy == null ? FeelBare(softer, plainTarget, unguarded) : 0f;
-                        Check(softerWhy == null && (softerLeft < keep || !FeelRollKept(softer, unguarded, plainTarget)),
-                            "vehicle feel: " + name + " is given no more softness than its travel carries: at " + FeelF(ride * 0.9f) + " Hz, a tenth less, the front would keep " + FeelCm(softerLeft) + " cm (a third: " + FeelCm(keep)
-                            + ") and the outer spring " + (FeelRollKept(softer, unguarded, plainTarget) ? "keeps" : "does not keep") + " a third at 1 g");
+                        bool softerDive = HandlingModel.DiveCarries(softer, asked, scratch);
+                        Check(!HandlingModel.RideCarries(softer, asked, scratch),
+                            "vehicle feel: " + name + " is given no more softness than its travel carries: at " + FeelF(ride * 0.9f) + " Hz, a tenth less, "
+                            + (softerDive ? "its outer springs would keep less than a third of their travel in the hardest turn it can take" : "its front would keep less than a third of its travel at the full pedal"));
                     }
                     if (which == 2 && kind == CarKind.Saloon && level == HandlingLevel.Full)
                     {
@@ -497,8 +533,23 @@ internal static partial class Program
             "vehicle feel: the log's three cars as any other kind, 6 cm of travel at rest: " + held + " of " + designs + " designs are held off the ride asked, " + bottomed
             + " would have been on or near their stops at the full pedal without the guard");
 
+        // The roll is counted in the hardest turn the car can take, not at 1 g of cornering: the Audi R8 as a Saloon at Full on 1.05 Hz, a ride its dive
+        // carries (just stiffer than the 1.005 Hz it was given while the roll was counted at 1 g), keeps a third of its outer springs' travel at 1 g and
+        // goes past their stops in the hardest turn its tyres hold. Designed on the ride with nothing held, as the level would have had it.
+        CarChassis audi = FeelLogged(2);
+        HandlingTarget audiAsked = HandlingRules.Target(CarKind.Saloon, HandlingLevel.Full, FeelNeutral, true);
+        HandlingModel.Soften(audi, 1.05f);
+        string audiWhy = HandlingModel.Design(audi, HandlingRules.Target(CarKind.Saloon, HandlingLevel.Full, FeelNeutral), unguarded);
+        float audiAtOne = HandlingModel.RollLeft(audi, unguarded, 1f);
+        float audiAtHold = FeelRollLeft(audi, unguarded);
+        FeelSay("  the Audi R8 as a Saloon at Full on 1.05 Hz: roll " + FeelF(unguarded.RollPerG) + " degrees per g, swing " + FeelF(unguarded.Overshoot) + ", tyres hold " + FeelF(unguarded.Hold) + " g; the outer springs keep "
+                + FeelF(audiAtOne) + " of their travel at 1 g and " + FeelF(audiAtHold) + " at the hold");
+        Check(audiWhy == null && HandlingModel.DiveCarries(audi, audiAsked, scratch) && HandlingModel.RollKept(audi, unguarded, 1f) && audiAtHold < 0f && !HandlingModel.RollCarries(audi, audiAsked, scratch),
+            "vehicle feel: the Audi R8 as a Saloon at Full on 1.05 Hz, a ride its dive carries, keeps " + FeelF(audiAtOne) + " of its outer springs' travel at 1 g of cornering but " + FeelF(audiAtHold)
+            + " (past their stops) in the hardest turn its tyres hold, " + FeelF(unguarded.Hold) + " g: the ride is held to that turn (HandlingModel.RollCarries), not to 1 g");
+
         // A sweep of cars of other mods of every kind: weights, centres of mass, travel and brakes (the log's own 2300 N m and a sports car's 12000).
-        int cars = 0, softened = 0, kept = 0, wouldBottom = 0, fails = 0;
+        int cars = 0, softened = 0, kept = 0, wouldBottom = 0, fails = 0, rollHeld = 0;
         string firstAt = null;
         foreach (float mass in new[] { 1300f, 2200f })
         {
@@ -524,15 +575,26 @@ internal static partial class Program
                                     continue;
                                 }
                                 float keep = HandlingModel.FrontKeep * setup.Front.RestLength;
-                                bool good = setup.Softened ? setup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.RideCarries(car, asked, scratch) && FeelRollKept(car, setup, asked) : FeelSameSprings(car, stock);
+                                float rollLeft = FeelRollLeft(car, setup);
+                                bool good = setup.Softened
+                                    ? setup.FrontLeft >= keep - HandlingModel.TravelSpare && HandlingModel.RideCarries(car, asked, scratch) && rollLeft >= HandlingModel.FrontKeep - 0.01f
+                                    : FeelSameSprings(car, stock);
                                 good &= HandlingModel.TravelKept(setup, setup.FrontLeft);
                                 if (!good)
                                 {
                                     fails++;
-                                    firstAt = firstAt ?? where + ": softened " + setup.Softened + ", front keeps " + FeelCm(setup.FrontLeft) + " of " + FeelCm(setup.Front.RestLength);
+                                    firstAt = firstAt ?? where + ": softened " + setup.Softened + ", front keeps " + FeelCm(setup.FrontLeft) + " of " + FeelCm(setup.Front.RestLength) + ", the outer springs "
+                                              + FeelF(rollLeft) + " of theirs at " + FeelF(setup.Hold) + " g";
                                 }
                                 softened += setup.Softened ? 1 : 0;
                                 kept += !setup.Softened && setup.SoftHeld ? 1 : 0;
+                                if (setup.Softened && setup.SoftHeld)
+                                {
+                                    // Held by the roll: a tenth softer, the front would still keep its third at the full pedal, the outer springs not theirs in the hardest turn.
+                                    CarChassis softer = FeelOtherHz(mass, com, 3.5f, 6000f, rest, 0.04f, 11000f, torque);
+                                    HandlingModel.Soften(softer, setup.Front.GameFrequency * 0.9f);
+                                    rollHeld += HandlingModel.DiveCarries(softer, asked, scratch) && !HandlingModel.RollCarries(softer, asked, scratch) ? 1 : 0;
+                                }
                                 CarChassis plain = FeelOtherHz(mass, com, 3.5f, 6000f, rest, 0.04f, 11000f, torque);
                                 HandlingModel.Soften(plain, asked.RideHz);
                                 HandlingTarget plainTarget = HandlingRules.Target(kind, level, FeelNeutral);
@@ -544,9 +606,11 @@ internal static partial class Program
             }
         }
         Check(fails == 0 && cars == 192,
-            "vehicle feel: every car of the sweep (" + cars + ": kinds, weights, centres of mass, travel, brakes) is softened only as far as its front keeps a third of its travel at the full pedal, or keeps its own springs"
-            + (firstAt != null ? "; " + fails + " did not, the first: " + firstAt : string.Empty));
-        FeelSay("  sweep: " + cars + " cars, " + softened + " softened, " + kept + " kept as their mod made them, " + wouldBottom + " short of a third of their travel at the ceiling's ride without the guard, " + fails + " failing");
+            "vehicle feel: every car of the sweep (" + cars + ": kinds, weights, centres of mass, travel, brakes) is softened only as far as its front keeps a third of its travel at the full pedal and its outer springs a third"
+            + " of theirs in the hardest turn its tyres hold, or keeps its own springs" + (firstAt != null ? "; " + fails + " did not, the first: " + firstAt : string.Empty));
+        FeelSay("  sweep: " + cars + " cars, " + softened + " softened, " + kept + " kept as their mod made them, " + rollHeld + " held by the roll, " + wouldBottom
+                + " short of a third of their travel at the ceiling's ride without the guard, " + fails + " failing");
+        Check(rollHeld > 0, "vehicle feel: the sweep has cars that the roll holds, not the dive: " + rollHeld + " would keep a third of their front travel at the full pedal a tenth softer, but not of their outer springs' in the hardest turn");
 
         // A very tall car (a centre of mass 0.9 m up) on weak brakes: it is the roll, not the dive, that 6 cm of travel cannot carry at the ride asked.
         CarChassis tall = FeelOtherHz(2000f, 0.9f, 3.5f, 6000f, 0.06f, 0.05f, 11000f, 1500f);
@@ -554,16 +618,20 @@ internal static partial class Program
         string tallWhy = HandlingModel.Design(tall, tallAsked, setup);
         float tallKeep = HandlingModel.FrontKeep * setup.Front.RestLength;
         float tallRide = setup.Front.GameFrequency;
-        FeelSay("  a very tall van: rides " + FeelF(tallRide) + " Hz, roll " + FeelF(setup.RollPerG) + " degrees per g, front keeps " + FeelCm(setup.FrontLeft) + " cm of " + FeelCm(setup.Front.RestLength));
-        Check(tallWhy == null && setup.Softened && setup.SoftHeld && FeelRollKept(tall, setup, tallAsked) && setup.FrontLeft >= tallKeep - HandlingModel.TravelSpare,
-            "vehicle feel: a very tall van (centre of mass 0.9 m) is given " + FeelF(tallRide) + " Hz, not the 0.8 asked, and its outer springs keep a third of 6 cm at 1 g of the roll asked (" + FeelF(setup.GameRollPerG + tallAsked.RollAdd) + " degrees per g)");
+        float tallRoll = FeelRollLeft(tall, setup);
+        FeelSay("  a very tall van: rides " + FeelF(tallRide) + " Hz, roll " + FeelF(setup.RollPerG) + " degrees per g, tyres hold " + FeelF(setup.Hold) + " g, front keeps " + FeelCm(setup.FrontLeft) + " cm of "
+                + FeelCm(setup.Front.RestLength) + ", the outer springs " + FeelF(tallRoll) + " of theirs");
+        Check(tallWhy == null && setup.SoftHeld && setup.FrontLeft >= tallKeep - HandlingModel.TravelSpare
+              && (setup.Softened
+                  ? HandlingModel.RideCarries(tall, tallAsked, scratch) && tallRoll >= HandlingModel.FrontKeep - 0.01f
+                  : FeelSameSprings(tall, FeelOtherHz(2000f, 0.9f, 3.5f, 6000f, 0.06f, 0.05f, 11000f, 1500f))),
+            "vehicle feel: a very tall van (centre of mass 0.9 m) is given " + FeelF(tallRide) + " Hz, not the 0.8 asked, and its outer springs keep " + FeelF(tallRoll) + " of their 6 cm in the hardest turn its tyres hold ("
+            + FeelF(setup.Hold) + " g, " + FeelF(setup.RollPerG) + " degrees per g)");
         CarChassis tallSofter = FeelOtherHz(2000f, 0.9f, 3.5f, 6000f, 0.06f, 0.05f, 11000f, 1500f);
         HandlingModel.Soften(tallSofter, tallRide * 0.9f);
-        HandlingTarget tallPlain = HandlingRules.Target(CarKind.Van, HandlingLevel.Full, FeelNeutral);
-        string tallSofterWhy = HandlingModel.Design(tallSofter, tallPlain, unguarded);
-        Check(tallSofterWhy == null && !FeelRollKept(tallSofter, unguarded, tallPlain) && FeelBare(tallSofter, tallPlain, unguarded) >= tallKeep,
-            "vehicle feel: the very tall van, a tenth softer (" + FeelF(tallRide * 0.9f) + " Hz), would be asked to roll " + FeelF(unguarded.GameRollPerG + tallPlain.RollAdd) + " degrees per g and use more than two thirds of its travel, while its front would still keep "
-            + FeelCm(FeelBare(tallSofter, tallPlain, unguarded)) + " cm: it is the roll that holds it");
+        Check(HandlingModel.DiveCarries(tallSofter, tallAsked, scratch) && !HandlingModel.RollCarries(tallSofter, tallAsked, scratch),
+            "vehicle feel: the very tall van, a tenth softer (" + FeelF(tallRide * 0.9f) + " Hz), would keep a third of its front travel at the full pedal's dive, but its outer springs would not keep a third of theirs "
+            + "in the hardest turn it can take: it is the roll that holds it");
         Check(wouldBottom >= cars / 3 && softened >= cars / 4,
             "vehicle feel: the sweep has the failure in it: " + wouldBottom + " of " + cars + " cars would be short of a third of their travel at the ceiling's ride (and " + softened + " are softened, "
             + kept + " kept as their mod made them)");
@@ -731,6 +799,31 @@ internal static partial class Program
         Check(pickupRest > 0.15f && pickupStock >= HandlingModel.FrontKeep * pickupRest - HandlingModel.TravelSpare && pickupSport > 0.01f && pickupRace > 0f,
             "vehicle feel: the Vord V150 at Full keeps " + FeelCm(pickupStock) + " cm of " + FeelCm(pickupRest) + " at the stock brakes, " + FeelCm(pickupSport) + " with the sport brakes and " + FeelCm(pickupRace)
             + " with the race brakes, never on its stops (it went to 0.7 and -3.4 once the shop's parts were on)");
+
+        // The parts laid on the car being driven after its handling went on (bought sitting in it, the road turning wet or dry, a save loaded): the
+        // handling's pedal and dampers were worked out for no parts, and the sport brakes put 1.25 times its torque on top, unheld (the tyres take
+        // that much: at Light, where nothing is held, the pickup brakes at it). Worked out again for the parts (CarTuning, told through
+        // GarageBridges.PartsLaid), the pedal is held and the front keeps its third. At Full and Heavy, whose lighter dampers the dive swings on.
+        foreach (HandlingLevel level in new[] { HandlingLevel.Full, HandlingLevel.Heavy })
+        {
+            HandlingTarget target = HandlingRules.Target(CarKind.Utility, level, FeelNeutral);
+            CarChassis before = FeelPickup();
+            var stale = new HandlingSetup();
+            string staleWhy = HandlingModel.Design(before, target, stale);
+            float staleLeft = HandlingModel.PartsFrontLeft(before, stale, 1f, stale.BrakeG * 1.25f);
+            CarChassis again = FeelPickup();
+            again.PartsBrakes = 1.25f;
+            var redone = new HandlingSetup();
+            string redoneWhy = HandlingModel.Design(again, target, redone);
+            float redoneG = HandlingModel.PartsBrakes(again, redone, 1.25f, 1f, 1f, out _, out _, out _);
+            float redoneLeft = HandlingModel.PartsFrontLeft(again, redone, 1f, redoneG);
+            FeelSay("  the Vord V150 at " + level + ", the sport brakes laid on after the handling: " + FeelF(stale.BrakeG * 1.25f) + " g unheld leaves the front " + FeelCm(staleLeft) + " cm; worked out again, "
+                    + FeelF(redoneG) + " g leaves " + FeelCm(redoneLeft) + " cm of " + FeelCm(redone.Front.RestLength));
+            Check(staleWhy == null && redoneWhy == null && !HandlingModel.TravelKept(stale, staleLeft) && HandlingModel.TravelKept(redone, redoneLeft)
+                  && redoneLeft >= HandlingModel.FrontKeep * redone.Front.RestLength - HandlingModel.TravelSpare,
+                "vehicle feel: the Vord V150 at " + level + " with the sport brakes laid on after its handling went on keeps " + FeelCm(staleLeft) + " cm of its front travel at the full pedal ("
+                + FeelF(stale.BrakeG * 1.25f) + " g); the handling worked out again for them keeps " + FeelCm(redoneLeft) + " cm (" + FeelF(redoneG) + " g), the third it is held to");
+        }
     }
 
     // ---------------------------------------------------------------- (6) the self-check line's verdict
@@ -805,9 +898,9 @@ internal static partial class Program
                 }
             }
         }
-        Check(compared == 24 && same == compared && mostSteps <= 8 + 17 + 8,
+        Check(compared == 24 && same == compared && mostSteps <= 2 * 8 + 17 + 8,
             "vehicle feel: a design of a car given the ride of its kind, a step at a time, is the whole design, a whole design of another car between every two steps (" + same + " of " + compared
-            + ", at most " + mostSteps + " steps: 8, a ride tried a step for 8 more, and one for each 5 km/h of the game's hardest turn)");
+            + ", at most " + mostSteps + " steps: 8, a ride tried in one or two steps (its dive, then its roll) for 16 more, and one for each 5 km/h of the game's hardest turn)");
         FeelSay("  the slowest step of a design with a ride asked: " + slowest.ToString("F3") + " ms, " + mostSteps + " steps at the most");
         Check(slowest < 2.0, "vehicle feel: the slowest step of those designs, a ride tried among them, takes " + slowest.ToString("F3") + " ms here (2 ms at most; NavCheck holds the design's own to 0.6 ms)");
     }
@@ -826,11 +919,15 @@ internal static partial class Program
         string handling = ModSource(@"Driving\CarHandling.cs");
         string tuning = ModSource(@"Driving\CarTuning.cs");
         string catalogue = ModSource(@"Driving\CarCatalogue.cs");
+        string garageCar = ModSource(@"Garage\GarageCar.cs");
+        string garageState = ModSource(@"Garage\GarageState.cs");
+        string links = ModSource(@"Wiring\Wiring.DrivingLinks.cs");
         string settings = ModSource(@"Core\Settings.cs");
         string mod = ModSource(@"Core\RealLifeOverhaulMod.cs");
         string tree = ModSource(@"Meta\OptionsTree.cs");
         string features = ModSource(@"Meta\FeatureList.cs");
-        Check(model.Length > 0 && rules.Length > 0 && handling.Length > 0 && tuning.Length > 0 && catalogue.Length > 0 && settings.Length > 0 && mod.Length > 0 && tree.Length > 0 && features.Length > 0,
+        Check(model.Length > 0 && rules.Length > 0 && handling.Length > 0 && tuning.Length > 0 && catalogue.Length > 0 && settings.Length > 0 && mod.Length > 0 && tree.Length > 0 && features.Length > 0
+              && garageCar.Length > 0 && garageState.Length > 0 && links.Length > 0,
             "vehicle feel sources: the files are there");
 
         // What CarHandling.Begin asks is a rule of the game-free code, checked above on its behaviour; here only that Begin asks it so and nothing else softens.
@@ -851,13 +948,19 @@ internal static partial class Program
               && line.IndexOf("TravelKept(", StringComparison.Ordinal) < line.IndexOf("_line.Clear()", StringComparison.Ordinal) && line.Contains("Softened(gf, gr)") && line.Contains("Travel(left)")
               && MemberText(handling, "private string Travel(").Contains("_setup.FrontFirm") && MemberText(handling, "private string Softened(").Contains("SoftHeld"),
             "vehicle feel sources: the self-check line fails (FAIL, with the figures) when the front springs keep less than they are held to with the parts on the car, and says what was softened, held back and firmed");
+        Check(line.Contains("float rollLeft = RollLeft();") && line.Contains("_setup.Softened && rollLeft < HandlingModel.FrontKeep - 0.01f")
+              && line.IndexOf("rollLeft < HandlingModel.FrontKeep", StringComparison.Ordinal) < line.IndexOf("_line.Clear()", StringComparison.Ordinal)
+              && MemberText(handling, "private float RollLeft(").Contains("HandlingModel.RollLeft(_chassis, _setup, _setup.Hold * _partsGrip)")
+              && MemberText(handling, "private string Softened(").Contains("RollLeft()"),
+            "vehicle feel sources: the self-check line fails a softened car whose outer springs keep less than a third of their travel in the hardest turn its tyres hold (the custom shop's tyres counted), and says what they keep");
         Check(MemberText(tuning, "private static long HandlingStamp(").Contains("Settings.HandlingOtherMods"),
             "vehicle feel sources: switching the option while driving puts the handling on the car again (it is in the stamp the car is put on by)");
         string pitch = MemberText(model, "private static void Pitch(");
         Check(pitch.Contains("DiveForTravel(") && pitch.Contains("FirmFront(car, s, hold, plan, s.DivePerG / Radian)") && pitch.Contains("Within(") && pitch.IndexOf("DivePerG = hold", StringComparison.Ordinal) < pitch.IndexOf("FirmFront(", StringComparison.Ordinal)
               && MemberText(model, "private static float DivePlan(").Contains("car.PartsBrakes") && MemberText(model, "private static float DivePlan(").Contains("car.PartsGrip")
-              && model.Contains("wanted = HeldForTravel(car, s, massFactor, wanted);") && model.Contains("case DesignSoft:") && MemberText(model, "private static int SoftStep(").Contains("RideCarries(")
-              && model.Contains("public const float FrontKeep = 0.33f;") && model.Contains("public const float SoftenFrom = 1.1f;") && model.Contains("public const float RollG = 1f;"),
+              && model.Contains("wanted = HeldForTravel(car, s, massFactor, wanted);") && model.Contains("case DesignSoft:") && model.Contains("case DesignSoftRoll:")
+              && MemberText(model, "private static int Dived(").Contains("DiveCarried(") && MemberText(model, "private static int SoftRoll(").Contains("RollCarried(")
+              && model.Contains("public const float FrontKeep = 0.33f;") && model.Contains("public const float SoftenFrom = 1.1f;"),
             "vehicle feel sources: the nose dive and the dampers are asked of the front springs' travel after the anti-squat's limits, the plan counts the parts on the car, the parts' brakes are held to the travel, and the ride is searched in the design's own steps");
         Check(rules.Contains("public static float RideCeiling(CarKind kind, HandlingLevel level)") && rules.Contains("public float RideHz;") && rules.Contains("public static bool SoftensCar(string typeName, bool option)")
               && catalogue.Contains("public static bool IsGameCar(string typeName)"),
@@ -889,13 +992,35 @@ internal static partial class Program
         }
         Check(users.Count == 0, "vehicle feel sources: only the driven car's handling softens a car" + (users.Count > 0 ? " (also in " + string.Join(", ", users) + ")" : string.Empty));
 
+        // The Garage's parts laid on the car being driven, or taken off, by the Garage itself: Driving is told through the Garage's bridge (wired in Wiring), and
+        // the car's sums are done again, as for an option changed. Not when Driving lifts and lays them itself around its own changes.
+        string show = MemberText(garageCar, "public void Show(");
+        Check(show.Contains("Handling(m, wet);") && show.Contains("laid = true;") && show.Contains("laid = _handling;") && show.Contains("laid |= Cleared();")
+              && show.IndexOf("Handling(m, wet);", StringComparison.Ordinal) < show.IndexOf("laid = true;", StringComparison.Ordinal)
+              && show.IndexOf("if (laid)", StringComparison.Ordinal) > show.IndexOf("catch (Exception e)", StringComparison.Ordinal)
+              && MemberText(garageCar, "public void Clear(").Contains("if (Cleared())") && MemberText(garageCar, "private bool Cleared(").Contains("bool had = _handling;")
+              && MemberText(garageCar, "private void Laid(").Contains("GarageBridges.PartsLaid(_vehicle)")
+              && !MemberText(garageCar, "public bool LiftHandling(").Contains("Laid()") && !MemberText(garageCar, "public void LayHandling(").Contains("Laid()")
+              && !MemberText(garageCar, "private void Handling(").Contains("Laid()") && !MemberText(garageCar, "private void ClearHandling(").Contains("Laid()"),
+            "vehicle feel sources: the Garage tells Driving when it lays its handling parts on a car or takes them off (a build put on or off, the road wet or dry, the shop's preview), never as Driving lifts and lays them");
+        Check(garageState.Contains("public static Action<VehicleController> PartsLaid;") && links.Contains("GarageBridges.PartsLaid = PartsLaid;") && links.Contains("GarageBridges.PartsLaid = null;")
+              && links.Contains("CarTuning.PartsLaid(vehicle);") && links.Contains("Fault(\"DrivingLinks.PartsLaid\", e);"),
+            "vehicle feel sources: the Garage's bridge for it is filled in by Wiring.DrivingLinks and emptied when the links are undone, a fault in it caught");
+        string update = MemberText(tuning, "private void OnUpdate(");
+        string partsLaid = MemberText(tuning, "public static void PartsLaid(");
+        Check(update.Contains("handled == _handled && !_partsLaid;") && update.Contains("_partsLaid = false;")
+              && update.IndexOf("_partsLaid = false;", StringComparison.Ordinal) < update.IndexOf("Begin(car, vehicle, options, handled);", StringComparison.Ordinal)
+              && update.IndexOf("Restore();", StringComparison.Ordinal) < update.IndexOf("_partsLaid = false;", StringComparison.Ordinal)
+              && partsLaid.Contains("car.vehicleController == tuning._seen") && partsLaid.Contains("tuning._partsLaid = true;") && !partsLaid.Contains("Restore(") && !partsLaid.Contains("Begin("),
+            "vehicle feel sources: told the parts on the car being driven changed, car tuning sets a flag, and the next frame takes the handling off and works the car's sums out again for them, as for an option changed");
+
         string doc = File.Exists(VehicleFeelRoot(@"docs\features\driving.md")) ? File.ReadAllText(VehicleFeelRoot(@"docs\features\driving.md")) : string.Empty;
         Check(doc.Contains("**Cars of other mods.**") && doc.Contains("HandlingModel.Soften") && doc.Contains("HandlingModel.RideCarries") && doc.Contains("car_handling_modded") && doc.Contains("CarCatalogue.IsGameCar")
               && doc.Contains("**The front springs' travel at the full pedal.**") && doc.Contains("HandlingModel.DiveForTravel") && doc.Contains("HandlingModel.FirmFront") && doc.Contains("HandlingModel.HeldForTravel")
-              && doc.Contains("HandlingModel.FrontKeep"),
+              && doc.Contains("HandlingModel.FrontKeep") && doc.Contains("HandlingModel.RollCarries") && doc.Contains("GarageBridges.PartsLaid") && !doc.Contains("HandlingModel.RollG"),
             "vehicle feel docs: docs/features/driving.md says what is done for the cars of other mods and for the front springs' travel");
         string garage = File.Exists(VehicleFeelRoot(@"docs\features\garage.md")) ? File.ReadAllText(VehicleFeelRoot(@"docs\features\garage.md")) : string.Empty;
-        Check(garage.Contains("HandlingModel.HeldForTravel") && !garage.Contains("can bring the front to its stops"),
+        Check(garage.Contains("HandlingModel.HeldForTravel") && garage.Contains("GarageBridges.PartsLaid") && !garage.Contains("can bring the front to its stops"),
             "vehicle feel docs: docs/features/garage.md says the brakes part is held to the front springs' travel, no longer that it can put them on their stops");
     }
 

@@ -295,6 +295,8 @@ internal static partial class Program
             var levelMass = new float[4];
             var levelRoll = new float[4];
             var levelHeld = new bool[4];
+            var levelRide = new float[4];     // Hz: the ride of the springs the design was made on (a car of another mod softened as far as its travel carries)
+            var levelTravel = new bool[4];    // the springs' travel held that ride off the one asked
             foreach (HandlingLevel level in new[] { HandlingLevel.Light, HandlingLevel.Full, HandlingLevel.Heavy })
             {
                 if (level == HandlingLevel.Light && type.Contains("-vehicle:"))
@@ -328,6 +330,8 @@ internal static partial class Program
                 levelMass[(int)level] = setup.Mass;
                 levelRoll[(int)level] = setup.RollPerG;
                 levelHeld[(int)level] = setup.TipHeld;
+                levelRide[(int)level] = setup.Front.GameFrequency;
+                levelTravel[(int)level] = setup.SoftHeld;
 
                 // ---- the weight, the centre of mass, the springs and bars: the game's own, carrying a little more weight.
                 float kindMass = HandlingRules.KindMass(kind);
@@ -576,11 +580,18 @@ internal static partial class Program
             }
 
             // ---- the levels against each other: Light the lightest, Heavy the heaviest; each rolls at least as much as the one
-            // below it, except where rolling over holds the higher one's roll back.
-            Check(levelMass[1] <= levelMass[2] && levelMass[2] <= levelMass[3] && (levelHeld[2] || levelRoll[1] <= levelRoll[2] + 0.02f) && (levelHeld[3] || levelRoll[2] <= levelRoll[3] + 0.02f),
+            // below it, except where rolling over holds the higher one's roll back, or where the springs' travel holds a car of
+            // another mod at a stiffer ride at the higher level: its lighter dampers swing the body further in a sudden turn, so
+            // the same travel carries less lean per g (HandlingModel.RollCarries), its outer springs keeping the same third in the hardest turn.
+            bool fullTravel = levelTravel[2] && levelRide[1] > 0f && levelRide[2] > levelRide[1] + 1e-3f;
+            bool heavyTravel = levelTravel[3] && levelRide[3] > levelRide[2] + 1e-3f;
+            Check(levelMass[1] <= levelMass[2] && levelMass[2] <= levelMass[3] && (levelHeld[2] || fullTravel || levelRoll[1] <= levelRoll[2] + 0.02f)
+                  && (levelHeld[3] || heavyTravel || levelRoll[2] <= levelRoll[3] + 0.02f),
                 "handling: " + type + " at Light, Full and Heavy weighs " + F(levelMass[1]) + ", " + F(levelMass[2]) + ", " + F(levelMass[3]) + " kg and rolls " + F(levelRoll[1]) + ", "
                 + F(levelRoll[2]) + ", " + F(levelRoll[3]) + " degrees per g" + (levelHeld[2] || levelHeld[3] ? " (rolling over holds " + (levelHeld[2] ? "Full's" : "") + (levelHeld[2] && levelHeld[3] ? " and " : "")
-                + (levelHeld[3] ? "Heavy's" : "") + " back)" : ""));
+                + (levelHeld[3] ? "Heavy's" : "") + " back)" : "")
+                + (fullTravel ? " (the springs' travel holds Full at " + F(levelRide[2]) + " Hz, stiffer than Light's " + F(levelRide[1]) + ")" : "")
+                + (heavyTravel ? " (the springs' travel holds Heavy at " + F(levelRide[3]) + " Hz, stiffer than Full's " + F(levelRide[2]) + ")" : ""));
         }
         Check(builds > 1000, "handling: every car with every Garage build of springs, weight and tyres, wet and dry (" + builds + ")");
         Check(brakeBuilds > 5000, "handling: every car's stop with every Garage build of brakes, weight, tyres and springs, at both onsets (" + brakeBuilds + ")");

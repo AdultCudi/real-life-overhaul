@@ -848,6 +848,14 @@ namespace RealLifeOverhaul
                 why = "the front springs keep " + Num(left * 100f) + " of " + Num(_setup.Front.RestLength * 100f) + " cm at the full pedal's dive, under the "
                       + Num(HandlingModel.TravelNeeded(_setup) * 100f) + " cm they are held to";
             }
+            // A car of another mod given a softer ride: in the hardest turn its tyres hold (the custom shop's tyres counted), the body's swing in a sudden
+            // turn counted, each axle's outer spring keeps a third of its travel at rest; the design softens it no further than that (HandlingModel.RideCarries).
+            float rollLeft = RollLeft();
+            if (why == null && _setup.Softened && rollLeft < HandlingModel.FrontKeep - 0.01f)
+            {
+                why = "softened, its outer springs keep " + Num(rollLeft * 100f) + " % of their travel at rest in the hardest turn its tyres hold ("
+                      + Num(_setup.Hold * _partsGrip) + " g), under the third they are held to";
+            }
 
             float lockDegrees = _chassis.SteerLock;
             _line.Clear();
@@ -895,7 +903,15 @@ namespace RealLifeOverhaul
             float f = front.OwnFrequency > 0f ? front.OwnFrequency : _setup.Front.GameFrequency;
             float r = rear.OwnFrequency > 0f ? rear.OwnFrequency : _setup.Rear.GameFrequency;
             return " (softened from " + Num(f) + "/" + Num(r) + " Hz, as another mod's springs stiffer than the game gives a car of its kind"
-                   + (_setup.SoftHeld ? ", no further than the travel they have at rest carries" : string.Empty) + ")";
+                   + (_setup.SoftHeld ? ", no further than the travel they have at rest carries" : string.Empty)
+                   + "; in the hardest turn its tyres hold, " + Num(_setup.Hold * _partsGrip) + " g, the outer springs keep " + Num(RollLeft() * 100f)
+                   + " % of their travel at rest)";
+        }
+
+        // The least share of its travel at rest an axle's outer spring keeps in the hardest turn the car's tyres hold, the custom shop's tyres on top.
+        private float RollLeft()
+        {
+            return HandlingModel.RollLeft(_chassis, _setup, _setup.Hold * _partsGrip);
         }
 
         // What the full pedal's dive leaves of the front springs' travel at its peak, the custom shop's parts counted, against the game's own car;
