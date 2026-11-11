@@ -139,11 +139,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// The panel's canvas over the kit HUD's, at the minimap card's order (UiHostRules.MinimapOrder): it stands in the
-        /// left column over the card, and a panel taller than the room under the objectives stands over their lower part,
-        /// which it must be drawn over (the HUD lifts its own order over the phone's, which can leave the panel under it). The
-        /// card and the panel never meet, the game's dialogs and the kit's windows stay over both. With the HUD not up, the
-        /// order it was made at. Four times a second with the panel's readings, never a frame; writes only a change.
+        /// The panel's canvas over the kit HUD's, at the minimap card's order (UiHostRules.MinimapOrder), so none of the
+        /// HUD's pieces is drawn across it (the HUD lifts its own order over the phone's, which can leave the panel under it).
+        /// The card and the panel never meet; the game's dialogs and the kit's windows stay over both. With the HUD not up,
+        /// the order it was made at. Four times a second with the panel's readings, never a frame; writes only a change.
         /// </summary>
         internal static void Lift()
         {
@@ -276,6 +275,7 @@ namespace RealLifeOverhaul.Ui
         private VehicleController _car;                                  // the vehicle the panel shows, or null
         private string _sellFor;                                         // "Sell for $2,407", made again only when the price changes
         private float _sellPrice = -1f;
+        private bool _sellShort;                                         // the price made short, for the driving card
         private float _frameW, _frameH;                                  // the layout's size, last laid: the minimap's card is read into it
         private readonly List<UiItemAction> _actions = new List<UiItemAction>(10);
         private readonly List<UiReading> _readings = new List<UiReading>(6);
@@ -284,6 +284,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _words = new List<string>(4);
         private readonly List<Transform> _parents = new List<Transform>(4);
         private readonly StringBuilder _sb = new StringBuilder(256);
+        private readonly Vector3[] _corners = new Vector3[4];
         private UiCatalogueCard[] _cargo = new UiCatalogueCard[0];
         private string _status, _streetOf, _districtOf;   // the street and district the HUD shows, and the words they came from
         private string _range, _speed, _speedUnit;         // the range's and the speed's words, made again only when a figure changes
@@ -486,6 +487,9 @@ namespace RealLifeOverhaul.Ui
             _m.Aspect = 1f;
             _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|').Append(_m.Owner).Append('|');
             _car = car;
+            // Driving, the small card: the speed and the parking zone, the game's keys as chips (the owner, 12 Nov 2026).
+            _m.Compact = car != null && car.controlledByPlayer && PlayerHelper.IsUsingVehicle;
+            _sb.Append(_m.Compact ? 'c' : 'f');
             ReadVehicle(car);
             ReadMeta();
             ReadCargo(car, item);
@@ -510,9 +514,10 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < rows.childCount; i++)
                 {
                     GameObject row = rows.GetChild(i).gameObject;
-                    if (!row.activeSelf || row == cargo || row == steering)
+                    if (!row.activeSelf || row == cargo || row == steering
+                        || (_m.Compact && row != parking && !row.name.StartsWith(SpeedRow, StringComparison.Ordinal)))
                     {
-                        continue;
+                        continue;   // the driving card has the speed and the parking zone alone
                     }
                     if (row == fuel || row == condition)
                     {
@@ -559,7 +564,7 @@ namespace RealLifeOverhaul.Ui
         // What the game's meta line and maintenance line say (the unpaid amount, a mop's cleanliness), as lines.
         private void ReadMeta()
         {
-            for (int pass = 0; pass < 2; pass++)
+            for (int pass = 0; pass < 2 && !_m.Compact; pass++)
             {
                 Transform root = pass == 0 ? _ui.metaInfo : _ui.maintenanceInfo;
                 if (root == null || !root.gameObject.activeInHierarchy || BuyKits.AllWords(root, _words) == 0)
@@ -588,7 +593,7 @@ namespace RealLifeOverhaul.Ui
         {
             _slots.Clear();
             int most = 0, used = 0;
-            if (_ui.cargoContainer != null && _ui.cargoContainer.activeInHierarchy)
+            if (_ui.cargoContainer != null && _ui.cargoContainer.activeInHierarchy && !_m.Compact)
             {
                 BuyKits.Copies(_ui.cargoSlotTemplate, _slots);
                 ICargoHolder holder = car != null ? car.vehicleInstance : item;
@@ -693,10 +698,11 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float price = _car != null && _car.vehicleInstance != null ? _car.vehicleInstance.GetSellingPrice() : ItemPrice(item);
-            if (price != _sellPrice || _sellFor == null)
+            if (price != _sellPrice || _sellFor == null || _sellShort != _m.Compact)
             {
                 _sellPrice = price;
-                _sellFor = UiText.T("reallife_ui_buy_sell_for").Replace("{price}", price.ToCurrencyFormat());
+                _sellShort = _m.Compact;
+                _sellFor = UiText.T("reallife_ui_buy_sell_for").Replace("{price}", _m.Compact ? price.ToShortCurrencyFormat() : price.ToCurrencyFormat());
             }
             UiItemAction a = _actions[last];
             a.Label = _sellFor;
@@ -715,11 +721,45 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
             }
             HudHost.KeysBox(_frameW, _frameH, out _m.KeysX, out _m.KeysY, out _m.KeysW, out _m.KeysH);
+            Phone();
+            ShellNotices.StackBox(_frameW, _frameH, out _m.NoticesX, out _m.NoticesY, out _m.NoticesW, out _m.NoticesH);
+            if (_m.PhoneW > 0f)
+            {
+                _sb.Append(_m.PhoneX).Append(',').Append(_m.PhoneY).Append(',').Append(_m.PhoneW).Append(',').Append(_m.PhoneH).Append('|');
+            }
+            if (_m.NoticesW > 0f)
+            {
+                _sb.Append(_m.NoticesX).Append(',').Append(_m.NoticesY).Append(',').Append(_m.NoticesW).Append(',').Append(_m.NoticesH).Append('|');
+            }
             ItemPanelKit.Lift();
             if (_m.KeysW > 0f)
             {
                 _sb.Append(_m.KeysX).Append(',').Append(_m.KeysY).Append(',').Append(_m.KeysW).Append(',').Append(_m.KeysH).Append('|');
             }
+        }
+
+        // The kit's phone card where it stands on the screen (its part above the screen's foot, open or folded) in px of the
+        // layout, as the HUD reads it for its key chips (HudLive.PhoneBox); nothing while it does not show.
+        private void Phone()
+        {
+            RectTransform phone = PhoneKit.Rect;
+            _m.PhoneX = _m.PhoneY = _m.PhoneW = _m.PhoneH = 0f;
+            if (phone == null || _frameW <= 0f || _frameH <= 0f || Screen.width <= 0 || Screen.height <= 0)
+            {
+                return;
+            }
+            phone.GetWorldCorners(_corners);   // the phone's canvas is an overlay: world is screen pixels
+            float foot = Math.Max(0f, _corners[0].y), top = Math.Min(Screen.height, _corners[2].y);
+            if (top <= foot)
+            {
+                return;
+            }
+            UiHudRules.ToLayout(_corners[0].x, top, Screen.width, Screen.height, _frameW, _frameH, out float x, out float y);
+            UiHudRules.ToLayout(_corners[2].x, foot, Screen.width, Screen.height, _frameW, _frameH, out float right, out float bottom);
+            _m.PhoneX = Mathf.Floor(x);
+            _m.PhoneY = Mathf.Floor(y);
+            _m.PhoneW = Mathf.Ceil(right) - _m.PhoneX;
+            _m.PhoneH = Mathf.Ceil(bottom) - _m.PhoneY;
         }
 
         // A thing in hand's price as the game's own Sell confirm offers it (ItemPanelUI.GetTotalSellingPrice): its own, and

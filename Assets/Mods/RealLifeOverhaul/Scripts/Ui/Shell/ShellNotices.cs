@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<int, UiIcon> Kinds = new Dictionary<int, UiIcon>(16);   // a toast's object by its id: its kind's glyph
         private static Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool> _onShow;
         private static NotificationsUI _toasts;
+        private static float _boxX, _boxY, _boxW, _boxH;   // the cards' stack as shares of the screen from its top left, as last laid; 0 wide for none
         private static NoticeCardsScreen _live;   // the cards' screen while the kit draws them: told of each toast as the game makes it
         private static bool _joined, _cardsSaid, _lateSaid;
 
@@ -36,6 +37,25 @@ namespace RealLifeOverhaul.Ui
             Join();
             Switch(Cards);
             Switch(List);
+        }
+
+        /// <summary>
+        /// The notice cards' stack where it was last laid, in px of another kit layout of the given size, from its top left,
+        /// for a piece on a canvas of its own (the item panel) to keep clear of; all zero while no card shows. Whole px,
+        /// rounded outwards. Read a few times a second; nothing is allocated.
+        /// </summary>
+        public static void StackBox(float layoutW, float layoutH, out float x, out float y, out float w, out float h)
+        {
+            x = y = w = h = 0f;
+            if (_live == null || _boxW <= 0f || _boxH <= 0f || layoutW <= 0f || layoutH <= 0f)
+            {
+                return;
+            }
+            float left = Mathf.Floor(_boxX * layoutW), top = Mathf.Floor(_boxY * layoutH);
+            x = left;
+            y = top;
+            w = Mathf.Ceil((_boxX + _boxW) * layoutW) - left;
+            h = Mathf.Ceil((_boxY + _boxH) * layoutH) - top;
         }
 
         /// <summary>The game's own notices again.</summary>
@@ -242,6 +262,12 @@ namespace RealLifeOverhaul.Ui
                 _frameH = frame.Height;
                 Look(frame);
                 UiNotices.LayCards(s, _m, frame, dark, keys);
+                UiNotices.StackBox(_m, frame, out float bx, out float by, out float bw, out float bh);
+                bool any = bw > 0f && bh > 0f && frame.Width > 0f && frame.Height > 0f;
+                _boxX = any ? bx / frame.Width : 0f;
+                _boxY = any ? by / frame.Height : 0f;
+                _boxW = any ? bw / frame.Width : 0f;
+                _boxH = any ? bh / frame.Height : 0f;
                 _dirty = false;
                 Said();
             }
