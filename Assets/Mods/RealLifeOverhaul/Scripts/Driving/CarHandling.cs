@@ -18,7 +18,9 @@ namespace RealLifeOverhaul
     /// The handling of the car the player drives: the game's own car with a little weight, roll and nose dive, smooth brakes
     /// that never lock and a little give past the limit. <see cref="HandlingModel"/> works the values out; this puts them on
     /// the game's vehicle physics, records everything first and puts it back exactly. The Garage's parts always lie on top
-    /// (<see cref="DrivingBridges"/>). Only the player's own car. Driven by <see cref="CarTuning"/>: nothing per frame.
+    /// (<see cref="DrivingBridges"/>); laid on the car again (<see cref="Relaid"/>), what they change is worked out with the handling
+    /// left on, a design made again for them put on in place of the last in one frame. Only the player's own car. Driven by
+    /// <see cref="CarTuning"/>: nothing per frame.
     /// </summary>
     public sealed class CarHandling
     {
@@ -41,8 +43,8 @@ namespace RealLifeOverhaul
             public float Brake;
         }
 
-        private readonly CarChassis _chassis = new CarChassis();
-        private readonly HandlingSetup _setup = new HandlingSetup();
+        private CarChassis _chassis = new CarChassis();          // the car the design on it was made for (Exchange swaps it with the spare)
+        private HandlingSetup _setup = new HandlingSetup();
         private readonly List<WheelStock> _wheels = new List<WheelStock>(4);
         private readonly List<GroupStock> _groups = new List<GroupStock>(2);
         private readonly Dictionary<string, float> _brakeTorques = new Dictionary<string, float>();   // vehicle id: the game's brake torque as first met this session
@@ -82,6 +84,15 @@ namespace RealLifeOverhaul
         private HandlingTuning _designTuning;
         private bool _made;                             // the design is made and the mod's presets filled for it (Make): Finish puts it on
         private HandlingTuning _lineTuning;             // the sliders of the handling on the car, for its self-check line
+
+        // A design made again for the Garage's parts while the handling is on the car (Relaid): the car as it was read getting in, before a design
+        // softened its springs in place; the chassis, setup and tyres it is made into, put in place of those on the car in the frame it goes on.
+        private readonly CarChassis _read = new CarChassis();
+        private CarChassis _chassisNext = new CarChassis();
+        private HandlingSetup _setupNext = new HandlingSetup();
+        private FrictionPreset _tyreNext;
+        private HandlingTarget _target;                 // what the design on the car was asked for
+        private bool _relaying;                         // the design under way is made again for the parts, the handling on the car meanwhile
 
         /// <summary>True while the handling is on a car.</summary>
         public bool On => _vehicle != null;
@@ -152,6 +163,8 @@ namespace RealLifeOverhaul
             // A car of another mod that rides stiffer than the game's cars of its kind is given the kind's ride in the first steps of its design,
             // as far as its springs' travel carries it, so that its roll, dive and damping come out as the game's cars' do (the option, on by default).
             HandlingTarget target = HandlingRules.Target(spec.Kind, level, tuning, HandlingRules.SoftensCar(type.vehicleTypeName, Settings.HandlingOtherMods));
+            _target = target;
+            _read.CopyFrom(_chassis);   // as read, for a design made again for the parts: this one softens the springs in its steps
             _design.Begin(_chassis, target, _setup);
             _designCar = car;
             _designVehicle = vehicle;
@@ -186,6 +199,11 @@ namespace RealLifeOverhaul
                 _tyre = ScriptableObject.CreateInstance<FrictionPreset>();
                 _tyre.name = "RealLifeOverhaul tyres";
             }
+            if (_tyreNext == null)
+            {
+                _tyreNext = ScriptableObject.CreateInstance<FrictionPreset>();   // the spare, for a design made again with the handling on
+                _tyreNext.name = "RealLifeOverhaul tyres";
+            }
             if (_road == null)
             {
                 _road = ScriptableObject.CreateInstance<GroundDetectionPreset>();
@@ -211,14 +229,16 @@ namespace RealLifeOverhaul
             string why = _design.Why;
             if (car == null || vehicle == null || vehicle.vehicleRigidbody == null || why != null)
             {
+                bool again = _relaying;
                 _designCar = null;
                 _designVehicle = null;
+                _relaying = false;
                 _design.Cancel();
-                if (car != null && vehicle != null && vehicle.vehicleRigidbody != null)
+                if (!again && car != null && vehicle != null && vehicle.vehicleRigidbody != null)
                 {
                     Refused(_type, why);
                 }
-                return false;   // refused, or the car went while its design was under way
+                return false;   // refused, or the car went while its design was under way; one made again leaves the design on the car as it is
             }
             Build(vehicle);   // the mod's own presets and curve: a fault here changes nothing on the car
             _made = true;
@@ -227,7 +247,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The design made (<see cref="Make"/>, in the frame before; here if it was not), put on the car it was begun for,
-        /// the Garage's parts lifted first and laid back on top after. True if it is on; false if the car cannot have it
+        /// the Garage's parts lifted first and laid back on top after; one made again for the parts (<see cref="Relaid"/>)
+        /// goes in place of the design on the car, nothing taken off. True if it is on; false if the car cannot have it
         /// (said once) or is gone. Nothing if no design is under way.
         /// </summary>
         public bool Finish()
@@ -240,10 +261,12 @@ namespace RealLifeOverhaul
             CarController car = _designCar;
             NwhVehicle vehicle = _designVehicle;
             HandlingTuning tuning = _designTuning;
+            bool again = _relaying;
             _designCar = null;
             _designVehicle = null;
+            _relaying = false;
             _design.Cancel();
-            if (car == null || vehicle == null || vehicle.vehicleRigidbody == null)
+            if (car == null || vehicle == null || vehicle.vehicleRigidbody == null || (again && vehicle != _vehicle))
             {
                 return false;   // the car went after its design was made
             }
@@ -254,10 +277,18 @@ namespace RealLifeOverhaul
             float gripUnder = 0f;
             try
             {
-                Record(car, vehicle, body);
-                _vehicle = vehicle;
-                Refusal = null;
-                PutOn(vehicle, body);
+                if (again)
+                {
+                    Exchange();   // the new design is the handling's from here; the game's values recorded when the first went on stay as they are
+                    PutOn(vehicle, body, false);
+                }
+                else
+                {
+                    Record(car, vehicle, body);
+                    _vehicle = vehicle;
+                    Refusal = null;
+                    PutOn(vehicle, body, true);
+                }
                 _took = Took(vehicle, body);   // what the handling wrote, read back before the Garage's parts lie on top of it
                 torqueUnder = vehicle.brakes.maxTorque;   // what lies under the Garage's parts, to tell their brakes, weight and tyres by
                 massUnder = body.mass;
@@ -270,6 +301,71 @@ namespace RealLifeOverhaul
             BrakesForParts(vehicle, body, torqueUnder, massUnder, gripUnder);
             _lineTuning = tuning;
             return true;
+        }
+
+        /// <summary>
+        /// The Garage laid its parts on the car the handling is on, or took them off: read as Begin reads them, the parts lifted and laid straight
+        /// back, and what they call for (<see cref="HandlingRules.Relay"/>): nothing; the brakes shared again for them, here; or that and the
+        /// design made again for them beside the one on the car, a step at a time (<see cref="Step"/>, <see cref="Make"/>), put on in its place
+        /// by <see cref="Finish"/> in one frame. Nothing of the handling comes off the car for it.
+        /// </summary>
+        public PartsRelay Relaid(CarController car)
+        {
+            NwhVehicle vehicle = _vehicle;
+            if (vehicle == null || car == null || car.vehicleController != vehicle || vehicle.vehicleRigidbody == null || _designVehicle != null)
+            {
+                return PartsRelay.Nothing;
+            }
+            Rigidbody body = vehicle.vehicleRigidbody;
+            float torqueUnder = 0f;
+            float massUnder = 0f;
+            float gripUnder = 0f;
+            LiftParts(car);
+            try
+            {
+                torqueUnder = vehicle.brakes.maxTorque;   // the handling under the Garage's parts, as Finish read it
+                massUnder = body.mass;
+                gripUnder = _wheels[0].Wheel.LongitudinalFrictionGrip;
+            }
+            finally
+            {
+                LayParts(car);
+            }
+            float brakes = HandlingModel.PartsFactor(vehicle.brakes.maxTorque, torqueUnder, 1f);
+            float mass = HandlingModel.PartsFactor(body.mass, massUnder, 1f);
+            float grip = HandlingModel.PartsFactor(_wheels[0].Wheel.LongitudinalFrictionGrip, gripUnder, 0.01f);
+            PartsRelay relay = HandlingRules.Relay(_chassis, _partsBrakes, _partsMass, _partsGrip, brakes, mass, grip);
+            if (relay != PartsRelay.Nothing)
+            {
+                BrakesForParts(vehicle, body, torqueUnder, massUnder, gripUnder);   // at once, on the design on the car: its pedal held for the parts on it now
+            }
+            if (relay == PartsRelay.Design)
+            {
+                _chassisNext.CopyFrom(_read);   // the car as it was read: the design on it may have softened its springs
+                _chassisNext.PartsBrakes = brakes;
+                _chassisNext.PartsMass = mass;
+                _chassisNext.PartsGrip = grip;
+                _design.Begin(_chassisNext, _target, _setupNext);
+                _designCar = car;
+                _designVehicle = vehicle;
+                _designTuning = _lineTuning;
+                _relaying = true;
+            }
+            return relay;
+        }
+
+        // The design made again goes in place of the one on the car: its chassis, setup and tyres are the handling's from here, the last ones the spare.
+        private void Exchange()
+        {
+            CarChassis chassis = _chassis;
+            _chassis = _chassisNext;
+            _chassisNext = chassis;
+            HandlingSetup setup = _setup;
+            _setup = _setupNext;
+            _setupNext = setup;
+            FrictionPreset tyre = _tyre;
+            _tyre = _tyreNext;
+            _tyreNext = tyre;
         }
 
         /// <summary>With Developer diagnostics on, the self-check line of the handling just put on (Finish), in a frame of its own; once.</summary>
@@ -408,9 +504,20 @@ namespace RealLifeOverhaul
             return keys.Length > 0;
         }
 
-        // The mod's own presets and curve, made before the car records anything, so a fault here changes nothing on it.
+        // The mod's own presets and curve, made before the car records anything, so a fault here changes nothing on it. A design made again for the
+        // Garage's parts fills the spare tyres alone: those on the car stay until it goes on, and the steering and the ground are the sliders' and the car's.
         private void Build(NwhVehicle vehicle)
         {
+            if (_relaying)
+            {
+                if (_tyreNext == null)
+                {
+                    _tyreNext = ScriptableObject.CreateInstance<FrictionPreset>();
+                    _tyreNext.name = "RealLifeOverhaul tyres";
+                }
+                Tyres(_tyreNext, _tyre, _setupNext);   // the game's own figures, as the tyres on the car were given them
+                return;
+            }
             FrictionPreset game = FrontTyre(vehicle);
             // Made once and filled again for each car; destroyed in Dispose.
             if (_tyre == null)
@@ -418,10 +525,7 @@ namespace RealLifeOverhaul
                 _tyre = ScriptableObject.CreateInstance<FrictionPreset>();
             }
             _tyre.name = "RealLifeOverhaul tyres";
-            _tyre.BCDE = game.BCDE;   // the game's own D: the most along, and the side force's cap
-            _tyre.UpdateFrictionCurve();
-            _tyre.Curve.keys = Frames(_setup.Tyre);
-            _tyre.peakSlip = game.peakSlip;   // the game's own friction circle
+            Tyres(_tyre, game, _setup);
             _steerMade = _setup.SteerOwn ? null : new AnimationCurve(Frames(_setup.Steer));
             GroundDetectionPreset ground = vehicle.groundDetection.groundDetectionPreset;
             if (_road == null)
@@ -436,6 +540,15 @@ namespace RealLifeOverhaul
                 _road.particlePrefab = ground.particlePrefab;
                 _road.chunkPrefab = ground.chunkPrefab;
             }
+        }
+
+        // The mod's tyres for a design: the game's own preset's figures, the design's curve.
+        private static void Tyres(FrictionPreset tyre, FrictionPreset game, HandlingSetup setup)
+        {
+            tyre.BCDE = game.BCDE;   // the game's own D: the most along, and the side force's cap
+            tyre.UpdateFrictionCurve();
+            tyre.Curve.keys = Frames(setup.Tyre);
+            tyre.peakSlip = game.peakSlip;   // the game's own friction circle
         }
 
         private static FrictionPreset FrontTyre(NwhVehicle vehicle)
@@ -494,24 +607,29 @@ namespace RealLifeOverhaul
             _ground = vehicle.groundDetection.groundDetectionPreset;
         }
 
-        // The design on the car. Every write of a value of the game's here has its write back in TakeOff (NavCheck reads both).
-        private void PutOn(NwhVehicle vehicle, Rigidbody body)
+        // The design on the car. Every write of a value of the game's here has its write back in TakeOff (NavCheck reads both). Not whole: a design made
+        // again for the Garage's parts, over the one on the car, writes the wheels' and axles' values alone; the weight (the same: the parts do not change
+        // it), its inertia, the steering, the ground and the ABS module stay as the first design put them.
+        private void PutOn(NwhVehicle vehicle, Rigidbody body, bool whole)
         {
-            Vector3 before = body.inertiaTensor;
-            body.mass = _setup.Mass;
-            if (_centre != null)
+            if (whole)
             {
-                _centre.baseMass = _setup.Mass;
+                Vector3 before = body.inertiaTensor;
+                body.mass = _setup.Mass;
+                if (_centre != null)
+                {
+                    _centre.baseMass = _setup.Mass;
+                }
+                // A heavier car turns as heavily: the engine scales a tensor it works out itself; one it does not is scaled here.
+                float ratio = _setup.Mass / _mass;
+                _inertiaSet = Mathf.Abs(body.inertiaTensor.y - before.y * ratio) > before.y * ratio * 0.02f;
+                if (_inertiaSet)
+                {
+                    body.inertiaTensor = before * ratio;
+                    body.inertiaTensorRotation = _inertiaTurn;
+                }
+                _inertiaRatio = before.y > 0f ? body.inertiaTensor.y / before.y : 0f;
             }
-            // A heavier car turns as heavily: the engine scales a tensor it works out itself; one it does not is scaled here.
-            float ratio = _setup.Mass / _mass;
-            _inertiaSet = Mathf.Abs(body.inertiaTensor.y - before.y * ratio) > before.y * ratio * 0.02f;
-            if (_inertiaSet)
-            {
-                body.inertiaTensor = before * ratio;
-                body.inertiaTensorRotation = _inertiaTurn;
-            }
-            _inertiaRatio = before.y > 0f ? body.inertiaTensor.y / before.y : 0f;
 
             for (int i = 0; i < _wheels.Count; i++)
             {
@@ -534,6 +652,10 @@ namespace RealLifeOverhaul
                 AxleSetup axle = stock.Front ? _setup.Front : _setup.Rear;
                 stock.Group.antiRollBarForce = axle.AntiRoll;
                 stock.Group.brakeCoefficient = axle.BrakeShare;
+            }
+            if (!whole)
+            {
+                return;
             }
             if (_steerMade != null)
             {
@@ -624,6 +746,7 @@ namespace RealLifeOverhaul
         {
             _design.Cancel();
             _made = false;
+            _relaying = false;
             _designCar = null;
             _designVehicle = null;
             NwhVehicle vehicle = _vehicle;
@@ -750,6 +873,11 @@ namespace RealLifeOverhaul
             {
                 UnityEngine.Object.Destroy(_tyre);
                 _tyre = null;
+            }
+            if (_tyreNext != null)
+            {
+                UnityEngine.Object.Destroy(_tyreNext);
+                _tyreNext = null;
             }
             if (_road != null)
             {

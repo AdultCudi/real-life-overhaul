@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using RealLifeOverhaul;
 
 // The sweep of 12 Nov 2026, two players' posts about the driven car's feel, and the repair of the first answer to them.
@@ -29,7 +30,9 @@ using RealLifeOverhaul;
 //     The figures kept for the self-check line are those of the dive the car came to, the anti-squat's limits counted. The parts are read off
 //     the car as the handling goes on; when the Garage lays them on the car being driven after that (brakes bought sitting in it, the road
 //     turning wet or dry, a save loaded), the handling is now worked out again for them (GarageBridges.PartsLaid): it kept the pedal of a car
-//     with no parts, and the shop's brakes came on top of it unheld.
+//     with no parts, and the shop's brakes came on top of it unheld. That first took everything of the mod's off the car for it, as for an option
+//     changed, each time rain began or stopped under any build; nothing comes off for parts laid now, what they change is worked out with the rest
+//     left on (HandlingRules.Frame and Relay, CarHandling.Relaid: the road turning wet or dry, below).
 //
 // The cars are built from the figures of the game's files as NavCheck's HandlingCheck has them, and from the player's log for the three
 // cars of other mods. Offline: run with --vehicle-feel (RLO_FEEL_REPORT=1 prints the figures).
@@ -273,6 +276,7 @@ internal static partial class Program
         VehicleFeelBuilds();
         VehicleFeelVerdict();
         VehicleFeelSpread();
+        VehicleFeelRelay();
         VehicleFeelSources();
         VehicleFeelWords();
     }
@@ -905,6 +909,418 @@ internal static partial class Program
         Check(slowest < 2.0, "vehicle feel: the slowest step of those designs, a ride tried among them, takes " + slowest.ToString("F3") + " ms here (2 ms at most; NavCheck holds the design's own to 0.6 ms)");
     }
 
+    // ---------------------------------------------------------------- the road turning wet or dry under the car being driven
+
+    // Rain starting or stopping is folded into the stamp the Garage shows each car by (GarageDirector), so GarageCar.Show lays a build's parts on the car
+    // being driven again, whatever they carry, and tells Driving (GarageBridges.PartsLaid). Car tuning took that as an option changed: the next frame took
+    // the power, drag, eased pedals and handling off and worked the car's sums out again, the car on the game's own figures for the 15 frames or so they
+    // take (a softened car of another mod up to 16 design steps more): a jolt in mid bend, under a build of brakes alone too, which carries nothing the
+    // weather changes. Now parts laid take nothing off the car (HandlingRules.Frame): what they change is worked out with everything left on, nothing for
+    // the parts the handling was made and its brakes shared for, the brakes shared out again for others, and for parts its design was not made for a
+    // design made again beside the one on the car and put on in its place in one frame (HandlingRules.Relay, CarHandling.Relaid). Played here on the rule
+    // car tuning asks each frame, its flag kept as OnUpdate keeps it, on the custom shop's own builds read as the handling reads them off the car, and on
+    // the design's own steps; the sources are tied to them after.
+    private static void VehicleFeelRelay()
+    {
+        Check(HandlingRules.Frame(false, false, false) == TuningFrame.Again && HandlingRules.Frame(false, true, false) == TuningFrame.Again
+              && HandlingRules.Frame(false, false, true) == TuningFrame.Again && HandlingRules.Frame(true, false, false) == TuningFrame.Rest
+              && HandlingRules.Frame(true, false, true) == TuningFrame.Carry,
+            "vehicle feel relay: another car, or an option or slider changed, takes everything of the mod's off the car and begins its sums again; nothing changed, nothing is done; sums under way are carried on");
+        Check(HandlingRules.Frame(true, true, false) == TuningFrame.Relay && HandlingRules.Frame(true, true, true) == TuningFrame.Carry && HandlingRules.Frame(false, true, true) == TuningFrame.Again,
+            "vehicle feel relay: the Garage's parts laid on the car again are never an option changed: what they change is worked out with everything left on, once any sums under way are done");
+
+        // A drive a frame at a time: got in (its sums some 15 frames), the open road, the rain starting, a slider moved and the rain stopping five frames
+        // into its sums, the open road again. Each frame asks what OnUpdate asks, the Garage's word (CarTuning.PartsLaid, a flag set) given before it.
+        const int sumsFrames = 15;
+        bool laid = false;
+        int sumsLeft = 0, offMidDrive = 0, relays = 0;
+        string firstOff = null;
+        for (int frame = 0; frame < 160; frame++)
+        {
+            bool changed = frame == 0 || frame == 95;      // got in; a slider moved
+            bool rain = frame == 55 || frame == 100;       // the Garage lays the parts again for the rain starting, then stopping
+            laid |= rain;
+            switch (HandlingRules.Frame(!changed, laid, sumsLeft > 0))
+            {
+                case TuningFrame.Again:
+                    if (!changed)
+                    {
+                        offMidDrive++;
+                        firstOff = firstOff ?? (frame == 55 ? "the rain starting on the open road" : "the rain stopping while a slider's sums were under way");
+                    }
+                    laid = false;
+                    sumsLeft = sumsFrames;
+                    break;
+                case TuningFrame.Relay:
+                    laid = false;
+                    relays++;
+                    break;
+                case TuningFrame.Carry:
+                    sumsLeft--;
+                    break;
+            }
+        }
+        Check(offMidDrive == 0 && relays == 2 && !laid,
+            "vehicle feel relay: a drive with the rain starting on the open road and stopping while a slider's sums are under way takes everything of the mod's off the car " + offMidDrive
+            + " time(s) besides getting in and the slider (" + (firstOff ?? "never") + "); what the parts laid change is worked out with everything left on it " + relays
+            + " time(s), the second once the sums are done (2 wanted)");
+
+        // The builds of the custom shop as the handling reads them off the car, the road dry and wet (FeelFactors): with no tyres part the weather changes
+        // nothing the handling was made or its brakes shared for.
+        string[][] builds =
+        {
+            new[] { "brakes_sport" }, new[] { "brakes_race", "weight_2" }, new[] { "susp_coilover" }, new[] { "brakes_race", "tyres_semi" }, new[] { "tyres_sport" },
+            new[] { "tyres_allweather", "brakes_sport" }
+        };
+        int weatherFree = 0, weatherBound = 0, wrong = 0;
+        string firstWrong = null;
+        foreach (string[] parts in builds)
+        {
+            GarageModifiers m = FeelBuild(parts);
+            FeelFactors(m, false, true, out float dryBrakes, out float dryMass, out float dryGrip);
+            FeelFactors(m, true, true, out float wetBrakes, out float wetMass, out float wetGrip);
+            bool same = dryBrakes == wetBrakes && dryMass == wetMass && dryGrip == wetGrip;
+            bool free = m.Grip == m.WetGrip;
+            weatherFree += free ? 1 : 0;
+            weatherBound += free ? 0 : 1;
+            if (same != free || Math.Abs(dryBrakes - m.Brakes) > 1e-6f || Math.Abs(dryMass - m.Mass) > 1e-6f || Math.Abs(dryGrip - m.Grip) > 1e-6f || Math.Abs(wetGrip - m.WetGrip) > 1e-6f)
+            {
+                wrong++;
+                firstWrong = firstWrong ?? string.Join(" and ", parts);
+            }
+        }
+        Check(wrong == 0 && weatherFree == 3 && weatherBound == 3,
+            "vehicle feel relay: read off the car as the handling reads it, a build with no tyres part (" + weatherFree + " of " + builds.Length + ") is the same wet and dry, one with tyres ("
+            + weatherBound + ") differs in its grip alone (" + (firstWrong ?? "each as its parts say") + ")");
+
+        // What the parts laid call for (HandlingRules.Relay): a handling made on a dry road, its design's factors read off the game's car as Begin reads
+        // them and its brakes' off the handling's as Finish reads them; then the road turning wet, and the same parts laid again as they were.
+        int nothing = 0, redesigned = 0, amiss = 0;
+        string firstAmiss = null;
+        foreach (string[] parts in builds)
+        {
+            GarageModifiers m = FeelBuild(parts);
+            FeelFactors(m, false, false, out float designBrakes, out float designMass, out float designGrip);
+            FeelFactors(m, false, true, out float sharedBrakes, out float sharedMass, out float sharedGrip);
+            FeelFactors(m, true, true, out float wetBrakes, out float wetMass, out float wetGrip);
+            var made = new CarChassis { PartsBrakes = designBrakes, PartsMass = designMass, PartsGrip = designGrip };
+            PartsRelay wet = HandlingRules.Relay(made, sharedBrakes, sharedMass, sharedGrip, wetBrakes, wetMass, wetGrip);
+            PartsRelay same = HandlingRules.Relay(made, sharedBrakes, sharedMass, sharedGrip, sharedBrakes, sharedMass, sharedGrip);
+            bool free = m.Grip == m.WetGrip;
+            nothing += wet == PartsRelay.Nothing ? 1 : 0;
+            redesigned += wet == PartsRelay.Design ? 1 : 0;
+            if (same != PartsRelay.Nothing || wet != (free ? PartsRelay.Nothing : PartsRelay.Design))
+            {
+                amiss++;
+                firstAmiss = firstAmiss ?? string.Join(" and ", parts) + ": wet " + wet + ", laid again " + same;
+            }
+        }
+        Check(amiss == 0 && nothing == 3 && redesigned == 3,
+            "vehicle feel relay: the road turning wet under a build with no tyres part calls for nothing (" + nothing + " of " + builds.Length + ", the brakes alone among them), under one with tyres for the design made again ("
+            + redesigned + "); parts laid again as they were call for nothing (" + (firstAmiss ?? "each so") + ")");
+
+        // Brakes bought sitting in the car with the power option off (the options the same, so no sums begun): the design made again. The brakes shared for
+        // other parts than the design's (a design made again and refused, its brakes shared for the parts at once): those alone. The parts the design and
+        // the brakes are for: nothing. The weight read off the handling's heavier car is the factor read off the game's, to a float's rounding.
+        var none = new CarChassis();
+        var sport = new CarChassis { PartsBrakes = 1.25f };
+        float lighter = HandlingModel.PartsFactor(1400f * 0.9f, 1400f, 1f), heavier = HandlingModel.PartsFactor(1637.5f * 0.9f, 1637.5f, 1f);
+        var weighted = new CarChassis { PartsMass = lighter };
+        Check(HandlingRules.Relay(none, 1f, 1f, 1f, 1.25f, 1f, 1f) == PartsRelay.Design && HandlingRules.Relay(sport, 1f, 1f, 1f, 1.25f, 1f, 1f) == PartsRelay.Brakes
+              && HandlingRules.Relay(sport, 1.25f, 1f, 1f, 1.25f, 1f, 1f) == PartsRelay.Nothing && HandlingRules.Relay(sport, 1.25f, 1f, 1f, 1f, 1f, 1f) == PartsRelay.Design
+              && HandlingRules.Relay(weighted, 1f, heavier, 1f, 1f, heavier, 1f) == PartsRelay.Nothing && HandlingRules.Relay(weighted, 1f, heavier, 1f, 1f, 0.95f, 1f) == PartsRelay.Design,
+            "vehicle feel relay: brakes bought sitting in the car call for the design made again, brakes shared for other parts than the design's for those alone, the same parts for nothing, and a weight read off the handling's heavier car is the one read off the game's");
+
+        // The design made again beside the one on the car (CarHandling.Relaid), on the design's own steps: from the car as it was read before its first
+        // design (CarChassis.CopyFrom; a design softens a car of another mod's springs in place), into a spare chassis and setup (FeelRelaid).
+        int relaidCars = 0, relaidSteps = 0, softenedCars = 0;
+        string relaidAmiss = null;
+        void Relaid(string name, Func<CarChassis> make, HandlingTarget target, float brakesDry, float gripDry, float brakesWet, float gripWet)
+        {
+            string why = FeelRelaid(make, target, brakesDry, gripDry, brakesWet, gripWet, out int steps, out bool softened);
+            relaidCars++;
+            relaidSteps = Math.Max(relaidSteps, steps);
+            softenedCars += softened ? 1 : 0;
+            relaidAmiss = relaidAmiss ?? (why != null ? name + ": " + why : null);
+            FeelSay("  " + name + ", the road turning wet: the design made again beside the one on the car in " + steps + " steps" + (why != null ? ": " + why : ""));
+        }
+        Relaid("the Vord V150 at Full, race brakes and semi-slick tyres", FeelPickup, HandlingRules.Target(CarKind.Utility, HandlingLevel.Full, FeelNeutral), 1.5f, 1.2f, 1.5f, 0.75f);
+        Relaid("the Vord V150 at Heavy, sport tyres", FeelPickup, HandlingRules.Target(CarKind.Utility, HandlingLevel.Heavy, FeelNeutral), 1f, 1.1f, 1f, 0.9f);
+        for (int which = 0; which < FeelLoggedNames.Length; which++)
+        {
+            int car = which;
+            Relaid("the " + FeelLoggedNames[which] + " softened at Full, semi-slick tyres", () => FeelLogged(car), HandlingRules.Target(CarKind.Sports, HandlingLevel.Full, FeelNeutral, true),
+                1f, 1.2f, 1f, 0.75f);
+        }
+        Check(relaidAmiss == null && relaidCars == 2 + FeelLoggedNames.Length && softenedCars == FeelLoggedNames.Length,
+            "vehicle feel relay: on " + relaidCars + " cars (" + softenedCars + " of other mods softened, " + relaidSteps + " steps at the most), the design made again for the road turning wet leaves the one on the car "
+            + "untouched through every step, comes out as the design made from scratch for the parts to the bit, with the weight and steering of the one on the car (" + (relaidAmiss ?? "each so") + ")");
+
+        // The spare is made from the car as read: every figure of it carried (each field filled, the copy's own figures and longer curves overwritten).
+        var full = new CarChassis();
+        var copy = new CarChassis();
+        float value = 1f, stale = 500f;
+        string unfilled = FeelFill(full, ref value) ?? FeelFill(copy, ref stale) ?? FeelFill(copy, ref stale);
+        copy.CopyFrom(full);
+        string missed = FeelDiffers(copy, full, "the car");
+        Check(unfilled == null && missed == null && value > 50f,
+            "vehicle feel relay: CarChassis.CopyFrom carries every figure and curve key of the car as read, " + (int)(value - 1f) + " of them (" + (unfilled != null ? "cannot fill " + unfilled : missed ?? "all") + ")");
+
+        // What the rules and the steps above stand for in the code: the Garage lays the parts as FeelFactors reads them; car tuning hands parts laid to the
+        // handling with nothing taken off; the handling reads them as Begin does, and makes the design again into the spare from the car as read.
+        string garageCar = MemberText(ModSource(@"Garage\GarageCar.cs"), "private void Handling(");
+        Check(garageCar.Contains("float grip = wet ? m.WetGrip : m.Grip;") && garageCar.Contains("wheel.LongitudinalFrictionGrip *= grip;") && garageCar.Contains("nwh.brakes.maxTorque = _brakeTorque * m.Brakes;")
+              && garageCar.Contains("body.mass = _mass * m.Mass;"),
+            "vehicle feel relay: the Garage lays the tyres' wet or dry grip, the brakes' torque and the weight on the car as the check reads them");
+        string tuning = ModSource(@"Driving\CarTuning.cs");
+        string update = MemberText(tuning, "private void OnUpdate(");
+        int relayAt = update.IndexOf("else if (frame == TuningFrame.Relay)", StringComparison.Ordinal);
+        int carryAt = update.IndexOf("Carry(ref slice, began);", StringComparison.Ordinal);
+        string relayBranch = relayAt > 0 && carryAt > relayAt ? update.Substring(relayAt, carryAt - relayAt) : string.Empty;
+        string relay = MemberText(tuning, "private bool Relay(");
+        string carry = MemberText(tuning, "private void Carry(");
+        string after = MemberText(tuning, "private Sums AfterHandling(");
+        Check(update.Contains("bool same = vehicle == _seen && options == _options && handled == _handled;") && update.Contains("HandlingRules.Frame(same, _partsLaid, _sums != Sums.None)")
+              && update.Contains("frame == TuningFrame.Rest") && update.Contains("frame == TuningFrame.Again") && relayBranch.Contains("_partsLaid = false;")
+              && relayBranch.Contains("Relay(car, vehicle)") && !relayBranch.Contains("Restore(") && relay.Contains("_sums = Sums.Relaid;") && !relay.Contains("Restore(")
+              && !relay.Contains("_handling.Begin(") && carry.Contains("_relaid = _handling.Relaid(_sumsCar);") && after.IndexOf("if (_relay)", StringComparison.Ordinal) >= 0
+              && after.IndexOf("if (_relay)", StringComparison.Ordinal) < after.IndexOf("Sums.TuningBegin", StringComparison.Ordinal),
+            "vehicle feel relay: car tuning asks the rule each frame, and hands parts laid to the handling with nothing taken off the car, nothing after but the self-check line");
+        string handling = ModSource(@"Driving\CarHandling.cs");
+        string begin = MemberText(handling, "public bool Begin(");
+        string relaid = MemberText(handling, "public PartsRelay Relaid(");
+        string finish = MemberText(handling, "public bool Finish(");
+        string putOn = MemberText(handling, "private void PutOn(");
+        string build = MemberText(handling, "private void Build(");
+        int againAt = finish.IndexOf("if (again)", StringComparison.Ordinal);
+        int elseAt = againAt > 0 ? finish.IndexOf("else", againAt, StringComparison.Ordinal) : -1;
+        string swap = againAt > 0 && elseAt > againAt ? finish.Substring(againAt, elseAt - againAt) : string.Empty;
+        Check(begin.IndexOf("_chassis.PartsGrip = ", StringComparison.Ordinal) < begin.IndexOf("_read.CopyFrom(_chassis);", StringComparison.Ordinal)
+              && begin.IndexOf("_read.CopyFrom(_chassis);", StringComparison.Ordinal) < begin.IndexOf("_design.Begin(_chassis, target, _setup);", StringComparison.Ordinal)
+              && relaid.IndexOf("LiftParts(car);", StringComparison.Ordinal) > 0 && relaid.IndexOf("LiftParts(car);", StringComparison.Ordinal) < relaid.IndexOf("LayParts(car);", StringComparison.Ordinal)
+              && relaid.IndexOf("LayParts(car);", StringComparison.Ordinal) < relaid.IndexOf("HandlingRules.Relay(_chassis, _partsBrakes, _partsMass, _partsGrip, brakes, mass, grip)", StringComparison.Ordinal)
+              && relaid.Contains("_chassisNext.CopyFrom(_read);") && relaid.Contains("_design.Begin(_chassisNext, _target, _setupNext);") && !relaid.Contains("TakeOff(")
+              && !relaid.Contains("Restore(") && !relaid.Contains("PutOn(") && swap.Contains("Exchange();") && swap.Contains("PutOn(vehicle, body, false);") && !swap.Contains("Record(")
+              && finish.IndexOf("LiftParts(car);", StringComparison.Ordinal) < againAt && putOn.IndexOf("wheel.FrictionPreset = _tyre;", StringComparison.Ordinal) < putOn.IndexOf("if (!whole)", StringComparison.Ordinal)
+              && putOn.IndexOf("if (!whole)", StringComparison.Ordinal) < putOn.IndexOf("groundDetectionPreset = _road", StringComparison.Ordinal)
+              && putOn.IndexOf("if (whole)", StringComparison.Ordinal) < putOn.IndexOf("body.mass = _setup.Mass;", StringComparison.Ordinal)
+              && build.IndexOf("Tyres(_tyreNext, _tyre, _setupNext);", StringComparison.Ordinal) > 0
+              && build.IndexOf("Tyres(_tyreNext, _tyre, _setupNext);", StringComparison.Ordinal) < build.IndexOf("FrontTyre(vehicle)", StringComparison.Ordinal),
+            "vehicle feel relay: the handling reads the parts laid as it reads them getting in, makes the design again into the spare from the car as read, and puts it on over the last, its wheels and axles alone, nothing recorded again");
+    }
+
+    // A build of the custom shop's parts, by their ids, as the Garage adds them up.
+    private static GarageModifiers FeelBuild(string[] parts)
+    {
+        var build = new GarageBuild();
+        foreach (string id in parts)
+        {
+            PartDef part = GarageCatalogue.Part(id);
+            build.Parts[(int)part.Slot] = id;
+        }
+        return build.Modifiers();
+    }
+
+    // The factors the handling reads off a car with a build on it, each the value with the parts on over the value under them (CarHandling), the parts
+    // laid as GarageCar.Handling lays them: the brakes' torque times the part, the weight where it has one, the grip times the tyres' wet or dry grip.
+    // The values under them are the Vord V150's, as the game made it (CarHandling.Begin reads them so for the design) or with the handling on (Finish
+    // and Relaid read them so for the brakes).
+    private static void FeelFactors(in GarageModifiers m, bool wet, bool handlingOn, out float brakes, out float mass, out float grip)
+    {
+        const float torque = 4000f, along = 0.9f;
+        float weight = handlingOn ? 1637.5f : 1400f;
+        brakes = HandlingModel.PartsFactor(torque * m.Brakes, torque, 1f);
+        mass = HandlingModel.PartsFactor(m.Mass != 1f ? weight * m.Mass : weight, weight, 1f);
+        grip = HandlingModel.PartsFactor(along * (wet ? m.WetGrip : m.Grip), along, 0.01f);
+    }
+
+    // A design made on a dry road and made again for the road turning wet, as CarHandling does both (Begin, then Relaid): the car as read copied before
+    // its first design, the design made again from that copy into a spare chassis and setup on the same design's steps. After every step the design on
+    // the car is checked against a twin of it made alike; the one made again against the design made from scratch for the wet road, and its weight and
+    // steering against the one on the car, which PutOn leaves when it puts a design made again over the last. Null if all holds, else what did not.
+    private static string FeelRelaid(Func<CarChassis> make, HandlingTarget target, float brakesDry, float gripDry, float brakesWet, float gripWet, out int steps, out bool softened)
+    {
+        steps = 0;
+        softened = false;
+        CarChassis onCar = make();
+        CarChassis twin = make();
+        onCar.PartsBrakes = twin.PartsBrakes = brakesDry;
+        onCar.PartsGrip = twin.PartsGrip = gripDry;
+        var read = new CarChassis();
+        read.CopyFrom(onCar);   // as CarHandling.Begin keeps it, before the design softens the springs
+        var setup = new HandlingSetup();
+        var twinSetup = new HandlingSetup();
+        var design = new HandlingDesign();
+        design.Begin(onCar, target, setup);
+        while (design.Step())
+        {
+        }
+        var twinDesign = new HandlingDesign();
+        twinDesign.Begin(twin, target, twinSetup);
+        while (twinDesign.Step())
+        {
+        }
+        if (design.Why != null || twinDesign.Why != null)
+        {
+            return "its design was refused (" + (design.Why ?? twinDesign.Why) + ")";
+        }
+        softened = setup.Softened;
+        string alike = FeelDiffers(onCar, twin, "the car") ?? FeelDiffers(setup, twinSetup, "the setup");
+        if (alike != null)
+        {
+            return "two designs of it made alike differ at " + alike;
+        }
+
+        var next = new CarChassis();
+        next.CopyFrom(read);
+        next.PartsBrakes = brakesWet;
+        next.PartsGrip = gripWet;
+        var setupNext = new HandlingSetup();
+        design.Begin(next, target, setupNext);
+        bool more = true;
+        while (more)
+        {
+            more = design.Step();
+            string touched = FeelDiffers(onCar, twin, "the car") ?? FeelDiffers(setup, twinSetup, "the setup");
+            if (touched != null)
+            {
+                return "step " + design.Steps + " of the design made again changed the one on the car at " + touched;
+            }
+        }
+        steps = design.Steps;
+        if (design.Why != null)
+        {
+            return "the design made again was refused (" + design.Why + ")";
+        }
+        CarChassis fresh = make();
+        fresh.PartsBrakes = brakesWet;
+        fresh.PartsGrip = gripWet;
+        var freshSetup = new HandlingSetup();
+        string freshWhy = HandlingModel.Design(fresh, target, freshSetup);
+        string unlike = freshWhy != null ? "made from scratch it was refused (" + freshWhy + ")" : FeelDiffers(setupNext, freshSetup, "the setup") ?? FeelDiffers(next, fresh, "the car");
+        if (unlike != null)
+        {
+            return "the design made again is not the one made from scratch for the parts: " + unlike;
+        }
+        if (setupNext.Mass != setup.Mass || setupNext.SteerOwn != setup.SteerOwn || FeelDiffers(setupNext.Steer, setup.Steer, "the steering") != null)
+        {
+            return "the design made again has another weight or steering than the one on the car, which are left on it";
+        }
+        if (softened)
+        {
+            // Made from the car as it stands, softened by its first design, the design would not be the car's: the copy as read is what makes it so.
+            var standing = new CarChassis();
+            standing.CopyFrom(onCar);
+            standing.PartsBrakes = brakesWet;
+            standing.PartsGrip = gripWet;
+            var standingSetup = new HandlingSetup();
+            HandlingModel.Design(standing, target, standingSetup);
+            if (FeelDiffers(standingSetup, freshSetup, "the setup") == null)
+            {
+                return "made from the softened car as it stands the design comes out the same, so the copy as read would not be needed";
+            }
+        }
+        return null;
+    }
+
+    // Where two of the handling's objects differ, field by field down through the axles and curves (a curve by its keys), or null if nowhere.
+    private static string FeelDiffers(object a, object b, string path)
+    {
+        if (a == null || b == null)
+        {
+            return a == b ? null : path;
+        }
+        Type type = a.GetType();
+        if (type != b.GetType())
+        {
+            return path + " (of another type)";
+        }
+        if (a is CurveKeys curveA)
+        {
+            var curveB = (CurveKeys)b;
+            if (curveA.Count != curveB.Count)
+            {
+                return path + " (" + curveA.Count + " keys against " + curveB.Count + ")";
+            }
+            for (int i = 0; i < curveA.Count; i++)
+            {
+                if (!curveA.Time(i).Equals(curveB.Time(i)) || !curveA.Value(i).Equals(curveB.Value(i)) || !curveA.InSlope(i).Equals(curveB.InSlope(i))
+                    || !curveA.OutSlope(i).Equals(curveB.OutSlope(i)))
+                {
+                    return path + ", key " + i;
+                }
+            }
+            return null;
+        }
+        if (type.IsPrimitive || type.IsEnum || a is string)
+        {
+            return a.Equals(b) ? null : path + " (" + a + " against " + b + ")";
+        }
+        if (a is Array arrayA)
+        {
+            var arrayB = (Array)b;
+            if (arrayA.Length != arrayB.Length)
+            {
+                return path + " (" + arrayA.Length + " against " + arrayB.Length + ")";
+            }
+            for (int i = 0; i < arrayA.Length; i++)
+            {
+                string inner = FeelDiffers(arrayA.GetValue(i), arrayB.GetValue(i), path + "[" + i + "]");
+                if (inner != null)
+                {
+                    return inner;
+                }
+            }
+            return null;
+        }
+        foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            string inner = FeelDiffers(field.GetValue(a), field.GetValue(b), path + "." + field.Name);
+            if (inner != null)
+            {
+                return inner;
+            }
+        }
+        return null;
+    }
+
+    // Every field of a car as read given a figure of its own, down through its axles, each curve three keys more; the first field of a kind it cannot
+    // fill named, else null.
+    private static string FeelFill(object o, ref float next)
+    {
+        foreach (FieldInfo field in o.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            Type type = field.FieldType;
+            if (type == typeof(float))
+            {
+                field.SetValue(o, next);
+                next += 1f;
+            }
+            else if (type == typeof(CurveKeys))
+            {
+                var curve = (CurveKeys)field.GetValue(o);
+                for (int k = 0; k < 3; k++)
+                {
+                    curve.Add(next, next + 0.25f, next + 0.5f, next + 0.75f);
+                    next += 1f;
+                }
+            }
+            else if (type == typeof(AxleData))
+            {
+                string inner = FeelFill(field.GetValue(o), ref next);
+                if (inner != null)
+                {
+                    return inner;
+                }
+            }
+            else
+            {
+                return o.GetType().Name + "." + field.Name;
+            }
+        }
+        return null;
+    }
+
     // ---------------------------------------------------------------- the sources
 
     private static string VehicleFeelRoot(string relative)
@@ -993,7 +1409,7 @@ internal static partial class Program
         Check(users.Count == 0, "vehicle feel sources: only the driven car's handling softens a car" + (users.Count > 0 ? " (also in " + string.Join(", ", users) + ")" : string.Empty));
 
         // The Garage's parts laid on the car being driven, or taken off, by the Garage itself: Driving is told through the Garage's bridge (wired in Wiring), and
-        // the car's sums are done again, as for an option changed. Not when Driving lifts and lays them itself around its own changes.
+        // what they change is worked out with everything left on the car (VehicleFeelRelay). Not when Driving lifts and lays them itself around its own changes.
         string show = MemberText(garageCar, "public void Show(");
         Check(show.Contains("Handling(m, wet);") && show.Contains("laid = true;") && show.Contains("laid = _handling;") && show.Contains("laid |= Cleared();")
               && show.IndexOf("Handling(m, wet);", StringComparison.Ordinal) < show.IndexOf("laid = true;", StringComparison.Ordinal)
@@ -1008,11 +1424,11 @@ internal static partial class Program
             "vehicle feel sources: the Garage's bridge for it is filled in by Wiring.DrivingLinks and emptied when the links are undone, a fault in it caught");
         string update = MemberText(tuning, "private void OnUpdate(");
         string partsLaid = MemberText(tuning, "public static void PartsLaid(");
-        Check(update.Contains("handled == _handled && !_partsLaid;") && update.Contains("_partsLaid = false;")
+        Check(update.Contains("HandlingRules.Frame(same, _partsLaid, _sums != Sums.None)") && update.Contains("_partsLaid = false;")
               && update.IndexOf("_partsLaid = false;", StringComparison.Ordinal) < update.IndexOf("Begin(car, vehicle, options, handled);", StringComparison.Ordinal)
               && update.IndexOf("Restore();", StringComparison.Ordinal) < update.IndexOf("_partsLaid = false;", StringComparison.Ordinal)
               && partsLaid.Contains("car.vehicleController == tuning._seen") && partsLaid.Contains("tuning._partsLaid = true;") && !partsLaid.Contains("Restore(") && !partsLaid.Contains("Begin("),
-            "vehicle feel sources: told the parts on the car being driven changed, car tuning sets a flag, and the next frame takes the handling off and works the car's sums out again for them, as for an option changed");
+            "vehicle feel sources: told the parts on the car being driven changed, car tuning sets a flag and nothing else, works out what they change from the next frame with everything left on, and drops the flag when another car or option begins everything again");
 
         string doc = File.Exists(VehicleFeelRoot(@"docs\features\driving.md")) ? File.ReadAllText(VehicleFeelRoot(@"docs\features\driving.md")) : string.Empty;
         Check(doc.Contains("**Cars of other mods.**") && doc.Contains("HandlingModel.Soften") && doc.Contains("HandlingModel.RideCarries") && doc.Contains("car_handling_modded") && doc.Contains("CarCatalogue.IsGameCar")
@@ -1031,12 +1447,21 @@ internal static partial class Program
         Dictionary<string, string> en = LocaleFile("en");
         Check(en.TryGetValue("reallife_car_handling_modded", out string label) && label.Length > 0 && label.Length <= 60 && label.Split(' ').Length <= 9 && !label.EndsWith("."),
             "vehicle feel words: the option has a label in English that fits the page (at most 9 words, 60 characters, no full stop)");
-        Check(en.TryGetValue("reallife_opt_tip_car_handling_modded", out string tip) && tip.Length > 0 && tip.Length <= 190 && tip.Split(' ').Length <= 36 && tip.EndsWith("."),
-            "vehicle feel words: the option has its one sentence in English (at most 36 words, 190 characters, a full stop)");
+        Check(en.TryGetValue("reallife_opt_tip_car_handling_modded", out string tip) && tip.Length > 0 && tip.Length <= 190 && tip.Split(' ').Length <= 32 && tip.EndsWith("."),
+            "vehicle feel words: the option has its one sentence in English (at most 32 words and 190 characters, as the options page holds every tip to, and a full stop)");
         Check(tip != null && tip.Contains("as far as its springs' travel allows"), "vehicle feel words: the option's tip says that the ride is given as far as the springs' travel allows");
+        // The soft ride is asked only at Full and Heavy (HandlingRules.RideCeiling, 0 at every other level for every kind): the tip and What's new say so.
+        bool levels = true;
+        foreach (CarKind kind in Enum.GetValues(typeof(CarKind)))
+        {
+            levels &= HandlingRules.RideCeiling(kind, HandlingLevel.Light) == 0f && HandlingRules.RideCeiling(kind, HandlingLevel.Off) == 0f;
+        }
+        levels &= HandlingRules.RideCeiling(CarKind.Sports, HandlingLevel.Full) > 0f && HandlingRules.RideCeiling(CarKind.Sports, HandlingLevel.Heavy) > 0f;
+        Check(levels && tip != null && tip.Contains("only at Full or Heavy car handling, never at Light"),
+            "vehicle feel words: the option's tip says plainly that the soft ride comes only at Full or Heavy car handling and never at Light, as the rule asks it");
         // What's new: looked for in every row, by its English line, so that it is found before a release and after it numbers the row.
-        string soft = "Cars from other mods that ride on springs far stiffer than the game's now get the soft ride, body roll and nose dive of the game's cars of their kind, as far as the travel of their springs allows, "
-                      + "and the new option Soft ride for other mods' cars, on by default, switches that off.";
+        string soft = "Cars from other mods that ride on springs far stiffer than the game's now get the soft ride, body roll and nose dive of the game's cars of their kind when car handling is at Full or Heavy, "
+                      + "never at Light, as far as the travel of their springs allows, and the new option Soft ride for other mods' cars, on by default, switches that off.";
         string fix = "Fixed: braking hard from speed dipped the nose of the Vord V150 pickup and other softly sprung cars so far that the front springs nearly reached their stops and the car jolted; "
                      + "where the springs have little travel the nose now dips no further than the game's own, their front dampers firm up, and the custom shop's brakes add stopping power only as far as the front springs keep their travel.";
         Check(WhatsNewHas(en, soft) && WhatsNewHas(en, fix), "vehicle feel words: What's new has the soft ride for other mods' cars and the fix of the pickup's braking (any row)");

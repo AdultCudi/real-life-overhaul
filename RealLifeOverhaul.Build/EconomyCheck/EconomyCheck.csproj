@@ -814,6 +814,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\HandlingModel.cs" Link="Mod\HandlingModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\HandlingTurn.cs" Link="Mod\HandlingTurn.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\CurveKeys.cs" Link="Mod\CurveKeys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\GarageCatalogue.cs" Link="Mod\GarageCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkModel.cs" Link="Mod\WorkModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OpenHoursRules.cs" Link="Mod\OpenHoursRules.cs" />

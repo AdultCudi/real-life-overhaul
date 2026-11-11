@@ -62,6 +62,23 @@ namespace RealLifeOverhaul
         public float RideHz;         // the stiffest ride, in Hz, a car of another mod is left with: softer springs are put on a stiffer car as far as their travel carries it (0: it keeps its own)
     }
 
+    /// <summary>What a frame of the driven car's tuning does (<see cref="HandlingRules.Frame"/>, asked by Driving/CarTuning each frame).</summary>
+    public enum TuningFrame
+    {
+        Rest,    // nothing: the same car or none, the same options, no parts laid on it since, no sums under way
+        Again,   // everything of the mod's taken off the car and its sums begun again: another car, or an option or slider changed
+        Carry,   // the car's sums under way carried on
+        Relay    // the custom shop's parts laid on the car or taken off: what they change worked out, everything of the mod's left on it
+    }
+
+    /// <summary>What the custom shop's parts, laid on the car the handling is on again or taken off it, call for (<see cref="HandlingRules.Relay"/>).</summary>
+    public enum PartsRelay
+    {
+        Nothing,   // the parts the handling was made and its brakes shared for: the road turning wet or dry under a build with no tyres part
+        Brakes,    // the parts the design was made for, the brakes shared for others: the brakes' shares and full pedal worked out again
+        Design     // other parts than the design was made for: it is made again beside the one on the car, which stays on until it is put on in one frame
+    }
+
     /// <summary>
     /// The handling's levels on top of the game's own car, more of each at Heavy, almost none at Light, and the eased brake
     /// pedal. Game-free: NavCheck compiles this file.
@@ -192,6 +209,46 @@ namespace RealLifeOverhaul
             }
             float back = current - dt / BrakeFall;
             return back < asked ? asked : back;
+        }
+
+        /// <summary>
+        /// What a frame of the driven car's tuning does: <paramref name="same"/> is the same car or none, with the same options and handling;
+        /// <paramref name="partsLaid"/> that the Garage laid its parts on it or took them off since (GarageBridges.PartsLaid);
+        /// <paramref name="sumsUnderWay"/> that its sums are not yet done.
+        /// </summary>
+        public static TuningFrame Frame(bool same, bool partsLaid, bool sumsUnderWay)
+        {
+            if (!same)
+            {
+                return TuningFrame.Again;
+            }
+            if (sumsUnderWay)
+            {
+                return TuningFrame.Carry;   // parts laid meanwhile wait for the sums to end: those read the car as it was
+            }
+            return partsLaid ? TuningFrame.Relay : TuningFrame.Rest;   // never an option changed: nothing is taken off for parts laid
+        }
+
+        /// <summary>
+        /// What parts laid on the car the handling is on call for: <paramref name="designed"/> holds the factors its design was made for
+        /// (<see cref="CarChassis.PartsBrakes"/> and the rest), the shared ones those its brakes were shared for, the last three those read off
+        /// the car now, each the value with the parts on over the value under them. The weather changes only the tyres' grip.
+        /// </summary>
+        public static PartsRelay Relay(CarChassis designed, float sharedBrakes, float sharedMass, float sharedGrip, float brakes, float mass, float grip)
+        {
+            if (!SameFactor(designed.PartsBrakes, brakes) || !SameFactor(designed.PartsMass, mass) || !SameFactor(designed.PartsGrip, grip))
+            {
+                return PartsRelay.Design;   // the nose dive, the front dampers and a softened car's ride are planned for the parts' full pedal and grip
+            }
+            return SameFactor(sharedBrakes, brakes) && SameFactor(sharedMass, mass) && SameFactor(sharedGrip, grip) ? PartsRelay.Nothing : PartsRelay.Brakes;
+        }
+
+        // A factor read twice off the same parts differs by a float's rounding at most (the design's are read off the game's car, the brakes' off the
+        // handling's); the shop's parts differ by 0.05 at least.
+        private static bool SameFactor(float a, float b)
+        {
+            float d = a - b;
+            return d < 1e-4f && d > -1e-4f;
         }
     }
 }

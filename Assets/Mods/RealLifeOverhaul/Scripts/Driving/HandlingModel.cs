@@ -28,6 +28,36 @@ namespace RealLifeOverhaul
         public float Application;     // the game's force application point distance (a share of the spring's length)
         public float AntiSquat;       // the game's anti-squat figure
         public float OwnFrequency;    // Hz the springs rode at as the car came, when they were softened to the game's ride (HandlingModel.Soften); 0 if they were not
+
+        /// <summary>Every figure of another axle, its spring's curve too; nothing allocated once the curve has room for its keys.</summary>
+        public void CopyFrom(AxleData other)
+        {
+            Z = other.Z;
+            Track = other.Track;
+            Top = other.Top;
+            Radius = other.Radius;
+            SpringForce = other.SpringForce;
+            SpringLength = other.SpringLength;
+            Spring.CopyFrom(other.Spring);
+            SideGrip = other.SideGrip;
+            AlongGrip = other.AlongGrip;
+            SideStiffness = other.SideStiffness;
+            LoadRating = other.LoadRating;
+            Rolling = other.Rolling;
+            AntiRoll = other.AntiRoll;
+            BrakeShare = other.BrakeShare;
+            Bump = other.Bump;
+            Rebound = other.Rebound;
+            SlowBump = other.SlowBump;
+            FastBump = other.FastBump;
+            BumpKnee = other.BumpKnee;
+            SlowRebound = other.SlowRebound;
+            FastRebound = other.FastRebound;
+            ReboundKnee = other.ReboundKnee;
+            Application = other.Application;
+            AntiSquat = other.AntiSquat;
+            OwnFrequency = other.OwnFrequency;
+        }
     }
 
     /// <summary>What <see cref="HandlingModel.Design"/> needs to know about one car, read once when the player gets in.</summary>
@@ -48,6 +78,29 @@ namespace RealLifeOverhaul
         public float PartsBrakes = 1f;   // the custom shop's parts on the car as the player gets in, each against the car without them: the brakes' torque...
         public float PartsMass = 1f;     // ...the weight part's mass...
         public float PartsGrip = 1f;     // ...and the tyres part's grip (1 for none): the nose dive is planned for the full pedal they give
+
+        /// <summary>
+        /// Every figure of another car, its curves and axles too: the car as it was read, for a design made again beside the one on it (a design
+        /// softens the car's springs in place). Nothing allocated once the curves have room for their keys.
+        /// </summary>
+        public void CopyFrom(CarChassis other)
+        {
+            Mass = other.Mass;
+            ComY = other.ComY;
+            ComZ = other.ComZ;
+            BrakeTorque = other.BrakeTorque;
+            SteerLock = other.SteerLock;
+            TopKmh = other.TopKmh;
+            TyreD = other.TyreD;
+            TyrePeakSlip = other.TyrePeakSlip;
+            Tyre.CopyFrom(other.Tyre);
+            Steer.CopyFrom(other.Steer);
+            Front.CopyFrom(other.Front);
+            Rear.CopyFrom(other.Rear);
+            PartsBrakes = other.PartsBrakes;
+            PartsMass = other.PartsMass;
+            PartsGrip = other.PartsGrip;
+        }
     }
 
     /// <summary>What the handling puts on one axle (per wheel where it says so), and what that axle should then do.</summary>

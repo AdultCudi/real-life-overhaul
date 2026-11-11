@@ -7,7 +7,7 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The driven car's handling with the custom shop's parts: they come off before the handling changes and go back on
         /// top after, so they always act on it, never under it; and when the Garage lays them on the car or takes them off
-        /// itself, the handling is worked out again for them.
+        /// itself, what they change in the handling is worked out with it left on.
         /// </summary>
         public static class DrivingLinks
         {

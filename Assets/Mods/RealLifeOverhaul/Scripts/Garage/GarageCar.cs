@@ -185,9 +185,9 @@ namespace RealLifeOverhaul
             return had;
         }
 
-        // The handling parts on the car changed: Driving is told, so that the handling of the car being driven is worked out again for
-        // them (its brake shares are for the parts that were on it when it went on; parts laid after would brake unheld on them). Not
-        // from LiftHandling or LayHandling, which Driving itself calls while it changes the car.
+        // The handling parts on the car changed: Driving is told, so that what they change in the handling of the car being driven is
+        // worked out with it left on (its brake shares and design are for the parts that were on it when it went on; parts laid after
+        // would brake unheld on them). Not from LiftHandling or LayHandling, which Driving itself calls while it changes the car.
         private void Laid()
         {
             if (_vehicle != null && GarageBridges.PartsLaid != null)
