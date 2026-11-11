@@ -97,6 +97,7 @@
         public const string CarAccelerationId = "car_acceleration";
         public const string SmoothThrottleId = "smooth_throttle";
         public const string SpeedometerId = "speedometer";
+        public const string AutoSignalsId = "auto_signals";
         public const string HandlingId = "car_handling";
         public const string HandlingSoftnessId = "car_handling_softness";
         public const string HandlingBounceId = "car_handling_bounce";
@@ -486,6 +487,7 @@
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
+        public static bool AutoSignals = true;       // the car you drive switches its turn signals on and off by itself as it turns
         public static int Handling = 2;              // the driven car's weight, soft ride, roll and sliding: 0 off, 1 light, 2 full, 3 heavy
         public static int HandlingSoftness = 100;    // the test tools' tuning sliders, per cent of the design: the springs' softness...
         public static int HandlingBounce = 100;      // ...how lightly the bounce is damped
@@ -937,6 +939,7 @@
             UnityEngine.PlayerPrefs.DeleteKey(Key(modId, CarSpeedId));
             Keys.Load();
             Speedometer = Bool(modId, SpeedometerId, Speedometer);
+            AutoSignals = Bool(modId, AutoSignalsId, AutoSignals);
             Handling = Int(modId, HandlingId, Handling);
             HandlingSoftness = Int(modId, HandlingSoftnessId, HandlingSoftness);
             HandlingBounce = Int(modId, HandlingBounceId, HandlingBounce);
