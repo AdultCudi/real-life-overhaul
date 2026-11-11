@@ -18,7 +18,9 @@ using RealLifeOverhaul;
 //     DiveCarries, RollCarries). The first version asked 0.8 Hz of every kind but a sports car whatever the travel, and put the front of
 //     a 1700 kg saloon on 6 cm of travel 3.5 cm past its stops; the next counted the roll at 1 g of cornering, where the log's cars hold
 //     about 3.6 g on their tyres as sports cars, and gave the Audi R8 of the log, as a saloon, 1.005 Hz, on which its outer springs would
-//     go past their stops in the hardest turn.
+//     go past their stops in the hardest turn. Softened, the BMW M4 G82 kept its own dampers on its softer springs, more than the physics
+//     step carries on its light rear corner, and at the full pedal its rear asked 3.5 times its share of the tyres: the dampers now go with
+//     the springs, and the design takes no ride whose full pedal asks either axle more than twice its share (HandlingModel.MostLag).
 //
 // (2) "Better brakes, there are some bugs while going fast and suddenly braking (especially the Ford pick up)." The handling's dampers are
 //     lighter than the game's, so the body's first swing in a full-pedal dive goes about 40% further than the settled dive, and nothing
@@ -274,6 +276,7 @@ internal static partial class Program
         VehicleFeelOtherKinds();
         VehicleFeelTravel();
         VehicleFeelBuilds();
+        VehicleFeelBrakes();
         VehicleFeelVerdict();
         VehicleFeelSpread();
         VehicleFeelRelay();
@@ -827,6 +830,219 @@ internal static partial class Program
                   && redoneLeft >= HandlingModel.FrontKeep * redone.Front.RestLength - HandlingModel.TravelSpare,
                 "vehicle feel: the Vord V150 at " + level + " with the sport brakes laid on after its handling went on keeps " + FeelCm(staleLeft) + " cm of its front travel at the full pedal ("
                 + FeelF(stale.BrakeG * 1.25f) + " g); the handling worked out again for them keeps " + FeelCm(redoneLeft) + " cm (" + FeelF(redoneG) + " g), the third it is held to");
+        }
+    }
+
+    // ---------------------------------------------------------------- (1) a softened car's brakes: the worst moments and the custom shop's stop
+
+    // NavCheck's limits on the brakes of every car it designs: neither axle asks more than twice its settled share of its tyres at its worst moment as the
+    // body dives, and with every Garage build the custom shop's stopping figure is the car's own stop within a metre and no wheel asks more than its tyre holds.
+    private const float FeelMostLag = 2f;
+    private const float FeelShopSpare = 1f;
+
+    // The BMW M4 G82 of the player's log as a sports car at Heavy was softened to 2.37 Hz with its own dampers left on the softer springs: 28 000 N s/m on a
+    // 400 kg rear corner, more than the game's 0.02 s physics step carries, so that corner's load jittered, the design read no damping ratio there (0) and kept
+    // them as the car's own. At the full pedal its rear asked 3.498 times its settled share of the tyres, the car stopped 5.572 m further than the custom shop
+    // said (42.014 m against 36.442 with the coilovers), and with the sport brakes, semi-slick tyres and coilovers a wheel asked 3836 times what its tyre held.
+    // The dampers now go with a softened spring by the root of its factor, keeping the car's own damping (HandlingModel.Soften), and a ride at whose full pedal
+    // either axle would ask more than HandlingModel.MostLag times its share is not one the design takes (RideCarries): it softens less, or not at all.
+    // NavCheck's sums, on the log's three cars as sports cars at Full and Heavy with the soft ride asked, and every Garage build.
+    private static void VehicleFeelBrakes()
+    {
+        // The building block: the BMW's dampers go with its springs.
+        float ceiling = HandlingRules.RideCeiling(CarKind.Sports, HandlingLevel.Full);
+        CarChassis stock = FeelLogged(1);
+        CarChassis plain = FeelLogged(1);
+        HandlingModel.Soften(plain, ceiling);
+        float frontScale = plain.Front.OwnFrequency > 0f ? ceiling / plain.Front.OwnFrequency : 0f;
+        float rearScale = plain.Rear.OwnFrequency > 0f ? ceiling / plain.Rear.OwnFrequency : 0f;
+        Check(frontScale > 0f && rearScale > 0f
+              && Math.Abs(plain.Front.Bump - stock.Front.Bump * frontScale) < 1f && Math.Abs(plain.Front.Rebound - stock.Front.Rebound * frontScale) < 1f
+              && Math.Abs(plain.Rear.Bump - stock.Rear.Bump * rearScale) < 1f && Math.Abs(plain.Rear.Rebound - stock.Rear.Rebound * rearScale) < 1f,
+            "vehicle feel: the BMW M4 G82 softened to " + FeelF(ceiling) + " Hz has its dampers go with its springs by the root of their factor, keeping its own damping: front "
+            + FeelF(stock.Front.Bump) + " -> " + FeelF(plain.Front.Bump) + ", rear " + FeelF(stock.Rear.Bump) + " -> " + FeelF(plain.Rear.Bump) + " N s/m (it rode at "
+            + FeelF(plain.Front.OwnFrequency) + "/" + FeelF(plain.Rear.OwnFrequency) + " Hz)");
+
+        CarKind kind = CarKind.Sports;
+        var setup = new HandlingSetup();
+        int designs = 0, softened = 0, brakeBuilds = 0;
+        foreach (HandlingLevel level in new[] { HandlingLevel.Full, HandlingLevel.Heavy })
+        {
+            HandlingTarget asked = HandlingRules.Target(kind, level, FeelNeutral, true);
+            for (int which = 0; which < FeelLoggedNames.Length; which++)
+            {
+                CarChassis car = FeelLogged(which);
+                string why = HandlingModel.Design(car, asked, setup);
+                string name = "the " + FeelLoggedNames[which] + " as a sports car at " + level;
+                designs++;
+                Check(why == null, "vehicle feel: " + name + ", the soft ride asked, is designed (" + (why ?? "yes") + ")");
+                if (why != null)
+                {
+                    continue;
+                }
+                softened += setup.Softened ? 1 : 0;
+                name += setup.Softened ? ", softened to " + FeelF(setup.Front.GameFrequency) + " Hz" : ", on its own springs";
+                Check(setup.Front.GameZeta > 0f && setup.Rear.GameZeta > 0f,
+                    "vehicle feel: " + name + " rides on dampers the physics step carries: a damping ratio of " + FeelF(setup.Front.GameZeta) + " and " + FeelF(setup.Rear.GameZeta)
+                    + " read on its springs (none, 0, where a corner's load jitters)");
+                Check(setup.FrontLag >= 1f && setup.FrontLag <= FeelMostLag && setup.RearLag >= 1f && setup.RearLag <= FeelMostLag,
+                    "vehicle feel: " + name + ": its axles ask " + FeelF(setup.FrontLag) + " and " + FeelF(setup.RearLag) + " times their settled share of the tyres at their worst moment as the body dives ("
+                    + FeelF(FeelMostLag) + " at most)");
+
+                // Every Garage build of brakes, weight, tyres and springs, the brakes coming on at either of the game's onsets, stepped wheel by wheel.
+                float diffMost = 0f, useMost = 0f;
+                string diffAt = null, useAt = null;
+                foreach (PartDef spring in FeelPartsOf(PartSlot.Suspension))
+                {
+                    if (spring != null && spring.UtilityOnly && kind != CarKind.Utility && kind != CarKind.Van)
+                    {
+                        continue;
+                    }
+                    foreach (PartDef weight in FeelPartsOf(PartSlot.Weight))
+                    {
+                        float massFactor = weight != null ? weight.Mass : 1f;
+                        var frontCorner = new AxleSetup();
+                        var rearCorner = new AxleSetup();
+                        FeelBuiltAxle(car.Front, setup.Front, spring != null ? spring.Stiff : 1f, spring != null ? spring.Ride : 0f, massFactor, frontCorner);
+                        FeelBuiltAxle(car.Rear, setup.Rear, spring != null ? spring.Stiff : 1f, spring != null ? spring.Ride : 0f, massFactor, rearCorner);
+                        foreach (PartDef tyre in FeelPartsOf(PartSlot.Tyres))
+                        {
+                            float grip = tyre != null ? tyre.Grip : 1f;
+                            foreach (float onset in new[] { HandlingModel.GameBrakeOnset, 0.25f })
+                            {
+                                foreach (PartDef brake in FeelPartsOf(PartSlot.Brakes))
+                                {
+                                    float brakes = brake != null ? brake.Brake : 1f;
+                                    float shop = HandlingModel.ShopStop(car, setup, brakes, massFactor, grip, onset);
+                                    float stopped = FeelStop(car, setup, frontCorner, rearCorner, brakes, massFactor, grip, onset, out float worst);
+                                    brakeBuilds++;
+                                    string build = (brake != null ? brake.Id : "stock brakes") + ", " + (weight != null ? weight.Id : "stock weight") + ", " + (tyre != null ? tyre.Id : "stock tyres")
+                                                   + ", " + (spring != null ? spring.Id : "stock springs") + ", onset " + FeelF(onset) + " s: shop " + FeelF(shop) + " m, car " + FeelF(stopped) + " m";
+                                    if (Math.Abs(shop - stopped) > diffMost)
+                                    {
+                                        diffMost = Math.Abs(shop - stopped);
+                                        diffAt = build;
+                                    }
+                                    if (worst > useMost)
+                                    {
+                                        useMost = worst;
+                                        useAt = build;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                FeelSay("  " + name + ": lags " + FeelF(setup.FrontLag) + "/" + FeelF(setup.RearLag) + ", damping read " + FeelF(setup.Front.GameZeta) + "/" + FeelF(setup.Rear.GameZeta) + " -> "
+                        + FeelF(setup.Front.Zeta) + "/" + FeelF(setup.Rear.Zeta) + ", shop and car within " + FeelF(diffMost) + " m (" + diffAt + "), a wheel asks " + FeelF(useMost) + " at the most (" + useAt + ")");
+                Check(diffMost <= FeelShopSpare, "vehicle feel: " + name + " with every Garage build of brakes, weight, tyres and springs: the custom shop's stopping figure and the car's own stop agree within "
+                                                 + FeelF(diffMost) + " m (" + (diffAt ?? "every build the same") + ")");
+                Check(useMost <= 1f, "vehicle feel: " + name + " with every Garage build: no wheel asks more than its tyre holds as the body dives (" + FeelF(useMost) + ", " + useAt + ")");
+            }
+        }
+        Check(designs == 6 && softened == designs && brakeBuilds >= designs * 2,
+            "vehicle feel: the log's three cars as sports cars at Full and Heavy, the soft ride asked: " + softened + " of " + designs + " softened, " + brakeBuilds + " Garage builds stepped wheel by wheel");
+
+        // The condition is the design's own choice, in the step that tries a ride's roll, and the softened car's dampers are put back with its springs between the rides tried.
+        string model = ModSource(@"Driving\HandlingModel.cs");
+        Check(model.Contains("public const float MostLag = 2f;") && MemberText(model, "private static int SoftRoll(").Contains("LagsCarried(")
+              && MemberText(model, "public static bool RideCarries(").Contains("LagsCarried(") && MemberText(model, "private static void Restock(").Contains("car.Rear.Rebound = stock[9];"),
+            "vehicle feel sources: a ride whose full pedal asks either axle more than HandlingModel.MostLag times its share is refused in the design's own steps, and the dampers are put back with the springs between rides");
+        string doc = File.Exists(VehicleFeelRoot(@"docs\features\driving.md")) ? File.ReadAllText(VehicleFeelRoot(@"docs\features\driving.md")) : string.Empty;
+        Check(doc.Contains("HandlingModel.MostLag"), "vehicle feel docs: docs/features/driving.md says a softened car's brakes are held to HandlingModel.MostLag");
+    }
+
+    // A Garage build's springs and weight on an axle of a design, as the Garage puts them on the car (NavCheck's HandlingCheck.BuiltAxle): the spring fitted
+    // to its stiffness, ride height and weight, the dampers by the root of stiffness times weight, the force point moved with the body, the bar stiffened.
+    private static void FeelBuiltAxle(AxleData game, AxleSetup s, float stiffness, float ride, float massFactor, AxleSetup into)
+    {
+        float load = s.Load * massFactor;
+        HandlingModel.FitSpring(game.Spring.Evaluate, s.SpringForce, s.SpringLength, s.Load, massFactor, stiffness, ride, GarageCatalogue.MaxLower, GarageCatalogue.MaxRaise,
+            out into.SpringForce, out into.SpringLength, out float change);
+        float damping = (float)Math.Sqrt(stiffness * massFactor);
+        into.Bump = s.Bump * damping;
+        into.Rebound = s.Rebound * damping;
+        into.Application = (s.Application * s.SpringLength + change) / into.SpringLength;
+        into.AntiSquat = s.AntiSquat;
+        into.AntiRoll = s.AntiRoll * stiffness;
+        into.LoadRating = s.LoadRating;
+        into.Load = load;
+        float settled = HandlingModel.RestCompression(game.Spring, into.SpringForce, load);
+        into.Rate = into.SpringForce * game.Spring.Slope(settled) / into.SpringLength;
+        into.Sag = settled * into.SpringLength;
+        into.RestLength = into.SpringLength - into.Sag;
+    }
+
+    // The car braking from 100 km/h as the game's own chain brakes it, wheel by wheel (NavCheck's HandlingCheck.GameStop): the eased pedal at the input's rate,
+    // the brakes' onset, each wheel's torque held to what its tyre takes at the load its spring and damper put on it as the body dives, each axle's corner with
+    // the build's springs. Returns the metres; worst is the most of what its tyre holds any wheel asked for (past 1 it would lock).
+    private static float FeelStop(CarChassis car, HandlingSetup s, AxleSetup frontCorner, AxleSetup rearCorner, float brakes, float massFactor, float grip, float onset,
+        out float worst)
+    {
+        HandlingModel.PartsBrakes(car, s, brakes, massFactor, grip, out float frontShare, out float rearShare, out _);
+        float step = HandlingModel.Step;
+        float mass = s.Mass * massFactor;
+        float most = car.BrakeTorque * brakes;
+        float arm = HandlingModel.PitchArm(car, s);
+        float wheelbase = car.Front.Z - car.Rear.Z;
+        float frontGrip = s.Front.AlongG * grip;
+        float rearGrip = s.Rear.AlongG * grip;
+        float frontMass = frontCorner.Load / HandlingModel.G;
+        float rearMass = rearCorner.Load / HandlingModel.G;
+        float frontLength = frontCorner.RestLength, rearLength = rearCorner.RestLength;
+        float frontBefore = frontLength, rearBefore = rearLength, frontSpeed = 0f, rearSpeed = 0f;
+        float pedal = 0f, felt = 0f, time = 0f, nextFrame = 0f, frame = 1f / HandlingModel.InputRate;
+        float speed = HandlingModel.StopFrom, metres = 0f;
+        worst = 0f;
+        for (int i = 0; i < 5000 && speed > 0f; i++)
+        {
+            while (nextFrame <= time)
+            {
+                pedal = HandlingRules.BrakePedal(pedal, 1f, frame, s.BrakeRise);
+                nextFrame += frame;
+            }
+            felt = Math.Min(pedal, felt + step / Math.Max(0.001f, onset));
+            float frontLoad = FeelCorner(car.Front, frontCorner, frontLength, (frontBefore - frontLength) / step);
+            float rearLoad = FeelCorner(car.Rear, rearCorner, rearLength, (rearBefore - rearLength) / step);
+            float frontWant = (Math.Min(felt * most * frontShare, most) + s.Front.Rolling) / car.Front.Radius;
+            float rearWant = (Math.Min(felt * most * rearShare, most) + s.Rear.Rolling) / car.Rear.Radius;
+            float frontHold = frontGrip * frontLoad, rearHold = rearGrip * rearLoad;
+            worst = Math.Max(worst, Math.Max(frontWant / Math.Max(1f, frontHold), rearWant / Math.Max(1f, rearHold)));
+            float slowing = 2f * (Math.Min(frontWant, frontHold) + Math.Min(rearWant, rearHold)) / mass;
+            float moved = mass * slowing * arm / (2f * wheelbase);   // N a front wheel gains and a rear wheel loses as the body dives
+            frontBefore = frontLength;
+            rearBefore = rearLength;
+            frontSpeed += ((frontLoad - moved) / frontMass - HandlingModel.G) * step;
+            rearSpeed += ((rearLoad + moved) / rearMass - HandlingModel.G) * step;
+            frontLength += frontSpeed * step;
+            rearLength += rearSpeed * step;
+            speed = Math.Max(0f, speed - slowing * step);
+            metres += speed * step;
+            time += step;
+        }
+        return metres;
+    }
+
+    // A corner's spring and damper at a length and compression speed, as the game sums them for the tyre's load.
+    private static float FeelCorner(AxleData shape, AxleSetup s, float length, float compressing)
+    {
+        if (length >= s.SpringLength)
+        {
+            return 0f;
+        }
+        return Math.Max(0f, shape.Spring.Evaluate((s.SpringLength - length) / s.SpringLength) * s.SpringForce + HandlingModel.DamperAt(shape, s.Bump, s.Rebound, compressing));
+    }
+
+    // No part, then each of the custom shop's parts for a slot.
+    private static IEnumerable<PartDef> FeelPartsOf(PartSlot slot)
+    {
+        yield return null;
+        foreach (PartDef part in GarageCatalogue.Parts)
+        {
+            if (part.Slot == slot)
+            {
+                yield return part;
+            }
         }
     }
 
