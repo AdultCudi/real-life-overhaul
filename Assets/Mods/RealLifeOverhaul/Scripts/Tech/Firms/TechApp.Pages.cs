@@ -561,9 +561,19 @@ namespace RealLifeOverhaul.Tech
                 box.Selector(FirmsCatalogue.MarketingDay.Length, p.Marketing, TechText.MarketingLevel, i => Do(() => _director.SetProduct(id, -1, i, -1)));
                 if (p.K == ProductKind.Model)
                 {
-                    box.Selector(InfraRules.TrainLevels.Length, p.Train, i => TechText.Fill("reallife_tech_product_train", "units", InfraRules.TrainLevels[i].ToString(),
-                        "cost", TechText.Cents(_director.Level((long)InfraRules.TrainLevels[i] * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000))),
-                        i => Do(() => _director.SetTraining(id, i)));
+                    // the levels up to the highest its compute covers (one set before racks were sold stays listed until it is lowered), each as the day
+                    // gives it, then what holds it there and what raises it
+                    TrainingLook t = _director.Training(p);
+                    box.Selector(Mathf.Max(t.Most, t.Level) + 1, t.Level, i => Words(TrainingViews.Level(t, i, _studioWords)), i => Do(() => _director.SetTraining(id, i)));
+                    ViewLine room = TrainingViews.Room(t);
+                    if (room.Tone == ViewTone.Warn)
+                    {
+                        box.Line(Words(room), CellTone.Yellow);
+                    }
+                    else
+                    {
+                        box.Note(Words(room));
+                    }
                 }
                 int at = 0;
                 for (int i = 0; i < Shares.Length; i++)

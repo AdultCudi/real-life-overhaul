@@ -56,6 +56,19 @@ namespace RealLifeOverhaul.Tech
         public bool Outage;
     }
 
+    /// <summary>What one of the player's AI models takes of a day's AI compute (InfraRules.ModelsDay), units a day. Game-free.</summary>
+    public struct ModelCompute
+    {
+        public int Level;                // the training level it was reckoned at
+        public long Kept;                // of its training past what it may rent, what the player's own AI racks kept for it
+        public long Own, Rented;         // its training: on the racks (Kept among it), and rented (never past InfraCatalogue.RentedMost)
+        public long RunOwn, RunRented;   // its customers' use: on the racks, and rented
+        public long Keep;                // the racks' compute less the other models' parts past what they may rent: the most its own part past that may be (InfraRules.TrainMost)
+
+        public long Trained => Own + Rented;
+        public long Bought => Rented + RunRented;   // what is paid to the rival clouds
+    }
+
     /// <summary>Everything the infrastructure part keeps in a save. Game-free.</summary>
     public sealed class InfraFile
     {

@@ -53,12 +53,16 @@ namespace RealLifeOverhaul.Tech
                 hosting += r.Customers * SectorCatalogue.HostingUnits[Clamp(seg, 0, 2)] / 1000;
                 if (r.Market >= (int)SectorMarket.ConsumerAi)
                 {
-                    training += (long)(r.Startups ? SectorCatalogue.StartupLabCompute : SectorCatalogue.RivalLabCompute) * SectorCatalogue.RivalCloudRent / 1000;
+                    InfraRules.TrainAlone(LabOwn(r), out long rent);
+                    training += rent;   // the part of its training past its own racks
                 }
             }
             f.Hosting = hosting;
             f.Training = training;
         }
+
+        /// <summary>The AI compute a rival lab has of its own racks a day: a listed company's or a startup's.</summary>
+        public static long LabOwn(RivalProduct r) => r.Startups ? SectorCatalogue.StartupLabOwn : SectorCatalogue.RivalLabOwn;
 
         /// <summary>
         /// The compute (or AI compute) the city buys a day at the list price, the player's cloud's and the rivals': each firm's

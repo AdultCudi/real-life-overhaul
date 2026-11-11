@@ -22,6 +22,8 @@ namespace RealLifeOverhaul.Tech
         private long _ownHosting;      // what the player's own firms paid their own cloud today, cents
         private readonly long[] _due = new long[InfraCatalogue.CentresMost * 3];   // each centre's cooling, upkeep and crews at scale today, cents
         private long _opsDue;          // the cloud's operations people's wages at scale today, cents
+        private readonly List<ModelCompute> _modelsDay = new List<ModelCompute>(16);   // the AI models' share of the AI racks (InfraRules.ModelsDay), reused by the pages and the desk
+        private readonly List<ModelCompute> _cloudDay = new List<ModelCompute>(16);    // the cloud's day's own share of them, so nothing written while it books its costs can change it
         // Warehouses taken while playing, each asked about once: known this session, the ones waiting for the question box.
         private readonly HashSet<string> _knownWarehouses = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<string> _warehousePlaces = new List<string>(8), _takenNow = new List<string>(2), _offers = new List<string>(2);
@@ -468,28 +470,23 @@ namespace RealLifeOverhaul.Tech
             int working = EndScaleRules.Working(EndScaleRules.Cover(c.Ops, ops));
             capacity = (int)((long)capacity * working / 1000);
             gpu = (int)((long)gpu * working / 1000);
-            // the AI labs train and run their models on the cloud's accelerators while it has them, else rented ones
-            long rented = 0;
-            for (int i = 0; _firmsOn && i < _firmsFile.Products.Count; i++)
+            // the AI labs train and run their models on the player's own AI racks first, a cloud or not, then on rented accelerators, by the one
+            // rule their pages and the desk's training runs read too (InfraRules.ModelsDay): a model's training past what it may rent is kept for
+            // it on the racks, the rest of the racks go in the products' order, and its customers' use is always served
+            IList<Product> products = _firmsOn ? _firmsFile.Products : null;
+            long left = InfraRules.ModelsDay(products, Math.Max(0, gpu), _cloudDay);
+            InfraRules.Train(products, _cloudDay);
+            for (int i = 0; products != null && i < products.Count && i < _cloudDay.Count; i++)
             {
-                Product p = _firmsFile.Products[i];
-                if (p.K != ProductKind.Model || p.Stage >= 2)
-                {
-                    continue;
-                }
-                int want = InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)] + (p.Live ? InfraRules.Inference(p) : 0);
-                int own = open ? Math.Min(gpu, want) : 0;
-                gpu -= own;
-                int bought = want - own;
-                p.Compute += InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)];
-                long cost = (long)bought * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000 * level / 1000;
-                if (cost > 0)
+                Product p = products[i];
+                long cost = InfraRules.RentCost(_cloudDay[i].Bought) * level / 1000;
+                if (InfraRules.Trains(p) && cost > 0)
                 {
                     FirmPlace lab = FirmOf(p.Place);
                     FirmsGame.Cost(cost, InfraGame.ComputeKey, lab != null ? lab.Reg : null, lab != null ? lab.File.Name : p.Name, day - 1);
-                    rented += cost;
                 }
             }
+            gpu = (int)Math.Min(int.MaxValue, left);   // what the labs left, for the cloud to sell
             if (!open)
             {
                 c.Sold = c.GpuSold = c.Own = 0;
@@ -735,14 +732,63 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// A model's training level, set from its page: down freely, up to the highest its compute covers (<see cref="TrainingMost"/>), by
+        /// <see cref="InfraRules.TrainSet"/>. A level set before racks were sold stays until it is lowered; the day then trains it on what the compute gives.
+        /// </summary>
         internal void SetTraining(int product, int level)
         {
             Product p = _firmsOn ? _firmsFile.ProductOf(product) : null;
             if (p != null && p.K == ProductKind.Model)
             {
-                p.Train = TalentCatalogue.Clamp(level, 0, InfraRules.TrainLevels.Length - 1);
+                p.Train = InfraRules.TrainSet(level, p.Train, TrainingMost(p));
                 ChangedTech();
             }
+        }
+
+        /// <summary>
+        /// An AI model's training as its page shows it (<see cref="TrainingViews.Look"/>): the day's own rule (<see cref="InfraRules.ModelsDay"/>)
+        /// with the player's AI racks at full work, at each level it could be set to, and what an AI rack bought today gives. COST: a pass over the
+        /// data centres and two over the products for each level, when a page is written.
+        /// </summary>
+        internal TrainingLook Training(Product p)
+        {
+            IList<Product> products = _firmsOn ? _firmsFile.Products : null;
+            return TrainingViews.Look(products, products != null && p != null ? products.IndexOf(p) : -1, OwnRacks(), InfraRules.GpuRackUnits(BuyScale), _modelsDay);
+        }
+
+        // The highest training level a model may be set to: the most its part past what it may rent can take of the racks without another's (ModelCompute.Keep).
+        private int TrainingMost(Product p)
+        {
+            int index = _firmsOn ? _firmsFile.Products.IndexOf(p) : -1;
+            if (index < 0)
+            {
+                return InfraRules.TrainMost(0);
+            }
+            InfraRules.ModelsDay(_firmsFile.Products, OwnRacks(), _modelsDay);
+            return InfraRules.TrainMost(_modelsDay[index].Keep);
+        }
+
+        /// <summary>
+        /// The AI compute the player's AI racks give a day at full work (no outage, the crews full), at today's share of the end game's scale:
+        /// what a model's page, its highest level and a training run at the desk are reckoned on. COST: a pass over the data centres.
+        /// </summary>
+        private long OwnRacks()
+        {
+            int share = _infra != null && Save != null ? EndScaleRules.Share(Settings.EndScale, _infra.ScaleFrom, Save.Day) : 0;
+            return _infra != null ? InfraRules.GpuOwned(_infra.Centres, share) : 0;
+        }
+
+        /// <summary>
+        /// The cloud page's line on the AI racks (<see cref="TrainingViews.Racks"/>): what the player's own models take of them a day at full work
+        /// by the day's own rule, and the AI compute the cloud sold yesterday; null with no AI racks or no model on them. COST: a pass over the
+        /// data centres and two over the products, when the page is written.
+        /// </summary>
+        internal ViewLine RacksLine()
+        {
+            long racks = OwnRacks();
+            InfraRules.ModelsDay(_firmsOn ? _firmsFile.Products : null, racks, _modelsDay);
+            return TrainingViews.Racks(racks, _modelsDay, _infra != null ? _infra.Cloud.GpuSold : 0);
         }
 
         /// <summary>The steps of the way up after the firms' own (a data centre, a cloud, a hyperscaler, an AI lab), for the Firms tab.</summary>

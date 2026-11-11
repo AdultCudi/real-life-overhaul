@@ -760,6 +760,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\TrainingViews.cs" Link="Mod\TrainingViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPlace.cs" Link="Mod\Staffing\StaffPlace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffEffects.cs" Link="Mod\Staffing\StaffEffects.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.cs" Link="Mod\Staffing\StaffTable.cs" />

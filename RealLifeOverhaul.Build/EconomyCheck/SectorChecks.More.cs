@@ -62,7 +62,7 @@ internal static partial class Program
         model.Features = 60;
         var sp = new SectorProduct { Id = model.Id };
         var lab = new Firm { Place = "lab", Reputation = 500 };
-        DeskResult run = SectorRules.Training(f, model, sp, lab, SectorRules.ComputeOwn, SectorRules.DataLicensed, SectorRules.SafetyFull, false, 17, 80);
+        DeskResult run = SectorRules.Training(f, model, sp, lab, SectorRules.ComputeOwn, SectorRules.DataLicensed, SectorRules.SafetyFull, 0, 17, 80);
         Check(run.Done && model.Compute > 0 && run.Cost > SectorCatalogue.DataCost[0] && sp.Benchmark > 50 && run.Story == SectorRules.DeskStoryBenchmark && run.Rival >= 0 && lab.Reputation > 500
               && SectorRules.Held(sp, 80 + SectorCatalogue.SafetyDays[0] - 1) && !SectorRules.Held(sp, 80 + SectorCatalogue.SafetyDays[0]),
             "sector desk: a strong model's run (on rented compute with no accelerators of the player's) beats the rival labs' benchmark, earns a name and holds its next training for its checks (score "
@@ -70,7 +70,7 @@ internal static partial class Program
         Product weak = FirmsRules.NewProduct(ff, "lab", ProductKind.Model, Segment.Business, 0, "Small");
         weak.Features = 1;
         var wsp = new SectorProduct { Id = weak.Id };
-        DeskResult lose = SectorRules.Training(f, weak, wsp, lab, SectorRules.ComputeSmaller, SectorRules.DataSynthetic, SectorRules.SafetySkip, false, 17, 81);
+        DeskResult lose = SectorRules.Training(f, weak, wsp, lab, SectorRules.ComputeSmaller, SectorRules.DataSynthetic, SectorRules.SafetySkip, 0, 17, 81);
         Check(lose.Story == SectorRules.DeskStoryNone && wsp.Benchmark < 50 && lose.Figure2 < run.Figure2 && wsp.Data / 10 == SectorRules.SafetySkip,
             "sector desk: a weak model on half a run loses the benchmark; skipped checks are remembered for its launch");
         // a model's launch

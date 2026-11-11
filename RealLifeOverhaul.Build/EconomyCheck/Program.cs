@@ -601,6 +601,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ai-training")
+        {
+            AiTraining();   // (an AI model's training against the compute behind it alone: AiTrainingChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 1 && args[0] == "--living")
         {
             Sessions();     // (the desk sessions and the tech money scale alone, while working on them: SessionChecks.cs, TechScaleChecks.cs; "scale" after it prints the tables)
@@ -1349,6 +1355,7 @@ internal static partial class Program
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();
         Infra2();
+        AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();
         StartupMoneyChecks();
         StartupTermsChecks();

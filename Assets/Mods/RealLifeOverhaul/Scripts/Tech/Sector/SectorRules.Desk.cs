@@ -222,24 +222,31 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- the AI lab: a training run
 
         /// <summary>
-        /// A training run: ten days of the model's training at once on the lab's own cloud (its accelerators, at the price the
-        /// player's firms pay their own cloud) or rented, or half a run; licensed data makes it sounder and costs, scraped data
-        /// is free and may bring a claim, synthetic is between; full safety checks hold the next training for days and earn a
-        /// name, skipped ones risk an incident at its launch. Its benchmark against the rival labs of its market: a win earns
-        /// a name and a piece in the paper. Returns the run's cost and its score.
+        /// A training run: ten days of the model's training at once (at its level, <see cref="RunLevel"/>) on the player's own AI racks as far as
+        /// they give the model (<paramref name="own"/>: its share a day by InfraRules.ModelsDay, at the price the player's firms pay their own
+        /// cloud) and the rest rented, never past <see cref="InfraCatalogue.RentedMost"/> a day, at the rival clouds' price. Returns the run's cost
+        /// and its score.
         /// </summary>
-        public static DeskResult Training(SectorFile f, Product p, SectorProduct sp, Firm firm, int compute, int data, int safety, bool ownGpu, int seed, int day, int strength = 1000)
+        public static DeskResult Training(SectorFile f, Product p, SectorProduct sp, Firm firm, int compute, int data, int safety, long own, int seed, int day, int strength = 1000)
         {
+            // Or rented, or half a run. Licensed data makes it sounder and costs, scraped data is free and may bring a claim, synthetic is between;
+            // full safety checks hold the next training for days and earn a name, skipped ones risk an incident at its launch. Its benchmark against
+            // the rival labs of its market: a win earns a name and a piece in the paper.
             var r = new DeskResult { Done = true, Rival = -1 };
             int c = Clamp(compute, 0, 2), d = Clamp(data, 0, 2), s = Clamp(safety, 0, 2);
-            if (c == ComputeOwn && !ownGpu)
+            long daily = InfraRules.TrainLevels[RunLevel(p)];
+            long ownDaily = c == ComputeOwn ? Math.Min(daily, Math.Max(0L, own)) : 0;   // never more of the racks than the day gives the model
+            if (c == ComputeOwn && ownDaily <= 0)
             {
-                c = ComputeRented;   // no accelerators of the player's to run it on
+                c = ComputeRented;   // nothing of the player's own AI racks for it to run on
             }
-            long units = (long)InfraRules.TrainLevels[Math.Max(2, Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1))] * SectorCatalogue.TrainRunDays * SectorCatalogue.TrainCompute[c] / 1000
-                         * Clamp(strength, 0, 1000) / 1000;   // a manager's run makes less of the same compute
+            long rentDaily = Math.Min(daily - ownDaily, InfraCatalogue.RentedMost);
+            int part = Clamp(strength, 0, 1000);   // a manager's run makes less of the same compute
+            long onRacks = ownDaily * SectorCatalogue.TrainRunDays * SectorCatalogue.TrainCompute[c] / 1000 * part / 1000;
+            long rented = rentDaily * SectorCatalogue.TrainRunDays * SectorCatalogue.TrainCompute[c] / 1000 * part / 1000;
+            long units = onRacks + rented;
             p.Compute += units;
-            r.Cost = units * InfraCatalogue.GpuUnitDay * (c == ComputeOwn ? InfraCatalogue.OwnHostingShare : InfraCatalogue.RentedGpuShare) / 1000 + SectorCatalogue.DataCost[d];
+            r.Cost = onRacks * InfraCatalogue.GpuUnitDay * InfraCatalogue.OwnHostingShare / 1000 + InfraRules.RentCost(rented) + SectorCatalogue.DataCost[d];
             switch (d)
             {
                 case DataLicensed:
@@ -297,8 +304,14 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True when a model's training is held for its safety checks today.</summary>
         public static bool Held(SectorProduct sp, int day) => sp != null && day < sp.TrainedDay;
 
-        /// <summary>The sound run: on the lab's own accelerators when it has them, licensed data, full safety checks.</summary>
-        public static int PickTraining(int step, bool ownGpu) => step == 0 ? (ownGpu ? ComputeOwn : ComputeRented) : step == 1 ? DataLicensed : SafetyFull;
+        /// <summary>The level a training run trains a model at: its own, and never under 2 (50 units a day).</summary>
+        public static int RunLevel(Product p) => Math.Max(2, InfraRules.TrainLevel(p.Train));
+
+        /// <summary>True when the player's own AI racks give a model its whole run a day (<paramref name="own"/>, its share at <see cref="RunLevel"/> by InfraRules.ModelsDay).</summary>
+        public static bool RunCovered(Product p, long own) => own >= InfraRules.TrainLevels[RunLevel(p)];
+
+        /// <summary>The sound run: on the player's own AI racks when they cover the whole run (<see cref="RunCovered"/>), else rented; licensed data, full safety checks.</summary>
+        public static int PickTraining(int step, bool covered) => step == 0 ? (covered ? ComputeOwn : ComputeRented) : step == 1 ? DataLicensed : SafetyFull;
 
         // ---------------------------------------------------------------- the AI lab: a model's launch
 

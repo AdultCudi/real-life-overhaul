@@ -202,9 +202,10 @@ namespace RealLifeOverhaul.Tech
         public const int CloudScale = 40000;         // thousandths: what the end game's scale opens beyond the city (CloudDemandScale over CloudDemand)
         public const int GpuScale = 20000;           // ...of AI compute (GpuDemandScale over GpuDemand)
         public static readonly int[] HostingUnits = { 1, 20, 500 };   // thousandths of a unit of compute a customer of a rival's software takes a day, by Segment
-        public const int RivalLabCompute = 1500;     // AI compute unit-days a listed company's model trains on a day...
-        public const int StartupLabCompute = 200;    // ...and a startup's
-        public const int RivalCloudRent = 50;        // thousandths of the rival labs' training rented from the clouds the player's competes with (the rest on their own racks)
+        // A rival lab trains by the player's rule (InfraRules.TrainAlone): at the highest level its own racks and the most a model may rent
+        // cover, its own compute first, the rest rented from the clouds the player's competes with.
+        public const int RivalLabOwn = 1425;         // AI compute units a day a listed company's lab has of its own: it trains 1,500 a day, 75 of them rented...
+        public const int StartupLabOwn = 190;        // ...and a startup's: 200 a day, 10 rented
         public const int RivalCloudReputation = 700; // the rival clouds' name
         public const int RivalCloudWeight = 1000;    // thousandths: the rival clouds' weight together against the player's at an even price and name
         public static readonly int[] TierAppeal = { 700, 1000, 1250, 1500 };   // thousandths: how a data centre's tier weighs with a company letting racks
