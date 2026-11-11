@@ -64,6 +64,10 @@ namespace RealLifeOverhaul
         /// </summary>
         public Offence Driving(Rigidbody body, float now, OffenceSwitches on)
         {
+            if (body == null)
+            {
+                return Offence.None;   // no car, or one the game destroyed: nothing to read
+            }
             Vector3 velocity = body.velocity;
             float sqrSpeed = velocity.x * velocity.x + velocity.z * velocity.z;
             bool slow = sqrSpeed < MinSpeed * MinSpeed;

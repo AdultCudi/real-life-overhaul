@@ -49,6 +49,24 @@ internal static partial class Program
         OffenceMovePins();
         OffenceRidePins();
         OffenceWords();
+        OffenceBodyPins();
+    }
+
+    // The player's car can be destroyed between the police's slow lookups: a destroyed body is dropped before anything reads it.
+    private static void OffenceBodyPins()
+    {
+        string attention = ModSource(@"Crime\PoliceAttention.cs"), offences = ModSource(@"Crime\PlayerOffences.cs");
+        string drop = Between(attention, "private bool DropGoneBody()", "private void Lookup()");
+        string tick = Between(attention, "private void Tick(float now)", "private void Lookup()");
+        string detect = Between(attention, "private void Detect(float now)", "private bool Seen(");
+        string driving = Between(offences, "public Offence Driving(Rigidbody body", "Vector3 velocity = body.velocity;");
+        Check(drop.Contains("!_driving || _body != null") && drop.Contains("_driving = false;") && drop.Contains("_nextLookup = 0f;"),
+            "police body: a destroyed car clears driving and asks for a fresh lookup at once");
+        Check(tick.IndexOf("DropGoneBody();", StringComparison.Ordinal) is int t && t >= 0 && t < tick.IndexOf("Lookup();", StringComparison.Ordinal),
+            "police body: the pursuit and the look both start after the dropped body, never on it");
+        Check(Regex.IsMatch(detect, @"if \(DropGoneBody\(\)\)\s*\{\s*return;") && detect.IndexOf("DropGoneBody()", StringComparison.Ordinal) < detect.IndexOf("_offences.Driving(", StringComparison.Ordinal),
+            "police body: Detect returns before reading a destroyed car");
+        Check(Regex.IsMatch(driving, @"if \(body == null\)\s*\{\s*return Offence\.None;"), "police body: PlayerOffences.Driving gives no offence for a null or destroyed body");
     }
 
     private static OffenceSwitches OffencesWith(int on)   // bit i: kind i of OffenceKinds is on
