@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Ui
         public string More;                                    // another mod's button in the game's panel: opens the game's own view; null for none
         public bool Hidden;                                    // the game has the panel faded out (a menu over the world): nothing is drawn
         public float AvoidX, AvoidY, AvoidW, AvoidH;           // px of the layout: the mod's minimap card, kept clear of; 0 wide for none
+        public float KeysX, KeysY, KeysW, KeysH;               // px of the layout: the HUD's key chips over the bar (the game's control hints), kept clear of; 0 wide for none
     }
 
     /// <summary>
@@ -50,8 +51,8 @@ namespace RealLifeOverhaul.Ui
     /// thing in hand or the vehicle: its strip, its picture with its name, state and whose it is, a vehicle's readings
     /// (fuel, condition, the mod's speed and what the car needs) as meters with their glyphs, its cargo as a tile a stack
     /// under how many of its slots are used, and the game's actions with the game's own key caps. It is as wide as what it
-    /// holds needs (narrower with no readings) and keeps clear of the mod's minimap card. The HUD takes no key: the game answers its keys, the
-    /// pointer presses the rest. Commands from <see cref="ActionCommand"/>. Game-free. Cost: a layout a change.
+    /// holds needs (narrower with no readings) and keeps clear of the mod's minimap card and of the HUD's key chips. The HUD
+    /// takes no key: the game answers its keys, the pointer presses the rest. Commands from <see cref="ActionCommand"/>. Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiItemPanel
     {
@@ -124,9 +125,24 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            Place(m, frame, out float x, out float y);
+            Draw(s, m, x, y);
+        }
+
+        /// <summary>
+        /// Where the panel's top left stands: docked at the bottom left above the bar; beside the minimap's card where that
+        /// stands there (over it where the screen is too narrow); and its foot over the HUD's key chips wherever they would
+        /// meet it. The chips stand in the lane over the bar (UiFrame.PromptLane, theirs: a window ends above it) from the
+        /// phone leftwards, so the game's driving hints, seven of them, reach past the minimap's card into the panel's foot
+        /// and were drawn across its last button (the owner's report, 11 Nov 2026).
+        /// </summary>
+        public static void Place(UiItemPanelModel m, UiFrame frame, out float x, out float y)
+        {
             float h = Height(m), w = WidthOf(m);
-            float x = UiTokens.S4, y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
-            if (m.AvoidW > 0f && m.AvoidH > 0f && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
+            x = UiTokens.S4;
+            y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
+            bool minimap = m.AvoidW > 0f && m.AvoidH > 0f;
+            if (minimap && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
             {
                 // The minimap's card stands there: beside it at the same foot, or over it where the screen is too narrow.
                 float beside = UiDraw.Snap(m.AvoidX + m.AvoidW + UiTokens.S2);
@@ -139,7 +155,14 @@ namespace RealLifeOverhaul.Ui
                     y = Math.Max(UiTokens.S4, UiDraw.SnapDown(m.AvoidY - UiTokens.S2 - h));
                 }
             }
-            Draw(s, m, x, y);
+            if (m.KeysW > 0f && m.KeysH > 0f && UiHudRules.Overlaps(x, y, w, h, m.KeysX, m.KeysY, m.KeysW, m.KeysH))
+            {
+                y = Math.Max(UiTokens.S4, UiDraw.SnapDown(m.KeysY - UiTokens.S2 - h));
+                if (minimap && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
+                {
+                    y = Math.Max(UiTokens.S4, UiDraw.SnapDown(Math.Min(m.AvoidY, m.KeysY) - UiTokens.S2 - h));   // lifted into the card's way: over both
+                }
+            }
         }
 
         public static float Draw(UiScene s, UiItemPanelModel m, float x, float y)

@@ -682,13 +682,20 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The mod's minimap card (Navigation) where it stands, in px of the layout, so the panel keeps clear of it wherever it
-        // is and whichever HUD shows; nothing while it is hidden. Read with the panel, four times a second; whole px.
+        // is and whichever HUD shows; nothing while it is hidden. With it the HUD's key chips over the bar, which the panel's
+        // foot keeps over (they stand on a canvas of their own and know nothing of the panel). Read with the panel, four
+        // times a second; whole px.
         private void Minimap()
         {
             UiMinimapBox.Read(_frameW, _frameH, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);
             if (_m.AvoidW > 0f)
             {
                 _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
+            }
+            HudHost.KeysBox(_frameW, _frameH, out _m.KeysX, out _m.KeysY, out _m.KeysW, out _m.KeysH);
+            if (_m.KeysW > 0f)
+            {
+                _sb.Append(_m.KeysX).Append(',').Append(_m.KeysY).Append(',').Append(_m.KeysW).Append(',').Append(_m.KeysH).Append('|');
             }
         }
 

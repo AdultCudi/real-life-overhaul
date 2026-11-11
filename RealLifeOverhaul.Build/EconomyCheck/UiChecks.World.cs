@@ -322,6 +322,57 @@ internal static partial class Program
         CriticChecks(en);
     }
 
+    // The owner's report (11 Nov): driving, the vehicle panel stood beside the minimap's card with its foot under the HUD's
+    // key chips (the game's seven driving hints, W Forward to F12 Menu, from the phone leftwards past the card), Sell
+    // drawn over. The panel's foot now keeps over the chips wherever they meet it, and stays docked where they do not.
+    private static void ItemPanelKeysChecks(UiWords en)
+    {
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "HUD");
+        float chipsY = frame.BandY - UiDraw.KeyChipLift - UiDraw.KeyChipHeight;
+        UiItemPanelModel car = UiSamples.ItemPanel(en, "vehicle");
+        car.AvoidX = UiSamples.MinimapX;
+        car.AvoidY = UiSamples.MinimapY;
+        car.AvoidW = UiSamples.MinimapW;
+        car.AvoidH = UiSamples.MinimapH;
+        float w = UiItemPanel.WidthOf(car), h = UiItemPanel.Height(car);
+        UiItemPanel.Place(car, frame, out float x0, out float y0);   // no chips: the panel's own foot beside the card
+        car.KeysX = 345f;
+        car.KeysY = chipsY;
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        car.KeysH = UiDraw.KeyChipHeight;
+        UiItemPanel.Place(car, frame, out float x1, out float y1);
+        var s = new UiScene();
+        UiItemPanel.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
+        UiItem box = default(UiItem);
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if ((s.Items[i].Flags & UiFlags.Panel) != 0)
+            {
+                box = s.Items[i];
+                break;
+            }
+        }
+        Check(y0 == UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h) && x0 >= car.AvoidX + car.AvoidW && UiHudRules.Overlaps(x0, y0, w, h, car.KeysX, car.KeysY, car.KeysW, car.KeysH)
+              && x1 == x0 && y1 + h <= car.KeysY - UiTokens.S2 && !UiHudRules.Overlaps(x1, y1, w, h, car.KeysX, car.KeysY, car.KeysW, car.KeysH)
+              && !UiHudRules.Overlaps(x1, y1, w, h, car.AvoidX, car.AvoidY, car.AvoidW, car.AvoidH) && box.W == w && box.X == x1 && box.Y == y1,
+            "item panel: driving, the vehicle panel beside the minimap's card keeps its foot over the HUD's key chips that reach under it, and its own place beside the card");
+        car.KeysX = x1 + w + UiTokens.S2;   // chips that end short of the panel (a short hint row): the panel stays docked at its own foot
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        UiItemPanel.Place(car, frame, out float x2, out float y2);
+        car.AvoidW = 0f;   // no minimap, chips under the bottom left corner: the panel rises over them there too
+        car.KeysX = UiTokens.S4;
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        UiItemPanel.Place(car, frame, out float x3, out float y3);
+        Check(x2 == x0 && y2 == y0 && x3 == UiTokens.S4 && y3 + h <= car.KeysY - UiTokens.S2,
+            "item panel: chips that end short of the panel leave it at its own foot, and chips under the bottom left lift it over them without the minimap too");
+        string scripts = ModScripts();
+        string kit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "ItemPanelKit.cs"));
+        string hud = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Hud", "HudHost.cs"));
+        Check(kit.Contains("HudHost.KeysBox(_frameW, _frameH, out _m.KeysX, out _m.KeysY, out _m.KeysW, out _m.KeysH);") && hud.Contains("_keysW = shares ? kw / frame.Width : 0f;")
+              && hud.Contains("!HudStatusGame.Shows"),
+            "item panel: the game's panel reads where the HUD's chips stand from the HUD's own layout, four times a second with its other readings, nothing a frame");
+    }
+
     // The wave 2 critic's findings on the buying and world screens (3 Nov), each held by its sample.
     private static void CriticChecks(UiWords en)
     {
@@ -346,6 +397,7 @@ internal static partial class Program
         Check(panel >= 0 && !UiHudRules.Overlaps(box.X, box.Y, box.W, box.H, bag.AvoidX, bag.AvoidY, bag.AvoidW, bag.AvoidH) && tiles == 1
               && box.W == UiItemPanel.Narrow && UiDraw.CapWord("BACKSPACE") == "Bksp" && bag.Actions[0].Label == "Sell for $12",
             "item panel: a paper bag stands beside the minimap's card, as narrow as a thing in hand, one tile for its one stack and no wall of empty slots, Sell with its price on a short cap");
+        ItemPanelKeysChecks(en);
         UiCheckoutModel goods = UiSamples.Checkout(en, "goods");
         UiCheckoutLine popcorn = Array.Find(goods.Lines, l => l.Name == "Popcorn");
         Check(popcorn.Packs == 0 && popcorn.Total == "$0" && goods.Sums.Length == 2 && goods.QueueDetail != null,

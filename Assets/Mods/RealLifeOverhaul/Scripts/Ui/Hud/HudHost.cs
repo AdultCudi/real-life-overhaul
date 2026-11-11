@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.Ui
         private bool _hasColumn;
         private float _columnRight, _columnBottom;         // the left column alone, in canvas units from the screen's foot: what the minimap is placed under
         private float _chipsLeft, _chipsTop = -1f;         // the key chips over the bar's right end, in the same units: what the minimap is placed over
+        private float _keysX, _keysY, _keysW, _keysH;      // the key chips again, as shares of the screen from its top left: what the item panel keeps clear of; 0 wide for none
         private AllAppsScreen _allApps;
         private float _appsDue;                         // when the app row's list is read again from the game while walking
 
@@ -386,6 +387,33 @@ namespace RealLifeOverhaul.Ui
             bool chips = UiHud.Chips(_scene, _screen.Model, Frame(), HudHints.Wrap(UiGame.Instance.Keys), out float kx, out float ky, out float kw, out float kh);
             _chipsLeft = chips ? kx * _scale : 0f;
             _chipsTop = chips ? _laidSize.y - ky * _scale : -1f;
+            bool shares = chips && frame.Width > 0f && frame.Height > 0f;
+            _keysX = shares ? kx / frame.Width : 0f;
+            _keysY = shares ? ky / frame.Height : 0f;
+            _keysW = shares ? kw / frame.Width : 0f;
+            _keysH = shares ? kh / frame.Height : 0f;
+        }
+
+        /// <summary>
+        /// The key chips over the bar (the game's control hints while the keys lead) in px of another kit layout of the given
+        /// size, from its top left, for a piece on a canvas of its own (the item panel) to keep clear of; all zero while the
+        /// HUD is not on screen or shows no chips. Whole px, rounded outwards. Read where a host looks at the game a few
+        /// times a second; nothing is allocated.
+        /// </summary>
+        public static void KeysBox(float layoutW, float layoutH, out float x, out float y, out float w, out float h)
+        {
+            x = y = w = h = 0f;
+            HudHost host = Instance;
+            if (host == null || layoutW <= 0f || layoutH <= 0f || host._keysW <= 0f || host._keysH <= 0f || !host.isActiveAndEnabled || !HudStatusGame.Shows
+                || host._laidSize.x <= 0f)
+            {
+                return;
+            }
+            float left = Mathf.Floor(host._keysX * layoutW), top = Mathf.Floor(host._keysY * layoutH);
+            x = left;
+            y = top;
+            w = Mathf.Ceil((host._keysX + host._keysW) * layoutW) - left;
+            h = Mathf.Ceil((host._keysY + host._keysH) * layoutH) - top;
         }
 
         /// <summary>The HUD's order, which the minimap's canvas is set over (HudHost.KeepOver may lift it over the phone).</summary>
