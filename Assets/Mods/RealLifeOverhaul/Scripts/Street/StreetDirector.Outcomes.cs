@@ -16,8 +16,8 @@ namespace RealLifeOverhaul.Street
             StreetStranger s = _chat.Who;
             return new StreetMeet
             {
-                First = s.First, Last = s.Last, Female = s.Female, Age = s.Age, Job = s.Job, District = s.District, Traits = s.Traits, Warm = StreetRules.Score(_chat) >= StreetRules.NumberAt,
-                Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Body) : null
+                First = s.First, Last = s.Last, Female = s.Female, Age = s.Age, Job = s.Job, District = s.District, Traits = s.Traits, Compatible = s.Compatible,
+                Warm = StreetRules.Score(_chat) >= StreetRules.NumberAt, Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Body) : null
             };
         }
 

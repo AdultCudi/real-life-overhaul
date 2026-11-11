@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Population
         public const int CoupleFrom = 22, CoupleTo = 45;   // years: the ages singles pair up between
         public const int LeaveFrom = 20, LeaveTo = 34;     // years: grown children leave home between
         public const int MotherFrom = 15, MotherTo = 49;   // years
-        public const int AgeGapMost = 8;                   // years between partners at most
+        public const int AgeGapMost = 8;                   // years between partners at most; the player's romances keep it too (RomanceRules.AgeGap)
         public const int SameSexShare = 50;                // thousandths of couples of the same sex
         public const int PartnerLooks = 10;                // single adults a seeker looks at
 

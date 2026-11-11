@@ -646,6 +646,9 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
+                    new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
+                    v => Settings.FamilyInterest = v)
                 .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
                     v => Settings.SocialNetworking = v)
                 .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
@@ -1525,9 +1528,6 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyWealthMood = v)
                 .AddToggle(Settings.FamilyExpectId, "reallife_family_expect_opt", Settings.FamilyExpect,
                     v => Settings.FamilyExpect = v)
-                .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
-                    new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
-                    v => Settings.FamilyInterest = v)
                 .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", Family.ChildYearRules.WeeksLeast, Family.ChildYearRules.WeeksMost, Settings.FamilyYearWeeks,
                     v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())

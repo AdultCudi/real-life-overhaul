@@ -636,6 +636,7 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
+                    int interest = SocialLife.Interest, years = SocialLife.PlayerYears();   // (asked once, not for each of up to 400 people)
                     for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.Get(i);
@@ -645,7 +646,8 @@ namespace RealLifeOverhaul
                         }
                         into.Add(new FlarePerson
                         {
-                            Index = p.Index, First = SocialLife.First(p), Stage = (int)p.Stage, Taste = Taste(p), Closeness = p.Closeness, Partner = p.Together, Compatible = p.Compatible,
+                            Index = p.Index, First = SocialLife.First(p), Stage = (int)p.Stage, Taste = Taste(p), Closeness = p.Closeness, Partner = p.Together,
+                            Compatible = SocialRules.Romantic(p, interest, years, SocialLife.Day, SocialPlaces.DaysPerYear),   // somebody the player could fall for
                             Unanswered = p.LastTextDay > p.LastContactDay && SocialLife.Day - p.LastTextDay <= 3,
                             Job = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))].GetLocalization(), District = SocialPlaces.District(p.District),
                             Female = p.Female, Age = p.Age, LookSeed = p.Seed, Mood = p.Mood, Contact = SocialPhone.IdOf(p)

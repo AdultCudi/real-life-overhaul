@@ -116,6 +116,32 @@ namespace RealLifeOverhaul
             return weekday == DayOfWeekOrdered.Saturday || weekday == DayOfWeekOrdered.Sunday;
         }
 
+        /// <summary>Who the player is interested in (<see cref="RomanceRules"/>): the option of that name. A field read.</summary>
+        public static int Interest => Settings.FamilyInterest;
+
+        /// <summary>
+        /// The played character's age in whole years, as the game counts it; 0 when the game does not say, which rules nobody out
+        /// for their age. A few field reads, asked on a press or when a page is drawn, never per frame.
+        /// </summary>
+        public static int PlayerYears()
+        {
+            try
+            {
+                CharacterData data = PlayerHelper.CharacterData;
+                return data != null ? TimeHelper.GetYearsByDays(data.ageInDays) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;   // the city is not up yet, or the game has no player to ask
+            }
+        }
+
+        /// <summary>Whether a romance with them is possible for the player now (<see cref="SocialRules.Romantic"/>, at their age and wish).</summary>
+        public static bool Romantic(SocialPerson person)
+        {
+            return person != null && person.Compatible && SocialRules.Romantic(person, Interest, PlayerYears(), Day, SocialPlaces.DaysPerYear);
+        }
+
         public static string T(string key)
         {
             return JobKeys.Fill(key.GetLocalization());
@@ -379,7 +405,8 @@ namespace RealLifeOverhaul
             SocialPhone.Add(person, true);
             Toast(NotificationType.Success, "reallife_social_met", Data(person), 10f);
             ModState.AddModifier(ModState.Social);
-            Logger?.Info("Social: met " + person.Name + " (" + person.Origin + "), traits " + person.Traits + (person.Compatible ? ", a romance is possible" : string.Empty) + ".");
+            Logger?.Info("Social: met " + person.Name + " (" + person.Origin + "), traits " + person.Traits
+                         + (Romantic(person) ? ", a romance is possible" : person.Compatible ? ", open to a romance but not with this player (their sex or age)" : string.Empty) + ".");
             try
             {
                 SocialLinks.Met?.Invoke(person, by);

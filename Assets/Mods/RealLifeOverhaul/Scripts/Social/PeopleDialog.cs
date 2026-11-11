@@ -115,10 +115,15 @@ namespace RealLifeOverhaul
             data["birthday"] = birthday == 0 ? SocialLife.T("reallife_social_people_birthday_today")
                 : SocialLife.T("reallife_social_people_birthday_in").Replace("{days}", birthday.ToString());
             string network = SocialPhone.NetworkLine != null ? SocialPhone.NetworkLine(p) : null;   // their position, and what they could do next
+            string extra = !p.Together && SocialState.Partner == null && SocialLife.Romantic(p) ? SocialLife.T("reallife_social_people_romance") : null;   // who Ask them out is for
+            if (network != null)
+            {
+                extra = extra == null ? network : extra + "\n" + network;
+            }
             var entry = new DialogEntry
             {
-                messageData = network != null
-                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + network } })
+                messageData = extra != null
+                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + extra } })
                     : "reallife_social_people_page".Localize(data),
                 OnCancel = PhoneContacts.HangUp
             };

@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Street
         public int Age;
         public int Job, District;
         public SocialTrait Traits;
+        public bool Compatible;    // open to a romance, as the talk showed (StreetStranger.Compatible): what the phone then allows is the same
         public bool Warm;          // the talk went well (the social life's warm first meeting)
         public string Look;        // the figure's look (People/PersonLook's text); null if it could not be read
     }

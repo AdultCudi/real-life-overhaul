@@ -210,15 +210,31 @@ namespace RealLifeOverhaul
             {
                 return MakeRoom(origin);
             }
+            int years = SocialLife.PlayerYears(), interest = SocialLife.Interest;
             SocialPerson p = SocialCatalogue.MakeNew(SocialState.Count, origin, sex, SocialState.CastSeed, SocialLife.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts,
-                SocialState.People, SocialState.Count);
+                SocialState.People, SocialState.Count, years, interest);
             if (!SocialState.Add(p))
             {
                 return null;
             }
             SocialPhone.Picture(p);
             Logger?.Info("Social: somebody new to meet, " + p.Name + " (" + origin + "), person " + (p.Index + 1) + " of at most " + SocialRules.MaxCast + ".");
+            RomanceCheck(p, sex, years, interest);
             return p;
+        }
+
+        // With Developer diagnostics: somebody new who is open to a romance fits the player, as the cast was made to (RomanceRules).
+        private static void RomanceCheck(SocialPerson p, int sex, int years, int interest)
+        {
+            if (!Meta.Dev.Verbose || !p.Compatible)
+            {
+                return;
+            }
+            bool sexFits = sex >= 0 || RomanceRules.SexFits(interest, p.Female), ageFits = RomanceRules.AgeFits(p.Age, years);
+            Logger?.Info("Social check (romance): " + p.Name + " is open to a romance, " + (p.Female ? "a woman" : "a man") + " of " + p.Age + "; the player is " + years
+                         + " and is interested in " + (interest == RomanceRules.Women ? "women" : interest == RomanceRules.Men ? "men" : "anyone")
+                         + (sexFits && ageFits ? ": PASS." : ": FAIL (" + (sexFits ? string.Empty : "their sex") + (sexFits || ageFits ? string.Empty : " and ")
+                                                             + (ageFits ? string.Empty : "their age") + " does not fit)."));
         }
 
         /// <summary>The next time the player is on foot in the street. False if one is waiting already.</summary>

@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_social_header")
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
                 .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
+                .Owns(Settings.FamilyInterestId)   // who the player is interested in: the people who can fall for them, who they can ask out; no preset sets it, it is their own
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)
                 .Data("reallife:social", "reallife:social_*")
@@ -200,6 +201,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("social_slack", () => Guide.Number(SocialRules.Slack))
                 .Fact("social_date_aff", () => Guide.Number(SocialRules.DateAffection))
                 .Fact("social_date_trust", () => Guide.Number(SocialRules.DateTrust))
+                .Fact("social_age_gap", () => RomanceRules.AgeGap.ToString(CultureInfo.InvariantCulture))
                 .Fact("social_partner_aff", () => Guide.Number(SocialRules.PartnerAffection))
                 .Fact("social_partner_trust", () => Guide.Number(SocialRules.PartnerTrust))
                 .Fact("social_partner_days", () => SocialRules.PartnerDays.ToString(CultureInfo.InvariantCulture))
@@ -744,7 +746,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")
                 .Owns(Settings.FamilyId, Settings.FamilyAtHomeId, Settings.FamilyWeddingId, Settings.FamilyChildrenId, Settings.FamilyRelativesId,
-                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyInterestId, Settings.FamilyYearWeeksId)
+                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId)
                 .Preset(Settings.FamilyFrictionId, 0, 1, 1)
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")

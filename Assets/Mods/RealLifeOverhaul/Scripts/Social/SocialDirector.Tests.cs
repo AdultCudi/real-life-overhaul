@@ -315,7 +315,7 @@ namespace RealLifeOverhaul
                 p.MetDay = Mathf.Min(p.MetDay, day - SocialRules.CloseDays);
                 Raise(p, SocialRules.CloseFamiliarity + 5f, SocialRules.CloseAffection + 5f, SocialRules.CloseTrust + 5f);
             }
-            else if (p.Stage == SocialStage.CloseFriend && p.Compatible && SocialState.Partner == null)
+            else if (p.Stage == SocialStage.CloseFriend && SocialLife.Romantic(p) && SocialState.Partner == null)
             {
                 Raise(p, p.Familiarity, SocialRules.DateAffection + 5f, SocialRules.DateTrust + 5f);
                 SocialLife.SetStage(p, SocialStage.Dating);

@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Street
         public const int LikedFrom = 70;          // public standing: the law's "liked" (Reputation.LikedFrom)
         public const int DislikedBelow = 30;      // ...below this the city thinks badly of the player
         public const int RecogniseMost = 90;      // in hundredths: at full recognition nine in ten know the player's face
-        public const int CompatiblePercent = 45;  // of adults 21 to 60, a romance would be possible
+        public const int CompatiblePercent = 45;  // of everybody, a romance would be possible; with the player, only where their sex and age fit (RomanceRules)
         public const int TakenPercent = 30;       // with somebody else
         public const int CommuterPercent = 45;    // on their way to work at the rush hours
         public const int HumourPercent = 60;
@@ -126,6 +126,12 @@ namespace RealLifeOverhaul.Street
             return years <= SeenOldest ? years : SeenOldest + Roll(seed, 16, SeenSpread);
         }
 
+        /// <summary>Whether a romance with them is possible for the player: they are open to one and their sex and age fit (<see cref="RomanceRules"/>).</summary>
+        public static bool Romantic(StreetStranger s, StreetFacts f)
+        {
+            return s.Compatible && RomanceRules.Fits(f.Interest, s.Female, s.Age, f.PlayerAge);
+        }
+
         /// <summary>The seed of somebody, from the save's own number, the day and the game's figure.</summary>
         public static int Seed(int save, int day, int key)
         {
@@ -151,7 +157,7 @@ namespace RealLifeOverhaul.Street
             s.Traits = pair[0] | pair[1];
             s.Mood = Roll(seed, 7, 5) - 2;
             s.Style = Roll(life, 8, Styles.Length);
-            s.Compatible = s.Age >= 21 && s.Age <= 60 && Roll(life, 9, 100) < CompatiblePercent;
+            s.Compatible = Roll(life, 9, 100) < CompatiblePercent;   // (whether it is with the player is Romantic: their sex and age against the player's)
             s.Taken = Roll(life, 10, 100) < TakenPercent;
             s.Commuter = s.Job != SocialCatalogue.Jobs.Length - 1 && Roll(seed, 11, 100) < CommuterPercent;
             s.Humour = Roll(life, 12, 100) < HumourPercent;

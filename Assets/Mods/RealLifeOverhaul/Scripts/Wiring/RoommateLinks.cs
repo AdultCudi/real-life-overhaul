@@ -222,7 +222,7 @@ namespace RealLifeOverhaul
                     SocialPerson m = mate.Person;
                     p.Name = m.Name;
                     p.Female = m.Female;
-                    p.Age = m.Age;
+                    SocialRules.SetAge(p, m.Age, SocialLife.Day);   // the age they have as they move in, not the seat's, which was dealt long ago
                     p.Seed = m.Seed;
                     p.Job = m.Job;
                     p.FreeFrom = m.FreeFrom;

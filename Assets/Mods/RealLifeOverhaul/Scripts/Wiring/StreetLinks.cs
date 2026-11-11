@@ -58,6 +58,8 @@ namespace RealLifeOverhaul
                     f.Wanted = Justice.Wanted;
                     f.Unwashed = Settings.HomeNeeds && HomeState.Loaded && HomeState.Hygiene < HomeBalance.HygieneLow;
                     f.SocialOn = Settings.Social && Settings.SocialMeetings && SocialState.Loaded && SocialDirector.Instance != null;
+                    f.Interest = SocialLife.Interest;     // who a flirt is for: the option, and the player's own age
+                    f.PlayerAge = SocialLife.PlayerYears();
                     if (FlareBridges.CityFacts == null)
                     {
                         return;
@@ -148,11 +150,11 @@ namespace RealLifeOverhaul
                     p.Name = m.First + " " + m.Last;   // one name is one contact: somebody else's stays theirs
                 }
                 p.Female = m.Female;
-                p.Age = Mathf.Clamp(m.Age, 18, 85);
-                p.AgeDay = Mathf.Max(1, SocialLife.Day);   // the age they had in the street is true today: a seat rolled long ago adds no birthdays it never had
+                SocialRules.SetAge(p, Mathf.Clamp(m.Age, 18, 85), SocialLife.Day);   // the age they had in the street is true today: a seat rolled long ago adds no birthdays it never had
                 p.Job = m.Job;
                 p.District = m.District;
                 p.Traits = m.Traits;
+                p.Compatible = m.Compatible;   // as open to a romance as the talk showed, not as the seat's roll was for somebody else
                 p.Origin = SocialOrigin.Street;
                 int seed = PersonLooks.Remember(m.Look);   // the same look in the street, on the contact's picture and on Flare
                 if (seed != 0)

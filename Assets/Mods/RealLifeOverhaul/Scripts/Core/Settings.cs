@@ -150,7 +150,7 @@
         public const string FamilyWorkId = "family_work";
         public const string FamilyWealthMoodId = "family_wealth_mood";
         public const string FamilyExpectId = "family_expect";
-        public const string FamilyInterestId = "family_interest";
+        public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
         public const string FamilyYearWeeksId = "family_year_weeks";
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
@@ -555,7 +555,7 @@
         public static bool FamilyWealthMood = true;      // the partner reacts to the player's wealth by how they lean, proud or envious
         public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
-        public static int FamilyInterest = 0;            // who the default "Someone special" introduces: 0 anyone, 1 women, 2 men
+        public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
         public static bool Civic = true;                 // civic life: a city government and a construction programme
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street

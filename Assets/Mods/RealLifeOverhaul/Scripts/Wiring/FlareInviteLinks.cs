@@ -154,7 +154,9 @@ namespace RealLifeOverhaul
                 }
                 if (b.Age > 0)
                 {
-                    p.Age = Mathf.Clamp(b.Age, 18, 85);   // a retiree of the city is 82 at most, the age their face is drawn at
+                    // A retiree of the city is 82 at most, the age their face is drawn at. It is their age today: the seat was dealt long
+                    // ago, and its birthdays since must not be added to it.
+                    SocialRules.SetAge(p, Mathf.Clamp(b.Age, 18, 85), SocialLife.Day);
                 }
                 if (b.Face > 0)
                 {

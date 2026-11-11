@@ -217,9 +217,9 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("repay");
             }
-            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null)
+            if (!_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && SocialLife.Romantic(_p))
             {
-                _actions.Add("askout");
+                _actions.Add("askout");   // only somebody the player could fall for: of the sex they are interested in, near their age
             }
             if (_p.Stage == SocialStage.Dating)
             {
@@ -708,7 +708,7 @@ namespace RealLifeOverhaul
                 return Wait("reallife_social_askout_wait", wait);
             }
             SocialLife.Remember(_p, MemoryCode.AskedOut);
-            if (SocialRules.WouldDate(_p) && SocialState.Partner == null)
+            if (SocialRules.WouldDate(_p, SocialLife.Romantic(_p)) && SocialState.Partner == null)
             {
                 SocialLife.SetStage(_p, SocialStage.Dating);
                 return Close(SocialLines.Pick(SocialCatalogue.AskOutYes));
