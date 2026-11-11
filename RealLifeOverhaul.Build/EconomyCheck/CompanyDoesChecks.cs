@@ -97,6 +97,7 @@ internal static partial class Program
         public void Stocks() => Log("OpenStocks");
         public void Options(string section) => Log("OpenOptions", section);
         public void Parties() => Log("OpenParties");
+        public void Quiet(string place, int matter, int figure) => Log("Quiet", place, matter, figure);
     }
 
     private static void CompanyDoesChecks()
@@ -113,6 +114,7 @@ internal static partial class Program
             Pair(CompanyAct.Of(CompanyDo.OpenStocks), "OpenStocks()"),
             Pair(CompanyAct.Of(CompanyDo.OpenOptions, "rota"), "OpenOptions(rota)"),
             Pair(CompanyAct.Of(CompanyDo.OpenOptions), "OpenOptions(company)"),
+            Pair(CompanyAct.Of(CompanyDo.Quiet, "Elm~7", 2, 1), "Quiet(Elm~7,2,1)"),
             Pair(CompanyAct.Of(CompanyDo.Settle, null, 12, 3), "HierarchySettle(12,3)"),
             Pair(CompanyAct.Of(CompanyDo.Dismiss, null, 12), "HierarchyDismiss(12)"),
             Pair(CompanyAct.Of(CompanyDo.TryNow, null, 14), "HierarchyTryNow(14)"),

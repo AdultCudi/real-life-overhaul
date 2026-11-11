@@ -22,6 +22,22 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _foot = new StringBuilder(300);    // ...and what is left to do under it
         private readonly List<UiLedgerLine> _rows = new List<UiLedgerLine>(12);
         private readonly List<Act> _acts = new List<Act>(8);
+        private static readonly List<string> More = new List<string>(4);   // what other features add to the file, read when it is written
+
+        // What else hangs over the player (Justice.Bridges.FileLines); a bridge that throws adds nothing.
+        private static List<string> MoreLines()
+        {
+            More.Clear();
+            try
+            {
+                Justice.Bridges.FileLines?.Invoke(More);
+            }
+            catch (Exception e)
+            {
+                JusticeDirector.Logger?.Error(e);
+            }
+            return More;
+        }
 
         public LegalFile(JusticeDirector director)
         {
@@ -33,10 +49,11 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             JusticeCase next = JusticeState.NextOpen;
+            List<string> more = MoreLines();
             if (next == null && JusticeState.Owed == 0 && !JusticeState.OnProbation(day) && JusticeState.Suits.Count == 0 && JusticeState.CommunityHours == 0
                 && JusticeState.ClaimsOpen == 0)
             {
-                return JusticeText.T("reallife_justice_brief_nothing");
+                return more.Count > 0 ? more[0] : JusticeText.T("reallife_justice_brief_nothing");
             }
             var text = new StringBuilder(240);
             if (next == null)
@@ -212,6 +229,11 @@ namespace RealLifeOverhaul
                         "day", JusticeText.N(claim.HearDay)));
                 }
             }
+            List<string> more = MoreLines();
+            for (int i = 0; i < more.Count; i++)
+            {
+                Said(more[i]);
+            }
             JusticeCase appeal = JusticeSettings.Aftermath ? JusticeState.Appealable(day) : null;
             if (appeal != null)
             {
@@ -385,6 +407,14 @@ namespace RealLifeOverhaul
                     Odds = Tenths("reallife_justice_odds_appeal", chance),
                     Do = () => _director.Appeal(appeal)
                 });
+            }
+            try
+            {
+                Justice.Bridges.FileActs?.Invoke((label, hint, run) => _acts.Add(new Act { Label = label, Hint = hint, Do = run }));
+            }
+            catch (Exception e)
+            {
+                JusticeDirector.Logger?.Error(e);
             }
             if (JusticeState.CommunityHours > 0 && JusticeSettings.Community)
             {

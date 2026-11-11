@@ -344,6 +344,8 @@ internal static partial class UiSamples
             {
                 b.Add(CNote(w.F("reallife_co_policy_term", "Runs to day {day}; {claims} claims so far.", "day", Dn(policy.Until), "claims", claims.ToString())));
                 b.Add(CBtns(CB(w.T("reallife_co_policy_cancel", "Cancel the cover"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.CoverCancel, speedy, 0), UiIcon.Close, false, null, true)));
+                // Another feature's quiet second choice under the card's own (CompanyLive.Quiet): a policy in force, the cover's kind.
+                b.Add(CBtns(CB(w.T("reallife_scheme_quiet_claim", "A loss that never happened"), UiButtonKind.Quiet, UiAction.Count, CA(CompanyDo.Quiet, speedy, 0, System.Array.IndexOf(CompanyWorld.CoverKinds, cover)))));
             }
             else
             {

@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy
                 return i;
             }
             BusinessFigures b = VenturesGame.Figures(reg);
-            i.AvgProfit7 = b.AvgProfit7;
+            i.AvgProfit7 = Lifted(reg, b.AvgProfit7);
             i.DaysOnRecord = b.DaysOnRecord;
             i.Sector = (int)b.Sector;
             i.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(GameRegistrations.District(reg)));
@@ -63,6 +63,19 @@ namespace RealLifeOverhaul.Economy
             i.Loans = ServicesBridges.LoansOwed != null ? Mathf.Max(0, ServicesBridges.LoansOwed(reg.Address)) : 0;
             Quality(reg, ref i);
             return i;
+        }
+
+        // The recent profit as the business's books show it to a buyer: the game's own, unless another feature dressed them (ServicesBridges.BooksShown).
+        private static float Lifted(BuildingRegistration reg, float profit)
+        {
+            try
+            {
+                return ServicesBridges.BooksShown != null ? ServicesBridges.BooksShown(reg, profit) : profit;
+            }
+            catch (Exception)
+            {
+                return profit;   // a bridge that throws dresses nothing
+            }
         }
 
         /// <summary>A business's stock and furniture at the price the game itself pays for them when a lease ends.</summary>

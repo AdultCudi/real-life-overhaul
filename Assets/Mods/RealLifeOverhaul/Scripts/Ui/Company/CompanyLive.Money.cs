@@ -204,6 +204,7 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Sec(w.T("reallife_ibox_sec_how", "How it is measured")));
             blocks.Add(Note(CompanyText.T("reallife_co_push_measure")));
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_push_book"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.CampaignBook, shop.File.Place, kind), UiAction.Alt, UiIcon.Check)));
+            Quiet(blocks, CompanyBridges.QuietCampaign, shop.File.Place, 0);
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -642,6 +643,7 @@ namespace RealLifeOverhaul.Ui
                     !writes,
                     !writes ? CompanyText.T("reallife_co_policy_refused", "insurer", CompanyText.Insurer(insurer), "claims", carried.ToString()) : null)));
             }
+            Quiet(blocks, CompanyBridges.QuietPolicy, place, kind);
             card.Blocks = blocks.ToArray();
             return card;
         }

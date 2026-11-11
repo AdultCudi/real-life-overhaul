@@ -180,6 +180,7 @@ namespace RealLifeOverhaul.Economy
                 int chosen = insurer;
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_policy_buy", () => _director.BuyCover(place, kind, chosen));
             }
+            QuietButton(buttons, CompanyBridges.QuietPolicy, place, kind);
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
             Guide(box);
         }

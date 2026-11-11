@@ -126,6 +126,7 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_return_file", _director.FileReturn);
             }
+            QuietButton(buttons, CompanyBridges.QuietReturn, null, 0);
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
             Guide(box);
         }
@@ -197,7 +198,10 @@ namespace RealLifeOverhaul.Economy
             box.Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit",
                 "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]), "sum", CompanyText.Money(CompanyCatalogue.CourtSum)));
             box.Note(CompanyText.T("reallife_co_hide_threshold"));
-            BackButton(box);
+            var buttons = box.ButtonRow();
+            QuietButton(buttons, CompanyBridges.QuietBooks, place, 0);
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
     }
 }

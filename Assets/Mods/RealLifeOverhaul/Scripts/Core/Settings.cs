@@ -227,6 +227,7 @@
         public const string LivingStudioId = "living_studio";
         public const string LivingFlareId = "living_flare";
         public const string LivingFirmsId = "living_firms";
+        public const string LivingSchemesId = "living_schemes";
         public const string LivingTripsId = "living_trips";
         public const string LivingRivalsSeenId = "living_rivals_seen";   // ...rivals seen around the city (Scripts/RivalsSeen)
         public const string LivingSpoilageId = "living_spoilage";
@@ -615,6 +616,7 @@
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
         public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
+        public static bool LivingSchemes = true;         // ...schemes that pay until they are found out: invented claims and expenses, dressed books, a sham club, washed cash, bought favour (Schemes)
         public static bool LivingFirms = true;           // ...the other tech firms rebuilt: shared markets from the city, rivals by the same rules, a desk session for each kind (Sector)
         public static bool LivingTrips = true;           // ...logistics routes run as delivery trips: departure times, vehicles and drivers, drive time, fuel (Economy/Logistics)
         public static bool LivingRivalsSeen = true;      // ...rivals seen around the city: at the places their week has them, their cars, the sightings (RivalsSeen)
@@ -1060,6 +1062,7 @@
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
             LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);
+            LivingSchemes = Bool(modId, LivingSchemesId, LivingSchemes);
             LivingTrips = Bool(modId, LivingTripsId, LivingTrips);
             LivingRivalsSeen = Bool(modId, LivingRivalsSeenId, LivingRivalsSeen);
             LivingSpoilage = Bool(modId, LivingSpoilageId, LivingSpoilage);

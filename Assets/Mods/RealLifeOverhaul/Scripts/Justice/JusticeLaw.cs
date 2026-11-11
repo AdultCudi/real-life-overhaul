@@ -68,6 +68,10 @@ namespace RealLifeOverhaul
         public const string Misconduct = "misconduct";             // an undeclared interest in a vote that it decided
         public const string BidRigging = "bid_rigging";            // a ring of builders on a tender the player covered for came out
         public const string InvestorFraud = "investor_fraud";      // a firm's investors' money spent elsewhere and not paid back, found by an audit
+        public const string Fraud = "fraud";                       // a scheme for money found by an inquiry: an invented claim, dressed books, a sham club
+        public const string FalseAccounting = "false_accounting";  // the same, for little money or told in full: the lesser charge
+        public const string MoneyLaundering = "money_laundering";  // cash from a scheme run through a till as sales
+        public const string PervertingJustice = "perverting_justice";   // money offered to an investigator or a judge
 
         // Caps and bounds: nothing a court does goes past these, whatever is added up.
         public const int CustodyCapHours = 48;         // never held longer without a prison sentence
@@ -154,7 +158,15 @@ namespace RealLifeOverhaul
             new ChargeDef { Id = BidRigging, NameKey = "reallife_justice_charge_bid_rigging", Class = ChargeClass.Misdemeanour,
                 Fine = 7000, CommunityHours = 12, ProbationDays = 7, JailHours = 0 },
             new ChargeDef { Id = InvestorFraud, NameKey = "reallife_justice_charge_investor_fraud", Class = ChargeClass.Felony,
-                Fine = 20000, ProbationDays = 14, JailHours = 48, PrisonDays = 3 }
+                Fine = 20000, ProbationDays = 14, JailHours = 48, PrisonDays = 3 },
+            new ChargeDef { Id = Fraud, NameKey = "reallife_justice_charge_fraud", Class = ChargeClass.Felony,
+                Fine = 12000, ProbationDays = 10, JailHours = 48, PrisonDays = 2, LesserId = FalseAccounting },
+            new ChargeDef { Id = FalseAccounting, NameKey = "reallife_justice_charge_false_accounting", Class = ChargeClass.Misdemeanour,
+                Fine = 5000, CommunityHours = 12, ProbationDays = 7, JailHours = 0 },
+            new ChargeDef { Id = MoneyLaundering, NameKey = "reallife_justice_charge_money_laundering", Class = ChargeClass.Felony,
+                Fine = 15000, ProbationDays = 14, JailHours = 48, PrisonDays = 3, LesserId = FalseAccounting },
+            new ChargeDef { Id = PervertingJustice, NameKey = "reallife_justice_charge_perverting_justice", Class = ChargeClass.Felony,
+                Fine = 18000, ProbationDays = 14, JailHours = 48, PrisonDays = 4, LesserId = Bribery }
         };
 
         // A claim the player brings (OwnClaims): the court's fee, refunded with what is won, and the days to the hearing.

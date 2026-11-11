@@ -1191,6 +1191,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_mkt_test_centres", () => Tech.TechDirector.Instance?.TestSectorDesks(-1))
                 .AddButton("reallife_tech_mkt_test_markets", () => Tech.TechDirector.Instance?.TestSectorMarkets())
                 .AddButton("reallife_tech_mkt_test_year", () => Tech.TechDirector.Instance?.TestSectorYear())
+                .AddToggle(Settings.LivingSchemesId, "reallife_scheme_enabled", Settings.LivingSchemes,
+                    v => Settings.LivingSchemes = v)
+                .AddButton("reallife_scheme_test_inquiry", () => Schemes.SchemeDirector.Instance?.TestInquiry())
+                .AddButton("reallife_scheme_test_step", () => Schemes.SchemeDirector.Instance?.TestStep())
+                .AddButton("reallife_scheme_test_fund", () => Schemes.SchemeDirector.Instance?.TestFund())
+                .AddButton("reallife_scheme_test_rival", () => Schemes.SchemeDirector.Instance?.TestRival())
+                .AddButton("reallife_scheme_test_standing", () => Schemes.SchemeDirector.Instance?.TestStanding())
                 .AddToggle(Settings.LivingTripsId, "reallife_trips_enabled", Settings.LivingTrips,
                     v => Settings.LivingTrips = v)
                 .AddButton("reallife_trips_test", () => Economy.LogisticsDirector.Instance?.TestTrips())
@@ -1825,6 +1832,8 @@ namespace RealLifeOverhaul
             Guard.Step("Parties.PartyDirector", () => Parties.PartyGame.Logger = context.Logger);
             Guard.Step("Parties.PartyDirector", () => Parties.PartyApp.Logger = context.Logger);
             Guard.Step("Parties.PartyDirector", () => Guard.Add<Parties.PartyDirector>(_root));   // a look once a second: parties and company events
+            Guard.Step("Schemes.SchemeDirector", () => Schemes.SchemeDirector.Logger = context.Logger);
+            Guard.Step("Schemes.SchemeDirector", () => Guard.Add<Schemes.SchemeDirector>(_root));   // a look once a second: the day of the schemes and their inquiries
             Guard.Step("Ui.UiDirector", () => Ui.UiDirector.Logger = context.Logger);
             Guard.Step("Ui.UiDirector", () => Ui.UiDirector.ModRoot = context.ModRootPath);
             Guard.Step("Ui.UiDirector", () => Guard.Add<Ui.UiDirector>(_root));   // the fonts behind the loading screen; a look once a second at Contacts

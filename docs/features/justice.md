@@ -127,6 +127,12 @@ Nominal values, for a first offence convicted after a trial.
 | `Violation` | Breach of probation | misdemeanour | 1 500 | | 24 h | | 5 d | | |
 | `BidRigging` | Bid rigging (a cover bid for a ring of builders that came out: `TaxCases.FileBidRigging`) | misdemeanour | 7 000 | 12 h | | | 7 d | | |
 | `InvestorFraud` | Defrauding investors (a funded firm's investors' money spent elsewhere and not paid back, found by an audit: `TaxCases.FileInvestorFraud`) | felony | 20 000 | | 48 h | 3 d | 14 d | | |
+| `Fraud` | Fraud (a scheme for money found by an inquiry: an invented claim, dressed books, a club that does not exist: `SchemeCases.File`) | felony | 12 000 | | 48 h | 2 d | 10 d | | `FalseAccounting` |
+| `FalseAccounting` | False accounting (the same for little money, or told in full) | misdemeanour | 5 000 | 12 h | | | 7 d | | |
+| `MoneyLaundering` | Money laundering (cash from a scheme run through a till as sales) | felony | 15 000 | | 48 h | 3 d | 14 d | | `FalseAccounting` |
+| `PervertingJustice` | Perverting the course of justice (money offered to an investigator or a judge) | felony | 18 000 | | 48 h | 4 d | 14 d | | `Bribery` |
+
+**An inquiry's file** ([Schemes and inquiries](schemes.md)): what an inquiry found goes to the courts on a summons with the evidence it gathered, the sum it is about and the save's own seed for the court's doubt (`SchemeCases.File`), and is an ordinary case from there. The Legal file lists every inquiry the player knows of and a rival's fund, with what can be done about each (`Justice.Bridges.FileLines`, `FileActs`). A judge who was paid weighs the evidence of the case that comes up next 0.20 lighter on every charge, never under the least a charge is tried on (`SchemeCases.Lean`).
 
 **Investors' claims and fraud** ([Startup money](startup-money.md)): the investors of a funded firm sue the player for investors' money spent elsewhere and not paid back (`InvestorClaims.File`, an ordinary civil suit filed like `DebtClaims`, the sum plus a tenth in costs), and for the clear pattern, over half the raise or over a tenth followed by a shutdown, a case is opened on a summons for `InvestorFraud` (`TaxCases.FileInvestorFraud`), its strength the audit's evidence (0.45 to 0.95, by the sum against the raise and the transactions the books name). The court reads out the sum with the charge.
 

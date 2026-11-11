@@ -215,7 +215,20 @@ namespace RealLifeOverhaul.Networking
             {
                 return NetFavour.None;
             }
-            return NetworkRules.Next(c, p.Stage, c.MetDay, NetworkGame.Day, _file.LastFavourDay, _testReady == person);
+            return NetworkRules.Next(c, p.Stage, c.MetDay, NetworkGame.Day, _file.LastFavourDay, _testReady == person || IsBought(person));
+        }
+
+        // A favour that was bought waits for nothing but its asking (NetworkBridges.Bought); a bridge that throws has bought nothing.
+        private static bool IsBought(int person)
+        {
+            try
+            {
+                return NetworkBridges.Bought != null && NetworkBridges.Bought(person);
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -240,6 +253,10 @@ namespace RealLifeOverhaul.Networking
                 if (_testReady == person)
                 {
                     _testReady = -1;
+                }
+                if (IsBought(person))
+                {
+                    NetworkBridges.BoughtUsed?.Invoke(person);
                 }
                 Write();
             }

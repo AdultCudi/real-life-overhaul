@@ -188,6 +188,7 @@ namespace RealLifeOverhaul.Ui
             Row("Justice", "A hearing, bail and the Legal file", "the court's scene", AuditWindow.Scene, Scenes, "Justice/"),
             Row("Justice", "Community service, the courthouse", "the card over the door", AuditWindow.Prompt, Prompt, "Justice/"),
             Row("Justice", "Legal counsel", "the dialogue", AuditWindow.Dialog, Dialog, "Justice/"),
+            Row("Schemes", "A quiet second button of the Company's, a rival's fund", "the scheme's scene", AuditWindow.Scene, Scenes, "Schemes/"),
             Row("Civic", "Running for office: the door, the vote", "the door scene", AuditWindow.Scene, Scenes, "Civic/"),
             Row("Civic", "The council and the town hall", "the card over the door", AuditWindow.Prompt, Prompt, "Civic/"),
             Row("Civic", "The town hall's phone", "the dialogue", AuditWindow.Dialog, Dialog, "Civic/"),

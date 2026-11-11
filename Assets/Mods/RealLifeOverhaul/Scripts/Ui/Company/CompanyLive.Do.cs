@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Ui
             public void Stocks() => CompanyGame.OpenListing();
 
             public void Parties() => RealLifeOverhaul.Parties.PartyDirector.Open(PartyPages.TabStaff);
+            public void Quiet(string place, int matter, int figure) => CompanyBridges.QuietPress(matter, place, figure);
 
             public void Options(string section)
             {

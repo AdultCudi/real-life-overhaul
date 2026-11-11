@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Meta
             Tech.SectorGuide.Register();
             Economy.LogisticsGuide.Register();
             Parties.PartyGuide.Register();
+            Schemes.SchemeGuide.Register();
         }
 
         private static void RegisterGameplay()

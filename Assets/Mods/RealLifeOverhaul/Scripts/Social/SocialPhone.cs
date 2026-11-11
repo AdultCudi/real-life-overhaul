@@ -47,6 +47,9 @@ namespace RealLifeOverhaul
         /// <summary>Set by Wiring/PartyLinks: the People page's button that opens Host a party (its key; null while parties are off), and what it opens.</summary>
         public static Func<string> PartyLabel;
         public static Action PartyOpen;
+        /// <summary>Set by Wiring/SchemeLinks: the call's button for a quiet word with somebody who holds a position (null for none), and what it opens.</summary>
+        public static Func<SocialPerson, string> QuietLabel;
+        public static Func<SocialPerson, DialogEntry> QuietAsk;
 
         public static string IdOf(SocialPerson person)
         {

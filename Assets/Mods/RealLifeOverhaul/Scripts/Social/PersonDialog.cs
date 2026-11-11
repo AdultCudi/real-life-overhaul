@@ -204,6 +204,11 @@ namespace RealLifeOverhaul
                 _actions.Add("network");   // they texted to say they could help
             }
             _actions.Add("plans");
+            string quiet = SocialPhone.QuietLabel != null && SocialPhone.QuietAsk != null ? SocialPhone.QuietLabel(_p) : null;
+            if (quiet != null)
+            {
+                _actions.Add("quiet");   // after the plans: a quiet second choice, never the first thing said
+            }
             if (SocialTalk.BirthdayIn(_p) == 0 && _p.BirthdayYear != Year(day))
             {
                 _actions.Add("birthday");
@@ -288,6 +293,10 @@ namespace RealLifeOverhaul
                 case "network":
                     entry.ConfirmTextOverride = favour.Localize();
                     entry.OnConfirm = () => SocialPhone.NetworkAsk(_p);
+                    break;
+                case "quiet":
+                    entry.ConfirmTextOverride = quiet.Localize();
+                    entry.OnConfirm = () => SocialPhone.QuietAsk(_p);
                     break;
                 case "family":
                     entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();

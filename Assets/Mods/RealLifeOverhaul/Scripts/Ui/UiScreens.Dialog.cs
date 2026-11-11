@@ -108,7 +108,12 @@ namespace RealLifeOverhaul.Ui
                     "reallife_justice_role_judge", "reallife_justice_role_counsel", "reallife_justice_role_defendant", "reallife_justice_cost_hours",
                     "reallife_justice_cost_fine", "reallife_justice_cost_community", "reallife_justice_odds", "reallife_justice_cost_lost_fine",
                     "reallife_justice_cost_lost_community", "reallife_justice_charge_tax_evasion", "reallife_justice_plea_settle",
-                    "reallife_justice_plea_settle_hint", "reallife_justice_settle_cost", "reallife_justice_settle_gain"
+                    "reallife_justice_plea_settle_hint", "reallife_justice_settle_cost", "reallife_justice_settle_gain",
+                    "reallife_scheme_claim_title", "reallife_scheme_claim_body", "reallife_scheme_claim_hint", "reallife_scheme_claim_gain", "reallife_scheme_size_small",
+                    "reallife_scheme_size_large", "reallife_scheme_risk_small", "reallife_scheme_risk_large", "reallife_scheme_leave", "reallife_scheme_leave_hint",
+                    "reallife_scheme_fund_title", "reallife_scheme_fund_body", "reallife_scheme_fund_put", "reallife_scheme_fund_put_hint", "reallife_scheme_fund_put_cost",
+                    "reallife_scheme_fund_put_gain", "reallife_scheme_fund_look", "reallife_scheme_fund_look_hint", "reallife_scheme_fund_look_cost", "reallife_scheme_fund_down",
+                    "reallife_scheme_fund_down_hint"
                 }).Switch(UiScreenSwitches.Boxes),
             });
         }

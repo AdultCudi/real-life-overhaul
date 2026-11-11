@@ -399,6 +399,7 @@ namespace RealLifeOverhaul.Ui
             }
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order
                 ? CompanyText.T("reallife_co_return_books") : null)));
+            Quiet(blocks, CompanyBridges.QuietReturn, null, 0);
             // What each accountant would take and save on this return, so that who files it is chosen with the figures in view.
             blocks.Add(Sec(w.T("reallife_co_acc_terms_sec", "What an accountant costs")));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = AccountantTerms(d, t, w) });
@@ -553,6 +554,7 @@ namespace RealLifeOverhaul.Ui
                 Sec(w.T("reallife_co_hide_every", "Every business"), every.Count.ToString()),
                 new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.ToArray() }
             };
+            card.Blocks = Quiet(card.Blocks, CompanyBridges.QuietBooks, shop.File.Place, 0);
             return card;
         }
 

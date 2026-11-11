@@ -85,6 +85,42 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Files a criminal case for tax kept back; the court's number, or 0 with no court.</summary>
         public static Func<int, int> TaxCase;
 
+        /// <summary>
+        /// Another feature's quiet second choice on a page of the company's: the words of its button for a matter (a policy 0, the return 1, a business's
+        /// books 2, a campaign 3), a place and a figure, or null for no button; and its press. Default: no button anywhere.
+        /// </summary>
+        public static Func<int, string, int, string> QuietLabel;
+
+        public static Action<int, string, int> Quiet;
+
+        public const int QuietPolicy = 0, QuietReturn = 1, QuietBooks = 2, QuietCampaign = 3;
+
+        /// <summary>The quiet button's words, or null: a bridge that throws has no button.</summary>
+        public static string QuietWords(int matter, string place, int figure)
+        {
+            try
+            {
+                return QuietLabel != null && Quiet != null ? QuietLabel(matter, place, figure) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The quiet button was pressed.</summary>
+        public static void QuietPress(int matter, string place, int figure)
+        {
+            try
+            {
+                Quiet?.Invoke(matter, place, figure);
+            }
+            catch (Exception)
+            {
+                // a bridge that throws does nothing
+            }
+        }
+
         /// <summary>Per cent of footfall one of business pressure's issues changes at a business on a day; 0 with none.</summary>
         public static Func<BuildingRegistration, int, int> IssueFootfall;
 

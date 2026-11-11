@@ -964,6 +964,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 1 && args[0] == "--schemes")
+        {
+            _schemeTable = args.Length == 2 && args[1] == "table";   // the simulation's rows too, for whoever tunes a figure
+            Schemes();   // (schemes and inquiries alone, while working on them: SchemeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--networking")
         {
             Networking();   // (networking alone, while working on it: NetworkChecks.cs)
@@ -1489,6 +1496,7 @@ internal static partial class Program
         RivalFirst();   // when the first rival tycoon comes forward, by the option: the steps, the tiers, a season at each, every reader, the texts (RivalFirstChecks.cs)
         TaxiComfort();  // ride fares' easier passengers: the two tables, the arithmetic, a rough ride under each, the gig reading only the table, the texts (TaxiComfortChecks.cs)
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
+        Schemes();      // schemes and inquiries: every figure, the trail and its line, an inquiry's stages, the people, the rivals, the save, ten years of every plan, the pages, the texts (SchemeChecks.cs)
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         BizAsks();      // the smaller business asks: a parking space in a building's car park and the showroom's suppliers, their rules, caps, saves, pages, sources and texts (BizAsksChecks.cs)
         Suppliers();    // suppliers and contracts: prices and terms, take or pay, the judging of a delivery, the remedy, what is owed, the suppliers' own books, the rivals, the buyer's rules, the save, the pages, the sources, the texts (SupplierChecks.cs)

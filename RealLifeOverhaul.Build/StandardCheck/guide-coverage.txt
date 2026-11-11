@@ -82,3 +82,4 @@ utilities	reallife_guide_utilities	power, water and internet
 walking	reallife_guide_walking	walking
 rlo-interface	reallife_guide_ui	the RLO interface, its switch and its motion
 startup-exits	reallife_guide_tech_startups	selling, listing and the city startups as places: offers, bankers, roadshow, lock-up, founders and floors
+schemes	reallife_guide_schemes,reallife_guide_schemes_about	schemes, inquiries, money to people and the rivals' own
