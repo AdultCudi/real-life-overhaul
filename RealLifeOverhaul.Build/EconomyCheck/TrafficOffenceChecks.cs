@@ -12,7 +12,7 @@ using RealLifeOverhaul;
 // and the foot look leaves alone anyone something carries (Crime/PlayerRide.cs). First the rules, then the places that use them, then
 // the texts. "Fixed:" is looked for in any What's new row, as the version step moves the next row into its own.
 //
-// The reviewers' repair. (1) The old switch's value was kept in memory only: the game's toggle on the options page reads an option with no
+// What the first version missed. (1) The old switch's value was kept in memory only: the game's toggle on the options page reads an option with no
 // saved value as the shipped "on" and sets it live, so opening Options > Mods turned all eight back on, the next start turned them off
 // again, a player who then set one row kept the other seven following a stale key, and the game's reset, which deletes the eight keys and
 // not the old one, was undone a frame later. It is written now as each option's own saved value, once, and the old key is deleted
@@ -284,7 +284,7 @@ internal static partial class Program
     {
         string jaywalk = OffenceIds[4];
 
-        // The reviewers' sequence. An old install that had traffic offences off: player_offences = 0 and none of the eight saved.
+        // The sequence the first version failed. An old install that had traffic offences off: player_offences = 0 and none of the eight saved.
         var off = new PretendOffencePrefs();
         off.Kept[OffenceOlder] = 0;
         var game = new PretendOffenceGame(off, true);
