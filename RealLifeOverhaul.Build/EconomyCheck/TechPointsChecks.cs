@@ -614,7 +614,7 @@ internal static partial class Program
     {
         string pages = ModSource(@"Tech\Firms\TechApp.Pages.cs"), live = ModSource(@"Ui\Tech\TechLive.Products.cs"), hero = ModSource(@"Ui\Tech\TechLive.FirmPage.cs");
         string words = ModSource(@"Tech\TechText.cs"), desk = ModSource(@"Tech\TechDirector.SectorDesk.cs"), keys = ModSource(@"Ui\UiScreens.Tech.cs"), rules = ModSource(@"Tech\Firms\FirmsRules.cs");
-        string founding = ModSource(@"Tech\TechDirector.Founding.cs"), day = ModSource(@"Tech\TechDirector.Firms.cs"), cloud = ModSource(@"Tech\TechDirector.Infra.cs"), views = ModSource(@"Tech\Firms\ProductViews.cs");
+        string founding = ModSource(@"Tech\TechDirector.Founding.cs"), day = ModSource(@"Tech\TechDirector.Firms.cs"), cloud = ModSource(@"Tech\TechDirector.Infra.cs"), infraRules = ModSource(@"Tech\Infra\InfraRules.cs"), views = ModSource(@"Tech\Firms\ProductViews.cs");
         // only the rules name a feature's cost: a page that works out the points to go itself (the cost less the work, in whatever shape) was below zero while a model waited for its training
         var named = new Regex(@"\bFeatureCost\s*\(", RegexOptions.CultureInvariant);
         var rulesOnly = new HashSet<string> { "FirmsRules.cs", "SectorRules.Rivals.cs", "RivalryRules.Reactions.cs", "TechDirector.FoundDesk.cs" };
@@ -658,7 +658,8 @@ internal static partial class Program
               && !founding.Contains("NicheRules.View("), "tech points sources: the sale weighs a founded firm's product in the view NicheRules.Market works out, the one the page reads");
         Check(rules.Contains("public static FeatureWait Wait(Product p)") && rules.Contains("p.Compute >= InfraRules.TrainNeed(p.Features)") && rules.Contains("if (p.Stage >= 2)"),
             "tech points sources: the rule that waits stands beside the build that waits for the same training, and knows a withdrawn product waits for none");
-        Check(day.Contains("p.Place != file.Place || p.Stage >= 2") && cloud.Contains("p.K != ProductKind.Model || p.Stage >= 2"),
+        Check(day.Contains("p.Place != file.Place || p.Stage >= 2") && cloud.Contains("InfraRules.ModelsDay(products,") && infraRules.Contains("public static bool Trains(Product p) => p != null && p.K == ProductKind.Model && p.Stage < 2;")
+              && Regex.Matches(infraRules, @"\bTrains\((products\[i\]|p)\)").Count >= 2,
             "tech points sources: the day's build and the cloud's training still skip a withdrawn product, which is what its page saying it waits for nothing rests on");
         string[] named2 =
         {
