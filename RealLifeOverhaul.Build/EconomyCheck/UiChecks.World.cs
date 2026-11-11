@@ -322,6 +322,70 @@ internal static partial class Program
         CriticChecks(en);
     }
 
+    // The owner's report (11 Nov): driving, the vehicle panel stood beside the minimap's card in the lower middle of the
+    // screen with its foot under the HUD's key chips (the game's seven driving hints, W Forward to F12 Menu, from the phone
+    // leftwards past the card), Sell drawn over. The owner's choice: the panel stands over the card in the left column,
+    // left edges lined up and a grid step between, so the middle and the hints' row stay clear; with no card it stands
+    // where the card would, at the bottom left, its foot over the chips; on a screen too short for over, beside the card.
+    private static void ItemPanelKeysChecks(UiWords en)
+    {
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "HUD");
+        float chipsY = frame.BandY - UiDraw.KeyChipLift - UiDraw.KeyChipHeight;
+        UiItemPanelModel car = UiSamples.ItemPanel(en, "vehicle");
+        car.AvoidX = UiSamples.MinimapX;
+        car.AvoidY = UiSamples.MinimapY;
+        car.AvoidW = UiSamples.MinimapW;
+        car.AvoidH = UiSamples.MinimapH;
+        car.KeysX = 345f;   // the screenshot's seven hints, ending at the phone
+        car.KeysY = chipsY;
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        car.KeysH = UiDraw.KeyChipHeight;
+        float w = UiItemPanel.WidthOf(car), h = UiItemPanel.Height(car);
+        UiItemPanel.Place(car, frame, out float x1, out float y1);
+        var s = new UiScene();
+        UiItemPanel.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
+        UiItem box = default(UiItem);
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if ((s.Items[i].Flags & UiFlags.Panel) != 0)
+            {
+                box = s.Items[i];
+                break;
+            }
+        }
+        float gap = car.AvoidY - (y1 + h);
+        Check(x1 == Math.Max(UiTokens.S4, car.AvoidX) && gap >= UiTokens.S2 && gap < UiTokens.S2 + UiTokens.Grid && y1 >= UiTokens.S4
+              && !UiHudRules.Overlaps(x1, y1, w, h, car.KeysX, car.KeysY, car.KeysW, car.KeysH) && !UiHudRules.Overlaps(x1, y1, w, h, car.AvoidX, car.AvoidY, car.AvoidW, car.AvoidH)
+              && box.W == w && box.X == x1 && box.Y == y1,
+            "item panel: driving, the vehicle panel stands over the minimap's card in the left column (left edges lined up with the column, a grid step between), clear of the key chips and the middle of the screen (x " + x1 + ", foot " + (y1 + h) + ", card at " + car.AvoidX + "," + car.AvoidY + ")");
+        car.AvoidY = 300f;   // a short screen's card, high up the column: no room over it
+        car.AvoidH = frame.BandY - UiTokens.S4 - car.AvoidY;
+        UiItemPanel.Place(car, frame, out float x2, out float y2);
+        Check(x2 >= car.AvoidX + car.AvoidW + UiTokens.S2 && y2 >= UiTokens.S4 && y2 + h <= car.KeysY - UiTokens.S2
+              && !UiHudRules.Overlaps(x2, y2, w, h, car.AvoidX, car.AvoidY, car.AvoidW, car.AvoidH) && !UiHudRules.Overlaps(x2, y2, w, h, car.KeysX, car.KeysY, car.KeysW, car.KeysH)
+              && x2 + w <= frame.Width - UiTokens.S4,
+            "item panel: where there is no room over the card it stands beside it on the screen, its foot over the key chips");
+        car.AvoidW = 0f;   // no minimap: where the card would stand, at the bottom left, over the chips that reach under it
+        car.AvoidH = 0f;
+        car.KeysX = UiTokens.S4;
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        UiItemPanel.Place(car, frame, out float x3, out float y3);
+        car.KeysX = UiTokens.S4 + w + UiTokens.S2;   // chips that end short of the panel: it stays docked at its own foot
+        car.KeysW = frame.Width - 340f - car.KeysX;
+        UiItemPanel.Place(car, frame, out float x4, out float y4);
+        Check(x3 == UiTokens.S4 && y3 + h <= chipsY - UiTokens.S2 && y3 + h > chipsY - UiTokens.S2 - UiTokens.Grid && x4 == UiTokens.S4 && y4 == UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h),
+            "item panel: with no minimap it stands at the bottom left where the card would, its foot over the key chips that reach under it and docked above the bar where they do not");
+        string scripts = ModScripts();
+        string kit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "ItemPanelKit.cs"));
+        string hud = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Hud", "HudHost.cs"));
+        int keep = kit.IndexOf("internal static void Keep()", StringComparison.Ordinal);
+        string keepCode = keep >= 0 ? kit.Substring(keep, Math.Min(2000, kit.Length - keep)) : "";
+        Check(kit.Contains("HudHost.KeysBox(_frameW, _frameH, out _m.KeysX, out _m.KeysY, out _m.KeysW, out _m.KeysH);") && kit.Contains("ItemPanelKit.Lift();")
+              && kit.Contains("Math.Max(_order, UiHostRules.MinimapOrder(hud.CanvasOrder))") && !keepCode.Contains("Lift()") && !keepCode.Contains("HudHost")
+              && hud.Contains("_keysW = shares ? kw / frame.Width : 0f;") && hud.Contains("!HudStatusGame.Shows"),
+            "item panel: where the HUD's chips stand and the HUD's order are read from the HUD four times a second with the panel's other readings, nothing a frame; the panel's canvas over the HUD's, at the minimap card's order");
+    }
+
     // The wave 2 critic's findings on the buying and world screens (3 Nov), each held by its sample.
     private static void CriticChecks(UiWords en)
     {
@@ -345,7 +409,8 @@ internal static partial class Program
         UiItem box = panel >= 0 ? s.Items[panel] : default(UiItem);
         Check(panel >= 0 && !UiHudRules.Overlaps(box.X, box.Y, box.W, box.H, bag.AvoidX, bag.AvoidY, bag.AvoidW, bag.AvoidH) && tiles == 1
               && box.W == UiItemPanel.Narrow && UiDraw.CapWord("BACKSPACE") == "Bksp" && bag.Actions[0].Label == "Sell for $12",
-            "item panel: a paper bag stands beside the minimap's card, as narrow as a thing in hand, one tile for its one stack and no wall of empty slots, Sell with its price on a short cap");
+            "item panel: a paper bag stands over the minimap's card, as narrow as a thing in hand, one tile for its one stack and no wall of empty slots, Sell with its price on a short cap");
+        ItemPanelKeysChecks(en);
         UiCheckoutModel goods = UiSamples.Checkout(en, "goods");
         UiCheckoutLine popcorn = Array.Find(goods.Lines, l => l.Name == "Popcorn");
         Check(popcorn.Packs == 0 && popcorn.Total == "$0" && goods.Sums.Length == 2 && goods.QueueDetail != null,
