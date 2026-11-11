@@ -146,9 +146,11 @@ namespace RealLifeOverhaul.Family
                 ChildRecord c = s.Children[i];
                 if (!c.Grown)
                 {
-                    int days = Mathf.CeilToInt((Mathf.Floor(c.Age) + 1f - c.Age) * Children.DaysPerYear);
-                    text.Append('\n').Append(FamilyText.T("reallife_family_page_birthday",
-                        new Args { Child = c.Name, Day = FamilyText.When(TimeHelper.CurrentDay + days), N = (Mathf.FloorToInt(c.Age) + 1).ToString() }));
+                    int yearDays = Children.DaysPerYear;   // the day and the age come of the one rule the Calendar and the ageing use
+                    text.Append('\n').Append(FamilyText.T("reallife_family_page_birthday", new Args
+                    {
+                        Child = c.Name, Day = FamilyText.When(TimeHelper.CurrentDay + ChildYearRules.BirthdayIn(c.Age, yearDays)), N = ChildYearRules.Turning(c.Age, yearDays).ToString()
+                    }));
                     lines++;
                 }
             }

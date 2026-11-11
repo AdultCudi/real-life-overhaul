@@ -22,8 +22,8 @@ namespace RealLifeOverhaul.Family
 
         private static int _lastExpecting = -1, _lastWaiting = -1, _lastNight = -1, _lastGrown = -1;
 
-        /// <summary>In-game days to a year of a child's age (the options page's weeks per year).</summary>
-        public static int DaysPerYear => Mathf.Clamp(Settings.FamilyYearWeeks, 1, 12) * 7;
+        /// <summary>In-game days to a year of a child's age: the options page's weeks per year (1 to 52, ChildYearRules) of seven days.</summary>
+        public static int DaysPerYear => ChildYearRules.Days(Settings.FamilyYearWeeks);
 
         private static float Share => FamilyState.Bond == Bond.Divorced ? 1f - FamilyBalance.SupportShare : 1f;
 
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Family
             int day = TimeHelper.CurrentDay;
             s.PKind = (int)ProcessKind.Pregnancy;
             s.PStartDay = day;
-            s.PDueDay = day + Mathf.Max(6, Mathf.RoundToInt(FamilyBalance.PregnancyYears * DaysPerYear));
+            s.PDueDay = day + ChildYearRules.Span(FamilyBalance.PregnancyYears, DaysPerYear);
             s.PStep = 0;
             s.PCarrier = carrier;
             s.BirthHour = Random.Range(7, 18);
@@ -217,7 +217,7 @@ namespace RealLifeOverhaul.Family
                 if (s.PStep == 0 && done >= 0.2f) { s.PStep = 1; Errands.Add(Errands.Scan, day, 9, 18).Number = 1; }
                 else if (s.PStep == 1 && done >= 0.5f && FamilyState.FindErrand(Errands.Scan) == null) { s.PStep = 2; Errands.Add(Errands.Scan, day, 9, 18).Number = 2; }
                 else if (s.PStep == 2 && done >= 0.75f && FamilyState.FindErrand(Errands.Scan) == null) { s.PStep = 3; Errands.Add(Errands.BirthClass, day, 9, 20); }
-                if (day - s.LastFlavourDay >= 4 && day < s.PDueDay)
+                if (day - s.LastFlavourDay >= ChildYearRules.TextGap(ChildYearRules.PregnancyTextDays, DaysPerYear) && day < s.PDueDay)
                 {
                     s.LastFlavourDay = day;
                     string line = FamilyText.Pick(Expecting, ref _lastExpecting);
@@ -240,7 +240,7 @@ namespace RealLifeOverhaul.Family
                 Errands.Add(Errands.AdoptMeet, meet, 9, 18);
                 FamilyText.Message(FamilyPhone.FamilyContact, "reallife_family_adopt_matched", Args.Us.On(FamilyText.When(meet)));
             }
-            else if (s.PStep >= 1 && s.PStep < 3 && day - s.LastFlavourDay >= 5)
+            else if (s.PStep >= 1 && s.PStep < 3 && day - s.LastFlavourDay >= ChildYearRules.TextGap(ChildYearRules.AdoptionTextDays, DaysPerYear))
             {
                 s.LastFlavourDay = day;
                 FamilyText.Message(FamilyPhone.FamilyContact, FamilyText.Pick(Waiting, ref _lastWaiting), Args.Us);

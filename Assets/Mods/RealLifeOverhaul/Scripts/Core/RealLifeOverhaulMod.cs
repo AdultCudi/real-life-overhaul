@@ -1494,7 +1494,7 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
-                .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", 1, 12, Settings.FamilyYearWeeks,
+                .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", Family.ChildYearRules.WeeksLeast, Family.ChildYearRules.WeeksMost, Settings.FamilyYearWeeks,
                     v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())
                 .AddButton("reallife_family_test_work", () => Family.FamilyDirector.Instance?.TestWork())

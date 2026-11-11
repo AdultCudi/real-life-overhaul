@@ -774,7 +774,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("family_nursery", () => Guide.Money(Family.FamilyBalance.NurseryPerMonth))
                 .Fact("family_nanny", () => Guide.Money(Family.FamilyBalance.NannyPerMonth))
                 .Fact("family_school", () => Guide.Money(Family.FamilyBalance.PrivateSchoolPerMonth))
-                .Fact("family_year_weeks", () => Settings.FamilyYearWeeks.ToString(CultureInfo.InvariantCulture))
+                .Fact("family_year_weeks", () => Family.ChildYearRules.Weeks(Settings.FamilyYearWeeks).ToString(CultureInfo.InvariantCulture))
                 .Fact("family_counselling", () => Guide.Money(Family.FamilyBalance.CounsellingCost))
                 .Fact("family_settlement", () => Guide.Percent(Family.FamilyBalance.SettlementShare))
                 .Fact("family_settlement_most", () => Guide.Money(Family.FamilyBalance.SettlementCap))
