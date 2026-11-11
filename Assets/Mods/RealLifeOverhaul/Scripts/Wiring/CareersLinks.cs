@@ -69,6 +69,8 @@ namespace RealLifeOverhaul
                 TechBridges.Owner = Owner;
                 TechBridges.OwnerWorked = (prof, rank, minutes) => CareersDirector.Instance?.FirmWorked(prof, rank, minutes);
                 TechBridges.ContractDesk = ContractDesk;
+                TechBridges.ContractClient = ContractClient;
+                CareersBridges.FirmDesk = FirmDesk;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 FitOut.FitDesks.Wanted = CareersDirector.DeskWanted;
@@ -91,6 +93,7 @@ namespace RealLifeOverhaul
                 TechBridges.Owner = null;
                 TechBridges.OwnerWorked = null;
                 TechBridges.ContractDesk = null;
+                TechBridges.ContractClient = null;
                 TechBridges.AcademyType = null;
                 TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
@@ -348,6 +351,36 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("CareersLinks.ContractDesk", e);
+                    return false;
+                }
+            }
+
+            // The client of the contract that click would work, so the firm can ask which of the two the player means (Tech/TechDirector.OwnDesk).
+            private static string ContractClient(EmployeeStationController desk)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    return d != null ? d.ContractClientAt(desk) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.ContractClient", e);
+                    return null;
+                }
+            }
+
+            // True while the tech firm's click (or the sessions' Work button) leads to work at a desk, which a contract rides on: Careers clicks a desk of its own where it does not.
+            private static bool FirmDesk()
+            {
+                try
+                {
+                    TechDirector t = TechDirector.Instance;
+                    return t != null && t.OwnDeskOffered;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.FirmDesk", e);
                     return false;
                 }
             }

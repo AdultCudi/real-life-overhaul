@@ -515,6 +515,15 @@ internal static partial class Program
             OwnDesk();            // (the desk of one's own tech firm, whose learning it shares: OwnDeskChecks.cs)
             DeskSeat();           // (every seat held or given back, one more caller of it: DeskSeatChecks.cs)
             OwnContractOffice();  // (where a contract's desk work can be done: BusinessFixChecks.cs)
+            SetOff();             // (the computer at home, whose activity and buttons a contract is now worked through: SetOffChecks.cs)
+            InterviewPlaces();    // (...and what its video interview reads of the same activity: InterviewPlaceChecks.cs)
+            HomeworkCounts();     // (...and its homework: HomeworkCountChecks.cs)
+            ClassCounts();        // (...and its classes: ClassCountChecks.cs)
+            DeskScreens();        // (...and the screens it lights: DeskScreenChecks.cs)
+            SessionSharedDesk();  // (the tech firm's desk click, which a contract now rides on and shares with the desk sessions' panel: SessionChecks.cs)
+            HiddenPanelSources(); // (the buttons that begin an activity are named for Going Public's press, the home computer's Start among them: HiddenPanelChecks.cs)
+            DeskStartSources();   // (the director's desks and the one decision they read, whose StartAtComputer it shares: DeskStartChecks.cs)
+            SessionDeskSources(); // (the game's panel is shown in one place only, DeskGame.Show: SessionDeskChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }

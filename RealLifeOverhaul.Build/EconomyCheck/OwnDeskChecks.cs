@@ -363,10 +363,10 @@ internal static partial class Program
         Check(offer.Contains("Settings.CareersOwn") && offer.Contains("ReferenceEquals(DeskGame.OtherClicked, _onDesk)") && offer.Contains("DeskGame.OtherTarget = free;")
               && offer.Contains("DeskGame.OtherClicked = _onDesk;") && MethodText(desk, "private void DeskDown()").Contains("ReferenceEquals(DeskGame.OtherClicked, _onDesk)"),
             "own desk sources: a free desk is clicked as a job's desk is, and the click is cleared only by its owner, never the bank counter's");
-        string clicked = MethodText(desk, "private void DeskClicked(EntityController e)");
-        Check(clicked.Contains("DeskRefusal(firm, out OwnerStanding standing, out string professions)") && clicked.Contains("Notifications.Show(NotificationType.Warning, why")
-              && clicked.Contains("Notifications.ShowInsufficientEnergy()") && clicked.Contains("DeskGame.WalkTo(desk,"),
-            "own desk sources: a click says why not in the game's notification, or walks the player to the desk");
+        string clicked = MethodText(desk, "private void DeskClicked(EntityController e)"), firmWork = MethodText(desk, "private void FirmDeskWork(EmployeeStationController desk)");
+        Check(clicked.Contains("DeskRefusal(firm, out _, out _)") && clicked.Contains("FirmDeskWork(desk);") && firmWork.Contains("DeskRefusal(firm, out OwnerStanding standing, out string professions)")
+              && firmWork.Contains("Notifications.Show(NotificationType.Warning, why") && firmWork.Contains("Notifications.ShowInsufficientEnergy()") && firmWork.Contains("DeskGame.WalkTo(desk,"),
+            "own desk sources: a click on the firm's desk says why not in the game's notification, or walks the player to the desk (with a contract of theirs also to be worked, they are asked which)");
         Check(MethodText(desk, "private void OpenStint(FirmPlace firm, EmployeeStationController desk, OwnerStanding standing)").Contains("ShiftSkip.Offer(this, stint)"),
             "own desk sources: the stint is the game's own work panel, with skip and fast forward (Jobs/ShiftSkip)");
         string started = MethodText(desk, "private void StintStarted(OwnStint stint)");

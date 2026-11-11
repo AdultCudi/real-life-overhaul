@@ -67,6 +67,12 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Former colleagues join a firm of the player's: the place, the role, the level and how many; returns how many joined (Tech/People). Default: none.</summary>
         public static Func<string, int, int, int, int> JoinFirm;
 
+        /// <summary>
+        /// True while a click (or the desk sessions' Work button) in the tech firm the player stands in leads to work at a desk, which a contract of theirs rides on
+        /// (Tech/TechDirector.OwnDesk). Default: no.
+        /// </summary>
+        public static Func<bool> FirmDesk;
+
         /// <summary>True once the utilities office and the courthouse have chosen their buildings, so the university never takes one. Default: true.</summary>
         public static Func<bool> OthersPicked;
 
@@ -81,6 +87,18 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The tech company whose floor of a shared tower the player is on now (Tech/Sites), or null. Default: none.</summary>
         public static Func<string> FloorHere;
+
+        public static bool FirmDeskNow()
+        {
+            try
+            {
+                return FirmDesk != null && FirmDesk();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         public static long HeadquartersStampNow()
         {
@@ -231,6 +249,7 @@ namespace RealLifeOverhaul.Careers
             Children = null;
             TechFirm = null;
             JoinFirm = null;
+            FirmDesk = null;
             TookAd = null;
             Shortage = null;
             Friends = null;

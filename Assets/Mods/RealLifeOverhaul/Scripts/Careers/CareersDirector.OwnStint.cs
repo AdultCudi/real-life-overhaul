@@ -10,8 +10,9 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// A freelance contract worked at a desk of the player's own office business, as a job's desk is worked (Careers/DeskGame's click, the walk, the game's work panel with its slider of
     /// hours, the seat, the stand-up): inside a business of theirs where a taken contract can be done, a free desk is a thing to click, and the click walks the player to it and offers
-    /// the contract due first (OwnRules.WorkedBefore). A tech firm's own click carries the contract (TechBridges.ContractDesk), since the firm's own work waits on the same desk. The
-    /// Career app starts a stint itself only where there is no desk to click: a trade's at the client's, a contract worked at home, an office with no desk free, the option off.
+    /// the contract due first (OwnRules.WorkedBefore). A tech firm's own click carries the contract while it is up (TechBridges.ContractDesk) and asks which work they mean when the firm's
+    /// own can be done too; with the tech sector off the contract is clicked here, as in any office. At home the computer's panel starts it (CareersDirector.OwnHome). The Career app starts
+    /// a stint itself only where nothing at the place does (OwnPlaceRules.StartOf): a trade's at the client's, a home with no computer to click, an office no click leads to, the option off.
     /// Cost: one second's look inside a business of theirs (a loop over six contracts at most); the building's desks are read once a visit, and every ten seconds while none is free.
     /// </summary>
     public sealed partial class CareersDirector
@@ -23,13 +24,16 @@ namespace RealLifeOverhaul.Careers
         private string _ownDeskInside;      // the business of the player's (its place key) they stand in, once a second; null outside
         private bool _ownDeskScanned;       // its desks were read this visit
         private float _ownDeskLookAt;
-        private bool _ownDeskNone;          // in such a business with a contract to work here and no desk free to click
+        private bool _ownDeskNone;          // in such a business with a contract to work here and no click leading to it (OwnPlaceRules.ClickFor)
         private bool _ownDeskOff;           // stood down for the session after a fault
         private ContractStint _ownStint;    // the stint offered or under way, from the panel's offer until it is over
         private int _ownHours = OwnRules.SittingHoursDefault;   // the hours last picked on the slider, kept while the game runs
 
-        /// <summary>True while a contract's desk work is started at the place, a free desk of an office business of the player's, not from the Career app: its switch on, the click there.</summary>
-        internal bool OwnDeskWay => Settings.CareersOwnDesk && OwnOn && !_ownDeskOff && DeskGame.Clickable;
+        /// <summary>True while a freelance contract is started where the player sits down to it, not from the Career app: its switch on, working for oneself, the working life, no fault.</summary>
+        internal bool OwnWay => Settings.CareersOwnDesk && OwnOn && _workOn && !_ownDeskOff;
+
+        /// <summary>True while a free desk of an office business of the player's is clicked for a contract: <see cref="OwnWay"/> and the click in the game.</summary>
+        internal bool OwnDeskWay => OwnWay && DeskGame.Clickable;
 
         /// <summary>The slider moved to these hours: kept for the next stint, while the game runs.</summary>
         internal void OwnHoursChosen(int hours)
@@ -38,8 +42,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// True where the Career app starts a taken contract's stint itself, as it starts a job's day only where no desk could be had: a trade's at the client's, a contract worked at home,
-        /// one in an office of the player's with no desk free to click, and every one with the desk way switched off.
+        /// True where the Career app starts a taken contract's stint itself, as it starts a job's day only where no desk could be had (OwnPlaceRules.StartOf): a trade's at the client's, the
+        /// desk way switched off, a home with no computer to click, and an office of the player's that no click leads to (no desk free, or another part's click holds the place).
         /// </summary>
         internal bool ContractFromApp(Contract c)
         {
@@ -47,8 +51,12 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            Profession p = c.Def;
-            return !OwnDeskWay || p == null || OwnRules.IsTrade(p) || CareersGame.AtHome() || _ownDeskNone;
+            bool deskWork = OwnPlaceRules.AtDesk(c);   // a trade's (or a profession the game no longer knows) is worked at the client's, where the app starts it
+            bool home = deskWork && CareersGame.AtHome();
+            bool office = deskWork && !home && OwnOffice(c.Def, true) != null;
+            bool computer = home && OwnComputerWay && HomeComputerHere();
+            bool click = office && OwnDeskWay && !_ownDeskNone;
+            return OwnPlaceRules.StartOf(OwnWay, !deskWork, home, computer, office, click) == ContractStart.App;
         }
 
         /// <summary>Show on map for a taken contract's work: a trade's client, else the first office business of the player's it can be done in. Null if done, else a reason key.</summary>
@@ -107,16 +115,21 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // The contract worked first at a desk of this business (OwnRules.WorkedBefore): taken, with work left, desk work and no trade's, of a profession done in such an office. Null for none.
+        // The contract worked first at a desk of this business (OwnRules.WorkedBefore): one OwnPlaceRules.AtDesk takes, of a profession done in such an office. Null for none.
         private Contract NextContractHere(BuildingRegistration reg)
+        {
+            return reg != null ? FirstContract(reg) : null;
+        }
+
+        // The contract worked first (OwnRules.WorkedBefore) of those a desk or a computer takes (OwnPlaceRules.AtDesk); with an office business given, of those that fit it. Null for none.
+        private Contract FirstContract(BuildingRegistration office)
         {
             WorkFile w = Work;
             Contract best = null;
             for (int i = 0; w != null && i < w.Contracts.Count; i++)
             {
                 Contract c = w.Contracts[i];
-                Profession p = c.Def;
-                if (c.Stage == (int)ContractStep.Taken && OwnRules.Left(c) > 0 && p != null && !OwnRules.IsTrade(p) && OfficeFits(p, reg) && (best == null || OwnRules.WorkedBefore(c, best)))
+                if (OwnPlaceRules.AtDesk(c) && (office == null || OfficeFits(c.Def, office)) && (best == null || OwnRules.WorkedBefore(c, best)))
                 {
                     best = c;
                 }
@@ -124,12 +137,12 @@ namespace RealLifeOverhaul.Careers
             return best;
         }
 
-        // The first desk of the building's (in the order of its items) that nobody sits at now.
-        private EmployeeStationController FreeOwnDesk()
+        // The first desk of the building's (in the order of its items) that nobody sits at now, and is not the desk sessions' own, which their panel answers.
+        private EmployeeStationController FreeOwnDesk(EmployeeStationController session)
         {
             for (int i = 0; i < _ownDesks.Count; i++)
             {
-                if (FirmsGame.Free(_ownDesks[i]))
+                if (FirmsGame.Free(_ownDesks[i]) && !ReferenceEquals(_ownDesks[i], session))
                 {
                     return _ownDesks[i];
                 }
@@ -137,35 +150,41 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        // A free desk of a business that is no tech firm is the one the player may click for a contract; nothing to click elsewhere, or while a stint is on.
+        // The building's desks read once a visit, and again at most every ten seconds while none is free: the free desk to click, or null.
+        private EmployeeStationController FreeOwnDeskNow()
+        {
+            EmployeeStationController session = TechBridges.SessionDeskNow();
+            EmployeeStationController free = FreeOwnDesk(session);
+            if (free == null && (!_ownDeskScanned || Time.realtimeSinceStartup >= _ownDeskLookAt))
+            {
+                FirmsGame.Desks(_ownDesks);
+                _ownDeskScanned = true;
+                _ownDeskLookAt = Time.realtimeSinceStartup + OwnDeskLookSeconds;
+                free = FreeOwnDesk(session);
+            }
+            return free;
+        }
+
+        // A free desk of a business of the player's is the one they may click for a contract, wherever a click leads to it (OwnPlaceRules.ClickFor): their own, or a tech firm's, which
+        // carries it while it is up. Where none does (the tech sector off, no desk free, the one place held by the bank branch's counter) the Career app starts it; nothing to click
+        // elsewhere, or while a stint is on.
         private void OfferOwnDesk(BuildingRegistration reg)
         {
-            EmployeeStationController free = null;
-            _ownDeskNone = false;
-            if (reg != null && _ownStint == null && OwnDeskWay && NextContractHere(reg) != null)
+            bool contract = reg != null && _ownStint == null && OwnDeskWay && NextContractHere(reg) != null;
+            bool tech = contract && FirmsGame.KindOf(reg.businessTypeName) >= 0;
+            bool techLive = tech && CareersBridges.FirmDeskNow();
+            bool held = DeskGame.OtherClicked != null && !ReferenceEquals(DeskGame.OtherClicked, _onOwnDesk);
+            EmployeeStationController free = contract && !techLive && !held ? FreeOwnDeskNow() : null;
+            DeskClick click = OwnPlaceRules.ClickFor(contract, tech, techLive, free != null, held);
+            _ownDeskNone = contract && click == DeskClick.None;
+            if (click != DeskClick.Own)
             {
-                free = FreeOwnDesk();
-                if (free == null && (!_ownDeskScanned || Time.realtimeSinceStartup >= _ownDeskLookAt))
-                {
-                    FirmsGame.Desks(_ownDesks);   // the building's items read once a visit, and again at most every ten seconds while none is free
-                    _ownDeskScanned = true;
-                    _ownDeskLookAt = Time.realtimeSinceStartup + OwnDeskLookSeconds;
-                    free = FreeOwnDesk();
-                }
-                _ownDeskNone = free == null;
-            }
-            if (free == null || FirmsGame.KindOf(reg.businessTypeName) >= 0)
-            {
-                ReleaseOwnClick();   // (a tech firm's own click carries the contract: TechBridges.ContractDesk)
+                ReleaseOwnClick();
                 return;
             }
             if (_onOwnDesk == null)
             {
                 _onOwnDesk = OwnDeskClicked;
-            }
-            if (DeskGame.OtherClicked != null && !ReferenceEquals(DeskGame.OtherClicked, _onOwnDesk))
-            {
-                return;   // another part's click holds the second place (the bank branch's counter)
             }
             DeskGame.OtherTarget = free;
             DeskGame.OtherClicked = _onOwnDesk;
@@ -187,21 +206,39 @@ namespace RealLifeOverhaul.Careers
             ContractAtDesk(e as EmployeeStationController);
         }
 
+        // The contract a free desk of the business the player stands in offers them (the one due first that fits it), or null where none can be worked: the way off, a stint on, a desk taken.
+        private Contract ContractFor(EmployeeStationController desk, out BuildingRegistration reg)
+        {
+            reg = FirmsGame.InsideOwn();
+            if (!_workOn || !OwnDeskWay || _ownStint != null || desk == null || reg == null || Save == null || !FirmsGame.Free(desk))
+            {
+                return null;
+            }
+            return NextContractHere(reg);
+        }
+
+        /// <summary>The client of the contract a free desk of the business the player stands in offers them, or null for none (the tech firm asks, to say which work the click may be for).</summary>
+        internal string ContractClientAt(EmployeeStationController desk)
+        {
+            Contract c = ContractFor(desk, out _);
+            return c != null ? c.Client : null;
+        }
+
         /// <summary>
-        /// A contract of the player's worked at this free desk of the business they stand in: true when the click was taken, the walk begun or the refusal said; false when no contract can be
-        /// worked here, and the caller offers its own work (a tech firm's, through TechBridges.ContractDesk).
+        /// A contract of the player's worked at this free desk of the business they stand in: true when the click was taken, the walk begun or the refusal said (a business shut for now, a tired
+        /// player); false when no contract can be worked here, and the caller offers its own work (a tech firm's, through TechBridges.ContractDesk).
         /// </summary>
         internal bool ContractAtDesk(EmployeeStationController desk)
         {
-            BuildingRegistration reg = FirmsGame.InsideOwn();
-            if (!_workOn || !OwnDeskWay || _ownStint != null || desk == null || reg == null || Save == null)
+            Contract c = ContractFor(desk, out BuildingRegistration reg);
+            if (c == null)
             {
                 return false;
             }
-            Contract c = NextContractHere(reg);
-            if (c == null || !FirmsGame.Free(desk))
+            if (FirmsGame.Shut(reg))
             {
-                return false;
+                Notifications.Show(NotificationType.Warning, "reallife_tech_own_why_shut", null, 10f);   // closed for now (no power or internet): no work is done in it, a client's or the firm's
+                return true;
             }
             if (Save.Energy <= 0f)
             {
@@ -257,7 +294,7 @@ namespace RealLifeOverhaul.Careers
                 return busy;
             }
             Sitting sitting = ContractSitting(c, left);
-            var stint = new ContractStint(this, sitting, left, desk, place, _ownHours, Settings.CareersOwnHours);
+            var stint = new ContractStint(this, sitting, desk, place, new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen));
             CloseApps();
             ShiftSkip skip = ShiftSkip.Offer(this, stint);
             if (skip == null)
@@ -265,6 +302,7 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             stint.Skip = skip;
+            stint.Offered();   // the panel's offer is done: what it tells the slider from here is the player's move, and the hours kept are theirs
             _skip = skip;
             Hold(sitting, skip);
             _ownStint = stint;
