@@ -125,7 +125,8 @@ internal static partial class Program
         Check(team.Contains("SeatGame.DesksFor(person.Game, person.At)") && team.Contains("TalentGame.StationShift(person.Game, person.At)") && team.Contains("reallife_roles_state_no_desk")
               && team.Contains("reallife_roles_file_no_desk") && team.Contains("reallife_roles_file_no_shift"),
             "tech seats: the Team tab says why a professional of the game's has no seat, no desk placed or no shift at one");
-        Check(Occurs(hiring, "reallife_hire_seat_desk") == 2 && Occurs(hiring, "reallife_hire_seat_payroll") == 2 && table.Contains("reallife_staff_t_seat_desk") && table.Contains("reallife_staff_t_seat_payroll"),
+        Check(Occurs(hiring, "TechText.SeatDesk()") == 2 && Occurs(hiring, "reallife_hire_seat_payroll") == 2 && table.Contains("reallife_staff_t_seat_desk") && table.Contains("reallife_staff_t_seat_payroll")
+              && ModSource(@"Tech\TechText.cs").Contains("\"reallife_hire_seat_desk_auto\" : \"reallife_hire_seat_desk\""),
             "tech seats: the job ad page, the search firm's page and the Staff and roles reference say which workstation a role needs");
 
         // the reference: every professional role says its workstation

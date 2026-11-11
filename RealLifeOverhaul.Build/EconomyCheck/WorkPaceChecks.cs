@@ -109,11 +109,11 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the professionals' files by id
 
-    // The people's read finds each employee's file from TalentFile.Index: at the cap of 600, with an id twice and files
-    // with no id, every id gives the file TalentFile.Of gives.
+    // The people's read finds each employee's file from TalentFile.Index: with six hundred files, an id twice and files
+    // with no id, every id gives the file TalentFile.Of gives (a pass over the files for each, which is why six hundred and not the bound).
     private static void PaceTalentIndex()
     {
-        TalentFile file = PaceTalent(TalentStore.PeopleMost);
+        TalentFile file = PaceTalent(600);
         file.People[17].Id = file.People[400].Id;   // (an id twice: the first is the one)
         file.People[30].Id = string.Empty;
         file.People[31].Id = string.Empty;

@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Ui
             role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_place", "At"), Stepper = 2 });
             role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_posts", "Posts to fill"), Stepper = 8 });
             role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_arrangement", "Arrangement"), Stepper = 6 });
-            role.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll") });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk() : TechText.T("reallife_hire_seat_payroll") });
             form.Left.Add(role);
             var terms = new WorkFormBand { Title = w.T("reallife_work_the_terms", "Pay and terms") };
             terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_pay_most", "Pay up to"), Stepper = 3 });

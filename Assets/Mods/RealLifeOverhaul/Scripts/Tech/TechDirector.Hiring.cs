@@ -276,7 +276,7 @@ namespace RealLifeOverhaul.Tech
                     continue;
                 }
                 bool payroll = HiringRules.OnPayroll(s.P.Def, ad.Work, ad.CrewSearch, shifts);
-                bool ok;
+                bool ok, seating = false;
                 if (payroll)
                 {
                     ok = StartPayroll(s, ad, a, day);
@@ -293,6 +293,7 @@ namespace RealLifeOverhaul.Tech
                     {
                         File(HiringGame.Id(candidate), s.P, day, ad.Work);
                         HiringGame.Arrived(candidate, at, s.P.Name, day);
+                        seating = SeatsNew(candidate, at);   // the hour's pass gives them a desk and shifts; the note below says so
                     }
                 }
                 if (!ok)
@@ -319,7 +320,7 @@ namespace RealLifeOverhaul.Tech
                 a.Stage = (int)ApplyStage.Started;
                 s.Taken = true;
                 n++;
-                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : "reallife_hire_note_started",
+                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : seating ? "reallife_hire_note_started_seat" : "reallife_hire_note_started",
                     Data("name", s.P.Name, "business", TalentGame.NameOf(at), "role", TechText.Role(s.P.Role)), TabTeam, null);
             }
             return n;

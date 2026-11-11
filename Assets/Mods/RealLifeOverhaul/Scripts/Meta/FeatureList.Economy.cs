@@ -358,8 +358,8 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
                 .Group("reallife_talent_header")
                 .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
-                .Owns(Settings.TechPeopleId)
-                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test")
+                .Owns(Settings.TechPeopleId, Settings.TechSeatHiresId)
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test", "reallife_hire_test_seat")
                 .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

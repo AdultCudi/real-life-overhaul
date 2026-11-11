@@ -34,6 +34,8 @@ namespace RealLifeOverhaul.Tech
         private readonly int[] _wanted = new int[8];
         private TalentFile _talent;
         private bool _peopleOn;
+        private bool _peopleFullTold;   // the files' bound was met: said once in the log, never silently
+        private readonly int[] _shortageRead = new int[(int)Family.Count];   // each family's shortage, worked out once for a whole read of the people
 
         /// <summary>The people's files; null while the part is off.</summary>
         public TalentFile Talent => _peopleOn ? _talent : null;
@@ -92,6 +94,8 @@ namespace RealLifeOverhaul.Tech
             _fileOf.Clear();
             _personOf.Clear();
             _personNext.Clear();
+            ForgetSeating();
+            _peopleFullTold = false;
             if (!unloading && _rolesApp != null)
             {
                 _rolesApp.Remove();
@@ -128,6 +132,7 @@ namespace RealLifeOverhaul.Tech
                 _talent.People[i].Seen = _talent.People[i].Payroll;
             }
             _talent.Index(_fileOf);
+            ReadShortages();
             TalentGame.Employees(_employees);
             int made = 0;
             for (int i = 0; i < _employees.Count; i++)
@@ -139,6 +144,12 @@ namespace RealLifeOverhaul.Tech
                 {
                     if (_talent.People.Count >= TalentStore.PeopleMost)
                     {
+                        if (!_peopleFullTold)
+                        {
+                            _peopleFullTold = true;
+                            Logger?.Warn("Tech: " + TalentStore.PeopleMost + " professionals are on file, the most the sector keeps; "
+                                         + "the game's employees after them have no role and are left out of the firms' crews.");
+                        }
                         continue;
                     }
                     p = NewFile(e, day);
@@ -175,6 +186,16 @@ namespace RealLifeOverhaul.Tech
             return made;
         }
 
+        // Each family's shortage for the whole read: what every professional's going rate is worked from. Asked once for the read and not for each
+        // professional, since it passes over the whole market and a large save has thousands of them.
+        private void ReadShortages()
+        {
+            for (int f = 0; f < _shortageRead.Length; f++)
+            {
+                _shortageRead[f] = Shortage((Family)f);
+            }
+        }
+
         // The file's Person of the last read, filled again, so a read of 600 makes no objects.
         private Person Read(Profile p, EmployeeInstance e, int day)
         {
@@ -209,7 +230,7 @@ namespace RealLifeOverhaul.Tech
                 p.GameWage = p.Wage;
             }
             person.Business = person.At != null ? TalentGame.NameOf(person.At) : string.Empty;
-            p.Going = TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, person.MainPoints), p.Def, Shortage(p.Def.Family), TalentRules.CertPayBp(p));
+            p.Going = TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, person.MainPoints), p.Def, _shortageRead[(int)p.Def.Family], TalentRules.CertPayBp(p));
             person.HoursYesterday = HoursOf(person, day);   // the firms' crews are worked out from it
             return person;
         }
@@ -364,6 +385,7 @@ namespace RealLifeOverhaul.Tech
             {
                 Changed();
             }
+            SeatHour(day);
         }
 
         // The sector's offers, and the notices worked after them, whose employee the game's own rival offer has reached

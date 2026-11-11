@@ -111,7 +111,7 @@ Only on the player's button, after the game's own confirm dialogue where a rota 
   The stamp is compared again in the frame that writes; a business that changed is read again, and after three such readings nothing is written and the player is told.
   What the player confirmed is written only while the business is as it was when they were asked; one that changed since (the day turned, its customers moved) is not written, and the notice asks for the button again.
   A fill that ends with nothing written says so, in the log and in that notice.
-- **Never in part**: a business with more than 64 stations (one bit each in the solver) or 120 employees is refused with a sentence; nothing of it is read in part and nothing of its rota is touched.
+- **Never in part**: a business with more than 64 stations (one bit each in the solver) or 120 employees is refused with a sentence; nothing of it is read in part and nothing of its rota is touched. A tech firm that large still has its new hires seated, a desk at a time, by the Tech part's seat rule ([New hires](staffing.md#new-hires-a-role-and-a-seat)).
   The game's building size data is asset data and is not in the decompiled code, so the largest business the game allows is not known here.
 - **The late opening permit**: while licences are on and the business holds no permit, hours from 22:00 and before 05:00 are barred from the advice, so "Use these hours" can never put it in breach.
   The page says what the permit would add (hours and money), and says so when the business opens late without one as it stands.

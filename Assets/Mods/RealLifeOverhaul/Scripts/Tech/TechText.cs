@@ -20,6 +20,9 @@ namespace RealLifeOverhaul.Tech
 
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
+        /// <summary>The line that says a role sits at a desk: with Seat new hires on, that a free desk and shifts are found for a hire; off, that the player gives them.</summary>
+        public static string SeatDesk() => T(Settings.TechSeatHires ? "reallife_hire_seat_desk_auto" : "reallife_hire_seat_desk");
+
         /// <summary>Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line short enough for a notification.</summary>
         public static string IdleLine(Idle why, in FirmFacts f, bool yesterday)
         {

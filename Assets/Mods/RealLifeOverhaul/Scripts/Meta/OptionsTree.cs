@@ -433,7 +433,8 @@ namespace RealLifeOverhaul.Meta
                 S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
-                S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
+                S("people").For("tech_people").Opts("tech_people").Opt("tech_seat_hires", "tech_people")
+                    .Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach desk seat shift schedule hire"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")

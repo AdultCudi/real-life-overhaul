@@ -6,6 +6,7 @@ The tech sector and the professions: tech firms of the player's own, hiring, the
 
 - `TechDirector.cs`: keeps every part going; each part in partial files of its own (the apps' actions in `.Roles`, `.FirmsApp` and `.Deals`).
 - `TechBridges.cs`: what it asks of the others.
+- `TechDirector.Seating.cs`, `Firms/SeatPlan.cs`, `Firms/SeatShifts.cs`: a hire at a tech firm given a free desk and a week of shifts, on the game's hour; the rules are game-free, the one file that touches the game's schedule is `SeatShifts` ([New hires](../../../../../docs/features/staffing.md#new-hires-a-role-and-a-seat)).
 - `Firms`: the firms, one folder a part (Hiring, Infra, People, Sites, Venture).
 - `Studio`: the game studio under Living population, from the concept at the desk to its life after launch ([The game studio](../../../../../docs/features/game-studio.md)).
 - `Sector`: the other tech firms under Living population: shared markets from the city, rivals by the same rules, the city's IT work, data centres' demand and fourteen desk sessions ([The tech firms' markets](../../../../../docs/features/tech-firms.md)).

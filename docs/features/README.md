@@ -22,7 +22,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Subway in Uptown](subway-uptown.md): three subway stations in Uptown and Cedar Heights on the game's own subway, at its own fare, with the city's people on the line.
 - [Uptown's landmarks](landmarks.md): Summit Tower, Uptown Galleria and Crest Field, the city's megaprojects in the new district: tendered, built, opened, and what they do for the lots round them.
 - [Birchwood School](schools.md): a school campus on Uptown's west square, and the city's schools as one market the player may buy into, run by the same rules for the trusts and the council.
-- [Staff and roles](staffing.md): an exact, searchable reference of the staff of every business of the mod and of every role, generated from the code's own tables, in the Guide, the game's help and the Discord guide.
+- [Staff and roles](staffing.md): an exact, searchable reference of the staff of every business of the mod and of every role, generated from the code's own tables, in the Guide, the game's help and the Discord guide; and how a hire at a tech firm gets a role in the mod's files and a free desk with a week of shifts.
 
 ## The player's life
 

@@ -6,13 +6,15 @@ namespace RealLifeOverhaul.Tech
     /// <summary>
     /// The professionals in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h) and
     /// the files (p) and the moves followed (m, which an older version of the mod passes over), fields in the order
-    /// <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals.
+    /// <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals. A file is kept for every professional the game holds, so a save
+    /// of hundreds of programmers is read whole: the cap is a bound far above the employees any save has (the largest seen holds some six thousand
+    /// in all), never a number a player reaches, and a read of the line stays linear in its size.
     /// </summary>
     public static class TalentStore
     {
         public const string Key = "reallife:tech_people";
         public const int Version = 1;
-        public const int PeopleMost = 600;
+        public const int PeopleMost = 10000;   // files kept; a bound for the arithmetic (it was 600, which a large save met: its next hires got no role)
 
         public static TalentFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
@@ -44,6 +46,7 @@ namespace RealLifeOverhaul.Tech
             var r = new TechReader(text);
             version = r.Version;
             var f = new TalentFile();
+            var seen = new HashSet<string>(StringComparer.Ordinal);   // the ids read, so a file's id is looked up in one step, not by a pass over the files
             Fields h = r.One('h');
             f.Seed = h.Int(1);
             f.FirstDay = h.Int();
@@ -95,7 +98,7 @@ namespace RealLifeOverhaul.Tech
                     PrevDay = x.Int(-1),
                     PrevHours = Math.Max(0, x.Int())
                 };
-                if (p.Id.Length > 0 && f.Of(p.Id) == null && f.People.Count < PeopleMost)
+                if (p.Id.Length > 0 && f.People.Count < PeopleMost && seen.Add(p.Id))
                 {
                     f.People.Add(p);
                 }
