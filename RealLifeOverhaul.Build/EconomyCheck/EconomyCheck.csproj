@@ -1124,6 +1124,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapPresses.cs" Link="Mod\MapPresses.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapTilt.cs" Link="Mod\NavMapTilt.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavDestRules.cs" Link="Mod\NavDestRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavHeadRules.cs" Link="Mod\NavHeadRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\UiMapDistrict.cs" Link="Mod\UiMapDistrict.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\UiMapChrome.cs" Link="Mod\UiMapChrome.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\UiMapPlace.cs" Link="Mod\UiMapPlace.cs" />

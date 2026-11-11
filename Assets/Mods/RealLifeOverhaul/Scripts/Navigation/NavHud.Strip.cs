@@ -15,12 +15,15 @@ namespace RealLifeOverhaul.Nav
     {
         private const float StripPad = 14f;           // HUD units from the view's edge
         private const float CompassSize = 52f;
+        private const float StripHeight = 46f;
+        private const float SwitchGap = 10f;          // between the compass and the 2D and 3D button under it
         private const float CompassOrbit = 17f;       // the dot's distance from the compass's middle
 
         private RectTransform _strip, _compass, _compassDot, _scaleBox;
         private TMP_Text _stripText, _scaleText;
         private RectTransform _scaleLine, _scaleA, _scaleB;
         private string _stripShown;
+        private float _stripWanted;
         private int _scaleMetres;
         private float _scaleUnits;
         private float _compassTurn = float.MaxValue;
@@ -41,7 +44,7 @@ namespace RealLifeOverhaul.Nav
             _strip = Plate("Strip", _view, plate);
             _strip.anchorMin = _strip.anchorMax = _strip.pivot = new Vector2(0f, 1f);
             _strip.anchoredPosition = new Vector2(StripPad, -StripPad);
-            _strip.sizeDelta = new Vector2(240f, 46f);
+            _strip.sizeDelta = new Vector2(240f, StripHeight);
             _stripText = Label("Strip text", _strip, ink, TextAlignmentOptions.Left);
             if (_stripText != null)
             {
@@ -50,6 +53,11 @@ namespace RealLifeOverhaul.Nav
                 text.anchorMax = Vector2.one;
                 text.offsetMin = new Vector2(14f, 0f);
                 text.offsetMax = new Vector2(-14f, 0f);
+                _stripText.textWrappingMode = TextWrappingModes.NoWrap;
+                _stripText.overflowMode = TextOverflowModes.Ellipsis;   // the street's end goes first: the district leads the line
+                _stripText.enableAutoSizing = true;   // a long district and street first get smaller lettering
+                _stripText.fontSizeMax = 26f;
+                _stripText.fontSizeMin = 20f;
             }
 
             _compass = Plate("Compass", _view, plate);
@@ -119,8 +127,25 @@ namespace RealLifeOverhaul.Nav
             }
             _stripShown = words;
             bool both = !string.IsNullOrEmpty(street) && !string.IsNullOrEmpty(district);
-            _stripText.text = both ? "<color=#4FB8EA>" + district + "</color>   " + street : words ?? string.Empty;
-            _strip.sizeDelta = new Vector2(Mathf.Clamp(_stripText.preferredWidth + 36f, 120f, Mathf.Max(120f, ViewWidth - CompassSize - StripPad * 3f)), 46f);
+            _stripText.text = both ? "<color=#4FB8EA>" + district + "</color>  " + street : words ?? string.Empty;
+            _stripWanted = _stripText.preferredWidth + 36f;   // at the full lettering size: measured only when the words change
+            StripFit();
+        }
+
+        // The strip as wide as its words ask, up to the room beside the compass and the switch (one pad clear of them); the lettering shrinks, then the
+        // street is shortened, in what is left. On a change of the words or of the view's width.
+        private void StripFit()
+        {
+            if (_strip == null || _width <= 0f)
+            {
+                return;
+            }
+            float room = Mathf.Max(120f, ViewWidth - CompassSize - StripPad * 3f);
+            float width = Mathf.Clamp(_stripWanted, 120f, room);
+            if (_strip.sizeDelta.x != width)
+            {
+                _strip.sizeDelta = new Vector2(width, StripHeight);
+            }
         }
 
         // On each draw of the picture: the dot to where north is, and the scale bar's length for the metres across.
