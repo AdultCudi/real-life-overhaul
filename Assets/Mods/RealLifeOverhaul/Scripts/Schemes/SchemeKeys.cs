@@ -23,6 +23,13 @@ namespace RealLifeOverhaul.Schemes
             "reallife_scheme_favour_investigator", "reallife_scheme_favour_judge"
         };
 
+        /// <summary>The paper's line on the player's own exposure, by kind of scheme.</summary>
+        public static readonly string[] NewsOwn =
+        {
+            "reallife_scheme_news_own_claim", "reallife_scheme_news_own_expense", "reallife_scheme_news_own_books", "reallife_scheme_news_own_club",
+            "reallife_scheme_news_own_wash", "reallife_scheme_news_own_graft"
+        };
+
         /// <summary>What a favour is, what it costs and what it risks, said before the money moves.</summary>
         public static readonly string[] Asks =
         {

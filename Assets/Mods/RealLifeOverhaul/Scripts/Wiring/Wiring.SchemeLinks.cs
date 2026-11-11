@@ -214,23 +214,31 @@ namespace RealLifeOverhaul
             // How the courts ended a case, as the schemes count it: 0 while it is open.
             private static int CaseEnd(int number)
             {
-                int outcome = SchemeCases.Outcome(number);
-                if (outcome == 0)
+                try
                 {
-                    return 0;
+                    int outcome = SchemeCases.Outcome(number);
+                    if (outcome == 0)
+                    {
+                        return 0;
+                    }
+                    switch (outcome)
+                    {
+                        case (int)CaseOutcome.Convicted:
+                        case (int)CaseOutcome.Guilty:
+                        case (int)CaseOutcome.Deal:
+                            return (int)InquiryEnd.Convicted;
+                        case (int)CaseOutcome.Settled:
+                            return (int)InquiryEnd.Settled;
+                        case -1:
+                            return (int)InquiryEnd.Dropped;   // the courts no longer hold it
+                        default:
+                            return (int)InquiryEnd.Cleared;
+                    }
                 }
-                switch (outcome)
+                catch (Exception e)
                 {
-                    case (int)CaseOutcome.Convicted:
-                    case (int)CaseOutcome.Guilty:
-                    case (int)CaseOutcome.Deal:
-                        return (int)InquiryEnd.Convicted;
-                    case (int)CaseOutcome.Settled:
-                        return (int)InquiryEnd.Settled;
-                    case -1:
-                        return (int)InquiryEnd.Dropped;   // the courts no longer hold it
-                    default:
-                        return (int)InquiryEnd.Cleared;
+                    Fault("SchemeLinks.CaseEnd", e);
+                    return (int)InquiryEnd.Settled;   // a fault in the courts' look leaves nothing to wait for
                 }
             }
 
@@ -410,7 +418,15 @@ namespace RealLifeOverhaul
 
             private static DialogEntry PersonAsk(SocialPerson p)
             {
-                return Entry(p, 0);
+                try
+                {
+                    return Entry(p, 0);
+                }
+                catch (Exception e)
+                {
+                    Fault("SchemeLinks.PersonAsk", e);
+                    return null;
+                }
             }
 
             // One favour at a time: what it is, what it costs, how it would be paid and what it risks; then the next, or the money.
