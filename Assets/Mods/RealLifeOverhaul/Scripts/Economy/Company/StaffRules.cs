@@ -188,6 +188,17 @@ namespace RealLifeOverhaul.Economy
             return answer == RaiseAnswer.Agree ? asked : answer == RaiseAnswer.Less ? asked * CompanyCatalogue.RaiseLessShare / 100 : 0;
         }
 
+        /// <summary>
+        /// Whether a waiting request asks no more than <paramref name="percent"/> per cent of what they are paid now (the agreed raise included): the limit under which
+        /// the company agrees it by itself. 0 is off, a limit past <see cref="CompanyCatalogue.AgreeUpToMost"/> is held to it, and a request for nothing is none.
+        /// </summary>
+        public static bool WithinLimit(StaffFile f, int percent)
+        {
+            int asked = RaiseFor(f, RaiseAnswer.Agree);
+            percent = Math.Min(percent, CompanyCatalogue.AgreeUpToMost);
+            return f.AskDay > 0 && percent > 0 && asked > 0 && (long)asked * 100 <= (long)Math.Max(1, f.Paid) * percent;
+        }
+
         public static void Answer(StaffFile f, RaiseAnswer answer, int day)
         {
             if (f.AskDay == 0)

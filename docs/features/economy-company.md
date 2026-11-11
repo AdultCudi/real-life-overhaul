@@ -72,6 +72,8 @@ The rule is the city's economy's: no game method is patched, and no figure of th
 
 **Wages are never written.** `EmployeeInstance.hourlyWage` is saved, so a raise agreed here is `StaffFile.Raise`, hundredths an hour, kept by the game's own id for the employee (`EmployeeInstance.id`).
 
+**One wage everywhere.** What somebody costs an hour is the game's wage at the city's prices and any raise agreed on top (`Core/PaidWage`), and every screen that names a wage asks it, so the number shown is the number charged. The game's own screens are written at it (`Core/WageShown`), the My Employees list, its box and the kit's profile through it, and the review before hiring several candidates through `WageShown.PaidCents`; the saved wage is never changed.
+
 Each night it is paid for the hours the game counted that day (`workedHoursToday`, read on the hour event that opens the new day, before the game's run clears it; a delivery driver's fixed day as the game pays it) as one transaction per business, "Wages, agreed raise: {business}", taken whatever the cash is, as the game takes its own wages.
 
 An employee who is no longer at a business of the player's is no longer read, and their file is dropped with the raise in it the next time the staff are read: on the day's pass, or when the Company app opens.
@@ -105,7 +107,8 @@ Money is at a price index of 100 where "at prices" is said, and follows `CityEco
 | --- | --- |
 | Going rate against the game's wage formula | boom +4%, slowdown -2%, recession -5%; 0.2% for each point of district income from 100; between 80% and 130%; then at today's prices (the index's whole move). What somebody is paid is counted the same way: the game's wage at today's prices, as the city's cost of living pays it (`StaffFile.Wage`), and the raise on top, so prices moving make nobody underpaid by themselves |
 | Underpaid from, and for how long before asking | 15, 10, 8, 6% under; 10, 7, 6, 5 days |
-| A request | 4 days to answer; "offer less" gives half; 14 days before the same employee asks again |
+| A request | 4 days to answer; "offer less" gives half; 14 days before the same employee asks again. "Agree to all", "Offer less to all" and "Refuse all" on the Staff page answer every request waiting by the same rules, each as one person's own answer is (`CompanyDirector.AnswerAllRaises`; the kit's `CompanyDo.RaisesAll`, A 0, 2 and 1) |
+| A request agreed by itself | The option `economy_company_agree_up_to`, a slider from 0 (off, the start) to 50 per cent of what somebody is paid, the agreed raise included (`StaffRules.WithinLimit`). On each day's pass a waiting request, new or older, that asks that share or less is answered as the player's own Agree is (`StaffRules.Answer`: the going rate, +10 standing, 14 days of rest), and one notice tells how many. A request is left alone where somebody else answers it: the place's manager at their hour (`Manages`), an exception waiting for its approver, and, with the hierarchy on, a place with a manager at work while the people executive is in post (who settles what waits unmet there). The rivals' businesses already answer their requests inside a pay band (`RivalFirms`), so nothing is added for them |
 | Standing | starts 60, calm level 65; a day underpaid -1, a day paid fairly +1 up to calm; agree +10, less -8, refuse -18, an offer matched +5 |
 | Sick pay | none, 50% or 100% of a day's pay; standing -3, 0, +2 a sick day; statutory is the default |
 | A rival's offer | chance 0, 1.5, 2.5, 4% a day; to a skill of 50 or more, 8% or more under; the going rate and 5%; 3 days to answer, 2 days' notice; 21 days before the same employee, 7 before anybody. A rival tycoon's offer (Scripts/Rivals) keeps the same waits and never comes on Relaxed. One rival's offer to an employee at a time: none while the game's own offer to them is open (`EmployeeInstance.PoachByRival`, read through `Core/RivalOfferGuard.OfferOpen`) or the tech sector has its own offer or a departure in hand for them (`StaffRules.Free`). The game's special rivals choose whom they want and the mod cannot stop them: when the game's offer reaches somebody the company has an offer or a notice in hand for, the company's gives way within the hour, on the day's pass or at the press of an answer, as if never made (`StaffRules.GivesWay`, `GiveWay`; 21 days' rest), and a notice says the offer in their messages decides |
@@ -180,11 +183,11 @@ What the player does in the app is written whether or not diagnostics are on, as
 
 ## Test tools
 
-Nine buttons under the options.
+Buttons under the options.
 
 Each puts one thing in place at the first business or employee it fits and opens the app on it:
 
-- a raise request, a poaching offer, a strike tomorrow;
+- a raise request, a raise request agreed by itself (the first person nobody else answers raises for asks for the option's share of their pay, which is agreed at once by the day's own steps; it says why not while the option is at 0), a poaching offer, a strike tomorrow;
 - a fire claim on a test policy (no fire and no bill);
 - a campaign that ends at once with its report (flyers as if run over the last three days: nothing charged, no customers added, the report from the game's real figures);
 - a return due now;
@@ -193,6 +196,8 @@ Each puts one thing in place at the first business or employee it fits and opens
 - "put the company back", which restores the state from before the first test.
 
 Money that has moved since stays moved.
+
+To see a request agreed by itself on the day's own pass instead, set **Agree to raises automatically, up to (%)** above what the request asks, press the raise request test and let a day turn: the next day's pass agrees it and tells you in one notice.
 
 ## Checks
 
@@ -208,10 +213,13 @@ The save's line across a version bump, with figures out of bounds and names with
 
 And that the same seed gives the same history at every strictness.
 
+`StaffRaiseChecks.cs` (`--staff-raises`) holds the answers for all and the option that agrees raises by itself: offering less to 28 people at once, the edge of every limit over seven pays, a thirteen-row Staff page from a player at 7 to 11 per cent, a morning's pass over forty people with a manager answering two, the option at 0 changing nothing, the director's, the screens' and the option's sources, and the wage in My Employees' review before hiring.
+
 ## Not checked in the game (the game could not be run)
 
 That the Company app's five tabs and its pages fit the white box as Finance's do (the longest page is a strike's or an accountant's, eight or nine lines and one row of buttons).
-That the row of three buttons in a request for a raise reads well.
+That the rows of three buttons in a request for a raise and over the staff (Agree to all, Offer less to all, Refuse all) read well.
+That a manager or an executive who answers raises still does so with the option above 0, in a save with the hierarchy on.
 That the icon's glyph (`Icon-Shop`) is in memory on the phone.
 
 That `workedHoursToday` still holds the ended day's hours on the hour event that opens the new day, as the decompiled `GameManager.NewDay` says.

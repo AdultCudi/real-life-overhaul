@@ -10,7 +10,6 @@ using RealLifeOverhaul.Economy;
 using UI;
 using UI.Notification;
 using UI.Smartphone.Apps.MyEmployees;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -80,7 +79,7 @@ namespace RealLifeOverhaul.Ui
                 Ids.Add(e.id);
                 Names.Add(e.characterData.name);
                 Roles.Add(e.GetPrimarySkill());
-                Wages.Add(Mathf.RoundToInt(e.hourlyWage * 100f));
+                Wages.Add(WageShown.PaidCents(e));   // what the candidate costs an hour at the city's prices, as the candidates' table shows it
             }
             return Picked.Count > 0;
         }

@@ -185,6 +185,7 @@
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
         public const string EconomyCompanyStaffId = "economy_company_staff";
+        public const string EconomyCompanyAgreeUpToId = "economy_company_agree_up_to";   // ...a request for a raise of this share of the pay or less is agreed by itself
         public const string EconomyCompanyCoverId = "economy_company_cover";
         public const string EconomyCompanyMarketingId = "economy_company_marketing";
         public const string EconomyCompanyTaxId = "economy_company_tax";
@@ -575,6 +576,7 @@
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompanyStaff = true;   // ...the wage market, raises, rivals' offers, strikes, overtime and sick pay
+        public static int EconomyCompanyAgreeUpTo = 0;   // ...a request for a raise of this many per cent of the pay or less is agreed by itself each morning; 0 is off
         public static bool EconomyCompanyCover = true;   // ...business insurance: policies, premiums and claims
         public static bool EconomyCompanyMarketing = true;   // ...campaigns and their reports
         public static bool EconomyCompanyTax = true;     // ...the quarterly return and the accountant
@@ -1019,6 +1021,7 @@
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
             EconomyCompanyStaff = Bool(modId, EconomyCompanyStaffId, EconomyCompanyStaff);
+            EconomyCompanyAgreeUpTo = Int(modId, EconomyCompanyAgreeUpToId, EconomyCompanyAgreeUpTo);
             EconomyCompanyCover = Bool(modId, EconomyCompanyCoverId, EconomyCompanyCover);
             EconomyCompanyMarketing = Bool(modId, EconomyCompanyMarketingId, EconomyCompanyMarketing);
             EconomyCompanyTax = Bool(modId, EconomyCompanyTaxId, EconomyCompanyTax);

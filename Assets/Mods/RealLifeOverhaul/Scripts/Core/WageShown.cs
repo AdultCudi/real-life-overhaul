@@ -210,6 +210,12 @@ namespace RealLifeOverhaul
                    && !(GoingPublic.InSession && e.assignedAddress != null && GoingPublic.Foreign(BuildingHelper.GetBuildingRegistration(e.assignedAddress)));
         }
 
+        /// <summary>What an employee or a candidate is paid an hour, hundredths, as the game's screens now show it; the game's own figure for another player's.</summary>
+        internal static int PaidCents(EmployeeInstance e)
+        {
+            return e == null ? 0 : Ours(e) ? PaidWage.Now(e.hourlyWage, e.id) : PaidWage.Base(e.hourlyWage);
+        }
+
         /// <summary>True the first time in this save that a negotiation is told what its wage costs.</summary>
         internal static bool FirstTell(string negotiation)
         {

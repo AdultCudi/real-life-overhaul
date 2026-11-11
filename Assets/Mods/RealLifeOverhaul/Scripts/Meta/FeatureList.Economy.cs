@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Meta
             Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")
                 .Group("reallife_co_header")
                 .About("reallife_guide_economy_company_about").Help("reallife_guide_economy_company")
-                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
+                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyAgreeUpToId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
                     Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId, Settings.EconomyCompanyLicencesId)
                 .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)
                 .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey, Economy.PricePlanStore.Key)
