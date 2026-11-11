@@ -290,7 +290,9 @@ internal static partial class Program
             // The Guide's page: its bold names are those five texts, each of them, and no other name; and it keeps the English page's lines, heads, points and figures.
             string page = words.TryGetValue("reallife_guide_tech_jobs", out string pageText) ? pageText : string.Empty;
             List<string> bold = Regex.Matches(page, "<b>(.*?)</b>").Cast<Match>().Select(m => m.Groups[1].Value).ToList();
-            string odd = string.Join(", ", bold.Where(b => !labels.Contains(b)).Distinct());
+            // The page may also name the option that seats tech hires, by its own text in the language (the options page shows it so).
+            string seatOption = words.TryGetValue("reallife_hire_opt_seat", out string seatText) ? seatText : null;
+            string odd = string.Join(", ", bold.Where(b => !labels.Contains(b) && b != seatOption).Distinct());
             string absent = string.Join(", ", labels.Where(l => !bold.Contains(l)));
             Check(odd.Length == 0 && absent.Length == 0,
                 "search rush labels: the Guide's page on hiring names the Jobs, Applicants and Search tabs, the Hire technicians button and the Infra tab in bold as " + code + " has them, and no other name (not a label: "
