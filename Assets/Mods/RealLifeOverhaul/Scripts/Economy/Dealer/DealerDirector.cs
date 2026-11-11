@@ -481,13 +481,15 @@ namespace RealLifeOverhaul.Economy.Dealership
                         TabLots, LotRow(y));
                 }
             }
-            int placed = DealerGame.Park(y, _lost, _bays);
+            int placed = DealerGame.Park(y, _lost, _wrong, _bays);
             DropLost(y);
+            DropWrong(y);
             if (Verbose)
             {
                 Logger?.Info("Dealership check (entered '" + y.Name + "'): " + (laid ? "the lot laid out, " : string.Empty) + y.Spots.Count + " place(s), "
                              + placed + " of " + y.Cars.Count + " car(s) held on their places"
-                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
+                             + (_lost.Count > 0 ? ", " + _lost.Count + " the save no longer has taken off" : string.Empty)
+                             + (_wrong.Count > 0 ? ", " + _wrong.Count + " not the model paid for, paid back" : string.Empty) + ": " + (placed == y.Cars.Count ? "PASS" : "FAIL") + ".");
             }
             Changed();
         }
