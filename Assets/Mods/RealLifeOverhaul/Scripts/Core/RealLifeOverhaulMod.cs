@@ -886,6 +886,11 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.EconomyLevelId, "reallife_econ_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyLevel,
                     v => Settings.EconomyLevel = v)
+                .AddToggle(Settings.StartDebtId, "reallife_econ_opt_start_debt", Settings.StartDebt,
+                    v => Settings.StartDebt = v)
+                .AddDropdown(Settings.StartDebtDegreeId, "reallife_econ_opt_start_debt_degree",
+                    Economy.StartDebtRules.DegreeKeys, Settings.StartDebtDegree,
+                    v => Settings.StartDebtDegree = v)
                 .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
                 .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
                 .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())
@@ -906,6 +911,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_econ_test_lender", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestLenderText()))
                 .AddButton("reallife_econ_test_ways", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestWaysOut()))
                 .AddButton("reallife_econ_test_back", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestBack()))
+                .AddButton("reallife_econ_test_start_debt", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestStartDebt()))
                 .AddHeader("reallife_macro_header")
                 .AddToggle(Settings.EconomyCityId, "reallife_macro_enabled", Settings.EconomyCity,
                     v => Settings.EconomyCity = v)

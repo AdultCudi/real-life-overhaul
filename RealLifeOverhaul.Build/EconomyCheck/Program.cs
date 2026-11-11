@@ -861,6 +861,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--start-debt")
+        {
+            StartDebtChecks();   // (the student loan a new game starts with alone, while working on it: StartDebtChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--parking")
         {
             ParkChecks();   // (car parks alone, while working on them: ParkChecks.cs)
@@ -1384,6 +1390,7 @@ internal static partial class Program
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
         ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
+        StartDebtChecks(); // the student loan a new game starts with: the amounts held to the courses' fees, a payment the loans page leaves alone, which game is new, what a missed payment does, the save, the option and its texts (StartDebtChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)

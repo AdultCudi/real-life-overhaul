@@ -59,6 +59,7 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
   Pick one: its figures, how it stands, the next step if payments are missed, and pay an amount or pay it off.
   A game loan's row is known by the loan (`FinanceApp.LoanRowId`: its bank, first day and sum), so a pick stays on it when a loan before it is paid off.
 
+  A game loan's kind is its mark's purpose: a bank loan, a business loan, a consolidation loan, or the student loan a new game may start with ([credit products](economy-credit-products.md#a-new-game-that-starts-in-debt)).
   A game loan is paid as EconoView pays it (`LoanEntryUi.PayOffLoan`: the game's `ba:transaction_loanpayoff` under the bank's name, the amount off `remainingAmount`, the loan out of the list with `ba:gameevent_loanpaid` when nothing is left); the credit file then reads it as it reads a payment made in EconoView (`EconomyDirector.BringUpToDate`).
   A collections call that waits shows its three answers here as well.
   Changing a game loan's daily payment stays in EconoView (a button opens it).
