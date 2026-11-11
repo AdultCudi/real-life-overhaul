@@ -373,6 +373,8 @@
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
         public const string CareersOwnOfferNotesId = "careers_own_offer_notes";
+        public const string CareersOwnDeskId = "careers_own_desk";
+        public const string CareersOwnHoursId = "careers_own_hours";
         public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
@@ -802,6 +804,8 @@
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
+        public static bool CareersOwnDesk = true;        // ...a contract's work started at a free desk of an office business of the player's, not from the Career app (off: the app starts it)
+        public static bool CareersOwnHours = true;       // ...the hours of a contract's stint picked on the work panel's slider (off: three hours each)
         public static bool CareersLadder = true;         // the management ladder at a city company's stores (off: a job there is the profession's ranks alone; the record is kept)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
@@ -1241,6 +1245,8 @@
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
             CareersOwnOfferNotes = Bool(modId, CareersOwnOfferNotesId, CareersOwnOfferNotes);
+            CareersOwnDesk = Bool(modId, CareersOwnDeskId, CareersOwnDesk);
+            CareersOwnHours = Bool(modId, CareersOwnHoursId, CareersOwnHours);
             CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);

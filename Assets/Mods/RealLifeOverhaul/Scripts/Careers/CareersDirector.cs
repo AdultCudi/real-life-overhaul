@@ -142,6 +142,7 @@ namespace RealLifeOverhaul.Careers
             if (_workOn)
             {
                 WorkDesks();
+                OwnDeskSecond();
             }
             LookAtSittings();
             if (_skip != null && !_skip.Open)

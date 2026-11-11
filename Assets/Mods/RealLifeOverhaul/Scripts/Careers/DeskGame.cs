@@ -236,7 +236,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>A computer of the player's home with its chair, the first of them, or null.</summary>
+        /// <summary>
+        /// A computer of the player's home with its chair that the game opens a panel for, the first of them, or null: the one the working day's and the contract's buttons are on
+        /// (<see cref="OwnPlaceRules.ComputerPanel"/>). Where there is none the Career app starts the work, so a computer whose panel never opens is not a way in.
+        /// </summary>
         public static ComputerController HomeComputer()
         {
             if (!Inside(out BuildingManager manager, out BuildingRegistration reg) || !GoingPublic.Mine(reg))
@@ -246,7 +249,7 @@ namespace RealLifeOverhaul.Careers
             List<ItemController> items = manager.allItemControllers;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (items[i] is ComputerController computer && computer.gameObject.activeInHierarchy && computer.FindChair() != null)
+                if (items[i] is ComputerController computer && computer.gameObject.activeInHierarchy && OwnPlaceRules.ComputerPanel(computer.FindChair() != null, Usable(computer)))
                 {
                     return computer;
                 }

@@ -9,8 +9,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's courses and job as buttons of the game's own computer panel beside Pass the time, copies of its button
-    /// template made once a city. The cost: nothing between two openings of the panel; on one, a look through courses and job.
+    /// The player's courses, job and freelance contract as buttons of the game's own computer panel beside Pass the time, copies of its button
+    /// template made once a city. The cost: nothing between two openings of the panel; on one, a look through courses, job and contracts.
     /// </summary>
     public sealed class ComputerButtons : MonoBehaviour
     {
@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Careers
         private static bool _failed;
 
         private CustomizableButtonsOverlay _panel;
-        private GameObject _class, _homework, _work;
+        private GameObject _class, _homework, _work, _contract;
         private Button _classButton, _workButton;
         private int _classCourse = -1, _homeworkCourse = -1;
         private bool _workLate;                         // the job's button is Work late (else Start the working day)
@@ -66,15 +66,19 @@ namespace RealLifeOverhaul.Careers
                 GameObject classCopy = UiClone.Asleep(template.gameObject, holder, "RealLifeOverhaul Attend Class");
                 GameObject homeworkCopy = UiClone.Asleep(template.gameObject, holder, "RealLifeOverhaul Do Homework");
                 GameObject workCopy = UiClone.Asleep(template.gameObject, holder, "RealLifeOverhaul Start Work");
+                GameObject contractCopy = UiClone.Asleep(template.gameObject, holder, "RealLifeOverhaul Own Contract");
                 Button classButton = UiClone.Rewire(classCopy.transform, ClassClicked);
                 UiClone.Rewire(homeworkCopy.transform, HomeworkClicked);
                 Button workButton = UiClone.Rewire(workCopy.transform, WorkClicked);
+                UiClone.Rewire(contractCopy.transform, ContractClicked);
                 classCopy.SetActive(false);
                 homeworkCopy.SetActive(false);
                 workCopy.SetActive(false);
+                contractCopy.SetActive(false);
                 classCopy.transform.SetParent(list, false);
                 homeworkCopy.transform.SetParent(list, false);
                 workCopy.transform.SetParent(list, false);
+                contractCopy.transform.SetParent(list, false);
                 DestroyImmediate(holder.gameObject);
 
                 _instance = panel.gameObject.AddComponent<ComputerButtons>();
@@ -82,11 +86,12 @@ namespace RealLifeOverhaul.Careers
                 _instance._class = classCopy;
                 _instance._homework = homeworkCopy;
                 _instance._work = workCopy;
+                _instance._contract = contractCopy;
                 _instance._classButton = classButton;
                 _instance._workButton = workButton;
                 if (Meta.Dev.Verbose)
                 {
-                    CareersDirector.Logger?.Info("Careers check (computer): 'Attend', 'Do homework' and the working day's button are buttons of the game's"
+                    CareersDirector.Logger?.Info("Careers check (computer): 'Attend', 'Do homework', the working day's and the contract's buttons are buttons of the game's"
                                                  + " computer panel, copied from its own template: PASS.");
                 }
                 return true;
@@ -120,6 +125,10 @@ namespace RealLifeOverhaul.Careers
                     {
                         Destroy(_instance._work);
                     }
+                    if (_instance._contract != null)
+                    {
+                        Destroy(_instance._contract);
+                    }
                     Destroy(_instance);
                 }
             }
@@ -152,7 +161,7 @@ namespace RealLifeOverhaul.Careers
 
         private void Decide()
         {
-            if (_class == null || _homework == null || _work == null || _panel == null)
+            if (_class == null || _homework == null || _work == null || _contract == null || _panel == null)
             {
                 return;
             }
@@ -188,9 +197,15 @@ namespace RealLifeOverhaul.Careers
                     _workButton.interactable = canWork;
                 }
             }
+            string contract = home && computer.FindChair() != null ? director.ComputerContract() : null;   // the freelance contract worked first, at the computer at home
+            if (contract != null)
+            {
+                UiClone.Words(_contract.GetComponentInChildren<TMPro.TMP_Text>(true), contract);
+            }
             Show(_class, offer.Class >= 0);
             Show(_homework, offer.Homework >= 0);
             Show(_work, work != null);
+            Show(_contract, contract != null);
         }
 
         // After the game's own buttons (it copies its template to the end of the list each time it fills the panel).
@@ -219,6 +234,10 @@ namespace RealLifeOverhaul.Careers
             if (_work != null && _work.activeSelf)
             {
                 _work.SetActive(false);
+            }
+            if (_contract != null && _contract.activeSelf)
+            {
+                _contract.SetActive(false);
             }
         }
 
@@ -258,6 +277,18 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             Refused(director.WorkAtComputer(computer, late));
+        }
+
+        private static void ContractClicked()
+        {
+            ComputerButtons buttons = _instance;
+            ComputerController computer = Closed();
+            CareersDirector director = CareersDirector.Instance;
+            if (director == null || buttons == null)
+            {
+                return;
+            }
+            Refused(director.ContractAtComputer(computer));
         }
 
         // The panel closed as the game's own buttons of it close it; the computer it was open over.

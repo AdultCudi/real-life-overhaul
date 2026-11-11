@@ -64,6 +64,22 @@ namespace RealLifeOverhaul.Careers
             return _firmNames.ToString();
         }
 
+        /// <summary>
+        /// The skills of a stint of own work, at a desk of a firm (<see cref="FirmWorked"/>) or on a contract (ContractEnded): the hours teach the rank's two as a job's day does
+        /// and the profession's own two are kept up beside them (OwnRules.Practise), so an owner who has risen to a managing rank does not let the firm's own trade fade.
+        /// </summary>
+        private void OwnWorked(Profession p, int rank, int hours, int day)
+        {
+            OwnRules.Practise(_study, p, rank, hours, day, LadderLearn());
+            if (Verbose)
+            {
+                OwnRules.WorkSkills(p, rank, out int a, out int b, out int keepA, out int keepB);
+                Logger?.Info("Careers check (own work): " + hours + " hour(s) as " + p.Key + " at rank " + rank + " taught " + a + " and " + b + " and kept up " + keepA + " and " + keepB
+                             + " (-1: none); the profession's own " + p.SkillA + " and " + p.SkillB + " were used on day " + day + ": "
+                             + (_study.Used[p.SkillA] == day && _study.Used[p.SkillB] == day ? "PASS" : "FAIL"));
+            }
+        }
+
         /// <summary>Minutes worked at a desk of the player's own firm as a profession's rank: what they learnt, a long week's burnout, a restraint clause.</summary>
         internal void FirmWorked(int prof, int rank, int minutes)
         {
@@ -73,10 +89,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             int day = Save.Day;
-            p.SkillsOf(rank, out int a, out int b);
-            int hours = Math.Max(1, minutes / 60);
-            LearnAtWork(a, hours, day);
-            LearnAtWork(b, hours, day);
+            OwnWorked(p, rank, Math.Max(1, minutes / 60), day);
             WorkFile w = _study.Work;
             if (w.Job != null && Settings.CareersLife)
             {

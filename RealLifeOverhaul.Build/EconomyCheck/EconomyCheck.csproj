@@ -844,6 +844,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\SellerRules.cs" Link="Mod\SellerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\SellerStore.cs" Link="Mod\SellerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnPlaceRules.cs" Link="Mod\OwnPlaceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\StintSlider.cs" Link="Mod\StintSlider.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderRanks.cs" Link="Mod\LadderRanks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderFile.cs" Link="Mod\LadderFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.cs" Link="Mod\CareerLadderRules.cs" />

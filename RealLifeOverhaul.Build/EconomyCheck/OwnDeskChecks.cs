@@ -363,10 +363,10 @@ internal static partial class Program
         Check(offer.Contains("Settings.CareersOwn") && offer.Contains("ReferenceEquals(DeskGame.OtherClicked, _onDesk)") && offer.Contains("DeskGame.OtherTarget = free;")
               && offer.Contains("DeskGame.OtherClicked = _onDesk;") && MethodText(desk, "private void DeskDown()").Contains("ReferenceEquals(DeskGame.OtherClicked, _onDesk)"),
             "own desk sources: a free desk is clicked as a job's desk is, and the click is cleared only by its owner, never the bank counter's");
-        string clicked = MethodText(desk, "private void DeskClicked(EntityController e)");
-        Check(clicked.Contains("DeskRefusal(firm, out OwnerStanding standing, out string professions)") && clicked.Contains("Notifications.Show(NotificationType.Warning, why")
-              && clicked.Contains("Notifications.ShowInsufficientEnergy()") && clicked.Contains("DeskGame.WalkTo(desk,"),
-            "own desk sources: a click says why not in the game's notification, or walks the player to the desk");
+        string clicked = MethodText(desk, "private void DeskClicked(EntityController e)"), firmWork = MethodText(desk, "private void FirmDeskWork(EmployeeStationController desk)");
+        Check(clicked.Contains("DeskRefusal(firm, out _, out _)") && clicked.Contains("FirmDeskWork(desk);") && firmWork.Contains("DeskRefusal(firm, out OwnerStanding standing, out string professions)")
+              && firmWork.Contains("Notifications.Show(NotificationType.Warning, why") && firmWork.Contains("Notifications.ShowInsufficientEnergy()") && firmWork.Contains("DeskGame.WalkTo(desk,"),
+            "own desk sources: a click on the firm's desk says why not in the game's notification, or walks the player to the desk (with a contract of theirs also to be worked, they are asked which)");
         Check(MethodText(desk, "private void OpenStint(FirmPlace firm, EmployeeStationController desk, OwnerStanding standing)").Contains("ShiftSkip.Offer(this, stint)"),
             "own desk sources: the stint is the game's own work panel, with skip and fast forward (Jobs/ShiftSkip)");
         string started = MethodText(desk, "private void StintStarted(OwnStint stint)");
@@ -393,8 +393,9 @@ internal static partial class Program
         Check(standing.Contains("!_workOn || !OwnOn") && standing.Contains("OwnRules.FirmProfession(_study, type, Save.Day, Year, out int rank)") && standing.Contains("\"reallife_tech_own_why_none\""),
             "own desk sources: Careers picks the profession from what the player has learnt, or says what is missing");
         string worked = MethodText(careers, "internal void FirmWorked(int prof, int rank, int minutes)");
-        Check(worked.Contains("LearnAtWork(a, hours, day);") && worked.Contains("Burn(w.Job, w.Job.WeekMinutes, minutes);") && worked.Contains("TestRestraint(false);") && !worked.Contains("Pay("),
-            "own desk sources: the hours teach, make a job's week long and test a restraint clause, unpaid");
+        Check(worked.Contains("OwnWorked(p, rank, Math.Max(1, minutes / 60), day);") && worked.Contains("Burn(w.Job, w.Job.WeekMinutes, minutes);") && worked.Contains("TestRestraint(false);")
+              && !worked.Contains("Pay(") && !worked.Contains("SkillsOf("),
+            "own desk sources: the hours teach and keep the trade up through the one rule of own work (OwnWorked, as a contract's do), make a job's week long and test a restraint clause, unpaid");
         Check(desk.Contains("public void TestOwnDesk()") && mod.Contains("\"reallife_tech_test_own_desk\", () => Tech.TechDirector.Instance?.TestOwnDesk()")
               && list.Contains("\"reallife_tech_test_net\", \"reallife_tech_test_own_desk\"") && desk.Contains("\"reallife_tech_test_own_none\"") && desk.Contains("\"reallife_tech_test_own_fail\""),
             "own desk sources: the test is in Options, on the tech sector's list, and says why when it cannot run");

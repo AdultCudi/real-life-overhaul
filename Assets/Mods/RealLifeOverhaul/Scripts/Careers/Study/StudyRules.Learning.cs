@@ -125,6 +125,15 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>
+        /// The thousandths of a point that hours of work teach a skill: <see cref="StudyCatalogue.WorkLearn"/> an hour at 0 points, less the more of it is held,
+        /// by the management ladder's factor (thousandths; 1000 with none). A job's day (CareersDirector.LearnAtWork) and a stint of own work (OwnRules.Practise) use this one sum.
+        /// </summary>
+        public static int WorkGain(StudyFile f, int skill, int hours, int ladder)
+        {
+            return StudyCatalogue.WorkLearn * hours * (100 - Points(f, skill)) / 100 * ladder / 1000;
+        }
+
         /// <summary>A day gone by: a skill unused for over <see cref="StudyCatalogue.FadeAfterDays"/> days fades, within its floors; returns the thousandths lost.</summary>
         public static int Fade(StudyFile f, int day)
         {

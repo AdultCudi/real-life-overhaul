@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CloseSitting();
             }
+            OwnDeskDown("the working life stopped");
             DeskRelease("the working life stopped");
             DeskGame.Remove();
             Guard.Step("the recruitment desk's two ways", AgencyDesk.Give);   // the game's own dialogue again
@@ -479,7 +480,7 @@ namespace RealLifeOverhaul.Careers
         // A skill learnt from hours of work, less the more of it the player has.
         private void LearnAtWork(int skill, int hours, int day)
         {
-            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100 * LadderLearn() / 1000, day);
+            StudyRules.Learn(_study, skill, StudyRules.WorkGain(_study, skill, hours, LadderLearn()), day);
         }
 
         /// <summary>The pay for minutes worked, with the student loan's repayment taken from it.</summary>

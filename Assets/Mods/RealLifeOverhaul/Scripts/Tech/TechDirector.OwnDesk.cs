@@ -5,6 +5,7 @@ using System.Globalization;
 using BigAmbitions.DayNightCycle;
 using Controllers;
 using Entities;
+using Localizor;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.GameUi;
 using UI.Elements;
@@ -121,6 +122,12 @@ namespace RealLifeOverhaul.Tech
             return sessionFree ? session : null;
         }
 
+        /// <summary>
+        /// True while a click on a free desk of the firm the player stands in leads to work at it (their own click, or the Work button of the desk sessions' panel at their desk): a contract
+        /// of the player's rides on it (TechBridges.ContractDesk), so Careers clicks no desk of its own there (CareersBridges.FirmDesk).
+        /// </summary>
+        public bool OwnDeskOffered => _firmsOn && _stint == null && (_sharedDesk != null || (_onDesk != null && ReferenceEquals(DeskGame.OtherClicked, _onDesk)));
+
         /// <summary>True while the work is offered at the desk sessions' own desk, the only free one (their panel then offers it; SessionBridges.WorkHere).</summary>
         public bool WorksAt(EmployeeStationController desk)
         {
@@ -136,13 +143,64 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // A click on the desk: why not, in the game's notification; else the player walks to it and the game's work panel offers a stint.
+        // A click on the desk: the contract of the player's that Careers would have them work here (paid work for a client) and the firm's own work are told apart by
+        // OwnPlaceRules.ChoiceAt. One that can be worked goes to the walk, or the other's reason is said; where both can be worked the player is asked which they mean.
         private void DeskClicked(EntityController e)
+        {
+            EmployeeStationController desk = e as EmployeeStationController;
+            FirmPlace firm = DeskFirm(desk);
+            if (firm == null)
+            {
+                return;
+            }
+            string client = TechBridges.ContractClientAt(desk);
+            switch (OwnPlaceRules.ChoiceAt(client != null, DeskRefusal(firm, out _, out _) == null))
+            {
+                case DeskChoice.Contract:
+                    ContractDeskWork(desk);
+                    break;
+                case DeskChoice.Ask:
+                    AskDeskWork(desk, client, firm.File.Name);
+                    break;
+                default:
+                    FirmDeskWork(desk);
+                    break;
+            }
+        }
+
+        // The firm of the player's they stand in, for a click on a desk of it; null while a stint is on, the firms are off or no save is loaded.
+        private FirmPlace DeskFirm(EmployeeStationController desk)
         {
             BuildingRegistration reg = FirmsGame.InsideFirm();
             FirmPlace firm = reg != null ? FirmOf(TalentGame.Place(reg)) : null;
-            EmployeeStationController desk = e as EmployeeStationController;
-            if (firm == null || desk == null || _stint != null || !_firmsOn || Save == null)
+            return firm == null || desk == null || _stint != null || !_firmsOn || Save == null ? null : firm;
+        }
+
+        // Both can be worked at this desk: the game's question box, the contract on its confirm and the firm's work on its cancel, which is what a click on the desk always was.
+        private void AskDeskWork(EmployeeStationController desk, string client, string firm)
+        {
+            bool asked = GameConfirm.TryShow("reallife_own_pick_title".Localize(), "reallife_own_pick_body".Localize(new { client, firm = firm ?? string.Empty }),
+                () => ContractDeskWork(desk), () => FirmDeskWork(desk), "reallife_own_pick_contract", "reallife_own_pick_firm", false, false);
+            if (!asked)
+            {
+                FirmDeskWork(desk);   // the game has no question box the mod can call: the click as it was
+            }
+        }
+
+        // The contract at this desk, as Careers takes the click; the firm's own work if it can no longer be worked (an answer given late).
+        private void ContractDeskWork(EmployeeStationController desk)
+        {
+            if (!TechBridges.ContractAt(desk))
+            {
+                FirmDeskWork(desk);
+            }
+        }
+
+        // The firm's own work at this desk: why not, in the game's notification, or the player walks to it and the game's work panel offers a stint.
+        private void FirmDeskWork(EmployeeStationController desk)
+        {
+            FirmPlace firm = DeskFirm(desk);
+            if (firm == null || !FirmsGame.Free(desk))
             {
                 return;
             }

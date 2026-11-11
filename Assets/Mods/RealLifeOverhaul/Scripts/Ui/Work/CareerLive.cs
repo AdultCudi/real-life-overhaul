@@ -753,6 +753,7 @@ namespace RealLifeOverhaul.Ui
                 case CareerAct.AskRise: return Said(d.AskRise(), d);
                 case CareerAct.TakeContract: return Said(d.TakeContract(arg), d);
                 case CareerAct.DropContract: return Said(d.DropContract(arg), d);
+                case CareerAct.WorkContract: return Said(d.WorkContract(arg), d);
                 case CareerAct.TaskYes: return Said(d.LadderAnswer(arg, Verdict.Yes, -1), d);
                 case CareerAct.TaskNo: return Said(d.LadderAnswer(arg, Verdict.No, -1), d);
                 case CareerAct.TaskUp: return Said(d.LadderAnswer(arg, Verdict.Up, -1), d);

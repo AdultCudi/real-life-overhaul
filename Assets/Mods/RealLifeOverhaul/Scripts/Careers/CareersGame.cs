@@ -113,6 +113,19 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>The player's home: the one they stand in, else the first they rent (looked up at most every few seconds by the home part); null with none.</summary>
+        public static BuildingRegistration Home()
+        {
+            try
+            {
+                return HomeTidy.Home();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>True inside the building at an address.</summary>
         public static bool InsideAt(string street, int number)
         {

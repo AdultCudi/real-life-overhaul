@@ -376,6 +376,44 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
+        /// <summary>
+        /// A contract of the player's worked at a free desk of their own firm (Careers: the freelance work of the Own work tab): true when Careers took the click, the work panel offered
+        /// or the refusal said; false when no contract can be worked there and the firm's own work is offered. Default: none is.
+        /// </summary>
+        public static Func<EmployeeStationController, bool> ContractDesk;
+
+        /// <summary><see cref="ContractDesk"/> asked: false with no answer, or if Careers faults.</summary>
+        public static bool ContractAt(EmployeeStationController desk)
+        {
+            try
+            {
+                return ContractDesk != null && ContractDesk(desk);
+            }
+            catch (Exception)
+            {
+                return false;   // Careers' fault: the firm's own work is offered, as with none
+            }
+        }
+
+        /// <summary>
+        /// The client of the contract Careers would have the player work at a free desk of their own firm, or null for none: the firm asks, to say which work a click may be for.
+        /// Default: none.
+        /// </summary>
+        public static Func<EmployeeStationController, string> ContractClient;
+
+        /// <summary><see cref="ContractClient"/> asked: none with no answer, or if Careers faults.</summary>
+        public static string ContractClientAt(EmployeeStationController desk)
+        {
+            try
+            {
+                return ContractClient != null ? ContractClient(desk) : null;
+            }
+            catch (Exception)
+            {
+                return null;   // Careers' fault: only the firm's own work is offered, as with none
+            }
+        }
+
         /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers). Default: nothing.</summary>
         public static Func<int> Founder;
 
@@ -517,6 +555,8 @@ namespace RealLifeOverhaul.Tech
             Founder = null;
             Owner = null;
             OwnerWorked = null;
+            ContractDesk = null;
+            ContractClient = null;
             CourseShareBp = null;
             DegreeFee = null;
             OthersPicked = null;

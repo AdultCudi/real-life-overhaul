@@ -395,7 +395,7 @@ namespace RealLifeOverhaul.Ui
             }
             form.Left.Add(leave);
             var contracts = new WorkFormBand { Title = words.T("reallife_own_contracts", "Contracts"), Count = w.Contracts.Count.ToString(Inv) };
-            for (int i = w.Contracts.Count - 1; i >= 0 && contracts.Rows.Count < 8; i--)
+            for (int i = w.Contracts.Count - 1; i >= 0 && contracts.Rows.Count < 12; i--)
             {
                 RealLifeOverhaul.Careers.Contract c = w.Contracts[i];
                 contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Client,
@@ -410,8 +410,21 @@ namespace RealLifeOverhaul.Ui
                 }
                 else if (c.Stage == (int)ContractStep.Taken)
                 {
-                    contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.F("reallife_work_due_day", "Due {day}", "day", CareersText.Day(c.Due)),
-                        Act = Act(CareerAct.DropContract, c.Id, words.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close) });
+                    var due = new WorkFormRow { Field = WorkField.Button, Label = words.F("reallife_work_due_day", "Due {day}", "day", CareersText.Day(c.Due)),
+                        Act = Act(CareerAct.DropContract, c.Id, words.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close) };
+                    if (d.ContractFromApp(c))
+                    {
+                        // where no desk can be clicked for it (a trade's at the client's, the work at home, an office with no desk free, the desk way off) the app starts the stint
+                        string stop = d.CanWorkContract(c);
+                        due.Act = Act(CareerAct.WorkContract, c.Id, words.T("reallife_own_button_work", "Work on it"), UiButtonKind.Primary, UiIcon.Check, false,
+                            stop == null ? null : CareersText.T(stop));
+                        due.More.Add(Act(CareerAct.DropContract, c.Id, words.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close));
+                    }
+                    else
+                    {
+                        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T("reallife_own_where_desk") });
+                    }
+                    contracts.Rows.Add(due);
                 }
             }
             if (w.Contracts.Count == 0)

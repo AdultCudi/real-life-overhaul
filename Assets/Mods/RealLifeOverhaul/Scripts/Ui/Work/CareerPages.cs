@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
         Resign = 109, WalkOut = 110, AskRise = 111, OpenCampus = 112, TaskYes = 113, TaskNo = 114, TaskUp = 115, TakeContract = 116, DropContract = 117,
         Retire = 118, Aiming = 119, Declare = 120, AnswerA = 121, AnswerB = 122, PolicyMore = 123, PolicyLess = 124, RotaLean = 125, RotaStandard = 126, RotaFull = 127,
         AskShiftEarlier = 128, AskShiftLater = 129, AskEquipment = 130, AskInsurance = 131, Raise = 132, PracticeOpen = 133, PracticeClose = 134, Found = 135, FoundWith = 136,
-        PracticeLeaveAct = 137, BringColleagues = 138
+        PracticeLeaveAct = 137, BringColleagues = 138, WorkContract = 139
     }
 
     /// <summary>One rung of the profession's ladder at the player's employer.</summary>
