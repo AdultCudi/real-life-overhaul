@@ -13,6 +13,7 @@ using RealLifeOverhaul.Economy;
 internal static partial class Program
 {
     private const int BranchYear = 60;   // the game's own year: a month of five days
+    private const int BranchesStoppedAt = 16;   // the flat limit a National Bank had before the city's districts set it (BranchCatalogue)
 
     private static void Branches()
     {
@@ -63,6 +64,15 @@ internal static partial class Program
             "bank branch: the reach is bounded, and businesses get a part of it");
         Check(BranchCatalogue.SkillLeast < 1000 && BranchCatalogue.SkillMost > 1000 && BranchCatalogue.OnFloorMost <= 4 && BranchCatalogue.ShownMost >= BranchCatalogue.OnFloorMost,
             "bank branch: skill moves a teller both ways, and the floor asks no more people than the pool spares");
+
+        // A National Bank's limit fits the city: PerDistrict branches for each of its districts, the game's seven and Uptown and Cedar Heights. A player asked for more than the sixteen
+        // it stopped at once the two stood; a district added to either list fails this until the catalogue is looked at again.
+        int districts = RealLifeOverhaul.CityDistricts.NewYork.Length + RealLifeOverhaul.Uptown.DistrictSplit.Count;   // (the type in full: Program has a check of the same name)
+        Check(BranchCatalogue.Districts == districts && BranchCatalogue.PerDistrict > 0 && BranchCatalogue.BranchesMost == districts * BranchCatalogue.PerDistrict,
+            "bank branch: a National Bank's limit fits the city: " + BranchCatalogue.PerDistrict + " for each of its " + districts + " districts, " + BranchCatalogue.BranchesMost + " in all");
+        Check(BranchCatalogue.BranchesMost > BranchesStoppedAt && BankTiers.BranchesMost[BankTiers.National] == BranchCatalogue.BranchesMost
+              && BankTiers.BranchesMost[BankTiers.Regional] < BranchCatalogue.BranchesMost,
+            "bank branch: a National Bank runs more than the " + BranchesStoppedAt + " branches it stopped at, and a Regional Bank still fewer than a National one");
     }
 
     // ---------------------------------------------------------------- an hour's customers and the counter
@@ -369,6 +379,16 @@ internal static partial class Program
         }
         OwnBank capped = OwnBankStore.Read(OwnBankStore.Write(many), out _);
         Check(capped != null && capped.Branches.Count == BranchCatalogue.BranchesMost, "bank branch: at most " + BranchCatalogue.BranchesMost + " branches are kept");
+        var full = new OwnBank();
+        OwnBankRules.Found(full, 1, 3, OwnBankRules.CapitalLeast(c.Level), "Full");
+        for (int i = 0; i < BranchCatalogue.BranchesMost; i++)
+        {
+            full.Branches.Add(new BankBranch { Place = "Full~" + i });
+        }
+        OwnBank whole = OwnBankStore.Read(OwnBankStore.Write(full), out _);
+        Check(whole != null && whole.Branches.Count == BranchCatalogue.BranchesMost && whole.Branches.Count > BranchesStoppedAt
+              && whole.Branch("Full~" + (BranchCatalogue.BranchesMost - 1)) != null,
+            "bank branch: the save's line keeps every branch of a National Bank up to the limit, past the " + BranchesStoppedAt + " it once stopped at, the last one included");
     }
 
     // ---------------------------------------------------------------- the option off
@@ -484,6 +504,13 @@ internal static partial class Program
             line |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.IndexOf("bank branch of your own", StringComparison.OrdinalIgnoreCase) >= 0;
         }
         Check(line, "bank branch: What's new has the bank branch's line, in the next row or a version's");
+        bool limit = false;
+        foreach (KeyValuePair<string, string> row in en)
+        {
+            limit |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                     && row.Value.IndexOf("A National Bank can now run up to ", StringComparison.Ordinal) >= 0;
+        }
+        Check(limit, "bank branch: What's new has the National Bank's higher limit, in the next row or a version's");
     }
 
     // ---------------------------------------------------------------- time

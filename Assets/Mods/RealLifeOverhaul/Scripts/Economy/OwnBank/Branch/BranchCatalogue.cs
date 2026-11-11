@@ -13,7 +13,13 @@ namespace RealLifeOverhaul.Economy
         // The business
         public const string TypeName = "reallife_bankbranch";   // its own business type (the name is also its text key; its designs' folder is "bankbranch")
         public const string BuildingType = "ba:buildingtype_retail";
-        public const int BranchesMost = 16;                      // branches whose figures a bank keeps
+
+        // The most branches a bank keeps the figures of, which is a National Bank's count (BankTiers.BranchesMost; the lower levels run fewer): PerDistrict for each district of
+        // the city. It was a flat sixteen, made before Uptown and Cedar Heights stood as two districts. EconomyCheck holds Districts to the districts the mod knows
+        // (CityDistricts.NewYork and DistrictSplit), so a district added later fails it until the limit is looked at again.
+        public const int Districts = 9;                          // districts of the city: the game's seven, and Uptown and Cedar Heights
+        public const int PerDistrict = 3;                        // branches a National Bank may run for each of them
+        public const int BranchesMost = Districts * PerDistrict; // branches whose figures a bank keeps: 27
 
         // Visitors
         public const int VisitorShare = 180;        // a branch's visitors an hour, of the customers a shop of its size would see

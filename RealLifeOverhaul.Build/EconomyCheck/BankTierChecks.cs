@@ -74,7 +74,8 @@ internal static partial class Program
               && BankTiers.DepositsCentsScale[top] == BankTiers.NoLimit && BankTiers.BranchesMost[top] == BranchCatalogue.BranchesMost
               && BankTiers.HallDayCents[top] == OwnBankCatalogue.StaffDayCents && BankTiers.SystemsDayCents[top] == OwnBankCatalogue.SystemsDayCents
               && BankTiers.ComplianceLeast[top] == OwnBankCatalogue.ComplianceLeast,
-            "bank levels: a national bank is the bank as it was before levels: its licence, capital, staff, systems and compliance, sixteen branches and no limit but the ratio");
+            "bank levels: a national bank is the bank as it was before levels: its licence, capital, staff, systems and compliance, the branches a bank keeps (" + BranchCatalogue.BranchesMost
+            + ") and no limit but the ratio");
         bool rising = true;
         for (int t = 1; t < n; t++)
         {
@@ -217,7 +218,19 @@ internal static partial class Program
             b.Branches.Add(new BankBranch { Place = "Count~" + i });
         }
         Check(room && full && more && !OwnBankRules.BranchRoom(b) && OwnBankRules.Caps(b, PriceRules.Start, 0).Branches == BranchCatalogue.BranchesMost,
-            "bank levels: a community bank takes in " + BankTiers.BranchesMost[0] + " branches and no more, a regional one more, a national one the sixteen a bank keeps");
+            "bank levels: a community bank takes in " + BankTiers.BranchesMost[0] + " branches and no more, a regional one more, a national one the " + BranchCatalogue.BranchesMost
+            + " a bank keeps");
+        var wide = new OwnBank();
+        OwnBankRules.Found(wide, 1, 3, OwnBankRules.CapitalLeast(PriceRules.Start), "Wide");
+        for (int i = 0; i < BranchesStoppedAt; i++)
+        {
+            wide.Branches.Add(new BankBranch { Place = "Wide~" + i });
+        }
+        bool seventeenth = OwnBankRules.BranchRoom(wide);
+        wide.Branches.Add(new BankBranch { Place = "Wide~" + BranchesStoppedAt });
+        Check(wide.Tier == BankTiers.National && seventeenth && OwnBankRules.BranchRoom(wide) == (BranchCatalogue.BranchesMost > BranchesStoppedAt + 1)
+              && OwnBankRules.Caps(wide, PriceRules.Start, 0).Branches > BranchesStoppedAt,
+            "bank levels: a national bank takes in a branch past the " + BranchesStoppedAt + " it once stopped at, up to the city's fit");
         string reads = MemberText(BranchSource("OwnBankDirector.Branches.cs"), "private void ReadBranches()");
         Check(reads.Contains("OwnBankRules.BranchRoom(_bank)") && reads.IndexOf("RemoveAt", StringComparison.Ordinal) < reads.IndexOf("BranchRoom", StringComparison.Ordinal)
               && reads.Contains("TellWaiting"),
