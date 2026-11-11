@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Rivals
 
         public bool Running => _running && !_broken;
 
+        /// <summary>True once a fault has switched the rivals off for the session: nothing of theirs comes until the next session.</summary>
+        public bool Broken => _broken;
+
         /// <summary>The save's rivals; null while they do not run.</summary>
         public RivalFile File => Running ? _file : null;
 

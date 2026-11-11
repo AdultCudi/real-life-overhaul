@@ -421,6 +421,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("party parties host guests friends invite invitation dinner drinks staff event lunch evening team day morale satisfaction standing company"),
                 S("suppliers").For("suppliers").Opt("living_suppliers", "living_population")
                     .Also("supplier suppliers wholesaler wholesale contract contracts fixed price take or pay delivery deliveries late short shortage stock order goods buyer"),
+                S("rivalsseen").For("rivals_seen").Opt("living_rivals_seen", "living_population")
+                    .Also("rival rivals owner owners tycoon seen sighting sightings car cars luxury lunch dinner restaurant beach hamptons weekend society gossip flare paper greet hello"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

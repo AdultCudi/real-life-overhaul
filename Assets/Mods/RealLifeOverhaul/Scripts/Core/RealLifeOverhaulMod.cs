@@ -1505,6 +1505,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Giving.GivingOptions.AddGiving(o))
                 .Guarded(o => Health.HealthOptions.AddHealth(o))
+                .Guarded(o => RivalsSeen.SeenOptions.AddSeen(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
@@ -1868,6 +1869,7 @@ namespace RealLifeOverhaul
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
             Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
             Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));
+            Guard.Step("rivals seen", () => RivalsSeen.SeenDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs

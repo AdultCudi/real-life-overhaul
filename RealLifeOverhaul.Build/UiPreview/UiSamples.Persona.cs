@@ -282,7 +282,11 @@ internal static partial class UiSamples
     }
 
     private static RivalEntry Rival(string name, float income, float weekAgo, int businesses, string district, int age, bool you, bool rivalry, bool defeated) =>
-        new RivalEntry { Name = name, WeeklyIncome = income, WeekAgo = weekAgo, Businesses = businesses, District = district, Age = age, You = you, Rivalry = rivalry, Defeated = defeated };
+        new RivalEntry
+        {
+            Name = name, WeeklyIncome = income, WeekAgo = weekAgo, Businesses = businesses, District = district, Age = age, You = you, Rivalry = rivalry, Defeated = defeated,
+            Car = you || defeated ? null : "Mersaidi S500", Found = you || defeated ? null : "Out most days"
+        };
 
     private static RivalBusiness Business(string name, string key, string type, float income, string address) =>
         new RivalBusiness { Name = name, TypeKey = key, Type = type, WeeklyIncome = income, Address = address };

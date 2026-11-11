@@ -32,6 +32,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
 - [Giving](giving.md): gifts to the city's charities, money given or lent to people, the deduction on the tax return and the people who ask.
 - [Health](health.md): illnesses and injuries that can turn serious, the doctor's appointment, hospital stays, health plans, medical debt and sick leave, for the player, their staff, the rivals and the city.
+- [Rivals seen around the city](rivals-seen.md): rival owners and tycoons at places that fit how their business is doing, their cars, a greeting, sightings on Flare and in the paper.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.

@@ -44,6 +44,8 @@ namespace RealLifeOverhaul.Rivals
         /// bought. Default: nothing is.
         /// </summary>
         public static Func<int, long, bool> Shares;
+        /// <summary>A line on the car a tycoon (by index) drives and where they tend to be found; empty for nothing (RivalsSeen). Default: none.</summary>
+        public static Func<int, string> SeenLine;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
@@ -136,6 +138,7 @@ namespace RealLifeOverhaul.Rivals
             SupplyLine = null;
             MarketLine = null;
             Shares = null;
+            SeenLine = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;

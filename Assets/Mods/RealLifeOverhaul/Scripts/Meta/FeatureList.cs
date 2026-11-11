@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Meta
             ParkSpaces.SpaceGuide.Register();
             Economy.Dealership.CarSupplyGuide.Register();
             Suppliers.SupplierGuide.Register();
+            RivalsSeen.SeenGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();

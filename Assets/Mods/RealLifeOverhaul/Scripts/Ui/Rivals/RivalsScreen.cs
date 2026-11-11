@@ -329,7 +329,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The game's leaderboard in its order: each button's line, its war mark as the game shows it, and its week from the
-        // game's own history of the weekly income (the player's, or the rival's).
+        // game's own history of the weekly income (the player's, or the rival's). What the rivals seen around the city say
+        // (the car, where they are usually found) is asked for the chosen line alone, the only one whose head shows it.
         private void League()
         {
             _league.Clear();
@@ -338,6 +339,8 @@ namespace RealLifeOverhaul.Ui
             GameInstance save = SaveGameManager.Current;
             int today = save != null ? save.Day : 0;
             int chosen = 0;
+            bool picked = false;
+            string seenId = null;   // the game's id of the rival whose head shows: the chosen line's, or the first's with none chosen; null for the player or a defeated rival
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
                 RivalLeaderboardButton line = lines[i];
@@ -350,9 +353,11 @@ namespace RealLifeOverhaul.Ui
                 bool you = string.IsNullOrEmpty(d.rivalId);
                 var war = GameContract.RivalsWarMark.Field?.GetValue(line) as Image;
                 List<Tuple<int, float>> history = you ? (save != null ? save.playerWeeklyIncomeHistory : null) : RivalsHelper.GetRivalState(d.rivalId)?.weeklyIncomeHistory;
-                if (d == _app.selectedRival)
+                if (d == _app.selectedRival || (!picked && _league.Count == 0))
                 {
+                    picked |= d == _app.selectedRival;
                     chosen = _league.Count;
+                    seenId = you || d.isDefeated ? null : d.rivalId;
                 }
                 _league.Add(new RivalEntry
                 {
@@ -361,6 +366,14 @@ namespace RealLifeOverhaul.Ui
                     District = string.IsNullOrEmpty(d.mostActiveNeighborhood) ? null : UiText.T(d.mostActiveNeighborhood)
                 });
                 _lines.Add(line);
+            }
+            RivalsSeen.SeenDirector seenBy = seenId != null && chosen < _league.Count ? RivalsSeen.SeenDirector.Instance : null;
+            if (seenBy != null && seenBy.Owner(seenId, out string car, out string found))   // (made again only when what it says has changed: RivalsSeen/SeenPage)
+            {
+                RivalEntry head = _league[chosen];
+                head.Car = car;
+                head.Found = found;
+                _league[chosen] = head;
             }
             _v.League = _league.ToArray();
             _v.Chosen = chosen;

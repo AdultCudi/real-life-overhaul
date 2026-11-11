@@ -52,6 +52,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Health", "health" },
             { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
             { "RealLifeOverhaul.Suppliers", "suppliers" },
+            { "RealLifeOverhaul.RivalsSeen", "rivals_seen" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
             { "RealLifeOverhaul.Population", "population" },

@@ -18,6 +18,7 @@ giving	reallife_guide_giving	charities, gifts and loans
 health	reallife_guide_health	illness, the doctor, hospital stays, health plans and sick leave
 parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
 suppliers	reallife_guide_suppliers	a choice of suppliers, fixed price contracts, late or short deliveries
+rivals-seen	reallife_guide_rivals_seen	rivals seen around the city, their cars, the greeting and the sightings
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
 startup-terms	reallife_guide_tech_startups	the terms of a round, the board's say over big spends and the skills that read them
 startup-founding	reallife_guide_tech_startups	founding a startup, niches, co-founders and going to market

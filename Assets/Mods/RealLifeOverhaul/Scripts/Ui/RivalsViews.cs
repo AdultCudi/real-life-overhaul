@@ -14,6 +14,8 @@ namespace RealLifeOverhaul.Ui
         public int Businesses;
         public float WeekAgo;        // their weekly income a week before, or NaN where the game has no history yet
         public string District;      // the district they are busiest in, in the game's words; null for none
+        public string Car;           // the car they are seen in, in the game's words; null where nothing is on record (RivalsSeen)
+        public string Found;         // where they tend to be found, in a few words; null for the same
         public int Age;
     }
 
@@ -212,8 +214,22 @@ namespace RealLifeOverhaul.Ui
                 : who.Rivalry ? t("rivals_defense_icons_active_rivalry_title", "Active Rivalry") : null;
             p.StatusTone = who.Defeated ? UiRole.Muted : who.You ? UiRole.Accent : UiRole.Danger;
             bool facts = chosen >= 0 && tab != UiRivals.League;
-            p.FactLabels = facts ? new[] { t("common_weekly_income", "Weekly Income") } : new string[0];
-            p.FactValues = facts ? new[] { Money(v, who.WeeklyIncome) } : new string[0];
+            bool seen = chosen >= 0 && !who.You && !who.Defeated && !string.IsNullOrEmpty(who.Car) && !string.IsNullOrEmpty(who.Found);
+            int n = (facts ? 1 : 0) + (seen ? 2 : 0), at = 0;
+            p.FactLabels = new string[n];
+            p.FactValues = new string[n];
+            if (facts)
+            {
+                p.FactLabels[at] = t("common_weekly_income", "Weekly Income");
+                p.FactValues[at++] = Money(v, who.WeeklyIncome);
+            }
+            if (seen)   // seen around the city: their car and where they tend to be found, both from their real figures (RivalsSeen)
+            {
+                p.FactLabels[at] = t("reallife_ui_rivals_drives", "Drives");
+                p.FactValues[at++] = who.Car;
+                p.FactLabels[at] = t("reallife_ui_rivals_found", "Usually");
+                p.FactValues[at] = who.Found;
+            }
             p.RatingLabel = t("reallife_ui_rivals_strength", "Strength");
             p.Rating = chosen >= 0 ? Stars(chosen, v.League.Length, who.Defeated) : -1;
             m.ProfileActions = v.Contacts && chosen >= 0
