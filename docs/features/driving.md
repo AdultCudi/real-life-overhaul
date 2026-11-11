@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-The car the player drives gets the performance of its kind (power, gearing and drag worked out from a target per vehicle type), the handling of its kind (weight, a soft ride that swings and settles, body roll and pitch, steering by speed, tyres that slide, brakes that build without locking), an eased throttle and a speed reading in the game's own vehicle panel.
+The car the player drives gets the performance of its kind (power, gearing and drag worked out from a target per vehicle type), the handling of its kind (weight, a soft ride that swings and settles, body roll and pitch, steering by speed, tyres that slide, brakes that build without locking), an eased throttle, a speed reading in the game's own vehicle panel and turn signals that come on by themselves as it turns.
 
 ## Where the code is
 
@@ -21,6 +21,9 @@ The car the player drives gets the performance of its kind (power, gearing and d
 | `DrivingBridges` | what Driving asks of the Garage: its parts lifted off a car and laid back on top |
 | `CarMeasure` | the "Measure this car" button: times a full-throttle run, off otherwise |
 | `Sound/*` | the recorded car sounds of the Garage's option: see [Garage](garage.md#recorded-car-sounds) |
+| `TurnSignalRules` | when the driven car signals a turn by itself and when the signal goes off, as a pure function of looks at the car (game-free) |
+| `TurnSignals` | looks at the driven car ten times a second, asks the rules, switches the game's own signal, lets the car go on every way out |
+| `TurnSignalGame` | the one place that meets the game for the turn signals: its signal object, the two values it keeps the signals' state in, the car's physics |
 
 ## How it talks to other features
 
@@ -151,3 +154,30 @@ Where the game's own car would roll over before its tyres let go (most of the so
 **Testing.** With Developer diagnostics on, getting in writes one line to Player.log, "Handling check (getting in): ...": the kind and level; the weight, centre of mass, springs, ride, damping ratio, a kerb's travel, roll, force points, bars, dive, rolling over, what the tyres hold and where they give, the hardest turn they were measured at, steering and brakes against the game's own; then PASS, or what did not take. What the handling wrote is read back before the Garage's parts go on top of it, so a springs part on the car is never reported as a fault (0.40.4 said "the springs or tyres did not take" whenever the custom shop's parts re-fitted the springs on top). Getting out writes "Handling check (getting out): ...: PASS" once every value reads back as the game had it. The test button "Say what the car you drive has from its handling" gives a short notice, and the full line in Player.log whatever the diagnostics say. With the test tools shown, the options page's Troubleshooting has "Car handling tuning": six sliders from 50 to 150% (spring softness, bounce, body roll, tyre grip, steering at speed, how quickly the brakes build), around the level's figures as before: 100% is now the game's own springs, damping, grip and steering with the level's additions on top. A saved level and saved sliders keep working as they are.
 
 Not seen in the game yet: how the turns, the little roll and the give past the limit feel against the model; that the game's ABS module, put on while the car runs, eases the brakes as on a car built with it; a car on the two terrains; Empire Motors' cars and other mods' cars, whose values the checks can only assume.
+
+## Turn signals
+
+**What the player sees.** The car the player drives signals its turns by itself. Once the car has been turning for 0.4 s, the signal of the side it turns to comes on, through the game's own signal (the one the two signal keys toggle, with its tick), and it goes off when the turn is made. The two keys work as ever. A signal the player switched on is theirs: the mod never puts it off and never adds the other side beside it. The option is "Automatic turn signals", on by default, in Options, Getting around, At the wheel; with it off the game behaves exactly as without it.
+
+**The rules** (`Driving/TurnSignalRules`, game-free; `TurnSignals` looks at the driven car ten times a second and hands the rules its speed along the nose, the steering asked for, how fast the nose is swinging and which signals show):
+
+| what | figure | why |
+| --- | --- | --- |
+| a turn | the car moving forward at 9 km/h or more, the wheel at least half over and the nose swinging 9 degrees a second or more | parking at a crawl, backing and a slide with the wheel straight are not turns |
+| the signal comes on | the turn has lasted 0.4 s, no signal shows, and a second has passed since the last one went off | the taps on a key that keep a car in its lane are shorter, and one signal rests before the next |
+| the signal stays | a stop in the middle of a turn keeps it, however long | a car held at a junction is still turning |
+| the signal goes off | the nose has swung 20 degrees the signalled way, the wheel and the nose have been straight for 0.8 s and the signal has been up 4 s (two full flashes of the game's own, whose cycle is 2 s) | the turn is made |
+| a signal that came on for nothing | goes off after 6 s of straight running at a pace | the turn was never made |
+| backing | takes it off at once, at 1.5 m/s backwards or more | the car is no longer going the way it was signalling |
+| the other way | a turn the other way for 0.4 s, after the signal has stood 2 s, puts it over to the other side (the game's toggle puts the first off) | an S-bend; a weave does not make it flicker |
+| the driver's own | a signal that shows and was not switched on by the rules is never touched, and none is raised beside it; one the driver puts off in a turn is not raised again until the car has run straight for 0.5 s | the keys stay the driver's |
+
+**Who it is for.** Only the car the player drives, and never another player's car in a Going Public session (`GoingPublic.MineVehicle`). Traffic signals its own turns through the game's driving (`DrivingAI` and the cars' `VehicleLightsComponent`). Of the mod's own drivers only the city bus indicates, pulling in to its bay and away (`BusVehicle.Indicate`); the taxi, the response units and the reckless drivers, all driven by `EmergencyDriver`, show none, and this feature does not change that.
+
+**Gives back.** What the rules switched on is switched off again whenever the car is let go: the option switched off, another car driven, the player getting out, a load, a fault, the feature switched off after faults and the city going. A car the game gave no signal object (a car of another mod) keeps its own signals, and so does a car whose signal, once switched on, does not show where the game keeps it: the switch is put back at once, with a warning in Player.log. Whenever the signals cannot work on a car (no vehicle physics of the game's kind, no signal object, no body mesh to read the signals from), Player.log says why, once for the car.
+
+**Cost.** Idle, one comparison with the clock a frame. With a car followed, a look ten times a second: a few field reads, the nose's heading and one read of the body's property block, nothing allocated.
+
+**Checks.** EconomyCheck, `--turn-signals` (`TurnSignalChecks.cs`): the rules through every kind of drive on a car that has the game's two signals (a left and a right turn, taps in a lane, parking pace, backing, a gentle bend, a slide, a roundabout, an S-bend, a weave, a turn never made, a stop in a turn, a late look), the driver's own signals (left alone, put off in a turn, put over to the other side, switched on as the turn begins), the cost (a million looks allocate nothing), the sources (the option, the guard, the player's own car only, every way the car is let go, the game's signal object named in one file) and the texts. With Developer diagnostics on, Player.log has `Turn signal check (...)` lines: one for each signal put on (the nose's swing and the speed against what the rules want, and whether the game's signal took it), one for each put off and one for each car given back, each ending PASS or the reason.
+
+Not seen in the game yet: that the signal flashes and ticks on every car as the key's does (the game's own routine drives both), how the thresholds feel with a keyboard and with a pad, and the cars of other mods.

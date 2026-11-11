@@ -137,6 +137,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_camera_test_pretend", CameraYield.TestPretend)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,
                     v => Settings.Speedometer = v)
+                .AddToggle(Settings.AutoSignalsId, "reallife_car_auto_signals", Settings.AutoSignals,
+                    v => Settings.AutoSignals = v)
                 .AddSlider(Settings.CameraFollowId, "reallife_camera_follow", 0, 10, Settings.CameraFollow,
                     v => Settings.CameraFollow = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.MapPlacesShownId, "reallife_map_places_shown", Settings.MapPlacesShown,
@@ -1893,8 +1895,10 @@ namespace RealLifeOverhaul
             Guard.Step("CarTuning", () => CarTuning.Logger = context.Logger);
             Guard.Step("SpeedReading", () => SpeedReading.Logger = context.Logger);
             Guard.Step("CarMeasure", () => CarMeasure.Logger = context.Logger);
+            Guard.Step("TurnSignals", () => TurnSignals.Logger = context.Logger);
             Guard.Step("CarTuning", () => Guard.Add<CarTuning>(_root));
             Guard.Step("Speedometer", () => Guard.Add<Speedometer>(_root));
+            Guard.Step("TurnSignals", () => Guard.Add<TurnSignals>(_root));   // the player's own car signals its turns; a look ten times a second while driving
             Guard.Step("GarageDirector", () => GarageDirector.Logger = context.Logger);
             Guard.Step("GarageShop", () => GarageShop.Logger = context.Logger);
             Guard.Step("GarageCar", () => GarageCar.Logger = context.Logger);

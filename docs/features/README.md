@@ -42,7 +42,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 
 ## Getting about
 
-- [Driving](driving.md): each car's performance and the eased throttle.
+- [Driving](driving.md): each car's performance, the eased throttle and automatic turn signals.
 - [Driving licences](licences.md): the driving school, tests, points and enforcement.
 - [Transport](transport.md): buses, the subway and owning a car.
 - [Taxi by phone](taxi.md): a taxi sent to where you are.

@@ -1103,6 +1103,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--turn-signals")
+        {
+            TurnSignalChecks();   // (the car's automatic turn signals alone, while working on them: TurnSignalChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--designs")
         {
             Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
@@ -1511,6 +1517,7 @@ internal static partial class Program
         PopulationChecks(); // the city's population: the measure, generation, a day with every cent placed, ten years, the labour market, the anchors, the costs (PopulationChecks.cs)
         FlareResidentChecks();  // Flare in the city: residents who follow and hear, attention that moves people between rivals and never makes them, the lift, reviews from real customers, ads, the save, the costs (FlareResidentChecks.cs)
         PopDemandChecks();  // what the people bring the mod's own businesses: the measure, the anchor, ten years, the save, the shared part, the screens, the costs (PopDemandChecks.cs)
+        TurnSignalChecks(); // the player's car signals its own turns: when a turn raises a signal and when it goes off, the driver's own signals never touched, the option, the car given back, the texts (TurnSignalChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

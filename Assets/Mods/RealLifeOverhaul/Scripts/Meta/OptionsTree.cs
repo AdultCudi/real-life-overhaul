@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.Meta
                 S("camera").For("camera").Main("camera_enabled").Opts("camera_indoors", "camera_pitch", "camera_distance", "camera_fov", "camera_height", "camera_follow")
                     .Opt("car_camera").Opt("car_camera_distance", "car_camera").Also("view third person zoom"),
                 S("carperf").For("driving").Main("car_tuning").Opts("car_top_speed", "car_acceleration").Buttons("reallife_car_measure").Also("speed fast engine"),
-                S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "radio_hud").Also("pedal dashboard speed music"),
+                S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "auto_signals", "radio_hud").Also("pedal dashboard speed music indicator blinker"),
                 S("handling").Guide("driving").Opts("car_handling")
                     .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
