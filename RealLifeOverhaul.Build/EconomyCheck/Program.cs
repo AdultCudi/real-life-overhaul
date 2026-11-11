@@ -225,6 +225,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--notice-mute")
+        {
+            NoticeMuting();   // the mod's notifications by kind: what a switch keeps from popping up, the gate in the maker's place, the list, the cost, the texts (NoticeMuteChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bus-kerb")
         {
             BusKerb();   // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
@@ -1599,6 +1605,7 @@ internal static partial class Program
         PopDemandChecks();  // what the people bring the mod's own businesses: the measure, the anchor, ten years, the save, the shared part, the screens, the costs (PopDemandChecks.cs)
         ShowroomStand();    // the Car Showroom's car paid for is the car that stands: the verdict, the cash given back, the chain from the market, the one place a car is made, the sources, the texts (ShowroomStandChecks.cs)
         TurnSignalChecks(); // the player's car signals its own turns: when a turn raises a signal and when it goes off, the driver's own signals never touched, the option, the car given back, the texts (TurnSignalChecks.cs)
+        NoticeMuting();     // the mod's notifications by kind: what a switch keeps from popping up, the gate in the maker's place, the list, the cost, the texts (NoticeMuteChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

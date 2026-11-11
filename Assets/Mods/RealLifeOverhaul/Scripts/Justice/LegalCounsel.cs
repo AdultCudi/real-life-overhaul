@@ -378,7 +378,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A text from the courts or counsel in the Legal contact's thread; a toast without the contact.</summary>
+        /// <summary>
+        /// A text from the courts or counsel in the Legal contact's thread; a toast without the contact. The court's keys begin
+        /// "reallife_text_justice_" and a scheme's letter's "reallife_scheme_", both the police's kind (GameUi/NoticeKinds), so no
+        /// switch keeps the toast from popping up.
+        /// </summary>
         public static void Send(string key, Dictionary<string, string> data = null)
         {
             try

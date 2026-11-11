@@ -250,6 +250,26 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
+                // Each kind of the mod's notifications pops up or goes straight into the list: the gate is placed again at once (GameUi/NoticeMute).
+                .AddToggle(Settings.NoticeShowRoadId, "reallife_notice_show_road", Settings.NoticeShowRoad,
+                    v => { Settings.NoticeShowRoad = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowMoneyId, "reallife_notice_show_money", Settings.NoticeShowMoney,
+                    v => { Settings.NoticeShowMoney = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowPropertyId, "reallife_notice_show_property", Settings.NoticeShowProperty,
+                    v => { Settings.NoticeShowProperty = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowWorkId, "reallife_notice_show_work", Settings.NoticeShowWork,
+                    v => { Settings.NoticeShowWork = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowBusinessId, "reallife_notice_show_business", Settings.NoticeShowBusiness,
+                    v => { Settings.NoticeShowBusiness = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowTechId, "reallife_notice_show_tech", Settings.NoticeShowTech,
+                    v => { Settings.NoticeShowTech = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowNewsId, "reallife_notice_show_news", Settings.NoticeShowNews,
+                    v => { Settings.NoticeShowNews = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowPeopleId, "reallife_notice_show_people", Settings.NoticeShowPeople,
+                    v => { Settings.NoticeShowPeople = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowOtherId, "reallife_notice_show_other", Settings.NoticeShowOther,
+                    v => { Settings.NoticeShowOther = v; GameUi.NoticeMute.Place(); })
+                .AddButton("reallife_test_notice_mute", GameUi.NoticeMute.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
                 .AddButton("reallife_test_event_fridge", () => LifeEvents.Instance?.TriggerFridgeBill())
                 .AddButton("reallife_moods_test", MoodsTest.Run)
@@ -1715,6 +1735,7 @@ namespace RealLifeOverhaul
             Guard.Step("the font's prewarm", () => ScenePrewarm.Add("game UI: the game's font being found", FindFont));
             Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
             Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);
+            Guard.Step("GameUi.NoticeMute", () => GameUi.NoticeMute.Logger = context.Logger);
             Guard.Step("GameUi.NoticeRoom", () => GameUi.NoticeRoom.Logger = context.Logger);
             Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // nothing per frame
             Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));

@@ -304,9 +304,12 @@ namespace RealLifeOverhaul.Meta
             Features.Add("phone", "reallife_meta_title_phone")
                 .About("reallife_guide_phone_about").Help("reallife_guide_phone")
                 .Owns(Settings.PhoneContactsId, Settings.PhoneContactGroupsId, Settings.PhoneSkinId, Settings.NoticeLookId)
+                .Owns(Settings.NoticeShowRoadId, Settings.NoticeShowMoneyId, Settings.NoticeShowPropertyId, Settings.NoticeShowWorkId, Settings.NoticeShowBusinessId,
+                    Settings.NoticeShowTechId, Settings.NoticeShowNewsId, Settings.NoticeShowPeopleId, Settings.NoticeShowOtherId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
-                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_contacts_test_groups", "reallife_test_notice_look")
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_contacts_test_groups", "reallife_test_notice_look",
+                    "reallife_test_notice_mute")
                 .Repair(() =>
                 {
                     PhoneContacts.Setup();

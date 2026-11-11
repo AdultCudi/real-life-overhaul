@@ -36,7 +36,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Shows a notice at once, or holds it for the morning line while the player sleeps; one with the duplicate id
-        /// of a held one takes its place.
+        /// of a held one takes its place. A notice of a kind switched off is never held: it goes straight into the
+        /// notification list (GameUi/NoticeMute), not into the morning line, which pops up.
         /// </summary>
         public static void Show(NotificationType type, string key, Dictionary<string, string> data, float seconds, string same = null, bool track = true)
         {
@@ -44,6 +45,11 @@ namespace RealLifeOverhaul
             if (!Holding || !Wanted)
             {
                 ShowAsCame(notice);
+                return;
+            }
+            if (GameUi.NoticeMute.Muting(type, key))
+            {
+                ShowAsCame(notice);   // its kind is switched off: straight into the notification list, never into the morning line
                 return;
             }
             int at = MorningNewsRules.Same(HeldSame, HeldSame.Count, same);

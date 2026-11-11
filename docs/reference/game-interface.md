@@ -42,6 +42,10 @@ Core/GameUi/
   NoticeKinds     game-free (CatalogueCheck/NoticeCheck): which kind a notification of the mod's is, from its key alone
   NoticeLook      the mod's notifications told from the game's: the kind's picture on a disc of the mod's colour, in the
                   game's own toast and the game's own notification list; the options page's test of one of each kind
+  NoticeMuteRules game-free (EconomyCheck --notice-mute): which of the mod's notifications a kind's switch keeps from
+                  popping up, and what always pops up
+  NoticeMute      the kinds switched off: a gate in the game's toast maker's place on its event, which writes a kept
+                  notification into the game's list as the maker would, whatever its sender asked, and makes nothing
 
 ```
 
@@ -115,6 +119,10 @@ Each only quiets its notification: what it tells of still happens and is still i
 | A notification for each contract offered | Working for yourself | `reallife_own_note_offer` | the Career app's Own work tab |
 | A notification for each client offer and tender | Tech sector | `reallife_tech_note_offer`, `reallife_tech_note_tender` | the Tech app's Contracts tab |
 | A notification when your credit rating rises | Credit rating and loans | `reallife_econ_note_grade_up` (a fall is always told) | the Finance app, its badge |
+
+### A switch for each kind (`Core/GameUi/NoticeMuteRules`, `NoticeMute`)
+
+The section "Notifications that pop up" keeps whole kinds from popping up: one switched off goes straight into the game's notification list, and no toast is made for it. The police's and health's have no switch, and warnings, what is owed, a death in the family, the morning line's news, what the mod says of itself in answer to the player (the options page, its apps, tools and services, Going Public, the camera), the driving test's words, the player's own reminders and the tests' answers always pop up. A scheme's notifications and the court's and counsel's texts (`reallife_text_justice_`, a notification of their own when the Legal contact is not on the phone) are the police's (`NoticeKinds`). How the gate stands in the game's toast maker's place, and what it costs: [the phone](../features/phone.md#notifications-that-pop-up-a-switch-for-each-kind).
 
 ## On screen, everywhere: no canvas of the mod's but the options page
 

@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.GameUi
     {
         None,       // not the mod's: the game's own or another mod's, left as the game draws it
         Road,       // accidents, the car, driving licences, buses, taxis, the GPS
-        Police,     // crime, the police, courts and prison
+        Police,     // crime, the police, courts and prison (the court's texts too), schemes and their inquiries
         Health,     // illness, the doctor, the hospital
         Money,      // banks, loans, credit, bills, markets, investors
         Property,   // property, letting, rent, the roommate
@@ -44,8 +44,9 @@ namespace RealLifeOverhaul.GameUi
             "accident_", "crash_", "car_", "roadside_", "garage_", "customshop_", "bike_", "transit_", "taxi_", "bus_", "subway_",
             "transport_", "nav_", "lic_", "licences_", "tow_", "pedhit_", "pedstruck_", "ped_", "horn_", "solid_", "player_",
             "traffic_", "speedometer_", "siren_", "empire_",
-            // police and crime
-            "crime_", "law_", "justice_", "police_", "pursuit_", "chase_", "streets_", "patrol_", "fine_", "records_", "911_",
+            // police and crime (a scheme's inquiry among them, and the court's and counsel's texts of the Legal contact, which come as
+            // a notification when the contact is not on the phone, LegalPhone.Send: never kept from popping up, NoticeMuteRules)
+            "crime_", "law_", "justice_", "text_justice_", "police_", "pursuit_", "chase_", "streets_", "patrol_", "fine_", "records_", "911_", "scheme_",
             // health and the hospital
             "health_", "doctor_", "hc_", "pd_", "ragdolls_",
             // money and bills

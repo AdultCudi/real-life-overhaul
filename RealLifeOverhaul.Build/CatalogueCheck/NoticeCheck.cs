@@ -40,6 +40,8 @@ namespace RealLifeOverhaul
                 ("reallife_accident_closed", NoticeKind.Road), ("reallife_tow_coming", NoticeKind.Road), ("reallife_car_breakdown", NoticeKind.Road),
                 ("reallife_careers_note", NoticeKind.Work), ("reallife_career_signed", NoticeKind.Work), ("reallife_car", NoticeKind.Other),
                 ("reallife_crime_stop_fleeing", NoticeKind.Police), ("reallife_law_wanted", NoticeKind.Police), ("reallife_justice_toast_warrant", NoticeKind.Police),
+                ("reallife_scheme_note_caution", NoticeKind.Police), ("reallife_scheme_note_letter", NoticeKind.Police),
+                ("reallife_text_justice_warrant", NoticeKind.Police), ("reallife_text_justice_suit_debt", NoticeKind.Police),
                 ("reallife_biz_racket_start", NoticeKind.Police), ("reallife_biz_visit_police", NoticeKind.Police), ("reallife_biz_poach_kept", NoticeKind.Business),
                 ("reallife_health_caught", NoticeKind.Health), ("reallife_event_ambulance", NoticeKind.Health), ("reallife_event_film_cut", NoticeKind.Other),
                 ("reallife_family_checkup_due", NoticeKind.Health), ("reallife_family_birth_time", NoticeKind.People), ("reallife_pd_ill_1", NoticeKind.Health),
