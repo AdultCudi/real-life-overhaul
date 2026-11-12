@@ -16,6 +16,7 @@ This standard is the set of numbered rules that every change to Real Life Overha
 | [git-and-review.md](git-and-review.md) | Branches, commits, pull requests, review, done, versions | RLO-GIT-001 to 011 |
 | [ui.md](ui.md) | The RLO interface: one source for every look, Cities: Skylines II's slate, the grid, fit, contrast over the world, the mouse first with every target on the keys, prompts, dead space, flat surfaces, the window in its room, pictures that carry the meaning, one kit of templates | RLO-UI-001 to 018 |
 | [dlc-and-updates.md](dlc-and-updates.md) | New districts, DLC content and another city: the city check, the DLC rule, tables by district | RLO-DLC-001 to 006 |
+| [platforms.md](platforms.md) | Windows and macOS: what only Windows has, paths, the asset bundles and their shaders, where the log is | RLO-PLT-001 to 005 |
 | [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0008 |
 
 ## How to read a rule

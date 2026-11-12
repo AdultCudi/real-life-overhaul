@@ -1,0 +1,200 @@
+# The game's own shaders by name, with the graphics APIs the installed game has each compiled for.
+# Written by RealLifeOverhaul.Build/Census/game_shaders.py --write from the installed Windows game (Build 3682): every Shader object of
+# its data files and its Addressables bundles. A bundle of the mod's may bring a shader only if its name is here, since the mod then
+# draws with the game's own of that name on every system (RLO-PLT-004). The game's build for another system is made from the same
+# project, so the names are taken to be the same there; the APIs are that build's own. One shader a line: its name, a tab, its APIs.
+02_Selection/Fullscreen	Direct3D11, Vulkan
+02_Selection/Objects	Direct3D11, Vulkan
+BlurShadersProHDRP/Blur	Direct3D11, Vulkan
+BlurShadersProHDRP/RadialBlur	Direct3D11, Vulkan
+Debug/ShadowCasterDebug	Direct3D11, Vulkan
+HDRP/Decal	Direct3D11, Vulkan
+HDRP/DefaultFogVolume	Direct3D11, Vulkan
+HDRP/Hair	Direct3D11, Vulkan
+HDRP/Lit	Direct3D11, Vulkan
+HDRP/TerrainLit	Direct3D11, Vulkan
+HDRP/Unlit	Direct3D11, Vulkan
+Hidden/BlitCubemap	Direct3D11, Vulkan
+Hidden/BoneHandles	Direct3D11, Vulkan
+Hidden/ColorPyramidPS	Direct3D11, Vulkan
+Hidden/Core/FallbackError	Direct3D11, Vulkan
+Hidden/CoreResources/FilterAreaLightCookies	Direct3D11, Vulkan
+Hidden/CubeToPano	Direct3D11, Vulkan
+Hidden/DebugVTBlit	Direct3D11, Vulkan
+Hidden/Fullscreen/CompositeBlur	Direct3D11, Vulkan
+Hidden/GraphView/GraphViewUIE	Direct3D11, Vulkan
+Hidden/HDRP/ApplyDistortion	Direct3D11, Vulkan
+Hidden/HDRP/Blit	Direct3D11, Vulkan
+Hidden/HDRP/BlitColorAndDepth	Direct3D11, Vulkan
+Hidden/HDRP/CameraMotionVectors	Direct3D11, Vulkan
+Hidden/HDRP/CharlieConvolve	Direct3D11, Vulkan
+Hidden/HDRP/ClearBlack	Direct3D11, Vulkan
+Hidden/HDRP/ClearStencilBuffer	Direct3D11, Vulkan
+Hidden/HDRP/ColorResolve	Direct3D11, Vulkan
+Hidden/HDRP/CombineLighting	Direct3D11, Vulkan
+Hidden/HDRP/CompositeUI	Direct3D11, Vulkan
+Hidden/HDRP/CopyDepthBuffer	Direct3D11, Vulkan
+Hidden/HDRP/CopyStencilBuffer	Direct3D11, Vulkan
+Hidden/HDRP/CustomClear	Direct3D11, Vulkan
+Hidden/HDRP/CustomPassRenderersUtils	Direct3D11, Vulkan
+Hidden/HDRP/CustomPassUtils	Direct3D11, Vulkan
+Hidden/HDRP/DLSSBiasColorMask	Direct3D11, Vulkan
+Hidden/HDRP/DebugBlitQuad	Direct3D11, Vulkan
+Hidden/HDRP/DebugColorPicker	Direct3D11, Vulkan
+Hidden/HDRP/DebugDisplayLatlong	Direct3D11, Vulkan
+Hidden/HDRP/DebugExposure	Direct3D11, Vulkan
+Hidden/HDRP/DebugFullScreen	Direct3D11, Vulkan
+Hidden/HDRP/DebugHDR	Direct3D11, Vulkan
+Hidden/HDRP/DebugLightVolumes	Direct3D11, Vulkan
+Hidden/HDRP/DebugLocalVolumetricFogAtlas	Direct3D11, Vulkan
+Hidden/HDRP/DebugViewMaterialGBuffer	Direct3D11, Vulkan
+Hidden/HDRP/DebugViewTiles	Direct3D11, Vulkan
+Hidden/HDRP/Deferred	Direct3D11, Vulkan
+Hidden/HDRP/DeferredTile	Direct3D11, Vulkan
+Hidden/HDRP/DepthValues	Direct3D11, Vulkan
+Hidden/HDRP/DownsampleDepth	Direct3D11, Vulkan
+Hidden/HDRP/FallbackError	Direct3D11, Vulkan
+Hidden/HDRP/FinalPass	Direct3D11, Vulkan
+Hidden/HDRP/GGXConvolve	Direct3D11, Vulkan
+Hidden/HDRP/IntegrateHDRI	Direct3D11, Vulkan
+Hidden/HDRP/LensFlareDataDriven	Direct3D11, Vulkan
+Hidden/HDRP/Material/Decal/DecalNormalBuffer	Direct3D11, Vulkan
+Hidden/HDRP/MaterialError	Direct3D11, Vulkan
+Hidden/HDRP/MaterialLoading	Direct3D11, Vulkan
+Hidden/HDRP/MotionVecResolve	Direct3D11, Vulkan
+Hidden/HDRP/OpaqueAtmosphericScattering	Direct3D11, Vulkan
+Hidden/HDRP/PreIntegratedFGD_CookTorrance	Direct3D11, Vulkan
+Hidden/HDRP/PreIntegratedFGD_Marschner	Direct3D11, Vulkan
+Hidden/HDRP/PreIntegratedFGD_Ward	Direct3D11, Vulkan
+Hidden/HDRP/ProbeVolumeDebug	Direct3D11, Vulkan
+Hidden/HDRP/ProbeVolumeOffsetDebug	Direct3D11, Vulkan
+Hidden/HDRP/ScreenSpaceShadows	Direct3D11, Vulkan
+Hidden/HDRP/Sky/CloudLayer	Direct3D11, Vulkan
+Hidden/HDRP/Sky/GradientSky	Direct3D11, Vulkan
+Hidden/HDRP/Sky/HDRISky	Direct3D11, Vulkan
+Hidden/HDRP/Sky/PbrSky	Direct3D11, Vulkan
+Hidden/HDRP/TemporalAA	Direct3D11, Vulkan
+Hidden/HDRP/TerrainLit_Basemap	Direct3D11, Vulkan
+Hidden/HDRP/TerrainLit_BasemapGen	Direct3D11, Vulkan
+Hidden/HDRP/UpsampleTransparent	Direct3D11, Vulkan
+Hidden/HDRP/VolumetricCloudsCombine	Direct3D11, Vulkan
+Hidden/HDRP/WaterCaustics	Direct3D11, Vulkan
+Hidden/HDRP/XRMirrorView	Direct3D11, Vulkan
+Hidden/HDRP/XROcclusionMesh	Direct3D11, Vulkan
+Hidden/HDRP/preIntegratedFGD_CharlieFabricLambert	Direct3D11, Vulkan
+Hidden/HDRP/preIntegratedFGD_GGXDisneyDiffuse	Direct3D11, Vulkan
+Hidden/High Definition Render Pipeline/HBAO	Direct3D11, Vulkan
+Hidden/NTSCPass	Direct3D11, Vulkan
+Hidden/Nature/Terrain/Utilities	Direct3D11, Vulkan
+Hidden/Nature/Tree Creator Albedo Rendertex	Direct3D11, Vulkan
+Hidden/Nature/Tree Creator Normal Rendertex	Direct3D11, Vulkan
+Hidden/Nature/Tree Soft Occlusion Bark Rendertex	Direct3D11, Vulkan
+Hidden/Nature/Tree Soft Occlusion Leaves Rendertex	Direct3D11, Vulkan
+Hidden/PostProcessing/Debug/Vectorscope	Direct3D11, Vulkan
+Hidden/PostProcessing/Debug/Waveform	Direct3D11, Vulkan
+Hidden/PostProcessing/SubpixelMorphologicalAntialiasing	Direct3D11, Vulkan
+Hidden/SRP/BlitCubeTextureFace	Direct3D11, Vulkan
+Hidden/ScriptableRenderPipeline/DebugDisplayHDShadowMap	Direct3D11, Vulkan
+Hidden/ScriptableRenderPipeline/ShadowBlit	Direct3D11, Vulkan
+Hidden/ScriptableRenderPipeline/ShadowClear	Direct3D11, Vulkan
+Hidden/Shader Graph/FallbackError	Direct3D11, Vulkan
+Hidden/Shader/AlphaInjection	Direct3D11, Vulkan
+Hidden/Shader/ChromaKeying	Direct3D11, Vulkan
+Hidden/TerrainEngine/BillboardTree	Direct3D11, Vulkan
+Hidden/TerrainEngine/CameraFacingBillboardTree	Direct3D11, Vulkan
+Hidden/TerrainEngine/CrossBlendNeighbors	Direct3D11, Vulkan
+Hidden/TerrainEngine/GenerateNormalmap	Direct3D11, Vulkan
+Hidden/TerrainEngine/HeightBlitCopy	Direct3D11, Vulkan
+Hidden/TerrainEngine/PaintHeight	Direct3D11, Vulkan
+Hidden/TerrainEngine/TerrainLayerUtils	Direct3D11, Vulkan
+Hidden/UIElements/EditorUIE	Direct3D11, Vulkan
+Hidden/VFX/Empty	Direct3D11, Vulkan
+Hidden/VFX/VFX_Fire/System (1)/FIRE	Direct3D11, Vulkan
+Hidden/VFX/VFX_Fire/System/FIRE	Direct3D11, Vulkan
+Hidden/VFX/VFX_Steam/System/Output Particle Quad	Direct3D11, Vulkan
+Hidden/VoxelizeShader	Direct3D11, Vulkan
+Legacy Shaders/Particles/Additive	Direct3D11, Vulkan
+Legacy Shaders/Particles/Alpha Blended Premultiply	Direct3D11, Vulkan
+Legacy Shaders/VertexLit	Direct3D11, Vulkan
+Mobile/Particles/Alpha Blended	Direct3D11, Vulkan
+Occlussions/SH_OcclussionNoise_Motion	Direct3D11, Vulkan
+Particles/Standard Surface	Direct3D11, Vulkan
+Particles/Standard Unlit	Direct3D11, Vulkan
+Shader Graphs/BorderFog	Direct3D11, Vulkan
+Shader Graphs/ConveyorBeltShader	Direct3D11, Vulkan
+Shader Graphs/EmissiveShader	Direct3D11, Vulkan
+Shader Graphs/GridShader	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_AO	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_GarageDoor	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_GlassWithGlow	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_Noise	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_Smoothness	Direct3D11, Vulkan
+Shader Graphs/HDRP_Lit_Occlusion_TransparentObjects	Direct3D11, Vulkan
+Shader Graphs/InteriorMapping_v3	Direct3D11, Vulkan
+Shader Graphs/InteriorShader	Direct3D11, Vulkan
+Shader Graphs/InteriorShader_ParkingNumberDecals	Direct3D11, Vulkan
+Shader Graphs/InteriorShader_Transparent	Direct3D11, Vulkan
+Shader Graphs/InteriorShader_Unlit	Direct3D11, Vulkan
+Shader Graphs/MixMaterialsGrassShader	Direct3D11, Vulkan
+Shader Graphs/MixMaterialsPuddleShader	Direct3D11, Vulkan
+Shader Graphs/MixMaterialsShader	Direct3D11, Vulkan
+Shader Graphs/ParalaxEffect	Direct3D11, Vulkan
+Shader Graphs/ParticleLit	Direct3D11, Vulkan
+Shader Graphs/ParticleLitSoft	Direct3D11, Vulkan
+Shader Graphs/ParticleUnlit	Direct3D11, Vulkan
+Shader Graphs/ParticleUnlitSoftGlow	Direct3D11, Vulkan
+Shader Graphs/Puddles	Direct3D11, Vulkan
+Shader Graphs/RoadTransition	Direct3D11, Vulkan
+Shader Graphs/SH_BuildingBackside	Direct3D11, Vulkan
+Shader Graphs/SH_CharacterAgingHead	Direct3D11, Vulkan
+Shader Graphs/SH_CharacterClothes	Direct3D11, Vulkan
+Shader Graphs/SH_CharacterClothesArray	Direct3D11, Vulkan
+Shader Graphs/SH_CharacterClothesStandard	Direct3D11, Vulkan
+Shader Graphs/SH_CharacterStandard	Direct3D11, Vulkan
+Shader Graphs/SH_Dirt	Direct3D11, Vulkan
+Shader Graphs/SH_EaselPaintingPicture	Direct3D11, Vulkan
+Shader Graphs/SH_InteriorAssetColorMask	Direct3D11, Vulkan
+Shader Graphs/SH_PixelatedEffect	Direct3D11, Vulkan
+Shader Graphs/SH_PoolWater	Direct3D11, Vulkan
+Shader Graphs/SH_Ripples	Direct3D11, Vulkan
+Shader Graphs/SH_SeaWaterFoamCasino	Direct3D11, Vulkan
+Shader Graphs/SH_SimpleLit	Direct3D11, Vulkan
+Shader Graphs/SH_SimpleLitColor	Direct3D11, Vulkan
+Shader Graphs/SH_SimpleUnlitColor	Direct3D11, Vulkan
+Shader Graphs/SH_TVAds	Direct3D11, Vulkan
+Shader Graphs/SH_UIEntranceUnlit	Direct3D11, Vulkan
+Shader Graphs/SH_Vehicle	Direct3D11, Vulkan
+Shader Graphs/SH_VehicleOnlyDirt	Direct3D11, Vulkan
+Shader Graphs/SH_VehicleWithoutMaps	Direct3D11, Vulkan
+Shader Graphs/SH_Waterfall	Direct3D11, Vulkan
+Shader Graphs/Sh_VolumetricLight	Direct3D11, Vulkan
+Shader Graphs/SkyboxShader	Direct3D11, Vulkan
+Shader Graphs/SolidColor	Direct3D11, Vulkan
+Shader Graphs/VoronoiShader	Direct3D11, Vulkan
+Shader Graphs/Water	Direct3D11, Vulkan
+Skybox/Cubemap	Direct3D11, Vulkan
+Sprites/Default	Direct3D11, Vulkan
+TextMeshPro/Distance Field	Direct3D11, Vulkan
+TextMeshPro/Mobile/Distance Field	Direct3D11, Vulkan
+TextMeshPro/SRP/TMP_SDF-HDRP UNLIT	Direct3D11, Vulkan
+TextMeshPro/Sprite	Direct3D11, Vulkan
+UI Custom/InteriorDesignerUI	Direct3D11, Vulkan
+UI Extensions/Particles/Additive	Direct3D11, Vulkan
+UI Extensions/Particles/Additive (Soft)	Direct3D11, Vulkan
+UI Extensions/Particles/Alpha Blended	Direct3D11, Vulkan
+UI Extensions/Particles/Alpha Blended Premultiply	Direct3D11, Vulkan
+UI Extensions/Particles/Blend	Direct3D11, Vulkan
+UI Extensions/Particles/Multiply	Direct3D11, Vulkan
+UI Extensions/Particles/Multiply (Double)	Direct3D11, Vulkan
+UI Extensions/Particles/VertexLit Blended	Direct3D11, Vulkan
+UI Extensions/Particles/~Additive-Multiply	Direct3D11, Vulkan
+UI Extensions/SoftMaskShader	Direct3D11, Vulkan
+UI Extensions/UI Image Crop	Direct3D11, Vulkan
+UI Extensions/UIAdditive	Direct3D11, Vulkan
+UI Extensions/UILinearDodge	Direct3D11, Vulkan
+UI Extensions/UIMultiply	Direct3D11, Vulkan
+UI Extensions/UIScreen	Direct3D11, Vulkan
+UI Extensions/UISoftAdditive	Direct3D11, Vulkan
+UI/Particles/Hidden	Direct3D11, Vulkan
+UI/Unlit/TransparentRenderOnTop	Direct3D11, Vulkan
+VegetationShaders/VegetationWindShader	Direct3D11, Vulkan

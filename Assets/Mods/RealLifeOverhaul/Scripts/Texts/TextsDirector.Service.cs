@@ -229,8 +229,10 @@ namespace RealLifeOverhaul.Texts
             if (Keys.Set(KeyName((int)p.Id), key))
             {
                 _version++;
-                Logger?.Info("Your own AI: a key for " + p.Name + " is kept on this PC.");
-                TextsGame.Notice("reallife_textsai_key_kept", new Dictionary<string, string>(1) { { "service", p.Name } });
+                Logger?.Info("Your own AI: a key for " + p.Name + (Keys.SessionOnly
+                    ? " is held until the game closes (" + HostSystem.Name + " has no protection for it that the mod uses, so it is not written)."
+                    : " is kept on this PC."));
+                TextsGame.Notice(Keys.SessionOnly ? "reallife_textsai_key_session" : "reallife_textsai_key_kept", new Dictionary<string, string>(1) { { "service", p.Name } });
             }
             else
             {
@@ -245,6 +247,11 @@ namespace RealLifeOverhaul.Texts
             if (Chosen.Access == TextAccess.App)
             {
                 TextsGame.Notice("reallife_textsai_p2_signin", null, 16f);   // Player2 signs in in its own App
+                return;
+            }
+            if (Keys.SessionOnly)
+            {
+                TextsGame.Notice("reallife_textsai_signin_windows", null, 16f);   // a sign-in is kept between sessions, which needs Windows' protection: a key works here
                 return;
             }
             if (!TextKeys.Sealable())

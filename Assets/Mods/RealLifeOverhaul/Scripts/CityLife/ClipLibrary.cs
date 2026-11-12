@@ -180,6 +180,7 @@ namespace RealLifeOverhaul
         {
             try
             {
+                BundleShaders.Check(Logger, Path.GetFileName(BundlePath), null, reading.allAssets, null);   // clips are drawn with nothing: the line says the bundle brought no material
                 var found = new Dictionary<string, AnimationClip>(32);
                 TextAsset catalogueText = null;
                 foreach (UnityEngine.Object asset in reading.allAssets)

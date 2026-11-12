@@ -8,7 +8,9 @@ namespace RealLifeOverhaul
     /// the machine was (so the share other programs held) and the page faults. That tells a frame the game spent working
     /// from one it waited in, or one another program held the processor in. Read by <see cref="FrameSteps"/> at each
     /// roll-over while the steps are timed: four kernel32 calls, nothing allocated. Times count at the system's clock tick
-    /// (about 15.6 ms). An entry point that is missing (an older Windows, Wine) is found out once and says so.
+    /// (about 15.6 ms). An entry point that is missing (an older Windows, Wine) is found out once and says so. They are
+    /// Windows' own calls: on a Mac none is made (<see cref="HostSystem.Windows"/>), each figure says it is not available
+    /// and a long frame's line does without them.
     /// </summary>
     public static class MachineClock
     {
@@ -63,6 +65,11 @@ namespace RealLifeOverhaul
         /// <summary>Tries each entry point once (when the timing starts); the frame's first roll-over takes the first reading.</summary>
         public static void Start()
         {
+            if (!_tried && !HostSystem.Windows)
+            {
+                _tried = true;
+                _threadWhy = _processWhy = _systemWhy = _memoryWhy = "not available (" + HostSystem.Name + " is not asked: these are Windows' own figures)";
+            }
             if (!_tried)
             {
                 _tried = true;
@@ -77,6 +84,10 @@ namespace RealLifeOverhaul
         /// <summary>One reading, at the frame's roll-over: the frame before this one is the difference from the last.</summary>
         public static void Sample()
         {
+            if (!HostSystem.Windows)
+            {
+                return;   // nothing can be read: no call is made
+            }
             try
             {
                 if (_thread && ThreadTimes(ThisThread, out _, out _, out long k, out long u) != 0)
@@ -198,16 +209,16 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        private static bool TryThread() => ThreadTimes(ThisThread, out _, out _, out _, out _) != 0;
+        private static bool TryThread() => HostSystem.Windows && ThreadTimes(ThisThread, out _, out _, out _, out _) != 0;
 
-        private static bool TryProcess() => ProcessTimes(ThisProcess, out _, out _, out _, out _) != 0;
+        private static bool TryProcess() => HostSystem.Windows && ProcessTimes(ThisProcess, out _, out _, out _, out _) != 0;
 
-        private static bool TrySystem() => SystemTimes(out _, out _, out _) != 0;
+        private static bool TrySystem() => HostSystem.Windows && SystemTimes(out _, out _, out _) != 0;
 
         private static bool TryMemory()
         {
             var counters = new MemoryCounters { Size = CountersSize };
-            return MemoryInfo(ThisProcess, ref counters, CountersSize) != 0;
+            return HostSystem.Windows && MemoryInfo(ThisProcess, ref counters, CountersSize) != 0;
         }
     }
 }

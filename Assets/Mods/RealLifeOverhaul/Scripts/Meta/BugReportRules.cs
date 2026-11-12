@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Meta
         public long LinesTotal;
         public string Contract;
         public readonly List<string> Files = new List<string>(6);   // what the report's folder holds, as said at its top
-        public string Profile;              // the player's Windows user folder, written as %USERPROFILE%
+        public string Profile;              // the player's user folder (C:\Users\name, or /Users/name on a Mac), written as %USERPROFILE%
         public readonly List<BugStaff> Staff = new List<BugStaff>(32);    // every employee of the player's, by business: what wages and hours are, read on the press
         public string StaffNote;            // why the staff could not be read, or null
         public readonly List<BugMoney> Books = new List<BugMoney>(64);    // the game's transactions of yesterday and today, one entry each
@@ -472,16 +472,19 @@ namespace RealLifeOverhaul.Meta
         private const string Name = @"((?:(?!%5[cC]|%2[fF])[^\\/""'\s:*?<>|])(?:(?!%5[cC]|%2[fF])[^\\/""'\s:*?<>|])*?)(?=" + Sep + @"|[""'\s:*?<>|,;)\]}]|\.(?:\s|$)|$)";
         private static readonly Regex UsersFolder = new Regex(@"((?:[a-zA-Z](?::|%3[aA]))" + Sep + "+(?i:users)" + Sep + "+)" + Name, RegexOptions.CultureInvariant);
         private static readonly Regex HomeFolder = new Regex(@"((?:/|\\\\|\\|%2[fF]|%5[cC])(?i:home)" + Sep + "+)" + Name, RegexOptions.CultureInvariant);
+        // A Mac's user folders stand at the root, with no drive before them.
+        private static readonly Regex MacFolder = new Regex(@"((?<![A-Za-z0-9:._-])/Users/)" + Name, RegexOptions.CultureInvariant);
         private static readonly Regex SteamId = new Regex(@"(?<!\d)7656119\d{10}(?!\d)", RegexOptions.CultureInvariant);
         private static readonly Regex SteamQuoted = new Regex(@"(\bname\s*[=:]\s*')([^'\r\n]*)(')", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private static readonly Regex PlayerName = new Regex(@"(player name:[ \t]*)([^\r\n]+)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private static readonly MatchEvaluator UserFolder = m => Kept(m.Groups[2].Value) ? m.Value : m.Groups[1].Value + OtherUser;
 
-        // The folders under Users that are nobody's.
+        // The folders under Users that are nobody's (Shared is a Mac's).
         private static bool Kept(string name)
         {
             return name == OtherUser || string.Equals(name, "Public", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default", StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(name, "All Users", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default User", StringComparison.OrdinalIgnoreCase);
+                   || string.Equals(name, "All Users", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default User", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(name, "Shared", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>After the exact pass: another user's or an 8.3 folder under Users, the folder under /home/, Steam ids and Steam names, each when a cheap search finds its sign.</summary>
@@ -494,6 +497,7 @@ namespace RealLifeOverhaul.Meta
             if (text.IndexOf("users", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 text = UsersFolder.Replace(text, UserFolder);
+                text = MacFolder.Replace(text, UserFolder);
             }
             if (text.IndexOf("home", StringComparison.OrdinalIgnoreCase) >= 0)
             {
@@ -653,7 +657,60 @@ namespace RealLifeOverhaul.Meta
         /// <summary>A file address for a folder, not escaped: Windows reads an escaped one in its own code page, which mangles "João" or a Chinese name.</summary>
         public static string FileUrl(string path)
         {
-            return "file:///" + path.Replace('\\', '/').TrimStart('/');
+            return FileUrl(path, HostSystem.Windows);
+        }
+
+        /// <summary>
+        /// The file address for a folder as the system asked for takes it: plain for Windows (above); for a Mac or Linux
+        /// with every part escaped, since they open no address that holds a space, and a Mac keeps the game's data under
+        /// "Application Support".
+        /// </summary>
+        public static string FileUrl(string path, bool windows)
+        {
+            string plain = path.Replace('\\', '/').TrimStart('/');
+            if (windows)
+            {
+                return "file:///" + plain;
+            }
+            string[] parts = plain.Split('/');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = Uri.EscapeDataString(parts[i]);
+            }
+            return "file:///" + string.Join("/", parts);
+        }
+
+        /// <summary>
+        /// True when the game's log lies where the report may read it: in the game's own data folder, where Windows keeps
+        /// it, or under the user's Library/Logs, where a Mac keeps Player.log apart from the game's data. A log sent
+        /// somewhere else by a command line is not read.
+        /// </summary>
+        public static bool OwnLog(string log, string dataFolder, string home)
+        {
+            if (string.IsNullOrEmpty(log))
+            {
+                return false;
+            }
+            string path = Plain(log);
+            int cut = path.LastIndexOf('/');
+            if (cut <= 0)
+            {
+                return false;
+            }
+            string folder = path.Substring(0, cut);
+            if (string.Equals(folder, Plain(dataFolder), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            string logs = string.IsNullOrEmpty(home) ? null : Plain(home) + "/Library/Logs/";
+            return logs != null && folder.Length > logs.Length && folder.StartsWith(logs, StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(path.Substring(cut + 1), LogPlaceRules.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // A path with one kind of slash and none at its end, for comparing two.
+        private static string Plain(string path)
+        {
+            return (path ?? string.Empty).Replace('\\', '/').TrimEnd('/');
         }
 
         /// <summary>What the file explorer is given to open a folder with the report picked.</summary>

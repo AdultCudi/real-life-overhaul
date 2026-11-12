@@ -12,6 +12,10 @@ namespace RealLifeOverhaul.Texts
     {
         private bool Launch()
         {
+            if (!HostSystem.Windows)
+            {
+                return Fail("RLO Texts packs run on Windows only (the server is llama.cpp's Windows program, never started on " + HostSystem.Name + ")");
+            }
             if (!File.Exists(_start.Exe) || !File.Exists(_start.Model))
             {
                 return Fail("the pack's files are missing (" + Path.GetFileName(File.Exists(_start.Exe) ? _start.Model : _start.Exe) + ")");

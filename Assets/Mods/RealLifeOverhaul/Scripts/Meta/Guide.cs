@@ -255,7 +255,7 @@ namespace RealLifeOverhaul.Meta
                 case "version": return Changelog.Shown;
                 case "preset": return Presets.CurrentName();
                 case "folder": return Presets.Folder;
-                case "data": return Application.persistentDataPath;
+                case "data": return LogPlaceRules.Folder(Application.consoleLogPath, Application.persistentDataPath);   // Player.log's folder: a Mac keeps it apart from the game's data
                 case "controls": return Controls();
             }
             for (int i = 0; i < Keys.Count; i++)
