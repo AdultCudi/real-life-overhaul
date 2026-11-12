@@ -30,6 +30,7 @@ The code is in `Assets/Mods/RealLifeOverhaul/Scripts`, one folder per feature. E
 | [`FitOut`](../Assets/Mods/RealLifeOverhaul/Scripts/FitOut/) | The mod's own buildings furnished with the game's furniture | |
 | [`Floors`](../Assets/Mods/RealLifeOverhaul/Scripts/Floors/) | The mod's places on floors of the buildings it holds: the university's, the tech towers', places to come | [Floors](../docs/features/floors.md) |
 | [`Garage`](../Assets/Mods/RealLifeOverhaul/Scripts/Garage/) | The custom shop for cars, bicycles and motorbikes | [Garage](../docs/features/garage.md) |
+| [`Graphics`](../Assets/Mods/RealLifeOverhaul/Scripts/Graphics/) | A look for the whole picture by the hour, the weather and the season | [Realistic graphics](../docs/features/graphics.md) |
 | [`Home`](../Assets/Mods/RealLifeOverhaul/Scripts/Home/) | Needs, cooking, illness and the doctor, the roommate | [Home life and health](../docs/features/home.md) |
 | [`Interiors`](../Assets/Mods/RealLifeOverhaul/Scripts/Interiors/) | Interiors and decor that matter to a business | [Interiors and decor](../docs/features/interiors.md) |
 | [`Jobs`](../Assets/Mods/RealLifeOverhaul/Scripts/Jobs/) | Gigs from the Gig Line and the help-wanted boards, and the employers' ranks | [Jobs](../docs/features/jobs.md) |

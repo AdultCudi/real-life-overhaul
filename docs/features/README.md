@@ -14,6 +14,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.
+- [Realistic graphics](graphics.md): a look for the whole picture that follows the clock, the weather and the season, with nothing added for the graphics card to draw.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
 - [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground; a construction company of the player's: land, plans, planning permission, sites, money, tenders and the city's builders.
 - [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).

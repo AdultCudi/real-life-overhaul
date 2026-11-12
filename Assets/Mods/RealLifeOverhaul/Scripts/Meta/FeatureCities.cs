@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Meta
             new Line("traffic", CityScope.AnyCity, "the game's own traffic"),
             new Line("streets", CityScope.AnyCity, "the game's own drivers"),
             new Line("visuals", CityScope.AnyCity, "the picture"),
+            new Line("graphics", CityScope.AnyCity, "the picture's look by the hour and the weather of whatever city it is"),
             new Line("keys", CityScope.AnyCity, "the mod's keys"),
             new Line("performance", CityScope.AnyCity, "how the game draws any city"),
             new Line("savetools", CityScope.AnyCity, "the save's own tools"),

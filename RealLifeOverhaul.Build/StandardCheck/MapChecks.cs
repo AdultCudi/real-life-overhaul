@@ -29,6 +29,8 @@ internal static partial class Program
             "the mod's buildings' names in the open map's search list, which the map takes away with it; nothing is left to put back"),
         ("Districts/DistrictView.cs", "Districts/DistrictView.cs", "OnMap", "district view",
             "a district layer shown on the open map, taken off with its frame work once it shuts"),
+        ("Graphics/GraphicsGame.cs", "Graphics/GraphicsGame.cs", "MapToggled", "the picture's look",
+            "the look's volume off and the sun's and the moon's own colours back while the map is open, the look on the picture again as it shuts"),
         ("Navigation/NavDirector.cs", "Navigation/NavDirector.Map.cs", "OnMap", "route on the map",
             "the route drawn on the open map, its object off once it shuts"),
         ("NewBuildings/CopyLook.cs", "NewBuildings/CopyLook.cs", "OnMap", "copied buildings",

@@ -520,6 +520,8 @@ namespace RealLifeOverhaul.Meta
                     "perf_far_props", "perf_textures_whole", "perf_mod_cull").Also("fps frame rate lag stutter slow faster"),
                 S("render").Guide("performance").Opts("render_shadow_reach", "render_shadow_cascades", "render_lod_reach")
                     .Also("graphics shadows shadow distance cascades level of detail lod models quality fps"),
+                S("graphics").For("graphics").Opts("graphics_look", "graphics_cost")
+                    .Also("realistic graphics look picture filmic natural vivid colour light sun night haze fog shadows contact glow bloom tone grading"),
                 S("picture").For("visuals").Main("visuals_enabled").Opts("visuals_saturation", "visuals_contrast", "visuals_bloom", "visuals_detail")
                     .Also("graphics colour visuals quality")),
 
