@@ -3,8 +3,8 @@
 # data files and its Addressables bundles with UnityPy and writes nothing into the game's folder.
 #
 # A shader is compiled for the graphics APIs of the system the game was built for, so each line also says which the
-# installed game has: Direct3D 11 and Vulkan in the Windows game. The names are the same in the game's build for
-# another system, which is made from the same project; only the APIs differ.
+# installed game has: Direct3D 11 and Vulkan in the Windows game. The game's build for another system is made from
+# the same project, so the names are taken to be the same there (no such build has been read); only the APIs differ.
 #
 #   python -I game_shaders.py                                   the installed game against the list beside StandardCheck
 #   python -I game_shaders.py --write                           the same, and the list written again
@@ -72,8 +72,8 @@ def text(found, build):
         "# The game's own shaders by name, with the graphics APIs the installed game has each compiled for.",
         "# Written by RealLifeOverhaul.Build/Census/game_shaders.py --write from the installed Windows game (Build " + build + "): every Shader object of",
         "# its data files and its Addressables bundles. A bundle of the mod's may bring a shader only if its name is here, since the mod then",
-        "# draws with the game's own of that name on every system (RLO-PLT-004). The names are the same in the game's build for another",
-        "# system; the APIs are that build's own. One shader a line: its name, a tab, its APIs.",
+        "# draws with the game's own of that name on every system (RLO-PLT-004). The game's build for another system is made from the same",
+        "# project, so the names are taken to be the same there; the APIs are that build's own. One shader a line: its name, a tab, its APIs.",
     ]
     for name in sorted(found):
         lines.append(name + "\t" + ", ".join(sorted(found[name])))

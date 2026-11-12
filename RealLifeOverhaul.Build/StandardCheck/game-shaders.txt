@@ -1,8 +1,8 @@
 # The game's own shaders by name, with the graphics APIs the installed game has each compiled for.
 # Written by RealLifeOverhaul.Build/Census/game_shaders.py --write from the installed Windows game (Build 3682): every Shader object of
 # its data files and its Addressables bundles. A bundle of the mod's may bring a shader only if its name is here, since the mod then
-# draws with the game's own of that name on every system (RLO-PLT-004). The names are the same in the game's build for another
-# system; the APIs are that build's own. One shader a line: its name, a tab, its APIs.
+# draws with the game's own of that name on every system (RLO-PLT-004). The game's build for another system is made from the same
+# project, so the names are taken to be the same there; the APIs are that build's own. One shader a line: its name, a tab, its APIs.
 02_Selection/Fullscreen	Direct3D11, Vulkan
 02_Selection/Objects	Direct3D11, Vulkan
 BlurShadersProHDRP/Blur	Direct3D11, Vulkan

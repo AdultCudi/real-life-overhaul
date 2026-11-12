@@ -149,20 +149,24 @@ internal static partial class Program
               && !BundleShaderRules.BringsShader(null) && !BundleShaderRules.BringsShader("format.material.txt"),
             "platform, bundles: a name in a bundle's list that is a material or a shader is told by its ending");
         string with = BundleShaderRules.With("HDRP/Lit", true, true, 0);
-        string props = BundleShaderRules.Line(BundleStem + "_props", 0, 0, 0, 0, 0, null, with, "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
+        string props = BundleShaderRules.Line(BundleStem + "_props", 0, 0, 0, 0, 0, null, true, with, "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
         Check(props == "Shaders check (" + BundleStem + "_props): 0 materials, 0 shaders, 0 not supported on Metal, 0 repointed to the game's own, 0 left: PASS. Its list names no material or shader; "
                        + "its pieces are drawn with the game's 'HDRP/Lit', which draws here. Graphics: Metal (Apple M4 Pro). System: Mac OS X 15.1.0. Game: Build 3682.",
             "platform, bundles: the line of a bundle that brought no material says so, what its pieces are drawn with, the graphics device, the system and the game");
         string fonts = UiShaderRules.Line(BundleStem + "_props", 2, 1, 1, 1, 0, null, "x", "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
-        string same = BundleShaderRules.Line(BundleStem + "_props", 2, 1, 1, 1, 0, null, "x", "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
+        string same = BundleShaderRules.Line(BundleStem + "_props", 2, 1, 1, 1, 0, null, true, "x", "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
         int head = fonts.IndexOf("left: PASS.", StringComparison.Ordinal);
         Check(head > 0 && same.StartsWith(fonts.Substring(0, head + 11), StringComparison.Ordinal) && fonts.EndsWith("Game: Build 3682.", StringComparison.Ordinal)
               && same.EndsWith("Graphics: Metal (Apple M4 Pro). System: Mac OS X 15.1.0. Game: Build 3682.", StringComparison.Ordinal),
             "platform, bundles: every bundle's line begins and ends with the same words as the fonts' line, so one search of a log finds all six");
-        string fail = BundleShaderRules.Line(BundleStem + "_props_2", 2, 1, 1, 0, 2, "Bench, Lamp", BundleShaderRules.With("HDRP/Lit", true, false, 0), "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
+        string fail = BundleShaderRules.Line(BundleStem + "_props_2", 2, 1, 1, 0, 2, "Bench, Lamp", false, BundleShaderRules.With("HDRP/Lit", true, false, 0), "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
         Check(fail.Contains("1 not supported on Metal, 0 repointed to the game's own, 2 left: FAIL (Bench, Lamp: ") && !fail.Contains("PASS") && fail.Contains("which does not draw here")
               && fail.IndexOf('\n') < 0,
             "platform, bundles: materials left on a shader that does not draw are a FAIL that names them, on one line");
+        string bare = BundleShaderRules.Line(BundleStem + "_props", 0, 0, 0, 0, 0, null, false, BundleShaderRules.With("HDRP/Lit", false, false, 0), "Metal", "Apple M4 Pro", "Mac OS X 15.1.0", 3682);
+        Check(bare.Contains("0 left: FAIL (the game's shader for the bundle's pieces is not there to draw them). ") && !bare.Contains("PASS") && bare.Contains("which was not found")
+              && BundleShaderRules.Passes(0, true) && !BundleShaderRules.Passes(0, false) && !BundleShaderRules.Passes(1, true),
+            "platform, bundles: a bundle whose pieces' own shader the game has not got, or cannot draw, is a FAIL too, though no material is left");
         Check(BundleShaderRules.With(null, false, false, 0) == "Its list names no material or shader; nothing of it is drawn with a material of its own"
               && BundleShaderRules.With("HDRP/Lit", false, false, 0).EndsWith("which was not found", StringComparison.Ordinal)
               && BundleShaderRules.With(null, false, false, 2).StartsWith("Its list names 2 material(s) or shader(s) that were not read", StringComparison.Ordinal),

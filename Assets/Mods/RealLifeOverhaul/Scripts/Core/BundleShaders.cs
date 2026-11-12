@@ -73,10 +73,11 @@ namespace RealLifeOverhaul
                 named += BundleShaderRules.BringsShader(list[i]) ? 1 : 0;
             }
             Shader with = drawnWith != null ? Shader.Find(drawnWith) : null;
-            string line = BundleShaderRules.Line(bundle, materials.Count, shaders.Count, unsupported, repointed, left, names,
-                BundleShaderRules.With(drawnWith, with != null, with != null && with.isSupported, named),
+            bool drawn = drawnWith == null || Draws(with);
+            string line = BundleShaderRules.Line(bundle, materials.Count, shaders.Count, unsupported, repointed, left, names, drawn,
+                BundleShaderRules.With(drawnWith, with != null, Draws(with), named),
                 SystemInfo.graphicsDeviceType.ToString(), SystemInfo.graphicsDeviceName, SystemInfo.operatingSystem, GameBuild.Running);
-            if (left == 0)
+            if (BundleShaderRules.Passes(left, drawn))
             {
                 Meta.Dev.Always(logger, line);
             }

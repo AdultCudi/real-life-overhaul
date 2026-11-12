@@ -54,16 +54,25 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The check's one line for a bundle: its materials and their shaders, how many of those shaders do not draw on this
         /// graphics device, how many were replaced by the game's own, the materials left on one that does not draw
-        /// (<paramref name="left"/> names them; none is a pass), then what the bundle's own pieces are drawn with, the
-        /// graphics device, the system and the game. The same words as the font bundle's line (Ui/UiShaderRules.Line).
+        /// (<paramref name="left"/> names them), then what the bundle's own pieces are drawn with, the graphics device, the
+        /// system and the game. A pass is none left and <paramref name="drawn"/>: the game's shader the pieces are drawn
+        /// with is there and draws (true for a bundle that needs none). The same words as the font bundle's line
+        /// (Ui/UiShaderRules.Line).
         /// </summary>
-        public static string Line(string bundle, int materials, int shaders, int unsupported, int repointed, int leftCount, string left, string with, string device, string card,
-            string system, int build)
+        public static string Line(string bundle, int materials, int shaders, int unsupported, int repointed, int leftCount, string left, bool drawn, string with, string device,
+            string card, string system, int build)
         {
+            string verdict = leftCount > 0 ? "FAIL (" + left + ": the game has no shader of that name that draws here, so what wears these is not drawn as modelled)"
+                : drawn ? "PASS" : "FAIL (the game's shader for the bundle's pieces is not there to draw them)";
             return "Shaders check (" + bundle + "): " + materials + " materials, " + shaders + " shaders, " + unsupported + " not supported on " + device + ", " + repointed
-                   + " repointed to the game's own, " + leftCount + " left: "
-                   + (leftCount == 0 ? "PASS" : "FAIL (" + left + ": the game has no shader of that name that draws here, so what wears these is not drawn as modelled)")
-                   + ". " + with + ". Graphics: " + device + " (" + card + "). System: " + system + ". Game: Build " + build + ".";
+                   + " repointed to the game's own, " + leftCount + " left: " + verdict + ". " + with + ". Graphics: " + device + " (" + card + "). System: " + system
+                   + ". Game: Build " + build + ".";
+        }
+
+        /// <summary>True when a bundle's line is a pass: no material left on a shader that does not draw, and the pieces' own shader there.</summary>
+        public static bool Passes(int leftCount, bool drawn)
+        {
+            return leftCount == 0 && drawn;
         }
 
         /// <summary>What a bundle's pieces are drawn with, for its line: the game's shader the mod makes their material from, and whether it draws here.</summary>
