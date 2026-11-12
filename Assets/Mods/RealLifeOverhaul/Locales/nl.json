@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Tevredenheid",
   "reallife_ui_gallery_energy": "Energie",
   "reallife_ui_enabled": "RLO-interface",
-  "reallife_opt_tip_ui_interface": "Tekent Contacten en de schermen van de overhaul in het eigen ontwerp van de mod: leipanelen over de stad, kleurenpictogrammen en een statusbalk langs de onderkant. Uit: de eigen schermen van het spel.",
+  "reallife_opt_tip_ui_interface": "Tekent Contacten en de overhaul-schermen in het ontwerp van de mod: leikleurige panelen, kleuriconen en een statusbalk. Standaard uit, met de schermen van het spel zelf: zet hem hier aan.",
   "reallife_ui_motion": "Beweging van de interface",
   "reallife_opt_tip_ui_motion": "Hoe de RLO-interface beweegt: volledig, rustig (trager en korter) of uit.",
   "reallife_ui_motion_0": "Volledig",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "De RLO-interface week uit na een fout; het eigen scherm van het spel verschijnt in plaats daarvan.",
   "reallife_meta_title_ui": "RLO-interface",
   "reallife_guide_ui_about": "Het eigen ontwerp van de mod, de City Ledger: Contacten en de schermen van de overhaul getekend als de financiële pagina's van de stad, eerst voor toetsenbord en gamepad.",
-  "reallife_guide_ui": "# Wat het is\n- De <b>RLO-interface</b> tekent de Contacten van het spel en de schermen van de overhaul in het eigen ontwerp van de mod, de City Ledger: schreefkoppen, de labels van de krant in hoofdletters, vierkante panelen met lijnen en één accent, de zalmkleur van een beursblad.\n- Het hoort bij <b>Levende bevolking</b> en heeft een eigen schakelaar. Uit, dan is elk scherm weer van het spel zelf.\n\n# Zo gebruik je het\n- Pijltjes of het richtingskruis verplaatsen de ene focus; Enter of A drukt op wat focus heeft; Esc of B gaat terug.\n- De toetsen onderaan het scherm zijn de toetsen die nu zijn ingesteld; een toets op een knop drukt hem van overal.\n- Een gesprek, een aanbod met eigen knoppen en een belastingtabel openen in de eigen weergave van het spel, tot je de app sluit.\n\n# Opties\n- Donker of licht volgt de uiterlijkoptie van Flare.\n- Beweging van de interface: volledig, rustig of uit.",
+  "reallife_guide_ui": "# Wat het is\n- De <b>RLO-interface</b> tekent de Contacten van het spel en de schermen van de overhaul in het eigen ontwerp van de mod, de City Ledger: schreefkoppen, de labels van de krant in hoofdletters, vierkante panelen met lijnen en één accent, de zalmkleur van een beursblad.\n- Het hoort bij <b>Levende bevolking</b> en heeft een eigen schakelaar, <b>RLO-interface</b> in de opties van de mod. Hij staat standaard uit terwijl fouten in de schermen worden opgelost, dus elk scherm is van het spel zelf tot je hem aanzet.\n\n# Zo gebruik je het\n- Pijltjes of het richtingskruis verplaatsen de ene focus; Enter of A drukt op wat focus heeft; Esc of B gaat terug.\n- De toetsen onderaan het scherm zijn de toetsen die nu zijn ingesteld; een toets op een knop drukt hem van overal.\n- Een gesprek, een aanbod met eigen knoppen en een belastingtabel openen in de eigen weergave van het spel, tot je de app sluit.\n\n# Opties\n- Donker of licht volgt de uiterlijkoptie van Flare.\n- Beweging van de interface: volledig, rustig of uit.",
   "reallife_contract_part_contacts_kit": "de Contacten-app getekend op de RLO-interface",
   "reallife_ui_page_details": "Details",
   "reallife_ui_page_empty": "Hier staat nog niets",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "Stel een naam voor",
   "reallife_studio_after_named": "Het wordt {name} genoemd.",
   "reallife_studio_note_named_1": "{name}, de gratis update voor {game}, is uit: ongeveer {copies} extra exemplaren komen eraan.",
-  "reallife_studio_note_named_2": "{name}, de add-on voor {game}, is uit: ongeveer {copies} eigenaren zullen hem kopen."
+  "reallife_studio_note_named_2": "{name}, de add-on voor {game}, is uit: ongeveer {copies} eigenaren zullen hem kopen.",
+  "reallife_ui_note_interface_off": "De RLO-interface is voorlopig uitgeschakeld. Enkele schermen hadden fouten: bestellen, eten buiten de deur en het voertuigpaneel. De schermen van het spel zelf zijn terug. Zet hem weer aan onder RLO-interface in de opties van de mod."
 }

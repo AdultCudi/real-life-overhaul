@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Memnuniyet",
   "reallife_ui_gallery_energy": "Enerji",
   "reallife_ui_enabled": "RLO arayüzü",
-  "reallife_opt_tip_ui_interface": "Kişiler ve modun ekranlarını modun kendi tasarımında çizer: şehrin üzerinde koyu paneller, renkli simgeler ve alt kısımda bir durum çubuğu. Kapalıysa oyunun kendi ekranları.",
+  "reallife_opt_tip_ui_interface": "Kişiler'i ve modun ekranlarını modun kendi tasarımıyla çizer: koyu paneller, renkli ikonlar ve bir durum çubuğu. Varsayılan olarak kapalıdır, oyunun kendi ekranları görünür; buradan açın.",
   "reallife_ui_motion": "Arayüz hareketi",
   "reallife_opt_tip_ui_motion": "RLO arayüzünün nasıl hareket ettiği: tam, sakin (daha yavaş ve daha kısa) ya da kapalı.",
   "reallife_ui_motion_0": "Tam",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "RLO arayüzü bir hatadan sonra kenara çekildi; bunun yerine oyunun kendi ekranı gösterilir.",
   "reallife_meta_title_ui": "RLO arayüzü",
   "reallife_guide_ui_about": "Modun kendi tasarımı, City Ledger: Kişiler ve modun ekranları şehrin finans sayfaları gibi çizilir; önce klavye ve oyun kumandası için.",
-  "reallife_guide_ui": "# Nedir\n- <b>RLO arayüzü</b> oyunun Kişiler'ini ve modun ekranlarını modun kendi tasarımında, City Ledger'da çizer: serif başlıklar, kâğıdın etiketleri büyük harflerle, kare çizgili paneller ve tek bir vurgu rengi; bir piyasa gazetesinin somon rengi.\n- <b>Yaşayan nüfus</b>'un parçasıdır ve kendi anahtarı vardır. Kapalıyken her ekran yeniden oyunun kendi ekranıdır.\n\n# Nasıl kullanılır\n- Oklar ya da yön tuşu tek odağı hareket ettirir; Enter ya da A odakta olanı basar; Esc ya da B geri döner.\n- Ekranın altındaki tuşlar şu an atanmış olanlardır; bir düğmede gösterilen bir tuş, her yerden onu basar.\n- Bir arama, kendi düğmeleri olan bir teklif ve bir vergi tablosu, uygulamayı kapatana kadar oyunun kendi görünümünde açılır.\n\n# Seçenekler\n- Koyu ya da açık, Flare'in görünüm seçeneğini izler.\n- Arayüz hareketi: tam, sakin ya da kapalı.",
+  "reallife_guide_ui": "# Nedir\n- <b>RLO arayüzü</b> oyunun Kişiler'ini ve modun ekranlarını modun kendi tasarımında, City Ledger'da çizer: serif başlıklar, kâğıdın etiketleri büyük harflerle, kare çizgili paneller ve tek bir vurgu rengi; bir piyasa gazetesinin somon rengi.\n- <b>Yaşayan nüfus</b>'un parçasıdır ve kendi anahtarı vardır: modun seçeneklerindeki <b>RLO arayüzü</b>. Ekranlarındaki hatalar düzeltilirken varsayılan olarak kapalıdır, bu yüzden açılana kadar her ekran oyunun kendi ekranıdır.\n\n# Nasıl kullanılır\n- Oklar ya da yön tuşu tek odağı hareket ettirir; Enter ya da A odakta olanı basar; Esc ya da B geri döner.\n- Ekranın altındaki tuşlar şu an atanmış olanlardır; bir düğmede gösterilen bir tuş, her yerden onu basar.\n- Bir arama, kendi düğmeleri olan bir teklif ve bir vergi tablosu, uygulamayı kapatana kadar oyunun kendi görünümünde açılır.\n\n# Seçenekler\n- Koyu ya da açık, Flare'in görünüm seçeneğini izler.\n- Arayüz hareketi: tam, sakin ya da kapalı.",
   "reallife_contract_part_contacts_kit": "RLO arayüzünde çizilen Kişiler uygulaması",
   "reallife_ui_page_details": "Ayrıntılar",
   "reallife_ui_page_empty": "Henüz burada bir şey yok",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "Bir ad öner",
   "reallife_studio_after_named": "Adı {name} olacak.",
   "reallife_studio_note_named_1": "{name}, {game} için ücretsiz güncelleme, yayında: yaklaşık {copies} kopya daha satılacak.",
-  "reallife_studio_note_named_2": "{name}, {game} için eklenti, yayında: yaklaşık {copies} sahip bunu satın alacak."
+  "reallife_studio_note_named_2": "{name}, {game} için eklenti, yayında: yaklaşık {copies} sahip bunu satın alacak.",
+  "reallife_ui_note_interface_off": "RLO arayüzü şimdilik kapalı. Bazı ekranlarında hatalar vardı: sipariş verme, dışarıda yemek ve araç paneli. Oyunun kendi ekranları geri geldi. Modun seçeneklerinde RLO arayüzü altından yeniden açılabilir."
 }
