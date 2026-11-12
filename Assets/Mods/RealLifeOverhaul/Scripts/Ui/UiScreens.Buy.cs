@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_buy_speed", "reallife_ui_buy_yours", "reallife_ui_buy_not_yours", "reallife_ui_buy_slots",
                     "reallife_ui_buy_in_hands", "reallife_ui_buy_unpaid_total",
                     "reallife_ui_buy_more", "reallife_ui_buy_minigame", "reallife_ui_buy_range", "reallife_ui_buy_range_value", "reallife_ui_buy_speed_of",
-                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for"
+                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for", "action_consumefood", "action_consumedrink"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("manage_cargo", UiTemplate.AppWindow, "CargoScreen", new[]
                 {
