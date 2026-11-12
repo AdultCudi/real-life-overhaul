@@ -37508,7 +37508,7 @@
   "reallife_ins_enabled": "Ubezpieczenia samochodów, zdrowia, domów i firm",
   "reallife_meta_title_insurance": "Ubezpieczenia",
   "reallife_opt_sec_insurance": "Ubezpieczenia",
-  "reallife_opt_tip_insurance": "Wybierz zakres ochrony dla każdego samochodu, ubezpiecz każdy dom i sprawdź plan zdrowotny oraz ubezpieczenie firmy w jednej aplikacji. Szkoda sama odejmuje się od rachunku. Wyłączone: polisa samochodu wraca do jednej polisy Garażu, a domy nie są objęte ochroną.",
+  "reallife_opt_tip_insurance": "Wybierz zakres ochrony każdego auta, ubezpiecz każdy dom i sprawdź ochronę zdrowia i firmy w jednej aplikacji. Szkody obniżają rachunek. Wyłączone: jedna polisa Garażu, domy bez ochrony.",
   "reallife_ui_screen_insurance": "Ubezpieczenia",
   "reallife_opt_tip_ui_screen_insurance": "Ubezpieczenia w interfejsie RLO. Wyłączone: aplikacja w ramce gry, a reszta pozostaje w interfejsie.",
   "reallife_guide_insurance_about": "Ochrona dla samochodów, zdrowia, domów i firm, kupowana i zmieniana w jednej aplikacji, a szkody same odejmują się od rachunku.",

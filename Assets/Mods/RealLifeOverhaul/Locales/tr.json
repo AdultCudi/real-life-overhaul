@@ -37508,7 +37508,7 @@
   "reallife_ins_enabled": "Arabalarınız, sağlığınız, evleriniz ve işletmeleriniz için sigorta",
   "reallife_meta_title_insurance": "Sigorta",
   "reallife_opt_sec_insurance": "Sigorta",
-  "reallife_opt_tip_insurance": "Her araba için bir teminat kademesi seçin, her evi sigortalayın ve sağlık planınızı ile işletme teminatınızı tek uygulamada görün. Hasar bedeli kendiliğinden faturadan düşer. Kapalı: bir arabanın poliçesi yeniden Garaj'ın tek poliçesi olur ve evler teminat altında olmaz.",
+  "reallife_opt_tip_insurance": "Her araba için teminat kademesi seçin, her evi sigortalayın, sağlık ve işletme teminatını tek uygulamada görün. Hasarlar faturadan düşer. Kapalı: Garaj'ın tek poliçesi, evler teminatsız.",
   "reallife_ui_screen_insurance": "Sigorta",
   "reallife_opt_tip_ui_screen_insurance": "RLO arayüzünde Sigorta. Kapalı: uygulama oyunun kendi çerçevesinde açılır, diğerleri arayüzde kalır.",
   "reallife_guide_insurance_about": "Arabalarınız, sağlığınız, evleriniz ve işletmeleriniz için teminat; tek uygulamadan alınır ve değiştirilir, hasar bedelleri kendiliğinden faturadan düşer.",

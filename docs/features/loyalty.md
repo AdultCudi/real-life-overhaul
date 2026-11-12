@@ -17,7 +17,7 @@ The owner asked for it: "loyalty cards for the player's shops".
 | `LoyaltyState` | a scheme as the save keeps it (`LoyaltyFile`), a day of its week, a rival shop as the rules see it, what a day reads and comes to |
 | `LoyaltyStore` | the save's one line, `reallife:loyalty` |
 | `LoyaltyGame` | the player's businesses, yesterday from the game's order history and satisfaction, an hour that could serve nobody, the other owners' shops of a kind in a district, a product more in a basket, money through `BizBooks.Book`; `LoyaltyBridges` |
-| `LoyaltyDirector` | the one component: a second's look, the save, the presses (`Start`, `End`, `NextRate`, `NextPush`, `NextOffer`), `FootfallOf` |
+| `LoyaltyDirector` | the one component: a second's look, the save, the presses (`SwitchOn`, `End`, `NextRate`, `NextPush`, `NextOffer`), `FootfallOf` |
 | `LoyaltyDirector.Day` | the game's day (`Pass`: yesterday lived and booked, the turn, today's lift written) and the game's hour (the hours counted, the baskets) |
 | `LoyaltyDirector.Tests` | Options, Tests |
 | `LoyaltyTab`, `LoyaltyTab.Pages` | the Loyalty tab in BizMan: a copy of the game's own tab button and two of BizMan's scroll views, as the Interior tab's; its lines are also what the RLO interface draws |

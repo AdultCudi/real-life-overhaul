@@ -1,3 +1,4 @@
+using System;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.SideJobs;
 
@@ -17,7 +18,8 @@ namespace RealLifeOverhaul
         ///   CallOff              the jobs' director drives the shift as its ride-hail or courier job in desk mode
         ///   PumpCents            the game's pump price, as the delivery trips read it (Economy/Logistics)
         ///
-        /// Asked once a second at most, or on a press; never per frame. A director that is not there answers as nothing to offer.
+        /// Asked once a second at most, or on a press; never per frame. A director that is not there answers as nothing to offer;
+        /// a fault is said once (<see cref="Fault"/>) and the bridge's default answered.
         /// </summary>
         public static class SideJobLinks
         {
@@ -41,39 +43,63 @@ namespace RealLifeOverhaul
 
             private static bool PlacesReady()
             {
-                JobDirector jobs = JobDirector.Instance;
-                return jobs != null && jobs.HelpBoards != null && jobs.HelpBoards.Searched && jobs.Career != null && jobs.Career.Mapped;
+                try
+                {
+                    JobDirector jobs = JobDirector.Instance;
+                    return jobs != null && jobs.HelpBoards != null && jobs.HelpBoards.Searched && jobs.Career != null && jobs.Career.Mapped;
+                }
+                catch (Exception e)
+                {
+                    Fault("SideJobLinks.PlacesReady", e);
+                    return false;
+                }
             }
 
             private static SidePlace Place(SideKind kind)
             {
-                JobDirector jobs = JobDirector.Instance;
-                if (jobs == null || jobs.HelpBoards == null || jobs.Career == null)
+                try
                 {
+                    JobDirector jobs = JobDirector.Instance;
+                    if (jobs == null || jobs.HelpBoards == null || jobs.Career == null)
+                    {
+                        return default;
+                    }
+                    JobBoards boards = jobs.HelpBoards;
+                    int board = jobs.Career.DepotOf(CareerCatalogue.IndexOf(kind == SideKind.Cab ? CareerCatalogue.Cab : CareerCatalogue.Courier));
+                    if (board < 0 || !boards.Stands(board))
+                    {
+                        return default;
+                    }
+                    return new SidePlace
+                    {
+                        Known = true, BoardFront = boards.Front(board), BoardAt = boards.At(board), Outward = boards.Outward(board), Building = boards.Building(board),
+                        Address = boards.Address(board), Shop = boards.Place(board)
+                    };
+                }
+                catch (Exception e)
+                {
+                    Fault("SideJobLinks.Place", e);
                     return default;
                 }
-                JobBoards boards = jobs.HelpBoards;
-                int board = jobs.Career.DepotOf(CareerCatalogue.IndexOf(kind == SideKind.Cab ? CareerCatalogue.Cab : CareerCatalogue.Courier));
-                if (board < 0 || !boards.Stands(board))
-                {
-                    return default;
-                }
-                return new SidePlace
-                {
-                    Known = true, BoardFront = boards.Front(board), BoardAt = boards.At(board), Outward = boards.Outward(board), Building = boards.Building(board),
-                    Address = boards.Address(board), Shop = boards.Place(board)
-                };
             }
 
             private static string Start(SideKind kind, DeskShift desk)
             {
-                JobDirector jobs = JobDirector.Instance;
-                if (jobs == null)
+                try
                 {
-                    return "reallife_job_no_off";
+                    JobDirector jobs = JobDirector.Instance;
+                    if (jobs == null)
+                    {
+                        return "reallife_job_no_off";
+                    }
+                    JobDef def = JobCatalogue.Find(kind == SideKind.Cab ? JobCatalogue.Taxi : JobCatalogue.Courier);
+                    return jobs.TakeDesk(def, desk, out string reason) ? null : reason ?? "reallife_job_no_now";
                 }
-                JobDef def = JobCatalogue.Find(kind == SideKind.Cab ? JobCatalogue.Taxi : JobCatalogue.Courier);
-                return jobs.TakeDesk(def, desk, out string reason) ? null : reason ?? "reallife_job_no_now";
+                catch (Exception e)
+                {
+                    Fault("SideJobLinks.Start", e);
+                    return "reallife_job_no_now";   // the desk says it cannot be now, and no shift is counted as on
+                }
             }
         }
     }

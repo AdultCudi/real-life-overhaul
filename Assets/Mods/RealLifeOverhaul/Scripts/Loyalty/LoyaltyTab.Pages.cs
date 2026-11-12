@@ -249,12 +249,12 @@ namespace RealLifeOverhaul.Loyalty
         {
             if (cost <= 0)
             {
-                Pressed(dir => dir.Start(reg, cost));
+                Pressed(dir => dir.SwitchOn(reg, cost));
                 return;
             }
             string body = LoyaltyText.T("reallife_loyalty_q_start", "business", LoyaltyGame.Name(reg), "amount", LoyaltyText.Money(cost * 100L),
                 "day", LoyaltyText.Money(Prices.At(LoyaltyRules.CardDay) * 100L));
-            GameConfirm.Show("reallife_loyalty_q_start_title".GetLocalization(), body, () => UiClone.Safe(() => Pressed(dir => dir.Start(reg, cost))), null, null, null, false, false);
+            GameConfirm.Show("reallife_loyalty_q_start_title".GetLocalization(), body, () => UiClone.Safe(() => Pressed(dir => dir.SwitchOn(reg, cost))), null, null, null, false, false);
         }
 
         // A press on the page: done by the director, and the game's own boxes written afresh if they are showing.
