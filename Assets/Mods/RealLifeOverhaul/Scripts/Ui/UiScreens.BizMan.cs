@@ -66,6 +66,9 @@ namespace RealLifeOverhaul.Ui
                     "reallife_interior_head_place", "reallife_interior_head_decor", "reallife_interior_head_condition", "reallife_interior_page_effects",
                     "reallife_interior_page_items", "reallife_interior_page_customers", "reallife_interior_page_rules", "reallife_interior_head_next", "reallife_set_link",
                     "reallife_interior_refresh_button", "reallife_interior_renovate_button", "reallife_guide_app",
+                    "reallife_loyalty_tab", "reallife_loyalty_head_week", "reallife_loyalty_head_today", "reallife_loyalty_head_scheme", "reallife_loyalty_head_terms",
+                    "reallife_loyalty_btn_start", "reallife_loyalty_btn_keep", "reallife_loyalty_btn_end", "reallife_loyalty_btn_rate", "reallife_loyalty_btn_push",
+                    "reallife_loyalty_btn_day",
                     "reallife_ui_bizman_logo_shapes", "reallife_ui_bizman_logo_shapes_none", "reallife_ui_bizman_logo_note", "reallife_ui_bizman_logo_own", "reallife_ui_bizman_logo_done",
                     "reallife_ui_bizman_logo_colour_shape", "reallife_ui_bizman_logo_colour_text", "reallife_ui_bizman_logo_colour_back", "reallife_ui_bizman_logo_colours"
                 }).Switch(UiScreenSwitches.Business),

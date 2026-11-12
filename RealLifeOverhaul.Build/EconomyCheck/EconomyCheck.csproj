@@ -922,6 +922,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyRules.cs" Link="Mod\Supply\CarSupplyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyStore.cs" Link="Mod\Supply\CarSupplyStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\CarSupplyPages.cs" Link="Mod\Supply\CarSupplyPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Loyalty\LoyaltyState.cs" Link="Mod\Loyalty\LoyaltyState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Loyalty\LoyaltyRules.cs" Link="Mod\Loyalty\LoyaltyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Loyalty\LoyaltyStore.cs" Link="Mod\Loyalty\LoyaltyStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceCatalogue.cs" Link="Mod\ParkSpaces\SpaceCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceState.cs" Link="Mod\ParkSpaces\SpaceState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceRules.cs" Link="Mod\ParkSpaces\SpaceRules.cs" />

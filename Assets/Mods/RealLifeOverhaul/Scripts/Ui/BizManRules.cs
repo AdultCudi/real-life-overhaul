@@ -34,6 +34,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The mod's own Interior tab (Interiors/InteriorTab.Id), a child of the tab bar the mod made.</summary>
         public const string Interiors = "RealLifeInteriors";
 
+        /// <summary>The mod's own Loyalty tab (Loyalty/LoyaltyTab.Id), a child of the tab bar the mod made; drawn as the Interior tab is, a page written as lines.</summary>
+        public const string Loyalty = "RealLifeLoyalty";
+
         /// <summary>The names the game gives the children of BizMan's tab bar: anything else there is another mod's.</summary>
         public static readonly string[] GameTabs =
         {
@@ -63,7 +66,7 @@ namespace RealLifeOverhaul.Ui
                 case Marketing: return BizManPart.Marketing;
                 case Settings: return BizManPart.Settings;
                 case RealEstate: return BizManPart.Estate;
-                case Interiors: return BizManPart.Interior;
+                case Interiors: case Loyalty: return BizManPart.Interior;
                 default: return BizManPart.Classic;
             }
         }
@@ -93,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                 case HrManagers: return UiIcon.People;
                 case Headhunters: return UiIcon.IdBadge;
                 case Interiors: return UiIcon.Sofa;
+                case Loyalty: return UiIcon.IdCard;
                 default: return UiIcon.Code;
             }
         }

@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Meta
             new Line("rivals_seen", CityScope.AnyCity, "the rivals, the cars and the eating places of whatever city it is; a weekend in the Hamptons only where the city has them"),
             new Line("dynasty", CityScope.AnyCity, "the player's own family, estate and age, and the rivals' lines"),
             new Line("newshops", CityScope.AnyCity, "business types of the mod's own in the game's buildings"),
+            new Line("loyalty", CityScope.AnyCity, "the player's own businesses and the other owners' shops of whatever city it is, by the game's own district of each"),
             new Line("careers_ladder", CityScope.AnyCity, "the city's chains and their stores, read from the game's businesses at each load"),
             new Line("economy_hierarchy", CityScope.AnyCity, "the player's own stores and managers, with regions drawn from them"),
         };

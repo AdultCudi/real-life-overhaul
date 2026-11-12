@@ -134,6 +134,9 @@ namespace RealLifeOverhaul.BizPace
                 Root(warm, typeof(Interiors.InteriorTab), "Write", "Rewrite", "Fix", "Written");
                 Root(warm, typeof(Interiors.InteriorTabKeeper), "OnLateUpdate");
                 Root(warm, typeof(Interiors.InteriorPageWatch), "OnEnable");
+                Root(warm, typeof(Loyalty.LoyaltyTab), "Write", "Rewrite", "Fix", "Written");
+                Root(warm, typeof(Loyalty.LoyaltyTabKeeper), "OnLateUpdate");
+                Root(warm, typeof(Loyalty.LoyaltyPageWatch), "OnEnable");
                 Root(warm, typeof(ClaimedPresentation), "Look", "Hold", "OnLateUpdate");
                 Root(warm, typeof(Tech.StartCards), "Write");
                 Root(warm, typeof(Tech.StartCardsWrite), "OnLateUpdate");

@@ -86,6 +86,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Districts](districts.md): the district view on the city map.
 - [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
 - [Parking spaces](parking-spaces.md): a single space bought or rented in a building's car park, the hourly charge paid back, the tycoons' and the city's spaces.
+- [Loyalty cards](loyalty.md): a loyalty scheme for each of the player's shops from a Loyalty tab in BizMan, members who come back more often, the rewards given back, and the other owners' cards in the district.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
 

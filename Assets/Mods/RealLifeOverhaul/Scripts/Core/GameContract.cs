@@ -87,6 +87,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
         public static readonly GamePart PopulationCount = ContractBook.Part("population_customers", "population", "the population's count in the game's customer calculators");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
+        public static readonly GamePart LoyaltyTabPart = ContractBook.Part("loyalty_tab", "loyalty", "the Loyalty tab in BizMan");
         public static readonly GamePart BizPacePart = ContractBook.Part("bizman_pace", "performance", "the timing of what the mod adds to BizMan's open, switch and tab change");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
         public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
@@ -431,12 +432,12 @@ namespace RealLifeOverhaul
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");
 
-        // Interiors/InteriorTab: BizMan's business page, its tabs and their containers (without the details, no scroll of them)
-        public static readonly GameMember BizManMenu = Field(InteriorTabPart, Game, "BizManBusiness", "menu", "Transform");
-        public static readonly GameMember BizManContainers = Field(InteriorTabPart, Game, "BizManBusiness", "containers", "Transform");
-        public static readonly GameMember BizManTabs = Field(InteriorTabPart, Game, "BizManBusiness", "_tabs", "List<String>");
-        public static readonly GameMember BizManSetTab = Method(InteriorTabPart, Game, "BizManBusiness", "SetTab", "Void", "String");
-        public static readonly GameMember BizManDetails = Optional(Field(InteriorTabPart, Game, "BizManBusiness", "businessInfo", "Transform"));
+        // Interiors/InteriorTab and Loyalty/LoyaltyTab: BizMan's business page, its tabs and their containers (without the details, no scroll of them)
+        public static readonly GameMember BizManMenu = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "menu", "Transform");
+        public static readonly GameMember BizManContainers = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "containers", "Transform");
+        public static readonly GameMember BizManTabs = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "_tabs", "List<String>");
+        public static readonly GameMember BizManSetTab = Method(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "SetTab", "Void", "String");
+        public static readonly GameMember BizManDetails = Optional(Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "businessInfo", "Transform"));
 
         // BizPace/BizPaceGame: the same page's tabs and their pages, for the marks that begin a step and for the test that clicks each tab
         public static readonly GameMember BizPaceMenu = Field(BizPacePart, Game, "BizManBusiness", "menu", "Transform");
@@ -650,6 +651,11 @@ namespace RealLifeOverhaul
         private static GameMember Method(GamePart part, string assembly, string type, string name, string returns, params string[] parameters)
         {
             return new GameMember(GameMemberKind.Method, assembly, type, name, false, returns, parameters, false, One(part));
+        }
+
+        private static GameMember Method(GamePart[] parts, string assembly, string type, string name, string returns, params string[] parameters)
+        {
+            return new GameMember(GameMemberKind.Method, assembly, type, name, false, returns, parameters, false, parts);
         }
 
         private static GameMember StaticMethod(GamePart part, string assembly, string type, string name, string returns, params string[] parameters)

@@ -180,6 +180,7 @@ namespace RealLifeOverhaul.Ui
             Row("Phone", "A contact's call", "the dialogue", AuditWindow.Dialog, Dialog, "Phone/"),
             Row("Rivals", "A rival's page", "a yes or no box", AuditWindow.Question, Question, "Rivals/"),
             Row("Interiors", "The Interior tab in BizMan", "a yes or no box", AuditWindow.Question, Question, "Interiors/"),
+            Row("Loyalty", "The Loyalty tab in BizMan", "a yes or no box", AuditWindow.Question, Question, "Loyalty/"),
 
             // ---------------------------------------------------------------------------------------------------- the world's own scenes and desks
             Row("Fame", "A show's invitation: the host's questions", "the show's scene", AuditWindow.Scene, Scenes, "Fame/"),

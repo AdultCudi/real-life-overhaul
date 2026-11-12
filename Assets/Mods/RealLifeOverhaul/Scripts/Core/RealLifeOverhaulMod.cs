@@ -474,6 +474,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => Loyalty.LoyaltyOptions.AddLoyalty(o))   // loyalty cards for the player's shops (Scripts/Loyalty)
                 .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
                 .Guarded(o => Shops.ShopsOptions.AddShops(o))   // the ice cream parlour, tea bar and tobacconist (Scripts/Shops)
                 .AddHeader("reallife_home_header")
@@ -1948,6 +1949,7 @@ namespace RealLifeOverhaul
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
             Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
             Guard.Step("side jobs", () => SideJobs.SideJobDirector.Attach(_root, context.Logger));
+            Guard.Step("loyalty cards", () => Loyalty.LoyaltyDirector.Attach(_root, context.Logger));
             Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));
             Guard.Step("rivals seen", () => RivalsSeen.SeenDirector.Attach(_root, context.Logger));
             Guard.Step("the dynasty", () => Dynasty.DynastyDirector.Attach(_root, context.Logger));

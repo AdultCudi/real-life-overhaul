@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Ui
                     "bizman_schedule_search_workstation", "bizman_security", "bizman_security_level_good", "bizman_vehicle_slots",
                     "bizman_warehouse_driverstation_no_vehicle_assigned", "bizman_warehouses", "common_business", "common_cancel", "common_neighborhood",
                     "common_open", "common_open_in_econoview", "common_per_hour", "common_product", "common_requirements", "common_show_warehouse",
-                    "common_unassigned", "reallife_interior_tab", "reallife_ui_bizman_needs", "reallife_ui_bizman_prompt_section",
+                    "common_unassigned", "reallife_interior_tab", "reallife_loyalty_tab", "reallife_ui_bizman_needs", "reallife_ui_bizman_prompt_section",
                     "reallife_ui_bizman_tab_building", "reallife_ui_bizman_tab_hr", "reallife_ui_bizman_tab_logistics", "reallife_ui_bizman_tab_prices",
                     "reallife_ui_bizman_tab_pricing", "reallife_ui_bizman_tab_purchasing", "reallife_ui_bizops_against_rivals", "reallife_ui_bizops_amount",
                     "reallife_ui_bizops_and_more", "reallife_ui_bizops_assigned", "reallife_ui_bizops_auto_title", "reallife_ui_bizops_average_margin",
