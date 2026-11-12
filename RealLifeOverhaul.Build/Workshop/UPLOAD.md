@@ -12,7 +12,7 @@ The upload is done from inside the game. Everything else is prepared here. What 
 | `changenote.txt` | the change note; the form only asks for one on an update |
 | `tags.txt` | why there is nothing to choose |
 | `gallery/` | seven screenshots for the Steam page |
-| `make_thumbnail.ps1` | rebuilds `Assets/Mods/RealLifeOverhaul/thumbnail.jpg` |
+| `make_thumbnail.py` | rebuilds `Assets/Mods/RealLifeOverhaul/thumbnail.jpg` |
 | `CREDITS.md` | what the mod contains and where it came from; has a licence line to fill in |
 | `STYLE.md`, `check.pl` | the writing rules for the mod's texts and the script that checks them |
 
@@ -26,7 +26,7 @@ The upload is done from inside the game. Everything else is prepared here. What 
    | File | Size |
    | --- | --- |
    | `RealLifeOverhaul.dll` | about 3.1 MB |
-   | `thumbnail.jpg` | about 216 KB |
+   | `thumbnail.jpg` | about 200 KB |
    | `Locales\en.json` | about 0.7 MB |
    | `Bundles\reallife_anim` | 6,294,571 bytes |
    | `Bundles\reallife_character` | 44,520,019 bytes |
@@ -68,7 +68,7 @@ Two more things follow from the mod now having a different id (its Workshop numb
 
    | File | Shows |
    | --- | --- |
-   | `01_accident_ambulance.jpg` | an accident: the ambulance, a casualty on the stretcher, paramedics, an officer, the cordon (the thumbnail's source) |
+   | `01_accident_ambulance.jpg` | an accident: the ambulance, a casualty on the stretcher, paramedics, an officer, the cordon |
    | `02_pedestrian_down_cordon.jpg` | a pedestrian hit by a van: cones, police tape, the barrier, paramedics at work |
    | `03_bus_stop.jpg` | a bus stop with its shelter, route sign and the timetable panel |
    | `04_coffee_cart.jpg` | buying a coffee at the cart, with the notices for it |
