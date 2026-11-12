@@ -84,6 +84,24 @@ internal static partial class Program
             "ui press: a game button that takes no press says why (not there, switched off, held), and a button under a hover outline has its own way");
         string log = PressSource(System.IO.Path.Combine(folder, "Host", "UiRefusalLog.cs"));
         Check(log.Contains("Logger?.Warn(line)") && !log.Contains("Dev.Verbose"), "ui press: the line is written with or without Developer diagnostics");
+        // One refusal, one line: a screen that writes its own (BizMan's Answered, with the page and the place) says so, and
+        // the piece that sent the press writes none. A press on a disabled target asked no screen: what the press before
+        // it left behind never silences its line.
+        UiRefusals.Reset();
+        UiRefusals.Begin();
+        bool fresh = UiRefusals.HostWrites(false) && UiRefusals.HostWrites(true);
+        UiRefusals.Told();
+        bool told = !UiRefusals.HostWrites(false) && UiRefusals.HostWrites(true);
+        UiRefusals.Begin();
+        Check(fresh && told && UiRefusals.HostWrites(false), "ui press: a refusal its screen wrote down itself is not written again by the host, the next press starts afresh, and a disabled target's line is never held back");
+        UiRefusals.Told();
+        UiRefusals.Reset();
+        Check(UiRefusals.HostWrites(false), "ui press: a new session holds nothing over");
+        string bizman = PressSource(System.IO.Path.Combine(folder, "BizMan", "BizManScreen.cs"));
+        int own = bizman.IndexOf("UiRefusals.Told();", StringComparison.Ordinal), first = bizman.IndexOf("UiDirector.Logger?.Warn(\"BizMan check (press): \" + where", StringComparison.Ordinal);
+        Check(own >= 0 && first > own && bizman.Contains("if (!done)") && Occurs(bizman, "+ Widget() +") == 2 && bizman.Contains("UiRefusals.Why != null ?")
+              && Occurs(log, "UiRefusals.HostWrites(") == 2,
+            "ui press: BizMan writes a refused press once, in its own line with the page, the place and the widget's reason, and tells the host, which then writes none (both of the host's ways ask)");
     }
 
     // A source as text; nothing for one that is not there, so that a check fails for it instead of stopping the run.

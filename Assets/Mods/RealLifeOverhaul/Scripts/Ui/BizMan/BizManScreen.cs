@@ -170,6 +170,12 @@ namespace RealLifeOverhaul.Ui
                 _refused = _said;   // nothing, but for a press with more to say than that it was taken
                 return;
             }
+            if (!done)
+            {
+                // Written below with its page and place (a run of the same press once, with its count): the host that sent the
+                // press writes no line of its own for it, so one refusal is in the log once.
+                UiRefusals.Told();
+            }
             string action = Pressed(command, arg);
             // A target without words (a chart's point, a tab already chosen, whose button the game holds) may have nothing to do
             // where it stands: it keeps to the error cue and a plain line in the log, and is never called a fault.
@@ -198,15 +204,18 @@ namespace RealLifeOverhaul.Ui
             }
             else if (told)
             {
-                UiDirector.Logger?.Warn("BizMan check (press): " + where + " came to nothing: " + BizManRules.RefusalSaid(_why) + "; the page says so in words"
+                UiDirector.Logger?.Warn("BizMan check (press): " + where + " came to nothing: " + BizManRules.RefusalSaid(_why) + Widget() + "; the page says so in words"
                                         + (_why == BizManRefusal.Fault ? ": FAIL." : "."));
             }
             else
             {
                 UiDirector.Logger?.Info("BizMan (kit): a press of " + where + " did nothing and got the error sound"
-                                        + (_why != BizManRefusal.Fault ? " (" + BizManRules.RefusalSaid(_why) + ")" : string.Empty) + "; the page says nothing of it.");
+                                        + (_why != BizManRefusal.Fault ? " (" + BizManRules.RefusalSaid(_why) + ")" : string.Empty) + Widget() + "; the page says nothing of it.");
             }
         }
+
+        // What the game's own widget said of the press it refused (UiWidgets gives it: which button, switched off or held), for the line above.
+        private static string Widget() => UiRefusals.Why != null ? " (" + UiRefusals.Why + ")" : string.Empty;
 
         // A press refused more than once in a row is said once more with its count, when another press ends the run: as loud as its first line was.
         private void Repeats()

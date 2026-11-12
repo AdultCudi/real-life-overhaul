@@ -32,9 +32,10 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
    and tints cells: what the vanilla object says is the truth. Look at a signature of the game's state a few times a
    second (`Every = 0.25f`), never every frame, and lay out only when it changed. A mod's addition inside the screen is
    offered as an entry that calls `host.Classic()`: the game's own view until the screen closes. A press that answers
-   false gets the host's error cue and nothing else, so a screen whose press can come to nothing says why on its own
-   page and writes one line to Player.log (BizMan's `Answered`): each action a page offers has its own case, and no
-   range of numbers is ever asked before the cases.
+   false gets the host's error cue and one line of Player.log (below, "Every press reaches the game, or is said"), and
+   nothing the player can read, so a screen whose press can come to nothing says why on its own page (BizMan's
+   `Answered`, a line at the page's foot): each action a page offers has its own case, and no range of numbers is ever
+   asked before the cases.
 3. **Make one host** for the screen, once: `new UiGameHost(new MyGameScreen())`, kept in a static field. Call its
    `Install()` from `UiDirector.Slow` while `UiScreenSwitches.On(id)`, `Remove(why)` when the switch is off, and
    `Rearm()` with the others when the city goes. A call or anything the game must run in its own view:
@@ -79,7 +80,7 @@ kit draws it, remembering what the game writes there and giving it back the mome
 
 ## Every press reaches the game, or is said
 
-A press that answers false gets the error sound and nothing else. Four rules keep that from hiding a fault:
+A press that answers false gets the error sound and nothing else. Five rules keep that from hiding a fault:
 
 - **Rows are where the game makes them.** The game copies a row template beside the template (`template.parent`,
   `BuyKits.Copies`). An object the game switches on and off for a whole list may be a scroll view two levels above its
@@ -93,6 +94,9 @@ A press that answers false gets the error sound and nothing else. Four rules kee
   `UiRefusals.Begin()` before it and `UiRefusalLog.Say(...)` when it is refused: one line of Player.log with the screen,
   the control and the reason, with or without Developer diagnostics. `UiWidgets` gives the reason for a game button; a
   screen that refuses for a rule of its own says `UiRefusals.Because(...)` and shows the player a notice in words.
+- **One refusal, one line.** A screen that writes its own line for a refused press, with what only it knows (BizMan's
+  `Answered`: the page, the place, what the page's foot says, a run of the same press counted), calls
+  `UiRefusals.Told()` and puts the widget's reason (`UiRefusals.Why`) in that line; the host then writes none.
 
 EconomyCheck (`UiPressChecks.cs`, `--ui-press`) reads every screen's sources: each command its samples lay out as a
 target is named by its `Press`, and no range of numbers is asked before the case of a number inside it. The game's files

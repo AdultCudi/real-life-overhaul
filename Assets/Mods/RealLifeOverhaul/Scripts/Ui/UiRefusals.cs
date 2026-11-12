@@ -7,8 +7,10 @@ namespace RealLifeOverhaul.Ui
     /// a refusal nobody wrote down cannot be told from a fault afterwards (Start business, the order's add button). Whoever
     /// refuses says why while the press is under way (<see cref="Because"/>: the game's widgets do, a screen may), and the
     /// host that sent the press writes one line of Player.log the first time a screen's control is refused for a reason
-    /// (<see cref="Line"/>), whatever the diagnostics' switch says. Game-free, so the offline checks read it. Cost: nothing
-    /// until a press is refused; then a set looked up and, the first time, one line made.
+    /// (<see cref="Line"/>), whatever the diagnostics' switch says. A screen that writes its own line for a refusal, with
+    /// more than the host knows (BizMan), says so (<see cref="Told"/>) and the host writes none: one refusal, one line.
+    /// Game-free, so the offline checks read it. Cost: nothing until a press is refused; then a set looked up and, the
+    /// first time, one line made.
     /// </summary>
     public static class UiRefusals
     {
@@ -17,15 +19,33 @@ namespace RealLifeOverhaul.Ui
         public const string Disabled = "it is drawn disabled";
         private static readonly HashSet<string> Said = new HashSet<string>();
         private static string _why;
+        private static bool _told;
 
         /// <summary>How many lines were written this session, for the checks.</summary>
         public static int Count => Said.Count;
 
-        /// <summary>A press starts: no reason is held over from the one before.</summary>
+        /// <summary>A press starts: no reason is held over from the one before, and no screen has written it down.</summary>
         public static void Begin()
         {
             _why = null;
+            _told = false;
         }
+
+        /// <summary>
+        /// The screen wrote the refusal of the press under way to Player.log itself, with what only it knows (BizMan: the
+        /// page, the place and what the page's foot says of it). The piece that sent the press then writes no line of its
+        /// own (<see cref="HostWrites"/>), so one refusal stands in the log once.
+        /// </summary>
+        public static void Told()
+        {
+            _told = true;
+        }
+
+        /// <summary>
+        /// Whether the piece that sent a press writes its refusal: always for a target drawn disabled (no screen was asked,
+        /// so what the press before it left behind does not count), else unless the screen wrote it down itself.
+        /// </summary>
+        public static bool HostWrites(bool disabled) => disabled || !_told;
 
         /// <summary>Why the press under way is refused. The first reason given stands: it is the one nearest the cause.</summary>
         public static void Because(string why)
@@ -85,6 +105,7 @@ namespace RealLifeOverhaul.Ui
         {
             Said.Clear();
             _why = null;
+            _told = false;
         }
     }
 }
