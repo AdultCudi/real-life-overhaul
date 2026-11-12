@@ -20,13 +20,18 @@ namespace RealLifeOverhaul.Photos
                 .Owns(Settings.PhoneCameraId, Settings.PhoneCameraGridId)
                 .Objects("RealLifeOverhaul Camera View", "RealLifeOverhaul Camera Grade")
                 .Test("reallife_phonecam_test_open", "reallife_phonecam_test_selfie", "reallife_gallery_test_open", "reallife_gallery_test_full", "reallife_gallery_test_sweep")
+                .Test("reallife_cine_test_set", "reallife_cine_test_hour")   // the cinematic shots (Photos/Cinematic), a developer's tool
                 .Fact("photos_cap", () => PhotoStoreRules.Cap.ToString(Inv))
                 .Fact("photos_offer", () => PhotoStoreRules.OfferAtOnce.ToString(Inv))
                 .Fact("photos_grace", () => PhotoStoreRules.GraceDays.ToString(Inv))
                 .Fact("photos_lines", () => Photos.PhotoPixels.PhotoHeight.ToString(Inv))
                 .Fact("photos_small", () => PhotoThumbs.Width.ToString(Inv))
                 .Fact("photos_zoom", () => CameraRules.ZoomMost.ToString("0", Inv))
-                .Cleanup(() => PhotosDirector.Instance?.StopAll());
+                .Cleanup(() =>
+                {
+                    PhotosDirector.Instance?.StopAll();
+                    CineDirector.Instance?.Stop("the save tools");
+                });
         }
     }
 
@@ -47,6 +52,8 @@ namespace RealLifeOverhaul.Photos
                 .AddButton("reallife_gallery_test_full", () => PhotosDirector.Instance?.TestFull())
                 .AddButton("reallife_gallery_test_sweep", () => PhotosDirector.Instance?.TestSweep())
                 .AddButton("reallife_ui_life_test_gallery", () => RealLifeOverhaul.Ui.LifeUiTests.OpenGallery())
+                .AddButton("reallife_cine_test_set", () => CineDirector.Instance?.TestSet())
+                .AddButton("reallife_cine_test_hour", () => CineDirector.Instance?.TestHour())
                 .AddSplitter();
         }
     }

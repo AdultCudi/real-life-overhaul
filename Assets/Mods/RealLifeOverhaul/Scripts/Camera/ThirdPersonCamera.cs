@@ -335,8 +335,8 @@ namespace RealLifeOverhaul
         /// <summary>Any screen that needs the mouse cursor. Left Alt covers the ones not listed here.</summary>
         public static bool IsUiOpen()
         {
-            // Photo mode and the phone's camera are the mod's own screens over the world.
-            return Leisure.PhotoMode.Active || Photos.CameraMode.Active || AnyWindow(true);
+            // Photo mode, the phone's camera and the cinematic shots are the mod's own screens over the world.
+            return Leisure.PhotoMode.Active || Photos.CameraMode.Active || AnyWindow(true) || Photos.CineDirector.Active;
         }
 
         /// <summary>A window that needs the pointer, the mod's own cameras left out; <paramref name="menuCounts"/>: whether the full menu counts.</summary>

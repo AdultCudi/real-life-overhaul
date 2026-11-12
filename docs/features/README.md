@@ -99,6 +99,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, the Banks app, and the groups of the Contacts app.
 - [Floors](floors.md): the mod's places on floors of the buildings it holds: the university's classrooms, the tech companies' towers, places to come.
 - [The district save](district-save.md): the records of the mod's own places kept in the mod's part of the save, so a save loads without the mod.
+- [Cinematic shots](cinematic-shots.md): a developer's tool that takes the mod's own pictures: a list of composed shots in the loaded city, in four lights, saved at 3840 by 2160 with everything put back.
 
 ## Folders without a page
 
