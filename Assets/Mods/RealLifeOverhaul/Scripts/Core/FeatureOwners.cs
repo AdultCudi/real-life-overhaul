@@ -46,6 +46,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Subway", "uptown_subway" },
             { "RealLifeOverhaul.Hustles", "hustles" },
             { "RealLifeOverhaul.Seasons", "seasons" },
+            { "RealLifeOverhaul.Gfx", "graphics" },
             { "RealLifeOverhaul.Networking", "networking" },
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Loyalty", "loyalty" },

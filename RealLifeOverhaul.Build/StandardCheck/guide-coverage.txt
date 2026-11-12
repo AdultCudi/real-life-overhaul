@@ -49,6 +49,7 @@ economy-rota	reallife_guide_economy_rota	the staff rota planner
 family	reallife_guide_family	family
 floors	-	how the mod's places share a building's floors: nothing a player sees
 garage	reallife_guide_garage	the custom shop
+graphics	reallife_guide_graphics	the picture's look
 car-suppliers	reallife_guide_economy_dealer_supply	the Car Showroom's suppliers by kind of car
 home	reallife_guide_home	home life and health
 household	reallife_guide_household	household staff

@@ -124,6 +124,8 @@
         public const string ShadowReachId = "render_shadow_reach";
         public const string ShadowCascadesId = "render_shadow_cascades";
         public const string LodReachId = "render_lod_reach";
+        public const string GraphicsLookId = "graphics_look";   // realistic graphics: the look of the whole picture
+        public const string GraphicsCostId = "graphics_cost";   // ...and what it may cost the graphics card
         public const string CharacterHighDetailId = "character_high_detail";
         public const string CharacterHairId = "character_hair";
         public const string CharacterLightingId = "character_lighting";
@@ -553,6 +555,8 @@
         public static int ShadowReach = RenderLevelRules.Game;       // the sun's shadows, percent of the game's distance
         public static int ShadowCascades = RenderLevelRules.GameCascades;   // the sun's shadow cascades: 0 the game's own, else 1 to 4
         public static int LodReach = RenderLevelRules.Game;          // level-of-detail distances, percent of the game's
+        public static int GraphicsLook = 0;      // realistic graphics: 0 Off (the game's own picture), 1 Natural, 2 Filmic, 3 Vivid (Gfx.GraphicsRules.DefaultLook)
+        public static int GraphicsCost = 0;      // ...what it may cost: 0 Free (no pass added), 1 Balanced, 2 High (Gfx.GraphicsRules.DefaultCost)
         public static bool CharacterHighDetail = true;   // the player is drawn with the game's detailed character set in the city
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
@@ -1027,6 +1031,8 @@
             ShadowReach = RenderLevelRules.Percent(Int(modId, ShadowReachId, ShadowReach));
             ShadowCascades = RenderLevelRules.Cascades(Int(modId, ShadowCascadesId, ShadowCascades));
             LodReach = RenderLevelRules.Percent(Int(modId, LodReachId, LodReach));
+            GraphicsLook = System.Math.Max(0, System.Math.Min(3, Int(modId, GraphicsLookId, GraphicsLook)));
+            GraphicsCost = System.Math.Max(0, System.Math.Min(2, Int(modId, GraphicsCostId, GraphicsCost)));
             CharacterHighDetail = Bool(modId, CharacterHighDetailId, CharacterHighDetail);
             CharacterHair = Bool(modId, CharacterHairId, CharacterHair);
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);

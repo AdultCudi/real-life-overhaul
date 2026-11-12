@@ -85,6 +85,7 @@ namespace RealLifeOverhaul
             Step("the game studio's sessions", StudioLinks.Connect);   // after the desk sessions: its kinds join theirs
             Step("the tech firms' markets and sessions", SectorLinks.Connect);   // after the desk sessions: its kinds join theirs (the population is read each game day, not here)
             Step("the seasons", SeasonLinks.Connect);   // before the calendar: its day page asks the seasons for their line
+            Step("the picture", GraphicsLinks.Connect);   // wraps nothing: it asks the seasons for the season and the snow
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
@@ -149,6 +150,7 @@ namespace RealLifeOverhaul
             Step("the public city read API", ModApiLinks.Disconnect);
             Step("the calendar", CalendarLinks.Disconnect);
             Step("the Marketplace", HustleLinks.Disconnect);
+            Step("the picture", GraphicsLinks.Disconnect);
             Step("the seasons", SeasonLinks.Disconnect);
             Step("loyalty cards", LoyaltyLinks.Disconnect);   // before the rivals': what it wrapped of footfall goes back first
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason

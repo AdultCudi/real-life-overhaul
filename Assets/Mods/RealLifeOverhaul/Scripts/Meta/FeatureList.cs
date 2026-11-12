@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
             Calendar.CalendarGuide.Register();
             Hustles.HustleGuide.Register();
             Seasons.SeasonGuide.Register();
+            Gfx.GraphicsGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
             Networking.NetworkGuide.Register();

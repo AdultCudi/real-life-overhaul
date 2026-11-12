@@ -19,6 +19,7 @@ namespace RealLifeOverhaul
         private const string Steam = "Facepunch.Steamworks.Win64";
         private const string Navigation = "Unity.AI.Navigation";
         private const string Hg = "HGPlugins";
+        private const string Shade = "HBAO.HighDefinition.Runtime";   // the corner shading the game draws with (another maker's plug-in; the mod's build does not carry it)
         private const string Factory = "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory";   // the customer calculators' factory (Population/PopulationGame.Calculators)
 
         static GameContract()
@@ -110,6 +111,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart SnowWalkers = ContractBook.Part("snow_walkers", "seasons", "people in the street walking more slowly on snow");
         public static readonly GamePart SeasonSky = ContractBook.Part("season_sky", "seasons", "a greyer sky and softer light on snow days, and summer's warmer sun");
         public static readonly GamePart SeasonRain = ContractBook.Part("season_rain", "seasons", "the seasons' own rain: spring showers, autumn rain and summer storms");
+        public static readonly GamePart GraphicsShade = ContractBook.Part("graphics_shade", "graphics", "wider corner shading in the Balanced and High choices of Realistic graphics");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
@@ -237,6 +239,11 @@ namespace RealLifeOverhaul
         public static readonly GameMember RainSettings = Field(SeasonSky, Game, "TimeOfDayController", "environmentSettingsRain", "EnvironmentSettings");
         public static readonly GameMember RainEnd = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainEndTime", "Timestamp");
         public static readonly GameMember RainFade = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainPostRainPeriodStartTime", "Timestamp");
+
+        // Graphics/GraphicsGame: the game's corner shading, a volume setting of its own kind, and its two sliders; without them the rest of a look is the same
+        public static readonly GameMember OcclusionKind = TypeOf(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO");
+        public static readonly GameMember OcclusionRadius = Field(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO", "radius", "ClampedFloatParameter");
+        public static readonly GameMember OcclusionStrength = Field(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO", "intensity", "ClampedFloatParameter");
 
         // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame, Sessions/SessionGame: the game's list of what a click does
         public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickSession, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
