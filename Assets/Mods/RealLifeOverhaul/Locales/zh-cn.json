@@ -37508,7 +37508,7 @@
   "reallife_ins_enabled": "为您的汽车、健康、住房和企业投保",
   "reallife_meta_title_insurance": "保险",
   "reallife_opt_sec_insurance": "保险",
-  "reallife_opt_tip_insurance": "为每辆车选择保障等级，为每处住房投保，并在一个应用中查看健康计划和企业保障。理赔金额会自动从账单中扣除。关闭后，汽车保单将恢复为车库的单一保单，住房则不再受保。",
+  "reallife_opt_tip_insurance": "为每辆车选择保障等级，为每处住房投保，并在一个应用中查看健康和企业保障。理赔金额会从账单中扣除。关闭后，只有车库的单一保单，住房不受保。",
   "reallife_ui_screen_insurance": "保险",
   "reallife_opt_tip_ui_screen_insurance": "RLO 界面中的保险应用。关闭后，应用将以游戏自带的窗口显示，其余部分仍保留在界面中。",
   "reallife_guide_insurance_about": "在一个应用中购买和更改您的汽车、健康、住房和企业保障，理赔金额会自动从账单中扣除。",

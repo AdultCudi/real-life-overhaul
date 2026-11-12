@@ -37508,7 +37508,7 @@
   "reallife_ins_enabled": "Insurance for your cars, health, homes and businesses",
   "reallife_meta_title_insurance": "Insurance",
   "reallife_opt_sec_insurance": "Insurance",
-  "reallife_opt_tip_insurance": "Choose a tier of cover for each car, insure each home, and see your health plan and business cover in one app. A claim comes off the bill by itself. Off: a car's policy is the Garage's one policy again, and homes are not covered.",
+  "reallife_opt_tip_insurance": "Choose each car's level of cover, insure each home and see health and business cover in one app. Claims come off the bill. Off: the Garage's one policy, no home cover.",
   "reallife_ui_screen_insurance": "Insurance",
   "reallife_opt_tip_ui_screen_insurance": "Insurance in the RLO interface. Off: the app in the game's own frame, while the rest stay on the interface.",
   "reallife_guide_insurance_about": "Cover for your cars, your health, your homes and your businesses, bought and changed in one app, with claims taken off the bill by themselves.",

@@ -404,7 +404,7 @@ namespace RealLifeOverhaul.Loyalty
         /// The player switches the scheme on at a business: the set-up is paid now and the cards are out from tomorrow morning.
         /// <paramref name="shown"/> is the cost the question box said (-1: not asked): if it has moved, nothing is taken.
         /// </summary>
-        public LoyaltyRefusal Start(BuildingRegistration reg, int shown = -1)
+        public LoyaltyRefusal SwitchOn(BuildingRegistration reg, int shown = -1)
         {
             if (!Running)
             {

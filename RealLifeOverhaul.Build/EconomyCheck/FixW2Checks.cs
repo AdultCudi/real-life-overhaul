@@ -109,6 +109,7 @@ internal static partial class Program
             { "Sitting", "a class, an interview or a desk day: the desk's own slider (Careers/DeskWork) and a fixed length for the rest" },
             { "HustleWork", "a repair, a clean, a wait or a client's visit is one piece of work that is done or not" },
             { "EstateVisitGame", "a tenant's repair is one piece of work that is done or not; stopped early it waits for another go" },
+            { "SignOn", "ten minutes at a desk are one sign-on that is made or not; stopped early nothing is signed and no shift starts" },
         };
         foreach (string file in Directory.GetFiles(FilePath.Combine(W2Root, "Scripts"), "*.cs", SearchOption.AllDirectories))
         {

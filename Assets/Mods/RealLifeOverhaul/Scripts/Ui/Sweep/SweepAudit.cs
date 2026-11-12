@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Ui
             Row("Jobs", "A job board, a kiosk, a vendor", "the card over the board", AuditWindow.Prompt, Prompt, "Jobs/"),
             Row("Jobs", "Dispatch board, design stages, the tender bill", "the list window", AuditWindow.Picker, Picker, "Jobs/"),
             Row("Jobs", "Career and job phone calls", "the dialogue", AuditWindow.Dialog, Dialog, "Jobs/"),
+            Row("Jobs", "A sign-on desk of the taxi and delivery shifts", "the card over the desk", AuditWindow.Prompt, Prompt, "SideJobs/"),
             Row("Licences", "The driving school and its theory test", "the list window", AuditWindow.Picker, Picker, "Licences/"),
             Row("Licences", "The school's desk and the practical test", "the card over the desk", AuditWindow.Prompt, Prompt, "Licences/"),
             Row("Licences", "The driving school's talk", "the dialogue", AuditWindow.Dialog, Dialog, "Licences/"),

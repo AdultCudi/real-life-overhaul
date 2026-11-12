@@ -462,14 +462,30 @@ namespace RealLifeOverhaul
             // Health's own premium for a plan, at a tycoon's age and with no claims counted; nothing while Health is off, so no tycoon buys a plan there is no use for.
             private static long RivalQuote(int plan)
             {
-                HealthDirector d = HealthDirector.Instance;
-                return d != null && d.Running && plan > 0 && plan < (int)Plan.Count ? HealthCover.Premium((Plan)plan, InsuranceCatalogue.RivalAge, 0, Prices.Level) : 0L;
+                try
+                {
+                    HealthDirector d = HealthDirector.Instance;
+                    return d != null && d.Running && plan > 0 && plan < (int)Plan.Count ? HealthCover.Premium((Plan)plan, InsuranceCatalogue.RivalAge, 0, Prices.Level) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("InsuranceLinks.RivalQuote", e);
+                    return 0L;   // no quote: the tycoon buys no plan
+                }
             }
 
             // Health's own rule for what a plan pays of a hospital stay, given what it has paid this year.
             private static long RivalClaim(int plan, long bill, long paidYear)
             {
-                return plan > 0 && plan < (int)Plan.Count ? HealthCover.Claim((Plan)plan, Care.Hospital, bill, paidYear, Prices.Level) : 0L;
+                try
+                {
+                    return plan > 0 && plan < (int)Plan.Count ? HealthCover.Claim((Plan)plan, Care.Hospital, bill, paidYear, Prices.Level) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("InsuranceLinks.RivalClaim", e);
+                    return 0L;   // the plan pays nothing: the whole bill stays the tycoon's
+                }
             }
 
             // A tycoon's hospital bill (Health's day): their plan pays its part, and what is left leaves their worth as Health has always taken it.
@@ -485,8 +501,15 @@ namespace RealLifeOverhaul
                 {
                     Fault("InsuranceLinks.RivalHospital", e);
                 }
-                Func<int, long, long> before = _rivalPayBefore;
-                return before != null ? before(index, theirs) : 0L;
+                try
+                {
+                    return _rivalPayBefore != null ? _rivalPayBefore(index, theirs) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("InsuranceLinks.RivalHospital (the pairing before)", e);
+                    return 0L;   // nothing was taken
+                }
             }
 
             // ---- the Planner (and through it the Calendar)
