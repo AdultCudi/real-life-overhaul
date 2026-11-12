@@ -249,7 +249,7 @@ namespace RealLifeOverhaul.Gfx
         {
             Func<int> season = GraphicsBridges.Season;
             Func<float> falling = GraphicsBridges.SnowFalling, cover = GraphicsBridges.SnowCover;
-            return GraphicsRules.Moment(look, Cost, GraphicsGame.Place, _shownHour >= 0f ? _shownHour : GraphicsGame.Hour, GraphicsGame.Rain, falling != null ? falling() : 0f,
+            return GraphicsRules.Moment(look, Cost, GraphicsGame.Place, _shownHour >= 0f ? _shownHour : GraphicsGame.LitHour, GraphicsGame.Rain, falling != null ? falling() : 0f,
                 cover != null ? cover() : 0f, season != null ? season() : -1);
         }
 

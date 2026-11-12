@@ -10,7 +10,10 @@ using RealLifeOverhaul.Photos;
 // twice in one light), where the camera stands for each kind of shot and how it is pulled in along its line when something
 // is in the way, the busiest spot and the street's run, the four lights' hours, the depth of field, and the sources: the run
 // gives everything back in a finally, refuses a Going Public session, never writes the game's clock or its time scale, and
-// costs nothing while no run is on.
+// costs nothing while no run is on. After the first run in the game (12 Nov 2026: white-outs from a camera standing in the
+// game's ground mist, hours whose names the pictures did not bear out, a wall filling a frame, a skyline off the map's edge):
+// what fills a frame (rays across it), a picture named by the light read back, the mist lifted for a camera that stands in
+// it, the middle of a carriageway, the way with the most city in view, and a picture held against the screen's own frame.
 internal static partial class Program
 {
     private static readonly string[] CineKeys =
@@ -26,6 +29,8 @@ internal static partial class Program
         CinematicCameraChecks();
         CinematicFindChecks();
         CinematicLightChecks();
+        CinematicFrameChecks();
+        CinematicPictureChecks();
         CinematicSourceChecks();
         CinematicTextChecks();
     }
@@ -83,19 +88,19 @@ internal static partial class Program
         bool safe = true, unique = true;
         foreach (CineShot shot in shots)
         {
-            foreach (bool all in new[] { true, false })
+            foreach (string word in new[] { "midday", "day", "golden", "blue", "night", null })
             {
-                string name = CineRules.FileName(shot, all);
+                string name = CineRules.FileName(shot, word);
                 safe &= CineRules.FileSafe(name) && CineRules.FileSafe(shot.Slug) && name.StartsWith(shot.Number.ToString("00"), StringComparison.Ordinal)
-                        && name.Contains(all ? CineRules.LightWord(shot.Light) : CineRules.NowWord);
+                        && name.Contains("_" + (word ?? CineRules.NowWord) + "_");
                 unique &= names.Add(name);
             }
         }
         Check(safe, "cinematic list: every picture's name is small letters, digits and underscores, begins with its number and names its light");
         Check(unique && shots.Select(s => s.Slug).Distinct(StringComparer.Ordinal).Count() == shots.Length, "cinematic list: no two pictures share a name");
-        Check(CineRules.FileName(shots[7], true) == "08_golden_avenue_long" && CineRules.FileName(shots[7], false) == "08_now_avenue_long" && shots[14].Slug == "avenue_lights"
-              && CineRules.FileName(shots[14], true) == "15_night_avenue_lights",
-            "cinematic list: a picture is named by its number, its light and what it is of (08_golden_avenue_long)");
+        Check(CineRules.FileName(shots[7], "golden") == "08_golden_avenue_long" && CineRules.FileName(shots[7], null) == "08_now_avenue_long" && shots[14].Slug == "avenue_lights"
+              && CineRules.FileName(shots[14], "night") == "15_night_avenue_lights" && CineRules.FileName(shots[14], "day") == "15_day_avenue_lights",
+            "cinematic list: a picture is named by its number, the light it was given and what it is of (08_golden_avenue_long), whatever light its shot asks for");
         Check(!CineRules.FileSafe("Night Avenue") && !CineRules.FileSafe("a/b") && !CineRules.FileSafe("a.b") && !CineRules.FileSafe(string.Empty) && !CineRules.FileSafe(new string('a', 49))
               && !CineRules.FileSafe("café"),
             "cinematic list: a name with a space, a slash, a dot, a capital or an accent, or too long, is not a safe one");
@@ -216,11 +221,22 @@ internal static partial class Program
         CineRules.Frame(CineStyle.LowWide, tower, 60f, 1, out CinePose low);
         float lowAway = CineFlat(low.EyeX, low.EyeZ, 0f, 0f);
         double pitch = Math.Atan2(low.AimY - low.EyeY, lowAway) * 180.0 / Math.PI;
-        Check(low.EyeZ > tower.HalfLength + 5f && lowAway >= 10f && lowAway <= 85f && pitch > 5.0 && pitch < 35.0 && Math.Abs(low.EyeY - 1.05f) < 0.001f,
+        double top = Math.Atan2(tower.Height - low.EyeY, lowAway) * 180.0 / Math.PI, foot = Math.Atan2(low.EyeY, lowAway) * 180.0 / Math.PI;
+        Check(low.EyeZ > tower.HalfLength + 5f && lowAway >= 10f && lowAway <= CineRules.LowWideMost + 30f && pitch > 5.0 && pitch < 35.0 && Math.Abs(low.EyeY - 1.05f) < 0.001f,
             "cinematic camera: a tall thing is seen from the ground in front of it, far enough off to look up no steeper than 35 degrees (" + pitch.ToString("0") + ")");
+        Check(top - pitch < 60.0 * 0.45 && pitch + foot < 60.0 * 0.5 && top - pitch > 5.0,
+            "cinematic camera: the whole of it is in the frame, its top under the frame's top with sky over it and its foot over the frame's foot ("
+            + lowAway.ToString("0") + " m off, top " + (top - pitch).ToString("0") + " degrees over the aim)");
+        float lowLine = (float)Math.Sqrt(Math.Pow(low.EyeX - low.AimX, 2) + Math.Pow(low.EyeY - low.AimY, 2) + Math.Pow(low.EyeZ - low.AimZ, 2));
+        Check(low.Reach > tower.HalfLength && low.Reach < lowLine - 20f && Math.Abs(low.AnchorY - tower.Height * 0.5f) < 0.001f
+              && low.AimZ + (low.EyeZ - low.AimZ) * low.Reach / lowLine > tower.HalfLength + 0.5f,
+            "cinematic camera: its line is tested from outside the wall the lens is on, not from its middle, where its own walls would be in its way");
         var hut = new CineBox { X = 0f, Y = 0f, Z = 0f, Fx = 0f, Fz = 1f, HalfLength = 2f, HalfWidth = 2f, Height = 3f };
         CineRules.Frame(CineStyle.LowWide, hut, 60f, 1, out CinePose lowHut);
         Check(CineFlat(lowHut.EyeX, lowHut.EyeZ, 0f, 0f) >= 10f, "cinematic camera: a small thing is still seen from ten metres or more");
+        var spire = new CineBox { X = 0f, Y = 0f, Z = 0f, Fx = 0f, Fz = 1f, HalfLength = 20f, HalfWidth = 20f, Height = 400f };
+        CineRules.Frame(CineStyle.LowWide, spire, 60f, 1, out CinePose lowSpire);
+        Check(lowSpire.EyeZ <= spire.HalfLength + CineRules.LowWideMost + 0.001f, "cinematic camera: the tallest thing is stood back from no further than the game draws its street round the player");
 
         var shop = new CineBox { X = 0f, Y = 0f, Z = 0f, Fx = 0f, Fz = 1f, HalfLength = 0f, HalfWidth = 7f, Height = 6f };
         CineRules.Frame(CineStyle.Facade, shop, 40f, 1, out CinePose facade);
@@ -237,10 +253,10 @@ internal static partial class Program
 
         // The roof.
         var city = new CineBox { X = 0f, Y = 5f, Z = 0f, Fx = 0f, Fz = 1f };
-        CineRules.Establish(city, 45f, 30f, 28f, out CinePose roof);
-        Check(roof.Free && roof.EyeZ < 0f && Math.Abs(roof.EyeZ + 30f) < 0.001f && Math.Abs(roof.EyeX - 28f) < 0.001f && Math.Abs(roof.EyeY - 45f - CineRules.EyeOverRoof) < 0.001f
-              && roof.AimZ > 200f && roof.AimY < roof.EyeY && roof.AimY > city.Y,
-            "cinematic camera: the roof's shot stands a tripod's height over the roof behind the subject and looks over it, a little down");
+        CineRules.Establish(city, 28f, 45f, -30f, out CinePose roof);
+        Check(roof.Free && Math.Abs(roof.EyeZ + 30f) < 0.001f && Math.Abs(roof.EyeX - 28f) < 0.001f && Math.Abs(roof.EyeY - 45f - CineRules.EyeOverRoof) < 0.001f
+              && roof.AimZ > 200f && Math.Abs(roof.AimX - roof.EyeX) < 0.001f && roof.AimY < roof.EyeY && roof.AimY > city.Y,
+            "cinematic camera: the roof's shot stands a tripod's height over the roof's edge and looks the way the city lies, a little down");
         var stands = new HashSet<string>();
         bool standsOk = true;
         for (int i = 0; i < CineRules.Stands; i++)
@@ -277,15 +293,33 @@ internal static partial class Program
               && !CineRules.InFrame(0.5f, 0.01f, 10f) && !CineRules.InFrame(float.NaN, 0.5f, 10f),
             "cinematic clearance: a subject behind the lens or off the frame's edge is not in the picture");
         var tries = new HashSet<string>();
-        for (int i = 0; i < CineRules.Tries; i++)
+        for (int i = 0; i < CineRules.Tries(CineStyle.ThreeQuarter); i++)
         {
-            CineRules.Try(i, out int side, out bool flip);
-            tries.Add(side + "/" + flip);
+            CineRules.Try(CineStyle.ThreeQuarter, i, out int side, out float turn);
+            tries.Add(side + "/" + turn);
         }
-        CineRules.Try(0, out int firstSide, out bool firstFlip);
-        Check(tries.Count == 4 && CineRules.Tries == 4 && firstSide == 1 && !firstFlip && !CineRules.CanFlip(CineStyle.Facade) && !CineRules.CanFlip(CineStyle.OverShoulder)
-              && !CineRules.CanFlip(CineStyle.Establishing) && CineRules.CanFlip(CineStyle.ThreeQuarter) && CineRules.CanFlip(CineStyle.Compression),
+        CineRules.Try(CineStyle.ThreeQuarter, 0, out int firstSide, out float firstTurn);
+        CineRules.Try(CineStyle.Facade, 1, out int frontSide, out float frontTurn);
+        CineRules.Try(CineStyle.OverShoulder, 3, out _, out float shoulderTurn);
+        Check(tries.Count == 4 && CineRules.Tries(CineStyle.ThreeQuarter) == 4 && firstSide == 1 && firstTurn == 0f && CineRules.Tries(CineStyle.Facade) == 2
+              && CineRules.Tries(CineStyle.OverShoulder) == 2 && frontSide == -1 && frontTurn == 0f && shoulderTurn == 0f,
             "cinematic clearance: both sides are tried, then both from the other end; a front and the player's shoulder are never shot from behind");
+        var round = new HashSet<float>();
+        for (int i = 0; i < CineRules.Tries(CineStyle.LowWide); i++)
+        {
+            CineRules.Try(CineStyle.LowWide, i, out _, out float turn);
+            round.Add(turn);
+        }
+        CineRules.Try(CineStyle.LowWide, 0, out _, out float roundFirst);
+        Check(round.Count == 8 && roundFirst == 0f && round.Contains(180f) && round.Contains(90f) && round.Contains(-90f) && CineRules.Tries(CineStyle.Establishing) == CineRules.Stands
+              && Enum.GetValues(typeof(CineStyle)).Cast<CineStyle>().All(s => CineRules.Tries(s) >= 1 && CineRules.Tries(s) <= CineRules.TriesMost),
+            "cinematic clearance: a thing seen from the ground is gone round, eight ways, its own front first; a skyline is tried from every roof found");
+        CineBox north = CineCar();
+        CineBox back2 = CineRules.Turned(north, 180f), side2 = CineRules.Turned(north, 90f), corner = CineRules.Turned(north, 45f);
+        Check(Math.Abs(back2.Fx) < 0.001f && Math.Abs(back2.Fz + 1f) < 0.001f && back2.HalfLength == north.HalfLength
+              && Math.Abs(side2.Fx - 1f) < 0.001f && Math.Abs(side2.Fz) < 0.001f && side2.HalfLength == north.HalfWidth && side2.HalfWidth == north.HalfLength
+              && corner.HalfLength == north.HalfLength && corner.HalfWidth == north.HalfLength && Math.Abs(corner.Fx * corner.Fx + corner.Fz * corner.Fz - 1f) < 0.001f,
+            "cinematic clearance: a subject seen from another way round keeps its place and height, its facing turned and its length and width with it");
     }
 
     // ---------------------------------------------------------------- what is found
@@ -347,23 +381,31 @@ internal static partial class Program
               && Math.Abs(CineRules.Elevation(180f)) < 0.01f && CineRules.Elevation(200f) < 0f && Math.Abs(CineRules.Elevation(30f) - 30f) < 0.01f,
             "cinematic light: the sun's height is read from the turn the game gives its light: overhead at 90, down again past it, under the horizon past 180");
         var hours = new float[(int)CineLight.Count];
-        CineRules.Hours(20f, 19f, null, hours);
-        Check(hours[0] == 12.5f && Math.Abs(hours[1] - 19f) < 0.001f && Math.Abs(hours[2] - 20.35f) < 0.001f && hours[3] == 23f,
-            "cinematic light: with no curve to read, midday is 12:30, the golden hour an hour before the sun goes out, the blue hour a little after, night 23:00");
-        // A sun overhead at noon that reaches the horizon at 20:00: 8 degrees up at about 19:17.
+        CineRules.Hours(20f, 19f, null, null, null, hours);
+        Check(hours[0] == 12.5f && Math.Abs(hours[1] - 19.25f) < 0.001f && Math.Abs(hours[2] - 20.35f) < 0.001f && hours[3] == 23f,
+            "cinematic light: with no curve to read, midday is 12:30, the golden hour three quarters of an hour before the sun goes out, the blue hour a little after, night 23:00");
+        // The game's own day as its files have it: a white sun all day, warm only in the last hour, out at 21:00. Here it fades through that hour.
+        Func<float, float> lux = hour => hour < 6f || hour >= 21f ? 0f : hour <= 20f ? 13500f : 13500f * (21f - hour);
+        Func<float, float> kelvin = hour => hour >= 20f ? 3600f : 6500f;
         Func<float, float> sun = hour => 90f + (hour - 12f) * 11.25f;
-        CineRules.Hours(20f, 19f, sun, hours);
-        Check(hours[1] > 19.1f && hours[1] < 19.4f && CineRules.Elevation(sun(hours[1])) >= CineRules.GoldenSun - 0.01f && CineRules.Elevation(sun(hours[1])) < CineRules.GoldenSun + 2f,
-            "cinematic light: the golden hour is the last at which the game's own sun still stands 8 degrees up (" + CineRules.Clock(hours[1]) + ")");
-        // A sun the game keeps high until it puts it out: the last light there is.
-        CineRules.Hours(20f, 21f, hour => 60f, hours);
-        Check(Math.Abs(hours[1] - 19.8f) < 0.001f && Math.Abs(hours[2] - 21.35f) < 0.001f, "cinematic light: the blue hour waits for both the sun to be out and the lamps to be on");
+        CineRules.Hours(21f, 19f, lux, kelvin, null, hours);
+        Check(hours[1] >= 20f && hours[1] < 20.7f && lux(hours[1]) >= 13500f * CineRules.GoldenStrong && kelvin(hours[1]) == 3600f,
+            "cinematic light: the golden hour is the warmest hour at which the game's own sun still has a third of its strength, not the last minute of a sun that has faded ("
+            + CineRules.Clock(hours[1]) + ")");
+        // The first run's golden hour was 20:48, twelve minutes before the sun goes out, by its height alone: on this day the sun has a fifth of its strength then.
+        Check(lux(20.8f) < 13500f * CineRules.GoldenStrong && Math.Abs(hours[1] - 20.8f) > 0.1f, "cinematic light: a low sun with a fifth of its strength left is not the golden hour");
+        // A sun that stays white and strong until it goes: the lowest sun is the most golden there is.
+        CineRules.Hours(20f, 19f, hour => 13500f, hour => 6500f, sun, hours);
+        Check(hours[1] > 19.5f && hours[1] < 20f, "cinematic light: where the sun never warms, the golden hour is its lowest strong hour");
+        CineRules.Hours(20f, 21f, hour => 0f, null, null, hours);
+        Check(Math.Abs(hours[1] - 19.25f) < 0.001f && Math.Abs(hours[2] - 21.35f) < 0.001f,
+            "cinematic light: a sun with no strength to read falls back, and the blue hour waits for both the sun to be out and the lamps to be on");
         bool ordered = true;
         foreach (float sunOff in new[] { 14f, 17f, 20f, 22f, 23.5f, 26f })
         {
             foreach (float lamps in new[] { 5f, 18f, 21f, 23.9f })
             {
-                CineRules.Hours(sunOff, lamps, sunOff > 21f ? sun : null, hours);
+                CineRules.Hours(sunOff, lamps, sunOff > 21f ? lux : null, sunOff > 21f ? kelvin : null, sunOff > 20f ? sun : null, hours);
                 for (int i = 0; i < hours.Length; i++)
                 {
                     ordered &= hours[i] >= CineRules.HourLeast && hours[i] <= CineRules.HourMost && (i == 0 || hours[i] >= hours[i - 1]);
@@ -392,6 +434,322 @@ internal static partial class Program
             "cinematic picture: frames are drawn at a new place, in a new light and at the picture's size before it is read");
     }
 
+    // ---------------------------------------------------------------- what fills the frame
+
+    // A frame of rays: every ray the same, then some changed by the case.
+    private static void CineFrame(float metres, CineHit kind, int surface, out float[] far, out CineHit[] kinds, out int[] surfaces)
+    {
+        far = new float[CineJudge.Rays];
+        kinds = new CineHit[CineJudge.Rays];
+        surfaces = new int[CineJudge.Rays];
+        for (int i = 0; i < CineJudge.Rays; i++)
+        {
+            far[i] = metres;
+            kinds[i] = kind;
+            surfaces[i] = surface;
+        }
+    }
+
+    private static void CineRow(float[] far, CineHit[] kinds, int[] surfaces, int row, float metres, CineHit kind, int surface)
+    {
+        for (int c = 0; c < CineJudge.Columns; c++)
+        {
+            int ray = CineJudge.Ray(c, row);
+            far[ray] = metres;
+            kinds[ray] = kind;
+            surfaces[ray] = surface;
+        }
+    }
+
+    private static void CinematicFrameChecks()
+    {
+        Check(CineJudge.Rays == 45 && CineJudge.Ray(0, 0) == 0 && CineJudge.Ray(8, 4) == 44 && CineJudge.NearShare == 0.4f && CineJudge.NearWall >= 4f && CineJudge.NearWall <= 8f,
+            "cinematic frame: a frame is judged by 45 rays, nine across and five up, and a surface within some 6 m on more than 40% of them is a wall in the lens");
+        CineJudge.RayAt(0, out float x0, out float y0);
+        CineJudge.RayAt(44, out float x1, out float y1);
+        Check(x0 > 0f && x0 < 0.1f && y0 > 0f && y0 < 0.15f && x1 > 0.9f && x1 < 1f && y1 > 0.85f && y1 < 1f, "cinematic frame: the rays cover the frame from corner to corner, none on its edge");
+
+        // The first run's park: a brick wall beside the camera on thirty of the forty five rays.
+        CineFrame(CineJudge.RayReach, CineHit.Sky, 0, out float[] far, out CineHit[] kinds, out int[] surfaces);
+        for (int i = 0; i < 30; i++)
+        {
+            far[i] = 3f;
+            kinds[i] = CineHit.Solid;
+            surfaces[i] = 77;
+        }
+        bool wallAny = false;
+        foreach (CineStyle style in Enum.GetValues(typeof(CineStyle)))
+        {
+            wallAny |= CineJudge.Frame(style, CineSubject.Trees, far, kinds, surfaces, 9, out string said) || said == null || !said.Contains("one surface");
+        }
+        Check(!wallAny, "cinematic frame: a wall three metres off on two thirds of the rays fails every kind of shot, and the reason names it");
+        for (int i = 0; i < 30; i++)
+        {
+            kinds[i] = CineHit.Subject;
+        }
+        Check(CineJudge.Frame(CineStyle.WheelHeight, CineSubject.Car, far, kinds, surfaces, 0, out _), "cinematic frame: the shot's own subject may fill the frame from three metres: a car at wheel height is no wall");
+        for (int i = 0; i < 30; i++)
+        {
+            kinds[i] = CineHit.Ground;
+        }
+        Check(CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, far, kinds, surfaces, 0, out _), "cinematic frame: the ground under a low lens is no wall either");
+        for (int i = 0; i < 30; i++)
+        {
+            kinds[i] = CineHit.Solid;
+            far[i] = 9f;
+        }
+        Check(CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, far, kinds, surfaces, 0, out _), "cinematic frame: the same wall nine metres off is a backdrop, not a wall in the lens");
+        for (int i = 0; i < 30; i++)
+        {
+            far[i] = 3f;
+            surfaces[i] = 100 + i;
+        }
+        Check(!CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, far, kinds, surfaces, 0, out string things) && things.Contains("things within"),
+            "cinematic frame: many things within reach of the lens that fill the frame between them fail it too");
+        for (int i = 0; i < 30; i++)
+        {
+            surfaces[i] = 77;
+            far[i] = i < 18 ? 3f : 40f;
+        }
+        Check(CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, far, kinds, surfaces, 0, out _) && 18 <= CineJudge.NearShare * CineJudge.Rays,
+            "cinematic frame: a wall on 40% of the rays or fewer is left to the photographer");
+        Check(!CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, null, kinds, surfaces, 0, out string unread) && unread != null
+              && !CineJudge.Frame(CineStyle.Thirds, CineSubject.Walkers, new float[3], kinds, surfaces, 0, out _),
+            "cinematic frame: a frame that could not be measured is not taken");
+
+        // The skyline: sky along the top, the city far off, nothing of the roof before the lens.
+        CineFrame(300f, CineHit.Solid, 5, out far, out kinds, out surfaces);
+        CineRow(far, kinds, surfaces, 4, CineJudge.RayReach, CineHit.Sky, 0);
+        CineRow(far, kinds, surfaces, 0, 2.5f, CineHit.Ground, 9);
+        Check(CineJudge.Frame(CineStyle.Establishing, CineSubject.Skyline, far, kinds, surfaces, 0, out _), "cinematic frame: a skyline with sky over it, the city beyond and the roof's edge at its foot is taken");
+        for (int c = 2; c < 5; c++)
+        {
+            far[CineJudge.Ray(c, 1)] = 8f;   // the first run's water tanks
+            surfaces[CineJudge.Ray(c, 1)] = 40 + c;
+        }
+        Check(!CineJudge.Frame(CineStyle.Establishing, CineSubject.Skyline, far, kinds, surfaces, 0, out string tanks) && tanks.Contains("on the roof"),
+            "cinematic frame: tanks on the roof within 12 m of the lens fail a skyline");
+        CineFrame(300f, CineHit.Solid, 5, out far, out kinds, out surfaces);
+        Check(!CineJudge.Frame(CineStyle.Establishing, CineSubject.Skyline, far, kinds, surfaces, 0, out string noSky) && noSky.Contains("no sky"), "cinematic frame: a skyline with no sky over the city fails");
+        CineFrame(30f, CineHit.Solid, 5, out far, out kinds, out surfaces);
+        CineRow(far, kinds, surfaces, 4, CineJudge.RayReach, CineHit.Sky, 0);
+        Check(!CineJudge.Frame(CineStyle.Establishing, CineSubject.Skyline, far, kinds, surfaces, 0, out string closed) && closed.Contains("closed"),
+            "cinematic frame: a skyline whose view ends at a wall 30 m off fails");
+        // The first run's skyline off the map's edge: sky and a far flat plane pass the rays, which is why the way to look is chosen by the buildings in view.
+        CineFrame(CineJudge.RayReach, CineHit.Sky, 0, out far, out kinds, out surfaces);
+        Check(CineJudge.Frame(CineStyle.Establishing, CineSubject.Skyline, far, kinds, surfaces, 0, out _), "cinematic frame: open sky passes the rays; which way the city lies is the bearing's rule");
+
+        // The street: clear down the middle, something of both sides.
+        foreach (CineStyle style in new[] { CineStyle.Symmetry, CineStyle.Compression })
+        {
+            CineFrame(CineJudge.RayReach, CineHit.Sky, 0, out far, out kinds, out surfaces);
+            CineRow(far, kinds, surfaces, 0, 4f, CineHit.Ground, 3);
+            CineRow(far, kinds, surfaces, 1, 12f, CineHit.Ground, 3);
+            for (int r = 2; r < CineJudge.Rows; r++)
+            {
+                for (int c = 0; c < 2; c++)
+                {
+                    far[CineJudge.Ray(c, r)] = 20f;
+                    kinds[CineJudge.Ray(c, r)] = CineHit.Solid;
+                    surfaces[CineJudge.Ray(c, r)] = 11;
+                    far[CineJudge.Ray(8 - c, r)] = 25f;
+                    kinds[CineJudge.Ray(8 - c, r)] = c == 0 ? CineHit.Tree : CineHit.Solid;
+                    surfaces[CineJudge.Ray(8 - c, r)] = 12;
+                }
+            }
+            far[CineJudge.Ray(4, 2)] = 300f;
+            kinds[CineJudge.Ray(4, 2)] = CineHit.Solid;
+            bool good = CineJudge.Frame(style, CineSubject.Avenue, far, kinds, surfaces, 0, out _);
+            far[CineJudge.Ray(4, 2)] = 40f;
+            bool shut = !CineJudge.Frame(style, CineSubject.Avenue, far, kinds, surfaces, 0, out string blocked) && blocked.Contains("does not run clear");
+            far[CineJudge.Ray(4, 2)] = 300f;
+            for (int r = 2; r < CineJudge.Rows; r++)
+            {
+                for (int c = 7; c < 9; c++)
+                {
+                    far[CineJudge.Ray(c, r)] = CineJudge.RayReach;
+                    kinds[CineJudge.Ray(c, r)] = CineHit.Sky;
+                }
+            }
+            bool oneSide = CineJudge.Frame(style, CineSubject.Avenue, far, kinds, surfaces, 0, out _);   // a park on the right: no ray meets a wall there
+            for (int r = 2; r < CineJudge.Rows; r++)
+            {
+                for (int c = 0; c < 2; c++)
+                {
+                    far[CineJudge.Ray(c, r)] = CineJudge.RayReach;
+                    kinds[CineJudge.Ray(c, r)] = CineHit.Sky;
+                }
+            }
+            bool bare = !CineJudge.Frame(style, CineSubject.Avenue, far, kinds, surfaces, 0, out string open) && open.Contains("neither side");
+            Check(good && shut && oneSide && bare,
+                "cinematic frame: a street shot (" + style + ") runs clear down the middle of the frame with a side of the street in it: one side may be a park, neither may not");
+        }
+        // The first run's avenue: the corner building 4 m off on the whole left half.
+        CineFrame(CineJudge.RayReach, CineHit.Sky, 0, out far, out kinds, out surfaces);
+        for (int r = 0; r < CineJudge.Rows; r++)
+        {
+            for (int c = 0; c < 4; c++)
+            {
+                far[CineJudge.Ray(c, r)] = 4f;
+                kinds[CineJudge.Ray(c, r)] = CineHit.Solid;
+                surfaces[CineJudge.Ray(c, r)] = 21;
+            }
+        }
+        Check(!CineJudge.Frame(CineStyle.Compression, CineSubject.Avenue, far, kinds, surfaces, 0, out string corner) && corner.Contains("one surface"),
+            "cinematic frame: a blank wall on the left half of a street shot, as in the first run, fails it");
+
+        // A tall thing: sky over it. A park: trees, open ground, not walls.
+        CineFrame(40f, CineHit.Solid, 5, out far, out kinds, out surfaces);
+        for (int c = 0; c < 4; c++)
+        {
+            far[CineJudge.Ray(c, 4)] = CineJudge.RayReach;
+            kinds[CineJudge.Ray(c, 4)] = CineHit.Sky;
+        }
+        bool whole = CineJudge.Frame(CineStyle.LowWide, CineSubject.Landmark, far, kinds, surfaces, 0, out _);
+        kinds[CineJudge.Ray(3, 4)] = CineHit.Solid;
+        kinds[CineJudge.Ray(2, 4)] = CineHit.Solid;
+        Check(whole && !CineJudge.Frame(CineStyle.LowWide, CineSubject.Landmark, far, kinds, surfaces, 0, out string cropped) && cropped.Contains("no sky"),
+            "cinematic frame: a landmark with sky over it is whole in the frame; with its top cut off, as in the first run, it is not");
+        CineFrame(CineJudge.RayReach, CineHit.Sky, 0, out far, out kinds, out surfaces);
+        CineRow(far, kinds, surfaces, 0, 3f, CineHit.Ground, 3);
+        CineRow(far, kinds, surfaces, 1, 9f, CineHit.Ground, 3);
+        CineRow(far, kinds, surfaces, 2, 25f, CineHit.Tree, 30);
+        bool park = CineJudge.Frame(CineStyle.LowWide, CineSubject.Trees, far, kinds, surfaces, 6, out _);
+        bool fewTrees = !CineJudge.Frame(CineStyle.LowWide, CineSubject.Trees, far, kinds, surfaces, 3, out string few) && few.Contains("tree");
+        CineRow(far, kinds, surfaces, 0, CineJudge.RayReach, CineHit.Sky, 0);
+        CineRow(far, kinds, surfaces, 1, 30f, CineHit.Tree, 31);
+        bool noGround = !CineJudge.Frame(CineStyle.LowWide, CineSubject.Trees, far, kinds, surfaces, 6, out string paved) && paved.Contains("open ground");
+        CineFrame(30f, CineHit.Solid, 5, out far, out kinds, out surfaces);
+        CineRow(far, kinds, surfaces, 4, CineJudge.RayReach, CineHit.Sky, 0);
+        CineRow(far, kinds, surfaces, 0, 3f, CineHit.Ground, 3);
+        bool walled = !CineJudge.Frame(CineStyle.LowWide, CineSubject.Trees, far, kinds, surfaces, 6, out string walls) && walls.Contains("walls fill");
+        Check(park && fewTrees && noGround && walled, "cinematic frame: a park shot has four trees or more in sight, open ground before them and no more than 45% walls");
+
+        // Which way the city lies: fifty buildings to the north east, the map's edge to the south.
+        var dx = new float[80];
+        var dz = new float[80];
+        for (int i = 0; i < 50; i++)
+        {
+            dx[i] = 300f + (i % 10) * 30f;
+            dz[i] = 300f + (i / 10) * 40f;
+        }
+        for (int i = 50; i < 60; i++)
+        {
+            dx[i] = -20f - i;   // the block the player stands in: too near to be a view
+            dz[i] = 30f;
+        }
+        Check(CineJudge.DensestBearing(dx, dz, 60, CineRules.Bearings, out int toward, out int inView) && toward >= 2 && toward <= 4 && inView >= 40,
+            "cinematic subjects: the skyline looks the way most of the city lies (bearing " + toward + " of 24, " + inView + " buildings in view), not at the buildings beside the player");
+        Check(!CineJudge.DensestBearing(dx, dz, 8, CineRules.Bearings, out _, out int fewBuildings) && fewBuildings <= 8 && !CineJudge.DensestBearing(null, dz, 60, 24, out int none, out _) && none == -1,
+            "cinematic subjects: with fewer than a dozen buildings in any view there is no skyline, as off the map's edge");
+
+        // The middle of the carriageway.
+        Check(CineJudge.Carriageway(new[] { -5.25f, -1.75f, 1.75f, 5.25f }, 4, out float mid, out float half) && Math.Abs(mid) < 0.001f && Math.Abs(half - 7f) < 0.001f,
+            "cinematic subjects: the middle of a street of four lanes is half way between its outermost lanes, and it is 14 m wide");
+        Check(CineJudge.Carriageway(new[] { 2f, 5.5f }, 2, out float kerb, out _) && Math.Abs(kerb - 3.75f) < 0.001f
+              && CineJudge.Carriageway(new[] { 3f }, 1, out float single, out float lane) && single == 3f && Math.Abs(lane - 1.75f) < 0.001f
+              && !CineJudge.Carriageway(new float[4], 0, out _, out _) && !CineJudge.Carriageway(null, 3, out _, out _),
+            "cinematic subjects: seen from the kerb the middle lies out in the road; a street of one lane is its lane; no lanes, no middle");
+    }
+
+    // ---------------------------------------------------------------- the light read back, the air, the picture against the screen
+
+    private static CineStat CineStatOf(int count, Func<int, int> r, Func<int, int> g, Func<int, int> b)
+    {
+        var tally = new CineTally();
+        for (int i = 0; i < count; i++)
+        {
+            tally.Add(r(i), g(i), b(i));
+        }
+        return tally.Finish();
+    }
+
+    private static void CinematicPictureChecks()
+    {
+        // The name from the light read back: the game's day as its files have it (sun 6:00 to 21:00, 13,500 lux, warm from 20:00).
+        var noon = new CineSeen { Read = true, SunOn = true, SunLux = 13500f, SunPeak = 13500f, SunKelvin = 6500f, SunUp = 62f, Hour = 12.5f, SunOnHour = 6f, SunOffHour = 21f };
+        CineSeen morning = noon;
+        morning.Hour = 9.7f;
+        CineSeen golden = noon;
+        golden.SunLux = 5400f;
+        golden.SunKelvin = 3600f;
+        golden.SunUp = 30f;
+        golden.Hour = 20.6f;
+        CineSeen faded = golden;
+        faded.SunLux = 1350f;
+        faded.Hour = 20.9f;
+        var dusk = new CineSeen { Read = true, SunOn = false, MoonOn = true, MoonLux = 1000f, Lamps = true, Hour = 21.35f, SunOnHour = 6f, SunOffHour = 21f, SunPeak = 13500f };
+        CineSeen night = dusk;
+        night.Hour = 23f;
+        CineSeen dawn = dusk;
+        dawn.Hour = 5.5f;
+        CineSeen small = night;
+        small.Hour = 2f;
+        Check(CineJudge.Light(noon) == CineLight.Midday && CineJudge.Word(CineJudge.Light(noon), noon.Hour) == "midday" && CineJudge.Word(CineJudge.Light(morning), morning.Hour) == "day",
+            "cinematic names: a white sun at full strength is day, and midday only round noon");
+        Check(CineJudge.Light(golden) == CineLight.Golden && CineJudge.Light(faded) == CineLight.Midday && CineJudge.Word(CineJudge.Light(faded), faded.Hour) == "day",
+            "cinematic names: a warm sun with strength left is golden; one that has all but faded is not, whatever the hour asked for");
+        Check(CineJudge.Light(dusk) == CineLight.Blue && CineJudge.Light(night) == CineLight.Night && CineJudge.Light(dawn) == CineLight.Blue && CineJudge.Light(small) == CineLight.Night,
+            "cinematic names: with the sun out, the blue hour is the hour or so after it goes and before it comes, and the rest is night");
+        CineShot nightShot = CineRules.Shots[14];
+        Check(nightShot.Light == CineLight.Night && CineRules.FileName(nightShot, CineJudge.Word(CineJudge.Light(noon), noon.Hour)) == "15_midday_avenue_lights"
+              && CineRules.FileName(nightShot, CineJudge.Word(CineJudge.Light(night), night.Hour)) == "15_night_avenue_lights"
+              && CineRules.FileName(nightShot, CineJudge.Word(CineLight.Count, 3f)) == "15_now_avenue_lights",
+            "cinematic names: a night shot taken while the game's sun was read on is named midday, not night: the name is what was read, never what was asked");
+        string words = CineJudge.LightWords(night), sunWords = CineJudge.LightWords(noon);
+        Check(words.Contains("sun off") && words.Contains("moon on, 1000 lux") && words.Contains("street lamps on") && sunWords.Contains("sun on, 13500 lux of 13500, 6500 K, 62 degrees up")
+              && CineJudge.LightWords(default(CineSeen)).Contains("could not be read"),
+            "cinematic names: the list says what was read back: the sun on or off, its strength, colour and height, the moon, the lamps");
+
+        // The air: the game's ground mist lifted for a camera that stands in it, never thickened, and said.
+        Check(CineJudge.Haze(48f, 5.7f) == CineJudge.HazeLeast && CineJudge.Haze(48f, 500f) == 1250f && CineJudge.Haze(48f, 1000f) == 2500f && CineJudge.Haze(48f, 9000f) == CineJudge.HazeMost,
+            "cinematic air: a mist a ray goes 48 m in is lifted to 450 m for a portrait, two and a half times the depth for a street or a skyline, and no further than 3000 m");
+        Check(CineJudge.Haze(620f, 60f) == 620f && CineJudge.Haze(5000f, 1000f) == 5000f && CineJudge.Haze(0f, 1000f) == 0f,
+            "cinematic air: a clearer air of the game's or the mod's look is never thickened, and no fog is left no fog");
+        Check(CineJudge.Depth(CineStyle.Establishing, 300f) > CineJudge.Depth(CineStyle.Compression, 240f) && CineJudge.Depth(CineStyle.Compression, 240f) > CineJudge.Depth(CineStyle.Symmetry, 120f)
+              && CineJudge.Depth(CineStyle.Thirds, 5.7f) == 60f && CineJudge.Depth(CineStyle.ThreeQuarter, 90f) == 90f,
+            "cinematic air: a skyline looks deepest, then the long lens, then the street at eye height; a close shot looks 60 m at the least");
+        var lifted = new CineSeen { Read = true, SunOn = true, SunLux = 13500f, SunPeak = 13500f, SunKelvin = 6500f, SunUp = 60f, HazeGame = 48f, HazeUsed = 1250f, HazeHeight = 20f, Exposure = 10f };
+        CineSeen asIs = lifted;
+        asIs.HazeUsed = 48f;
+        Check(CineJudge.LightWords(lifted).Contains("1250 m") && CineJudge.LightWords(lifted).Contains("the game's mist here: 48 m") && CineJudge.LightWords(lifted).Contains("lifted")
+              && CineJudge.LightWords(asIs).Contains("as the game has it") && !CineJudge.LightWords(asIs).Contains("lifted") && CineJudge.LightWords(lifted).Contains("EV 10.0"),
+            "cinematic air: the list says how far a ray goes in the picture's fog, what the game's was, and that it was lifted, or that it is the game's own");
+
+        // A picture's three figures.
+        CineStat grey = CineStatOf(100, i => 128, i => 128, i => 128);
+        CineStat chequer = CineStatOf(100, i => i % 2 * 255, i => i % 2 * 255, i => i % 2 * 255);
+        CineStat red = CineStatOf(100, i => 200, i => 0, i => 0);
+        Check(Math.Abs(grey.Mean - 128f) < 0.01f && grey.Spread < 0.01f && grey.Saturation == 0f && grey.Count == 100 && Math.Abs(chequer.Mean - 127.5f) < 0.01f
+              && Math.Abs(chequer.Spread - 127.5f) < 0.01f && Math.Abs(red.Saturation - 1f) < 0.001f && Math.Abs(red.Mean - 0.2126f * 200f) < 0.01f
+              && new CineTally().Finish().Count == 0,
+            "cinematic picture: a picture's brightness is its mean, its spread how far that strays, its saturation how far a pixel is from grey");
+
+        // The first run's figures, measured from its files: the game's ordinary view of the same day against the pictures.
+        var ownDay = new CineStat { Mean = 105.1f, Spread = 42.7f, Saturation = 0.191f, Count = 5184 };
+        var longLens = new CineStat { Mean = 120.0f, Spread = 36.2f, Saturation = 0.054f, Count = 5184 };
+        var nightLens = new CineStat { Mean = 118.1f, Spread = 35.1f, Saturation = 0.059f, Count = 5184 };
+        var clear = new CineStat { Mean = 101f, Spread = 46f, Saturation = 0.17f, Count = 5184 };
+        Check(CineJudge.Flags(longLens, ownDay) == "grey" && CineJudge.Flags(nightLens, ownDay) == "grey" && CineJudge.Flags(clear, ownDay) == null,
+            "cinematic picture: the first run's washed out street pictures are flagged against the game's own view of that day, and a clear one is not");
+        var fogged = new CineStat { Mean = 150f, Spread = 30f, Saturation = 0.12f, Count = 5184 };
+        var flat = new CineStat { Mean = 100f, Spread = 9f, Saturation = 0.2f, Count = 5184 };
+        var darker = new CineStat { Mean = 55f, Spread = 31f, Saturation = 0.16f, Count = 5184 };
+        Check(CineJudge.Flags(fogged, ownDay) == "fogged" && CineJudge.Flags(flat, ownDay) == "flat" && CineJudge.Flags(flat, default(CineStat)) == "flat"
+              && CineJudge.Flags(default(CineStat), ownDay) == "not read" && CineJudge.Flags(darker, ownDay) == null && CineJudge.Flags(longLens, default(CineStat)) == null,
+            "cinematic picture: brighter, flatter and paler at once is fogged; hardly any spread is flat; a darker picture with its colour is neither; with no view to hold it against only flat is told");
+        var nearly = new CineStat { Mean = 108f, Spread = 44f, Saturation = 0.18f, Count = 5184 };
+        Check(CineJudge.Same(ownDay, ownDay, out string no) && no == null && CineJudge.Same(ownDay, nearly, out _) && !CineJudge.Same(ownDay, longLens, out string differs) && differs != null
+              && !CineJudge.Same(ownDay, darker, out string dim) && dim.Contains("brightness") && !CineJudge.Same(default(CineStat), ownDay, out _),
+            "cinematic picture: a target's picture is the screen's when its three figures are the screen's within a little, and what differs is said");
+        Check(!CineJudge.UseScreen(ownDay, nearly, ownDay) && CineJudge.UseScreen(clear, longLens, ownDay) && CineJudge.UseScreen(clear, default(CineStat), ownDay)
+              && !CineJudge.UseScreen(default(CineStat), longLens, ownDay) && !CineJudge.UseScreen(longLens, longLens, ownDay),
+            "cinematic picture: the screen's own frame is saved where the target's is not the same picture or was not read; where both are the same the target's stands, flagged or not");
+        Check(CineJudge.SuperSize(1080) == 2 && CineJudge.SuperSize(1440) == 2 && CineJudge.SuperSize(2160) == 1 && CineJudge.SuperSize(720) == 3 && CineJudge.SuperSize(0) == 1
+              && CineJudge.SuperSize(200) == 4,
+            "cinematic picture: read from the screen, a picture is drawn larger by the whole number that gives 2160 lines or more, four at the most");
+    }
+
     // ---------------------------------------------------------------- the sources
 
     private static void CinematicSourceChecks()
@@ -399,7 +757,9 @@ internal static partial class Program
         string director = ModSource(@"Photos\Cinematic\CineDirector.cs"), tests = ModSource(@"Photos\Cinematic\CineDirector.Tests.cs");
         string game = ModSource(@"Photos\Cinematic\CineGame.cs"), subjects = ModSource(@"Photos\Cinematic\CineSubjects.cs");
         Check(director.Length > 0 && tests.Length > 0 && game.Length > 0 && subjects.Length > 0, "cinematic sources: the tool's files are where the checks look for them");
-        string all = director + tests + game + subjects;
+        string judge = ModSource(@"Photos\Cinematic\CineGame.Judge.cs"), rules = ModSource(@"Photos\Cinematic\CineJudge.cs");
+        Check(judge.Length > 0 && rules.Length > 0, "cinematic sources: the judging's two files are where the checks look for them");
+        string all = director + tests + game + subjects + judge;
 
         string run = Block(director, "private IEnumerator Run(bool allLights)");
         Check(InOrder(run, "try", "Begin(allLights);", "_finished = true;", "finally", "End();") && Regex.IsMatch(run, @"finally\s*\{\s*End\(\);\s*\}\s*\}\s*$")
@@ -476,7 +836,7 @@ internal static partial class Program
               && lines[0].Words.Contains("developer")
               && !RealLifeOverhaul.Ui.SweepLedger.AllFiles().Any(f => f.StartsWith("Photos/Cinematic/", StringComparison.Ordinal) && f != "Photos/Cinematic/CineGame.cs"),
             "cinematic sources: the one file that builds interface of its own, for the progress line, stands in the interface's audit table as a developer's tool that is no screen");
-        Check(!Regex.IsMatch(all, @"FindObjects?(OfType|ByType)|GameObject\.Find\(|SceneFinds\.") && Occurs(subjects, "Physics.Raycast(") <= 5 && !director.Contains("Physics."),
+        Check(!Regex.IsMatch(all, @"FindObjects?(OfType|ByType)|GameObject\.Find\(|SceneFinds\.") && Occurs(subjects, "Physics.Raycast(") <= 10 && !director.Contains("Physics."),
             "cinematic sources: no search of the whole scene; a subject is found in the game's own lists, the mod's map rows and a few rays");
 
         // The picture.
@@ -484,9 +844,47 @@ internal static partial class Program
         Check(target.Contains("CineRules.Width, CineRules.Height") && target.Contains("RenderTextureReadWrite.sRGB") && InOrder(develop, "EncodeNativeArrayToPNG(", "EncodeNativeArrayToJPG(", "CineRules.JpgQuality",
                   "name + \".png\"", "name + \".jpg\"", "finally", "Drop(frame);"),
             "cinematic sources: a picture is drawn into a target of its own size and written as a PNG with a JPG beside it, its pixels let go whatever happens");
-        Check(InOrder(run, "Target(true);", "CineRules.TargetFrames", "yield return new WaitForEndOfFrame();", "Read(true);", "yield return new WaitForEndOfFrame();", "Read(false);", "Task.Run(() => CineGame.Develop(")
-              && InOrder(Block(director, "private CineGame.Frame Read(bool target)"), "finally", "Target(false);"),
-            "cinematic sources: the frame is read at the end of a drawn frame, from the target or else from the screen, the target taken off the camera either way, and written on a worker");
+        Check(InOrder(run, "_screenFrame = ReadScreen(1);", "Target(true);", "CineRules.TargetFrames", "yield return new WaitForEndOfFrame();", "_pictureFrame = Read();",
+                  "CineJudge.UseScreen(screenStat, targetStat, _own)", "_pictureFrame = _screenFrame;", "Task.Run(() => CineGame.Develop(")
+              && InOrder(Block(director, "private CineGame.Frame Read()"), "finally", "Target(false);"),
+            "cinematic sources: the screen's own frame is read first, then the target's at the end of a drawn frame, the target taken off the camera either way; the screen's is the picture where the two differ, and it is written on a worker");
+        Check(InOrder(Block(director, "private void End()"), "CineGame.Drop(_screenFrame);", "CineGame.Drop(_pictureFrame);", "CineGame.DropAir();")
+              && InOrder(run, "CineGame.Frame picture = _pictureFrame;", "_pictureFrame = null;", "Task.Run("),
+            "cinematic sources: a shot's readings are let go by the run's end if it is cut, and are the worker's alone once handed over");
+        // What the first run in the game taught: the frame judged before it is taken, the name from the light read back, the mist lifted and said.
+        Check(InOrder(Block(game, "public static bool Place(CineShot shot, in CineFound found, out CinePose pose, out Vector3 eye, out string why)"),
+                  "Clear(shot.Style, pose, out eye)", "Fill(shot, found, pose, eye, out string fill)", "return true;", "last = fill;")
+              && InOrder(Block(judge, "public static bool Fill(CineShot shot, in CineFound found, in CinePose pose, Vector3 eye, out string why)"),
+                  "CineJudge.Rays", "Physics.Raycast(eye, way,", "CineJudge.Frame(shot.Style, shot.Subject, Metres, Kinds, Surfaces, trees, out why)"),
+            "cinematic sources: a place for the camera is taken only where rays across its frame say the frame is worth taking, and the last reason is kept for a shot left out");
+        Check(run.Contains("CineRules.FileName(shot, _seen.Read ? CineJudge.Word(CineJudge.Light(_seen), _seen.Hour) : null)")
+              && InOrder(Block(director, "private bool Compose(CineShot shot, bool allLights, out string why)"), "CineGame.Place(", "OnLateUpdate();", "CineGame.Haze(_haze, _camera,",
+                  "_seen = CineGame.Seen(")
+              && InOrder(Block(judge, "public static CineSeen Seen(float hazeGame, float hazeUsed, float hazeHeight, float exposure)"), "sun.isActiveAndEnabled", "sun.colorTemperature",
+                  "moon.isActiveAndEnabled", "day.ShouldOutdoorLightsBeOn()"),
+            "cinematic sources: a picture's name is made from the game's sun, moon and lamps read back after the camera is placed, never from the light its shot asks for");
+        string haze = Block(judge, "public static float Haze(Fog haze, Camera camera, float depth, out float game, out float height, out float exposure)");
+        Check(InOrder(haze, "haze.meanFreePath.overrideState = false;", "Air(camera, out game, out height, out exposure);", "CineJudge.Haze(game, depth)",
+                  "haze.meanFreePath.overrideState = true;", "haze.meanFreePath.value = wanted;")
+              && !Regex.IsMatch(all, @"\.enabled\.(overrideState|value)\s*=[^=]") && Occurs(all, ".overrideState = true;") == 3 && !all.Contains("farClipPlane")
+              && InOrder(Block(judge, "public static bool Air(Camera camera, out float reach, out float height, out float exposure)"), "data.volumeAnchorOverride", "data.volumeLayerMask",
+                  "volumes.Update(_stack, anchor, layers);", "fog.meanFreePath.value"),
+            "cinematic sources: the game's fog is read where the camera stands, as the pipeline blends its volumes there, and only its reach is ever set: not its switch, its colour or the far plane");
+        Check(InOrder(Block(director, "private void Home()"), "CineGame.HazeOff(_haze);", "_hold.Value(CinePart.Place, 0)", "_hold.Value(CinePart.Lens, 0)")
+              && InOrder(run, "Home();", "Light(shot.Light)", "CineRules.LightFrames", "Own();") && Occurs(run, "Own();") == 2
+              && InOrder(Block(director, "private void Own()"), "ReadScreen(1);", "_own = CineGame.Stat(own);", "CineGame.Drop(own);"),
+            "cinematic sources: the game's own view is read from the screen before the camera is moved and again in each new light, with the camera back where the game had it");
+        Check(Block(game, "private static void Look()").Contains("Gfx.GraphicsDirector.OptionChanged();") && Occurs(game, "Look();") == 2
+              && ModSource(@"Graphics\GraphicsDirector.cs").Contains("_shownHour >= 0f ? _shownHour : GraphicsGame.LitHour")
+              && InOrder(Block(ModSource(@"Graphics\GraphicsGame.cs"), "public static float LitHour"), "clock.usingSliderDebugTool", "InGameTimeOfDayPanel.selectedTimeInHours", "Hour"),
+            "cinematic sources: the mod's own look for the picture follows the hour the game lights the city for, and is told at once when the tool shows another");
+        Check(InOrder(Block(subjects, "private static void Avenue(Vector3 from, ref CineFound found)"), "TrafficTools.ClosestWaypoint(from, LaneReach, PlainLane)",
+                  "Sections(lanes, lane.position, along, ref best);", "Crossing(lanes, from, along)", "Sections(lanes, crossing.position, across, ref best);")
+              && InOrder(Block(subjects, "private static void Sections(Waypoint[] lanes, Vector3 start, Vector3 along, ref Street best)"),
+                  "CineJudge.Carriageway(Across, count, out float mid, out float half)", "station + right * mid", "walls * 300f")
+              && InOrder(Block(subjects, "private static void Skyline(Vector3 from, ref CineFound found)"), "CineJudge.DensestBearing(", "Edge(roof.point, toward)", "CineRules.RoofView")
+              && InOrder(Block(subjects, "private static void OnMap(Vector3 from, string[] rows, string none, ref CineFound found)"), "BuildingAt(place.Position)", "Measure(building,"),
+            "cinematic sources: the street is taken from the middle of its carriageway by the traffic system's lanes, the skyline toward the most buildings from a roof's edge, and a place on the map by the building that stands at it");
         Check(InOrder(Block(game, "public static string Root()"), "Environment.SpecialFolder.MyPictures", "\"Real Life Overhaul\", \"Cinematic\"") && director.Contains("CineRules.RunFolder(now)")
               && Block(game, "public static bool WriteList(string folder, string text)").Contains("\"shots.txt\""),
             "cinematic sources: the pictures go to Pictures/Real Life Overhaul/Cinematic and a folder of the run's own, with shots.txt beside them");

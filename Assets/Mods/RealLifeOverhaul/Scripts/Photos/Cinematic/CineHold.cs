@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Photos
         Target,       // the picture's render target on the camera: off it, the screen again
         Light,        // the game's time of day tool: whether it was on (1 or 0), its forced hour and its shown hour
         Look,         // the depth of field and the vignette (a volume of the tool's own): taken away
-        Lens,         // the field of view, the near plane and the far plane
+        Lens,         // the field of view and the near plane
         Layers,       // the layers the camera draws, as its mask's low and high 16 bits: the markers' layers are left out of a picture
         Place,        // the camera's position (x, y, z) and rotation (x, y, z, w)
         Brain,        // the engine's camera brain: on or off (1 or 0)
@@ -81,6 +81,12 @@ namespace RealLifeOverhaul.Photos
             _values[at + 7] = h;
             _held[(int)part] = true;
             return true;
+        }
+
+        /// <summary>One of a held part's values; 0 for a part not held.</summary>
+        public float Value(CinePart part, int index)
+        {
+            return Held(part) && index >= 0 && index < Values ? _values[(int)part * Values + index] : 0f;
         }
 
         /// <summary>A held part let go, its values copied into <paramref name="into"/>; false for a part not held.</summary>

@@ -472,7 +472,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        private static bool Layout(GraphicsFormat format, out int bytes, out bool bgr)
+        internal static bool Layout(GraphicsFormat format, out int bytes, out bool bgr)
         {
             bytes = 4;
             bgr = false;

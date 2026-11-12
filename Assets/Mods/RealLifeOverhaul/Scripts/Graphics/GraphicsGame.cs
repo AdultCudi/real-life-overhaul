@@ -130,6 +130,20 @@ namespace RealLifeOverhaul.Gfx
 
         public static float Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour + SaveGameManager.Current.Minute / 60f : 12f;
 
+        /// <summary>
+        /// The hour the game lights the city for: the clock's, or the hour its own time of day tool shows while that is on
+        /// (its console panel, and the cinematic shots, which show other hours through it). The look follows this one, so
+        /// its exposure, its colours and its haze are the lit hour's and never another's.
+        /// </summary>
+        public static float LitHour
+        {
+            get
+            {
+                TimeOfDayController clock = Clock();
+                return clock != null && clock.usingSliderDebugTool ? InGameTimeOfDayPanel.selectedTimeInHours : Hour;
+            }
+        }
+
         /// <summary>How far the game's sky has gone to its rain look, 0 to 1: its own figure, which it fades over the half hour before the drops.</summary>
         public static float Rain => RainHelper.isRaining ? Mathf.Clamp01(RainHelper.environmentTransitionProgress) : 0f;
 

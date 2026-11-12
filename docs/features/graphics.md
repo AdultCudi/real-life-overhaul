@@ -119,7 +119,7 @@ It is a model of flat open ground. It knows no building's shadow, no lamp and no
 
 ### Nothing jumps
 
-The picture moves with the clock's minute (a second of play) and the weather's twentieth. Each row of the table has a step, the most it may move from one minute or one twentieth to the next, and the checks hold every look to it: 0.012 stops, 0.7 on the white balance, 1 point of the mixer, 28 m of haze, 0.025 of the sun's filter. While the game has its sun out the filter stands still, so nothing is written for a light that does not shine.
+The picture moves with the clock's minute (a second of play) and the weather's twentieth. While the game's own time of day tool shows another hour (its console panel, or the [cinematic shots](cinematic-shots.md), which show other hours through it), the look follows the hour the game lights the city for (`GraphicsGame.LitHour`), so its exposure, colours and haze are never another hour's. Each row of the table has a step, the most it may move from one minute or one twentieth to the next, and the checks hold every look to it: 0.012 stops, 0.7 on the white balance, 1 point of the mixer, 28 m of haze, 0.025 of the sun's filter. While the game has its sun out the filter stands still, so nothing is written for a light that does not shine.
 
 ## What Balanced and High add
 

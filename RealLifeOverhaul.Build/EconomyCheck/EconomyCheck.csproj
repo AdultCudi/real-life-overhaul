@@ -960,6 +960,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\CameraHold.cs" Link="Mod\CameraHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\Cinematic\CineRules.cs" Link="Mod\CineRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\Cinematic\CineHold.cs" Link="Mod\CineHold.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\Cinematic\CineJudge.cs" Link="Mod\CineJudge.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\PhotoSeenRules.cs" Link="Mod\PhotoSeenRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\PhotoSidecarFile.cs" Link="Mod\PhotoSidecarFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\GalleryQuery.cs" Link="Mod\GalleryQuery.cs" />

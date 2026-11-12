@@ -158,14 +158,18 @@ namespace RealLifeOverhaul.Photos
         public const float SlideStep = 0.6f;        // metres it moves along its line at a time while its place is not clear
         public const int Slides = 10;               // steps before the place is given up
         public const float LeastHeight = 0.22f;     // metres over the ground the lens is kept
-        public const int Tries = 4;                 // sides and facings tried for one shot
+        public const int TriesMost = 8;             // places tried for one shot at the most: sides and facings, ways round a thing, or roofs
+        public const float WholeAbove = 0.38f;      // of the field of view: a tall thing's top stands no higher than this over the aim, so sky is over it
+        public const float WholeBelow = 0.46f;      // and its foot no lower than this under it
+        public const float LowWideMost = 160f;      // metres a tall thing is stood back from at the most
 
         public const float Vignette = 0.22f;        // HDRP's vignette intensity: slight
         public const float VignetteSmooth = 0.4f;
 
         public const float Midday = 12.5f;          // the hour of the midday light
         public const float Night = 23f;             // the hour of the night light: the game's own slider ends at 24
-        public const float GoldenSun = 8f;          // degrees over the horizon the sun stands at for the golden light
+        public const float GoldenStrong = 0.35f;    // of the sun's most: the golden hour is taken while the sun still has this much of its strength
+        public const float GoldenBack = 3f;         // hours before the sun goes out that the golden hour is looked for in
         public const float BlueAfter = 0.35f;       // hours after the sun is gone and the lamps are on
         public const float HourLeast = 5f, HourMost = 23.75f;   // the game's own time of day tool runs from 5:00 to 24:00
 
@@ -173,6 +177,8 @@ namespace RealLifeOverhaul.Photos
         public const float SettleSeconds = 0.6f;    // and real seconds at the least
         public const int LightFrames = 40;          // frames drawn after the light changes: the sky's light on the city is spread over frames
         public const float LightSeconds = 1.2f;
+        public const int LampFrames = 60;           // frames drawn at a new place with the lamps on: the game lights them a few a frame as they come into view
+        public const float LampSeconds = 1.5f;
         public const int FirstFrames = 50;          // frames before the first shot: what the game had hidden between its camera and the player fades back in
         public const float FirstSeconds = 1f;
         public const int TargetFrames = 16;         // frames drawn at the picture's own size before it is read: the smoothing of edges builds over frames
@@ -280,10 +286,13 @@ namespace RealLifeOverhaul.Photos
 
         // ------------------------------------------------------------------ names
 
-        /// <summary>A picture's name without its ending: "07_golden_avenue_long". The light is "now" when the hour was left alone.</summary>
-        public static string FileName(CineShot shot, bool allLights)
+        /// <summary>
+        /// A picture's name without its ending: "07_golden_avenue_long". The light's word is the light the game was read to
+        /// show when the picture was taken (CineJudge.Word), never the one that was asked for; "now" where it could not be read.
+        /// </summary>
+        public static string FileName(CineShot shot, string lightWord)
         {
-            return shot.Number.ToString("00", CultureInfo.InvariantCulture) + "_" + (allLights ? LightWord(shot.Light) : NowWord) + "_" + shot.Slug;
+            return shot.Number.ToString("00", CultureInfo.InvariantCulture) + "_" + (string.IsNullOrEmpty(lightWord) ? NowWord : lightWord) + "_" + shot.Slug;
         }
 
         /// <summary>A name any disk takes: small letters, digits and underscores, 1 to 48 of them.</summary>
@@ -360,17 +369,59 @@ namespace RealLifeOverhaul.Photos
 
         // ------------------------------------------------------------------ where the camera stands
 
-        /// <summary>The side and the facing of a try: the first two keep the subject's facing, the last two turn it round.</summary>
-        public static void Try(int attempt, out int side, out bool flip)
+        private static readonly float[] Round = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
+
+        /// <summary>
+        /// How many places a kind of shot is tried from: both sides of a front or the player's shoulder; both sides and both
+        /// ends of anything else; every way round a thing seen from the ground; every roof found for a skyline.
+        /// </summary>
+        public static int Tries(CineStyle style)
         {
-            side = (attempt & 1) == 0 ? 1 : -1;
-            flip = attempt >= 2;
+            switch (style)
+            {
+                case CineStyle.Facade:
+                case CineStyle.OverShoulder:
+                    return 2;
+                case CineStyle.LowWide:
+                    return Round.Length;
+                case CineStyle.Establishing:
+                    return Stands;
+                default:
+                    return 4;
+            }
         }
 
-        /// <summary>Whether a kind of shot may be taken from the other end: not a front, and not the player's own shoulder.</summary>
-        public static bool CanFlip(CineStyle style)
+        /// <summary>The side of a try and the degrees its subject is turned for it: sides first, then the other end; a thing seen from the ground is gone round.</summary>
+        public static void Try(CineStyle style, int attempt, out int side, out float turn)
         {
-            return style != CineStyle.Facade && style != CineStyle.OverShoulder && style != CineStyle.Establishing;
+            if (style == CineStyle.LowWide)
+            {
+                side = 1;
+                turn = Round[Math.Max(0, Math.Min(Round.Length - 1, attempt))];
+                return;
+            }
+            side = (attempt & 1) == 0 ? 1 : -1;
+            turn = attempt >= 2 && style != CineStyle.Facade && style != CineStyle.OverShoulder && style != CineStyle.Establishing ? 180f : 0f;
+        }
+
+        /// <summary>A subject seen from another way round: its facing turned, and its length and width with it.</summary>
+        public static CineBox Turned(in CineBox box, float degrees)
+        {
+            CineBox turned = box;
+            double t = degrees * Math.PI / 180.0;
+            turned.Fx = (float)(box.Fx * Math.Cos(t) + box.Fz * Math.Sin(t));
+            turned.Fz = (float)(-box.Fx * Math.Sin(t) + box.Fz * Math.Cos(t));
+            float quarter = Math.Abs(degrees) % 180f;
+            if (quarter > 67.5f && quarter < 112.5f)
+            {
+                turned.HalfLength = box.HalfWidth;
+                turned.HalfWidth = box.HalfLength;
+            }
+            else if (quarter > 22.5f && quarter < 157.5f)
+            {
+                turned.HalfLength = turned.HalfWidth = Math.Max(box.HalfLength, box.HalfWidth);   // seen from a corner
+            }
+            return turned;
         }
 
         /// <summary>The share of the wanted distance the camera may be pulled in to before the place is given up.</summary>
@@ -464,13 +515,22 @@ namespace RealLifeOverhaul.Photos
                     break;
                 case CineStyle.LowWide:
                 {
-                    float around = Math.Max(box.HalfLength, box.HalfWidth);
-                    float distance = Clamp(Math.Max(Math.Max(box.Height * 1.05f, around * 1.7f), box.HalfLength + 8f), 10f, 80f);
-                    along = distance;
-                    across = distance * 0.25f * s;
+                    // Far enough back for the whole of it: its top under the frame's top with sky over it, its foot over the frame's foot.
                     up = 1.05f;
-                    aimUp = box.Height * 0.55f;
-                    pose.Reach = Math.Min(box.HalfLength, distance * 0.5f);
+                    aimUp = box.Height * 0.5f;
+                    float field = Clamp(fov, 1f, 170f) * (float)Math.PI / 180f;
+                    float distance = Math.Max(8f, Math.Max(box.HalfLength, box.HalfWidth) * 0.9f);
+                    for (; distance < LowWideMost; distance += 2f)
+                    {
+                        double aimAt = Math.Atan2(aimUp - up, distance);
+                        if (Math.Atan2(box.Height - up, distance) - aimAt <= field * WholeAbove && aimAt + Math.Atan2(up, distance) <= field * WholeBelow)
+                        {
+                            break;
+                        }
+                    }
+                    along = box.HalfLength + distance;
+                    across = distance * 0.25f * s;
+                    pose.Reach = box.HalfLength;
                     break;
                 }
                 default:   // Facade
@@ -508,6 +568,12 @@ namespace RealLifeOverhaul.Photos
                 pose.AnchorX = pose.AimX;
                 pose.AnchorY = pose.AimY;
                 pose.AnchorZ = pose.AimZ;
+            }
+            if (style == CineStyle.LowWide && along > 0.01f)
+            {
+                // The aim is the thing's own middle, inside its walls: the line is tested from a metre outside the side the lens is on.
+                float dx = pose.EyeX - pose.AimX, dy = pose.EyeY - pose.AimY, dz = pose.EyeZ - pose.AimZ;
+                pose.Reach = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz) * box.HalfLength / along + 1f;
             }
             if (style == CineStyle.WheelHeight)
             {
@@ -547,17 +613,19 @@ namespace RealLifeOverhaul.Photos
             return rise >= RoofLeast && rise <= RoofMost ? Math.Min(rise, RoofBest) : 0f;
         }
 
-        /// <summary>The camera on a roof behind the subject, looking over it at the city beyond and a little down.</summary>
-        public static void Establish(in CineBox box, float roofY, float back, float sideways, out CinePose pose)
+        /// <summary>
+        /// The camera at a roof's edge (<paramref name="edgeX"/>, <paramref name="roofY"/>, <paramref name="edgeZ"/>), a tripod's
+        /// height over it, looking the way the subject faces at the city beyond and a little down.
+        /// </summary>
+        public static void Establish(in CineBox box, float edgeX, float roofY, float edgeZ, out CinePose pose)
         {
             pose = default(CinePose);
-            float rx = box.Fz, rz = -box.Fx;
-            pose.EyeX = box.X - box.Fx * back + rx * sideways;
+            pose.EyeX = edgeX;
             pose.EyeY = roofY + EyeOverRoof;
-            pose.EyeZ = box.Z - box.Fz * back + rz * sideways;
-            pose.AimX = box.X + box.Fx * 260f;
+            pose.EyeZ = edgeZ;
+            pose.AimX = edgeX + box.Fx * 300f;
             pose.AimY = box.Y + (roofY - box.Y) * 0.35f + 6f;
-            pose.AimZ = box.Z + box.Fz * 260f;
+            pose.AimZ = edgeZ + box.Fz * 300f;
             pose.AnchorX = pose.EyeX;
             pose.AnchorY = pose.EyeY;
             pose.AnchorZ = pose.EyeZ;
@@ -663,35 +731,55 @@ namespace RealLifeOverhaul.Photos
         }
 
         /// <summary>
-        /// The hour of the golden light: the last hour before the game puts its sun out (<paramref name="sunOff"/>) at which
-        /// the sun still stands <see cref="GoldenSun"/> degrees up, looked for in tenths of an hour back to early afternoon;
-        /// an hour before the sun goes where the game's curve cannot be read.
+        /// The hour of the golden light, from the game's own sun by the hour (its strength, its colour temperature and its
+        /// turn): in the three hours before the game puts its sun out (<paramref name="sunOff"/>), the hour at which the sun
+        /// is warmest while it still has <see cref="GoldenStrong"/> of its strength, the lower sun and then the later hour
+        /// where two are as warm. A sun that has all but faded gilds nothing, however low it stands. Three quarters of an
+        /// hour before the sun goes where the game's curves cannot be read.
         /// </summary>
-        public static float GoldenHour(float sunOff, Func<float, float> sunTurn)
+        public static float GoldenHour(float sunOff, Func<float, float> sunLux, Func<float, float> sunKelvin, Func<float, float> sunTurn)
         {
-            float fallback = sunOff - 1f;
-            if (sunTurn == null)
+            float fallback = ClampHour(sunOff - 0.75f);
+            if (sunLux == null)
             {
-                return ClampHour(fallback);
+                return fallback;
             }
-            for (float hour = sunOff - 0.2f; hour >= 13f; hour -= 0.1f)
+            float peak = 0f;
+            for (float hour = 6f; hour <= sunOff; hour += 0.25f)
             {
-                float up = Elevation(sunTurn(hour));
-                if (up >= GoldenSun)
+                peak = Math.Max(peak, sunLux(hour));
+            }
+            if (!(peak > 0f))
+            {
+                return fallback;
+            }
+            float best = float.NaN, bestKelvin = float.MaxValue, bestUp = float.MaxValue;
+            for (int step = 1; step <= (int)(GoldenBack * 10f); step++)   // from the last tenth before the sun goes, back
+            {
+                float hour = sunOff - step * 0.1f;
+                if (sunLux(hour) < peak * GoldenStrong)
                 {
-                    return ClampHour(Clamp(hour, sunOff - 2.5f, sunOff - 0.2f));
+                    continue;
+                }
+                float kelvin = sunKelvin != null ? sunKelvin(hour) : 6500f;
+                float up = sunTurn != null ? Elevation(sunTurn(hour)) : 45f;
+                if (kelvin < bestKelvin - 50f || (Math.Abs(kelvin - bestKelvin) <= 50f && up < bestUp - 1f))
+                {
+                    best = hour;
+                    bestKelvin = kelvin;
+                    bestUp = up;
                 }
             }
-            return ClampHour(fallback);
+            return float.IsNaN(best) ? fallback : ClampHour(best);
         }
 
         /// <summary>
         /// The four lights' hours: midday; the golden hour; the blue hour a little after both the sun is out and the lamps are
         /// on; night. Each within what the game's own time of day tool can show, and none before the one before it.
         /// </summary>
-        public static void Hours(float sunOff, float lampsOn, Func<float, float> sunTurn, float[] into)
+        public static void Hours(float sunOff, float lampsOn, Func<float, float> sunLux, Func<float, float> sunKelvin, Func<float, float> sunTurn, float[] into)
         {
-            float golden = Math.Max(GoldenHour(sunOff, sunTurn), Midday + 1f);
+            float golden = Math.Max(GoldenHour(sunOff, sunLux, sunKelvin, sunTurn), Midday + 1f);
             float blue = Math.Max(ClampHour(Math.Max(sunOff, lampsOn) + BlueAfter), golden);
             float night = Math.Max(ClampHour(Math.Max(Night, blue + 1f)), blue);
             into[(int)CineLight.Midday] = Midday;

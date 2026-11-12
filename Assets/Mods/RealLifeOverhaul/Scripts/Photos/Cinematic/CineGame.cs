@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Photos
     /// its reading, and the test of a place for the camera (a line cast from the subject and the place's own clear air).
     /// Nothing per frame of its own; every member is called from a run, a few times a shot.
     /// </summary>
-    internal static class CineGame
+    internal static partial class CineGame
     {
         public static IModLogger Logger;
 
@@ -182,28 +182,51 @@ namespace RealLifeOverhaul.Photos
         /// <summary>The hour the game's clock shows, with the minutes as a fraction.</summary>
         public static float HourNow => SaveGameManager.Current != null ? SaveGameManager.Current.Hour + SaveGameManager.Current.Minute / 60f : 12f;
 
+        private static float _sunPeak, _sunOnHour = 6f, _sunOffHour = 20f;   // the game's day as last read: the sun's most, and when it comes on and goes out
+
         /// <summary>
-        /// The four lights' hours from the game's own day: when it puts its sun out, when its street lamps come on and how
-        /// high its sun stands by the hour. False where they cannot be read, with the hours of an ordinary day.
+        /// The four lights' hours from the game's own day: when it puts its sun out, when its street lamps come on, and its
+        /// sun's strength, colour and height by the hour. False where they cannot be read, with the hours of an ordinary day.
         /// </summary>
         public static bool Hours(float[] into)
         {
-            float sunOff = 20f, lampsOn = 19f;
-            Func<float, float> turn = null;
+            float lampsOn = 19f;
+            Func<float, float> turn = null, lux = null, kelvin = null;
+            _sunPeak = 0f;
+            _sunOnHour = 6f;
+            _sunOffHour = 20f;
             TimeOfDayController day = Clock();
             var settings = day != null && GameContract.DaySettings.Field != null ? GameContract.DaySettings.Field.GetValue(day) as EnvironmentSettings : null;
             if (settings != null)
             {
-                sunOff = settings.hourToTurnOnMoon;
+                _sunOffHour = settings.hourToTurnOnMoon;
+                _sunOnHour = settings.hourToTurnOnSun;
                 lampsOn = settings.outdoorLightsOnStartHour;
-                AnimationCurve sun = settings.outdoorsSunRotationX;
-                if (sun != null && sun.length > 1)
+                turn = Curve(settings.outdoorsSunRotationX);
+                lux = Curve(settings.sunIntensity);
+                kelvin = Curve(settings.sunTemperature);
+                for (float hour = _sunOnHour; lux != null && hour <= _sunOffHour; hour += 0.25f)
                 {
-                    turn = sun.Evaluate;
+                    _sunPeak = Mathf.Max(_sunPeak, lux(hour));
                 }
             }
-            CineRules.Hours(sunOff, lampsOn, turn, into);
+            CineRules.Hours(_sunOffHour, lampsOn, lux, kelvin, turn, into);
             return settings != null;
+        }
+
+        private static Func<float, float> Curve(AnimationCurve curve)
+        {
+            return curve != null && curve.length > 1 ? curve.Evaluate : (Func<float, float>)null;
+        }
+
+        /// <summary>The hour the game lights the city for: its time of day tool's while that is on, else the clock's.</summary>
+        public static float HourShown
+        {
+            get
+            {
+                TimeOfDayController day = Clock();
+                return day != null && day.usingSliderDebugTool ? InGameTimeOfDayPanel.selectedTimeInHours : HourNow;
+            }
         }
 
         /// <summary>The game's time of day tool as it stands: whether it is on, the hour it forces and the hour it shows. False with no city.</summary>
@@ -234,6 +257,7 @@ namespace RealLifeOverhaul.Photos
             day.SetEnvironmentSettings(hour);
             day.UpdateHourlyValues(hour);
             Lamps();
+            Look();
             return true;
         }
 
@@ -255,6 +279,21 @@ namespace RealLifeOverhaul.Photos
             day.SetEnvironmentSettings(HourNow);
             day.UpdateHourlyValues(SaveGameManager.Current.Hour);
             Lamps();
+            Look();
+        }
+
+        // The mod's own look for the picture (Scripts/Graphics) follows the hour the game lights the city for; it is told at
+        // once, since its own look every second waits on the game's clock, which a pause stops.
+        private static void Look()
+        {
+            try
+            {
+                Gfx.GraphicsDirector.OptionChanged();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // The game's lamps flicker on over scaled seconds, which a pause never ends: forced, they are lit or put out at once.
@@ -265,13 +304,17 @@ namespace RealLifeOverhaul.Photos
 
         // ------------------------------------------------------------------ the look
 
-        /// <summary>A volume of the tool's own over the mod's grading: a slight vignette on every shot and the depth of field of a close one. There while a run is on.</summary>
-        public static GameObject MakeLook(Transform parent, out DepthOfField blur)
+        /// <summary>
+        /// A volume of the tool's own over the mod's grading: a slight vignette on every shot, the depth of field of a close
+        /// one, and the fog's reach where the game's ground mist is lifted for a camera that stands in it. There while a run is on.
+        /// </summary>
+        public static GameObject MakeLook(Transform parent, out DepthOfField blur, out Fog haze)
         {
             var made = new GameObject("RealLifeOverhaul Cinematic Look");
             made.transform.SetParent(parent, false);
             VolumeProfile profile = ScriptableObject.CreateInstance<VolumeProfile>();
             blur = profile.Add<DepthOfField>();
+            haze = profile.Add<Fog>();   // nothing of it is set until a shot lifts the mist: the fog stays the game's, or the look's
             Vignette edge = profile.Add<Vignette>();
             edge.intensity.overrideState = true;
             edge.intensity.value = CineRules.Vignette;
@@ -332,45 +375,46 @@ namespace RealLifeOverhaul.Photos
         }
 
         /// <summary>
-        /// The camera for a shot of a subject: each side and facing in turn until one is clear, with the subject in sight.
-        /// False, with why, when none is. Some eight physics queries a try, on a press.
+        /// The camera for a shot of a subject: each place of its kind in turn (a side and a facing, a way round a thing, a
+        /// roof) until one is clear with the subject in sight and the frame worth taking (<see cref="Fill"/>). False, with
+        /// the last place's reason, when none is. Some fifty physics queries a try, on a press.
         /// </summary>
         public static bool Place(CineShot shot, in CineFound found, out CinePose pose, out Vector3 eye, out string why)
         {
             pose = default(CinePose);
             eye = default(Vector3);
-            for (int attempt = 0; attempt < CineRules.Tries; attempt++)
+            string last = null;
+            int tries = Mathf.Min(CineRules.Tries(shot.Style), CineRules.TriesMost);
+            for (int attempt = 0; attempt < tries; attempt++)
             {
-                CineRules.Try(attempt, out int side, out bool flip);
-                if (flip && !CineRules.CanFlip(shot.Style))
-                {
-                    break;
-                }
-                CineBox box = found.Box;
-                if (flip)
-                {
-                    box.Fx = -box.Fx;
-                    box.Fz = -box.Fz;
-                }
                 if (shot.Style == CineStyle.Establishing)
                 {
-                    CineRules.Establish(box, found.Roof, found.Back, found.Sideways, out pose);
+                    if (attempt >= found.Roofs)
+                    {
+                        break;
+                    }
+                    Vector3 roof = CineSubjects.Roof(attempt);
+                    CineRules.Establish(found.Box, roof.x, roof.y, roof.z, out pose);
                 }
                 else
                 {
+                    CineRules.Try(shot.Style, attempt, out int side, out float turn);
+                    CineBox box = Mathf.Approximately(turn, 0f) ? found.Box : CineRules.Turned(found.Box, turn);
                     CineRules.Frame(shot.Style, box, shot.Fov, side, out pose);
                 }
-                if (Clear(shot.Style, pose, out eye))
+                if (!Clear(shot.Style, pose, out eye))
+                {
+                    last = last ?? "something stands in the camera's place or on its line to the subject";
+                    continue;
+                }
+                if (Fill(shot, found, pose, eye, out string fill))
                 {
                     why = null;
                     return true;
                 }
-                if (shot.Style == CineStyle.Establishing)
-                {
-                    break;   // a roof has one place
-                }
+                last = fill;
             }
-            why = "no clear place for the camera with " + CineRules.SubjectWord(shot.Subject) + " in sight";
+            why = "no place for the camera with " + CineRules.SubjectWord(shot.Subject) + " well in the frame" + (last != null ? ": " + last : string.Empty);
             return false;
         }
 
@@ -515,11 +559,44 @@ namespace RealLifeOverhaul.Photos
             return new Frame { Pixels = new NativeArray<byte>(raw, Allocator.Persistent), Width = reader.width, Height = reader.height };
         }
 
-        /// <summary>The screen read at the end of a frame, at the screen's own size, when the target gave nothing.</summary>
-        public static Frame ReadScreen()
+        /// <summary>
+        /// The screen read at the end of a frame: at its own size, or drawn larger by a whole number (the engine's super
+        /// size) for a picture of 2160 lines from a smaller screen. Null where it could not be read.
+        /// </summary>
+        public static Frame ReadScreen(int superSize)
         {
-            PhotosGame.Shot shot = PhotosGame.Read();
-            return shot != null ? new Frame { Screen = shot, Width = shot.Width, Height = shot.Height } : null;
+            if (superSize <= 1)
+            {
+                PhotosGame.Shot shot = PhotosGame.Read();
+                return shot != null ? new Frame { Screen = shot, Width = shot.Width, Height = shot.Height } : null;
+            }
+            Texture2D texture = null;
+            try
+            {
+                texture = ScreenCapture.CaptureScreenshotAsTexture(superSize);
+                if (texture == null || !PhotosGame.Layout(texture.graphicsFormat, out int bytes, out bool bgr))
+                {
+                    return null;
+                }
+                var big = new PhotosGame.Shot
+                {
+                    Pixels = new NativeArray<byte>(texture.GetRawTextureData<byte>(), Allocator.Persistent),
+                    Width = texture.width, Height = texture.height, Bytes = bytes, Bgr = bgr
+                };
+                return new Frame { Screen = big, Width = big.Width, Height = big.Height };
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return null;
+            }
+            finally
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.Destroy(texture);
+                }
+            }
         }
 
         // The darkest and the brightest of a grid of pixels, by their green.
