@@ -226,6 +226,12 @@ namespace RealLifeOverhaul.Ui
         // An action of a page: each the game's own button, found by the method the game wired it to.
         private bool Do(BizManBusiness b, int what)
         {
+            // Start business has a number of its own above the Interior tab's line: it is asked first, or the tab would take it for
+            // one of its buttons, find none and refuse the press with nothing started.
+            if (what == BizManPages.DoStartHere)
+            {
+                return SetUpBusiness(b);
+            }
             if (what >= BizManPages.DoLine)
             {
                 return InteriorDo(what - BizManPages.DoLine);
