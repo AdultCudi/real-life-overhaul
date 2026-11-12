@@ -15,7 +15,11 @@ internal static partial class UiSamples
 {
     public static readonly string[] CheckoutStates = { "goods", "goods_page2", "taxes", "queue", "ticket", "empty", "goods_fr" };
     public static readonly string[] VehicleBuyStates = { "car", "car_delivery", "boat", "car_fr" };
-    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap", "vehicle_driving", "vehicle_driving_fr" };
+    public static readonly string[] ItemPanelStates =
+    {
+        "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap", "vehicle_driving",
+        "vehicle_driving_fr", "vehicle_driving_needs", "vehicle_driving_plain", "hand_truck_used", "hand_truck_foreign"
+    };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
@@ -315,15 +319,42 @@ internal static partial class UiSamples
                     m.AvoidH = MinimapH;
                 }
                 break;
+            case "hand_truck_used":
+            case "hand_truck_foreign":
+                // A hand truck the player pushes. The game counts it a vehicle in use, as it does a car, and its tiles are its
+                // one way to take a box off it: so it keeps the full panel, each stack a tile to press. Another player's
+                // (a Going Public session): its tiles are drawn held.
+                m.Name = "Hand Truck";
+                m.Status = "5th Avenue, Midtown";
+                m.Glyph = UiIcon.Truck;
+                m.Owner = state == "hand_truck_foreign" ? t("reallife_ui_buy_not_yours", "Not yours") : t("reallife_ui_buy_yours", "Yours");
+                m.OwnerTone = state == "hand_truck_foreign" ? UiRole.Warn : UiRole.Ok;
+                m.CargoLabel = t("common_cargo", "Cargo");
+                m.CargoValue = t("reallife_ui_buy_slots", "{used} of {most}").Replace("{used}", "3").Replace("{most}", "4");
+                m.CargoSlots = 4;
+                m.Cargo = new[]
+                {
+                    new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "x2", Disabled = state == "hand_truck_foreign" },
+                    new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "x1", Disabled = state == "hand_truck_foreign" },
+                    new UiCatalogueCard { Picture = "buy:popcorn", Aspect = 1f, Figure = "x1", Disabled = state == "hand_truck_foreign" }
+                };
+                m.Actions = new[] { new UiItemAction { Label = t("itempanelui_buttons_park_vehicle", "Park Vehicle"), Key = park, Main = true } };
+                break;
             case "vehicle_driving":
             case "vehicle_driving_fr":
+            case "vehicle_driving_needs":
+            case "vehicle_driving_plain":
+            {
                 // The owner's screenshot (12 Nov): driving the Ferdinand 112 over the limit on a street of illegal parking,
-                // as the small card: its name and whose, the speed, the parking zone, Park and Sell as key chips.
+                // as the small card: its name with what it carries and whose, the speed, the fuel with how far it goes, the
+                // condition, the parking zone, Park and Sell as key chips. "needs": nearly dry, the longest range and a service
+                // due; "plain": the game's fuel and damage switched off and no cargo row, the card as it was on 12 Nov.
+                bool needs = state == "vehicle_driving_needs", plain = state == "vehicle_driving_plain";
                 m.Compact = true;
                 m.Name = "Ferdinand 112";
                 m.Owner = t("reallife_ui_buy_yours", "Yours");
                 m.OwnerTone = UiRole.Ok;
-                m.Readings = new[]
+                var readings = new List<UiReading>
                 {
                     new UiReading
                     {
@@ -331,6 +362,23 @@ internal static partial class UiSamples
                         Value = t("reallife_ui_buy_speed_of", "{speed} of {limit} {unit}").Replace("{speed}", "68").Replace("{limit}", "50").Replace("{unit}", "km/h")
                     }
                 };
+                if (!plain)
+                {
+                    readings.Add(new UiReading
+                    {
+                        Icon = UiIcon.Drop, Label = t("itempanelui_vehicle_fuel", "Fuel"), Share = needs ? 1f : 0.64f, Value = needs ? "100%" : "64%",
+                        Note = needs ? "1,240 km" : "310 km"
+                    });
+                    readings.Add(new UiReading
+                    {
+                        Icon = UiIcon.Wrench, Label = t("itempanelui_maintenance_condition", "Condition"), Share = needs ? 0.42f : 0.87f, Tone = needs ? UiRole.Warn : UiRole.None,
+                        Value = needs ? t("reallife_car_note_service", "SERVICE DUE") : "87%"
+                    });
+                    m.CargoLabel = t("common_cargo", "Cargo");
+                    m.CargoValue = t("reallife_ui_buy_slots", "{used} of {most}").Replace("{used}", "3").Replace("{most}", "10");
+                    m.CargoSlots = 10;
+                }
+                m.Readings = readings.ToArray();
                 m.Facts = new[] { new UiInfoRow { Label = t("itempanelui_vehicle_parkingzone", "Parking Zone"), Value = t("itempanelui_parkingzone_illegal", "ILLEGAL") } };
                 m.Actions = new[]
                 {
@@ -338,6 +386,7 @@ internal static partial class UiSamples
                     new UiItemAction { Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$104K"), Key = new UiGameKey { Name = "BACKSPACE" }, Danger = true }
                 };
                 break;
+            }
             case "minigame":
                 m.Title = t("reallife_ui_buy_minigame", "Playing");
                 m.Icon = UiIcon.GameController;

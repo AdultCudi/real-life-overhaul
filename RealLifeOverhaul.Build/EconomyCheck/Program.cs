@@ -124,6 +124,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--vehicle-panel")
+        {
+            ItemPanelKeysChecks(UiWords("en"));   // the driving card and where it stands, a hand truck's tiles, Take in manage cargo and a refused press's reason (UiChecks.World.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-cleanup")
         {
             UiCleanupChecks();   // the dead dashboard page kind gone, every decision card's choices lifting (UiChecks.Lift.cs)

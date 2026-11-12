@@ -26,6 +26,15 @@ namespace RealLifeOverhaul
         private static bool _on;
         private static bool _failed;
 
+        /// <summary>The reading's name among the vehicle panel's rows: the item panel on the RLO interface knows it by this.</summary>
+        internal const string RowName = "RealLifeOverhaul Service";
+
+        /// <summary>The word the reading shows while on (the driving card says it on its condition line); null while off.</summary>
+        internal static string Shown => _on ? _shown : null;
+
+        /// <summary>True while the word shown is the urgent one (a breakdown).</summary>
+        internal static bool Urgent => _on && _urgentShown;
+
         /// <summary>
         /// Shows <paramref name="word"/> (capitals; the same string object while nothing changes) in the game's red when
         /// <paramref name="urgent"/>, else its orange.
@@ -135,7 +144,7 @@ namespace RealLifeOverhaul
             }
             using var piece = SessionWatch.Piece("game UI: the car's reading being copied from the game's vehicle panel");
             Transform holder = UiClone.Dormant(info, "RealLifeOverhaul Service Holder");
-            GameObject copy = UiClone.Asleep(condition.gameObject, holder, "RealLifeOverhaul Service");
+            GameObject copy = UiClone.Asleep(condition.gameObject, holder, RowName);
             UiClone.StripGameScripts(copy, null);
             Transform value = copy.transform.Find("Value");
             Transform picture = copy.transform.Find("Icon");

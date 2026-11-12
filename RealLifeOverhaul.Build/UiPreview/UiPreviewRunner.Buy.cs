@@ -44,7 +44,7 @@ public static partial class UiPreviewRunner
         for (int i = 0; i < UiSamples.ItemPanelStates.Length; i++)
         {
             string st = UiSamples.ItemPanelStates[i];
-            screens.Add(ItemPanelShot("buy_item_panel_" + st, st, panel[i]));
+            screens.Add(ItemPanelShot("buy_item_panel_" + st, st, panel[Math.Min(i, panel.Length - 1)]));   // the later states stand on the last backdrop
         }
         screens.Add(ItemPanelShot("buy_item_panel_vehicle_night", "vehicle", "11.jpg"));
         screens.Add(ItemPanelShot("buy_item_panel_vehicle_before", "vehicle", "06.jpg"));
