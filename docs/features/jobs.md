@@ -52,6 +52,7 @@ Fifteen more jobs are the building trades (`JobCatalogue.Trades`, [Building trad
 - Shared pieces other features use: `ShiftCard` (the copied job panel), `ShiftSkip` (the rest of a shift left to the game's clock), `JobStand` and `JobUniform`.
 - A shift in progress at a save is settled on load: see [A shift across a save](#a-shift-across-a-save-jobsave-payslip).
 - The hired van is lent to the Marketplace's junk runs and moves while no gig is on (`JobDirector.HireVan`, `ReturnVan`, through `Wiring/Wiring.HustleLinks.cs`): see [Legal hustles](hustles.md). Its visits are worked on `ShiftSkip`.
+- The ride-hail and courier jobs are also driven as shifts signed on for at the cab office's and the parcel depot's desks, in the player's own vehicle (`Jobs/DeskShift`, `JobDirector.TakeDesk`, `Kinds/TaxiJob.Desk.cs`, `Kinds/CourierJob.Desk.cs`): see [Taxi and delivery shifts](side-jobs.md).
 - To add a job, see [Adding a job](../contributing/adding-things.md#adding-a-job).
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped, paid by the hour), the delivery van (a company van, a hand truck, boxes of stock to three shops, 100 a drop) and food delivery (accepted at a restaurant's till, 25 plus 0.05 a metre).

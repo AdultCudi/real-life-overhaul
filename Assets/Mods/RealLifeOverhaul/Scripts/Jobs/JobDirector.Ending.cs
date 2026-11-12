@@ -111,6 +111,7 @@ namespace RealLifeOverhaul
             CareerShift shift = _context.Shift;
             _context.Shift = null;
             _context.Gig = null;
+            _context.Desk = null;
             if (shift != null)
             {
                 _career.ShiftEnded(job, shift, why, failed);   // the basic wage and the payslip, after the work's own slip

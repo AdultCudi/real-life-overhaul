@@ -376,6 +376,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_career_dispatch", () => JobDirector.Instance?.TestShift(CareerWork.Dispatch, false))
                 .AddButton("reallife_test_career_lead", () => JobDirector.Instance?.TestShift(CareerWork.Lead, false))
                 .AddButton("reallife_test_career_gig", () => JobDirector.Instance?.TestGig())
+                .AddToggle(Settings.SideJobsId, "reallife_job_desk_enabled", Settings.SideJobs,
+                    v => Settings.SideJobs = v)
+                .AddButton("reallife_job_desk_test_cab", () => SideJobs.SideJobDirector.Instance?.TestSignOn(true))
+                .AddButton("reallife_job_desk_test_parcels", () => SideJobs.SideJobDirector.Instance?.TestSignOn(false))
+                .AddButton("reallife_job_desk_test_books", () => SideJobs.SideJobDirector.Instance?.TestBooks())
                 .AddToggle(Settings.CareersStudyId, "reallife_study_enabled", Settings.CareersStudy,
                     v => Settings.CareersStudy = v)
                 .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
@@ -1942,6 +1947,7 @@ namespace RealLifeOverhaul
             Guard.Step("giving", () => Giving.GivingDirector.Attach(_root, context.Logger));
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
             Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
+            Guard.Step("side jobs", () => SideJobs.SideJobDirector.Attach(_root, context.Logger));
             Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));
             Guard.Step("rivals seen", () => RivalsSeen.SeenDirector.Attach(_root, context.Logger));
             Guard.Step("the dynasty", () => Dynasty.DynastyDirector.Attach(_root, context.Logger));

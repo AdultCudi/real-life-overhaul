@@ -138,8 +138,9 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_no_here";
                 return false;
             }
-            // Last of all, once nothing else can refuse: the player's own car, or a van hired for the day.
-            CarController car = Ctx.Director.CarFor(Ctx.Test, out string noCar);
+            // Last of all, once nothing else can refuse: the player's own car, or a van hired for the day; a desk shift's is the car signed on with.
+            string noCar;
+            CarController car = Ctx.Desk != null ? DeskCar(out noCar) : Ctx.Director.CarFor(Ctx.Test, out noCar);
             if (car == null)
             {
                 Refusal = noCar ?? "reallife_job_no_car";
@@ -195,6 +196,7 @@ namespace RealLifeOverhaul
             _tried = false;
             _onFootShown = false;
             _stoppedSince = -1f;
+            DeskFare();
             Go(Step.ToPickup, now, 110f + JobSpots.Flat(from, _pickup.Front) / 4.5f);
             _pickupBy = _stepEnd;
             Show(JobText.T("reallife_job_taxi_obj_pickup", "place", _pickup.Name));
@@ -304,6 +306,10 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            if (DeskOtherCar())
+            {
+                return;   // a desk shift's fares ride in the car that was signed on with
+            }
             // Stopped beside them: is there a rear door they can walk to? Asked again only once the car has moved.
             Vector3 carAt = Ctx.Car.transform.position;
             if (_tried && JobSpots.Flat(carAt, _triedAt) < 1f)
@@ -335,6 +341,7 @@ namespace RealLifeOverhaul
             _boardCarAt = carAt;
             Unmark();
             Show(JobText.T("reallife_job_taxi_obj_boarding"));
+            _pickupUsed = Mathf.Clamp01((now - _stepFrom) / Mathf.Max(1f, _stepEnd - _stepFrom));
             Go(Step.Boarding, now, BoardAllow);
         }
 
@@ -441,9 +448,12 @@ namespace RealLifeOverhaul
             float par = _metres / 7.5f + 20f;
             int comfort = Mathf.Clamp(Mathf.RoundToInt(_comfort), 0, 100);
             var slip = new PaySlip { Units = 1, Base = UnitPay(), Distance = DistancePay(_metres) };
-            int fare = slip.Base + slip.Distance;
+            int kept = 0;
+            // A desk shift: the meter runs by distance and by time, the office keeps its share, and lateness and offences mark the ride down.
+            int fare = Ctx.Desk != null ? DeskMeter(seconds, par, ref comfort, ref slip, out kept) : slip.Base + slip.Distance;
 
-            float tip = comfort >= 90 ? Random.Range(0.22f, 0.30f)
+            float tip = Ctx.Desk != null ? DeskTip(comfort)
+                : comfort >= 90 ? Random.Range(0.22f, 0.30f)
                 : comfort >= 75 ? Random.Range(0.12f, 0.18f)
                 : comfort >= 55 ? Random.Range(0.04f, 0.08f)
                 : 0f;
@@ -455,6 +465,7 @@ namespace RealLifeOverhaul
             slip.Penalty = Mathf.RoundToInt(fare * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut + TaxiComfortRules.LowShare(comfort, _table)));
             UnitDone(_fares + 1, fare);   // the shift's big tipper, if the offer drew one: a share of the fare
             Ctx.Pay(this, slip, "reallife_job_taxi_slip");
+            DeskBooked(slip, fare, kept);
 
             string[] lines = comfort >= 75 ? Good : comfort >= 45 ? Fair : Bad;
             Ctx.Say(JobText.Pick(lines, ref _line), 7f);
@@ -477,6 +488,10 @@ namespace RealLifeOverhaul
         private void Between(float now)
         {
             if (now < _stepEnd)
+            {
+                return;
+            }
+            if (DeskDayDone())
             {
                 return;
             }

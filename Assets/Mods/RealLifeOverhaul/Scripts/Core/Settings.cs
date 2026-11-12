@@ -385,6 +385,7 @@
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
         public const string CareersId = "careers";
+        public const string SideJobsId = "side_jobs";
         public const string CareersStudyId = "careers_study";
         public const string CareersDegreesId = "careers_degrees";
         public const string CareersJobsId = "careers_jobs";
@@ -825,6 +826,7 @@
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks
+        public static bool SideJobs = true;              // taxi and delivery shifts in the player's own vehicle, signed on for at the cab office's and the depot's desks (off: no desk stands)
         public static bool CareersStudy = true;          // the city's courses (off: the game's own courses alone; records are kept)
         public static bool CareersDegrees = true;        // the university (off: those courses are not offered; results are kept)
         public static bool CareersJobs = true;           // professional jobs (off: no vacancies; a job held is kept)
@@ -1279,6 +1281,7 @@
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
             Careers = Bool(modId, CareersId, Careers);
+            SideJobs = Bool(modId, SideJobsId, SideJobs);
             CareersStudy = Bool(modId, CareersStudyId, CareersStudy);
             CareersDegrees = Bool(modId, CareersDegreesId, CareersDegrees);
             CareersJobs = Bool(modId, CareersJobsId, CareersJobs);

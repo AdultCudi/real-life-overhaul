@@ -53,6 +53,7 @@ household	reallife_guide_household	household staff
 hustles	reallife_guide_hustles	the Marketplace
 interiors	reallife_guide_interiors	interiors and decor
 jobs	reallife_guide_jobs	jobs
+side-jobs	reallife_guide_side_jobs	taxi and delivery shifts in the player's own car
 justice	reallife_guide_justice	courts and prison
 landlord	reallife_guide_economy_estate_duties	a landlord's duties
 landmarks	reallife_guide_landmarks	Uptown's landmarks

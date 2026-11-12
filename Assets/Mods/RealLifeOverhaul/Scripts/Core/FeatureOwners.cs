@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Giving", "giving" },
             { "RealLifeOverhaul.Health", "health" },
             { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
+            { "RealLifeOverhaul.SideJobs", "side_jobs" },
             { "RealLifeOverhaul.Suppliers", "suppliers" },
             { "RealLifeOverhaul.RivalsSeen", "rivals_seen" },
             { "RealLifeOverhaul.Dynasty", "dynasty" },

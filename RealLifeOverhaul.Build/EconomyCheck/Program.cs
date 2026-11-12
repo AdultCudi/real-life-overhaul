@@ -919,6 +919,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--side-jobs")
+        {
+            SideJobShifts();   // (taxi and delivery shifts in the player's own vehicle alone, while working on them: SideJobChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--parking")
         {
             ParkChecks();   // (car parks alone, while working on them: ParkChecks.cs)
@@ -1659,6 +1665,7 @@ internal static partial class Program
         Seasons();      // the seasons: the goods' table, the season of a day, the snow of a winter day and how much lies, the cost, the sources, the texts (SeasonChecks.cs)
         LoadPaths();    // load-path parity: nothing tells Continue from Load, the entry points, a game static that is null at a session's first city (LoadPathChecks.cs)
         RivalFirst();   // when the first rival tycoon comes forward, by the option: the steps, the tiers, a season at each, every reader, the texts (RivalFirstChecks.cs)
+        SideJobShifts();   // taxi and delivery shifts in the player's own vehicle: the desks' gates, the meter, the firm's share, quality and tips, a vehicle's room, each drop's clock and pay, no fare for no distance, the day, the save, the firms' books, the sources and the texts (SideJobChecks.cs)
         TaxiComfort();  // ride fares' easier passengers: the two tables, the arithmetic, a rough ride under each, the gig reading only the table, the texts (TaxiComfortChecks.cs)
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
         Schemes();      // schemes and inquiries: every figure, the trail and its line, an inquiry's stages, the people, the rivals, the save, ten years of every plan, the pages, the texts (SchemeChecks.cs)

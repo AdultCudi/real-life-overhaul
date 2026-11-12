@@ -54,6 +54,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 ## Work and careers
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
+- [Taxi and delivery shifts](side-jobs.md): metered fares and timed delivery runs in the player's own car, signed on for at the cab office's and the parcel depot's desks.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
 - [Hiring professionals](tech-hiring.md): the jobs board, applicants and offers in Open Roles, a search firm's search for senior people and for a data centre's crew, and paying to bring a hire's start forward: a search rushed, a notice bought out.
 - [Building trades](trades.md): the trades at the city's works sites, each with a game of its own, the architects' practice on a floor (the floor plan, the facade and the frame), the trades' courses and three ladders.

@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
             new Line("crime", CityScope.NewYork, "arrests and stops go to New York's precincts"),
             new Line("driving", CityScope.AnyCity, "the cars' handling"),
             new Line("jobs", CityScope.AnyCity, "places picked from the game's buildings at each load"),
+            new Line("side_jobs", CityScope.AnyCity, "the firms' help-wanted boards outside the special service buildings of whatever city it is, and the player's own vehicle"),
             new Line("life", CityScope.AnyCity, "the character's life"),
             new Line("people", CityScope.NewYork, "officers and patrols of New York's precincts"),
             new Line("phone", CityScope.AnyCity, "the phone and its contacts"),
