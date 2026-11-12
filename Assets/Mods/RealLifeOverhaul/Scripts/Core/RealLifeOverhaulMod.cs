@@ -1987,6 +1987,8 @@ namespace RealLifeOverhaul
             Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
             Guard.Step("Photos.PhotosDirector", () => Photos.PhotosDirector.Logger = context.Logger);
             Guard.Step("Photos.PhotosDirector", () => Guard.Add<Photos.PhotosDirector>(_root));   // nothing per frame while shut
+            Guard.Step("Photos.CineDirector", () => Photos.CineDirector.Logger = context.Logger);
+            Guard.Step("Photos.CineDirector", () => Guard.Add<Photos.CineDirector>(_root));   // the cinematic shots, a developer's tool: off unless a run is on
             Guard.Step("PerfDirector", () => PerfDirector.Logger = context.Logger);
             Guard.Step("PerfDirector", () => Guard.Add<PerfDirector>(_root));
             Guard.Step("MapLinks", () => Guard.Add<MapLinks>(_root));   // every feature's places on the city map; no feature knows of it

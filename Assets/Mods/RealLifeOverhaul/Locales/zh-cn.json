@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "医院附近没有空位，因此您的车辆被拖到{address}的修理厂。您的汽车保障赔付了{payout}的拖车费，您支付了{amount}。",
   "reallife_roadside_towed_covered": "您的车辆已被拖到{address}的车库。您的汽车保障赔付了{payout}的费用，已收取{amount}。",
   "reallife_transaction_ins_car": "汽车保险，等级已提升",
-  "reallife_transaction_ins_car_label": "汽车保险，等级已提升"
+  "reallife_transaction_ins_car_label": "汽车保险，等级已提升",
+  "reallife_cine_test_set": "电影镜头：现在拍摄整套",
+  "reallife_cine_test_hour": "电影镜头：仅在此时段拍摄",
+  "reallife_cine_armed": "关闭此菜单后开始拍摄电影镜头。按 Esc 可停止。",
+  "reallife_cine_running": "电影镜头正在拍摄。按 Esc 可停止。",
+  "reallife_cine_refuse_session": "在 Going Public 会话中无法拍摄电影镜头。拍摄会移动镜头并改变光线，而这些是所有玩家共享的。",
+  "reallife_cine_line": "正在拍摄第 {shot} 张，共 {count} 张，按 Esc 停止",
+  "reallife_cine_done": "{taken} 张电影照片已保存到 {folder}。{skipped} 张被跳过，该文件夹中的 shots.txt 说明了原因。",
+  "reallife_cine_stopped": "电影镜头已停止。{taken} 张照片已保存到 {folder}。一切已恢复原样。",
+  "reallife_cine_none": "这里无法拍摄任何电影照片。游戏日志会说明每张照片的原因。一切已恢复原样。",
+  "reallife_cine_failed": "电影镜头因故障而停止，详情见游戏日志。镜头、光线和界面已恢复原样。"
 }

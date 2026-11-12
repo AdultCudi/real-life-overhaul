@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Il n'y avait pas de place près de l'hôpital, donc votre voiture a été remorquée au garage à {address}. Votre couverture auto a payé {payout} des frais de remorquage et vous avez payé {amount}.",
   "reallife_roadside_towed_covered": "Votre voiture a été remorquée au garage à {address}. Votre couverture auto a payé {payout} des frais et {amount} ont été prélevés.",
   "reallife_transaction_ins_car": "Assurance auto, formule augmentée",
-  "reallife_transaction_ins_car_label": "Assurance auto, formule augmentée"
+  "reallife_transaction_ins_car_label": "Assurance auto, formule augmentée",
+  "reallife_cine_test_set": "Plans cinéma : prendre le lot maintenant",
+  "reallife_cine_test_hour": "Plans cinéma : à cette heure seulement",
+  "reallife_cine_armed": "Les plans cinéma commencent quand tu fermes ce menu. Appuie sur Esc pour les arrêter.",
+  "reallife_cine_running": "Les plans cinéma sont déjà en cours. Appuie sur Esc pour les arrêter.",
+  "reallife_cine_refuse_session": "Les plans cinéma ne se prennent pas dans une session Going Public. Ils déplacent la caméra et changent la lumière, que tous les joueurs partagent.",
+  "reallife_cine_line": "Plan cinéma {shot} sur {count}, appuie sur Esc pour arrêter",
+  "reallife_cine_done": "{taken} photos cinéma sont enregistrées dans {folder}. {skipped} ont été écartées, et shots.txt dans ce dossier explique pourquoi.",
+  "reallife_cine_stopped": "Les plans cinéma ont été arrêtés. {taken} photos sont enregistrées dans {folder}. Tout est revenu comme avant.",
+  "reallife_cine_none": "Aucune photo cinéma n'a pu être prise ici. Le journal du jeu indique la raison pour chacune. Tout est revenu comme avant.",
+  "reallife_cine_failed": "Les plans cinéma se sont arrêtés sur une erreur, consignée dans le journal du jeu. La caméra, la lumière et l'interface sont revenues comme avant."
 }

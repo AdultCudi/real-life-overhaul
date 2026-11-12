@@ -108,6 +108,22 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>Where a site of a family that is out now has its middle, for the cinematic shots; false for none. Asked on a press.</summary>
+        public bool SiteOut(CityFamily family, out Vector3 centre)
+        {
+            for (int i = 0; i < _running.Count; i++)
+            {
+                CityEntry entry = _running[i].Entry;
+                if (entry != null && entry.Family == family && entry.Activity != null)
+                {
+                    centre = entry.Activity.Centre;
+                    return true;
+                }
+            }
+            centre = default;
+            return false;
+        }
+
         private void Awake()
         {
             Instance = this;

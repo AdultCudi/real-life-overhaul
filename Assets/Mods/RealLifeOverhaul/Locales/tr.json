@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Hastane yakınında yer yoktu, bu yüzden arabanız {address} adresindeki tamirhaneye çekildi. Araba teminatınız çekme ücretinin {payout} kısmını ödedi, siz {amount} ödediniz.",
   "reallife_roadside_towed_covered": "Arabanız {address} adresindeki garaja çekildi. Araba teminatınız ücretin {payout} kısmını ödedi ve {amount} tahsil edildi.",
   "reallife_transaction_ins_car": "Araba sigortası, kademe yükseltildi",
-  "reallife_transaction_ins_car_label": "Araba sigortası, kademe yükseltildi"
+  "reallife_transaction_ins_car_label": "Araba sigortası, kademe yükseltildi",
+  "reallife_cine_test_set": "Sinematik çekimler: seti şimdi çek",
+  "reallife_cine_test_hour": "Sinematik çekimler: yalnızca bu saatte",
+  "reallife_cine_armed": "Bu menüyü kapattığında sinematik çekimler başlar. Durdurmak için Esc tuşuna bas.",
+  "reallife_cine_running": "Sinematik çekimler zaten yapılıyor. Durdurmak için Esc tuşuna bas.",
+  "reallife_cine_refuse_session": "Going Public oturumunda sinematik çekim yapılmaz. Kamerayı hareket ettirir ve herkesin paylaştığı ışığı değiştirirler.",
+  "reallife_cine_line": "Sinematik çekim {shot} / {count}, durdurmak için Esc tuşuna bas",
+  "reallife_cine_done": "{folder} klasörüne {taken} sinematik fotoğraf kaydedildi. {skipped} tanesi atlandı, bu klasördeki shots.txt nedenini açıklıyor.",
+  "reallife_cine_stopped": "Sinematik çekimler durduruldu. {folder} klasöründe {taken} fotoğraf kayıtlı. Her şey eski haline döndü.",
+  "reallife_cine_none": "Burada hiç sinematik fotoğraf çekilemedi. Oyunun günlüğü her biri için nedenini yazıyor. Her şey eski haline döndü.",
+  "reallife_cine_failed": "Sinematik çekimler oyun günlüğünde yazan bir hata yüzünden durdu. Kamera, ışık ve arayüz eski hallerine döndü."
 }

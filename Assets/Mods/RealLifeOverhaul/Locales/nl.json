@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Er was geen plek bij het ziekenhuis, dus je auto is naar de garage op {address} gesleept. Je autodekking betaalde {payout} van de takelkosten en jij {amount}.",
   "reallife_roadside_towed_covered": "Je auto is naar de garage op {address} gesleept. Je autodekking betaalde {payout} van de kosten en {amount} is in rekening gebracht.",
   "reallife_transaction_ins_car": "Autoverzekering, niveau verhoogd",
-  "reallife_transaction_ins_car_label": "Autoverzekering, niveau verhoogd"
+  "reallife_transaction_ins_car_label": "Autoverzekering, niveau verhoogd",
+  "reallife_cine_test_set": "Filmshots: nu de set maken",
+  "reallife_cine_test_hour": "Filmshots: alleen op dit uur",
+  "reallife_cine_armed": "De filmshots beginnen zodra je dit menu sluit. Druk op Esc om ze te stoppen.",
+  "reallife_cine_running": "De filmshots worden al gemaakt. Druk op Esc om ze te stoppen.",
+  "reallife_cine_refuse_session": "Filmshots worden niet gemaakt in een Going Public sessie. Ze verplaatsen de camera en veranderen het licht, dat alle spelers delen.",
+  "reallife_cine_line": "Filmshot {shot} van {count}, druk op Esc om te stoppen",
+  "reallife_cine_done": "{taken} filmfoto's staan opgeslagen in {folder}. {skipped} zijn overgeslagen, en shots.txt in die map legt uit waarom.",
+  "reallife_cine_stopped": "De filmshots zijn gestopt. {taken} foto's staan opgeslagen in {folder}. Alles staat weer zoals het was.",
+  "reallife_cine_none": "Hier kon geen filmfoto worden gemaakt. Het logboek van het spel vertelt per foto waarom. Alles staat weer zoals het was.",
+  "reallife_cine_failed": "De filmshots zijn gestopt door een fout, die in het logboek van het spel staat. De camera, het licht en de interface staan weer zoals ze waren."
 }

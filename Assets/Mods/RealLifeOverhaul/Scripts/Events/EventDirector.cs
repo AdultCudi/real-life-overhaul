@@ -50,6 +50,14 @@ namespace RealLifeOverhaul.Events
         /// <summary>True while something is burning that a 911 call can bring the engine to.</summary>
         public static bool FireBurning => Instance != null && Instance._scene != null && Instance._scene == Instance._fire;
 
+        /// <summary>True while a fire is on, with where it burns, for the cinematic shots. Asked on a press.</summary>
+        public static bool Burning(out Vector3 at)
+        {
+            bool on = FireBurning;
+            at = on ? Instance._scene.Focus : default;
+            return on;
+        }
+
         internal EventProps Props { get; private set; }
         internal EventPeople People { get; private set; }
         internal SceneCordon Cordon { get; private set; }

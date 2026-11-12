@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "There was no space near the hospital, so your car was towed to the repair shop at {address}. Your car cover paid {payout} of the towing fee and you paid {amount}.",
   "reallife_roadside_towed_covered": "Your car has been towed to the garage at {address}. Your car cover paid {payout} of the fee and {amount} has been charged.",
   "reallife_transaction_ins_car": "Car insurance, tier moved up",
-  "reallife_transaction_ins_car_label": "Car insurance, tier moved up"
+  "reallife_transaction_ins_car_label": "Car insurance, tier moved up",
+  "reallife_cine_test_set": "Cinematic shots: take the set now",
+  "reallife_cine_test_hour": "Cinematic shots: at this hour only",
+  "reallife_cine_armed": "The cinematic shots start when you close this menu. Press Esc to stop them.",
+  "reallife_cine_running": "The cinematic shots are already being taken. Press Esc to stop them.",
+  "reallife_cine_refuse_session": "Cinematic shots are not taken in a Going Public session. They move the camera and change the light, which every player shares.",
+  "reallife_cine_line": "Taking cinematic shots {shot} of {count}, press Esc to stop",
+  "reallife_cine_done": "{taken} cinematic pictures are saved in {folder}. {skipped} were left out, and shots.txt in that folder says why.",
+  "reallife_cine_stopped": "The cinematic shots were stopped. {taken} pictures are saved in {folder}. Everything is back as it was.",
+  "reallife_cine_none": "No cinematic picture could be taken here. The game's log says why for each one. Everything is back as it was.",
+  "reallife_cine_failed": "The cinematic shots stopped on a fault, which is in the game's log. The camera, the light and the interface are back as they were."
 }

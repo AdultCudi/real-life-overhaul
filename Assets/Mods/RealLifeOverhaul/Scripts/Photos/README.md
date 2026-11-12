@@ -11,6 +11,7 @@ The Camera and the Gallery on the phone: the photos of a save, favourites, the p
 - `CameraRules.cs`, `PhotoPixels.cs`, `PhotoSeenRules.cs`: the camera's tools, the pixel work on the worker (cut, frame, grade, turn) and what the lens saw (game-free).
 - `GalleryQuery.cs`: the albums, search, filters and sort (game-free); the kit's face is `Ui/Life/GalleryScreen*.cs`, the picker for Flare's post sheet `Ui/Flare/FlareScreen.Photos.cs`.
 - `PhotoThumbCache.cs`: the small copies, only the photos in view, at most 120.
+- `Cinematic/CineDirector.cs`: the cinematic shots, a developer's tool that takes the mod's own pictures ([Cinematic shots](../../../../../docs/features/cinematic-shots.md)); `Cinematic/CineRules.cs` is its game-free part.
 
 ## Documentation
 

@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Nie było miejsca przy szpitalu, więc samochód odholowano do warsztatu pod adresem {address}. Ochrona samochodu wypłaciła {payout} opłaty za holowanie, a ty zapłaciłeś {amount}.",
   "reallife_roadside_towed_covered": "Twój samochód został odholowany do garażu pod adresem {address}. Ochrona samochodu wypłaciła {payout} opłaty, a {amount} zostało pobrane.",
   "reallife_transaction_ins_car": "Ubezpieczenie samochodu, podniesiony zakres",
-  "reallife_transaction_ins_car_label": "Ubezpieczenie samochodu, podniesiony zakres"
+  "reallife_transaction_ins_car_label": "Ubezpieczenie samochodu, podniesiony zakres",
+  "reallife_cine_test_set": "Ujęcia filmowe: zrób teraz zestaw",
+  "reallife_cine_test_hour": "Ujęcia filmowe: tylko o tej godzinie",
+  "reallife_cine_armed": "Ujęcia filmowe zaczną się, gdy zamkniesz to menu. Naciśnij Esc, aby je zatrzymać.",
+  "reallife_cine_running": "Ujęcia filmowe już trwają. Naciśnij Esc, aby je zatrzymać.",
+  "reallife_cine_refuse_session": "Ujęć filmowych nie robi się w sesji Going Public. Przesuwają kamerę i zmieniają światło, które dzielą wszyscy gracze.",
+  "reallife_cine_line": "Ujęcie filmowe {shot} z {count}, naciśnij Esc, aby zatrzymać",
+  "reallife_cine_done": "{taken} zdjęć filmowych zapisano w {folder}. Pominięto {skipped}, a plik shots.txt w tym folderze wyjaśnia dlaczego.",
+  "reallife_cine_stopped": "Ujęcia filmowe zostały zatrzymane. {taken} zdjęć zapisano w {folder}. Wszystko wróciło do poprzedniego stanu.",
+  "reallife_cine_none": "Tutaj nie udało się zrobić żadnego zdjęcia filmowego. Dziennik gry podaje przyczynę dla każdego z nich. Wszystko wróciło do poprzedniego stanu.",
+  "reallife_cine_failed": "Ujęcia filmowe zatrzymały się z powodu błędu, który jest w dzienniku gry. Kamera, światło i interfejs wróciły do poprzedniego stanu."
 }
