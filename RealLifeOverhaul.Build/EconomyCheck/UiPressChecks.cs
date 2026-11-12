@@ -25,7 +25,72 @@ internal static partial class Program
         UiRefusalChecks();
         UiEatingChecks();
         UiNoticeWholeChecks();
+        UiMendedPressChecks();
         UiCommandChecks();
+    }
+
+    // ------------------------------------------------------------------------------------------------- 5. what the reading found
+
+    // The three controls the reading of 13 Nov found drawn with no case behind them, each now doing what it is drawn to do:
+    // a day's band of Finance's Cash flow folds, a statement's band in Stocks folds, the Marketplace's sort choice sorts.
+    private static void UiMendedPressChecks()
+    {
+        const int Band = UiStatement.First + UiStatement.Group, Line = UiStatement.First + UiStatement.Line;
+        // Finance, Cash flow.
+        FinanceScreen finance = NewFinance(FinanceFace.CashFlow, out FinanceStub _);
+        UiScene s = LayFinance(finance);
+        UiStatementModel cash = finance.Facts.Cash.Statement;
+        int groups = cash != null ? cash.Groups.Length : 0, rows = cash != null ? UiStatement.RowCount(cash) : 0;
+        int lines = groups > 0 && cash.Groups[0].Lines != null ? cash.Groups[0].Lines.Length : 0;
+        bool drawn = groups >= 2 && lines > 0 && s.FindNode(Band, 0) >= 0 && s.FindNode(Line, 1) >= 0;
+        bool fold = drawn && finance.Press(Band, 0);
+        s = LayFinance(finance);
+        cash = finance.Facts.Cash.Statement;
+        Check(fold && cash.Groups[0].Folded && !cash.Groups[1].Folded && UiStatement.RowCount(cash) == rows - lines && s.FindNode(Band, 1) >= 0 && finance.View.Folded.Count == 1,
+            "finance: a press on a day's band of Cash flow folds that day's lines away and leaves the other days (" + rows + " rows, " + lines + " lines folded)");
+        bool unfold = fold && finance.Press(Band, 0);
+        s = LayFinance(finance);
+        cash = finance.Facts.Cash.Statement;
+        Check(unfold && !cash.Groups[0].Folded && UiStatement.RowCount(cash) == rows && finance.View.Folded.Count == 0, "finance: a second press brings the day's lines back");
+        Check(drawn && finance.Press(Line, 1) && !finance.Press(Band, groups) && !finance.Press(Band, -1),
+            "finance: a line of the statement is read (a press asks nothing and is no error), and a band that is not there is refused");
+        // Stocks: its pages are tables, so the screen's own handling is read from the source; the statement part folds as Finance's does.
+        string folder = UiSourceFolder();
+        string stocks = PressSource(System.IO.Path.Combine(folder, "Stocks", "StocksScreen.cs"));
+        Check(Regex.IsMatch(stocks, @"if \(command == UiStatement\.First \+ UiStatement\.Group\)\s*\{\s*return FoldBand\(arg\);") && stocks.Contains("if (!_folded.Remove(band))")
+              && stocks.Contains("m.Statement.Groups[g].Folded = _folded.Contains(m.Statement.Groups[g].Label ?? string.Empty);"),
+            "stocks: a statement's band folds on a press, and what is folded is set on the model each time it is laid");
+        // The Marketplace's sort choice.
+        UiWords en = UiWords("en");
+        WorkScreen market = UiSamples.MarketScreenOf(en, "listings");
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Marketplace");
+        market.Lay(s, frame, true, UiDefaultKeys.Keyboard);
+        WorkCardsModel cards = market.Page != null ? market.Page.Cards : null;
+        string first = cards != null && cards.Cards.Length > 0 ? cards.Cards[0].Name : null, label = cards != null ? cards.SortLabel : null;
+        bool choice = cards != null && cards.Sorts && cards.Cards.Length > 3 && s.FindNode(WorkCmd.Sort, 0) >= 0;
+        bool sorted = choice && market.Press(WorkCmd.Sort, 0);
+        market.Lay(s, frame, true, UiDefaultKeys.Keyboard);
+        cards = market.Page != null ? market.Page.Cards : null;
+        bool rising = sorted && cards != null && cards.Cards.Length > 3;
+        for (int i = 1; rising && i < cards.Cards.Length; i++)
+        {
+            rising &= cards.Cards[i - 1].Order <= cards.Cards[i].Order && cards.Cards[i].Order > 0;
+        }
+        Check(rising && cards.SortLabel != label && cards.SortLabel == en("reallife_ui_dealer_sort_price", null) && cards.Cards[0].Name != first && market.View.Sort == 1 && cards.Chosen == 0,
+            "marketplace: a press on the sort choice puts the listings by price, the lowest first, and the choice says so (" + label + " to " + (cards != null ? cards.SortLabel : "nothing") + ")");
+        bool again = sorted && market.Press(WorkCmd.Sort, 0);
+        market.Lay(s, frame, true, UiDefaultKeys.Keyboard);
+        cards = market.Page != null ? market.Page.Cards : null;
+        Check(again && cards != null && cards.SortLabel == label && cards.Cards[0].Name == first && market.View.Sort == 0, "marketplace: a second press brings the listings' own order back");
+        WorkScreen yours = UiSamples.MarketScreenOf(en, "yours");
+        yours.Lay(s, frame, true, UiDefaultKeys.Keyboard);
+        Check(s.FindNode(WorkCmd.Sort, 0) < 0 && !yours.Press(WorkCmd.Sort, 0), "marketplace: a page with no sort choice draws none and answers none");
+        bool told = false;
+        foreach (KeyValuePair<string, string> row in LocaleFile("en"))
+        {
+            told |= row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && row.Value.Contains("a day's band in Finance's Cash flow");
+        }
+        Check(told, "ui press: What's new says the bands and the sort choice answer (looked for in every row, as the version step numbers the next one)");
     }
 
     // ------------------------------------------------------------------------------------------------- 3. refusals
@@ -1067,15 +1132,12 @@ internal static partial class Program
         { "hud:271", "the HUD's sample lays a tool row's choices, which build mode's screen runs" },
     };
 
-    // What this reading found on 13 Nov 2026 and this job did not mend: a control drawn as one that its screen refuses with
-    // the error sound alone. Each is a line of the report; take it out here when it is mended, and the check holds it.
+    // What a reading finds and its job does not mend: a control drawn as one that its screen refuses with the error sound
+    // alone. Each is a line of the report; take it out here when it is mended, and the check holds it. The five of 13 Nov
+    // 2026 (the bands and lines of Finance's and Stocks' statements, the Marketplace's sort choice) are mended and held by
+    // UiMendedPressChecks; none is known now.
     private static readonly Dictionary<string, string> PressKnownFaults = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        { "finance:141", "Finance, Cash flow: a day's band is drawn with a fold mark (UiStatement.Group) and FinanceScreen.Press has no case for it" },
-        { "finance:142", "Finance, Cash flow: a statement's line is a target (UiStatement.Line) and FinanceScreen.Press has no case for it" },
-        { "stocks:141", "Stocks: a statement's band is drawn with a fold mark and StocksScreen.Press has no case for it" },
-        { "stocks:142", "Stocks: a statement's line is a target and StocksScreen.Press has no case for it" },
-        { "marketplace:1409", "Marketplace: the sort choice at the right of the tool row (WorkCmd.Sort, WorkCards.Tools) is drawn as a choice and WorkScreen.Route has no case for it" },
     };
 
     // A range before a case that takes nothing from it, each with why.

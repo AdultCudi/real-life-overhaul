@@ -42,7 +42,8 @@ internal static partial class UiSamples
     {
         var t = new WorkTab { Shape = WorkShape.Cards, Search = w.T("reallife_work_search_listings", "Search listings"), AllWord = w.T("reallife_work_filter_all_word", "All"),
             Chips = new[] { w.T("reallife_work_cat_vehicles_word", "Vehicles"), w.T("reallife_work_cat_machines_word", "Machines"), w.T("reallife_work_cat_furniture_word", "Furniture"), w.T("reallife_work_cat_stock_word", "Stock") },
-            EmptyTitle = w.T("reallife_work_no_listings_title", "Nothing is listed today"), EmptyBody = w.T("reallife_work_no_listings", "New things arrive each morning. Check Yours for what you can list."), SortWord = w.T("reallife_work_sort_newest", "Newest first") };
+            EmptyTitle = w.T("reallife_work_no_listings_title", "Nothing is listed today"), EmptyBody = w.T("reallife_work_no_listings", "New things arrive each morning. Check Yours for what you can list."), SortWord = w.T("reallife_work_sort_newest", "Newest first"),
+            SortByOrder = w.T("reallife_ui_dealer_sort_price", "By price") };
         if (state == "listings_none")
         {
             return t;
@@ -68,7 +69,8 @@ internal static partial class UiSamples
             bool car = (int)p[5] == 0;
             r.Title = r.Name;
             r.Sub = (car ? w.T("reallife_work_kind_vehicle", "Vehicle") : (int)p[5] == 1 ? w.T("reallife_work_kind_machine", "Machine") : (int)p[5] == 2 ? w.T("reallife_work_kind_furniture", "Furniture") : w.T("reallife_work_kind_stock", "Stock lot")) + ", " + Cond(w, 82);
-            int worthRaw = (int)((int.Parse(((string)p[2]).Replace("$", string.Empty).Replace(",", string.Empty)) * 100.0) / (100 + (int)p[3]));
+            r.Order = int.Parse(((string)p[2]).Replace("$", string.Empty).Replace(",", string.Empty));   // the asking price: what the sort choice's other order goes by
+            int worthRaw = (int)(r.Order * 100.0 / (100 + (int)p[3]));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_asking", "Asking"), (string)p[2]));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), Mny(worthRaw)));
             var sec = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_seller", "The seller") };

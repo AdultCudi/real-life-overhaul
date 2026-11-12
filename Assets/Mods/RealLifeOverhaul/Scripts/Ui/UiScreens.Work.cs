@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_talent_skill_coding", "reallife_talent_skill_front_end", "reallife_talent_skill_networking",
                 "reallife_talent_skill_reliability", "reallife_talent_skill_system_design", "reallife_talent_skill_testing",
                 "reallife_talent_skill_troubleshooting", "reallife_talent_skill_user_research", "reallife_talent_skill_visual_design",
-                "reallife_ui_life_more", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_work_a_rival",
+                "reallife_ui_dealer_sort_price", "reallife_ui_life_more", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_work_a_rival",
                 "reallife_work_accept_at", "reallife_work_ad_arrangement", "reallife_work_ad_boost", "reallife_work_ad_boosted",
                 "reallife_work_ad_closed", "reallife_work_ad_closes", "reallife_work_ad_closes_in", "reallife_work_ad_cost", "reallife_work_ad_days",
                 "reallife_work_ad_going", "reallife_work_ad_open", "reallife_work_ad_pay_least", "reallife_work_ad_pay_most",

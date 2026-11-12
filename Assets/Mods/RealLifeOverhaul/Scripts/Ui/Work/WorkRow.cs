@@ -288,7 +288,8 @@ namespace RealLifeOverhaul.Ui
         public WorkAside Aside;
         public readonly List<WorkAct> Acts = new List<WorkAct>(3);   // buttons of the page itself (a new ad, a search)
         public readonly List<WorkAmount> Amounts = new List<WorkAmount>(3);
-        public string SortWord;                        // a sort choice's words
+        public string SortWord;                        // a sort choice's words: the tab's own order ("Newest first")
+        public string SortByOrder;                     // the words of the choice's other order, by each row's Order figure, the lowest first ("By price"); null for a tab with one order
         // shapes
         public WorkDiary Diary;
         public WorkStatement Statement;
