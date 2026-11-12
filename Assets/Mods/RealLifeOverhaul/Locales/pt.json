@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Não havia vaga perto do hospital, então seu carro foi rebocado para a oficina em {address}. A cobertura do seu carro pagou {payout} da taxa de reboque e você pagou {amount}.",
   "reallife_roadside_towed_covered": "Seu carro foi rebocado para a oficina em {address}. A cobertura do seu carro pagou {payout} da taxa e {amount} foram cobrados.",
   "reallife_transaction_ins_car": "Seguro de carro, nível subido",
-  "reallife_transaction_ins_car_label": "Seguro de carro, nível subido"
+  "reallife_transaction_ins_car_label": "Seguro de carro, nível subido",
+  "reallife_cine_test_set": "Fotos de cinema: tirar o conjunto agora",
+  "reallife_cine_test_hour": "Fotos de cinema: só nesta hora",
+  "reallife_cine_armed": "As fotos de cinema começam quando você fechar este menu. Pressione Esc para parar.",
+  "reallife_cine_running": "As fotos de cinema já estão sendo tiradas. Pressione Esc para parar.",
+  "reallife_cine_refuse_session": "Fotos de cinema não são tiradas em uma sessão Going Public. Elas movem a câmera e mudam a luz, que todos os jogadores compartilham.",
+  "reallife_cine_line": "Foto de cinema {shot} de {count}, pressione Esc para parar",
+  "reallife_cine_done": "{taken} fotos de cinema foram salvas em {folder}. {skipped} ficaram de fora, e o shots.txt dessa pasta explica o motivo.",
+  "reallife_cine_stopped": "As fotos de cinema foram interrompidas. {taken} fotos estão salvas em {folder}. Tudo voltou como estava.",
+  "reallife_cine_none": "Nenhuma foto de cinema pôde ser tirada aqui. O log do jogo diz o motivo de cada uma. Tudo voltou como estava.",
+  "reallife_cine_failed": "As fotos de cinema pararam por causa de uma falha, que está no log do jogo. A câmera, a luz e a interface voltaram como estavam."
 }

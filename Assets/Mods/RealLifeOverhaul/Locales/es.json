@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "No había plaza cerca del hospital, así que tu coche fue remolcado al taller de {address}. La cobertura de tu coche pagó {payout} de la tarifa de grúa y tú pagaste {amount}.",
   "reallife_roadside_towed_covered": "Tu coche ha sido remolcado al garaje de {address}. La cobertura de tu coche pagó {payout} de la tarifa y se han cobrado {amount}.",
   "reallife_transaction_ins_car": "Seguro de coche, nivel subido",
-  "reallife_transaction_ins_car_label": "Seguro de coche, nivel subido"
+  "reallife_transaction_ins_car_label": "Seguro de coche, nivel subido",
+  "reallife_cine_test_set": "Tomas de cine: hacer el conjunto ahora",
+  "reallife_cine_test_hour": "Tomas de cine: solo a esta hora",
+  "reallife_cine_armed": "Las tomas de cine empiezan cuando cierras este menú. Pulsa Esc para detenerlas.",
+  "reallife_cine_running": "Las tomas de cine ya se están tomando. Pulsa Esc para detenerlas.",
+  "reallife_cine_refuse_session": "No se hacen tomas de cine en una sesión de Going Public. Mueven la cámara y cambian la luz, que comparten todos los jugadores.",
+  "reallife_cine_line": "Toma de cine {shot} de {count}, pulsa Esc para detener",
+  "reallife_cine_done": "{taken} fotos de cine se guardaron en {folder}. Se omitieron {skipped}, y shots.txt en esa carpeta explica por qué.",
+  "reallife_cine_stopped": "Las tomas de cine se detuvieron. {taken} fotos se guardaron en {folder}. Todo volvió a como estaba.",
+  "reallife_cine_none": "No se pudo tomar ninguna foto de cine aquí. El registro del juego indica el motivo de cada una. Todo volvió a como estaba.",
+  "reallife_cine_failed": "Las tomas de cine se detuvieron por un fallo, que aparece en el registro del juego. La cámara, la luz y la interfaz volvieron a como estaban."
 }

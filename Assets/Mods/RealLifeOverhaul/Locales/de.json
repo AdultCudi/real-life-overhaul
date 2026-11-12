@@ -37676,5 +37676,15 @@
   "reallife_event_car_towed_shop_covered": "Auf dem Parkplatz nahe dem Krankenhaus war kein Platz, daher wurde dein Auto zur Werkstatt in {address} abgeschleppt. Dein Autoschutz hat {payout} der Abschleppgebühr gezahlt und du {amount}.",
   "reallife_roadside_towed_covered": "Dein Auto wurde in die Werkstatt in {address} abgeschleppt. Dein Autoschutz hat {payout} der Gebühr gezahlt und {amount} wurden berechnet.",
   "reallife_transaction_ins_car": "Autoversicherung, Stufe erhöht",
-  "reallife_transaction_ins_car_label": "Autoversicherung, Stufe erhöht"
+  "reallife_transaction_ins_car_label": "Autoversicherung, Stufe erhöht",
+  "reallife_cine_test_set": "Filmaufnahmen: Satz jetzt aufnehmen",
+  "reallife_cine_test_hour": "Filmaufnahmen: nur zu dieser Stunde",
+  "reallife_cine_armed": "Die Filmaufnahmen beginnen, wenn du dieses Menü schließt. Drücke Esc, um sie zu stoppen.",
+  "reallife_cine_running": "Die Filmaufnahmen laufen bereits. Drücke Esc, um sie zu stoppen.",
+  "reallife_cine_refuse_session": "Filmaufnahmen werden in einer Going Public Sitzung nicht gemacht. Sie bewegen die Kamera und verändern das Licht, das alle Spieler teilen.",
+  "reallife_cine_line": "Filmaufnahme {shot} von {count}, drücke Esc zum Stoppen",
+  "reallife_cine_done": "{taken} Filmbilder sind in {folder} gespeichert. {skipped} wurden ausgelassen, und shots.txt in diesem Ordner erklärt warum.",
+  "reallife_cine_stopped": "Die Filmaufnahmen wurden gestoppt. {taken} Bilder sind in {folder} gespeichert. Alles ist wieder so wie vorher.",
+  "reallife_cine_none": "Hier konnte kein Filmbild gemacht werden. Das Spiel-Log sagt für jedes einzelne, warum. Alles ist wieder so wie vorher.",
+  "reallife_cine_failed": "Die Filmaufnahmen wurden wegen eines Fehlers gestoppt, der im Spiel-Log steht. Kamera, Licht und Oberfläche sind wieder wie vorher."
 }
