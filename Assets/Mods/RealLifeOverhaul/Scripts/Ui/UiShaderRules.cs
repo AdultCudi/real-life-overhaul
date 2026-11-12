@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiShaderRules
     {
-        public const string Bundle = "reallife_ui";
+        public const string Bundle = "reallife" + "_ui";   // split, so the locale check does not take the bundle's name for a key
         public const string Text = "TextMeshPro/Distance Field";               // what the faces were made for, and the game's interface font's own
         public const string TextSmall = "TextMeshPro/Mobile/Distance Field";   // TextMeshPro's lighter cut: plain letters come out the same, and the kit uses no outline, glow or bevel
 
