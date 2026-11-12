@@ -44,6 +44,9 @@ namespace RealLifeOverhaul.Tech
             "reallife_studio_note_project_1", "reallife_studio_note_project_1", "reallife_studio_note_project_2", "reallife_studio_note_project_3", "reallife_studio_note_project_4"
         };
 
+        // ...and of a free update and an add-on that have a name of their own (StudioViews.ProjectTitle), which the notice then says beside the game's
+        private static readonly string[] NamedNotes = { "reallife_studio_note_named_1", "reallife_studio_note_named_1", "reallife_studio_note_named_2" };
+
         // ---------------------------------------------------------------- start, stop and the save
 
         private void StartStudio()
@@ -58,6 +61,12 @@ namespace RealLifeOverhaul.Tech
             _studio = file;
             _studio.YearDays = GameCalendar.DaysPerYear;
             _studioOn = true;
+            // an older save's rival games could share a name: named apart once by whoever owns the list (a guest takes the host's list, named there)
+            int renamed = !fresh && !SharedCity.Follows(StudioShare.Part) ? StudioRules.NameRivals(_studio) : 0;
+            if (renamed > 0)
+            {
+                Logger?.Info("Tech: " + renamed + " rival game(s) of an older save shared a name and were given their own.");
+            }
             int taken = CatchUpStudio(save.Day);
             SharedCity.Register(new SharedCityPart
             {
@@ -569,8 +578,10 @@ namespace RealLifeOverhaul.Tech
             {
                 StudioBridges.Say(StudioNews.AddOn, g.Place, p.Name, g.AddOnWindow);
             }
-            TellTech(NotificationType.Success, ProjectNotes[StudioRules.Clamp(project, 0, ProjectNotes.Length - 1)],
-                Data("game", p.Name, "copies", TechText.Whole(project == StudioRules.ProjectAddOn ? g.AddOnWindow : more)), TabProducts, TechApp.ProductRow + g.Id);
+            // a free update and an add-on have names of their own, made from the game's by rule: the one just released (Released has counted it)
+            string called = StudioViews.ProjectTitle(g, p.Name, project, 0);
+            TellTech(NotificationType.Success, called.Length > 0 ? NamedNotes[project] : ProjectNotes[StudioRules.Clamp(project, 0, ProjectNotes.Length - 1)],
+                Data("game", p.Name, "name", called, "copies", TechText.Whole(project == StudioRules.ProjectAddOn ? g.AddOnWindow : more)), TabProducts, TechApp.ProductRow + g.Id);
         }
 
         // A release's bonus day and the leads' monthly royalty: booked at the firm, felt by the team, and a hit that paid nothing remembered by the rivals.

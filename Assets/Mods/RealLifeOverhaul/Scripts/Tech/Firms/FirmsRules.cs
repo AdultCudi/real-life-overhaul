@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -602,10 +603,65 @@ namespace RealLifeOverhaul.Tech
             firm.Reputation = TalentCatalogue.Clamp(firm.Reputation + (target - firm.Reputation) / 20, 0, 1000);
         }
 
-        public static string Name(int seed, int n)
+        /// <summary>True when another product of the file (not <paramref name="except"/>) bears the name, compared as <see cref="TitleRules.Key"/> compares.</summary>
+        public static bool Named(FirmsFile f, string name, int except)
         {
-            return FirmsCatalogue.NameFirst[TechRandom.Range(seed, n, 61, 0, 0, FirmsCatalogue.NameFirst.Length - 1)]
-                   + FirmsCatalogue.NameSecond[TechRandom.Range(seed, n, 62, 0, 0, FirmsCatalogue.NameSecond.Length - 1)];
+            string key = TitleRules.Key(name);
+            for (int i = 0; f != null && i < f.Products.Count; i++)
+            {
+                if (f.Products[i].Id != except && TitleRules.Key(f.Products[i].Name) == key)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A name for every product that lacks one or shares one (an older save's names were rolled with nothing to keep two apart):
+        /// in the list's order the first bearer keeps its name and each later one, like each nameless product, is given a made-up
+        /// name of its style that no product has and <paramref name="elsewhere"/> lacks. From the save's seed and the product's
+        /// id, so it is given once and is the same whenever it is asked. Returns how many were named.
+        /// </summary>
+        public static int NameAll(FirmsFile f, Func<Product, int> styleOf, Func<string, bool> elsewhere)
+        {
+            if (f == null)
+            {
+                return 0;
+            }
+            var all = new HashSet<string>(StringComparer.Ordinal);
+            var kept = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                string key = TitleRules.Key(TitleRules.Clean(f.Products[i].Name));
+                if (key.Length > 0)
+                {
+                    all.Add(key);
+                }
+            }
+            int named = 0;
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                Product p = f.Products[i];
+                string name = TitleRules.Clean(p.Name);
+                if (name.Length == 0 || !kept.Add(TitleRules.Key(name)))
+                {
+                    name = TitleRules.Suggest(f.Seed, p.Id, styleOf != null ? styleOf(p) : StyleOf(f, p), 0,
+                        n => all.Contains(TitleRules.Key(n)) || (elsewhere != null && elsewhere(n)));
+                    all.Add(TitleRules.Key(name));
+                    kept.Add(TitleRules.Key(name));
+                    named++;
+                }
+                p.Name = name;
+            }
+            return named;
+        }
+
+        /// <summary>The style a product's made-up name has by the firms' own record: a game's genre is the one an older save's game is given.</summary>
+        public static int StyleOf(FirmsFile f, Product p)
+        {
+            int genre = p.K == ProductKind.Game ? StudioRules.GenreOfName(p.Name, p.Id, f != null ? f.Seed : 1) : 0;
+            return TitleRules.StyleOf(p.K, p.Segment, genre);
         }
 
         /// <summary>Products being built or on sale: at one firm, or across all of them with no place.</summary>
@@ -669,8 +725,12 @@ namespace RealLifeOverhaul.Tech
             {
                 Id = f.Next(), Place = place, Kind = (int)kind,
                 Segment = kind == ProductKind.App || kind == ProductKind.Game ? (int)Segment.Consumer : kind == ProductKind.Licence ? (int)Segment.Enterprise : (int)segment,
-                Scope = TalentCatalogue.Clamp(scope, 0, 2), Name = string.IsNullOrEmpty(name) ? Name(f.Seed, f.NextId) : name
+                Scope = TalentCatalogue.Clamp(scope, 0, 2), Name = TitleRules.Clean(name)
             };
+            if (p.Name.Length == 0)
+            {
+                p.Name = TitleRules.Suggest(f.Seed, p.Id, StyleOf(f, p), 0, n => Named(f, n, p.Id));   // left empty: a made-up name of its kind that no product of the file has
+            }
             p.RivalFeatures = FirmsCatalogue.RivalFeaturesAtStart[p.Segment];
             p.RivalTier = 1;
             p.Train = kind == ProductKind.Model ? 2 : 0;

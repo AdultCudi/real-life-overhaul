@@ -81,11 +81,48 @@ namespace RealLifeOverhaul.Tech
             var r = new RivalGame
             {
                 Id = id, Studio = studio, Genre = genre, Platforms = platforms, Scope = scope, Score = score, Launched = day,
-                Name = StudioCatalogue.TitleFirst[TechRandom.Range(f.Seed, id, 89, 0, 0, StudioCatalogue.TitleFirst.Length - 1)] + " "
-                       + StudioCatalogue.TitleSecond[TechRandom.Range(f.Seed, id, 90, 0, 0, StudioCatalogue.TitleSecond.Length - 1)]
+                Name = TitleRules.RivalGame(f.Seed, id, genre, n => RivalNamed(f, n, id))   // of its genre's words, and no rival game on the list has it
             };
             r.Units = RivalLife(f, r, day);
             return r;
+        }
+
+        /// <summary>True when a rival game on the list (not <paramref name="except"/>) bears the name, compared as <see cref="TitleRules.Key"/> compares.</summary>
+        public static bool RivalNamed(StudioFile f, string name, int except)
+        {
+            string key = TitleRules.Key(name);
+            for (int i = 0; f != null && i < f.Rivals.Count; i++)
+            {
+                if (f.Rivals[i].Id != except && TitleRules.Key(f.Rivals[i].Name) == key)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// An older save's rival games were named from 256 pairings with nothing to keep two apart: each second bearer of a name,
+        /// and each game with none, is given one of its genre's by the rule new releases are named by, the first bearer keeping
+        /// its own. Run by whoever owns the list (never a Going Public guest, who takes the host's). Returns how many were named.
+        /// </summary>
+        public static int NameRivals(StudioFile f)
+        {
+            int named = 0;
+            var kept = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; f != null && i < f.Rivals.Count; i++)
+            {
+                RivalGame r = f.Rivals[i];
+                string name = TitleRules.Clean(r.Name);
+                if (name.Length == 0 || !kept.Add(TitleRules.Key(name)))
+                {
+                    name = TitleRules.RivalGame(f.Seed, r.Id, r.Genre, n => RivalNamed(f, n, r.Id));
+                    kept.Add(TitleRules.Key(name));
+                    named++;
+                }
+                r.Name = name;
+            }
+            return named;
         }
 
         /// <summary>

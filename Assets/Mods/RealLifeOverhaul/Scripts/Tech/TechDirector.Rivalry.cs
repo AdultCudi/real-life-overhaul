@@ -298,7 +298,7 @@ namespace RealLifeOverhaul.Tech
                 int seg = Math.Max(0, Math.Min(2, SectorRules.BuyersOf(r.Market)));
                 into.Add(new RivalryLine
                 {
-                    Id = r.Id, Name = r.Name, Company = rec != null && rec.Backer >= 0 ? HiringCatalogue.RivalFirms[rec.Backer] : r.Startups ? string.Empty : r.Name,
+                    Id = r.Id, Name = r.Name, Title = r.Title, Company = rec != null && rec.Backer >= 0 ? HiringCatalogue.RivalFirms[rec.Backer] : r.Startups ? string.Empty : r.Name,
                     Listed = !r.Startups, Tier = r.Tier, Price = Level(FirmsCatalogue.Price[seg] * FirmsCatalogue.PriceTiers[Math.Max(0, Math.Min(2, r.Tier))] / 1000),
                     Share = buyers > 0 ? (int)Math.Min(1000L, Math.Max(0L, r.Customers) * 1000 / buyers) : 0, Customers = r.Customers, Cash = s != null && s.Alive ? Level(s.Cash) : -1,
                     Funded = RivalryRules.Funded(_world, r, rec)

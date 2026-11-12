@@ -226,17 +226,6 @@ namespace RealLifeOverhaul.Tech
 
         public static readonly int[] RivalFeaturesAtStart = { 8, 10, 12 };   // by segment: the rival's product as it stands
 
-        // Names
-        public static readonly string[] NameFirst =
-        {
-            "Bright", "Quill", "Harbour", "Lantern", "Copper", "Tide", "Ember", "Cobalt", "Juniper", "Meadow", "Summit", "Willow", "Ridge", "Arbor", "Marble", "Orbit", "Pebble", "Kestrel"
-        };
-
-        public static readonly string[] NameSecond =
-        {
-            "desk", "ledger", "flow", "board", "stack", "notes", "pass", "track", "cast", "loop", "post", "mint", "wave", "base", "kit", "path", "bloom", "forge"
-        };
-
         public static readonly string[] Clients =
         {
             "Elm Street Dental", "Northside Freight", "Garnet Insurance", "Harbour View Hotel", "Midtown Legal Partners", "Pinecrest Clinic", "Blue Anchor Logistics", "Copperfield Retail",

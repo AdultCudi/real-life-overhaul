@@ -264,8 +264,8 @@ namespace RealLifeOverhaul.Tech
                         {
                             TechBridges.Stock?.Invoke(stock, SectorCatalogue.RivalStockShip);
                         }
-                        TellTech(NotificationType.Info, "reallife_tech_mkt_note_overtaken", Data("rival", r.Name, "market", market, "features", r.Features.ToString(SectorInv)), TabProducts, null);
-                        Story("reallife_tech_mkt_news_ship", "name", r.Name, "market", market);
+                        TellTech(NotificationType.Info, "reallife_tech_mkt_note_overtaken", Data("rival", r.Called, "market", market, "features", r.Features.ToString(SectorInv)), TabProducts, null);
+                        Story("reallife_tech_mkt_news_ship", "name", r.Called, "market", market);
                         SectorBridges.Say(SectorNews.RivalShipped, null, r.Name, r.Features);
                         break;
                     case SectorRules.NoteCut:
@@ -275,15 +275,15 @@ namespace RealLifeOverhaul.Tech
                         }
                         if (_sector.Markets[r.Market].Mine > 0)
                         {
-                            TellTech(NotificationType.Info, "reallife_tech_mkt_note_cut", Data("rival", r.Name, "market", market), TabProducts, null);
+                            TellTech(NotificationType.Info, "reallife_tech_mkt_note_cut", Data("rival", r.Called, "market", market), TabProducts, null);
                         }
-                        Story("reallife_tech_mkt_news_cut", "name", r.Name, "market", market);
+                        Story("reallife_tech_mkt_news_cut", "name", r.Called, "market", market);
                         SectorBridges.Say(SectorNews.RivalCut, null, r.Name, FirmsCatalogue.PriceTiers[TalentCatalogue.Clamp(r.Tier, 0, 2)]);
                         break;
                     case SectorRules.NoteOutage:
                         if (r.Customers >= 500)
                         {
-                            Story("reallife_tech_mkt_news_outage", "name", r.Name, "market", market);
+                            Story("reallife_tech_mkt_news_outage", "name", r.Called, "market", market);
                         }
                         break;
                 }

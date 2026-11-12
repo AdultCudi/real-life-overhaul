@@ -104,7 +104,8 @@ namespace RealLifeOverhaul.Tech
             {
                 var p = new Product
                 {
-                    Id = x.Int(), Place = x.Place(), Name = x.Text(), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)ProductKind.Count - 1), Segment = TalentCatalogue.Clamp(x.Int(), 0, 2),
+                    Id = x.Int(), Place = x.Place(), Name = TitleRules.Clean(x.Text()), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)ProductKind.Count - 1),
+                    Segment = TalentCatalogue.Clamp(x.Int(), 0, 2),
                     Stage = x.Int(), Features = x.Int(), Progress = x.Int(), Bugs = x.Int(), Users = x.Long(), Free = x.Long(), Tier = TalentCatalogue.Clamp(x.Int(1), 0, 2), Marketing = x.Int(),
                     Share = x.Int(100), Launched = x.Int(), Hype = x.Int(), Scope = x.Int(), Revenue = x.Long(), RivalFeatures = x.Int(), RivalTier = TalentCatalogue.Clamp(x.Int(1), 0, 2),
                     LastRelease = x.Int(), Carry = x.Long(), Compute = x.Long(), Train = x.Int(2)

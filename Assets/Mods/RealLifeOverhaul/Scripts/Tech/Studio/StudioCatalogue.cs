@@ -312,16 +312,6 @@ namespace RealLifeOverhaul.Tech
         public const int RivalStockPerPoint = 3;    // basis points a listed rival moves for each point of a release's score over or under 60
         public const int OwnStockPerPoint = 4;      // ...and the player's own listed company for each of theirs
 
-        public static readonly string[] TitleFirst =
-        {
-            "Ember", "Iron", "Hollow", "Star", "Crimson", "Silent", "Wild", "Copper", "Frost", "Sunken", "Neon", "Paper", "Thunder", "Velvet", "Lantern", "Granite"
-        };
-
-        public static readonly string[] TitleSecond =
-        {
-            "Crown", "Frontier", "Tides", "Circuit", "Garden", "Legion", "Harbour", "Echoes", "Kingdom", "Rally", "Heist", "Orchard", "Signal", "Vault", "Pilgrim", "League"
-        };
-
         public const int GamesStored = 64;          // the studio's games the save reads back: past every product the firms may hold (FirmsCatalogue.ProductsStored)
         // (no bound on the professionals' genre experience: it follows the people part's files, which have none, and StudioRules.Prune lets go the experience of those who have gone)
     }

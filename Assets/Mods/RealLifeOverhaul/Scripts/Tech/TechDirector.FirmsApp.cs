@@ -126,7 +126,11 @@ namespace RealLifeOverhaul.Tech
             Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenTech(tab, pick)), true, false);
         }
 
-        internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope)
+        /// <summary>
+        /// A product started at a firm, called what the player typed (cleaned; <paramref name="typed"/>) while no other product or
+        /// rival bears it, else the name its page offered (<see cref="SuggestTitle"/> at the same <paramref name="turn"/>).
+        /// </summary>
+        internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope, string typed = null, int turn = 0)
         {
             FirmPlace firm = FirmOf(place);
             if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place, _sectorOn) != FirmsRules.RoomYes || Save == null)
@@ -134,7 +138,12 @@ namespace RealLifeOverhaul.Tech
                 return null;   // the page does not offer the button then, and says which limit it is
             }
             FirmsRules.TrimWithdrawn(_firmsFile);
-            Product p = FirmsRules.NewProduct(_firmsFile, place, kind, segment, scope, null);
+            string name = TitleRules.Clean(typed);
+            if (name.Length == 0 || TitleSet(0, null).Contains(TitleRules.Key(name)))
+            {
+                name = SuggestTitle(kind, (int)segment, turn);
+            }
+            Product p = FirmsRules.NewProduct(_firmsFile, place, kind, segment, scope, name);
             p.Launched = Save.Day;
             _firmsFile.Products.Add(p);
             ChangedTech();

@@ -127,8 +127,10 @@ namespace RealLifeOverhaul.Ui
                 case StudioAct.BeatPick:
                 case StudioAct.ProjectPick:
                     return false;
+                case StudioAct.Name:
+                    return false;   // a typed answer: asked for by the Tech app's page that shows the name, in the game's text box
                 default:
-                    return act >= StudioAct.Genre && act <= StudioAct.Greenlight;
+                    return (act >= StudioAct.Genre && act <= StudioAct.Greenlight) || act == StudioAct.Suggest;
             }
         }
 

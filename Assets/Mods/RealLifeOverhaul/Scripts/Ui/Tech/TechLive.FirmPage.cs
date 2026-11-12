@@ -196,6 +196,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Ask("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body", () => _d.Withdraw(id));
                 }
+                if (act == StudioAct.Name)
+                {
+                    // a typed name: a game's own on its page, or its concept's, where an empty box hands the name back to the studio
+                    return id > 0 ? NameRun(_d.TitleOf(id), false, text => _d.RenameProduct(id, text)) : NameRun(_d.DraftTyped(place), true, text => _d.NameDraft(place, text));
+                }
                 return studio ? Do(() => _d.StudioDo(act, place, id, arg)) : Do(() => _d.SectorDo(act, place, arg));
             }
 
@@ -429,17 +434,15 @@ namespace RealLifeOverhaul.Ui
                 bool studio = Studio;
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                for (int i = _f.Products.Count - 1; i >= 0; i--)
+                List<Product> list = ProductsInOrder(place);
+                for (int i = 0; i < list.Count; i++)
                 {
-                    Product p = _f.Products[i];
-                    if (p.Place == place)
-                    {
-                        rows.Add(ProductDataRow(p));
-                        keys.Add("prod:" + p.Id);
-                    }
+                    rows.Add(ProductDataRow(list[i]));
+                    keys.Add("prod:" + list[i].Id);
                 }
                 _m.Shape = TechShape.Table;
                 _m.Table = ProductTable(rows, TechText.T("reallife_tech_products_none"));
+                NameSort(_m.Table);
                 _m.RowKeys = keys.ToArray();
                 ProductsLead(place);
             }
@@ -636,7 +639,12 @@ namespace RealLifeOverhaul.Ui
 
             private void ChoiceLines(TechCard card, ViewChoice c, string place, int id)
             {
-                if (c.Options.Count > 0)
+                if (c.Options.Count == 1)
+                {
+                    card.Row(TechText.T(c.LabelKey), c.Options[0]);   // nothing to choose between: a fact with its button (the game's name)
+                    card.Say(c.Trade != null ? Words(c.Trade) : null, UiRole.Text2);
+                }
+                else if (c.Options.Count > 0)
                 {
                     int count = c.Options.Count, at = Math.Max(0, Math.Min(count - 1, c.Picked)), act = c.Act;
                     string label = TechText.T(c.LabelKey);

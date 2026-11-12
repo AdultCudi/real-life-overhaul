@@ -10,6 +10,8 @@ namespace RealLifeOverhaul.Ui
     {
         // What a new product has chosen and not yet started: the kind, the segment and the size, kept over the page's writing.
         private static int _newKind = -1, _newSegment = 1, _newScope;
+        private static string _newName;   // the name typed for it; none: the one the page offers
+        private static int _newTurn;      // which of the offered names the page shows: "suggest" moves to the next
         private static readonly int[] Shares = { 0, 25, 50, 75, 100 };
 
         private sealed partial class Page
@@ -39,13 +41,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                for (int i = _f.Products.Count - 1; i >= 0; i--)
+                List<Product> list = ProductsInOrder(null);
+                for (int i = 0; i < list.Count; i++)
                 {
-                    rows.Add(ProductDataRow(_f.Products[i]));
-                    keys.Add("prod:" + _f.Products[i].Id);
+                    rows.Add(ProductDataRow(list[i]));
+                    keys.Add("prod:" + list[i].Id);
                 }
                 _m.Shape = TechShape.Table;
                 _m.Table = ProductTable(rows, TechText.T("reallife_tech_products_none"));
+                NameSort(_m.Table);
                 _m.RowKeys = keys.ToArray();
                 var makers = Makers();
                 if (makers.Count > 0)
@@ -55,11 +59,45 @@ namespace RealLifeOverhaul.Ui
                         "firm_most", ProductsPerFirm.ToString(Inv), "kept", FirmsCatalogue.WithdrawnKept.ToString());
                     _m.Actions = new[] { Button(TechText.T("reallife_tech_button_new_product"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Open("newprod:" + place))) };
                     _newKind = -1;
+                    _newName = null;
+                    _newTurn = 0;
                 }
                 else
                 {
                     _m.Next = TechText.T("reallife_tech_products_no_maker");
                 }
+            }
+
+            // The products of a firm, or of every firm with no place, the newest first; by name where the table's head was pressed for it (TechView.Sort),
+            // compared letter by letter whatever the machine's language, so the order is the same everywhere.
+            private List<Product> ProductsInOrder(string place)
+            {
+                var list = new List<Product>(_f.Products.Count);
+                for (int i = _f.Products.Count - 1; i >= 0; i--)
+                {
+                    if (place == null || _f.Products[i].Place == place)
+                    {
+                        list.Add(_f.Products[i]);
+                    }
+                }
+                if (_v.Sort == 0)
+                {
+                    bool down = _v.SortDown;
+                    list.Sort((a, b) =>
+                    {
+                        int c = string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+                        return c != 0 ? (down ? -c : c) : b.Id.CompareTo(a.Id);
+                    });
+                }
+                return list;
+            }
+
+            // The products' table sorts by its first column, the name: the head is a target, and shows which way it stands.
+            private void NameSort(UiDataTableModel table)
+            {
+                table.Columns[0].Sortable = true;
+                table.SortColumn = _v.Sort == 0 ? 0 : -1;
+                table.SortDown = _v.SortDown;
             }
 
             private List<FirmPlace> Makers()
@@ -150,10 +188,14 @@ namespace RealLifeOverhaul.Ui
                     Name = p.Name, Icon = TechGlyphs.Of(TechGlyphs.Product, p.Kind), Role = TechText.ProductName(p.K) + (firm != null ? ", " + firm.File.Name : string.Empty),
                     Status = State(p), StatusTone = StateTone(p)
                 };
-                var actions = new List<UiActionModel>(2);
+                var actions = new List<UiActionModel>(3);
                 int pid = p.Id;
                 if (p.Stage < 2)
                 {
+                    if (GameUi.TextBox.CanType)
+                    {
+                        actions.Add(Button(TechText.T("reallife_tech_button_rename"), UiButtonKind.Secondary, UiAction.Option, NameRun(p.Name, false, text => _d.RenameProduct(pid, text))));
+                    }
                     actions.Add(Button(TechText.T("reallife_tech_button_withdraw"), UiButtonKind.Destructive, UiAction.Count,
                         Ask("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body", () => _d.Withdraw(pid))));
                 }
@@ -174,6 +216,18 @@ namespace RealLifeOverhaul.Ui
                 _m.Left = new[] { now.Build() };
                 _m.Right = new[] { ProductSettings(p) };
             }
+
+            // A name asked for in the game's own text box, which the kit draws on its own card where that option is on: what is typed goes to the
+            // director, which cleans it and reads it for nothing but showing it, and the page is written again.
+            private TechRun NameRun(string initial, bool allowEmpty, Action<string> typed) => () =>
+            {
+                GameUi.TextBox.Ask("reallife_tech_name_placeholder", "common_confirm", text => UiClone.Safe(() =>
+                {
+                    typed(text);
+                    _live.Touch();
+                }), null, initial ?? string.Empty, allowEmpty, TitleCatalogue.Most);
+                return true;
+            };
 
             // The lines the old page wrote for a product, in the order it wrote them.
             private void ProductLines(TechCard card, Product p, FirmPlace firm)
@@ -347,6 +401,29 @@ namespace RealLifeOverhaul.Ui
                     int s = _newScope;
                     card.Step(TechText.T("reallife_ui_tech_size"), TechText.Scope(s), null, true, true, Go(v => _newScope = (s + 2) % 3), Go(v => _newScope = (s + 1) % 3));
                 }
+                // what it will be called: the name typed, else one made up for its kind, which "suggest" changes for the next
+                int turn = _newTurn;
+                string typed = _newName, called = string.IsNullOrEmpty(typed) ? _d.SuggestTitle(kind, _newSegment, turn) : typed;
+                card.Row(TechText.T("reallife_tech_label_name"), called);
+                card.Say(TechText.T(string.IsNullOrEmpty(typed) ? "reallife_tech_name_suggested" : "reallife_tech_name_typed"), UiRole.Text2);
+                if (room == FirmsRules.RoomYes)
+                {
+                    if (GameUi.TextBox.CanType)
+                    {
+                        card.Button(TechText.T("reallife_tech_button_name"), UiButtonKind.Secondary, UiAction.Count, NameRun(called, true, text =>
+                        {
+                            if (_d.TypedTitle(text, out string name) == TitleRules.Ok)
+                            {
+                                _newName = name;   // empty: back to the offered name
+                            }
+                        }));
+                    }
+                    card.Button(TechText.T("reallife_tech_button_suggest"), UiButtonKind.Secondary, UiAction.Count, Go(v =>
+                    {
+                        _newName = null;
+                        _newTurn++;
+                    }));
+                }
                 card.Say(Need(kind));
                 card.Say(TechText.T(Mod + "_tech_new_about_" + kind.ToString().ToLowerInvariant()));
                 int segment = _newSegment, scope = _newScope;
@@ -358,9 +435,11 @@ namespace RealLifeOverhaul.Ui
                         {
                             UiClone.Safe(() =>
                             {
-                                Product made = _d.NewProduct(place, kind, (Segment)segment, scope);
+                                Product made = _d.NewProduct(place, kind, (Segment)segment, scope, typed, turn);
                                 if (made != null)
                                 {
+                                    _newName = null;
+                                    _newTurn = 0;
                                     _v.Pick = "prod:" + made.Id;
                                     _v.From = null;
                                     if (_firm == null)
@@ -409,10 +488,19 @@ namespace RealLifeOverhaul.Ui
                 {
                     right.Add(new TechCard(_runs).Say(Words(v.Next), Ink(v.Next.Tone)).Build());
                 }
+                var actions = new List<UiActionModel>(2);
+                for (int i = 0; i < v.Others.Count; i++)
+                {
+                    if (v.Others[i].Act == StudioAct.Suggest)
+                    {
+                        actions.Add(Button(TechText.T(v.Others[i].Key), UiButtonKind.Secondary, UiAction.Option, ActRun(v.Others[i], place, 0)));   // another name of the genre's
+                    }
+                }
                 if (v.Primary != null && v.Primary.Enabled)
                 {
-                    _m.HeadActions = new[] { Button(TechText.T(v.Primary.Key), UiButtonKind.Primary, UiAction.Alt, ActRun(v.Primary, place, 0)) };
+                    actions.Add(Button(TechText.T(v.Primary.Key), UiButtonKind.Primary, UiAction.Alt, ActRun(v.Primary, place, 0)));
                 }
+                _m.HeadActions = actions.ToArray();
                 _m.Left = left.ToArray();
                 _m.Right = right.ToArray();
             }
