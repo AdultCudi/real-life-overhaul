@@ -41,6 +41,8 @@ Meta/
                   the presets against the choices, the search
   Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
   Changelog       what changed per version, for the Guide's What's new page
+  VersionRules    a version's numbers, game-free: how two compare (a save's check, the welcome), and the order and What's new key the
+                  table gives a version, the same below and above 1.0.0
   SaveTools       prepare a save for removing the mod (.Steps: the backup and the purge), reset and repair (.Reset), the check after each load (.Load)
   MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
 ```

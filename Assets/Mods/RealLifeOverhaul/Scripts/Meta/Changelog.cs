@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Localizor;
@@ -8,13 +7,15 @@ namespace RealLifeOverhaul.Meta
 {
     /// <summary>
     /// What changed in each released version, newest first, for the Guide's "What's new" page. A version is MAJOR.MINOR.PATCH:
-    /// a feature raises MINOR, a fix alone PATCH, and MAJOR is for a change that old saves cannot follow.
+    /// a feature raises MINOR, a fix alone PATCH, and MAJOR is the maintainer's decision for a release large enough to be
+    /// named one (1.0.0, the living economy). MINOR and PATCH each stay under 100 (<see cref="VersionRules.PartMost"/>).
     ///
     /// A new version is four edits, and the build fails if the first three disagree (the csproj's CheckVersion target):
     /// &lt;Version&gt; in RealLifeOverhaul.csproj, <see cref="Latest"/>, Version in ModManifest.asset, and a row at the top of
     /// <see cref="All"/> with its two texts in en.json (reallife_changes_ with major and two digits of minor, then the patch:
-    /// 0.2.0 is "002_0", 0.5.12 is "005_12"; the same with _title). Work merged before the number is set goes in the row of
-    /// order <see cref="Unnumbered"/>.
+    /// 0.2.0 is "002_0", 0.5.12 is "005_12", 1.0.0 is "100_0"; the same with _title). Work merged before the number is set
+    /// goes in the row of order <see cref="Unnumbered"/>. EconomyCheck's VersionChecks holds every row's order and key to
+    /// its version by <see cref="VersionRules"/>.
     /// </summary>
     public static class Changelog
     {
@@ -302,21 +303,10 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The version as the player and a bug report read it: "0.61.0-beta.1" in a beta, <see cref="Version"/> otherwise.</summary>
         public static string Shown => IsBeta ? Version + "-" + BetaTag : Version;
 
-        /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
+        /// <summary>Compares two versions number by number; a missing part counts as 0 (<see cref="VersionRules.Compare"/>, which is checked offline).</summary>
         public static int Compare(string a, string b)
         {
-            string[] left = (a ?? string.Empty).Split('.');
-            string[] right = (b ?? string.Empty).Split('.');
-            for (int i = 0; i < Math.Max(left.Length, right.Length); i++)
-            {
-                int.TryParse(i < left.Length ? left[i] : "0", NumberStyles.Integer, CultureInfo.InvariantCulture, out int x);
-                int.TryParse(i < right.Length ? right[i] : "0", NumberStyles.Integer, CultureInfo.InvariantCulture, out int y);
-                if (x != y)
-                {
-                    return x < y ? -1 : 1;
-                }
-            }
-            return 0;
+            return VersionRules.Compare(a, b);
         }
 
         /// <summary>The whole table as the guide prints it.</summary>

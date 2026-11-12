@@ -1305,6 +1305,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\ReleaseDates.cs" Link="Mod\ReleaseDates.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsTree.cs" Link="Mod\OptionsTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\VersionRules.cs" Link="Mod\VersionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\TalkRules.cs" Link="Mod\TalkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityDistricts.cs" Link="Mod\CityDistricts.cs" />
