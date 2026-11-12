@@ -7,8 +7,10 @@ using RealLifeOverhaul.Ui;
 /// EconoView on the kit, each state as the game would hand it over (an EconoState, through the same EconoViews the game's
 /// screen uses): a rich save's overview, a new save's, the overview with its day's list open, every transaction, the
 /// transactions filtered and with the kinds' list open, no loans and three, the investments with a year's line and none,
-/// the taxes with and without back taxes, one business with its choice closed and open, and the overview and loans in
-/// German (the longest of the languages the game and the mod ship). Plain English for the rest, as the owner reads the previews.
+/// the taxes with and without back taxes, one business with its choice closed and open, a headquarters that only costs
+/// (a player's four days of 12 Nov 2026: nothing sold, every day's profit a loss within six dollars of the others), and
+/// the overview and loans in German (the longest of the languages the game and the mod ship). Plain English for the rest,
+/// as the owner reads the previews.
 /// </summary>
 internal static partial class UiSamples
 {
@@ -16,7 +18,7 @@ internal static partial class UiSamples
     public static readonly string[] EconoStates =
     {
         "overview_rich", "overview_new", "overview_period_open", "transactions_all", "transactions_filtered", "transactions_type_open", "loans_none", "loans_three",
-        "investments_year", "investments_none", "taxes", "taxes_back", "business", "business_choice_open", "overview_de", "loans_de"
+        "investments_year", "investments_none", "taxes", "taxes_back", "business", "business_choice_open", "business_loss", "overview_de", "loans_de"
     };
 
     private static readonly CultureInfo EconoInv = CultureInfo.InvariantCulture;
@@ -125,9 +127,30 @@ internal static partial class UiSamples
                 v.CanBizMan = true;
                 v.OpenList = state == "business_choice_open" ? UiEcono.ListBusiness : -1;
                 break;
+            case "business_loss":
+                v.Page = UiEcono.Business;
+                v.Businesses = new[] { "Garment District Main Office", "Bloom Café" };
+                v.BusinessChosen = 0;
+                v.BusinessKind = "Headquarters";
+                v.BusinessDays = v.DayNames;
+                v.BusinessRows = LossRows(t);
+                v.BusinessSales = new[] { 0f, 0f, 0f, 0f };
+                v.BusinessProfit = LossProfit;
+                v.BusinessItems = new[] { new string[0], new string[0], new string[0], new string[0] };
+                v.BusinessItemSales = new[] { new float[0], new float[0], new float[0], new float[0] };
+                v.BusinessCosts = new[]
+                {
+                    new[] { 3574.14f, 167f, 0f, 0f, 0f, 0f }, new[] { 3574.14f, 167f, 0f, 0f, 0f, 0f }, new[] { 3570.14f, 167f, 0f, 0f, 0f, 0f }, new[] { 3570.14f, 167f, 0f, 0f, 0f, 0f }
+                };
+                v.CanDestination = true;
+                v.CanBizMan = true;
+                break;
         }
         return v;
     }
+
+    /// <summary>The headquarters' profit on its four days, yesterday first: salaries and rent with nothing sold, as the player's page had them.</summary>
+    public static readonly float[] LossProfit = { -3741.14f, -3741.14f, -3737.14f, -3737.14f };
 
     private static EconoIncomeRow Head(string key, string name, params float[] values) =>
         new EconoIncomeRow { Key = key, Name = name, Parent = -1, Values = values };
@@ -338,6 +361,19 @@ internal static partial class UiSamples
 
     private static EconoIncomeRow Words(int parent, string key, string name, int kind, params string[] texts) =>
         new EconoIncomeRow { Key = key, Name = name, Parent = parent, Texts = texts, Kind = kind };
+
+    // A headquarters' four days as the game's business page writes them: no sales, its staff and its rent.
+    private static EconoIncomeRow[] LossRows(UiWords t)
+    {
+        return new[]
+        {
+            Words(-1, "econoview_row_ongoing_expenses", t("econoview_row_ongoing_expenses", "Ongoing Expenses"), 0, "-$3,741.14", "-$3,741.14", "-$3,737.14", "-$3,737.14"),
+            Words(0, "econoview_row_salaries", t("econoview_row_salaries", "Salaries"), -1, "-$3,574.14", "-$3,574.14", "-$3,570.14", "-$3,570.14"),
+            Words(0, "econoview_row_rent", t("econoview_row_rent", "Rent"), -1, "-$167.00", "-$167.00", "-$167.00", "-$167.00"),
+            new EconoIncomeRow { Key = "econoview_row_profit", Name = t("econoview_row_profit", "Profit"), Parent = -1, Total = true,
+                Texts = new[] { "-$3,741.14", "-$3,741.14", "-$3,737.14", "-$3,737.14" } },
+        };
+    }
 
     // A coffee shop's four days as the game's business page writes them.
     private static EconoIncomeRow[] BusinessRows(UiWords t)

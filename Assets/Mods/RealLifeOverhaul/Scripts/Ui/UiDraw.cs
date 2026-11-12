@@ -40,6 +40,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A length rounded down to the grid.</summary>
         public static float SnapDown(float px) => (float)Math.Floor(px / UiTokens.Grid + 0.001f) * UiTokens.Grid;
 
+        /// <summary>
+        /// A share held between nothing and the whole. A share that is no number (a part of a whole of nothing) is nothing:
+        /// Math.Max and Math.Min pass NaN on, and a box laid at NaN has no place on the screen.
+        /// </summary>
+        public static float Unit(float share) => share > 0f ? share < 1f ? share : 1f : 0f;
+
         /// <summary>A filled shape with an optional clear edge.</summary>
         public static int Box(UiScene s, UiAt at, float x, float y, float w, float h, UiRole fill, UiRole edge, float radius, UiFlags flags = UiFlags.None)
         {
