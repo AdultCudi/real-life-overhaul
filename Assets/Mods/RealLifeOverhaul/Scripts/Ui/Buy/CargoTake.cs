@@ -83,8 +83,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         // One line a refusal, whatever the diagnostics switch says: what was pressed where, why nothing came out, and what the game held then.
+        // It is this press's line in the log: the piece that sent the press is told, and writes no second one (UiRefusals.Told).
         private static void Refused(string stack, string where, CargoTakeRefusal why, ICargoHolder holder)
         {
+            UiRefusals.Told();
             Count(holder, out int stacks, out int pieces);
             string vehicle = ActiveVehicle();
             ItemInstance hands = PlayerHelper.ItemInstanceInHands;

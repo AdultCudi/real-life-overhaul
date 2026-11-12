@@ -95,8 +95,9 @@ A press that answers false gets the error sound and nothing else. Five rules kee
   the control and the reason, with or without Developer diagnostics. `UiWidgets` gives the reason for a game button; a
   screen that refuses for a rule of its own says `UiRefusals.Because(...)` and shows the player a notice in words.
 - **One refusal, one line.** A screen that writes its own line for a refused press, with what only it knows (BizMan's
-  `Answered`: the page, the place, what the page's foot says, a run of the same press counted), calls
-  `UiRefusals.Told()` and puts the widget's reason (`UiRefusals.Why`) in that line; the host then writes none.
+  `Answered`: the page, the place, what the page's foot says, a run of the same press counted, with the widget's
+  reason from `UiRefusals.Why`; a stack's tile, `CargoTake`: what the holder held), calls `UiRefusals.Told()`; the host
+  then writes none.
 
 EconomyCheck (`UiPressChecks.cs`, `--ui-press`) reads every screen's sources: each command its samples lay out as a
 target is named by its `Press`, and no range of numbers is asked before the case of a number inside it. The game's files

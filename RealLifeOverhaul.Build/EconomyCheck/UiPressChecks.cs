@@ -102,6 +102,10 @@ internal static partial class Program
         Check(own >= 0 && first > own && bizman.Contains("if (!done)") && Occurs(bizman, "+ Widget() +") == 2 && bizman.Contains("UiRefusals.Why != null ?")
               && Occurs(log, "UiRefusals.HostWrites(") == 2,
             "ui press: BizMan writes a refused press once, in its own line with the page, the place and the widget's reason, and tells the host, which then writes none (both of the host's ways ask)");
+        string take = PressSource(System.IO.Path.Combine(folder, "Buy", "CargoTake.cs"));
+        int toldAt = take.IndexOf("UiRefusals.Told();", StringComparison.Ordinal), lineAt = take.IndexOf("Meta.Dev.Always(UiDirector.Logger, \"UI check (cargo tile): '\"", StringComparison.Ordinal);
+        Check(toldAt >= 0 && lineAt > toldAt && Occurs(take, "UiRefusals.Told();") == 1,
+            "ui press: a stack's tile that takes nothing is written once, in the cargo's own line with what the holder held, and the host is told");
     }
 
     // A source as text; nothing for one that is not there, so that a check fails for it instead of stopping the run.
@@ -149,6 +153,8 @@ internal static partial class Program
             "item panel: each stack's own action on its slot (Eat, Drink, Equip, Read, Place) is an action of the panel, before the panel's own");
         Check(panel.Contains("ItemPanelRules.More(Foreign(), _slotButtons)") && panel.Contains("GameContract.SlotSell, slot") && panel.Contains("GameContract.SlotDiscard, slot"),
             "item panel: while a slot shows its own sell or discard, the panel offers the game's own view");
+        Check(panel.Contains("Disabled = !act.interactable || (_car != null && !_mine)") && panel.Contains("Disabled = car != null && !_mine"),
+            "item panel: on another player's vehicle a stack's action is drawn held, as its tile is (a Going Public session: what it carries is theirs)");
         Check(ItemPanelRules.SlotAction("Eat", "Cupcake") == "Eat Cupcake" && ItemPanelRules.SlotAction("Eat", null) == "Eat" && ItemPanelRules.SlotAction(null, "Cupcake") == null
               && ItemPanelRules.SlotAction(string.Empty, "Cupcake") == null,
             "item panel: a stack's action is the game's word and the stack's name, and none where the slot offers none");

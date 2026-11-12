@@ -787,6 +787,8 @@ namespace RealLifeOverhaul.Ui
         // action of the panel named with the stack, first so that eating what is in the bag is the panel's main. The kit drew
         // the stacks as tiles that press the slot alone, so food in a bag could not be eaten at all (1.0.0 to 1.0.2). A
         // slot's own sell and discard have no place on the tile: while one shows, the panel offers the game's own view.
+        // On another player's vehicle (a Going Public session) a stack's action is drawn held, as its tile is: what it
+        // carries is theirs to eat or place.
         private void SlotActions()
         {
             _slotButtons = false;
@@ -800,7 +802,7 @@ namespace RealLifeOverhaul.Ui
                 if (label != null)
                 {
                     _buttons.Add(act);
-                    _actions.Add(new UiItemAction { Label = label, Disabled = !act.interactable });
+                    _actions.Add(new UiItemAction { Label = label, Disabled = !act.interactable || (_car != null && !_mine) });
                 }
                 _slotButtons |= UiWidgets.There(BuyKits.Get<Button>(GameContract.SlotSell, slot)) || UiWidgets.There(BuyKits.Get<Button>(GameContract.SlotDiscard, slot));
             }
