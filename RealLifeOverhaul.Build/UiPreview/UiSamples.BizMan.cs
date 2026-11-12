@@ -14,7 +14,27 @@ internal static partial class UiSamples
     {
         "portfolio", "portfolio_filter_open", "portfolio_warehouses", "portfolio_empty", "portfolio_long", "store_building", "store_insight", "store_pricing",
         "store_deliveries", "store_marketing", "store_settings", "store_settings_unsaved", "store_estate", "store_switch_open", "store_needs_open", "store_classic",
-        "store_foreign", "store_interior", "warehouse", "factory", "headquarters", "start", "rent", "rival", "villa", "store_long", "portfolio_german", "store_german", "store_logo", "store_logo_colours"
+        "store_foreign", "store_interior", "warehouse", "factory", "headquarters", "start", "rent", "rival", "villa", "store_long", "portfolio_german", "store_german", "store_logo", "store_logo_colours",
+        "start_refused", "start_gym", "store_refused", "taken"
+    };
+
+    /// <summary>
+    /// The kinds of business a player can start, by the game's own lists (the building types' availableBusinessTypes, Build 3682): the
+    /// game's name for each without its prefix, how many requirements the game sets it for opening, and whether the game asks a
+    /// diploma to start it. The page that starts a business is laid out for each one.
+    /// </summary>
+    public static readonly string[] FoundKinds =
+    {
+        "florist", "fruitandvegetablestore", "coffeeshop", "supermarket", "fastfoodrestaurant", "hairdresser", "gym", "giftshop", "bookstore", "liquorstore", "nightclub",
+        "jewelrystore", "clothingstore", "electronicsstore", "headquarters", "eventplanningagency", "graphicdesigner", "lawfirm", "travelagency", "webdevelopmentagency",
+        "warehouse", "factory", "cinema", "theater"
+    };
+
+    public static readonly int[] FoundNeeds = { 3, 4, 2, 3, 2, 4, 5, 3, 3, 3, 3, 3, 4, 3, 0, 3, 3, 3, 3, 3, 0, 0, 5, 7 };
+
+    public static readonly bool[] FoundDiploma =
+    {
+        false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true
     };
 
     private static readonly string[] Businesses =
@@ -74,6 +94,38 @@ internal static partial class UiSamples
             case "factory": return Building(t, "factory");
             case "headquarters": return Building(t, "headquarters");
             case "start": return Start(t);
+            case "start_refused":
+            {
+                // A press the game was not asked for: the page's foot says so in words (the kit's own sentence), over the page laid above it.
+                BizManModel refused = Start(t);
+                refused.Refused = t("reallife_ui_bizman_refused_fault", "{action}: nothing was done. This is a fault of the RLO interface, not yours. To carry on, switch BizMan off in Mod settings under RLO interface: business apps, and please report it with your Player.log.")
+                    .Replace("{action}", t("bizman_start_business_button", "Start business"));
+                return refused;
+            }
+            case "start_gym": return BizManFound(t, System.Array.IndexOf(FoundKinds, "gym"), true);
+            case "taken":
+            {
+                // A building a feature of the mod's holds off the market: the head says whose it is, and the page offers no lease and no offer.
+                BizManModel held = Rent(t);
+                held.Part = BizManPart.Building;
+                held.Head.Chips = new[] { t("reallife_claimed_taken", "Taken by {name}").Replace("{name}", "City Utilities") };
+                held.Head.ChipTones = new[] { UiRole.Muted };
+                held.MoreTitle = null;
+                held.More = new BizManFact[0];
+                held.Amount = null;
+                held.Actions = new UiActionModel[0];
+                return held;
+            }
+            case "store_refused":
+            {
+                // A business opened by its switch and closed again at once by the utilities: the page says their sentence.
+                BizManModel shut = Store(t, BizManPart.Insight, "store_insight");
+                shut.Head.On = false;
+                shut.Head.SwitchWord = t("bizman_temporarily_closed", "Temporarily closed");
+                shut.Refused = t("reallife_util_closed_cut", "{place} is closed: its {service} is cut off for a bill not paid. Pay it in the Utilities app. It opens again by itself once the {service} is back.")
+                    .Replace("{place}", Businesses[0]).Replace("{service}", "power");
+                return shut;
+            }
             case "rent": return Rent(t);
             case "rival": return Rival(t);
             case "villa": return Villa(t);
@@ -627,10 +679,10 @@ internal static partial class UiSamples
         };
         m.Actions = new[]
         {
-            new UiActionModel { Label = t("reallife_set_link", "Settings"), Kind = UiButtonKind.Quiet, Icon = UiIcon.Gear, Key = UiAction.Count, Command = BizManPages.Action,
-                Arg = BizManPages.DoLine + 1 },
+            new UiActionModel { Label = t("reallife_set_link", "Settings"), Kind = UiButtonKind.Quiet, Icon = UiIcon.Gear, Key = UiAction.Count, Command = BizManPages.LineAction,
+                Arg = 1 },
             new UiActionModel { Label = t("reallife_interior_refresh_button", "Refresh the finishes"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Wrench, Key = UiAction.Count,
-                Command = BizManPages.Action, Arg = BizManPages.DoLine },
+                Command = BizManPages.LineAction, Arg = 0 },
         };
     }
 
@@ -743,6 +795,7 @@ internal static partial class UiSamples
         list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "2 x Coffee Machine" });
         list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "4 x Table" });
         list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Cash Register" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Note, Label = t("reallife_ui_bizman_start_note", "Name it, then start it. You fit it out afterwards from inside the building.") });
         list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_diploma", "Diploma") });
         list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Hospitality", Mark = UiIcon.Warning, Tone = UiRole.Warn });
         list.Add(new BizManStartRow
@@ -770,6 +823,73 @@ internal static partial class UiSamples
         };
         m.Prompts = BizManPrompts(t, false);
         m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    private static readonly string[] GymNeeds = { "Workout Machine", "Gym Lockers", "Public Shower", "Fitness Planning Board", "Drinks Fridge" };
+
+    /// <summary>
+    /// The page that starts a business, as the screen fills it for a place just rented and still empty: the head of a place with
+    /// no business (its address, "Rented, empty"), the kinds its building takes with one chosen (or none, <paramref name="kind"/>
+    /// under 0), that kind's detail with as many requirements as the game sets it, its diploma where the game asks one, the name
+    /// typed or not, and Start business. <paramref name="kind"/> is a place in <see cref="FoundKinds"/>.
+    /// </summary>
+    public static BizManModel BizManFound(UiWords t, int kind, bool named)
+    {
+        BizManModel m = Start(t);
+        m.NameText = named ? "Mott Street " + (kind >= 0 ? kind.ToString(System.Globalization.CultureInfo.InvariantCulture) : "Shop") : null;
+        // The kinds the chosen kind's building takes: a shop's fourteen, an office's six, a warehouse's two, a cinema's or a theatre's one.
+        int first = kind < 14 ? 0 : kind < 20 ? 14 : kind < 22 ? 20 : kind, end = kind < 14 ? 14 : kind < 20 ? 20 : kind < 22 ? 22 : kind + 1;
+        var rows = new UiDataRow[end - first];
+        for (int i = first; i < end; i++)
+        {
+            string type = "ba:businesstype_" + FoundKinds[i];
+            rows[i - first] = new UiDataRow { Cells = new[] { t(type, FoundKinds[i]), ((i * 7) % 5).ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                Values = new[] { (int)BizManRules.KindIcon(type, null), 0 } };
+        }
+        m.StartKinds.Rows = rows;
+        m.StartKinds.RowCount = rows.Length;
+        m.StartKinds.Selected = kind < 0 ? -1 : kind - first;
+        if (kind < 0)
+        {
+            m.StartDetail = null;
+            return m;
+        }
+        string chosen = "ba:businesstype_" + FoundKinds[kind];
+        var detail = new BizManStart { Kicker = t("common_business_type", "Business type"), Name = t(chosen, FoundKinds[kind]), Icon = BizManRules.KindIcon(chosen, null) };
+        var list = new System.Collections.Generic.List<BizManStartRow>();
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("reallife_ui_bizman_competitors_here", "Competitors in the neighbourhood"), Value = "3" });
+        if (FoundNeeds[kind] > 0)
+        {
+            list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_needs", "What it needs to open") });
+            for (int i = 0; i < FoundNeeds[kind]; i++)
+            {
+                list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = FoundKinds[kind] == "gym" ? GymNeeds[i] : "Requirement " + (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) });
+            }
+            list.Add(new BizManStartRow { Kind = BizManStartKind.Note, Label = t("reallife_ui_bizman_start_note", "Name it, then start it. You fit it out afterwards from inside the building.") });
+        }
+        if (FoundDiploma[kind])
+        {
+            list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_diploma", "Diploma") });
+            list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Headquarters", Mark = UiIcon.Warning, Tone = UiRole.Warn });
+            list.Add(new BizManStartRow
+            {
+                Kind = BizManStartKind.Note, Label = t("reallife_ui_bizman_start_diploma_missing", "You have not completed this diploma yet, so the game will not let you start this type.")
+            });
+        }
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_the_building", "The building") });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("common_building_type", "Building type"), Value = "Retail" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("bizman_building_total_size", "Total size"), Value = "220 m2" });
+        detail.Rows = list.ToArray();
+        m.StartDetail = detail;
+        // A place just rented offers no preview of itself: Randomise and Start business, as the game shows them there.
+        m.Actions = new[]
+        {
+            new UiActionModel { Label = t("reallife_ui_bizman_randomise", "Randomise"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Spark, Key = UiAction.Count,
+                Command = BizManPages.Action, Arg = BizManPages.DoRandomName },
+            new UiActionModel { Label = t("bizman_start_business_button", "Start business"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt,
+                Command = BizManPages.Action, Arg = BizManPages.DoStartHere },
+        };
         return m;
     }
 

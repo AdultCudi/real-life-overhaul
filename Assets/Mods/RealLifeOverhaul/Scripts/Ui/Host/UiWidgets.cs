@@ -125,6 +125,25 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        /// <summary>
+        /// A toggle set through itself while the game keeps the view it stands in switched off for the page shown (BizMan's header,
+        /// with its open switch, on the building's and the real estate's tabs): the caller has seen that the toggle and its own row
+        /// are on, so only that view hides it, and its listeners hear the change as they would a click. False when it is not there,
+        /// switched off itself or held.
+        /// </summary>
+        public static bool SetUnder(Toggle t, bool on)
+        {
+            if (t == null || !t.gameObject.activeSelf || !t.interactable)
+            {
+                return false;
+            }
+            using (HotSpots.Game())
+            {
+                t.isOn = on;
+            }
+            return true;
+        }
+
         /// <summary>A drop-down's option chosen through itself; false when it has no such option or is held.</summary>
         public static bool Pick(TMP_Dropdown d, int option)
         {

@@ -17,19 +17,29 @@ namespace RealLifeOverhaul.Ui
         public const int Action = 300, Type = 301, Less = 302, More = 303, FilterOption = 304, Period = 305, Item = 306, ItemLink = 307, Toggle = 308,
             Repeat = 309, Kind = 310, KindOption = 311, Font = 312, FontOption = 313, Uniforms = 314, FactLink = 315, Slider = 316, Classic = 317,
             Cancel = 319, Page = 320, Heading = 321, Pages = 322, Suppliers = 323;
+        public const int LineAction = 324;            // a button a page written as lines offers (the Interior tab's, the Loyalty tab's): its argument the button's place among them
         public const int FactSuppliers = 1;           // a fact's link that opens the Suppliers app at the business, its argument
         public const int SecondColumn = 1000;         // a heading of the right column: its argument from here, the left's from 0
 
         // The logo editor's commands (this job's block 9600 to 9619; used 9600 to 9603 and 9610 to 9612).
         public const int LogoShape = 9600, LogoOwn = 9601, LogoColourAdd = 9602, LogoTab = 9603, LogoColour = 9610;   // a colour row's swatches: LogoColour plus the row (0 to 2)
 
-        // What an action does, its argument: the game's side presses the game's own button for each.
+        // What an action does, its argument: the game's side presses the game's own button for each. Every one stands in Actions
+        // and has its own case in the screen's dispatch, with nothing asked before the cases: a button of a page written as lines
+        // has a command of its own (LineAction), so no action's number can be taken for one of those again.
         public const int DoRent = 1, DoStart = 2, DoTerminate = 3, DoPreview = 4, DoBuy = 5, DoTakeover = 6, DoBrowse = 7, DoEmployees = 8,
             DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoEdit = 15, DoLogoDone = 28, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
             DoOrder = 20, DoUrgent = 21, DoCancelContract = 22, DoEndContract = 23, DoEconoView = 25, DoClassic = 26, DoRandomName = 27;
-        public const int DoLine = 100;                // a button a page of lines offers (the Interior tab's), its index from here
+        public const int DoStartHere = 29;            // the start page's own Start business, the game's SetUpBusiness
         public const int StartKinds = 9800;           // the start page's kinds table, from here as UiDataTable's from its First (this job's block 9800 to 9819)
-        public const int DoStartHere = 9810;              // the start page's own Start business, the game's SetUpBusiness
+
+        /// <summary>Every action a page's button asks for, for the checks: each one known to the screen's dispatch, none twice.</summary>
+        public static readonly int[] Actions =
+        {
+            DoRent, DoStart, DoTerminate, DoPreview, DoBuy, DoTakeover, DoBrowse, DoEmployees, DoRandom, DoSave, DoShutdown, DoSaveLogo, DoLogoEdit, DoLogoDone,
+            DoApplyRent, DoTakeoverUnit, DoMarkSale, DoCancelSale, DoOrder, DoUrgent, DoCancelContract, DoEndContract, DoEconoView, DoClassic, DoRandomName, DoStartHere
+        };
+
         public const int Goods = 400;                 // the goods' table's commands, from here as UiDataTable's from its First
         public const int FieldName = 0, FieldOffer = 1, FieldBuy = 2, FieldSale = 3;
         private const float SummaryH = UiTokens.Control;   // px: the portfolio's slim line
@@ -38,7 +48,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands =
         {
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
-            Classic, Cancel, Page, Heading, Pages, Suppliers, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
+            Classic, Cancel, Page, Heading, Pages, Suppliers, LineAction, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
             UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
@@ -67,6 +77,10 @@ namespace RealLifeOverhaul.Ui
             UiNavEntry[] nav = m.Nav.Length > 1 ? m.Nav : new UiNavEntry[0];
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, UiIcon.Building, nav, m.NavSelected, false, keys, out float x, out float y, out float w, out float bottom);
             int page = s.NodeCount;
+            if (!string.IsNullOrEmpty(m.Refused))
+            {
+                bottom = RefusedLine(s, at, m.Refused, x, w, bottom);   // the page ends above what its last press was told
+            }
             if (m.Page == BizManPage.Portfolio)
             {
                 Portfolio(s, at, m, x, y, w, bottom, keys);
@@ -96,6 +110,25 @@ namespace RealLifeOverhaul.Ui
         private static void Behind(UiScene s, float x, float y, float w, float bottom)
         {
             UiDraw.Scrim(s, x - UiTokens.S5, y - UiTokens.S4, w + UiTokens.S5 * 2f, bottom - y + UiTokens.S4 * 2f, 1);
+        }
+
+        private const int RefusedLines = 3;   // lines the sentence may take: the longest of them in the longest language fits in three at the narrowest page
+
+        /// <summary>
+        /// Why the last press came to nothing, across the page's foot until a press is taken: the warning's glyph and the sentence
+        /// on a band, so a button that did nothing is never silent. Returns where the page ends above it.
+        /// </summary>
+        private static float RefusedLine(UiScene s, UiAt at, string words, float x, float w, float bottom)
+        {
+            float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, tw = UiDraw.SnapDown(x + w - UiTokens.S4 - tx);
+            float th = UiDraw.Snap(UiTextRules.WrappedHeight(words, UiStyle.Body, tw, RefusedLines));
+            float h = Math.Max(UiTokens.Control, th + UiTokens.S2 * 2f);
+            float top = bottom - h;
+            int band = UiDraw.Box(s, at, x, top, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiAt on = at.In(band);
+            UiDraw.Icon(s, on, x + UiTokens.S4, top + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Warning, UiRole.Warn, UiFlags.Middle, true);
+            UiDraw.Text(s, on, tx, top + UiDraw.SnapDown((h - th) / 2f), tw, UiStyle.Body, UiRole.Text, words, UiFlags.Label | UiFlags.Wrap, RefusedLines);
+            return top - UiTokens.S4;
         }
 
         // ------------------------------------------------------------------------------------------------- the portfolio

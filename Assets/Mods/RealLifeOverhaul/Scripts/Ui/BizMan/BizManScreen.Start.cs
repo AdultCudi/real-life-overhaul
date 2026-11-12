@@ -277,6 +277,9 @@ namespace RealLifeOverhaul.Ui
             if (_startRows.Count > from)
             {
                 _startRows.Insert(from, new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_start_needs") });
+                // What it needs to open reads as what it needs to be started, and a player with an empty place then waits to furnish
+                // it first: the game starts a business with a name and a kind alone, and the list is for afterwards.
+                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Note, Label = UiText.T("reallife_ui_bizman_start_note") });
             }
         }
 
@@ -340,10 +343,20 @@ namespace RealLifeOverhaul.Ui
             return Click(Get<Button>(GameContract.KindSelect, card), "choose " + at.name);
         }
 
+        // Start business: the game's own button, which asks its own questions (a name, a kind, the kind's diploma) and answers a
+        // refusal with its notice. The game writes the name into the place as it starts the business, before its logo is made, so
+        // the place having one right after says the business was started.
         private bool SetUpBusiness(BizManBusiness b)
         {
             StartBusinessUI start = Get<StartBusinessUI>(GameContract.ShowStart, PageOf<BizManPresentation>(b, BizManRules.Presentation));
-            return Click(Calling(start, "SetUpBusiness"), "set up the business");
+            int heard = ShellNotices.Heard;
+            bool handed = Click(Calling(start, "SetUpBusiness"), "set up the business");
+            if (handed)
+            {
+                BuildingRegistration reg = b.buildingRegistration;
+                Outcome("start a business", b, reg != null && !string.IsNullOrEmpty(reg.BusinessName), heard);
+            }
+            return handed;
         }
 
         private bool ClearKindSearch()

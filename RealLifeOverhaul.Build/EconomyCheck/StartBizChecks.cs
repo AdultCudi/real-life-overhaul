@@ -128,8 +128,10 @@ internal static partial class Program
         Check(read.Contains("UiDataTableModel old = again ? _m.StartKinds : null;") && read.Contains("Offset = old != null ? old.Offset : 0f"), "start biz: a refresh of the page shown keeps the list's scroll");
         Check(screen.Contains("if (StartWheel(clip, by))") && screen.Contains("if (StartReveal(list, index))") && press.Contains("BizManPages.StartKinds + UiDataTable.Row")
               && screen.Contains("KindTyped(text)"), "start biz: the wheel, the pad's reveal, the search and a row's press reach the page");
-        Check(Array.IndexOf(BizManPages.Commands, BizManPages.StartKinds + UiDataTable.Row) >= 0 && BizManPages.StartKinds >= 9800 && BizManPages.DoStartHere <= 9819,
-            "start biz: the page's commands stand in the job's block");
+        // Start business is an action of the page, among the pages' actions: a number of the commands' block once put it past the Interior tab's buttons.
+        Check(Array.IndexOf(BizManPages.Commands, BizManPages.StartKinds + UiDataTable.Row) >= 0 && BizManPages.StartKinds >= 9800
+              && Array.IndexOf(BizManPages.Actions, BizManPages.DoStartHere) >= 0 && BizManPages.DoStartHere < BizManPages.StartKinds,
+            "start biz: the page's commands stand in the job's block, and Start business among the pages' actions");
     }
 
     private static void StartBizPictures()

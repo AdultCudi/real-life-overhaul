@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Buildings.BuildingTypes.Shared.BusinessRequirement;
+using Helpers;
+using Streets;
 using TMPro;
 using UI.Smartphone.Apps.BizMan;
 using UI.Smartphone.Apps.BizMan.StartBusiness;
@@ -69,12 +72,9 @@ namespace RealLifeOverhaul.Ui
                     b.SetDestination();
                     return true;
                 case UiFirmHead.First + UiFirmHead.Switch:
-                {
-                    Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
-                    bool done = UiWidgets.Set(closed, closed != null && !closed.isOn);
-                    UiDirector.Logger?.Info("BizMan (kit): temporarily closed set through the game's own toggle" + (done ? string.Empty : " was refused by the game"));
-                    return done;
-                }
+                    return SetOpen(b);
+                case BizManPages.LineAction:
+                    return InteriorDo(arg);   // a button of a page written as lines: its own command, so no page action's number is ever taken for one
                 case UiFirmHead.First + UiFirmHead.Todo:
                     _todoOpen = !_todoOpen;
                     _listOpen = false;
@@ -116,10 +116,10 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.Repeat:
                 {
                     BizManContractSettings set = Get<BizManContractSettings>(GameContract.DealSettings, PageOf<BizManDeliveries>(b, BizManRules.Deliveries));
-                    return set != null && UiWidgets.Set(set.repeatingOrderToggle, !set.repeatingOrderToggle.isOn);
+                    return set != null && Flip(set.repeatingOrderToggle);
                 }
                 case BizManPages.Toggle:
-                    return arg >= 0 && arg < _campaigns.Count && UiWidgets.Set(_campaigns[arg], !_campaigns[arg].isOn);
+                    return arg >= 0 && arg < _campaigns.Count && Flip(_campaigns[arg]);
                 case BizManPages.Cancel:
                 {
                     Transform cancel = arg >= 0 && arg < _agencies.Count ? _agencies[arg].Find("CancelCampaign") : null;
@@ -166,6 +166,135 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static int DoOfHead(int index) => index == 0 ? BizManPages.DoEconoView : -1;
+
+        // A toggle of the game's set the other way through itself, as a click sets it. One not there to set says which way, for the
+        // page's line: the game holds it, or does not show it.
+        private static bool Flip(Toggle t)
+        {
+            if (UiWidgets.Set(t, t != null && !t.isOn))
+            {
+                return true;
+            }
+            _why = t != null && t.gameObject.activeInHierarchy ? BizManRefusal.Held : BizManRefusal.Gone;
+            return false;
+        }
+
+        // How the open switch reaches the game's toggle now (BizManRules.SwitchWay): by what the game's own objects say. A toggle out
+        // of sight is set only where the game's own tab is what hides its header (the building's, the real estate's), and never in
+        // a Going Public session: there another player's business stands as rented by the player, and what hides a control may be
+        // the session's lock.
+        private static BizManSwitchWay SwitchOf(BizManBusiness b, Toggle closed)
+        {
+            Transform row = closed != null ? closed.transform.parent : null;
+            string tab = GameContract.BizTab.Field?.GetValue(b) as string;
+            bool byTab = !GoingPublic.InSession && (tab == BizManRules.Presentation || tab == BizManRules.RealEstate);
+            return BizManRules.SwitchWay(row != null, row != null && row.gameObject.activeSelf, closed != null && closed.gameObject.activeSelf,
+                closed != null && closed.gameObject.activeInHierarchy, closed != null && closed.interactable, byTab);
+        }
+
+        // The open switch: the game's own "temporarily closed" toggle set through itself, so its listener (and any other mod's on it)
+        // runs the game's opening or closing. The game keeps the toggle in its header, which it switches off on the building's and
+        // the real estate's tabs; the head shows the switch there too, and a press there was refused with nothing said. It is set
+        // there all the same. Opening is followed by what the opening is worth: the business's own state, and the utilities' look.
+        private bool SetOpen(BizManBusiness b)
+        {
+            Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
+            BuildingRegistration reg = b.buildingRegistration;
+            BizManSwitchWay way = SwitchOf(b, closed);
+            if (closed == null || reg == null || way == BizManSwitchWay.None || way == BizManSwitchWay.Held)
+            {
+                _why = way == BizManSwitchWay.Held ? BizManRefusal.Held : BizManRefusal.Gone;
+                UiDirector.Logger?.Info("BizMan (kit): the open switch " + (way == BizManSwitchWay.Held ? "is held by the game, so nothing was set" : "has no toggle of the game's to set"));
+                return false;
+            }
+            Level(closed, reg);
+            bool close = !reg.temporarilyClosed;   // what the business is, the other way
+            bool done = way == BizManSwitchWay.Click ? UiWidgets.Set(closed, close) : UiWidgets.SetUnder(closed, close);
+            UiDirector.Logger?.Info("BizMan (kit): " + (close ? "closing" : "opening") + " by the game's own toggle"
+                + (way == BizManSwitchWay.Under ? ", under its header, which the game switches off on this tab" : string.Empty)
+                + (done ? ": handed to the game" : " was refused by the toggle"));
+            if (done && !close)
+            {
+                Opened(b, reg);
+                Level(closed, reg);   // closed again by the utilities since: the toggle says so too, in the game's own view as well
+            }
+            return done;
+        }
+
+        // The game writes its toggle from the business when it fills the page, and a closing or opening that is no click on it (the
+        // utilities', another player's in Going Public) leaves it saying the old state. Brought level the game's own way, without its
+        // listener, so the next set is a change the listener hears and the head never shows one state while the business is in the other.
+        private static void Level(Toggle closed, BuildingRegistration reg)
+        {
+            if (closed.isOn != reg.temporarilyClosed)
+            {
+                closed.SetIsOnWithoutNotify(reg.temporarilyClosed);
+            }
+        }
+
+        // A business just opened by its switch: what the opening is worth, said once in Player.log (a warning when it will not trade
+        // yet, so a report's log says why "open" is not open: a requirement missing, no opening hours today, the staff the game asks
+        // for), and the utilities look at the place at once instead of at the turn of the hour, so one they must close again is
+        // closed and told now, on the page the player is looking at.
+        private void Opened(BizManBusiness b, BuildingRegistration reg)
+        {
+            string place = b.address != null ? b.address.ToFormattedString() : "no place";
+            if (reg.temporarilyClosed)
+            {
+                UiDirector.Logger?.Warn("BizMan check (open): " + place + ": the game's toggle was set to open and the business is still closed: FAIL.");
+                return;
+            }
+            string why;
+            try
+            {
+                why = NotTrading(reg);
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                why = null;   // a game update took something the look reads: it says nothing, and the opening stands
+            }
+            if (why != null)
+            {
+                UiDirector.Logger?.Warn("BizMan check (open): " + place + " is open by its switch and will not trade yet: " + why + ".");
+            }
+            else if (Meta.Dev.Verbose)
+            {
+                UiDirector.Logger?.Info("BizMan check (open): " + place + " is open by its switch, every requirement of the game's met, open by its hours and staffed as the game asks: PASS.");
+            }
+            // Closed again at once for want of power, water or a connection: the page says the utilities' own sentence, which is also their notice.
+            _said = Utilities.UtilitiesDirector.Instance != null ? Utilities.UtilitiesDirector.Instance.LookAt(reg) : null;
+        }
+
+        // Why a business open by its switch will not trade yet, by the game's own tests: its requirements, its opening hours and its
+        // own alert for a station with nobody at it. Null when nothing stands in its way. A method of its own, so a game update that
+        // takes one of these leaves the press that called it standing.
+        private static string NotTrading(BuildingRegistration reg)
+        {
+            BusinessType type = BusinessTypeHelper.GetData(reg);
+            int needs = 0, missing = 0;
+            string first = null;
+            for (int i = 0; type != null && type.businessRequirements != null && i < type.businessRequirements.Count; i++)
+            {
+                BusinessRequirement need = type.businessRequirements[i];
+                if (need == null)
+                {
+                    continue;
+                }
+                needs++;
+                if (!BusinessHelper.IsRequirementMet(reg, need))
+                {
+                    missing++;
+                    first = first ?? need.businessRequirementName;
+                }
+            }
+            bool anyDay = false;
+            for (int d = 0; reg.scheduleDays != null && d < reg.scheduleDays.Count; d++)
+            {
+                anyDay |= reg.scheduleDays[d] != null && reg.scheduleDays[d].isOpen;
+            }
+            ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+            return BizManRules.NotTrading(needs, missing, first, anyDay, today != null && today.isOpen, BusinessHelper.IsMissingEmployeeAlertNeeded(reg));
+        }
 
         // A section chosen: a tab the kit draws is the game's own tab button pressed (its question about unsaved settings
         // first); a page only the game's view shows is its handover, the game's tab left as it is until it is opened there.
@@ -223,19 +352,11 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // An action of a page: each the game's own button, found by the method the game wired it to.
+        // An action of a page: each the game's own button, found by the method the game wired it to. Every action has its own case
+        // and nothing is asked before the cases (EconomyCheck holds both): a range asked first once took Start business for a button
+        // of the Interior tab, which had none of that number, and the press came to nothing.
         private bool Do(BizManBusiness b, int what)
         {
-            // Start business has a number of its own above the Interior tab's line: it is asked first, or the tab would take it for
-            // one of its buttons, find none and refuse the press with nothing started.
-            if (what == BizManPages.DoStartHere)
-            {
-                return SetUpBusiness(b);
-            }
-            if (what >= BizManPages.DoLine)
-            {
-                return InteriorDo(what - BizManPages.DoLine);
-            }
             BizManPresentation pres = PageOf<BizManPresentation>(b, BizManRules.Presentation);
             switch (what)
             {
@@ -249,7 +370,16 @@ namespace RealLifeOverhaul.Ui
                     b.OpenInEconoView();   // the game's own path to EconoView on this business
                     return true;
                 }
-                case BizManPages.DoRent: return Click(Calling(pres, "RentBuilding"), "rent the building");
+                case BizManPages.DoRent:
+                {
+                    int heard = ShellNotices.Heard;
+                    bool handed = Click(Calling(pres, "RentBuilding"), "rent the building");
+                    if (handed)
+                    {
+                        Outcome("rent", b, b.buildingRegistration != null && b.buildingRegistration.RentedByPlayer, heard);
+                    }
+                    return handed;
+                }
                 case BizManPages.DoStart: return Click(Calling(pres, "SetStartBusiness"), "start a business");
                 case BizManPages.DoTerminate:
                     return Click(Calling(_shown == BizManRules.Settings ? Page(b, BizManRules.Settings) : pres, "TerminateContract"), "terminate the lease (the game asks first)");
@@ -319,6 +449,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (d == null)
             {
+                _why = BizManRefusal.Gone;
                 return false;
             }
             d.SelectOption(option);   // what a click on the game's own option does: its listeners hear it
@@ -370,6 +501,7 @@ namespace RealLifeOverhaul.Ui
             TMP_InputField f = Field(BizManPages.Type, field);
             if (f == null || !f.interactable)
             {
+                _why = f == null ? BizManRefusal.Gone : BizManRefusal.Held;
                 return false;
             }
             double.TryParse(f.text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out double amount);

@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Ui
         public int NavSelected;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
+        public string Refused;                          // why the last press came to nothing (the kit's own reason, or the game's refusal in its own words); null for none
 
         // The portfolio
         public UiIcon[] SummaryIcons = new UiIcon[0];   // the slim line over the table: each its glyph and its words
