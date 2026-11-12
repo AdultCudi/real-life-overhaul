@@ -167,7 +167,11 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   end), bars by category (each its category's colour and value, every category named) and a market's candles over their
   volume, on a band with a round-stepped value axis and hairline rules. Each point is a target read in a slate card by
   focus or by the mouse resting on it (`IUiPointing`). Use it where a trend or a comparison is the point; not for a
-  single figure (`Figures` with its spark) or a share of a whole (`Donut`).
+  single figure (`Figures` with its spark) or a share of a whole (`Donut`). Whatever the values, nothing is drawn
+  outside the plot. A bar is a length from nothing, so a bar chart's axis always holds nothing and a loss hangs down
+  from its line. A line's axis may fit its values. A value that is no number (`UiChart.Real`) is left out, and ticks
+  that would read alike take a wider step. The sparkline, the donut, the ring and the gauge hold the same
+  (EconomyCheck `--charts`, UiChecks.ChartPlot.cs).
 - **Catalogue** (`UiCatalogue`): cards of goods or choices in a grid that scrolls inside its frame, each its picture on
   a slate tile (the game's own, through `UiPictures`, laid in its own shape and never stretched, or a glyph in its
   colour), its name, its price and a state chip, the chosen card's foot cyan, and its detail beside the grid with the

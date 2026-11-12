@@ -64,6 +64,9 @@ namespace RealLifeOverhaul.Ui
     /// beside it, by focus or by the mouse resting on it (IUiPointing). Flat strokes and fills, no gradient. A line is
     /// drawn as segments of the kit's spark, each in a box from one point to the next, so it needs no mesh of its own
     /// and allocates only when laid out. It stands in for the game's AwesomeCharts and the mod's own chart meshes.
+    /// Whatever the values, nothing is drawn outside the plot: a bar is a length from nothing, so a bar chart's axis
+    /// always holds nothing (losses hang down from it), every height is held between the plot's top and foot, a value
+    /// that is no number (a division by nothing) is left out, and the axis takes a wider step until its ticks read apart.
     /// Commands: <see cref="First"/> plus <see cref="Point"/> (the point's index). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiChart
@@ -71,12 +74,20 @@ namespace RealLifeOverhaul.Ui
         public const int First = 120;
         public const int Point = 0;
         public const int MostTargets = 31;      // points a chart makes targets of; a longer one reads by its axis alone
+        public const int MostSteps = 8;         // the value axis's steps at the most (nine rules): more would crowd a short plot
         private const int Intervals = 4;        // the value axis's steps, about
+        private const int MostWider = 32;       // times an axis takes the next round step to tell its ticks apart: eight powers of ten
+        private const float Most = 1e30f;       // a value past this either way is no figure to draw, so no sum of two can overflow
+        private const float NameSlot = UiTokens.S6;   // px: a narrower slot holds no category's name, so the axis names every so many
+        private const float LeastSlot = 0.001f; // px: a slot is divided by, and a series longer than its plot has px gives each point under one
         private const float SwatchSize = 8f;    // px: a legend's or a last value's dot
         private const float BarShare = 0.56f;   // of a point's slot, a bar's width
         private const float CandleShare = 0.6f; // of a slot, a candle's body
         private const float VolumeShare = 0.2f; // of the plot, the candles' volume under them
         private const float Wick = 2f;          // px: a candle's high to low
+
+        // The axis's words as Scale last read them. Scale reads them to tell the ticks apart, so the layout writes each once.
+        private static readonly string[] TickWords = new string[MostSteps + 1];
 
         /// <summary>The height a chart's head takes: its title and its legend on one line.</summary>
         public static float HeadHeight => UiTokens.PairRow + UiTokens.S2;
@@ -92,13 +103,14 @@ namespace RealLifeOverhaul.Ui
             Head(s, on, m, ix, iy, iw);
             float top = iy + HeadHeight;
             int n = m.Points != null ? m.Points.Length : 0;
-            if (n == 0 || !HasData(m))
+            if (n == 0 || !Range(m, out float low, out float high))
             {
                 UiDraw.Empty(s, on, ix, top, iw, iy + ih - top, m.EmptyTitle, m.EmptyBody);
                 return band;
             }
-            Scale(m, out float lo, out float hi, out float step);
-            float axisW = AxisWidth(m, lo, hi, step);
+            Scale(m, low, high, out float lo, out float hi, out float step);
+            int steps = Steps(lo, hi, step);
+            float axisW = AxisWidth(steps);
             float rightW = m.Kind == UiChartKind.Line ? LastWidth(m) : 0f;
             float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small) * (m.Kind == UiChartKind.Bars ? 2f : 1f)) + UiTokens.S1;   // a category's name may take two lines
             float px = ix + axisW, pw = UiDraw.SnapDown(iw - axisW - rightW);
@@ -106,7 +118,7 @@ namespace RealLifeOverhaul.Ui
             float volumeH = m.Kind == UiChartKind.Candles && m.Volume != null ? UiDraw.SnapDown((plotFoot - plotTop) * VolumeShare) : 0f;
             float ph = plotFoot - plotTop - (volumeH > 0f ? volumeH + UiTokens.S3 : 0f);
             float drawH = ph;
-            Axis(s, on, m, ix, axisW, plotTop, drawH, px, pw, lo, hi, step);
+            Axis(s, on, ix, axisW, plotTop, drawH, px, pw, lo, hi, step, steps);
             float slot = pw / n;
             int plot = UiDraw.Box(s, on, px, plotTop, pw, ph, UiRole.None, UiRole.None, 0f);
             UiAt inPlot = on.In(plot);
@@ -140,27 +152,36 @@ namespace RealLifeOverhaul.Ui
                 Volume(s, on, m, ix, axisW, px, slot, plotTop + ph + UiTokens.S3, volumeH);
             }
             PointLabels(s, on, m, px, slot, plotFoot + UiTokens.S1, labelH);
-            if (m.Focus >= 0 && m.Focus < n)
+            if (m.Focus >= 0 && m.Focus < n && (m.Kind != UiChartKind.Candles || (m.Focus < m.Close.Length && Real(m.Close[m.Focus]))))
             {
                 Reading(s, on, m, m.Focus, px, pw, slot, plotTop, ph, lo, hi, x, y, w, h);
             }
             return band;
         }
 
-        private static bool HasData(UiChartModel m)
+        /// <summary>
+        /// Whether a value can be drawn: a number, and one in reach. A division by nothing leaves NaN or an infinity, and
+        /// both fail this one comparison. Such a value is left out of the axis and of the plot.
+        /// </summary>
+        public static bool Real(float v) => Math.Abs(v) <= Most;
+
+        // A candle's four prices. A price that is missing or no number is read from the close, and the high and low hold
+        // the open and close between them. False when the close itself is no number: that day has no candle.
+        private static bool CandleOf(UiChartModel m, int i, out float open, out float high, out float low, out float close)
         {
-            if (m.Kind == UiChartKind.Candles)
+            close = m.Close[i];
+            open = m.Open != null && i < m.Open.Length && Real(m.Open[i]) ? m.Open[i] : close;
+            high = Math.Max(open, close);
+            low = Math.Min(open, close);
+            if (m.High != null && i < m.High.Length && Real(m.High[i]))
             {
-                return m.Close != null && m.Close.Length > 0;
+                high = Math.Max(high, m.High[i]);
             }
-            for (int i = 0; m.Series != null && i < m.Series.Length; i++)
+            if (m.Low != null && i < m.Low.Length && Real(m.Low[i]))
             {
-                if (m.Series[i].Values != null && m.Series[i].Values.Length > 0)
-                {
-                    return true;
-                }
+                low = Math.Min(low, m.Low[i]);
             }
-            return false;
+            return Real(close);
         }
 
         // The title at the left, and for lines a legend of each series' dot and name at the right.
@@ -186,80 +207,135 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A series' colour: its own, or the chart's hue in its turn.</summary>
         public static UiRole Tint(UiChartModel m, int series) => m.Series[series].Tint != UiRole.None ? m.Series[series].Tint : UiTokens.Chart(series);
 
-        // The span the values cover: from nothing for bars, as a bar's length is its value; from the lowest otherwise.
-        private static void Range(UiChartModel m, out float lo, out float hi)
+        // The span the values that can be drawn cover. False when there is none: the chart then shows its empty state.
+        private static bool Range(UiChartModel m, out float lo, out float hi)
         {
             lo = float.MaxValue;
             hi = float.MinValue;
             if (m.Kind == UiChartKind.Candles)
             {
-                for (int i = 0; i < m.Close.Length; i++)
+                for (int i = 0; m.Close != null && i < m.Close.Length; i++)
                 {
-                    lo = Math.Min(lo, m.Low != null ? m.Low[i] : m.Close[i]);
-                    hi = Math.Max(hi, m.High != null ? m.High[i] : m.Close[i]);
+                    if (CandleOf(m, i, out float _, out float high, out float low, out float _))
+                    {
+                        lo = Math.Min(lo, low);
+                        hi = Math.Max(hi, high);
+                    }
                 }
-                return;
+                return lo <= hi;
             }
-            for (int k = 0; k < m.Series.Length; k++)
+            for (int k = 0; m.Series != null && k < m.Series.Length; k++)
             {
                 float[] v = m.Series[k].Values;
                 for (int i = 0; v != null && i < v.Length; i++)
                 {
-                    lo = Math.Min(lo, v[i]);
-                    hi = Math.Max(hi, v[i]);
+                    if (Real(v[i]))
+                    {
+                        lo = Math.Min(lo, v[i]);
+                        hi = Math.Max(hi, v[i]);
+                    }
                 }
             }
-            if (m.Kind == UiChartKind.Bars)
-            {
-                lo = Math.Min(0f, lo);
-            }
+            return lo <= hi;
         }
 
         /// <summary>The value axis a chart is drawn on: its ends, each a whole number of its round step, and the step.</summary>
         public static void Scale(UiChartModel m, out float lo, out float hi, out float step)
         {
-            Range(m, out lo, out hi);
-            if (hi - lo < 1e-6f && m.Kind != UiChartKind.Bars)
+            if (!Range(m, out float low, out float high))
+            {
+                low = high = 0f;   // nothing to draw: a plain axis from nothing, as the empty state needs none
+            }
+            Scale(m, low, high, out lo, out hi, out step);
+        }
+
+        // The axis over a span of values. A bar is a length from nothing, so a bar chart's axis holds nothing whatever its
+        // values are: an axis fitted round losses of $3,741 a day drew their bars from far above the window (12 Nov 2026).
+        private static void Scale(UiChartModel m, float low, float high, out float lo, out float hi, out float step)
+        {
+            bool bars = m.Kind == UiChartKind.Bars;
+            if (bars)
+            {
+                low = Math.Min(0f, low);
+                high = Math.Max(0f, high);
+            }
+            else if (high - low < 1e-6f)
             {
                 // One value all through (a count that has not moved): the line stands in the middle of a real range, a tenth of the
                 // value (at least one) either side, never on the foot of an axis from one whole number to the next.
-                float half = Math.Max(1f, Math.Abs(lo) * 0.1f);
-                bool positive = lo >= 0f;
-                lo -= half;
-                hi += half;
-                if (positive && lo < 0f)
+                float half = Math.Max(1f, Math.Abs(low) * 0.1f);
+                bool positive = low >= 0f;
+                low -= half;
+                high += half;
+                if (positive && low < 0f)
                 {
-                    hi -= lo;   // a count at nothing keeps its foot at nothing
-                    lo = 0f;
+                    high -= low;   // a count at nothing keeps its foot at nothing
+                    low = 0f;
                 }
             }
-            step = NiceStep(hi - lo, Intervals);
+            step = NiceStep(high - low, Intervals);
             if (m.Whole)
             {
                 step = WholeStep(step);
             }
-            lo = (float)Math.Floor(lo / step + 1e-4) * step;
-            hi = (float)Math.Ceiling(hi / step - 1e-4) * step;
+            Ends(low, high, step, bars, out lo, out hi);
+            // Ticks that read alike say nothing ("$1.2M" five times, or a float's last figures at a large value): the next round
+            // step, until each tick has its own words.
+            bool apart = Readable(m, lo, hi, step);
+            for (int wider = 0; wider < MostWider && !apart; wider++)
+            {
+                step = Wider(step, m.Whole);
+                Ends(low, high, step, bars, out lo, out hi);
+                apart = Readable(m, lo, hi, step);
+            }
+        }
+
+        // The axis's ends for a step: each a whole number of it, holding the span between them.
+        private static void Ends(float low, float high, float step, bool bars, out float lo, out float hi)
+        {
+            lo = (float)Math.Floor(low / step + 1e-4) * step;
+            hi = (float)Math.Ceiling(high / step - 1e-4) * step;
             if (hi - lo < step * 0.5f)
             {
                 hi = lo + step;
             }
-            if (m.Kind == UiChartKind.Bars)
+            if (bars)
             {
-                // The tallest bar keeps room above it for its value: a bar that ends on the axis's top would lose its label.
-                float tallest = float.MinValue;
-                for (int k = 0; m.Series != null && k < m.Series.Length; k++)
-                {
-                    for (int i = 0; m.Series[k].Values != null && i < m.Series[k].Values.Length; i++)
-                    {
-                        tallest = Math.Max(tallest, m.Series[k].Values[i]);
-                    }
-                }
-                if (tallest > float.MinValue && tallest > hi - step * 0.2f)
+                // The longest bar each way keeps room past its end for its value: a bar that ends on the axis's edge would lose its label.
+                if (high > 0f && high > hi - step * 0.2f)
                 {
                     hi += step;
                 }
+                if (low < 0f && low < lo + step * 0.2f)
+                {
+                    lo -= step;
+                }
             }
+        }
+
+        // The steps an axis takes from its foot to its top.
+        private static int Steps(float lo, float hi, float step) => (int)Math.Round((hi - lo) / step);
+
+        // Whether an axis can be read: no more steps than a plot holds, and no two neighbouring ticks with the same words.
+        // The words stay in TickWords for the layout.
+        private static bool Readable(UiChartModel m, float lo, float hi, float step)
+        {
+            int steps = Steps(lo, hi, step);
+            bool apart = steps >= 1 && steps <= MostSteps;
+            for (int k = 0; k <= steps && k <= MostSteps; k++)
+            {
+                TickWords[k] = Tick(m, lo + k * step);
+                apart &= k == 0 || !string.Equals(TickWords[k], TickWords[k - 1], StringComparison.Ordinal);
+            }
+            return apart;
+        }
+
+        // The next round step up: 1 to 2 to 2.5 to 5 to 10 of a power of ten, a count's never by a half.
+        private static float Wider(float step, bool whole)
+        {
+            double power = Math.Pow(10, Math.Floor(Math.Log10(step) + 1e-6));
+            double unit = step / power;
+            return (float)((unit < 1.5 ? 2.0 : unit < 2.25 ? (whole ? 5.0 : 2.5) : unit < 3.75 ? 5.0 : 10.0) * power);
         }
 
         /// <summary>
@@ -294,14 +370,13 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Whether a value is a whole number of a round step (the axis's own test).</summary>
         public static bool OnStep(float value, float step) => step > 0f && Math.Abs(value / step - Math.Round(value / step)) < 1e-3;
 
-        // The value axis's width: its widest tick's words.
-        private static float AxisWidth(UiChartModel m, float lo, float hi, float step)
+        // The value axis's width: its widest tick's words, as Scale read them.
+        private static float AxisWidth(int steps)
         {
             float most = 0f;
-            int count = (int)Math.Round((hi - lo) / step);
-            for (int k = 0; k <= count; k++)
+            for (int k = 0; k <= steps && k <= MostSteps; k++)
             {
-                most = Math.Max(most, UiTextRules.Width(Tick(m, lo + k * step), UiStyle.Small));
+                most = Math.Max(most, UiTextRules.Width(TickWords[k], UiStyle.Small));
             }
             return UiDraw.Snap(most + UiTokens.S1 + UiTokens.S3);
         }
@@ -318,7 +393,7 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < m.Series.Length; k++)
             {
                 float[] v = m.Series[k].Values;
-                if (v != null && v.Length > 0)
+                if (v != null && v.Length > 0 && Real(v[v.Length - 1]))
                 {
                     most = Math.Max(most, UiTextRules.Width(Write(m, v[v.Length - 1]), UiStyle.SmallStrong));
                 }
@@ -327,20 +402,23 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The value axis: each round tick's words at the left, right aligned against the plot, and its hairline across.
-        private static void Axis(UiScene s, UiAt at, UiChartModel m, float x, float axisW, float plotTop, float ph, float px, float pw, float lo, float hi, float step)
+        private static void Axis(UiScene s, UiAt at, float x, float axisW, float plotTop, float ph, float px, float pw, float lo, float hi, float step, int steps)
         {
             float lh = UiTextRules.LineHeight(UiStyle.Small);
-            int count = (int)Math.Round((hi - lo) / step);
-            for (int k = 0; k <= count; k++)
+            for (int k = 0; k <= steps && k <= MostSteps; k++)
             {
-                float v = lo + k * step;
-                float ty = plotTop + ph - (v - lo) / (hi - lo) * ph;
+                float ty = Y(lo + k * step, lo, hi, plotTop, ph);
                 UiDraw.Box(s, at, px, ty, pw, UiTokens.Hairline, k == 0 ? UiRole.Line : UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
-                UiDraw.Text(s, at, x, ty - lh / 2f, axisW - UiTokens.S3, UiStyle.Small, UiRole.Muted, Tick(m, v), UiFlags.Right | UiFlags.Middle);
+                UiDraw.Text(s, at, x, ty - lh / 2f, axisW - UiTokens.S3, UiStyle.Small, UiRole.Muted, TickWords[k], UiFlags.Right | UiFlags.Middle);
             }
         }
 
-        private static float Y(float v, float lo, float hi, float top, float h) => top + h - (v - lo) / Math.Max(1e-6f, hi - lo) * h;
+        // A value's height in the plot, held between its foot and its top: a value past the axis is drawn to the plot's edge, never past it.
+        private static float Y(float v, float lo, float hi, float top, float h)
+        {
+            float share = (v - lo) / Math.Max(1e-6f, hi - lo);
+            return top + h - (share > 0f ? share < 1f ? share : 1f : 0f) * h;
+        }
 
         // One flat, quiet tint for each phase behind the lines (UiTokens.PhaseTint), and its name small at the top of that tint.
         private static void Phases(UiScene s, UiAt at, UiChartModel m, float px, float top, float pw, float ph)
@@ -398,13 +476,14 @@ namespace RealLifeOverhaul.Ui
                     Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent
                 };
                 s.Add(ref line);
-                float y = rate != null && atPoint < rate.Length ? Y(rate[atPoint], lo, hi, top, ph) : top + UiTokens.S2;
+                float y = rate != null && atPoint < rate.Length && Real(rate[atPoint]) ? Y(rate[atPoint], lo, hi, top, ph) : top + UiTokens.S2;
                 UiDraw.Circle(s, at, x - UiTokens.S1, y - UiTokens.S1, UiTokens.S2, UiTokens.S2, UiRole.Warn, UiFlags.Decor | UiFlags.Middle);
             }
         }
 
         // Each series as segments from point to point, each a spark of two values in the box between them, widened by the
-        // stroke's half each way so the spark's inset puts its ends on the points.
+        // stroke's half each way so the spark's inset puts its ends on the points. A point that is no number has no
+        // segment to it or from it: the line breaks there rather than run to a height that means nothing.
         private static void Lines(UiScene s, UiAt at, UiChartModel m, float px, float slot, float top, float h, float lo, float hi)
         {
             float t = UiTokens.Hairline;
@@ -414,6 +493,10 @@ namespace RealLifeOverhaul.Ui
                 UiRole tint = Tint(m, k);
                 for (int i = 1; v != null && i < v.Length; i++)
                 {
+                    if (!Real(v[i - 1]) || !Real(v[i]))
+                    {
+                        continue;
+                    }
                     float x0 = px + slot * (i - 0.5f), x1 = px + slot * (i + 0.5f);
                     float y0 = Y(v[i - 1], lo, hi, top, h), y1 = Y(v[i], lo, hi, top, h);
                     var seg = new UiItem
@@ -436,7 +519,7 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < n; k++)
             {
                 float[] v = m.Series[k].Values;
-                ys[k] = v != null && v.Length > 0 ? Y(v[v.Length - 1], lo, hi, top, h) - lh / 2f : top;
+                ys[k] = v != null && v.Length > 0 && Real(v[v.Length - 1]) ? Y(v[v.Length - 1], lo, hi, top, h) - lh / 2f : top;
                 order[k] = k;
             }
             Array.Sort((float[])ys.Clone(), order);
@@ -457,7 +540,7 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < n; k++)
             {
                 float[] v = m.Series[k].Values;
-                if (v == null || v.Length == 0)
+                if (v == null || v.Length == 0 || !Real(v[v.Length - 1]))
                 {
                     continue;
                 }
@@ -468,42 +551,48 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A category's bar from nothing to its value in its colour, its value over it where the slot holds the words.
+        // A category's bar from nothing to its value in its colour: up from the line of nothing for a gain, down from it for
+        // a loss, never past the plot. Its value stands past its end (over a gain, under a loss) where the slot holds the words.
         private static void Bar(UiScene s, UiAt at, UiChartModel m, int i, float sx, float slot, float top, float h, float lo, float hi)
         {
             float[] v = m.Series.Length > 0 ? m.Series[0].Values : null;
-            if (v == null || i >= v.Length)
+            if (v == null || i >= v.Length || !Real(v[i]))
             {
                 return;
             }
-            float bw = Math.Max(UiTokens.S2, slot * BarShare), bx = sx + (slot - bw) / 2f;
-            float y0 = Y(Math.Max(0f, lo), lo, hi, top, h), y1 = Y(v[i], lo, hi, top, h);
+            float bw = Math.Min(slot, Math.Max(UiTokens.S2, slot * BarShare)), bx = sx + (slot - bw) / 2f;
+            float zero = Y(0f, lo, hi, top, h), end = Y(v[i], lo, hi, top, h);
+            bool loss = v[i] < 0f;
+            float bh = Math.Min(h, Math.Max(UiTokens.Hairline * 2f, Math.Abs(zero - end)));
+            float by = Math.Max(top, Math.Min(top + h - bh, loss ? zero : zero - bh));   // a bar too short to see still stands on its line, inside the plot
             UiRole tint = m.BarTints != null && i < m.BarTints.Length && m.BarTints[i] != UiRole.None ? m.BarTints[i] : Tint(m, 0);
-            UiDraw.Box(s, at, bx, Math.Min(y0, y1), bw, Math.Max(UiTokens.Hairline * 2f, Math.Abs(y0 - y1)), tint, UiRole.None, UiTokens.RadiusSmall, UiFlags.Share | UiFlags.Middle);
+            UiDraw.Box(s, at, bx, by, bw, bh, tint, UiRole.None, UiTokens.RadiusSmall, UiFlags.Share | UiFlags.Middle);
             string words = Write(m, v[i]);
             float lw = UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1, lh = UiTextRules.LineHeight(UiStyle.SmallStrong);
-            if (lw <= slot - UiTokens.S1 && Math.Min(y0, y1) - lh - UiTokens.S1 >= top)
+            float ly = loss ? by + bh + UiTokens.S1 : by - lh - UiTokens.S1;
+            if (lw <= slot - UiTokens.S1 && ly >= top && ly + lh <= top + h)
             {
-                UiDraw.Text(s, at, sx + (slot - lw) / 2f, Math.Min(y0, y1) - lh - UiTokens.S1, lw, UiStyle.SmallStrong, UiRole.Text, words, UiFlags.Centre | UiFlags.Middle);
+                UiDraw.Text(s, at, sx + (slot - lw) / 2f, ly, lw, UiStyle.SmallStrong, UiRole.Text, words, UiFlags.Centre | UiFlags.Middle);
             }
         }
 
         // A day's candle: its wick from low to high, its body from open to close, green when it closed up and red when down.
         private static void Candle(UiScene s, UiAt at, UiChartModel m, int i, float sx, float slot, float top, float h, float lo, float hi)
         {
-            if (i >= m.Close.Length)
+            if (i >= m.Close.Length || !CandleOf(m, i, out float open, out float high, out float low, out float close))
             {
                 return;
             }
-            float open = m.Open != null ? m.Open[i] : m.Close[i], close = m.Close[i];
-            float high = m.High != null ? m.High[i] : Math.Max(open, close), low = m.Low != null ? m.Low[i] : Math.Min(open, close);
             UiRole tone = close >= open ? UiRole.Ok : UiRole.Danger;
             float cx = sx + slot / 2f;
+            float wick = Math.Min(Wick, slot);
             float yh = Y(high, lo, hi, top, h), yl = Y(low, lo, hi, top, h);
-            UiDraw.Box(s, at, cx - Wick / 2f, yh, Wick, Math.Max(Wick, yl - yh), tone, UiRole.None, 0f, UiFlags.Share | UiFlags.Middle | UiFlags.Decor);
-            float bw = Math.Max(UiTokens.S1, slot * CandleShare);
+            float wh = Math.Max(Wick, yl - yh);
+            UiDraw.Box(s, at, cx - wick / 2f, Math.Min(yh, top + h - wh), wick, wh, tone, UiRole.None, 0f, UiFlags.Share | UiFlags.Middle | UiFlags.Decor);
+            float bw = Math.Min(slot, Math.Max(UiTokens.S1, slot * CandleShare));
             float yo = Y(open, lo, hi, top, h), yc = Y(close, lo, hi, top, h);
-            UiDraw.Box(s, at, cx - bw / 2f, Math.Min(yo, yc), bw, Math.Max(Wick, Math.Abs(yo - yc)), tone, UiRole.None, UiTokens.RadiusSmall / 2f, UiFlags.Share | UiFlags.Middle);
+            float bh = Math.Max(Wick, Math.Abs(yo - yc));
+            UiDraw.Box(s, at, cx - bw / 2f, Math.Min(Math.Min(yo, yc), top + h - bh), bw, bh, tone, UiRole.None, UiTokens.RadiusSmall / 2f, UiFlags.Share | UiFlags.Middle);
         }
 
         // The volume under the candles: a bar a day in the quiet slate, its label at the strip's left.
@@ -512,24 +601,29 @@ namespace RealLifeOverhaul.Ui
             float most = 0f;
             for (int i = 0; i < m.Volume.Length; i++)
             {
-                most = Math.Max(most, m.Volume[i]);
+                most = Real(m.Volume[i]) ? Math.Max(most, m.Volume[i]) : most;
             }
             UiDraw.Text(s, at, x, y + (h - UiTextRules.LineHeight(UiStyle.Small)) / 2f, axisW - UiTokens.S3, UiStyle.Small, UiRole.Muted, m.VolumeLabel,
                 UiFlags.Right | UiFlags.Middle | UiFlags.Label);
             UiDraw.Box(s, at, px, y + h, slot * m.Volume.Length, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             for (int i = 0; i < m.Volume.Length && most > 0f; i++)
             {
-                float bw = Math.Max(UiTokens.S1, slot * CandleShare), bh = Math.Max(UiTokens.Hairline, m.Volume[i] / most * h);
+                if (!Real(m.Volume[i]))
+                {
+                    continue;
+                }
+                float bw = Math.Min(slot, Math.Max(UiTokens.S1, slot * CandleShare)), bh = Math.Max(UiTokens.Hairline, Math.Max(0f, m.Volume[i]) / most * h);
                 UiDraw.Box(s, at, px + slot * i + (slot - bw) / 2f, y + h - bh, bw, bh, UiRole.Chart8, UiRole.None, 0f, UiFlags.Share | UiFlags.Middle);
             }
         }
 
         // The point axis: as many names as fit apart, the first and every so many after it, each centred under its point. A
         // bar chart names every category, on two lines where its name needs them, as a category left unnamed says nothing.
+        // One with more bars than its width can name (slots under NameSlot) names every so many, as a line does.
         private static void PointLabels(UiScene s, UiAt at, UiChartModel m, float px, float slot, float y, float h)
         {
             int n = m.Points.Length;
-            if (m.Kind == UiChartKind.Bars)
+            if (m.Kind == UiChartKind.Bars && slot >= NameSlot)
             {
                 for (int i = 0; i < n; i++)
                 {
@@ -552,7 +646,7 @@ namespace RealLifeOverhaul.Ui
                 most = Math.Max(most, UiTextRules.Width(m.Points[i], UiStyle.Small));
                 stepped |= string.IsNullOrEmpty(m.Points[i]);
             }
-            int every = stepped ? 1 : Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
+            int every = stepped ? 1 : Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(LeastSlot, slot)));
             float lw = stepped ? most + UiTokens.S1 : Math.Min(most + UiTokens.S1, slot * every - UiTokens.S1);
             if (m.EvenAxis && !stepped)
             {
@@ -596,7 +690,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 most = Math.Max(most, UiTextRules.Width(m.Points[i], UiStyle.Small));
             }
-            return Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
+            return Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(LeastSlot, slot)));
         }
 
         // The reading of a point: a hairline down through it, a dot on each line, and a slate card beside it on the layer
@@ -611,7 +705,7 @@ namespace RealLifeOverhaul.Ui
                 for (int k = 0; k < m.Series.Length; k++)
                 {
                     float[] v = m.Series[k].Values;
-                    if (v != null && i < v.Length)
+                    if (v != null && i < v.Length && Real(v[i]))
                     {
                         float vy = Y(v[i], lo, hi, top, h);
                         UiDraw.Circle(s, at, cx - SwatchSize / 2f, vy - SwatchSize / 2f, SwatchSize, SwatchSize, Tint(m, k), UiFlags.Decor);
@@ -659,19 +753,21 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // What a point's card says: each line's name and value; a bar's value; a candle's open, high, low, close and volume.
+        // What a point's card says: each line's name and value (none for a value that is no number); a bar's value; a
+        // candle's open, high, low, close and volume.
         private static void ReadRows(UiChartModel m, int i, out int rows, out string[] labels, out string[] values, out UiRole[] swatches)
         {
             if (m.Kind == UiChartKind.Candles)
             {
-                bool vol = m.Volume != null && i < m.Volume.Length;
+                bool vol = m.Volume != null && i < m.Volume.Length && Real(m.Volume[i]);
                 rows = vol ? 5 : 4;
-                UiRole tone = m.Close[i] >= (m.Open != null ? m.Open[i] : m.Close[i]) ? UiRole.Ok : UiRole.Danger;
+                CandleOf(m, i, out float open, out float high, out float low, out float close);
+                UiRole tone = close >= open ? UiRole.Ok : UiRole.Danger;
                 labels = new[] { m.OpenLabel, m.HighLabel, m.LowLabel, m.CloseLabel, m.VolumeLabel };
                 values = new[]
                 {
-                    Write(m, m.Open != null ? m.Open[i] : m.Close[i]), Write(m, m.High != null ? m.High[i] : m.Close[i]), Write(m, m.Low != null ? m.Low[i] : m.Close[i]),
-                    Write(m, m.Close[i]), vol ? (m.CountFormat != null ? m.CountFormat(m.Volume[i]) : m.Volume[i].ToString("0", System.Globalization.CultureInfo.InvariantCulture)) : null
+                    Write(m, open), Write(m, high), Write(m, low),
+                    Write(m, close), vol ? (m.CountFormat != null ? m.CountFormat(m.Volume[i]) : m.Volume[i].ToString("0", System.Globalization.CultureInfo.InvariantCulture)) : null
                 };
                 swatches = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None };
                 return;
@@ -683,7 +779,7 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < m.Series.Length; k++)
             {
                 float[] v = m.Series[k].Values;
-                if (v == null || i >= v.Length)
+                if (v == null || i >= v.Length || !Real(v[i]))
                 {
                     continue;
                 }

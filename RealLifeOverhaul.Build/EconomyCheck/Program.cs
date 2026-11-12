@@ -130,6 +130,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--charts")
+        {
+            ChartPlotChecks(false);   // every kind of chart with every hard case of values, and the report's EconoView page (UiChecks.ChartPlot.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-screens")
         {
             UiScreenChecks();   // the kit screens' layout checks alone: RLO_UI_ONLY=<screen id> keeps one screen
@@ -1561,6 +1567,7 @@ internal static partial class Program
         TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiCleanupChecks(); // the dead dashboard page kind gone, every decision card's choices lifting (UiChecks.Lift.cs)
+        ChartPlotChecks(true); // every kind of chart with every hard case of values: nothing drawn outside a plot, bars from nothing, few ticks that read apart, the report's EconoView page (UiChecks.ChartPlot.cs)
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
         MinimapChecks(); // the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows (UiMinimapChecks.cs)

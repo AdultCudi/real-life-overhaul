@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The ring in a square of <paramref name="size"/> px at (x, y), filled to <paramref name="share"/> (0 to 1).</summary>
         public static void Ring(UiScene s, UiAt at, float x, float y, float size, float share, UiRole tone = UiRole.Accent)
         {
-            share = share < 0f ? 0f : share > 1f ? 1f : share;
+            share = Unit(share);
             // A slice with a radius is drawn on the thin ring's sprite (UiView.Slots), the track first so the run lies over it.
             var track = new UiItem
             {
