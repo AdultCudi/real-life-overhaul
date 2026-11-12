@@ -142,7 +142,9 @@ namespace RealLifeOverhaul.Ui
         /// The panel's canvas over the kit HUD's, at the minimap card's order (UiHostRules.MinimapOrder), so none of the
         /// HUD's pieces is drawn across it (the HUD lifts its own order over the phone's, which can leave the panel under it).
         /// The card and the panel never meet; the game's dialogs and the kit's windows stay over both. With the HUD not up,
-        /// the order it was made at. Four times a second with the panel's readings, never a frame; writes only a change.
+        /// the order it was made at. While the kit draws manage cargo, one over that: the game's two panels are pressed
+        /// side by side (a hand truck's tile moves its stack into the storage that is open), and manage cargo holds every
+        /// click that falls under it. Four times a second with the panel's readings, never a frame; writes only a change.
         /// </summary>
         internal static void Lift()
         {
@@ -152,6 +154,11 @@ namespace RealLifeOverhaul.Ui
             }
             HudHost hud = HudHost.Instance;
             _want = hud != null && hud.isActiveAndEnabled ? Math.Max(_order, UiHostRules.MinimapOrder(hud.CanvasOrder)) : _order;
+            int cargo = BuyKits.CargoOrder;
+            if (cargo != int.MinValue)
+            {
+                _want = Math.Max(_want, UiHostRules.Above(cargo));
+            }
             if (_shown && _canvas.sortingOrder != _want)
             {
                 _canvas.sortingOrder = _want;
@@ -264,7 +271,12 @@ namespace RealLifeOverhaul.Ui
         }
     }
 
-    /// <summary>The item panel as the kit's docked card: the thing, its readings, its cargo as tiles, the game's buttons.</summary>
+    /// <summary>
+    /// The item panel as the kit's docked card: the thing, its readings, its cargo as tiles, the game's buttons. A car the
+    /// player drives is the small card (UiItemPanel.DrivingCard): its speed, its fuel with how far it goes, its condition
+    /// or what it needs, the parking zone and how much it carries. A hand truck, a cart and a scooter keep the full panel:
+    /// their tiles are the game's one way to take a box off them, and a tile's press is the game's own click (CargoTake).
+    /// </summary>
     internal sealed class ItemPanelScreen : IUiScreen
     {
         private const float Every = 0.25f;
@@ -273,6 +285,11 @@ namespace RealLifeOverhaul.Ui
         private readonly UiItemPanelModel _m = new UiItemPanelModel();
         private readonly List<Button> _buttons = new List<Button>(10);   // the game's button an action presses; null for Manage cargo
         private VehicleController _car;                                  // the vehicle the panel shows, or null
+        private bool _mine = true;                                       // the vehicle is the player's own (always, outside a Going Public session)
+        private bool _cargoRow;                                          // the game's own cargo row shows on its vehicle panel ("3/10")
+        private bool _needSaid;                                          // what the car needs stands on the driving card's condition line
+        private int _saidCar, _saidTiles = -1;                           // the vehicle the log's line was last written for, and what it showed then
+        private bool _saidCompact;
         private string _sellFor;                                         // "Sell for $2,407", made again only when the price changes
         private float _sellPrice = -1f;
         private bool _sellShort;                                         // the price made short, for the driving card
@@ -289,6 +306,7 @@ namespace RealLifeOverhaul.Ui
         private UiCatalogueCard[] _cargo = new UiCatalogueCard[0];
         private string _status, _streetOf, _districtOf;   // the street and district the HUD shows, and the words they came from
         private string _range, _speed, _speedUnit;         // the range's and the speed's words, made again only when a figure changes
+        private string _rangeShort;                        // "310 km", the range beside the fuel's figure on the driving card
         private int _rangeShown = -1, _speedShown = int.MinValue, _limitShown = int.MinValue;
         private string _seen;
         private float _next;
@@ -348,7 +366,13 @@ namespace RealLifeOverhaul.Ui
                     }
                     return arg >= 0 && arg < _buttons.Count && Again(UiWidgets.Press(_buttons[arg]));
                 case UiItemPanel.CargoCommand:
-                    return arg >= 0 && arg < _slots.Count && Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.SlotButton, _slots[arg].GetComponent<CargoItemUi>())));
+                {
+                    // A stack's tile is the game's own click on its tile: off the hand truck into the hands, or across to the storage that is open.
+                    bool taken = arg >= 0 && arg < _slots.Count
+                                 && CargoTake.Press(_slots[arg] != null ? _slots[arg].GetComponent<CargoItemUi>() : null, Holder(), _mine, _car != null, "the item panel");
+                    Again(true);   // read again either way: a press that met a tile the game had rebuilt shows the new ones at once
+                    return taken;
+                }
                 case UiItemPanel.MoreCommand:
                     ItemPanelKit.Classic();
                     return true;
@@ -385,6 +409,9 @@ namespace RealLifeOverhaul.Ui
             }
             return done;
         }
+
+        // What holds the stacks the tiles show: the vehicle in use, else the thing in the hands.
+        private ICargoHolder Holder() => _car != null ? (ICargoHolder)_car.vehicleInstance : _ui.selectedItemInstance;
 
         // The street and district of the nearest address as the HUD shows them ("12 Main Street" in "Midtown" gives "Main
         // Street, Midtown"), made again only when the HUD's words change.
@@ -433,8 +460,9 @@ namespace RealLifeOverhaul.Ui
             if (key != _rangeShown || _range == null)
             {
                 _rangeShown = key;
-                _range = UiText.T("reallife_ui_buy_range_value").Replace("{distance}", far.ToString("N0", CultureInfo.InvariantCulture))
-                    .Replace("{unit}", imperial ? "mi" : "km");
+                string distance = far.ToString("N0", CultureInfo.InvariantCulture), unit = imperial ? "mi" : "km";
+                _range = UiText.T("reallife_ui_buy_range_value").Replace("{distance}", distance).Replace("{unit}", unit);
+                _rangeShort = distance + " " + unit;
             }
             return _range;
         }
@@ -488,23 +516,55 @@ namespace RealLifeOverhaul.Ui
             _m.Aspect = 1f;
             _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|').Append(_m.Owner).Append('|');
             _car = car;
-            // Driving, the small card: the speed and the parking zone, the game's keys as chips (the owner, 12 Nov 2026).
-            _m.Compact = car != null && car.controlledByPlayer && PlayerHelper.IsUsingVehicle;
-            _sb.Append(_m.Compact ? 'c' : 'f');
+            _mine = mine;
+            // Driving a car, the small card (the owner, 12 Nov 2026). The game shows a vehicle's panel only while the player
+            // uses the vehicle, a hand truck, a cart and a scooter too, and those carry tiles that are its one way to take a
+            // box off them: so never by "in use" alone, and never while a tile shows.
+            int tiles = Stacks();
+            _m.Compact = UiItemPanel.DrivingCard(car != null, car != null && car.controlledByPlayer, PlayerHelper.IsUsingVehicle,
+                car != null && car.vehicleType != null && car.vehicleType.spawnInPlayerObject, car != null && car.showCargoInItemPanel, tiles);
+            _sb.Append(_m.Compact ? 'c' : 'f').Append(mine ? 'm' : 'o');
             ReadVehicle(car);
             ReadMeta();
             ReadCargo(car, item);
             ReadButtons();
             Minimap();
+            Said(car, tiles);
             return _sb.ToString();
         }
 
+        // With the diagnostics on, one line when the vehicle's panel becomes the card or the full panel, or its tiles change:
+        // which it is and what it shows, so a log says whether a hand truck's tiles were there to press.
+        private void Said(VehicleController car, int tiles)
+        {
+            if (!Meta.Dev.Verbose || car == null)
+            {
+                return;
+            }
+            int id = car.GetInstanceID();
+            if (id == _saidCar && _m.Compact == _saidCompact && tiles == _saidTiles)
+            {
+                return;
+            }
+            _saidCar = id;
+            _saidCompact = _m.Compact;
+            _saidTiles = tiles;
+            bool whole = tiles == _m.Cargo.Length && (!_m.Compact || tiles == 0);   // every tile the game shows is drawn, and the card stands for none
+            UiDirector.Logger?.Info("UI check (vehicle panel): " + _m.Name + " has " + (_m.Compact ? "the driving card" : "the full panel") + ": the game gives its panel "
+                                    + (car.showCargoInItemPanel ? "cargo tiles" : "no cargo tiles") + ", " + tiles + " show and " + _m.Cargo.Length + " are drawn, with "
+                                    + _m.Readings.Length + " readings and cargo " + (_m.CargoValue ?? "not said") + ": " + (whole ? "PASS." : "FAIL."));
+        }
+
         // The vehicle's readings in the game's own order: fuel and condition with their meters, the parking zone as a line,
-        // the mod's speed and any other row a mod copied into the panel as the words it shows.
+        // the mod's speed and any other row a mod copied into the panel as the words it shows. The driving card holds the
+        // same readings in fewer lines: the speed first, how far the tank goes beside the fuel's figure, and what the car
+        // needs in the condition's place while it needs something.
         private void ReadVehicle(VehicleController car)
         {
             _readings.Clear();
             _facts.Clear();
+            _cargoRow = false;
+            _needSaid = false;
             VehicleInfoPanel info = _ui.vehicleInfo;
             if (car != null && info != null && info.gameObject.activeInHierarchy)
             {
@@ -515,23 +575,38 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < rows.childCount; i++)
                 {
                     GameObject row = rows.GetChild(i).gameObject;
-                    if (!row.activeSelf || row == cargo || row == steering
-                        || (_m.Compact && row != parking && !row.name.StartsWith(SpeedRow, StringComparison.Ordinal)))
+                    if (row == cargo)
                     {
-                        continue;   // the driving card has the speed and the parking zone alone
+                        _cargoRow = row.activeSelf;   // said with the cargo: by the tiles' line, or on the driving card's head line
+                        continue;
+                    }
+                    if (!row.activeSelf || row == steering)
+                    {
+                        continue;
                     }
                     if (row == fuel || row == condition)
                     {
                         string value = UiWidgets.Text(BuyKits.Get<TMP_Text>(row == fuel ? GameContract.InfoFuelValue : GameContract.InfoConditionValue, info));
                         float share = BuyKits.Percent(value);
-                        _readings.Add(new UiReading
+                        var reading = new UiReading
                         {
                             Icon = row == fuel ? UiIcon.Drop : UiIcon.Wrench, Label = UiText.T(row == fuel ? "itempanelui_vehicle_fuel" : "itempanelui_maintenance_condition"),
                             Share = share, Tone = BuyKits.Tone(share), Value = value
-                        });
+                        };
                         float left = -1f;
                         string range = row == fuel ? Range(car, out left) : null;
-                        if (range != null)
+                        if (_m.Compact && row == fuel)
+                        {
+                            reading.Note = range != null ? _rangeShort : null;
+                        }
+                        else if (_m.Compact && CarDash.Shown != null)
+                        {
+                            reading.Value = CarDash.Shown;
+                            reading.Tone = CarDash.Urgent ? UiRole.Danger : UiRole.Warn;
+                            _needSaid = true;
+                        }
+                        _readings.Add(reading);
+                        if (!_m.Compact && range != null)
                         {
                             _readings.Add(new UiReading { Icon = UiIcon.Navigation, Label = UiText.T("reallife_ui_buy_range"), Share = left, Tone = BuyKits.Tone(left), Value = range });
                         }
@@ -542,7 +617,19 @@ namespace RealLifeOverhaul.Ui
                     }
                     else if (row.name.StartsWith(SpeedRow, StringComparison.Ordinal))
                     {
-                        _readings.Add(Speed(car, BuyKits.WordsAt(row.transform, "Value")));
+                        UiReading speed = Speed(car, BuyKits.WordsAt(row.transform, "Value"));
+                        if (_m.Compact)
+                        {
+                            _readings.Insert(0, speed);   // what a driver reads most, first
+                        }
+                        else
+                        {
+                            _readings.Add(speed);
+                        }
+                    }
+                    else if (_needSaid && row.name == CarDash.RowName)
+                    {
+                        continue;   // on the condition's line already
                     }
                     else if (BuyKits.AllWords(row.transform, _words) > 0)
                     {
@@ -558,14 +645,14 @@ namespace RealLifeOverhaul.Ui
             _readings.CopyTo(_m.Readings);
             for (int i = 0; i < _readings.Count; i++)
             {
-                _sb.Append(_readings[i].Label).Append('=').Append(_readings[i].Value).Append(';');
+                _sb.Append(_readings[i].Label).Append('=').Append(_readings[i].Value).Append(_readings[i].Note).Append(';');
             }
         }
 
         // What the game's meta line and maintenance line say (the unpaid amount, a mop's cleanliness), as lines.
         private void ReadMeta()
         {
-            for (int pass = 0; pass < 2 && !_m.Compact; pass++)
+            for (int pass = 0; pass < 2; pass++)
             {
                 Transform root = pass == 0 ? _ui.metaInfo : _ui.maintenanceInfo;
                 if (root == null || !root.gameObject.activeInHierarchy || BuyKits.AllWords(root, _words) == 0)
@@ -589,14 +676,33 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The cargo slots as tiles: each stack's icon with its count, an unpaid one with its price; the empty slots after.
-        private void ReadCargo(VehicleController car, ItemInstance item)
+        // The game's tiles that show, in its order: the last ones it made, as it lets the old ones go only at the end of the
+        // frame it rebuilds them in (ItemPanelUI.SetupCargoSlots), and a read in that frame would hold both.
+        private int Stacks()
         {
             _slots.Clear();
-            int most = 0, used = 0;
-            if (_ui.cargoContainer != null && _ui.cargoContainer.activeInHierarchy && !_m.Compact)
+            if (_ui.cargoContainer == null || !_ui.cargoContainer.activeInHierarchy)
             {
-                BuyKits.Copies(_ui.cargoSlotTemplate, _slots);
+                return 0;
+            }
+            BuyKits.Copies(_ui.cargoSlotTemplate, _slots);
+            var stacks = BuyKits.Get<System.Collections.IList>(GameContract.PanelStacks, _ui);
+            if (stacks != null && _slots.Count > stacks.Count)
+            {
+                _slots.RemoveRange(0, _slots.Count - stacks.Count);
+            }
+            return _slots.Count;
+        }
+
+        // The cargo slots as tiles (Stacks, read before): each stack's icon with its count, an unpaid one with its price; the
+        // empty slots are said, not drawn. A car the player drives has no tiles in the game, only its cargo row's count,
+        // which the driving card says on its head line. Another player's vehicle's tiles are drawn held.
+        private void ReadCargo(VehicleController car, ItemInstance item)
+        {
+            int most = 0, used = 0;
+            bool shown = _ui.cargoContainer != null && _ui.cargoContainer.activeInHierarchy;
+            if (shown || (_m.Compact && _cargoRow))
+            {
                 ICargoHolder holder = car != null ? car.vehicleInstance : item;
                 most = car != null && car.vehicleType != null ? car.vehicleType.maxCargoCapacity : item != null && item.ItemCached != null ? item.ItemCached.cargoCapacity : 0;
                 List<CargoInstance> held = holder != null ? holder.GetCargoInstances() : null;
@@ -616,7 +722,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     Picture = BuyPictures.Item(_slots[i].name), Aspect = 1f, Icon = UiIcon.Package,
                     Name = BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotName, slot)),
-                    Figure = owed ? UiWidgets.Text(price) : pieces, State = owed ? UiText.T("reallife_ui_buy_unpaid") : null, StateTone = UiRole.Warn
+                    Figure = owed ? UiWidgets.Text(price) : pieces, State = owed ? UiText.T("reallife_ui_buy_unpaid") : null, StateTone = UiRole.Warn,
+                    Disabled = car != null && !_mine
                 };
                 _sb.Append(_cargo[i].Name).Append(_cargo[i].Figure).Append(';');
             }

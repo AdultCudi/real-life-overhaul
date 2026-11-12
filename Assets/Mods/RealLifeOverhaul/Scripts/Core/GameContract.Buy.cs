@@ -108,6 +108,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember PanelItem = Field(UiItemPanel, Game, "UI.ItemPanel.ItemPanelUI", "selectedItemInstance", "ItemInstance");
         public static readonly GameMember PanelCar = Field(UiItemPanel, Game, "UI.ItemPanel.ItemPanelUI", "_vehicleController", "VehicleController");
         public static readonly GameMember PanelMiniGame = Field(UiItemPanel, Game, "UI.ItemPanel.ItemPanelUI", "_isInMiniGame", "Boolean");
+        public static readonly GameMember PanelStacks = Field(UiItemPanel, Game, "UI.ItemPanel.ItemPanelUI", "_cargoItems", "List<CargoItem>");
         public static readonly GameMember InfoFuel = Field(UiItemPanel, Game, "UI.ItemPanel.VehicleInfoPanel", "fuel", "GameObject");
         public static readonly GameMember InfoFuelValue = Field(UiItemPanel, Game, "UI.ItemPanel.VehicleInfoPanel", "fuelValue", "TMP_Text");
         public static readonly GameMember InfoCondition = Field(UiItemPanel, Game, "UI.ItemPanel.VehicleInfoPanel", "condition", "GameObject");

@@ -12,7 +12,11 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>Manage cargo as the kit's catalogue: the holder, the slots used, a card each stack, the chosen one's buttons.</summary>
+    /// <summary>
+    /// Manage cargo as the kit's catalogue: the holder, the slots used, a card each stack, the chosen one's buttons. Take is
+    /// the game's own click on a stack's tile (CargoTake), its one way to get a box or a hand truck out of a vehicle: the
+    /// first of the chosen stack's buttons, and a press on the chosen stack itself, as a click on the game's tile.
+    /// </summary>
     internal sealed class CargoScreen : IUiScreen
     {
         private const float Every = 0.25f;
@@ -30,6 +34,8 @@ namespace RealLifeOverhaul.Ui
         private string _sell;          // "Sell for $2,407": the chosen stack's own Sell, or null for the game's word
         private Entities.Warehouse _to;   // the player's warehouse the vehicle stands at, for Move to a warehouse; null for none
         private CargoItem _chosen;     // the chosen stack as the game made it, for the same
+        private int _take = -1;        // which of the chosen stack's buttons is Take; -1 while it is not offered
+        private bool _mine = true;     // the holder is the player's to unload (always, outside a Going Public session)
         private const int Quick = 3;   // days: goods that keep no longer out of the cold say so on their tile
         private readonly string[] _quickWords = new string[Quick + 1];
 
@@ -77,9 +83,13 @@ namespace RealLifeOverhaul.Ui
         {
             if (command == UiCargo.CatalogueCommand + UiCatalogue.Card)
             {
-                if (arg < 0 || arg >= _stacks.Count || arg == _m.Catalogue.Chosen)
+                if (arg < 0 || arg >= _stacks.Count)
                 {
-                    return arg == _m.Catalogue.Chosen;
+                    return false;
+                }
+                if (arg == _m.Catalogue.Chosen)
+                {
+                    return Take();   // the chosen stack pressed is a click on the game's tile: it takes the stack
                 }
                 _m.Catalogue.Chosen = arg;
                 _m.Catalogue.Reveal = arg;
@@ -87,6 +97,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == UiCargo.CatalogueCommand + UiCatalogue.Action)
             {
+                if (arg == _take && arg >= 0)
+                {
+                    return Take();
+                }
                 if (arg >= 0 && arg < _buttons.Count && _buttons[arg] == null)
                 {
                     return !_actions[arg].Disabled && Again(Moved());   // the mod's own: the stack to the warehouse the vehicle stands at
@@ -130,6 +144,16 @@ namespace RealLifeOverhaul.Ui
         }
 
         private int Main() => _actions.Count > 0 && _actions[_actions.Count - 1].Key == UiAction.Alt ? _actions.Count - 1 : -1;
+
+        // The chosen stack taken by the game's own click on its tile; a press that takes nothing says why in the log (CargoTake).
+        private bool Take()
+        {
+            int at = _m.Catalogue.Chosen;
+            bool taken = at >= 0 && at < _stacks.Count
+                         && CargoTake.Press(_stacks[at] != null ? _stacks[at].GetComponent<CargoItemUi>() : null, _ui.currentCargoHolder, _mine, false, "manage cargo");
+            Again(true);   // read again either way: the game rebuilds its stacks, or closes the panel with the stack in the hands
+            return taken;
+        }
 
         private bool Again(bool done)
         {
@@ -199,6 +223,7 @@ namespace RealLifeOverhaul.Ui
             }
             _chosen = items != null && items.Count == _stacks.Count && c.Chosen >= 0 ? items[c.Chosen] as CargoItem : null;
             _to = CargoMove.Target(holder);
+            _mine = CargoTake.Mine(holder);
             Detail(_chosen);
             ReadActions(c.Chosen >= 0 ? _stacks[c.Chosen].GetComponent<CargoItemUi>() : null);
             Button all = BuyKits.Get<Button>(GameContract.CargoSellAll, _ui);
@@ -289,13 +314,16 @@ namespace RealLifeOverhaul.Ui
             return _quickWords[days];
         }
 
-        // The chosen stack's own buttons as the detail's actions: its action (Take, Place, Read), Discard, then Sell as the main.
+        // The chosen stack's own buttons as the detail's actions: Take (the game's click on its tile), its action button
+        // (Place, at a delivery spot), Discard, then Sell as the main.
         private void ReadActions(CargoItemUi stack)
         {
             _buttons.Clear();
             _actions.Clear();
+            _take = -1;
             if (stack != null)
             {
+                AddTake(stack);
                 Button act = BuyKits.Get<Button>(GameContract.SlotAction, stack);
                 Add(act, BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotActionLabel, stack)), UiButtonKind.Secondary, UiIcon.None, UiAction.Count);
                 Add(BuyKits.Get<Button>(GameContract.SlotDiscard, stack), UiText.T("itempanelui_buttons_discard"), UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count);
@@ -311,6 +339,25 @@ namespace RealLifeOverhaul.Ui
             {
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
             }
+        }
+
+        // Take: the game's tile itself, which its own panel answers with the stack in the hands, on the hand truck in use, or
+        // a hand truck out of the boot (CargoItemUi.ClickItem). Left off for what the player holds or pushes already, where
+        // the game's click moves nothing; drawn held for another player's vehicle.
+        private void AddTake(CargoItemUi stack)
+        {
+            Button tile = BuyKits.Get<Button>(GameContract.SlotButton, stack);
+            ICargoHolder holder = _ui.currentCargoHolder;
+            if (tile == null || !tile.gameObject.activeSelf || holder == null || ReferenceEquals(CargoTake.Own(), holder))
+            {
+                return;
+            }
+            _take = _actions.Count;
+            _buttons.Add(tile);
+            _actions.Add(new UiActionModel
+            {
+                Label = UiText.T("action_take"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = _actions.Count, Disabled = !tile.interactable || !_mine
+            });
         }
 
         // Move to a warehouse (Ui/Buy/CargoMove): only for a vehicle that stands at a warehouse of the player's, and for a stack that is
