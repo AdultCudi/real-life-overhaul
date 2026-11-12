@@ -187,6 +187,7 @@ namespace RealLifeOverhaul.Ui
                 MapKits.Rearm();
                 DesignerKits.Rearm();
                 HudLive.Rearm();
+                UiForeignCheck.Rearm();
                 _said = 0;
                 _waited = 0;
                 return;
@@ -256,6 +257,10 @@ namespace RealLifeOverhaul.Ui
                 _said = 2;
                 Logger?.Info(Said());
                 UiForeignCheck.Run(Logger);   // the self-check: other mods' pieces on the kit's screens, and how each is held
+            }
+            if (_said == 2)
+            {
+                UiForeignCheck.Apps(Logger);   // other mods' apps by where the player finds them: once, and again when a mod adds one late
             }
         }
 

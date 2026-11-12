@@ -14,7 +14,9 @@ namespace RealLifeOverhaul.Ui
     /// apps (ShellPages), each button's news from the HUD phone's button of the same name, and the folder the player keeps
     /// it in (PhoneLayoutPrefs). Pressing presses the app's own full-menu button, so the game's ShowApp, the mod's
     /// PhoneApp.Open and other mods' handlers run as a click would; Voogle Maps, which has no full-menu button, through
-    /// the HUD phone's. While the kit phone stands, the list is the phone's own model instead (<see cref="FromPhone"/>).
+    /// the HUD phone's. While the kit phone stands, the list is the phone's own model instead (<see cref="FromPhone"/>),
+    /// which holds the buttons other mods put on this row alone too (PhoneExtras): the kit hides the row, so an app
+    /// that stood only there had no way in. Either way the first of those stand on the kit's row with their own pictures.
     /// Cost: a walk of the row's buttons when the full menu opens and once a second while it shows.
     /// </summary>
     public static class ShellApps
@@ -37,6 +39,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return FromRow(into);
             }
+            PhoneItemsGame.Fresh(PhoneGridPager.Hud);   // the full menu opens, or a moment passed: what a mod put on its row since is among the apps
             int hash = UiShellApps.FromPhone(items, into, RowMost);
             ShellPages.Add(into, ref hash);
             return hash;
@@ -83,12 +86,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 inRow += Add(into, Find(name), inRow < RowMost, ref hash) ? 1 : 0;
             }
+            int carried = 0;
             for (int i = 0; i < Buttons.Count; i++)
             {
                 Transform b = Buttons[i];
-                if (Array.IndexOf(FirstOnHome, b.name) < 0 && !Enum.TryParse(b.name, out AppName _))
+                string name = b.name;
+                if (Array.IndexOf(FirstOnHome, name) < 0 && !Enum.TryParse(name, out AppName _))
                 {
-                    Add(into, b, false, ref hash);
+                    // What another mod put on this row stays on the kit's, which stands for it: the first of them, after the phone's first page.
+                    bool kept = carried < UiForeignApps.RowMost && UiForeignApps.Others(name, false);
+                    carried += Add(into, b, kept, ref hash) && kept ? 1 : 0;
                 }
             }
             ShellPages.Add(into, ref hash);
@@ -102,11 +109,21 @@ namespace RealLifeOverhaul.Ui
             {
                 return true;
             }
+            PhoneItems items = PhoneItems.Current;
+            int at = items != null ? items.IndexOf(id) : -1;
+            if (at >= 0 && items.Items[at].From != PhoneItemFrom.Grid)
+            {
+                return PhoneItemsGame.Press(at);   // another mod's button outside the phone's grid: pressed where its mod put it
+            }
             UIs uis = InstanceBehavior<UIs>.Instance;
             Transform row = Row(uis);
             Transform b = row != null ? row.Find(id) : null;
             if (b != null && b.GetComponent<Button>() is Button button && button.interactable)
             {
+                if (UiForeignApps.Others(id, Enum.TryParse(id, out AppName _)) && !MenuUp())
+                {
+                    return false;
+                }
                 UiWidgets.Hand(button);
                 return true;
             }
@@ -124,6 +141,30 @@ namespace RealLifeOverhaul.Ui
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// The full menu up, opened as the game opens it when it was not: an app another mod put on the menu's own row has
+        /// its page in the menu, and its button could only ever be pressed there, so its handler may count on the menu
+        /// standing (one of two read here shows its page and never opens the menu). The game's own apps and the mod's open
+        /// the menu themselves. False when the game would not open it now: its Toggle answers a question that is up instead.
+        /// </summary>
+        internal static bool MenuUp()
+        {
+            if (FullMenu.IsOpen)
+            {
+                return true;
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.fullMenu == null || UiBoxes.Up)
+            {
+                return false;
+            }
+            using (HotSpots.Game())
+            {
+                uis.fullMenu.Toggle(true);
+            }
+            return FullMenu.IsOpen;
         }
 
         /// <summary>The app the full menu shows now: its panel's name among the apps, or null.</summary>
@@ -191,7 +232,16 @@ namespace RealLifeOverhaul.Ui
             }
             UiShellKind kind = Enum.TryParse(b.name, out AppName _) ? UiShellKind.Game : PagerRules.ModRank(b.name) >= 0 ? UiShellKind.Mod : UiShellKind.Other;
             string title = UiWidgets.Label(b);
-            Append(into, b.name, string.IsNullOrEmpty(title) ? UiText.T("reallife_ui_shell_another_app") : title, kind, inRow, ref hash);
+            int picture = 0;
+            if (kind == UiShellKind.Other)
+            {
+                // Another mod's app as the phone draws it: its own picture, else the kit's mark of its first letter.
+                Image own = PhoneGridPager.Picture(b);
+                picture = PhoneItemsGame.Handle(own != null ? own.sprite : null);
+                picture = picture > 0 ? picture : UiForeignMark.Of(title, b.name);
+            }
+            Append(into, b.name, string.IsNullOrEmpty(title) ? UiText.T("reallife_ui_shell_another_app") : title, kind, inRow, ref hash, picture,
+                kind == UiShellKind.Other ? PhoneItemFrom.Row : PhoneItemFrom.Grid);
             return true;
         }
 
@@ -209,7 +259,7 @@ namespace RealLifeOverhaul.Ui
             hash = unchecked(hash * 31 + id.GetHashCode());
         }
 
-        private static void Append(List<UiShellApp> into, string id, string title, UiShellKind kind, bool inRow, ref int hash)
+        private static void Append(List<UiShellApp> into, string id, string title, UiShellKind kind, bool inRow, ref int hash, int picture = 0, PhoneItemFrom from = PhoneItemFrom.Grid)
         {
             int badge = Badge(id);
             int place = kind == UiShellKind.Mod && PhoneLayoutPrefs.On && PhoneLayoutPrefs.Layout != null ? PhoneLayoutPrefs.Layout.Place(id) : PhoneLayoutRules.Home;
@@ -217,9 +267,10 @@ namespace RealLifeOverhaul.Ui
             into.Add(new UiShellApp
             {
                 Id = id, Title = title, Icon = icon, Tint = UiIconTints.Of(icon), Badge = badge, Kind = kind, InRow = inRow,
-                Folder = UiShellApps.FolderOf(id, kind, place, PhoneLayoutRules.DefaultOf(id))
+                Folder = UiShellApps.FolderOf(id, kind, place, PhoneLayoutRules.DefaultOf(id)), Picture = picture, From = from
             });
             hash = unchecked(hash * 31 + id.GetHashCode()) * 31 + badge * 7 + (inRow ? 1 : 0);
+            hash = unchecked(hash * 31 + picture);
             hash = unchecked(hash * 31 + title.GetHashCode());
         }
 

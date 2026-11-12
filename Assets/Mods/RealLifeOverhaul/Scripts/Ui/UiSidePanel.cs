@@ -7,11 +7,12 @@ namespace RealLifeOverhaul.Ui
     /// a thing's head (its glyph on a tile, its name, what and where, a state chip), up to five rows (a link moves the camera
     /// or opens the thing), a switch row, a meter or a timing gauge, and one or two actions, each a row of its own, the last
     /// with a square tool beside it; collapsed, only its title strip. For the game's current job widget, the mod's ShiftCard
-    /// and the current building.
+    /// and the current building, which carries up to two more actions for buttons another mod put on the game's panel.
     /// </summary>
     public sealed class UiSidePanelModel
     {
-        public const int MostRows = 5, MostActions = 2;
+        public const int MostRows = 5, MostActions = 4;   // four: the game's two and two of another mod's, as many as a panel's command tells apart
+        public const int OwnActions = 2;                  // the actions a panel of the game's has of its own
 
         public string Title;                               // "Shift at Bloom Café"
         public UiIcon Icon = UiIcon.Briefcase;             // the head's glyph, on its tile
