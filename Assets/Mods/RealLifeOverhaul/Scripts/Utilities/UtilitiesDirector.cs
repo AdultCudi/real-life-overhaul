@@ -601,8 +601,15 @@ namespace RealLifeOverhaul.Utilities
                     {
                         // closed, or kept closed longer while the want lasts; told only when it is the mod that keeps it
                         // closed (one the player closed by hand is theirs to open)
+                        bool wasOpen = !UtilitiesGame.Closed(place.Reg);
                         if (close(place.Reg, ClosedHours))
                         {
+                            if (wasOpen)
+                            {
+                                // Opened by hand since it was last told, and closed again now: told again, or the switch would
+                                // fall back within the hour with nothing said, however often the player set it.
+                                _toldClosed.Remove(place.Place);
+                            }
                             TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
                         }
                     }
@@ -626,6 +633,21 @@ namespace RealLifeOverhaul.Utilities
         // why a business is closed and what opens it, the first time for that reason: a notice, a Business desk message, a log line
         private void TellClosed(PlaceInfo place, Account account, bool internet, int today, int hour)
         {
+            string key = ClosedKey(account, internet);
+            if (_toldClosed.TryGetValue(place.Place, out string said) && said == key)
+            {
+                return;
+            }
+            _toldClosed[place.Place] = key;
+            Dictionary<string, string> data = ClosedData(place, account, hour);
+            UtilitiesText.Toast(NotificationType.Warning, ClosedWords(key, data), 14f);
+            UtilitiesBridges.Record?.Invoke(key, data);
+            Logger?.Warn("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");   // a warning: logged without Developer diagnostics
+        }
+
+        // which sentence says why a business is closed, by what its account says: nothing applied for, a bill not paid, still being connected, no connection
+        private string ClosedKey(Account account, bool internet)
+        {
             string key;
             if (internet)
             {
@@ -640,25 +662,77 @@ namespace RealLifeOverhaul.Utilities
                     : account.State == SupplyState.Pending ? "reallife_util_closed_connecting"
                     : "reallife_util_closed_apply";
             }
-            if (key == "reallife_util_closed_apply")
-            {
-                key = UtilitiesRules.Where(key, ByPhone);
-            }
-            if (_toldClosed.TryGetValue(place.Place, out string said) && said == key)
-            {
-                return;
-            }
-            _toldClosed[place.Place] = key;
-            var data = new Dictionary<string, string>(4)
+            return key == "reallife_util_closed_apply" ? UtilitiesRules.Where(key, ByPhone) : key;
+        }
+
+        private Dictionary<string, string> ClosedData(PlaceInfo place, Account account, int hour)
+        {
+            return new Dictionary<string, string>(4)
             {
                 { "place", place.Name },
                 { "service", (account != null ? UtilitiesText.Service(account.Service) : UtilitiesText.Service(Service.Power)).ToLowerInvariant() },   // mid-sentence
                 { "office", OfficeName() },
                 { "time", account != null && account.OutageUntil > hour ? (account.OutageUntil % 24).ToString("00") + ":00" : string.Empty }
             };
-            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(key, "place", data["place"], "service", data["service"], "office", data["office"], "time", data["time"]), 14f);
-            UtilitiesBridges.Record?.Invoke(key, data);
-            Logger?.Warn("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");   // a warning: logged without Developer diagnostics
+        }
+
+        private static string ClosedWords(string key, Dictionary<string, string> data)
+        {
+            return UtilitiesText.T(key, "place", data["place"], "service", data["service"], "office", data["office"], "time", data["time"]);
+        }
+
+        /// <summary>
+        /// A business of the player's was opened by hand a moment ago (BizMan's switch on the RLO interface): the hour's look is
+        /// made now, so one that still lacks power, water or a connection is closed again at once and told why, on the page the
+        /// player is looking at, instead of within the hour with nothing said at the switch. Returns the sentence that says what
+        /// it lacks and what opens it, or null when it stays open or the utilities are not running. Cost: the hour's pass over
+        /// the player's places, once, on that press.
+        /// </summary>
+        public string LookAt(BuildingRegistration reg)
+        {
+            if (!_loaded || _failed || reg == null || !Settings.Utilities)
+            {
+                return null;
+            }
+            try
+            {
+                Refresh();
+                Effects();
+                return UtilitiesGame.Closed(reg) ? Lacking(reg) : null;
+            }
+            catch (Exception e)
+            {
+                Fault("its look at a business just opened", e);
+                return null;
+            }
+        }
+
+        // what a business of the player's lacks now, in the sentence its closure is told with; null when it lacks nothing
+        private string Lacking(BuildingRegistration reg)
+        {
+            int today = UtilitiesGame.Today;
+            int hour = today * 24 + (SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0);
+            for (int p = 0; p < _places.Count; p++)
+            {
+                PlaceInfo place = _places[p];
+                if (!ReferenceEquals(place.Reg, reg) || place.Kind == PlaceKind.Home)
+                {
+                    continue;
+                }
+                Account power = _state.Find(place.Place, Service.Power), water = _state.Find(place.Place, Service.Water);
+                bool dark = power != null && !UtilitiesRules.Supplied(power, today);
+                bool dry = water != null && !UtilitiesRules.Supplied(water, today)
+                           && (place.Kind == PlaceKind.FoodAndDrink || place.Kind == PlaceKind.Salon || place.Kind == PlaceKind.Gym);
+                Account net = _state.Find(place.Place, Service.Internet);
+                bool offline = NeedsNet(place) && !Online(net, hour) && !InternetRules.InGrace(_state, place.Place, today);
+                if (!dark && !dry && !offline)
+                {
+                    return null;
+                }
+                Account account = dark ? power : dry ? water : net;
+                return ClosedWords(ClosedKey(account, !dark && !dry), ClosedData(place, account, hour));
+            }
+            return null;
         }
 
         private static BuildingRegistration HomeIn()

@@ -202,5 +202,98 @@ namespace RealLifeOverhaul.Ui
         /// game keeps shut behind its make-an-offer button is not held: the method it calls is what runs, and it answers with its own notice.
         /// </summary>
         public static bool SendHeld(bool shown, bool interactable) => shown && !interactable;
+
+        /// <summary>
+        /// How the open switch reaches the game's own "temporarily closed" toggle. The game keeps the toggle in its header and
+        /// switches the header off on the building's and the real estate's tabs (BizManBusiness.SetTab), where the kit's head
+        /// still shows the switch: the toggle and its row are on there, so it is set all the same and its own listener runs the
+        /// game's opening or closing. A toggle or a row the game itself switched off is no switch, one it holds is never set, and
+        /// one hidden by anything but the game's own tab (a Going Public session's lock may hide a control) is no switch either.
+        /// </summary>
+        public static BizManSwitchWay SwitchWay(bool there, bool rowOn, bool selfOn, bool shownNow, bool interactable, bool headerOffByTab)
+        {
+            if (!there || !rowOn || !selfOn || (!shownNow && !headerOffByTab))
+            {
+                return BizManSwitchWay.None;
+            }
+            if (!interactable)
+            {
+                return BizManSwitchWay.Held;
+            }
+            return shownNow ? BizManSwitchWay.Click : BizManSwitchWay.Under;
+        }
+
+        /// <summary>
+        /// Why a business open by its switch will not trade yet, for Player.log (in English, as every line of it): requirements of
+        /// the game's still missing, no opening hours on any day or none today, a station the game wants someone at. Null when
+        /// nothing stands in its way. The game lets a business be opened in any of these states and says none of them at the
+        /// switch, so a report of "it will not open" is answered by this line.
+        /// </summary>
+        public static string NotTrading(int needs, int missing, string firstMissing, bool anyDay, bool today, bool staffMissing)
+        {
+            var why = new System.Text.StringBuilder(128);
+            if (missing > 0)
+            {
+                why.Append(missing).Append(" of the game's ").Append(needs).Append(" requirement(s) missing (the first: ").Append(string.IsNullOrEmpty(firstMissing) ? "unnamed" : firstMissing)
+                    .Append(')');
+            }
+            if (!anyDay || !today)
+            {
+                why.Append(why.Length > 0 ? "; " : string.Empty).Append(!anyDay ? "no day of its week has opening hours" : "it keeps no opening hours today");
+            }
+            if (staffMissing)
+            {
+                why.Append(why.Length > 0 ? "; " : string.Empty).Append("the game's own alert says a station it needs has nobody at it");
+            }
+            return why.Length > 0 ? why.ToString() : null;
+        }
+
+        /// <summary>The sentence the page says when a press came to nothing, by why: each names what was pressed as {action}.</summary>
+        public static string RefusalKey(BizManRefusal why)
+        {
+            switch (why)
+            {
+                case BizManRefusal.Gone: return "reallife_ui_bizman_refused_gone";
+                case BizManRefusal.Held: return "reallife_ui_bizman_refused_held";
+                default: return "reallife_ui_bizman_refused_fault";
+            }
+        }
+
+        /// <summary>The same, for Player.log.</summary>
+        public static string RefusalSaid(BizManRefusal why)
+        {
+            switch (why)
+            {
+                case BizManRefusal.Gone: return "the game does not show its own control for it now";
+                case BizManRefusal.Held: return "the game holds its own control for it now";
+                default: return "no part of the page answered it, a fault of the RLO interface";
+            }
+        }
+
+        /// <summary>
+        /// True for a target that says in words what it does: a page's action, a button of a page written as lines, the head's
+        /// action, the open switch. A press of one that nothing answered is the page's own fault, and the page says so. Any other
+        /// target may have nothing to do where it stands (a chart's point, the tab of a page that has one page), so a press of
+        /// one that comes to nothing with no reason known keeps to the error cue and is never called a fault.
+        /// </summary>
+        public static bool Promises(int command) =>
+            command == BizManPages.Action || command == BizManPages.LineAction || command == UiFirmHead.First + UiFirmHead.Action || command == UiFirmHead.First + UiFirmHead.Switch;
+    }
+
+    /// <summary>How the open switch's press reaches the game's toggle (BizManRules.SwitchWay).</summary>
+    public enum BizManSwitchWay : byte
+    {
+        None = 0,   // the game gives this place no switch
+        Held,       // the game holds its toggle: refused, and said
+        Click,      // the toggle shows: set as a click sets it
+        Under       // only the header it stands in is switched off for the tab shown: set all the same
+    }
+
+    /// <summary>Why a press on a BizMan page came to nothing: the page says each in words, and Player.log once.</summary>
+    public enum BizManRefusal : byte
+    {
+        Fault = 0,  // nothing answered the press: the kit's own fault
+        Gone,       // the game does not show its control for it now
+        Held        // the game holds its control for it now
     }
 }

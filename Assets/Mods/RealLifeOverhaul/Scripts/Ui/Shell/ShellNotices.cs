@@ -129,9 +129,37 @@ namespace RealLifeOverhaul.Ui
             return _toasts;
         }
 
+        private static Dictionary<string, string> _lastData;
+
+        /// <summary>
+        /// How many notices the game has been asked to show this session, and the last one's kind and key. A screen that hands a press
+        /// to the game reads the count before and after: the game answers a press it refuses with an error notice, and the screen
+        /// says that answer on its own page and in Player.log.
+        /// </summary>
+        public static int Heard { get; private set; }
+
+        public static NotificationType LastType { get; private set; }
+
+        public static string LastKey { get; private set; }
+
+        /// <summary>The last notice's words as the game writes them, its rich text taken off; null when it had none.</summary>
+        public static string LastWords()
+        {
+            return string.IsNullOrEmpty(LastKey) ? null : MapText.Plain(LocalizorManager.GetLocalization(LastKey, (object)_lastData));
+        }
+
         // Heard after the game made the toast: its newest entry is this notice, and its key says its kind.
         private static void Shown(NotificationType type, string key, Dictionary<string, string> data, float seconds, string duplicate, Action click, bool sound, bool track)
         {
+            Heard++;
+            LastType = type;
+            LastKey = key;
+            _lastData = data;
+            if (type == NotificationType.Error && Meta.Dev.Verbose)
+            {
+                // The game refuses with an error notice (no money for a lease, no name for a business): its key in the log says which, on any screen.
+                UiDirector.Logger?.Info("Notice check (error): the error notice '" + key + "' was shown.");
+            }
             if (NoticeMute.KeptBack(key, data))
             {
                 return;   // kept from popping up (Options, the kinds' switches): no entry was made, and the newest one is an older notice's

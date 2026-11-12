@@ -225,6 +225,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--found-biz")
+        {
+            FoundBizAll();   // starting a business on the kit's page for every kind, the dispatch that hands it to the game, the open switch, a refused press said (FoundBizChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--logo-ui")
         {
             LogoUiAll();   // the logo editor of BizMan on the kit (LogoUiChecks.cs)
@@ -1616,6 +1622,7 @@ internal static partial class Program
         TestShopsAll();   // the test tool that takes businesses over: the pick, the notice, the refusals, the texts (TestShopsChecks.cs)
         BizFactsAll();  // a business and a building on every card of the kit with the valuation and the market value (BizFactsChecks.cs)
         StartBizAll();  // BizMan's Start a business page: the list and its detail reachable, the game's facts, the sharp pictures (StartBizChecks.cs)
+        FoundBizAll();  // a business started from an empty rented place for every kind, each page action in its own case, the open switch, a refused press said (FoundBizChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)

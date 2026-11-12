@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Streets;
 using TMPro;
 using UI.Smartphone.Apps.BizMan;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace RealLifeOverhaul.Ui
     public sealed partial class BizManScreen : IUiScreen, IUiTyping, IUiStepping, IUiPointing, IUiTracking
     {
         private const float Every = 0.25f;   // seconds between looks at the game's BizMan
+        private const float Away = 1f;       // seconds with no look: the app was closed or stood aside meanwhile
 
         private static readonly List<Button> Buttons = new List<Button>(64);
         private static readonly Dictionary<int, Sprite> Pictures = new Dictionary<int, Sprite>(32);
@@ -51,6 +53,11 @@ namespace RealLifeOverhaul.Ui
             {
                 if (Time.unscaledTime >= _next)
                 {
+                    if (_refused != null && Time.unscaledTime - _next > Away)
+                    {
+                        _refused = null;   // the app was away since: what a press was told before is not said to whoever opens it again
+                        _dirty = true;
+                    }
                     _next = Time.unscaledTime + Every;
                     long now = Signature();
                     _dirty |= now != _seen;
@@ -109,6 +116,7 @@ namespace RealLifeOverhaul.Ui
             {
                 BuildPortfolio();
             }
+            _m.Refused = _refused;
             var prompts = new List<UiPrompt>(5)
             {
                 new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },
@@ -122,19 +130,165 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- presses
 
+        private static BizManRefusal _why;   // why the press under way cannot be done, where its path knows: a fault unless it says otherwise
+        private string _refused;             // what the page says of the last press that came to nothing, until a press is taken
+        private long _refusedWhat;           // which press and which answer that sentence is about, so one made again and again is written to the log once
+        private int _refusedTimes;           // how often in a row; 0 while the last press was taken
+        private bool _refusedTold;           // that run's press was told on the page: its count is a warning in the log, another's a plain line
+        private string _said;               // what a press that was taken still has to say on that line (a business opened and closed again at once by the utilities)
+
         public bool Press(int command, int arg)
+        {
+            _why = BizManRefusal.Fault;
+            _said = null;
+            int heard = ShellNotices.Heard;
+            bool done = Run(command, arg);
+            Answered(command, arg, done, heard);
+            return done;
+        }
+
+        // What a press does, by the face that shows; false when nothing came of it.
+        private bool Run(int command, int arg)
         {
             _dirty = true;
             return _m.Page == BizManPage.Portfolio ? PressPortfolio(command, arg) : PressPage(command, arg);
         }
 
+        /// <summary>
+        /// What became of a press, said where the player is looking: a button that came to nothing is never silent (Start business
+        /// once only played the error sound, and no log could say so). The page's foot says the game's own refusal in its words
+        /// (it was asked and answered with an error notice); of a page's own button (BizManRules.Promises), that the game holds it,
+        /// does not show it, or that nothing answered it, the page's own fault; of any other button with words, that the game
+        /// holds or does not show it. Player.log has one line either way, written without Developer diagnostics.
+        /// </summary>
+        private void Answered(int command, int arg, bool done, int heardBefore)
+        {
+            bool byGame = done && ShellNotices.Heard != heardBefore && ShellNotices.LastType == UI.Notification.NotificationType.Error;
+            if (done && !byGame)
+            {
+                Repeats();
+                _refused = _said;   // nothing, but for a press with more to say than that it was taken
+                return;
+            }
+            string action = Pressed(command, arg);
+            // A target without words (a chart's point, a tab already chosen, whose button the game holds) may have nothing to do
+            // where it stands: it keeps to the error cue and a plain line in the log, and is never called a fault.
+            bool told = byGame || BizManRules.Promises(command) || (action != null && _why != BizManRefusal.Fault);
+            long what = (((long)command << 32) | (uint)arg) * 31 + (byGame ? Hash(ShellNotices.LastKey) : (int)_why);
+            if (told)
+            {
+                // Asked and refused, the game's own words are the reason, as its notice says them: no fault of the page's.
+                _refused = byGame ? ShellNotices.LastWords() ?? _refused
+                    : UiText.Fill(BizManRules.RefusalKey(_why), "action", action ?? UiText.T("reallife_ui_bizman_refused_press"));
+            }
+            if (_refusedTimes > 0 && what == _refusedWhat)
+            {
+                _refusedTimes++;   // the same press with the same answer: counted, and said once with its count when the run ends
+                return;
+            }
+            Repeats();
+            _refusedWhat = what;
+            _refusedTimes = 1;
+            _refusedTold = told;
+            string where = Target(command, arg, action) + " on " + PressedOn();
+            if (byGame)
+            {
+                UiDirector.Logger?.Warn("BizMan check (press): " + where + " was handed to the game, which refused it with its notice '" + ShellNotices.LastKey
+                                        + "'; the page says the game's words: PASS.");
+            }
+            else if (told)
+            {
+                UiDirector.Logger?.Warn("BizMan check (press): " + where + " came to nothing: " + BizManRules.RefusalSaid(_why) + "; the page says so in words"
+                                        + (_why == BizManRefusal.Fault ? ": FAIL." : "."));
+            }
+            else
+            {
+                UiDirector.Logger?.Info("BizMan (kit): a press of " + where + " did nothing and got the error sound"
+                                        + (_why != BizManRefusal.Fault ? " (" + BizManRules.RefusalSaid(_why) + ")" : string.Empty) + "; the page says nothing of it.");
+            }
+        }
+
+        // A press refused more than once in a row is said once more with its count, when another press ends the run: as loud as its first line was.
+        private void Repeats()
+        {
+            if (_refusedTimes > 1 && _refusedTold)
+            {
+                UiDirector.Logger?.Warn("BizMan check (press): that press was made " + _refusedTimes + " times in a row, with the same answer each time.");
+            }
+            else if (_refusedTimes > 1)
+            {
+                UiDirector.Logger?.Info("BizMan (kit): that press was made " + _refusedTimes + " times in a row, with the same answer each time.");
+            }
+            _refusedTimes = 0;
+        }
+
+        private static string Target(int command, int arg, string action) =>
+            (action != null ? "'" + action + "' (" : "target (") + command.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/"
+            + arg.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
+
+        // Where the press was made, for the log: the portfolio, or a place's page by its part and address.
+        private string PressedOn()
+        {
+            if (_m.Page == BizManPage.Portfolio)
+            {
+                return "the portfolio";
+            }
+            BizManBusiness b = _app.business;
+            return "the " + _m.Part + " page" + (b != null && b.address != null ? " of " + b.address.ToFormattedString() : string.Empty);
+        }
+
+        // The words on the target pressed, where it has words of its own: a button's label, the open switch.
+        private string Pressed(int command, int arg)
+        {
+            if (command == UiFirmHead.First + UiFirmHead.Switch)
+            {
+                return UiText.T("reallife_ui_bizman_refused_switch");
+            }
+            if (command == UiFirmHead.First + UiFirmHead.Action)
+            {
+                return _m.Head != null && arg >= 0 && arg < _m.Head.Actions.Length ? _m.Head.Actions[arg].Label : null;
+            }
+            if (command == BizManPages.OpsAction)
+            {
+                return Named(_m.Ops.Actions, arg) ?? Named(_m.Ops.PlanActions, arg);   // an operations page's own buttons
+            }
+            if (command != BizManPages.Action && command != BizManPages.LineAction)
+            {
+                return null;
+            }
+            string label = Named(_m.Actions, arg);
+            if (label != null)
+            {
+                return label;
+            }
+            if (command == BizManPages.Action && _m.Amount != null && _m.Amount.Send.Arg == arg)
+            {
+                return _m.Amount.Send.Label;
+            }
+            return command == BizManPages.Action && _m.Second != null && _m.Second.Send.Arg == arg ? _m.Second.Send.Label : null;
+        }
+
+        // The words of the action with that argument, or null: one drawn as a glyph alone has no words to name it by.
+        private static string Named(UiActionModel[] actions, int arg)
+        {
+            for (int i = 0; actions != null && i < actions.Length; i++)
+            {
+                if (actions[i].Arg == arg)
+                {
+                    return string.IsNullOrEmpty(actions[i].Label) ? null : actions[i].Label;
+                }
+            }
+            return null;
+        }
+
         public void Focused(int command, int arg)
         {
             Aim(command, arg);
-            // A tab is chosen as the pad comes to it, so the ring is never on one tab while another is chosen.
+            // A tab is chosen as the pad comes to it, so the ring is never on one tab while another is chosen. No press of the
+            // player's: what comes of it is not told as one.
             if ((command == BizManPages.Period && arg != _m.Period) || (command == BizManPages.Page && arg != _m.PageShown))
             {
-                Press(command, arg);
+                Run(command, arg);
             }
             if (command == UiChart.First + UiChart.Point && _m.Chart != null && _m.Chart.Focus != arg)
             {
@@ -173,6 +327,7 @@ namespace RealLifeOverhaul.Ui
         public bool Back()
         {
             _dirty = true;
+            _refused = null;   // the player has moved on: what the last press was told does not follow to the list or stay under a closed sheet
             if (CloseLists() || OpsBack() || CardBack() || (_m.Part == BizManPart.Schedule && ScheduleBack()))
             {
                 return true;
@@ -198,7 +353,9 @@ namespace RealLifeOverhaul.Ui
 
         public bool Act(UiAction action)
         {
-            if (Pressing(_m.Head?.Actions, action, UiFirmHead.First + UiFirmHead.Action, true) || Pressing(_m.Actions, action, BizManPages.Action, false))
+            // A page written as lines offers its own buttons under their own command, the other pages their actions.
+            int own = _m.Page == BizManPage.Business && _m.Part == BizManPart.Interior ? BizManPages.LineAction : BizManPages.Action;
+            if (Pressing(_m.Head?.Actions, action, UiFirmHead.First + UiFirmHead.Action, true) || Pressing(_m.Actions, action, own, false))
             {
                 return true;
             }
@@ -315,6 +472,11 @@ namespace RealLifeOverhaul.Ui
 
         public void Typed(string text)
         {
+            if (_refused != null)
+            {
+                _refused = null;   // typing answers what a press was told (no name yet): the line goes as the words come
+                _dirty = true;
+            }
             if (_typeCommand == BizManPages.StartKinds + UiDataTable.Search)
             {
                 KindTyped(text);
@@ -418,12 +580,38 @@ namespace RealLifeOverhaul.Ui
             return found;
         }
 
-        // A button pressed as a click presses it, with one line in Player.log so a report shows each press reaching the game.
+        // A button pressed as a click presses it, with one line in Player.log so a report shows each press reaching the game. One not
+        // there to press says which way, for the page's line.
         private static bool Click(Button b, string what)
         {
             bool done = UiWidgets.Press(b);
-            UiDirector.Logger?.Info("BizMan (kit): " + what + (done ? ": handed to the game" : " was not shown by the game, so nothing was pressed"));
+            if (!done)
+            {
+                _why = b != null && b.gameObject.activeInHierarchy ? BizManRefusal.Held : BizManRefusal.Gone;
+            }
+            UiDirector.Logger?.Info("BizMan (kit): " + what + (done ? ": handed to the game"
+                : _why == BizManRefusal.Held ? " is held by the game, so nothing was pressed" : " was not shown by the game, so nothing was pressed"));
             return done;
+        }
+
+        // What came of a press that asked the game for one thing (to rent, to start a business, to open): written to Player.log when
+        // it did not come about and the game gave no notice either, since nothing else would say so; a refusal the game gave its
+        // notice for is written with the press. With Developer diagnostics on, also when it came about.
+        private static void Outcome(string asked, BizManBusiness b, bool came, int heardBefore)
+        {
+            string place = b != null && b.address != null ? b.address.ToFormattedString() : "no place";
+            if (came)
+            {
+                if (Meta.Dev.Verbose)
+                {
+                    UiDirector.Logger?.Info("BizMan check (" + asked + "): " + place + ": asked of the game and done: PASS.");
+                }
+                return;
+            }
+            if (ShellNotices.Heard == heardBefore)
+            {
+                UiDirector.Logger?.Warn("BizMan check (" + asked + "): " + place + ": asked of the game, which did not do it and gave no notice: FAIL.");
+            }
         }
 
         // A role for the colour the game paints a word in: its green good, its red bad, its yellow or orange a warning.

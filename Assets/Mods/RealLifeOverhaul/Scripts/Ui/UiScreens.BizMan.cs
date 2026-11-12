@@ -70,7 +70,12 @@ namespace RealLifeOverhaul.Ui
                     "reallife_loyalty_btn_start", "reallife_loyalty_btn_keep", "reallife_loyalty_btn_end", "reallife_loyalty_btn_rate", "reallife_loyalty_btn_push",
                     "reallife_loyalty_btn_day",
                     "reallife_ui_bizman_logo_shapes", "reallife_ui_bizman_logo_shapes_none", "reallife_ui_bizman_logo_note", "reallife_ui_bizman_logo_own", "reallife_ui_bizman_logo_done",
-                    "reallife_ui_bizman_logo_colour_shape", "reallife_ui_bizman_logo_colour_text", "reallife_ui_bizman_logo_colour_back", "reallife_ui_bizman_logo_colours"
+                    "reallife_ui_bizman_logo_colour_shape", "reallife_ui_bizman_logo_colour_text", "reallife_ui_bizman_logo_colour_back", "reallife_ui_bizman_logo_colours",
+                    // What the page's foot says of a press that came to nothing: the kit's own sentences, and the utilities' when they close again a business just opened.
+                    "reallife_ui_bizman_refused_gone", "reallife_ui_bizman_refused_held", "reallife_ui_bizman_refused_fault", "reallife_ui_bizman_refused_press",
+                    "reallife_ui_bizman_refused_switch", "reallife_util_closed_apply", "reallife_util_closed_apply_app", "reallife_util_closed_cut", "reallife_util_closed_connecting",
+                    "reallife_util_closed_net_none", "reallife_util_closed_net_install", "reallife_util_closed_net_outage", "reallife_claimed_taken",
+                    "ba:businesstype_fruitandvegetablestore", "ba:businesstype_supermarket", "ba:businesstype_hairdresser", "ba:businesstype_liquorstore", "ba:businesstype_nightclub"
                 }).Switch(UiScreenSwitches.Business),
             });
         }

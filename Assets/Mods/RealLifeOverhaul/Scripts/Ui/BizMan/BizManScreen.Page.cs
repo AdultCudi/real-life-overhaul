@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
                 _shown = gameTab;
                 if (fresh)
                 {
+                    _refused = null;   // what a press was told at another place is not this place's
                     CloseLists();
                     if (_openedByKit && !BizManRules.Drawn(gameTab, Ops) && PressTab(b, BizManRules.Presentation))
                     {
@@ -255,8 +256,10 @@ namespace RealLifeOverhaul.Ui
             h.Chosen = names != null ? names.SelectedOptionIndex : -1;
             h.ListOpen = _listOpen && h.Others.Length > 1;
             Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
-            h.HasSwitch = own && closed != null && closed.transform.parent != null && closed.transform.parent.gameObject.activeSelf;
-            h.On = closed != null && !closed.isOn;
+            // The switch stands wherever the game gives the business one, also on the tabs whose header the game switches off; it shows
+            // what the business is, which the game's toggle only says once the game has filled its page again.
+            h.HasSwitch = own && SwitchOf(b, closed) != BizManSwitchWay.None;
+            h.On = !reg.temporarilyClosed;
             h.SwitchWord = UiText.T(h.On ? "common_open" : "bizman_temporarily_closed");
             h.SwitchDisabled = closed != null && !closed.interactable;
             Chips(b, h);
@@ -299,7 +302,16 @@ namespace RealLifeOverhaul.Ui
                 words.Add(UiText.T("reallife_ui_bizman_rival"));
                 tones.Add(UiRole.Muted);
             }
-            if (reg.AvailableForRent && !reg.RentedByPlayer)
+            // A building a feature of the mod's holds is off the market here: the game's offers on its page are kept hidden
+            // (ClaimedOffers), so the page has no lease and no offer to show. The head says whose it is, in the words the game's own
+            // page gives it, and never "For rent" or "For sale" over a page that offers neither.
+            string taken = SpecialBuildings.TakenBy(reg);
+            if (taken != null)
+            {
+                words.Add(TakenPageRules.Line(SpecialBuildings.PageOf(reg, out _), UiText.T("reallife_claimed_taken").Replace("{name}", taken)));
+                tones.Add(UiRole.Muted);
+            }
+            else if (reg.AvailableForRent && !reg.RentedByPlayer)
             {
                 words.Add(UiText.T("reallife_ui_bizman_for_rent"));
                 tones.Add(UiRole.Accent);
@@ -309,7 +321,7 @@ namespace RealLifeOverhaul.Ui
                 words.Add(UiText.T("reallife_ui_bizman_rented"));
                 tones.Add(UiRole.Accent);
             }
-            if (!reg.BuildingOwnedByPlayer && SaveGameManager.Current != null && SaveGameManager.Current.buildingsForSale.Exists(x => x.address == reg.Address))
+            if (taken == null && !reg.BuildingOwnedByPlayer && SaveGameManager.Current != null && SaveGameManager.Current.buildingsForSale.Exists(x => x.address == reg.Address))
             {
                 words.Add(UiText.T("reallife_ui_bizman_for_sale"));
                 tones.Add(UiRole.Accent);
@@ -374,7 +386,8 @@ namespace RealLifeOverhaul.Ui
             Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
             Transform need = Get<Transform>(GameContract.BizNeed, b), alert = Get<Transform>(GameContract.BizAlert, b);
             sig = sig * 31 + (names != null ? names.SelectedOptionIndex : -1);
-            sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3);
+            sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3)
+                  + (b.buildingRegistration != null && b.buildingRegistration.temporarilyClosed ? 4 : 0);   // closed or opened by no click on the toggle (the utilities, another player)
             sig = sig * 31 + EntryCount(need) * 7 + EntryCount(alert);
             sig = sig * 31 + _m.Ops.ListOpen + _opsHeld * 7 + (Ops ? 1 : 0);
             switch (_shown)

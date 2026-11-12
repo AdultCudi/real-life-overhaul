@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
             if (m.Actions.Length > 0)
             {
                 foot = bottom - UiTokens.Control - UiTokens.S4;
-                Buttons(s, at, m.Actions, rx + half, bottom - UiTokens.Control, keys, Action);
+                Buttons(s, at, m.Actions, rx + half, bottom - UiTokens.Control, keys, LineAction);   // the tab's own buttons: a command of their own, never a page action's number
             }
             m.SecondOffset = Column(s, at, m.SecondLines, rx, ry, half, foot - ry, m.SecondOffset, ref m.SecondReveal, SecondColumn, out m.SecondClip, out m.SecondList, false);
             if (m.PagesOpen && !tabs && m.Pages.Length > 1)
