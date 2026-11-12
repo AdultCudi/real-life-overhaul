@@ -139,7 +139,6 @@ namespace RealLifeOverhaul.Ui
             private readonly EstateModel _m;
             private readonly EstateClimate _c;
             private readonly int _day, _monthDays;
-            private readonly string _unitsKey;
 
             public Page(EstateLive live, EstateDirector d, EstateState s, EstateView v, EstateRuns runs, EstateModel m)
             {

@@ -55,7 +55,6 @@ namespace RealLifeOverhaul.Construction
         public bool Wanted;        // the district wants its use most
         public bool Favourite;
         public int Floors;
-        public int Units;          // flats, shops or rooms the design makes; 0 when the plans say none
         public int Width, Depth;   // m
         public int Weeks;          // build time
         public long RentMonth;     // what its units rent for when let, a month; 0 when not known

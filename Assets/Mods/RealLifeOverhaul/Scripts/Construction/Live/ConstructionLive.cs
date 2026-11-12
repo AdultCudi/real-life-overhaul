@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Construction
         private int _tab, _wanted = -1, _wantPick, _wantPage, _local;
         private string _pick;      // a row's id: "lot:", "own:", "prj:", "tnd:", "crew:", "offer:", "plant:", "buy:", "staff:", "co:", "rival:"
         private int _page;         // a project's second page (its money) when 1, its materials and hedge when 2
-        private bool _opened, _previewing;
+        private bool _previewing;
         private string _preview, _previewKey;   // the row a table's tab shows beside it, and the one that was written for it
         private UiDataTableModel _detailTable;   // a page that compares things (the builders' quotes) has a table over its cards
         private string[] _detailKeys = new string[0];
@@ -78,7 +78,6 @@ namespace RealLifeOverhaul.Construction
 
         public void Opened()
         {
-            _opened = true;
             TakeWant();
         }
 
