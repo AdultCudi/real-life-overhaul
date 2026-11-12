@@ -820,7 +820,7 @@ internal static partial class Program
         {
             Check(guide.Contains(fact), "insurance texts: the Guide page states " + fact + " from the code");
         }
-        Check(english.TryGetValue("reallife_changes_next", out string next) && next.Contains("Insurance app"), "insurance texts: What's new says the Insurance app has come");
+        Check(WhatsNewHas(english, "A new Insurance app gathers cover"), "insurance texts: What's new says the Insurance app has come");
         // The pages' own English is what the offline pages are laid out with: it is the text of en.json, word for word.
         string pages = ModSource(@"Ui\Ventures\InsurePages.cs");
         int differs = 0, compared = 0;

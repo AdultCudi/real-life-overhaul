@@ -428,12 +428,13 @@ internal static partial class Program
             }
         }
         Check(left == "none", "city map: the city map's 2.5D option and the contract's words for it are gone from every language (" + left + ")");
-        // What's new: the sentence is in `reallife_changes_next` of every language, and the minimap alone draws the blocks (the other sentence is the map button's)
+        // What's new: the sentence is in the same row of every language (the next row, or the version's once numbered), and the minimap alone draws the blocks (the other sentence is the map button's)
+        string blocksRow = WhatsNewKey(LocaleFile("en"), "The minimap draws buildings as simple 2.5D blocks");
         string lacking = "none";
         foreach (string language in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr", "pl", "ko" })
         {
             var texts = LocaleFile(language);
-            if (!texts.TryGetValue("reallife_changes_next", out string next) || next.Split(new[] { "2.5D" }, StringSplitOptions.None).Length != 2)
+            if (WhatsNewText(texts, blocksRow).Split(new[] { "2.5D" }, StringSplitOptions.None).Length != 2)
             {
                 lacking = language;
             }

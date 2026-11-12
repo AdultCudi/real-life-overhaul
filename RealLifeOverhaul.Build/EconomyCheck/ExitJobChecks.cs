@@ -180,13 +180,14 @@ internal static partial class Program
                 }
             }
             Check(all, "exit job: " + lang + " has every key with its placeholders");
-            string next;
-            Check(d.TryGetValue("reallife_changes_next", out next) && next.Length > 400 && (lang == "en" || next != en["reallife_changes_next"]), "exit job: " + lang + " has the What's new line");
+            string row = WhatsNewKey(en, "the buyer now puts your name forward for a real job");   // the row that holds it
+            string next = WhatsNewText(d, row);
+            Check(next.Length > 400 && (lang == "en" || next != WhatsNewText(en, row)), "exit job: " + lang + " has the What's new line");
         }
         foreach (string k in keys)
         {
             Check(en[k].Length <= 240 && !en[k].Contains("!") && !en[k].Contains("—") && !en[k].Contains("–") && !en[k].StartsWith("Test"), "exit job: " + k + " is a plain notice or label");
         }
-        Check(en["reallife_changes_next"].Contains("the buyer now puts your name forward for a real job"), "exit job: the What's new line says it in en");
+        Check(WhatsNewHas(en, "the buyer now puts your name forward for a real job"), "exit job: the What's new line says it in en");
     }
 }

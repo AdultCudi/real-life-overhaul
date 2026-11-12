@@ -194,15 +194,16 @@ internal static partial class Program
         string hire = words[0].TryGetValue("reallife_wage_hire_city", out string h) ? h : string.Empty;
         Check(hire.Length > 0 && hire.Length <= 240 && hire.Contains("{percent}") && hire.Contains("{ask}") && hire.Contains("{cost}") && hire.Contains("{name}"),
             "one wage's texts: the hiring notice names the asked wage, its cost and the price level, in 240 characters or fewer (" + hire.Length + ")");
-        int fixes = Occurs(words[0].TryGetValue("reallife_changes_next", out string english) ? english : string.Empty, FixMarks["en"]);
+        string wageRow = WhatsNewKey(words[0], "Fixed: the panel of an employee you click at their station now shows the wage paid");   // the row that holds it
+        int fixes = Occurs(WhatsNewText(words[0], wageRow), FixMarks["en"]);
         string apart = string.Empty;
         for (int l = 0; l < codes.Length; l++)
         {
-            string row = words[l].TryGetValue("reallife_changes_next", out string own) ? own : string.Empty;
+            string row = WhatsNewText(words[l], wageRow);
             apart += fixes > 0 && Occurs(row, FixMarks[codes[l]]) == fixes ? string.Empty : " " + codes[l];
         }
         Check(WhatsNewHas(words[0], "Fixed: the panel of an employee you click at their station now shows the wage paid") && apart.Length == 0,
-            "one wage's texts: What's new says that the panel of an employee clicked at their station now shows the wage paid, and the next row has as many fixes in every language as in English (not so in:" + apart + ")");
+            "one wage's texts: What's new says that the panel of an employee clicked at their station now shows the wage paid, and its row has as many fixes in every language as in English (not so in:" + apart + ")");
         for (int l = 0; l < codes.Length; l++)
         {
             string mark = FixMarks.TryGetValue(codes[l], out string m) ? m : "Fixed: ";

@@ -1692,7 +1692,7 @@ internal static partial class Program
         {
             Dictionary<string, string> words = LocaleFile(code);
             bool has = words.TryGetValue("reallife_car_handling_modded", out string l) && l.Length > 0 && words.TryGetValue("reallife_opt_tip_car_handling_modded", out string t) && t.Length > 0
-                       && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("Vord V150") && next.Length > 0;
+                       && WhatsNewText(words, WhatsNewKey(LocaleFile("en"), "Vord V150")).Contains("Vord V150");   // the row that holds it
             Check(has, "vehicle feel words: " + code + " has the option's label and tip and the What's new row that names the pickup");
         }
     }

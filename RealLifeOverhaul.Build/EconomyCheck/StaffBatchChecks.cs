@@ -255,12 +255,13 @@ internal static partial class Program
         foreach (string code in ModLanguages.All)
         {
             Dictionary<string, string> texts = LocaleFile(code);
-            if (!texts.TryGetValue("reallife_changes_next", out string next) || !(next.Contains("My Employees") || next.Contains("Meus Funcionários") || next.Contains("我的员工")
+            string next = WhatsNewText(texts, WhatsNewKey(LocaleFile("en"), "My Employees now shows a review before a batch runs"));   // the row that holds it
+            if (!(next.Contains("My Employees") || next.Contains("Meus Funcionários") || next.Contains("我的员工")
                 || (texts.TryGetValue("reallife_ui_staff_app", out string app) && next.Contains(app))))
             {
                 found = found ?? code;
             }
         }
-        Check(found == null, "staff batch texts: the What's new line is in the next row of all eleven languages" + (found == null ? string.Empty : " (not in " + found + ")"));
+        Check(found == null, "staff batch texts: the What's new line is in its row in all eleven languages" + (found == null ? string.Empty : " (not in " + found + ")"));
     }
 }

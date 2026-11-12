@@ -1497,7 +1497,7 @@ internal static partial class Program
         for (int i = 0; i < DynastyLanguages.Length; i++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, DynastyLanguages[i] + ".json"));
-            string next = words != null && words.TryGetValue("reallife_changes_next", out string value) ? value : string.Empty;
+            string next = WhatsNewText(words, WhatsNewKey(LoadWords(System.IO.Path.Combine(DesignLocales, "en.json")), sentence));   // the row that holds the line: the next row, or the version's once numbered
             int mark = next.IndexOf(marks[i], StringComparison.Ordinal);
             string before = mark >= 0 ? next.Substring(0, mark) : next;
             if (i == 0)

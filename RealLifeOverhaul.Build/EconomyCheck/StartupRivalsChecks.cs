@@ -1027,8 +1027,6 @@ internal static partial class Program
             }
         }
         Check(missing.Count == 0, "rivals texts: every key of the pages is listed in the Tech screen's keys (" + string.Join(", ", missing.Take(3)) + ")");
-        string changes = "\"reallife_changes_next\":";
-        int at = enText.IndexOf(changes, StringComparison.Ordinal);
-        Check(at > 0 && enText.Substring(at, enText.IndexOf('\n', at) - at).Contains("head to head"), "rivals texts: the What's new line says it");
+        Check(WhatsNewHas(LoadWords(System.IO.Path.Combine(DesignLocales, "en.json")), "holds head to head contests your firm can enter"), "rivals texts: the What's new line says it");
     }
 }

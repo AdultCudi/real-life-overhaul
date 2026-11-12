@@ -176,7 +176,7 @@ internal static partial class Program
         }
         foreach (string code in new[] { "en", "de", "es", "fr", "ko", "nl", "pl", "pt", "ru", "tr", "zh-cn" })
         {
-            string next = LocaleFile(code)["reallife_changes_next"];
+            string next = WhatsNewText(LocaleFile(code), WhatsNewKey(LocaleFile("en"), "Start a business in BizMan is redrawn as a searchable list"));   // the row that holds it
             Check(next.Contains("BizMan"), "start biz texts: What's new names the start page's fix in " + code);
         }
     }

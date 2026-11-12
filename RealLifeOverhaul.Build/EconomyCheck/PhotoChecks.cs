@@ -599,6 +599,29 @@ internal static partial class Program
             "photos words: What's new has the Camera and Gallery's line in each of the three languages (any of its rows)");
     }
 
+    // The key of the What's new row that holds an English line: the next row before a release, the version's own row after it
+    // (the version step moves the lines there). The next row's key when no row holds the line.
+    private static string WhatsNewKey(Dictionary<string, string> english, string line)
+    {
+        if (english != null)
+        {
+            foreach (KeyValuePair<string, string> row in english)
+            {
+                if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+                {
+                    return row.Key;
+                }
+            }
+        }
+        return "reallife_changes_next";
+    }
+
+    // A language's text of a What's new row; empty when it has none.
+    private static string WhatsNewText(Dictionary<string, string> words, string key)
+    {
+        return words != null && words.TryGetValue(key, out string text) ? text : string.Empty;
+    }
+
     // Whether any row of What's new (reallife_changes_next or a numbered version's) has the words.
     private static bool WhatsNewHas(Dictionary<string, string> words, string line)
     {

@@ -637,8 +637,7 @@ internal static partial class Program
                 }
             }
         }
-        words[0].TryGetValue("reallife_changes_next", out string en);
-        Check(bad.Count == 0 && keys == 72 && en != null && en.Contains("Flare is alive from the first day"),
+        Check(bad.Count == 0 && keys == 72 && WhatsNewHas(words[0], "Flare is alive from the first day"),
             "Flare people: the " + keys + " new lines of a visit, an offer and a hello are in en, pt and zh-cn, each naming its business, with no dash and no exclamation mark, and What's new says it"
             + (bad.Count > 0 ? " (" + string.Join("; ", bad) + ")" : string.Empty));
         // Each visit line fits the kind of business it is for: two lines to a kind, five kinds.

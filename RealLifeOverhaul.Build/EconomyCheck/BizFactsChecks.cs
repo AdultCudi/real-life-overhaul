@@ -106,7 +106,8 @@ internal static partial class Program
         foreach (string code in new[] { "en", "de", "es", "fr", "ko", "nl", "pl", "pt", "ru", "tr", "zh-cn" })
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, code + ".json"));
-            Check(words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("BizMan") && !next.Contains('!') && !next.Contains((char)0x2014)
+            string next = WhatsNewText(words, WhatsNewKey(LoadWords(System.IO.Path.Combine(DesignLocales, "en.json")), "A building for sale in BizMan no longer hides its value behind its price."));   // the row that holds it
+            Check(words != null && next.Contains("BizMan") && !next.Contains('!') && !next.Contains((char)0x2014)
                   && !next.Contains((char)0x2013) && (code != "en" || next.Contains("A building for sale in BizMan no longer hides its value behind its price.")),
                 "biz facts: What's new says so in " + code);
         }
