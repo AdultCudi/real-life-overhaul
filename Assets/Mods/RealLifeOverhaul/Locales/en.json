@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "The RLO interface is now switched off by default, and has been switched off once for everyone, while faults in its screens are fixed: the game's own screens are back. Switch it on again under RLO interface in the mod's options if you prefer it.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfaction",
   "reallife_ui_gallery_energy": "Energy",
   "reallife_ui_enabled": "RLO interface",
-  "reallife_opt_tip_ui_interface": "Draws Contacts and the overhaul's screens in the mod's own design: slate panels over the city, colour icons and a status bar along the bottom. Off: the game's own screens.",
+  "reallife_opt_tip_ui_interface": "Draws Contacts and the overhaul's screens in the mod's own design: slate panels, colour icons and a status bar. Off by default, with the game's own screens: switch it on here.",
   "reallife_ui_motion": "Interface motion",
   "reallife_opt_tip_ui_motion": "How the RLO interface moves: full, calm (slower and shorter) or off.",
   "reallife_ui_motion_0": "Full",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "The RLO interface stepped aside after an error; the game's own screen shows instead.",
   "reallife_meta_title_ui": "RLO interface",
   "reallife_guide_ui_about": "The mod's own design, the City Ledger: Contacts and the overhaul's screens drawn like the city's financial pages, for keyboard and pad first.",
-  "reallife_guide_ui": "# What it is\n- The <b>RLO interface</b> draws the game's Contacts and the overhaul's screens in the mod's own design, the City Ledger: serif heads, the paper's labels in capitals, square ruled panels and one accent, the salmon of a markets paper.\n- It is part of <b>Living population</b> and has its own switch. Off, every screen is the game's own again.\n\n# How to use it\n- Arrows or the d-pad move the one focus; Enter or A presses what has focus; Esc or B goes back.\n- The keys at the foot of the screen are the ones bound now; a key shown on a button presses it from anywhere.\n- A call, an offer with its own buttons and a tax table open in the game's own view, until you close the app.\n\n# Options\n- Dark or light follows Flare's look option.\n- Interface motion: full, calm or off.",
+  "reallife_guide_ui": "# What it is\n- The <b>RLO interface</b> draws the game's Contacts and the overhaul's screens in the mod's own design, the City Ledger: serif heads, the paper's labels in capitals, square ruled panels and one accent, the salmon of a markets paper.\n- It is part of <b>Living population</b> and has its own switch, <b>RLO interface</b> in the mod's options. It is off by default while faults in its screens are fixed, so every screen is the game's own until you switch it on.\n\n# How to use it\n- Arrows or the d-pad move the one focus; Enter or A presses what has focus; Esc or B goes back.\n- The keys at the foot of the screen are the ones bound now; a key shown on a button presses it from anywhere.\n- A call, an offer with its own buttons and a tax table open in the game's own view, until you close the app.\n\n# Options\n- Dark or light follows Flare's look option.\n- Interface motion: full, calm or off.",
   "reallife_contract_part_contacts_kit": "the Contacts app drawn on the RLO interface",
   "reallife_ui_page_details": "Details",
   "reallife_ui_page_empty": "Nothing here yet",
@@ -37740,5 +37740,6 @@
   "reallife_changes_100_1_title": "1.0.1",
   "reallife_changes_100_1": "Fixed: on a Mac, the RLO interface's text was drawn as pink blocks. Its fonts were drawn in a way made for Windows alone. They are now drawn the way the game draws its own text, on every system.",
   "reallife_changes_100_2_title": "1.0.2",
-  "reallife_changes_100_2": "Fixed: on the new BizMan page the Start business button only played the error sound and started nothing, for every type of business. It starts the business again."
+  "reallife_changes_100_2": "Fixed: on the new BizMan page the Start business button only played the error sound and started nothing, for every type of business. It starts the business again.",
+  "reallife_ui_note_interface_off": "The RLO interface is switched off for now. Some of its screens had faults: ordering, eating out and the vehicle panel. The game's own screens are back. You can switch it on again under RLO interface in the mod's options."
 }
