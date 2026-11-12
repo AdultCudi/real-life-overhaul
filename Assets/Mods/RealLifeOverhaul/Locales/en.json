@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Fixed: on a Mac, the RLO interface's text was drawn as pink blocks. Its fonts were drawn in a way made for Windows alone. They are now drawn the way the game draws its own text, on every system. Fixed: on a Mac, a bug report left out the game's log, the Guide named the wrong folder for it, and RLO Texts tried to run its packs, which only Windows can. A key for Your own AI is now kept there until you close the game.",
+  "reallife_changes_next": "Fixed: on the new BizMan page the Start business button only played the error sound and started nothing, for every type of business. It starts the business again. Fixed: on a Mac, a bug report left out the game's log, the Guide named the wrong folder for it, and RLO Texts tried to run its packs, which only Windows can. A key for Your own AI is now kept there until you close the game.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -37737,6 +37737,8 @@
   "reallife_studio_after_named": "It will be called {name}.",
   "reallife_studio_note_named_1": "{name}, the free update for {game}, is out: about {copies} more copies to come.",
   "reallife_studio_note_named_2": "{name}, the add-on for {game}, is out: about {copies} owners will buy it.",
+  "reallife_changes_100_1_title": "1.0.1",
+  "reallife_changes_100_1": "Fixed: on a Mac, the RLO interface's text was drawn as pink blocks. Its fonts were drawn in a way made for Windows alone. They are now drawn the way the game draws its own text, on every system.",
   "reallife_texts_status_windows": "RLO Texts packs run on Windows only, so on this system every message uses its written line. Your own AI needs no pack: choose a service under Your own AI.",
   "reallife_textsai_key_session": "The key for {service} is kept until you close the game. This system cannot protect it on disk, so it is not saved: enter it again next time.",
   "reallife_textsai_signin_windows": "Continue with ChatGPT needs Windows, which protects the sign-in between sessions. On this system, choose a service you have a key for."

@@ -1,32 +1,4 @@
-1.0.0
-
-New
-- The living economy, under the Living population option: every home in the city holds a household that works, pays rent and tax and shops at the businesses within reach, and your customers are those people. Births, deaths and moves change the city over the years, and developers build homes when flats run short.
-- Flare in the city: your followers are the city's residents, a good post brings real customers, every business has a rating and reviews from people who shopped there, and the city posts about eighty times a day.
-- Tech firms rebuilt: game studios, software studios, AI labs, consultancies, agencies and data centres sell into markets sized from the city, against rivals who play by the same rules, with desk sessions at your own desk. A startup can be founded, funded on real terms, sold or listed.
-- The RLO interface: the HUD, BizMan, conversations, the interior designer, the city map's panels, the game's Options and the phone's apps in the mod's own design, each with its own switch.
-- Suppliers and contracts, delivery trips that drive the streets, and fresh food that spoils.
-- Health with days in hospital and a health plan, parties and company events, giving to charities and to people you know, and Dynasty: a will, an heir, and carrying on as them.
-- Rival owners seen around the city, buyers who bid for your businesses by name, and schemes that pay at first and leave a trail for inquiries.
-- A new Insurance app for your cars, health, homes and businesses, taxi and delivery shifts in your own car, and loyalty cards for your shops.
-- Three subway stations in Uptown and Cedar Heights, single parking spaces to buy or rent, suppliers for your Car Showroom, and stock splits, an index fund and block trades on the stock market.
-- Realistic graphics, under Performance in the options: a Natural, Filmic or Vivid look that follows the hour, the weather and the season. It is off until you choose a look.
-- A new Camera and Gallery, and a Stocks app that is a trading desk.
-- A new game can start with a student loan, your own bank can pay you dividends, and each traffic offence and each kind of notification has its own switch.
+1.0.1
 
 Fixed
-- Short hitches in the first seconds after a city loads, and the first time you get into a car.
-- Typing in a text field no longer triggers shortcuts.
-- Flare's feed shows photos on far more posts.
-- The bars for hygiene, stress and home show all the time under the game's top bar.
-- A child's birthday no longer comes a day late, and a child's year can last up to 52 weeks.
-- The people you can ask out are within 8 years of your own age, and who can be more than a friend follows who they are.
-- Programmers and other professionals hired at your tech firms get a role, a free desk and a week of shifts by themselves.
-- An AI lab's own racks train its models.
-- No warning or fine for jaywalking while you ride in a taxi, a bus or a car.
-- Braking hard no longer jolts softly sprung cars.
-- Subway rides take their time again.
-- A new job's workplace is easy to find, and the construction company's speciality is chosen from a list.
-- The Contacts chat keeps what was said in a call.
-- Leaving a car no longer switches the police checks off for the session.
-- The full list of what is new and fixed is in the game: the Guide on your phone, What's new.
+- On a Mac, the RLO interface's text was drawn as pink blocks. Its fonts were drawn in a way made for Windows alone. They are now drawn the way the game draws its own text, on every system.
