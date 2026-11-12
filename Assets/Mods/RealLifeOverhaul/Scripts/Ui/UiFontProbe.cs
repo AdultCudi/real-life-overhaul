@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 root.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;   // TextMeshPro lays a text out only under a canvas
-                var view = new UiView(root.transform, "Probe");
+                var view = new UiView(root.transform, "Probe") { Motion = UiMotionSetting.Off };   // gone in this call: no arrival is begun for it
                 var scene = new UiScene();
                 scene.Begin("fonts probe", Width, Height, true);
                 int item = UiDraw.Text(scene, UiAt.Screen, 0f, 0f, Width, Style, UiRole.Text, line, UiFlags.Truncate | UiFlags.Label);

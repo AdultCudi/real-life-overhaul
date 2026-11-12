@@ -290,6 +290,13 @@ public static partial class UiPreviewRunner
         try
         {
             root.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+            // In a language the game's interface font writes itself, a text is left exactly as it was made.
+            Localizor.LocalizorManager.LoadedLocale = "en";
+            TextMeshProUGUI english = Older(root.transform, Korean, Size, box, TextAlignmentOptions.TopLeft);
+            TextRoom.On(english);
+            FontsSay(english.margin == Vector4.zero && english.GetComponent<TextRoom>() == null && Laid(english).Characters == 0,
+                "outside the view, in English nothing is put on a text: its margins are as its maker set them (and a Korean line in it is dropped as before)");
+            Localizor.LocalizorManager.LoadedLocale = "ko";
             TextMeshProUGUI korean = Older(root.transform, Korean, Size, box, TextAlignmentOptions.TopLeft);
             Drew bare = Laid(korean);
             TextRoom.On(korean);
@@ -344,6 +351,7 @@ public static partial class UiPreviewRunner
         }
         finally
         {
+            Localizor.LocalizorManager.LoadedLocale = "en";
             UnityEngine.Object.DestroyImmediate(root);
         }
     }

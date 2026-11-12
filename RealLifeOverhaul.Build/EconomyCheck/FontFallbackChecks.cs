@@ -28,7 +28,8 @@ using RealLifeOverhaul.Ui;
 // engine dropped a Korean or Chinese line there too wherever a box was under 1.448 em (29 of Flare's kit's texts by
 // their numbers). Every text the mod has the engine cut outside the interface's view now carries its room
 // (Core/GameUi/TextRoom.cs, TextRoomRules.cs): its margins give a box that is too short what it lacks for one line of
-// the tallest font, on the side where its alignment leaves the words where they were.
+// the tallest font, on the side where its alignment leaves the words where they were. Only in the languages the game
+// writes with those fonts: in any other a text is not touched at all.
 internal static partial class Program
 {
     private static void FontFallbacks()
@@ -745,18 +746,22 @@ internal static partial class Program
 
         // The director: behind the loading screen whole, a little a second in play, one line a language.
         string awake = MemberText(director, "private void Awake()"), slow = MemberText(director, "private void Slow()");
-        Check(awake.Contains("LoadHold.Add(\"ui: the interface's fallback fonts\", FontsBehindScreen, done => { });")
-              && awake.IndexOf("UiFonts.Step", StringComparison.Ordinal) < awake.IndexOf("FontsBehindScreen", StringComparison.Ordinal)
-              && look.Contains("private static bool FontsBehindScreen() => FontsLook(int.MaxValue);"),
-            "fonts sources: the fallbacks are made and the language's characters given their fonts behind the loading screen, after the faces are read, with no limit there");
-        Check(slow.Contains("FontsLook(UiFallbackRules.TickBatch);") && slow.IndexOf("FontsLook(", StringComparison.Ordinal) < slow.IndexOf("bool city =", StringComparison.Ordinal)
+        Check(awake.Contains("LoadHold.Add(\"ui: the interface's fallback fonts\", FontsStep, done => { });")
+              && awake.IndexOf("UiFonts.Step", StringComparison.Ordinal) < awake.IndexOf("FontsStep", StringComparison.Ordinal)
+              && look.Contains("private static bool FontsStep() => FontsLook(LoadHold.Holding ? int.MaxValue : UiFallbackRules.TickBatch);"),
+            "fonts sources: the fallbacks are made and the language's characters given their fonts behind the loading screen, after the faces are read, with no limit while it is held");
+        Check(slow.Contains("FontsStep();") && slow.IndexOf("FontsStep(", StringComparison.Ordinal) < slow.IndexOf("bool city =", StringComparison.Ordinal)
               && UiFallbackRules.TickBatch <= 32 && UiFallbackRules.TickBatch >= 1,
-            "fonts sources: what the loading screen did not hide goes on each second, a copy or at most " + UiFallbackRules.TickBatch + " characters at a time, in the main menu too");
+            "fonts sources: what the loading screen did not hide goes on each second by the same step, a copy or at most " + UiFallbackRules.TickBatch + " characters at a time, in the main menu too");
         string fontsLook = MemberText(look, "private static bool FontsLook(int most)");
         Check(fontsLook.Contains("string language = UiGame.Language();") && fontsLook.Contains("UiFonts.Language(language);") && fontsLook.Contains("_fontsRead = ReadTexts(language);")
               && fontsLook.Contains("UiFonts.Characters(read.Language, read.Marked, read.Outside, read.MarkedGame, read.OutsideGame);") && fontsLook.Contains("UiFonts.FallbacksStep(most)")
               && fontsLook.Contains("if (done && UiFonts.FontsNews)"),
             "fonts sources: a language the game changes to orders the chain again, has its texts read and its check said once");
+        Check(fontsLook.IndexOf("if (!On)", StringComparison.Ordinal) >= 0 && fontsLook.IndexOf("return true;", StringComparison.Ordinal) > fontsLook.IndexOf("if (!On)", StringComparison.Ordinal)
+              && fontsLook.IndexOf("return true;", StringComparison.Ordinal) < fontsLook.IndexOf("UiFonts.Ready", StringComparison.Ordinal)
+              && fontsLook.IndexOf("UiFonts.Ready", StringComparison.Ordinal) < fontsLook.IndexOf("UiFonts.FallbacksStep(most)", StringComparison.Ordinal),
+            "fonts sources: with the RLO interface off nothing of the fonts' work is done and the loading screen is not held for it: no copy, no atlas, no line");
         string read = MemberText(look, "private static Task<LanguageText> ReadTexts(string language)"), texts = MemberText(look, "private static LanguageText Texts(string language, string modFile, string gameFile)");
         Check(read.Contains("File.Exists(own) ? own : Path.Combine(folder, English + \".json\")") && read.Contains("Application.streamingAssetsPath") && read.Contains("Task.Run(() => Texts(language, mod, game));")
               && texts.Contains("UiFallbackRules.Mark(File.ReadAllText(modFile), seen);") && texts.Contains("UiFallbackRules.Mark(File.ReadAllText(gameFile), game);") && !fontsLook.Contains("File.ReadAllText"),
@@ -851,6 +856,43 @@ internal static partial class Program
             TextRoomRules.Room(box, Size, TextRoomSide.None, out float o, out float u);
             none &= o == 0f && u == 0f;
         }
+        // The languages the room is given in, against the game's own words: those the interface font does not draw.
+        bool[] held = null;
+        foreach (KeyValuePair<string, GameFont> font in census.Fonts)
+        {
+            if (font.Value.Family != "Rubik")
+            {
+                continue;
+            }
+            held ??= (bool[])font.Value.Covers.Clone();
+            for (int c = 0; c < 65536; c++)
+            {
+                held[c] &= font.Value.Covers[c];
+            }
+        }
+        int tallLanguages = 0, wrongLanguages = 0, mostElsewhere = 0;
+        string wrong = null;
+        foreach (KeyValuePair<string, bool[]> words in census.Words)
+        {
+            List<GameFont> game = census.Chain(words.Key, false);
+            int taller = 0;
+            for (int c = 33; c < 65536 && held != null; c++)
+            {
+                GameFont by = words.Value[c] && !held[c] ? FontDrawing(game, c) : null;
+                taller += by != null && by.LineEm > interfaceLine + 0.01f ? 1 : 0;
+            }
+            bool tall = taller > 10;
+            tallLanguages += tall ? 1 : 0;
+            mostElsewhere = tall ? mostElsewhere : Math.Max(mostElsewhere, taller);
+            if (TextRoomRules.Tall(words.Key) != tall)
+            {
+                wrongLanguages++;
+                wrong ??= words.Key + " (" + taller + " characters of its words by a taller font)";
+            }
+        }
+        Check(held != null && wrongLanguages == 0 && tallLanguages == 5 && mostElsewhere <= 1 && !TextRoomRules.Tall(null) && !TextRoomRules.Tall("en") && !TextRoomRules.Tall(string.Empty),
+            "fonts room: room is given in the " + tallLanguages + " languages the game writes with fonts taller than its interface font, and in no other, where at most "
+            + mostElsewhere + " character of the game's words falls to one" + (wrong != null ? " (not: " + wrong + ")" : string.Empty));
         Check(holds, "fonts room: with its room every box, however short, holds a line of the game's tallest font as the text engine counts it");
         Check(still, "fonts room: the room moves no word: a text laid from the top has it under, one laid from the bottom over, a centred one half on each side");
         Check(untouched && none, "fonts room: a box that already holds the tall line gets no room, and a text centred by its capitals, which any room would move, gets none");
@@ -901,10 +943,21 @@ internal static partial class Program
                                                              + (faults.Count == 0 ? FontCutSites.Length + " files" : string.Join("; ", faults)) + ")");
         string room = ModSource(@"Core\GameUi\TextRoom.cs"), ledger = ModSource(@"Ledger\LedgerPage.cs"), kit = ModSource(@"Social\Flare\FlareKit.cs");
         string fit = MemberText(room, "private void Fit()");
-        Check(fit.Contains("TextRoomSide side = _text.enableAutoSizing ? TextRoomSide.None : Side(_text.verticalAlignment);")
+        Check(fit.Contains("TextRoomSide side = _text.enableAutoSizing || !TextRoomRules.Tall(Language()) ? TextRoomSide.None : Side(_text.verticalAlignment);")
+              && room.Contains("private static string LanguageNow() => Localizor.LocalizorManager.LoadedLocale;")
+              && MemberText(room, "private static string Language()").Contains("return LanguageNow();") && MemberText(room, "private static string Language()").Contains("when (Guard.Missing(e))")
               && fit.Contains("float box = _text.rectTransform.rect.height - _own.y - _own.w;") && fit.Contains("TextRoomRules.Room(box, _text.fontSize, side, out float over, out float under);")
-              && fit.Contains("_given = new Vector4(_own.x, _own.y - over, _own.z, _own.w - under);") && fit.Contains("Guard.Fail(FrameGuard, e, this);"),
-            "fonts room: the room is the rules', taken off the text's own margins on the side its alignment allows, behind the guard");
+              && fit.Contains("_given = new Vector4(_own.x, _own.y - over, _own.z, _own.w - under);"),
+            "fonts room: the room is the rules', taken off the text's own margins on the side its alignment allows");
+        string fitNow = MemberText(room, "private void FitNow()"), boxChanged = MemberText(room, "protected override void OnRectTransformDimensionsChange()");
+        Check(fitNow.Contains("if (FrameGuard.Off)") && fitNow.Contains("Guard.Fail(FrameGuard, e, this);") && boxChanged.Contains("if (FrameGuard.Off)") && boxChanged.Contains("Guard.Fail(FrameGuard, e, this);")
+              && fit.Contains("_fit = FitNow;") && MemberText(room, "protected override void OnEnable()").Contains("FitNow();") && !fit.Contains("catch"),
+            "fonts room: every way into the fitting stands behind the guard: the engine's two and the text engine's word, which comes from inside whatever set the text");
+        string on = MemberText(room, "public static void On(TMP_Text text)");
+        int asked = on.IndexOf("if (!TextRoomRules.Tall(Language()))", StringComparison.Ordinal), put = on.IndexOf("AddComponent<TextRoom>()", StringComparison.Ordinal);
+        Check(on.Contains("if (text == null || FrameGuard.Off)") && asked >= 0 && asked < put && on.IndexOf("return;", asked, StringComparison.Ordinal) < put
+              && on.Contains("room.Fit();") && on.Contains("Guard.Fail(FrameGuard, e);"),
+            "fonts room: the maker's call stands behind the guard, and in a language the game's interface font writes itself nothing is put on a text: it stays exactly as it was made");
         int taken = fit.IndexOf("_own = now;", StringComparison.Ordinal), noted = fit.IndexOf("_given = new Vector4(", StringComparison.Ordinal), written = fit.IndexOf("_text.margin = _given;", StringComparison.Ordinal);
         Check(taken >= 0 && taken < noted && noted < written && Occurs(fit, "if (now != _given)") == 2 && fit.IndexOf("Vector4 now = _text.margin;", StringComparison.Ordinal) < taken,
             "fonts room: margins a text's maker set since are taken as its own, and the new margins are noted as given before they are written, which the text engine answers by a second call");

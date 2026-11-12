@@ -11,7 +11,9 @@ namespace RealLifeOverhaul.Ui
     /// the characters the faces lack (the mod's own file for the language, or its English where it has none, and the
     /// game's), the fonts' work moved on, and the check's one line in Player.log. Behind the loading screen the work is
     /// done whole; from the director's second it goes a copy or a few characters at a time, so a language changed in
-    /// play never costs a frame. Cost: nothing a frame; each second a comparison of the language's code while idle.
+    /// play never costs a frame. With the interface switched off none of it is done: a player who never sees the kit
+    /// pays for no copy and no atlas, and it begins at the second the interface is switched on.
+    /// Cost: nothing a frame; each second a comparison of the language's code while idle.
     /// </summary>
     public sealed partial class UiDirector
     {
@@ -28,12 +30,18 @@ namespace RealLifeOverhaul.Ui
         private static string _fontsLanguage;             // the language last told to the fonts
         private static Task<LanguageText> _fontsRead;     // its texts being read, or null
 
-        // Behind the loading screen, a frame at a time until true: everything at once, where a long frame is not seen.
-        private static bool FontsBehindScreen() => FontsLook(int.MaxValue);
+        // The one step, for the loading screen's hold and for the director's second: everything at once while the hold
+        // hides a long frame, a copy or a few characters a call otherwise. The hold forgets its pieces when it ends, so
+        // what it did not finish goes on from the second.
+        private static bool FontsStep() => FontsLook(LoadHold.Holding ? int.MaxValue : UiFallbackRules.TickBatch);
 
         // The fonts' fallbacks moved on: true when nothing is left to do. In play a copy or a few characters a call.
         private static bool FontsLook(int most)
         {
+            if (!On)
+            {
+                return true;   // nothing of the interface is drawn: the loading screen is not held, and nothing is made
+            }
             if (!UiFonts.Ready)
             {
                 return false;

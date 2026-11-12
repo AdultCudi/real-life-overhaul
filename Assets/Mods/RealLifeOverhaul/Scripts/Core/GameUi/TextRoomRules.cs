@@ -16,12 +16,33 @@ namespace RealLifeOverhaul.GameUi
     /// ascender to descender, its interface font under 1.2 em, which the mod's boxes for one line are sized by. A box
     /// shorter than one line of the tallest font is given the difference as room, through the text's margins, on the side
     /// where its alignment leaves the words where they were (<see cref="TextRoom"/>); a box that holds such a line gets
-    /// none, so a text in Latin letters is laid out exactly as before. Held offline against the census of the game's
-    /// fonts (EconomyCheck, FontFallbackChecks). Cost: a few sums when a text's box changes size.
+    /// none. Room is given only in the languages the game writes with those fonts (<see cref="Tall"/>): in every other
+    /// language a text is left exactly as it was made. Held offline against the census of the game's fonts
+    /// (EconomyCheck, FontFallbackChecks). Cost: a few sums when a text's box changes size.
     /// </summary>
     public static class TextRoomRules
     {
         public const float TallestLineEm = 1.45f;   // em: a hair over the tallest line among the game's fallback fonts, 1.448 of its Noto fonts for Chinese, Japanese and Korean
+
+        /// <summary>
+        /// True for a language, by the game's code for it, whose words the game's interface font does not draw: Japanese,
+        /// Korean, both Chinese and Greek are written by the taller fallback fonts. In any other the interface font
+        /// writes all but a sign, and a text is given no room: nothing of its layout is touched.
+        /// </summary>
+        public static bool Tall(string language)
+        {
+            switch (language)
+            {
+                case "ja":
+                case "ko":
+                case "zh-cn":
+                case "zh-tw":
+                case "el":
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         /// <summary>
         /// The room over and under a text's box, in its own units, for a box of a height and a text of a size: nothing for

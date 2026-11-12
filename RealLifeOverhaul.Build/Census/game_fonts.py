@@ -516,7 +516,7 @@ def main():
         text = data_file(now)
         if args.check:
             with open(DATA, "r", encoding="utf-8-sig", newline="") as f:
-                if f.read() != text:
+                if f.read().replace("\r\n", "\n") != text.replace("\r\n", "\n"):   # a checkout may hold either line ending
                     sys.exit("FONTS: Scripts/Ui/UiFallbackRules.Data.cs is not what the installed game gives: run game_fonts.py --data and commit it")
             print("FONTS: the kit's table of the Western fallback is as the installed game gives it.")
         else:

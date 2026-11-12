@@ -344,7 +344,8 @@ internal static partial class Program
         Check(Math.Abs(ab - a - b) < 0.01f && a > 0f, "ui text: widths add up along a line");
         Check(UiTextRules.Width("groups", UiStyle.SectionHeader) > UiTextRules.Width("groups", UiStyle.Small), "ui text: capitals with tracking take more room than the same words in lower case");
         Check(Math.Abs(UiTextRules.Width("联系人", UiStyle.Body) - 3f * UiTokens.Type(UiStyle.Body).Size) < 0.01f, "ui text: Chinese characters are squares of the text's size");
-        Check(Math.Abs(UiTextRules.Width("연락처", UiStyle.Body) - 3f * UiTokens.Type(UiStyle.Body).Size) < 0.01f, "ui text: Korean syllables are squares too");
+        Check(Math.Abs(UiTextRules.Width("연락처", UiStyle.Body) - 3f * UiFallbackRules.HangulEm * UiTokens.Type(UiStyle.Body).Size) < 0.01f,
+            "ui text: a Korean syllable is as wide as the game's Korean font advances it, a little under a square (FontFallbackChecks holds the figure to the font)");
         Check(UiTextRules.Width("Контакты", UiStyle.Title) > 0f, "ui text: Russian in a Sora style is measured in Manrope, as the bundle falls back");
         float one = UiTextRules.LineHeight(UiStyle.Body);
         Check(UiTextRules.Lines("alpha beta gamma", UiStyle.Body, 1000f, 0, out float wide) == 1 && wide > 0f, "ui text: a short line stays on one line");

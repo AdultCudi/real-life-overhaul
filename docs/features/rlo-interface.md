@@ -137,12 +137,17 @@ reported all Korean text gone (12 November 2026). No glyph was missing.
   `Fonts check (ko): 1370 of the language's distinct characters in the mod's texts, 1273 missing from Overpass, 1273
   covered by fallbacks (Noto Sans KR 1273), 0 left: PASS.` It fails, as a warning, when a character is left without a
   font (the first twenty are named, and the game's font then writes the whole language) or when a line of twelve of
-  them, drawn through the kit's own text, does not come out whole.
+  them, drawn through the kit's own text, does not come out whole. With the interface off none of this is done (no
+  copy, no atlas, no line): it begins when the interface is switched on, a copy or sixteen characters a second, so
+  a language's characters are all in after a minute or three. Until then a text adds a character as it first shows
+  it, as any text of the game's does.
 - **Outside the kit** (`Core/GameUi/TextRoom`, `TextRoomRules`): the mod's older screens write in the game's font, in
   boxes sized by its line, and lost a Korean or Chinese line the same way wherever a box was under 1.448 em. Every text
   they have the text engine cut carries its room: its margins give a box that is too short what it lacks for one line
   of the tallest font, on the side where its alignment leaves the words where they were. A text that sizes itself to
-  its box needs none. EconomyCheck lists every such text by file, so a new one is given its room or fails the check.
+  its box needs none. Room is given only in the languages the game writes with its taller fonts (Japanese, Korean,
+  both Chinese and Greek, `TextRoomRules.Tall`): in every other language a text is left exactly as it was made.
+  EconomyCheck lists every such text by file, so a new one is given its room or fails the check.
 
 Offline: EconomyCheck `--fonts` (`FontFallbackChecks.cs`) holds the rules against the census of the game's fonts
 (`RealLifeOverhaul.Build/Census/fonts-NNNN.json`, written by `game_fonts.py`) for every character of the eleven
