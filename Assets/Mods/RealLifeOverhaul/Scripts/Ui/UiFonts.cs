@@ -8,15 +8,16 @@ namespace RealLifeOverhaul.Ui
     /// The interface's fonts from the bundle beside the DLL (Bundles/reallife_ui, built by UiAssets/build.ps1): Overpass in
     /// three weights, as static distance-field atlases. Read once a session in the background, behind the loading screen
     /// (<see cref="Begin"/>, <see cref="Step"/>); each atlas's copy in main memory is freed as it arrives, so it costs its
-    /// texture alone. Every face falls back to the game's own font, given by the host, which carries the game's fallbacks
-    /// for Chinese, Japanese and Korean (and Greek, which Overpass does not draw).
-    /// Without the bundle every style uses the game's font, so a missing file costs the look, never a screen.
+    /// texture alone. What the faces lack (Hangul, Chinese, kana, Greek, a sign) is drawn by the mod's own copies of the
+    /// game's fallback fonts, their line cut to the faces' (UiFonts.Fallbacks.cs, <see cref="FallbacksStep"/>).
+    /// Without the bundle every style uses the game's font, so a missing file costs the look, never a screen, and a
+    /// language whose texts hold a character no font of the chain draws is written with the game's font whole.
     /// A face's material never keeps the shader the bundle brought, which is built for Windows alone and draws pink blocks
     /// on a Mac: as the faces are read each is given a text shader of the running game's (<see cref="Mend"/>,
     /// <see cref="UiShaderRules"/>), on every system alike, and a face whose shader does not draw here is not written with.
     /// Cost: nothing a frame; a look in a six-slot table a text.
     /// </summary>
-    public static class UiFonts
+    public static partial class UiFonts
     {
         public const string BundlePath = "Bundles/reallife_ui";   // under the mod's folder, beside its other bundles
         // The faces as UiAssets/build.ps1 names them in the bundle, with the family and weight of each.
@@ -119,7 +120,7 @@ namespace RealLifeOverhaul.Ui
             _done = true;
         }
 
-        /// <summary>The game's own font, the last fallback of every face (its own fallbacks carry CJK and Hangul); set by the host.</summary>
+        /// <summary>The game's own interface font, the last of the faces' fallbacks and what stands in for a face; set by the host.</summary>
         public static void SetFallback(TMP_FontAsset gameFont)
         {
             if (gameFont == null || gameFont == _fallback)
@@ -127,10 +128,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _fallback = gameFont;
-            for (int i = 0; i < Read.Length; i++)
-            {
-                AddFallback(Read[i]);
-            }
+            Unchain();   // it joins the fallbacks at the next step
             Mend();   // its shader is one of the places a text shader is taken from
         }
 
@@ -166,6 +164,10 @@ namespace RealLifeOverhaul.Ui
 
         public static TMP_FontAsset For(UiStyle style)
         {
+            if (_standIn && _fallback != null)
+            {
+                return _fallback;   // characters of this language's texts have no font in the faces' chain: the game's font writes it whole
+            }
             UiType t = UiTokens.Type(style);
             int best = -1, gap = int.MaxValue;
             for (int i = 0; i < Names.Length; i++)
@@ -201,8 +203,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     atlas.Apply(false, true);   // the texture alone stays: the bundle's readable copy is let go
                 }
-                AddFallback(f);
             }
+            Unchain();   // the faces just read have no fallbacks yet
             Mend();
             if (got < Read.Length)
             {
@@ -384,15 +386,6 @@ namespace RealLifeOverhaul.Ui
                 names = (names != null ? names + ", " : string.Empty) + (m != null ? m.name : Read[i].name + " (no material)");
             }
             return left;
-        }
-
-        private static void AddFallback(TMP_FontAsset f)
-        {
-            if (f == null || _fallback == null || f.fallbackFontAssetTable == null || f.fallbackFontAssetTable.Contains(_fallback))
-            {
-                return;
-            }
-            f.fallbackFontAssetTable.Add(_fallback);
         }
     }
 }

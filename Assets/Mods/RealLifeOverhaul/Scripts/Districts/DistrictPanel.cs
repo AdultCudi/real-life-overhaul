@@ -135,6 +135,7 @@ namespace RealLifeOverhaul.Districts
                     panel._about.alignment = TextAlignmentOptions.TopLeft;
                     panel._about.fontSize = 24f;
                     panel._about.raycastTarget = false;
+                    TextRoom.On(panel._about);
                 }
                 panel._title = header;
                 UiClone.Rewire(close, () => panel.Closed?.Invoke());
@@ -348,6 +349,7 @@ namespace RealLifeOverhaul.Districts
                     {
                         slot.Text.richText = true;
                         slot.Text.overflowMode = TextOverflowModes.Ellipsis;
+                        TextRoom.On(slot.Text);
                     }
                 }
                 pool.Add(slot);

@@ -330,6 +330,7 @@ namespace RealLifeOverhaul.Meta
                 _hint.overflowMode = TextOverflowModes.Ellipsis;
                 _hint.text = "reallife_meta_search_hint".GetLocalization();
                 MetaUi.Stretch(_hint.rectTransform, 0f, 0f, 0f, 0f);
+                GameUi.TextRoom.On(_hint);
                 _text = Line("Text", _area, MetaUi.Ink, font);
                 MetaUi.Stretch(_text.rectTransform, 0f, 0f, 0f, 0f);
 
@@ -354,6 +355,7 @@ namespace RealLifeOverhaul.Meta
                 _status = Line("Text", status.transform, MetaUi.Soft, font);
                 _status.overflowMode = TextOverflowModes.Ellipsis;
                 MetaUi.Stretch(_status.rectTransform, 0f, 0f, 0f, 0f);
+                GameUi.TextRoom.On(_status);
                 var statusRect = (RectTransform)status.transform;
                 statusRect.anchorMin = new Vector2(0f, 0f);
                 statusRect.anchorMax = new Vector2(1f, 0f);

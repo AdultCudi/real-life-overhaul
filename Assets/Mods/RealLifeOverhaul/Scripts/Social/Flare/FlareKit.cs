@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Flare
             t.textWrappingMode = TextWrappingModes.Normal;
             t.overflowMode = TextOverflowModes.Ellipsis;
             t.margin = Vector4.zero;
+            TextRoom.On(t);
             return t;
         }
 

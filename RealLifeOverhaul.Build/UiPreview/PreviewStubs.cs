@@ -22,6 +22,10 @@ namespace RealLifeOverhaul
 
         public static void Fail(FeatureGuard guard, Exception e, Behaviour component = null) => Debug.LogException(e);
 
+        public static bool Missing(Exception e) => false;
+
+        public static bool DoesWithout(Exception e, string what, string answer) => false;
+
         public static Action<T> Wrap<T>(Action<T> handler) => handler;
 
         public static Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> handler) => handler;
@@ -108,6 +112,15 @@ namespace RealLifeOverhaul.Economy
     public static class ProductCatalogue
     {
         public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;
+    }
+}
+
+// The game's language, as the room of a text outside the kit asks it (Core/GameUi/TextRoom): the fonts check sets it.
+namespace Localizor
+{
+    public static class LocalizorManager
+    {
+        public static string LoadedLocale = "en";
     }
 }
 

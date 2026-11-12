@@ -303,6 +303,7 @@ namespace RealLifeOverhaul
                         text.textWrappingMode = TextWrappingModes.NoWrap;
                         text.overflowMode = TextOverflowModes.Ellipsis;
                         text.raycastTarget = false;
+                        TextRoom.On(text);
                     }
                     UiClone.Key(label.transform, Words[i]);
                     label.SetActive(true);
@@ -331,6 +332,7 @@ namespace RealLifeOverhaul
                     noteText.overflowMode = TextOverflowModes.Ellipsis;
                     noteText.raycastTarget = false;
                     noteText.color = WorldPanel.Yellow();
+                    TextRoom.On(noteText);
                 }
                 UiClone.Words(note.transform, string.Empty);
                 note.SetActive(false);

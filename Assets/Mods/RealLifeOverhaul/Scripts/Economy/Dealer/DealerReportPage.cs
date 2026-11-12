@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             rect.sizeDelta = size;
             text.textWrappingMode = TextWrappingModes.NoWrap;
             text.overflowMode = TextOverflowModes.Ellipsis;
+            TextRoom.On(text);
             return text;
         }
 

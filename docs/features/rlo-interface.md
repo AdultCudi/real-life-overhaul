@@ -33,7 +33,10 @@ preset touches it, and "reset everything" writes it off.
 Ui/                         game-free unless named: the offline checks and the previews draw exactly what ships
   UiTokens, UiColour          the one dark look's colours, type, spaces, radii, strokes, motion
   UiFontMetrics(.Data)        Overpass's metrics, written by UiAssets/scripts/fonts.py
-  UiTextRules                 widths, wrapping and fit, by those metrics
+  UiTextRules                 widths, wrapping and fit, by those metrics, and the room of a text's box
+  UiFallbackRules(.Data)      the characters the face lacks: which of the game's fonts draws them, in what order for
+                              a language, how wide they are measured, and the fonts check's line (the table of the
+                              game's Western fallback is written by RealLifeOverhaul.Build/Census/game_fonts.py)
   UiFrame                     where a screen stands over the world (a window, a docked panel, a card, the phone),
                               and what the status bar says
   UiScene, UiDraw*            a scene of placed items and targets, and the components that place them
@@ -55,11 +58,14 @@ Ui/                         game-free unless named: the offline checks and the p
   UiView*, UiHost, UiTweens,  the renderer (pooled slots, only what changed), the host (input, focus, sounds,
   UiSprites, UiFonts          typing), the tween pool, shapes and painted faces, the font bundle (game-facing, still
                               game-free)
+  UiFonts.Fallbacks,          the mod's own copies of the game's fallback fonts, their line cut to the face's, on
+  UiFontProbe                 every face in the language's order, and the line the kit draws to check them
   UiShaderRules               which text shader of the running game the faces are given as the bundle is read (the one
                               it was built with draws on Windows alone: pink blocks on a Mac), and the check's one line
   UiGame, UiText              the one file that meets the game (its input, sounds, money, time and icons), and the
                               words (game files)
-  UiDirector(.Tests), UiGuide the fonts behind the loading screen, the switch, Contacts, the tests, the feature's entry
+  UiDirector(.Tests, .Fonts), the fonts behind the loading screen, the language's characters and the fonts check's
+  UiGuide                     line, the switch, Contacts, the tests, the feature's entry
   Pages/                      the population's, Flare in the city's and the tech firms' screens, and a desk session's
                               pages over the game's own panel (SessionKit)
   Contacts/ContactsKit,       the game's Contacts app under the kit: hidden, read, its buttons pressed, given back on
@@ -101,6 +107,54 @@ Ui/                         game-free unless named: the offline checks and the p
   and its sales and support. Another firm's shows its products or work, the rivals in its markets, its team and its
   markets' shares. They draw inside the window on the older page shapes until they are converted to the new templates.
 - **The gallery**: every component on seven pages, the last an icon style sheet.
+- **Every script**: the face, Overpass, holds Latin and Cyrillic letters. Korean, Chinese, Japanese and Greek, and a
+  name typed in any script the game can write, are drawn by the game's own fonts at the face's line height, each
+  language in its own font first. A character no font has shows as the game's question mark, never as nothing.
+
+## The fonts of other scripts
+
+Overpass has no Hangul, no Chinese characters, no kana and no Greek. TextMeshPro draws a character the text's font
+lacks with a fallback font, and lays a line out by the font of each of its characters. The game's fallbacks for
+Chinese, Japanese and Korean (its Noto fonts, in TMP Settings' general list) stand 1.448 em from ascender to descender,
+Overpass 1.266, and the text engine ends a text that may be cut at its first character when a line is taller than its
+box. A box one line of the face tall, as every label of the kit had, therefore drew nothing of such a line: a player
+reported all Korean text gone (12 November 2026). No glyph was missing.
+
+- **Copies with the face's line** (`UiFonts.Fallbacks`): for each of the game's fallback fonts that has a font file
+  (found where TextMeshPro asks them: the general fallbacks, the default font, the game's interface font) the mod makes
+  a font asset of its own over the same file, with its ascender, descender, line and capitals cut to the face's, and
+  puts the copies on every face in the order of `UiFallbackRules.Rank`: the Western font, the language's own, the other
+  regions', then the rest as the game lists them. So Chinese is written by the simplified font before the Japanese one.
+  Nothing of the game's own fonts or of TextMeshPro's settings is written: the game's screens are laid out by them.
+- **Room** (`UiTextRules.Room`, `UiView.PlaceText`): every text's box has room no line needs, a line under a text laid
+  from its top, a line over and a line under a centred one, half a line under a wrapped block. A font that is not a
+  copy cannot drop a line either, and no word moves.
+- **Measure** (`UiFallbackRules.AdvanceEm`): a character the face lacks is measured as the font that draws it draws
+  it: the Western fallback's own advance, 0.92 em for a Hangul letter, a square for a Chinese character or a kana.
+- **The check** (`UiDirector.Fonts`): behind the loading screen, and again when the game's language changes, the
+  characters of the language's texts (the mod's file and the game's own) are read on a worker thread and put into the
+  copies' atlases, and one line of Player.log says what they came to, whatever Developer diagnostics says:
+  `Fonts check (ko): 1370 of the language's distinct characters in the mod's texts, 1273 missing from Overpass, 1273
+  covered by fallbacks (Noto Sans KR 1273), 0 left: PASS.` It fails, as a warning, when a character is left without a
+  font (the first twenty are named, and the game's font then writes the whole language) or when a line of twelve of
+  them, drawn through the kit's own text, does not come out whole. With the interface off none of this is done (no
+  copy, no atlas, no line): it begins when the interface is switched on, a copy or sixteen characters a second, so
+  a language's characters are all in after a minute or three. Until then a text adds a character as it first shows
+  it, as any text of the game's does.
+- **Outside the kit** (`Core/GameUi/TextRoom`, `TextRoomRules`): the mod's older screens write in the game's font, in
+  boxes sized by its line, and lost a Korean or Chinese line the same way wherever a box was under 1.448 em. Every text
+  they have the text engine cut carries its room: its margins give a box that is too short what it lacks for one line
+  of the tallest font, on the side where its alignment leaves the words where they were. A text that sizes itself to
+  its box needs none. Room is given only in the languages the game writes with its taller fonts (Japanese, Korean,
+  both Chinese and Greek, `TextRoomRules.Tall`): in every other language a text is left exactly as it was made.
+  EconomyCheck lists every such text by file, so a new one is given its room or fails the check.
+
+Offline: EconomyCheck `--fonts` (`FontFallbackChecks.cs`) holds the rules against the census of the game's fonts
+(`RealLifeOverhaul.Build/Census/fonts-NNNN.json`, written by `game_fonts.py`) for every character of the eleven
+locale files and of the game's own words in each language it offers. `preview.ps1 -Method UiPreviewRunner.FontsCheck`
+asks the text engine itself, in the game's Unity: the fault made again, then the kit and the room as they are now, then
+whole pages in Korean and Chinese. Only the game can show the look of the copies' letters and the `Fonts check` line
+of a Korean and a Chinese session.
 
 ## Save and Going Public
 

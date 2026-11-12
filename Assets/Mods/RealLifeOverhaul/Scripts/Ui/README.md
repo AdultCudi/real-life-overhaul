@@ -289,6 +289,11 @@ EconomyCheck's `UiHudChecks.cs` holds what a machine can check.
 game's own street screenshots in that folder, which stay local and are never committed, at 1080 and 720, with a mouse
 hover shot and a keys shot. `-Out` chooses where the shots go: the prototype's are in `not-in-repo/previews/ui/cs2/`.
 
+`-Method UiPreviewRunner.FontsCheck` draws no picture: it asks the text engine what it laid out of Korean and Chinese
+lines and pages, and prints one `[UiPreview] fonts check:` line for each answer. It uses the game's own fallback fonts
+where `python -I RealLifeOverhaul.Build/Census/game_fonts.py --extract UiAssets/build/gamefonts` put them (local only,
+the game's files are never committed), else two of Windows' fonts, whose widths are not the game's.
+
 ## Review checklist
 
 Before a screen is done, check each line in the previews at play distance: over the game's streets, at 1080 and 720,
@@ -347,6 +352,12 @@ rest is the review.
   `UiShaderRules` says which text shader of the running game the faces are given as the font bundle is read: the one a
   bundle brings is built for Windows alone, so no face keeps it on any system, and one line of Player.log
   ("Shaders check (reallife_ui)") says what was found.
+  `UiFonts.Fallbacks` puts the mod's own copies of the game's fallback fonts, their line cut to the face's, on every
+  face in the language's order (`UiFallbackRules`), so Korean, Chinese, Japanese and Greek are drawn at the face's
+  line height. `UiView` places every text's box with room no line needs (`UiTextRules.Room`): never make a text
+  outside the view. One line of Player.log ("Fonts check (ko)") says whether every character of the language's texts
+  has a font, and `UiFontProbe` draws the line it checks
+  ([the fonts of other scripts](../../../../../docs/features/rlo-interface.md#the-fonts-of-other-scripts)).
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
   directors, and `SessionKit` over the game's own desk panel.
 - **The game**: `UiGame`, `UiText`, `UiDirector`, `UiGuide`, `Contacts/`.
