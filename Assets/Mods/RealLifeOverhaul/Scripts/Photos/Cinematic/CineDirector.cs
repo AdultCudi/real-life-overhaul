@@ -161,7 +161,10 @@ namespace RealLifeOverhaul.Photos
                 enabled = false;
                 return;
             }
-            if (PhotosGame.TakeCancel() || Input.GetKeyDown(KeyCode.Escape))
+            // The game's cancel key, and Esc itself where the player moved cancel to another key. The key is tested first, then
+            // the one rule every key of the mod's asks (Core/TypingNow): a field that has the keyboard keeps its own Esc.
+            bool pressed = PhotosGame.TakeCancel() || Input.GetKeyDown(KeyCode.Escape);
+            if (pressed && !TypingNow.Now)
             {
                 _stopAsked = true;
             }

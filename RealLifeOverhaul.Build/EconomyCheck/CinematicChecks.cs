@@ -467,6 +467,15 @@ internal static partial class Program
               && InOrder(Block(director, "private void OnUpdate()"), "if (!Active)", "enabled = false;", "return;")
               && Occurs(director, "Guard.Fail(FrameGuard, e, this);") == 2 && Occurs(director, "if (FrameGuard.Off)") == 2 && Occurs(tests, "if (FrameGuard.Off)") == 1,
             "cinematic sources: the component is off unless a run is on, its two frame methods guarded, and it takes Esc before the game's own key handling");
+        // The gate's two rules for a file that reads a key or builds interface of its own, held here too so this flag finds them alone.
+        Check(RealLifeOverhaul.TypingRules.ReadsKeys(director) && !RealLifeOverhaul.TypingRules.Unguarded("Photos/Cinematic/CineDirector.cs", director)
+              && InOrder(Block(director, "private void OnUpdate()"), "Input.GetKeyDown(KeyCode.Escape)", "!TypingNow.Now", "_stopAsked = true;"),
+            "cinematic sources: Esc is tested first and then asked of TypingNow, as every key of the mod's is, before it ends a run");
+        RealLifeOverhaul.Ui.SweepRow[] lines = RealLifeOverhaul.Ui.SweepLedger.Rows.Where(r => r.Files.Contains("Photos/Cinematic/CineGame.cs")).ToArray();
+        Check(game.Contains("AddComponent<Canvas>()") && lines.Length == 1 && lines[0].State == RealLifeOverhaul.Ui.SweepState.NotScreen && lines[0].Screen == null
+              && lines[0].Words.Contains("developer")
+              && !RealLifeOverhaul.Ui.SweepLedger.AllFiles().Any(f => f.StartsWith("Photos/Cinematic/", StringComparison.Ordinal) && f != "Photos/Cinematic/CineGame.cs"),
+            "cinematic sources: the one file that builds interface of its own, for the progress line, stands in the interface's audit table as a developer's tool that is no screen");
         Check(!Regex.IsMatch(all, @"FindObjects?(OfType|ByType)|GameObject\.Find\(|SceneFinds\.") && Occurs(subjects, "Physics.Raycast(") <= 5 && !director.Contains("Physics."),
             "cinematic sources: no search of the whole scene; a subject is found in the game's own lists, the mod's map rows and a few rays");
 
