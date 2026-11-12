@@ -251,6 +251,7 @@ namespace RealLifeOverhaul.Seasons
                 text.textWrappingMode = TextWrappingModes.NoWrap;
                 text.overflowMode = TextOverflowModes.Ellipsis;
                 text.raycastTarget = false;
+                TextRoom.On(text);
                 words.SetActive(true);
                 _words = text;
                 _text = text;

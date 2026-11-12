@@ -384,6 +384,7 @@ namespace RealLifeOverhaul.Meta
             {
                 text.font = _font;
             }
+            GameUi.TextRoom.On(text);
             return text;
         }
 

@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.GameUi
                     rect.sizeDelta = new Vector2(1060f, rect.sizeDelta.y);
                     headline.textWrappingMode = TextWrappingModes.NoWrap;
                     headline.overflowMode = TextOverflowModes.Ellipsis;
+                    TextRoom.On(headline);
                 }
 
                 // The top right buttons stand where MyEmployees has its mass action selector, level with the tabs.
@@ -453,6 +454,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 text.textWrappingMode = TextWrappingModes.NoWrap;
                 text.overflowMode = TextOverflowModes.Ellipsis;
+                TextRoom.On(text);
             }
         }
 

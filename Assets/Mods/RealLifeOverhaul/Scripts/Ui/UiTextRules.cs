@@ -3,14 +3,18 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// How much room a text takes in a style, measured from the bundle's own font metrics (UiFontMetrics): a line's width,
     /// a line's height, and the lines a text wraps to in a width. The kit lays every text out with these, in the game and
-    /// in EconomyCheck alike, so a label the check passes in every language is the label the game draws. A character Sora
-    /// lacks is measured in Manrope of the same weight (as the bundle falls back), a CJK or Hangul one as a square (the
-    /// game's Noto fallbacks), anything else as an average letter. Kerning is left out: it only narrows. Game-free.
+    /// in EconomyCheck alike, so a label the check passes in every language is the label the game draws. A character the
+    /// face lacks is measured as the game's font that draws it advances it (<see cref="UiFallbackRules.AdvanceEm"/>): a
+    /// Greek letter by the Western fallback's table, a Hangul letter by the Korean font's advance, a Chinese character or
+    /// a sign as a square. Kerning is left out: it only narrows. A text's box is given room no line needs for itself
+    /// (<see cref="Room"/>), so a fallback's taller line never has the text engine drop it. Game-free.
     /// Cost: a table lookup a character; nothing allocated.
     /// </summary>
     public static class UiTextRules
     {
         public const string Ellipsis = "…";
+        public const float LineRoom = 1f;      // em: room under a one-line text's box (and over one centred on its box), over any font's line
+        public const float WrapRoom = 0.5f;    // em: room under a wrapped block's box: under a line's height, so a block cut to its lines never gains one
 
         /// <summary>A line's height in a style, px.</summary>
         public static float LineHeight(UiStyle style)
@@ -39,7 +43,6 @@ namespace RealLifeOverhaul.Ui
             }
             UiType t = UiTokens.Type(style);
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
-            UiFace backup = null;   // both families draw every script the bundle lists; CJK and Hangul fall to the game's font
             float em = 0f;
             int count = 0;
             for (int i = start; i < end; i++)
@@ -56,7 +59,7 @@ namespace RealLifeOverhaul.Ui
                     i++;
                     continue;
                 }
-                em += AdvanceEm(Cased(c, t.Case), primary, backup);
+                em += AdvanceEm(Cased(c, t.Case), primary);
                 count++;
             }
             return (em + t.Tracking * count) * t.Size;
@@ -94,7 +97,6 @@ namespace RealLifeOverhaul.Ui
             }
             UiType t = UiTokens.Type(style);
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
-            UiFace backup = null;
             int lines = 0, i = 0, n = text.Length;
             for (int k = 0; EmInHand && k < n; k++)
             {
@@ -135,7 +137,7 @@ namespace RealLifeOverhaul.Ui
                         ended = true;
                         break;
                     }
-                    float w = (AdvanceEm(Cased(c, t.Case), primary, backup) + t.Tracking) * t.Size;
+                    float w = (AdvanceEm(Cased(c, t.Case), primary) + t.Tracking) * t.Size;
                     if (j > i && MayBeginLine(c) && text[j - 1] != ' ' && !Wide(text[j - 1]))
                     {
                         brk = j - 1;   // an ideograph may begin a line after a digit or a Latin letter, a closing or stopping mark may not, as the text engine breaks it
@@ -305,22 +307,25 @@ namespace RealLifeOverhaul.Ui
 
         private static char Cased(char c, UiCase textCase) => textCase == UiCase.Upper ? char.ToUpperInvariant(c) : textCase == UiCase.Lower ? char.ToLowerInvariant(c) : c;
 
-        private static float AdvanceEm(char c, UiFace primary, UiFace backup)
+        private static float AdvanceEm(char c, UiFace primary)
         {
             int a = primary.Advance(c);
-            if (a >= 0)
-            {
-                return a / (float)primary.UnitsPerEm;
-            }
-            if (backup != null)
-            {
-                a = backup.Advance(c);
-                if (a >= 0)
-                {
-                    return a / (float)backup.UnitsPerEm;
-                }
-            }
-            return Wide(c) ? 1f : primary.AverageEm;
+            return a >= 0 ? a / (float)primary.UnitsPerEm : UiFallbackRules.AdvanceEm(c);
+        }
+
+        /// <summary>
+        /// The room a text's box is given beyond its own height, px: none of it is laid out, and no word moves by it. A
+        /// line the text engine finds taller than its box is ended there, and a text that may be cut then draws nothing,
+        /// which a fallback font's line can do to a box one line of the face tall. A one-line text has an em under it,
+        /// and an em over it too when it is centred on its box, so its middle stays. A wrapped block has half an em under
+        /// it, less than a line, so a block cut to its lines never shows one more.
+        /// </summary>
+        public static void Room(UiStyle style, UiFlags flags, out float above, out float below)
+        {
+            float size = UiTokens.Type(style).Size;
+            bool wrap = (flags & UiFlags.Wrap) != 0;
+            below = (wrap ? WrapRoom : LineRoom) * size;
+            above = !wrap && (flags & UiFlags.Middle) != 0 ? LineRoom * size : 0f;
         }
     }
 }

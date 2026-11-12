@@ -76,14 +76,22 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 # The phone's model and screen, and the pages' and folders' rules they stand on: game-free, outside the kit's own folder.
-@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs', 'Scripts\Ui\Host\UiHostRules.cs', 'Scripts\Ui\Host\IUiGameWay.cs', 'Scripts\Driving\CarCatalogue.cs', 'Scripts\Navigation\NavPlaceRules.cs', 'Scripts\Photos\GalleryQuery.cs', 'Scripts\Photos\GalleryRules.cs', 'Scripts\Photos\PhotoStoreRules.cs', 'Scripts\Photos\PhotoStore.cs', 'Scripts\Photos\PhotoSidecarFile.cs', 'Scripts\Photos\PhotoSidecarRules.cs', 'Scripts\Photos\PhotoSeenRules.cs', 'Scripts\Photos\CameraRules.cs', 'Scripts\Core\PhotoThumbs.cs', 'Scripts\DaySeries\DaySeriesBook.cs', 'Scripts\DaySeries\DaySeriesCatalogue.cs', 'Scripts\Economy\Finance\WorthBook.cs') | ForEach-Object {
+# With them the room of a text outside the kit's view (Core\GameUi\TextRoom), which the fonts check holds against the text engine.
+@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Core\GameUi\TextRoom.cs', 'Scripts\Core\GameUi\TextRoomRules.cs', 'Scripts\Ui\Host\UiCost.cs', 'Scripts\Ui\Host\UiHostRules.cs', 'Scripts\Ui\Host\IUiGameWay.cs', 'Scripts\Driving\CarCatalogue.cs', 'Scripts\Navigation\NavPlaceRules.cs', 'Scripts\Photos\GalleryQuery.cs', 'Scripts\Photos\GalleryRules.cs', 'Scripts\Photos\PhotoStoreRules.cs', 'Scripts\Photos\PhotoStore.cs', 'Scripts\Photos\PhotoSidecarFile.cs', 'Scripts\Photos\PhotoSidecarRules.cs', 'Scripts\Photos\PhotoSeenRules.cs', 'Scripts\Photos\CameraRules.cs', 'Scripts\Core\PhotoThumbs.cs', 'Scripts\DaySeries\DaySeriesBook.cs', 'Scripts\DaySeries\DaySeriesCatalogue.cs', 'Scripts\Economy\Finance\WorthBook.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul' $_)) (Join-Path $preview 'Kit')
 }
-# A Windows font with Chinese and Korean, for the shots in those languages: the game falls back to its own Noto fonts.
+# The fonts the game falls back to, for the shots in Chinese and Korean: the game's own where they were extracted beside
+# the project (python -I RealLifeOverhaul.Build\Census\game_fonts.py --extract UiAssets\build\gamefonts; local only, the
+# game's files are never committed), else two of Windows' that hold those scripts.
 New-Item -ItemType Directory -Force (Join-Path $preview 'Fonts') | Out-Null
-@('msyh.ttc', 'malgun.ttf') | ForEach-Object {
-    $font = Join-Path $env:WINDIR (Join-Path 'Fonts' $_)
-    if (Test-Path $font) { Copy-Item $font (Join-Path $preview 'Fonts') }
+$gameFonts = @(Get-ChildItem (Join-Path $repo 'UiAssets\build\gamefonts') -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.otf', '.ttf', '.ttc' })
+if ($gameFonts.Count -gt 0) {
+    $gameFonts | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Fonts') }
+} else {
+    @('msyh.ttc', 'malgun.ttf') | ForEach-Object {
+        $font = Join-Path $env:WINDIR (Join-Path 'Fonts' $_)
+        if (Test-Path $font) { Copy-Item $font (Join-Path $preview 'Fonts') }
+    }
 }
 Get-ChildItem $PSScriptRoot -Filter 'UiSamples*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem $PSScriptRoot -Filter 'UiPreviewRunner*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Editor') }

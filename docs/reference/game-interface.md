@@ -39,6 +39,9 @@ Core/GameUi/
                   entries whose lines wrap) for lists that say more than a station's name
   GuideMark       a mark on a place that is no building, on the game's own destination guider (the job's), taken
                   only while it is free and taken off only by whoever put it there
+  TextRoom        on a text the mod has the text engine cut: room through its margins while its box is under one line
+                  of the game's tallest fallback font, so a Korean or Chinese line is not dropped (TextRoomRules,
+                  game-free; EconomyCheck --fonts lists every such text by file and fails on one without it)
   NoticeKinds     game-free (CatalogueCheck/NoticeCheck): which kind a notification of the mod's is, from its key alone
   NoticeLook      the mod's notifications told from the game's: the kind's picture on a disc of the mod's colour, in the
                   game's own toast and the game's own notification list; the options page's test of one of each kind

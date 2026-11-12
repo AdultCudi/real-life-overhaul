@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Ui
                     BindBox((BoxSlot)slot, ref it, index);
                     break;
                 case UiKind.Text:
-                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
+                    PlaceText(slot.Rect, ref it);
                     BindText(((TextSlot)slot).Text, ref it);
                     ((TextSlot)slot).Style = it.Style;
                     break;
@@ -401,6 +401,19 @@ namespace RealLifeOverhaul.Ui
                 }
             }
         }
+
+        // A text's rect: its box with the room no line needs for itself (UiTextRules.Room). TextMeshPro ends a text that
+        // may be cut before a line taller than its rect, and a fallback font's line can be taller than the face's, which
+        // the box is made for: the text would draw nothing. Room under a text laid from its top, and as much over as
+        // under one centred on its box, moves no word.
+        private void PlaceText(RectTransform r, ref UiItem it)
+        {
+            UiTextRules.Room(it.Style, it.Flags, out float above, out float below);
+            Place(r, it.X, it.Y - above, it.W, it.H + above + below);
+        }
+
+        /// <summary>The engine's text an item of the last write is drawn with, for the checks; null for an item that is no text.</summary>
+        public TMP_Text TextOf(int item) => SlotOf(item) is TextSlot text ? text.Text : null;
 
         private void BindText(TextMeshProUGUI t, ref UiItem it)
         {

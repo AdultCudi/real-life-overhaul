@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Ui
             UiReentry.Said = line => Logger?.Warn(line);   // a call refused for coming back into itself: once a session at each place, with its stack
             UiFonts.Begin(Path.Combine(ModRoot ?? string.Empty, UiFonts.BundlePath));
             LoadHold.Add("ui: the interface's fonts", UiFonts.Step, done => { });
+            LoadHold.Add("ui: the interface's fallback fonts", FontsBehindScreen, done => { });
             if (UiTweens.Instance == null)
             {
                 UiTweens.Instance = gameObject.AddComponent<UiTweens>();
@@ -158,6 +159,7 @@ namespace RealLifeOverhaul.Ui
                 Logger?.Info("UI: the interface's fonts came in after the loading screen (its hold ended first).");
             }
             ShadersLook();
+            FontsLook(UiFallbackRules.TickBatch);
             bool city = SaveGameManager.Current != null && !UI.Load.LoadScene.isLoading;
             if (!city)
             {

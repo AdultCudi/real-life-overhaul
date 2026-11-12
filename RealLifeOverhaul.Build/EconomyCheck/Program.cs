@@ -94,6 +94,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--fonts")
+        {
+            FontFallbacks();   // the fonts that draw what the interface's face lacks: the census of the game's fonts, the rules, every language's characters, the sources (FontFallbackChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--versions")
         {
             Versions();   // the version compare, order and key, and What's new's table alone (VersionChecks.cs)
@@ -1586,6 +1592,7 @@ internal static partial class Program
         Beta();         // the beta channel: the tag a beta build carries in its version, none in a public build (BetaChecks.cs)
         Versions();     // versions across 1.0.0: the compare, the order and key of a version, and every row of What's new's table held to them (VersionChecks.cs)
         UiShaders();    // the pink text on a Mac: the faces given a text shader of the running game's on every system, a face without one left out, the check's line (UiShaderChecks.cs)
+        FontFallbacks(); // the Korean and Chinese text that was not drawn: the game's fallback fonts copied with the face's line and ordered by language, room in every text's box, every character of every language against the census of the game's fonts (FontFallbackChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)

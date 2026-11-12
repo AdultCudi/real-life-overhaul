@@ -388,6 +388,23 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- fonts
 
+        /// <summary>The game's language by its own code for it ("ko", "zh-cn"), which orders the faces' fallbacks; null where the game does not say.</summary>
+        public static string Language()
+        {
+            try
+            {
+                return LanguageNow();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the language the RLO interface's fallback fonts are ordered for", "they stand in the game's own order");
+                return null;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string LanguageNow() => LocalizorManager.LoadedLocale;
+
         /// <summary>The game's own font as the faces' last fallback, once it is known (behind a black screen); true when set.</summary>
         public static bool FallbackFont()
         {

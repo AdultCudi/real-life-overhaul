@@ -261,6 +261,7 @@ namespace RealLifeOverhaul.Meta
             text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Ellipsis;
             text.alignment = TextAlignmentOptions.Left;
+            TextRoom.On(text);
             return true;
         }
 

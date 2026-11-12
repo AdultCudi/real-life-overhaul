@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.Calendar
                 cell.Words.textWrappingMode = TextWrappingModes.Normal;
                 cell.Words.overflowMode = TextOverflowModes.Ellipsis;
                 cell.Words.alignment = TextAlignmentOptions.TopLeft;
+                TextRoom.On(cell.Words);
                 AppShell.Width(words, 100f, true);
             }
             var layout = copy.GetComponent<HorizontalLayoutGroup>();

@@ -239,6 +239,7 @@ namespace RealLifeOverhaul.GameUi
                     infoText.textWrappingMode = TextWrappingModes.Normal;
                     infoText.overflowMode = TextOverflowModes.Ellipsis;
                     infoText.alignment = TextAlignmentOptions.TopLeft;
+                    TextRoom.On(infoText);
                 }
                 info.SetActive(true);
                 list._info = info.transform;
