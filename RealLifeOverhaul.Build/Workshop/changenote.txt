@@ -1,4 +1,4 @@
-1.0.2
+1.0.3
 
-Fixed
-- On the new BizMan page the Start business button only played the error sound and started nothing, for every type of business. It starts the business again.
+New
+- The RLO interface is now switched off by default, and has been switched off once for everyone, while faults in its screens are fixed: the game's own screens are back. Switch it on again under RLO interface in the mod's options if you prefer it.

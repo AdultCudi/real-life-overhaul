@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfação",
   "reallife_ui_gallery_energy": "Energia",
   "reallife_ui_enabled": "Interface RLO",
-  "reallife_opt_tip_ui_interface": "Desenha os Contatos e as telas da reformulação no design do mod: painéis cor de ardósia sobre a cidade, ícones coloridos e uma barra de status embaixo. Desligado: as telas do próprio jogo.",
+  "reallife_opt_tip_ui_interface": "Desenha Contatos e as telas da reformulação no design do próprio mod: painéis de ardósia, ícones coloridos e barra de status. Desligada por padrão, com as telas do jogo: ligue aqui.",
   "reallife_ui_motion": "Movimento da interface",
   "reallife_opt_tip_ui_motion": "Como a interface RLO se move: completo, calmo (mais lento e curto) ou desligado.",
   "reallife_ui_motion_0": "Completo",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "A interface RLO saiu de cena após um erro; a tela do próprio jogo aparece no lugar.",
   "reallife_meta_title_ui": "Interface RLO",
   "reallife_guide_ui_about": "O design do próprio mod, o City Ledger: os Contatos e as telas da reformulação desenhados como as páginas financeiras da cidade, primeiro para teclado e controle.",
-  "reallife_guide_ui": "# O que é\n- A <b>interface RLO</b> desenha os Contatos do jogo e as telas da reformulação no design do próprio mod, o City Ledger: títulos com serifa, rótulos do jornal em maiúsculas, painéis quadrados com fios e um só destaque, o salmão de um jornal de mercado.\n- Faz parte da <b>População viva</b> e tem chave própria. Desligada, todas as telas voltam a ser as do jogo.\n\n# Como usar\n- Setas ou o direcional movem o foco; Enter ou A aciona o que está em foco; Esc ou B volta.\n- As teclas no rodapé são as configuradas agora; uma tecla mostrada num botão o aciona de qualquer lugar.\n- Uma chamada, uma oferta com botões próprios e uma tabela de impostos abrem na tela do próprio jogo, até você fechar o app.\n\n# Opções\n- Escuro ou claro segue a opção de aparência do Flare.\n- Movimento da interface: completo, calmo ou desligado.",
+  "reallife_guide_ui": "# O que é\n- A <b>interface RLO</b> desenha os Contatos do jogo e as telas da reformulação no design do próprio mod, o City Ledger: títulos com serifa, rótulos do jornal em maiúsculas, painéis quadrados com fios e um só destaque, o salmão de um jornal de mercado.\n- Faz parte da <b>População viva</b> e tem chave própria nas opções do mod, em <b>interface RLO</b>. Vem desligada por padrão enquanto as falhas nas telas são corrigidas, então todas as telas são as do jogo até você ligá-la.\n\n# Como usar\n- Setas ou o direcional movem o foco; Enter ou A aciona o que está em foco; Esc ou B volta.\n- As teclas no rodapé são as configuradas agora; uma tecla mostrada num botão o aciona de qualquer lugar.\n- Uma chamada, uma oferta com botões próprios e uma tabela de impostos abrem na tela do próprio jogo, até você fechar o app.\n\n# Opções\n- Escuro ou claro segue a opção de aparência do Flare.\n- Movimento da interface: completo, calmo ou desligado.",
   "reallife_contract_part_contacts_kit": "o app Contatos desenhado na interface RLO",
   "reallife_ui_page_details": "Detalhes",
   "reallife_ui_page_empty": "Nada aqui ainda",
@@ -37740,5 +37740,8 @@
   "reallife_changes_100_1_title": "1.0.1",
   "reallife_changes_100_1": "Corrigido: no Mac, o texto da interface do RLO era desenhado como blocos cor-de-rosa. As fontes eram desenhadas de um jeito feito só para o Windows. Agora são desenhadas do jeito que o jogo desenha o próprio texto, em todos os sistemas.",
   "reallife_changes_100_2_title": "1.0.2",
-  "reallife_changes_100_2": "Corrigido: na nova página do BizMan, o botão Iniciar negócio só tocava o som de erro e não iniciava nada, em todos os tipos de negócio. Agora ele inicia o negócio novamente."
+  "reallife_changes_100_2": "Corrigido: na nova página do BizMan, o botão Iniciar negócio só tocava o som de erro e não iniciava nada, em todos os tipos de negócio. Agora ele inicia o negócio novamente.",
+  "reallife_ui_note_interface_off": "A interface RLO está desligada por enquanto. Algumas telas tinham falhas: pedidos, comer fora e o painel de veículos. As telas do próprio jogo voltaram. Você pode ligá-la de novo em interface RLO nas opções do mod.",
+  "reallife_changes_100_3_title": "1.0.3",
+  "reallife_changes_100_3": "A interface RLO agora vem desligada por padrão e foi desligada uma vez para todos, enquanto as falhas nas telas são corrigidas: as telas do próprio jogo voltaram. Ligue de novo em interface RLO nas opções do mod se preferir."
 }

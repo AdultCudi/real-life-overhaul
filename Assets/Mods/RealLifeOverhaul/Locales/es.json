@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfacción",
   "reallife_ui_gallery_energy": "Energía",
   "reallife_ui_enabled": "Interfaz de RLO",
-  "reallife_opt_tip_ui_interface": "Dibuja Contactos y las pantallas de la reforma con el diseño del mod: paneles de pizarra sobre la ciudad, iconos de color y una barra de estado a lo largo de la parte inferior. Desactivado: las pantallas del juego.",
+  "reallife_opt_tip_ui_interface": "Dibuja Contactos y las pantallas de la reforma con el diseño del mod: paneles pizarra, iconos de color y barra de estado. Desactivada por defecto, con las pantallas del juego: actívala aquí.",
   "reallife_ui_motion": "Movimiento de la interfaz",
   "reallife_opt_tip_ui_motion": "Cómo se mueve la interfaz de RLO: completo, calmado (más lento y más corto) o desactivado.",
   "reallife_ui_motion_0": "Completo",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "La interfaz de RLO se apartó tras un error; en su lugar se muestra la pantalla del juego.",
   "reallife_meta_title_ui": "Interfaz de RLO",
   "reallife_guide_ui_about": "El diseño propio del mod, el City Ledger: Contactos y las pantallas de la reforma dibujadas como las páginas financieras de la ciudad, pensadas primero para teclado y mando.",
-  "reallife_guide_ui": "# Qué es\n- La <b>Interfaz de RLO</b> dibuja los Contactos del juego y las pantallas de la reforma con el diseño propio del mod, el City Ledger: títulos con serif, las etiquetas del periódico en mayúsculas, paneles cuadrados con líneas y un solo color de acento, el salmón de un periódico de mercados.\n- Es parte de <b>Población viva</b> y tiene su propio interruptor. Desactivada, cada pantalla vuelve a ser la del juego.\n\n# Cómo se usa\n- Las flechas o la cruceta mueven el único foco; Intro o A pulsa lo que tiene el foco; Esc o B vuelve atrás.\n- Las teclas al pie de la pantalla son las que están asignadas ahora; una tecla que aparece en un botón lo pulsa desde cualquier sitio.\n- Una llamada, una oferta con sus propios botones y una tabla de impuestos se abren en la vista del juego, hasta que cierres la app.\n\n# Opciones\n- Oscuro o claro sigue la opción de aspecto de Flare.\n- Movimiento de la interfaz: completo, calmado o desactivado.",
+  "reallife_guide_ui": "# Qué es\n- La <b>Interfaz de RLO</b> dibuja los Contactos del juego y las pantallas de la reforma con el diseño propio del mod, el City Ledger: títulos con serif, las etiquetas del periódico en mayúsculas, paneles cuadrados con líneas y un solo color de acento, el salmón de un periódico de mercados.\n- Es parte de <b>Población viva</b> y tiene su propio interruptor, <b>Interfaz de RLO</b> en las opciones del mod. Viene desactivada por defecto mientras se corrigen los fallos de sus pantallas, así que cada pantalla es la del juego hasta que la actives.\n\n# Cómo se usa\n- Las flechas o la cruceta mueven el único foco; Intro o A pulsa lo que tiene el foco; Esc o B vuelve atrás.\n- Las teclas al pie de la pantalla son las que están asignadas ahora; una tecla que aparece en un botón lo pulsa desde cualquier sitio.\n- Una llamada, una oferta con sus propios botones y una tabla de impuestos se abren en la vista del juego, hasta que cierres la app.\n\n# Opciones\n- Oscuro o claro sigue la opción de aspecto de Flare.\n- Movimiento de la interfaz: completo, calmado o desactivado.",
   "reallife_contract_part_contacts_kit": "la app Contactos dibujada en la interfaz de RLO",
   "reallife_ui_page_details": "Detalles",
   "reallife_ui_page_empty": "Todavía no hay nada aquí",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "Sugerir un nombre",
   "reallife_studio_after_named": "Se llamará {name}.",
   "reallife_studio_note_named_1": "{name}, la actualización gratuita de {game}, ya está disponible: llegarán unas {copies} copias más.",
-  "reallife_studio_note_named_2": "{name}, el complemento de {game}, ya está disponible: unos {copies} propietarios lo comprarán."
+  "reallife_studio_note_named_2": "{name}, el complemento de {game}, ya está disponible: unos {copies} propietarios lo comprarán.",
+  "reallife_ui_note_interface_off": "La interfaz de RLO está desactivada por ahora. Algunas de sus pantallas tenían fallos: pedidos, comer fuera y el panel de vehículos. Ya vuelven las pantallas del juego. Puedes volver a activarla en Interfaz de RLO, en las opciones del mod."
 }

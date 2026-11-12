@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Zufriedenheit",
   "reallife_ui_gallery_energy": "Energie",
   "reallife_ui_enabled": "RLO-Oberfläche",
-  "reallife_opt_tip_ui_interface": "Zeichnet Kontakte und die Bildschirme der Überarbeitung im eigenen Design der Mod: schieferfarbene Panels über der Stadt, farbige Symbole und eine Statusleiste unten. Aus: die eigenen Bildschirme des Spiels.",
+  "reallife_opt_tip_ui_interface": "Zeichnet Kontakte und die Bildschirme der Mod im eigenen Design: Schieferfelder, Farbsymbole, Statusleiste. Standardmäßig aus, dann die Bildschirme des Spiels. Hier einschalten.",
   "reallife_ui_motion": "Bewegung der Oberfläche",
   "reallife_opt_tip_ui_motion": "Wie sich die RLO-Oberfläche bewegt: voll, ruhig (langsamer und kürzer) oder aus.",
   "reallife_ui_motion_0": "Voll",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "Die RLO-Oberfläche ist nach einem Fehler beiseitegetreten; stattdessen zeigt sich der eigene Bildschirm des Spiels.",
   "reallife_meta_title_ui": "RLO-Oberfläche",
   "reallife_guide_ui_about": "Das eigene Design der Mod, die City Ledger: Kontakte und die Bildschirme der Überarbeitung, gezeichnet wie die Finanzseiten der Stadt, zuerst für Tastatur und Pad.",
-  "reallife_guide_ui": "# Was es ist\n- Die <b>RLO-Oberfläche</b> zeichnet die Kontakte des Spiels und die Bildschirme der Überarbeitung im eigenen Design der Mod, der City Ledger: Serifenköpfe, die Beschriftungen des Blatts in Großbuchstaben, eckige Linienfelder und eine Akzentfarbe, das Lachsrot einer Börsenzeitung.\n- Sie gehört zu <b>Lebendige Bevölkerung</b> und hat einen eigenen Schalter. Ausgeschaltet ist jeder Bildschirm wieder der des Spiels.\n\n# So benutzt du sie\n- Pfeiltasten oder das Steuerkreuz bewegen den einen Fokus; Enter oder A drückt, was den Fokus hat; Esc oder B geht zurück.\n- Die Tasten am Fuß des Bildschirms sind die, die jetzt belegt sind; eine Taste, die auf einer Schaltfläche steht, drückt sie von überall.\n- Ein Anruf, ein Angebot mit eigenen Schaltflächen und eine Steuertabelle öffnen sich in der Ansicht des Spiels, bis du die App schließt.\n\n# Optionen\n- Dunkel oder hell folgt der Option Aussehen von Flare.\n- Bewegung der Oberfläche: voll, ruhig oder aus.",
+  "reallife_guide_ui": "# Was es ist\n- Die <b>RLO-Oberfläche</b> zeichnet die Kontakte des Spiels und die Bildschirme der Überarbeitung im eigenen Design der Mod, der City Ledger: Serifenköpfe, die Beschriftungen des Blatts in Großbuchstaben, eckige Linienfelder und eine Akzentfarbe, das Lachsrot einer Börsenzeitung.\n- Sie gehört zu <b>Lebendige Bevölkerung</b> und hat einen eigenen Schalter, <b>RLO-Oberfläche</b> in den Optionen der Mod. Sie ist standardmäßig aus, solange Fehler in ihren Bildschirmen behoben werden, sodass jeder Bildschirm der des Spiels ist, bis du sie einschaltest.\n\n# So benutzt du sie\n- Pfeiltasten oder das Steuerkreuz bewegen den einen Fokus; Enter oder A drückt, was den Fokus hat; Esc oder B geht zurück.\n- Die Tasten am Fuß des Bildschirms sind die, die jetzt belegt sind; eine Taste, die auf einer Schaltfläche steht, drückt sie von überall.\n- Ein Anruf, ein Angebot mit eigenen Schaltflächen und eine Steuertabelle öffnen sich in der Ansicht des Spiels, bis du die App schließt.\n\n# Optionen\n- Dunkel oder hell folgt der Option Aussehen von Flare.\n- Bewegung der Oberfläche: voll, ruhig oder aus.",
   "reallife_contract_part_contacts_kit": "die Kontakte-App, auf der RLO-Oberfläche gezeichnet",
   "reallife_ui_page_details": "Details",
   "reallife_ui_page_empty": "Hier noch nichts",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "Namen vorschlagen",
   "reallife_studio_after_named": "Es wird {name} heißen.",
   "reallife_studio_note_named_1": "{name}, das kostenlose Update für {game}, ist draußen: etwa {copies} weitere Exemplare sind unterwegs.",
-  "reallife_studio_note_named_2": "{name}, das Add-on für {game}, ist draußen: etwa {copies} Besitzer werden es kaufen."
+  "reallife_studio_note_named_2": "{name}, das Add-on für {game}, ist draußen: etwa {copies} Besitzer werden es kaufen.",
+  "reallife_ui_note_interface_off": "Die RLO-Oberfläche ist vorerst ausgeschaltet. Einige Bildschirme hatten Fehler: Bestellen, Essen gehen und das Fahrzeugpanel. Die Bildschirme des Spiels sind zurück. Du kannst sie unter RLO-Oberfläche in den Optionen der Mod einschalten."
 }
