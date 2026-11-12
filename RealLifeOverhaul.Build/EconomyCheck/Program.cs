@@ -88,6 +88,12 @@ internal static partial class Program
             Console.WriteLine("OthersHash " + OthersFaces() + "UL");
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--ui-shaders")
+        {
+            UiShaders();   // the shader the interface's text is drawn with on every system, and its check's line (UiShaderChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--versions")
         {
             Versions();   // the version compare, order and key, and What's new's table alone (VersionChecks.cs)
@@ -1579,6 +1585,7 @@ internal static partial class Program
         BugBooks();     // "Report a bug" with the staff and the money: each wage against the game's own with its hours, a day of each rota, yesterday's and today's money by kind and place (BugBooksChecks.cs)
         Beta();         // the beta channel: the tag a beta build carries in its version, none in a public build (BetaChecks.cs)
         Versions();     // versions across 1.0.0: the compare, the order and key of a version, and every row of What's new's table held to them (VersionChecks.cs)
+        UiShaders();    // the pink text on a Mac: the faces given a text shader of the running game's on every system, a face without one left out, the check's line (UiShaderChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)

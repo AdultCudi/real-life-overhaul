@@ -340,6 +340,9 @@ rest is the review.
 - **Frame, boxes and notices**: `UiDraw.AppRow`, `UiAllApps`, `UiShellApps`, `UiCard`, `UiNotices`; the game side in `Shell/`.
 - **Host**: `Host/` (`UiGameHost`, `IUiGameScreen`, `UiConceal`, `UiWidgets`, `UiGameWatch`, `UiBoxes`, `UiHostRules`).
 - **Drawing**: `UiView*`, `UiHost`, `UiTweens`, `UiSprites`, `UiFonts`, `UiSpark`, `UiHit` (hover and wheel), `UiPointer` and `UiPress` (the mouse press, kept by what the target is).
+  `UiShaderRules` says which text shader of the running game the faces are given as the font bundle is read: the one a
+  bundle brings is built for Windows alone, so no face keeps it on any system, and one line of Player.log
+  ("Shaders check (reallife_ui)") says what was found.
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
   directors, and `SessionKit` over the game's own desk panel.
 - **The game**: `UiGame`, `UiText`, `UiDirector`, `UiGuide`, `Contacts/`.

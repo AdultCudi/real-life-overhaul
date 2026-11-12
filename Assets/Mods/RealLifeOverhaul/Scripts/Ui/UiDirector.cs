@@ -157,6 +157,7 @@ namespace RealLifeOverhaul.Ui
                 // never came in, and the HUD and the line below waited on them all session. Their read goes on here instead.
                 Logger?.Info("UI: the interface's fonts came in after the loading screen (its hold ended first).");
             }
+            ShadersLook();
             bool city = SaveGameManager.Current != null && !UI.Load.LoadScene.isLoading;
             if (!city)
             {
@@ -255,6 +256,30 @@ namespace RealLifeOverhaul.Ui
                 _said = 2;
                 Logger?.Info(Said());
                 UiForeignCheck.Run(Logger);   // the self-check: other mods' pieces on the kit's screens, and how each is held
+            }
+        }
+
+        // The check of the shaders the interface's text is drawn with (UiFonts.Mend): its line once the fonts are read, and again
+        // only if what it found changes. Written whatever Developer diagnostics says, since a report of pink or missing text is
+        // answered by this one line of a player's log; a face left without a shader that draws is a warning.
+        private static void ShadersLook()
+        {
+            if (UiFonts.Watch())
+            {
+                Logger?.Warn("UI: the shader the interface's text was drawn with went with what held it; the faces were given a text shader of the game's again.");
+            }
+            if (!UiFonts.ShadersNews)
+            {
+                return;
+            }
+            string line = UiFonts.ShadersLine(GameBuild.Running);
+            if (UiFonts.ShadersPass)
+            {
+                Meta.Dev.Always(Logger, line);
+            }
+            else
+            {
+                Logger?.Warn(line);
             }
         }
 
