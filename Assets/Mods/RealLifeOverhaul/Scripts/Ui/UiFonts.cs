@@ -11,6 +11,9 @@ namespace RealLifeOverhaul.Ui
     /// texture alone. Every face falls back to the game's own font, given by the host, which carries the game's fallbacks
     /// for Chinese, Japanese and Korean (and Greek, which Overpass does not draw).
     /// Without the bundle every style uses the game's font, so a missing file costs the look, never a screen.
+    /// A face's material never keeps the shader the bundle brought, which is built for Windows alone and draws pink blocks
+    /// on a Mac: as the faces are read each is given a text shader of the running game's (<see cref="Mend"/>,
+    /// <see cref="UiShaderRules"/>), on every system alike, and a face whose shader does not draw here is not written with.
     /// Cost: nothing a frame; a look in a six-slot table a text.
     /// </summary>
     public static class UiFonts
@@ -21,7 +24,13 @@ namespace RealLifeOverhaul.Ui
         private static readonly UiFamily[] Families = { UiFamily.Overpass, UiFamily.Overpass, UiFamily.Overpass };
         private static readonly int[] Weights = { 400, 600, 700 };
 
-        private static readonly TMP_FontAsset[] Assets = new TMP_FontAsset[3];
+        private static readonly TMP_FontAsset[] Assets = new TMP_FontAsset[3];   // the faces written with: read, and their shader draws here
+        private static readonly TMP_FontAsset[] Read = new TMP_FontAsset[3];     // the faces as the bundle gave them, written with or not
+        private static readonly Shader[] Built = new Shader[3];                  // the shader each face's material came with, for the check's line
+        private static readonly bool[] BuiltDraws = new bool[3];                 // ...and whether it draws on this graphics device
+        private static Shader _with;          // the game's shader the faces draw with now, held to see it go (Watch)
+        private static string _withSaid;      // ...as the check's line names it
+        private static int _outcome, _outcomeSaid = -1;   // what the check found, as one number, and what its line last said
         private static AssetBundleCreateRequest _opening;
         private static AssetBundleRequest _reading;
         private static AssetBundle _bundle;
@@ -40,7 +49,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The bundle's file as it was looked for, for the interface's line at load.</summary>
         public static string BundleFile { get; private set; }
 
-        /// <summary>How many of the faces came in from the bundle.</summary>
+        /// <summary>How many of the bundle's faces are written with: read, and their shader draws here.</summary>
         public static int Faces { get; private set; }
 
         /// <summary>Of the faces the bundle should hold.</summary>
@@ -118,10 +127,11 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _fallback = gameFont;
-            for (int i = 0; i < Assets.Length; i++)
+            for (int i = 0; i < Read.Length; i++)
             {
-                AddFallback(Assets[i]);
+                AddFallback(Read[i]);
             }
+            Mend();   // its shader is one of the places a text shader is taken from
         }
 
         private static readonly System.Collections.Generic.Dictionary<TMP_FontAsset, Material> Heavier = new System.Collections.Generic.Dictionary<TMP_FontAsset, Material>();
@@ -181,7 +191,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                Assets[at] = f;
+                Read[at] = f;
+                Material came = f.material;
+                Built[at] = came != null ? came.shader : null;
+                BuiltDraws[at] = Draws(came);
                 got++;
                 Texture2D atlas = f.atlasTexture;
                 if (atlas != null && atlas.isReadable)
@@ -190,12 +203,187 @@ namespace RealLifeOverhaul.Ui
                 }
                 AddFallback(f);
             }
-            Faces = got;
-            Own = got == Assets.Length;
-            if (!Own)
+            Mend();
+            if (got < Read.Length)
             {
-                Said?.Invoke("UI: the interface's font bundle holds " + got + " of " + Assets.Length + " faces; the game's font stands in for the rest");
+                Said?.Invoke("UI: the interface's font bundle holds " + got + " of " + Read.Length + " faces; the game's font stands in for the rest");
             }
+        }
+
+        /// <summary>
+        /// Gives every face read a text shader the running game draws with, and writes with a face only while its shader
+        /// draws on this graphics device. The shader a face came with is built for the system the bundle was made on, so it
+        /// is never kept, on any system: Windows goes the same way as a Mac. Run as the faces are read, when the game's font
+        /// is found, and when the shader in use has gone (<see cref="Watch"/>): never a frame.
+        /// </summary>
+        private static void Mend()
+        {
+            Shader game = TextShader(out string from);
+            int drawing = 0;
+            for (int i = 0; i < Read.Length; i++)
+            {
+                TMP_FontAsset f = Read[i];
+                Material m = f != null ? f.material : null;
+                Point(m, game);
+                bool draws = Draws(m);
+                Assets[i] = draws ? f : null;   // a face whose shader does not draw is never written with: the game's font stands in
+                drawing += draws ? 1 : 0;
+            }
+            foreach (System.Collections.Generic.KeyValuePair<TMP_FontAsset, Material> heavy in Heavier)
+            {
+                Point(heavy.Value, game);   // the thickened copies draw with the same shader as their faces
+            }
+            if (!ReferenceEquals(_with, game) || Faces != drawing || _outcome == 0)
+            {
+                _outcome++;   // the check's line is said again: what the text is drawn with has changed
+            }
+            _with = game;
+            _withSaid = game != null ? "the game's '" + game.name + "', " + from : null;
+            Faces = drawing;
+            Own = drawing == Assets.Length;
+        }
+
+        // The material drawn with another shader, everything else of it kept: its properties stay by name, its keywords are
+        // set again and a render queue of its own is put back (one it only had from its old shader is the new shader's to give).
+        private static void Point(Material m, Shader shader)
+        {
+            Shader was = m != null ? m.shader : null;
+            if (m == null || shader == null || ReferenceEquals(was, shader))
+            {
+                return;
+            }
+            int queue = m.renderQueue;
+            bool own = was != null && queue != was.renderQueue;
+            string[] keywords = m.shaderKeywords;
+            m.shader = shader;
+            m.shaderKeywords = keywords;
+            if (own && m.renderQueue != queue)
+            {
+                m.renderQueue = queue;
+            }
+        }
+
+        // True when a text written with this material shows: one of TextMeshPro's interface shaders, and one this graphics
+        // device runs. A shader that went with its scene reads as the engine's error shader, which is neither.
+        private static bool Draws(Material m)
+        {
+            Shader s = m != null ? m.shader : null;
+            return s != null && s.isSupported && UiShaderRules.ForText(s.name);
+        }
+
+        // The text shader of the running game the faces are given, by UiShaderRules.Pick, and where it came from; null for none.
+        private static Shader TextShader(out string from)
+        {
+            var found = new Shader[UiShaderRules.Places];
+            var names = new string[UiShaderRules.Places];
+            var draws = new bool[UiShaderRules.Places];
+            TMP_FontAsset standard = DefaultFont();
+            found[UiShaderRules.FromDefaultFont] = Of(standard);
+            found[UiShaderRules.FromGameFont] = Of(_fallback);
+            found[UiShaderRules.ByName] = Shader.Find(UiShaderRules.Text);
+            found[UiShaderRules.ByNameSmall] = Shader.Find(UiShaderRules.TextSmall);
+            for (int i = 0; i < found.Length; i++)
+            {
+                names[i] = found[i] != null ? found[i].name : null;
+                draws[i] = found[i] != null && found[i].isSupported;
+            }
+            int place = UiShaderRules.Pick(names, draws);
+            from = UiShaderRules.From(place, place == UiShaderRules.FromDefaultFont ? standard.name : place == UiShaderRules.FromGameFont ? _fallback.name : null);
+            return place >= 0 ? found[place] : null;
+        }
+
+        private static Shader Of(TMP_FontAsset font)
+        {
+            return font != null && font.material != null ? font.material.shader : null;
+        }
+
+        // TextMeshPro's default font in the running game, or null where its settings are not there (they always are in the game).
+        private static TMP_FontAsset DefaultFont()
+        {
+            try
+            {
+                return TMP_Settings.defaultFontAsset;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Once a second from the host: true when the shader the faces draw with has gone (the game unloading what held it)
+        /// and they were given another. Cost: two null tests.
+        /// </summary>
+        public static bool Watch()
+        {
+            if (!_done || (object)_with == null || _with != null)
+            {
+                return false;
+            }
+            Mend();
+            return true;
+        }
+
+        /// <summary>True when the shaders' check has something its line has not said: once the fonts are read, and again only if what it found changes.</summary>
+        public static bool ShadersNews => _done && _outcome != _outcomeSaid;
+
+        /// <summary>True when no face is left on a shader that does not draw here.</summary>
+        public static bool ShadersPass => Left(out _) == 0;
+
+        /// <summary>The shaders' check of the font bundle as its one line for Player.log (<see cref="UiShaderRules.Line"/>); saying it ends <see cref="ShadersNews"/>.</summary>
+        public static string ShadersLine(int gameBuild)
+        {
+            _outcomeSaid = _outcome;
+            int materials = 0, shaders = 0, unsupported = 0, repointed = 0;
+            for (int i = 0; i < Read.Length; i++)
+            {
+                if (!Came(i))
+                {
+                    continue;
+                }
+                materials++;
+                bool first = true, replaced = true;   // the faces share one shader: it is counted with the first, and replaced when none of them keeps it
+                for (int j = 0; j < Read.Length; j++)
+                {
+                    if (!Came(j) || !ReferenceEquals(Built[j], Built[i]))
+                    {
+                        continue;
+                    }
+                    first &= j >= i;
+                    replaced &= Draws(Read[j].material) && !ReferenceEquals(Read[j].material.shader, Built[j]);
+                }
+                shaders += first ? 1 : 0;
+                unsupported += first && !BuiltDraws[i] ? 1 : 0;
+                repointed += first && replaced ? 1 : 0;
+            }
+            int left = Left(out string names);
+            string with = materials == 0 ? "the game's own, with the game's font: the bundle's faces were not read" : _withSaid ?? "none of the game's that draws here";
+            return UiShaderRules.Line(UiShaderRules.Bundle, materials, shaders, unsupported, repointed, left, names, with,
+                SystemInfo.graphicsDeviceType.ToString(), SystemInfo.graphicsDeviceName, SystemInfo.operatingSystem, gameBuild);
+        }
+
+        // True for a face the bundle gave with a material.
+        private static bool Came(int i)
+        {
+            return Read[i] != null && Read[i].material != null;
+        }
+
+        // The faces read whose material does not draw here, and their materials' names.
+        private static int Left(out string names)
+        {
+            int left = 0;
+            names = null;
+            for (int i = 0; i < Read.Length; i++)
+            {
+                if (Read[i] == null || Assets[i] != null)
+                {
+                    continue;
+                }
+                left++;
+                Material m = Read[i].material;
+                names = (names != null ? names + ", " : string.Empty) + (m != null ? m.name : Read[i].name + " (no material)");
+            }
+            return left;
         }
 
         private static void AddFallback(TMP_FontAsset f)

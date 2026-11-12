@@ -47,6 +47,8 @@ Ui/                         game-free unless named: the offline checks and the p
   UiView*, UiHost, UiTweens,  the renderer (pooled slots, only what changed), the host (input, focus, sounds,
   UiSprites, UiFonts          typing), the tween pool, shapes and painted faces, the font bundle (game-facing, still
                               game-free)
+  UiShaderRules               which text shader of the running game the faces are given as the bundle is read (the one
+                              it was built with draws on Windows alone: pink blocks on a Mac), and the check's one line
   UiGame, UiText              the one file that meets the game (its input, sounds, money, time and icons), and the
                               words (game files)
   UiDirector(.Tests), UiGuide the fonts behind the loading screen, the switch, Contacts, the tests, the feature's entry
