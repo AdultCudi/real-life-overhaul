@@ -10,6 +10,7 @@ using Streets;
 using TMPro;
 using UI;
 using UI.ItemPanel;
+using UI.Notification;
 using UI.Purchase;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +25,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiCheckoutModel _m = new UiCheckoutModel();
         private readonly List<PurchaseUiItem> _rows = new List<PurchaseUiItem>(10);
         private readonly List<PurchaseUiTax> _taxes = new List<PurchaseUiTax>(2);
+        private readonly List<Transform> _copies = new List<Transform>(12);   // a template's copies, read into the rows and the taxes
+        private int _taken;                                                    // packs taken in all while the register lets the player choose
         private readonly List<UiCheckoutLine> _lines = new List<UiCheckoutLine>(10);
         private readonly UiInfoRow[] _sums = new UiInfoRow[2];
         private float _sumsOf = -1f;            // the order's price the sums were written for
@@ -97,7 +100,9 @@ namespace RealLifeOverhaul.Ui
                 case UiCheckout.MoreCommand:
                     return Step(arg, GameContract.StepMore);
                 case UiCheckout.PackCommand:
-                    return arg >= 0 && arg < _rows.Count && UiWidgets.Press(BuyKits.Get<Button>(GameContract.BuyRowButton, _rows[arg]));
+                    // The row itself takes one more, as the game's row does (PurchaseUiItem.IncreaseAmount), through the plus: the row's own
+                    // button answers a click at the order's most too and adds nothing.
+                    return Step(arg, GameContract.StepMore);
                 case UiCheckout.PageCommand:
                 {
                     int pages = UiCheckout.Pages(_m), page = Mathf.Clamp(_m.Page + arg, 0, pages - 1);
@@ -112,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 case UiCheckout.TaxPayCommand:
                     return Pay(arg);
                 case UiCheckout.OrderCommand:
-                    return Again(UiWidgets.Press(_ui.orderButton));
+                    return Order();
                 case UiCheckout.CancelCommand:
                     return Again(UiWidgets.Press(_ui.cancelButton));
             }
@@ -133,7 +138,7 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action) => action == UiAction.Alt && Again(UiWidgets.Press(_ui.orderButton));
+        public bool Act(UiAction action) => action == UiAction.Alt && Order();
 
         public void Reveal(int list, int index)
         {
@@ -196,6 +201,19 @@ namespace RealLifeOverhaul.Ui
             return Again(UiWidgets.Press(BuyKits.Get<Button>(button, stepper)));
         }
 
+        // The game's Place order. At a counter the game leaves it ready with nothing chosen and then waits in a queue that
+        // never serves (PurchaseUI.SetTotalPrice, PlaceOrder with an empty list): refused here, and said in words.
+        private bool Order()
+        {
+            if (CheckoutRules.NothingChosen(_m.Choose, _taken))
+            {
+                UiRefusals.Because("nothing is chosen yet (the player's own doing: told in a notice)");
+                Notifications.Show(NotificationType.Warning, "reallife_ui_buy_choose_first", null, 8f);
+                return false;
+            }
+            return Again(UiWidgets.Press(_ui.orderButton));
+        }
+
         private bool Pay(int row) => row >= 0 && row < _taxes.Count && Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.TaxPay, _taxes[row])));
 
         private TMP_InputField Field(int row)
@@ -210,26 +228,28 @@ namespace RealLifeOverhaul.Ui
         {
             _rows.Clear();
             _taxes.Clear();
-            Transform container = _ui.itemsContainer;
-            for (int i = 0; container != null && i < container.childCount; i++)
+            // The game makes each row as a copy of its template beside the template (PurchaseUI.CreateItemEntry, CreateTaxEntry),
+            // inside the list's scroll view. The list the game switches on and off (itemsContainer) is that scroll view itself,
+            // not the rows' parent: looked for among its children, no row was ever found (1.0.0 to 1.0.2).
+            BuyKits.Copies(_ui.itemTemplate, _copies);
+            for (int i = 0; i < _copies.Count; i++)
             {
-                Transform c = container.GetChild(i);
-                if (c == _ui.itemTemplate || c == _ui.taxItemTemplate || !c.gameObject.activeSelf)
-                {
-                    continue;
-                }
-                var row = c.GetComponent<PurchaseUiItem>();
+                var row = _copies[i].GetComponent<PurchaseUiItem>();
                 if (row != null)
                 {
                     _rows.Add(row);
-                    continue;
                 }
-                var tax = c.GetComponent<PurchaseUiTax>();
+            }
+            BuyKits.Copies(_ui.taxItemTemplate, _copies);
+            for (int i = 0; i < _copies.Count; i++)
+            {
+                var tax = _copies[i].GetComponent<PurchaseUiTax>();
                 if (tax != null)
                 {
                     _taxes.Add(tax);
                 }
             }
+            Transform container = _ui.itemsContainer;
             var cargo = BuyKits.Get<List<CargoInstance>>(GameContract.BuyCargo, _ui);
             Trim(_rows, cargo != null ? cargo.Count : 1);
             var types = BuyKits.Get<System.Collections.IList>(GameContract.BuyTaxTypes, _ui);
@@ -240,6 +260,7 @@ namespace RealLifeOverhaul.Ui
             bool itemsShown = container != null && container.gameObject.activeSelf;
             _lines.Clear();
             _m.Choose = false;
+            _taken = 0;
             float order = 0f;   // what the order costs as the game totals it: a row's pack price for each pack taken
             for (int i = 0; itemsShown && i < _rows.Count; i++)
             {
@@ -247,6 +268,7 @@ namespace RealLifeOverhaul.Ui
                 AmountSelector stepper = BuyKits.Get<AmountSelector>(GameContract.BuyRowStepper, row);
                 bool picks = stepper != null && stepper.gameObject.activeSelf;
                 _m.Choose |= picks;
+                _taken += picks ? row.Amount : 0;
                 CargoInstance ci = cargo != null && i < cargo.Count ? cargo[i] : null;
                 if (ci != null)
                 {

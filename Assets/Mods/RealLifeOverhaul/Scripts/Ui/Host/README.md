@@ -73,6 +73,27 @@ so not a leaf of them may be given a group of the kit's. Such a panel goes onto 
 kit draws it, remembering what the game writes there and giving it back the moment the kit stops. The item panel
 (`Scripts/Ui/Buy/ItemPanelKit.cs`) is the example.
 
+## Every press reaches the game, or is said
+
+A press that answers false gets the error sound and nothing else. Four rules keep that from hiding a fault:
+
+- **Rows are where the game makes them.** The game copies a row template beside the template (`template.parent`,
+  `BuyKits.Copies`). An object the game switches on and off for a whole list may be a scroll view two levels above its
+  rows (the purchase panel's `itemsContainer`): never look for rows among its children.
+- **Draw and press by one test.** What draws a control ready must be the test its press applies. `UiWidgets.Press`
+  wants the button's object switched on; a button on an outline the game switches on only under the mouse
+  (`UI.HoverEffect`: an order's add button) is read with `UiWidgets.ShowsUnder` and pressed with `PressUnder`.
+- **Every button of the game's has its place.** A row of the game's with several buttons (a cargo slot: the slot, its
+  action, its sell, its discard) gets each of them on the kit, or the way to the game's own view (`Classic`).
+- **A refusal is written and, where it is the player's doing, said.** The piece that sends a press calls
+  `UiRefusals.Begin()` before it and `UiRefusalLog.Say(...)` when it is refused: one line of Player.log with the screen,
+  the control and the reason, with or without Developer diagnostics. `UiWidgets` gives the reason for a game button; a
+  screen that refuses for a rule of its own says `UiRefusals.Because(...)` and shows the player a notice in words.
+
+EconomyCheck (`UiPressChecks.cs`, `--ui-press`) reads every screen's sources: each command its samples lay out as a
+target is named by its `Press`, and no range of numbers is asked before the case of a number inside it. The game's files
+are read by `RealLifeOverhaul.Build/Census/game_ui_census.py` after a game update.
+
 ## Checked offline
 
 EconomyCheck (`UiHostChecks.cs`): no file outside `Scripts/Ui/Host` binds over the game or hides its pieces its own way,

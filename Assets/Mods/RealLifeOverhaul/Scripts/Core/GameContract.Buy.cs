@@ -138,10 +138,10 @@ namespace RealLifeOverhaul
         public static readonly GameMember SlotCount = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "cargoAmount", "TMP_Text");
         public static readonly GameMember SlotPrice = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "priceLabel", "TMP_Text");
         public static readonly GameMember SlotButton = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "itemButton", "Button");
-        public static readonly GameMember SlotAction = Field(UiManageCargo, Game, "UI.PlayerHUD.CargoItemUi", "actionButton", "Button");
-        public static readonly GameMember SlotActionLabel = Field(UiManageCargo, Game, "UI.PlayerHUD.CargoItemUi", "actionButtonLabel", "TextLocalizationComponent");
-        public static readonly GameMember SlotDiscard = Field(UiManageCargo, Game, "UI.PlayerHUD.CargoItemUi", "discardButton", "Button");
-        public static readonly GameMember SlotSell = Field(UiManageCargo, Game, "UI.PlayerHUD.CargoItemUi", "sellButton", "Button");
+        public static readonly GameMember SlotAction = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "actionButton", "Button");
+        public static readonly GameMember SlotActionLabel = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "actionButtonLabel", "TextLocalizationComponent");
+        public static readonly GameMember SlotDiscard = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "discardButton", "Button");
+        public static readonly GameMember SlotSell = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "sellButton", "Button");
 
         // Manage cargo (ManageCargoUi): its panel, its stacks' template, Sell all, its contents line and the holder.
         public static readonly GameMember CargoHud = Field(UiManageCargo, Game, "UI.PlayerHUD.PlayerHUD", "manageCargoUI", "ManageCargoUi");

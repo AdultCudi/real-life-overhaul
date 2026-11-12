@@ -276,6 +276,7 @@ namespace RealLifeOverhaul.Ui
         private string _sellFor;                                         // "Sell for $2,407", made again only when the price changes
         private float _sellPrice = -1f;
         private bool _sellShort;                                         // the price made short, for the driving card
+        private bool _slotButtons;                                       // a slot shows its own sell or discard, which only the game's view has
         private float _frameW, _frameH;                                  // the layout's size, last laid: the minimap's card is read into it
         private readonly List<UiItemAction> _actions = new List<UiItemAction>(10);
         private readonly List<UiReading> _readings = new List<UiReading>(6);
@@ -634,6 +635,7 @@ namespace RealLifeOverhaul.Ui
         {
             _buttons.Clear();
             _actions.Clear();
+            SlotActions();
             ManageCargo();
             Add(_ui.parkButton, null, Key(PlayerAction.SecondaryInteract), false);
             Add(_ui.placeButton, _ui.placeButtonLabel, Key(PlayerAction.SecondaryInteract), false);
@@ -656,7 +658,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Actions = new UiItemAction[_actions.Count];
             }
             _actions.CopyTo(_m.Actions);
-            _m.More = Foreign() ? UiText.T("reallife_ui_buy_more") : null;
+            _m.More = ItemPanelRules.More(Foreign(), _slotButtons) ? UiText.T("reallife_ui_buy_more") : null;
             for (int i = 0; i < _actions.Count; i++)
             {
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
@@ -672,6 +674,29 @@ namespace RealLifeOverhaul.Ui
             }
             _buttons.Add(b);
             _actions.Add(new UiItemAction { Label = BuyKits.Words(label != null ? label : b), Key = key, Danger = danger, Disabled = !b.interactable });
+        }
+
+        // What each stack carried offers through the game's own button on its slot (Eat, Drink, Equip, Read, Place), as an
+        // action of the panel named with the stack, first so that eating what is in the bag is the panel's main. The kit drew
+        // the stacks as tiles that press the slot alone, so food in a bag could not be eaten at all (1.0.0 to 1.0.2). A
+        // slot's own sell and discard have no place on the tile: while one shows, the panel offers the game's own view.
+        private void SlotActions()
+        {
+            _slotButtons = false;
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                var slot = _slots[i].GetComponent<CargoItemUi>();
+                Button act = BuyKits.Get<Button>(GameContract.SlotAction, slot);
+                string label = act != null && act.gameObject.activeSelf
+                    ? ItemPanelRules.SlotAction(BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotActionLabel, slot)), BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotName, slot)))
+                    : null;
+                if (label != null)
+                {
+                    _buttons.Add(act);
+                    _actions.Add(new UiItemAction { Label = label, Disabled = !act.interactable });
+                }
+                _slotButtons |= UiWidgets.There(BuyKits.Get<Button>(GameContract.SlotSell, slot)) || UiWidgets.There(BuyKits.Get<Button>(GameContract.SlotDiscard, slot));
+            }
         }
 
         // Manage cargo, first and the panel's main, while the vehicle holds cargo and the player is on foot with empty hands:

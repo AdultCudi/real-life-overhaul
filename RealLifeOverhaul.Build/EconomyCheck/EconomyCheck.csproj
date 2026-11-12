@@ -1218,6 +1218,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.MenuRow.cs" Link="Mod\UiDraw.MenuRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiVehicleBuy.cs" Link="Mod\UiVehicleBuy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemPanel.cs" Link="Mod\UiItemPanel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiRefusals.cs" Link="Mod\UiRefusals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Buy\CheckoutRules.cs" Link="Mod\CheckoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Buy\ItemPanelRules.cs" Link="Mod\ItemPanelRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCargo.cs" Link="Mod\UiCargo.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWardrobe.cs" Link="Mod\UiWardrobe.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGarageStrip.cs" Link="Mod\UiGarageStrip.cs" />

@@ -37,6 +37,7 @@ internal static partial class Program
         UiSourceChecks();
         UiBindChecks();
         UiHostChecks();
+        UiPressAll();   // every command a screen lays out answered by its Press, no range before a case inside it, a refused press written and said (UiPressChecks.cs)
         UiPictureRingChecks();   // the pictures asked of their parts in turn, a layout and an opening refused inside their own (UiChecks.PictureRing.cs)
         UiClickChecks();
         UiClickBehindAllChecks();

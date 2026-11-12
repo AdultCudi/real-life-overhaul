@@ -735,10 +735,15 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             ref UiNode n = ref _dockScene.Nodes[node];
+            UiRefusals.Begin();
             bool done = !n.Disabled && Press(n.Command, n.Arg);
             if (done)
             {
                 _dockView.Press(Time.unscaledTime);
+            }
+            else
+            {
+                UiRefusalLog.Say("the building's card", _dockScene, node, n.Disabled);
             }
             UiGame.Instance.Play(done ? UiCue.Confirm : UiCue.Error);
         }

@@ -403,9 +403,11 @@ namespace RealLifeOverhaul.Ui
             }
             ref UiNode n = ref _scene.Nodes[node];
             Button b = n.Arg >= 0 && n.Arg < _pressed.Length ? _pressed[n.Arg] : null;
-            if (n.Disabled || b == null || !UiWidgets.Press(b))
+            UiRefusals.Begin();
+            if (n.Disabled || !UiWidgets.Press(b))
             {
                 UiGame.Instance.Play(UiCue.Error);
+                UiRefusalLog.Say("the world prompt", _scene, node, n.Disabled);
                 return;
             }
             _view.Press(Time.unscaledTime);

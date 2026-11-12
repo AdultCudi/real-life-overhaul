@@ -15,7 +15,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] CheckoutStates = { "goods", "goods_page2", "taxes", "queue", "ticket", "empty", "goods_fr" };
     public static readonly string[] VehicleBuyStates = { "car", "car_delivery", "boat", "car_fr" };
-    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap", "vehicle_driving", "vehicle_driving_fr" };
+    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap", "vehicle_driving", "vehicle_driving_fr", "paper_bag_eat" };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
@@ -292,6 +292,7 @@ internal static partial class UiSamples
                 break;
             case "paper_bag":
             case "paper_bag_minimap":
+            case "paper_bag_eat":
                 // The owner's case (3 Nov): a paper bag of ten slots holding one croissant, on the game's Backspace for Sell; with
                 // the minimap's card at the bottom left the panel stands beside it.
                 m.Title = t("reallife_ui_buy_in_hands", "In your hands");
@@ -307,6 +308,24 @@ internal static partial class UiSamples
                     new UiItemAction { Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$12"), Key = new UiGameKey { Name = "BACKSPACE" }, Danger = true },
                     new UiItemAction { Label = t("itempanelui_buttons_discard", "Discard"), Danger = true }
                 };
+                if (state == "paper_bag_eat")
+                {
+                    // Food bought at a counter: each stack's own action first, as the game's slot offers it, and the way to
+                    // the game's own view for a stack's sell (the report of 13 Nov: food in a bag could not be eaten).
+                    m.CargoValue = t("reallife_ui_buy_slots", "{used} of {most}").Replace("{used}", "2").Replace("{most}", "10");
+                    m.Cargo = new[]
+                    {
+                        new UiCatalogueCard { Picture = "buy:croissant", Aspect = 2.6f, Figure = "x1" },
+                        new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "x2" }
+                    };
+                    m.Actions = new[]
+                    {
+                        new UiItemAction { Label = ItemPanelRules.SlotAction(t("action_consumefood", "Eat"), "Croissant"), Main = true },
+                        new UiItemAction { Label = ItemPanelRules.SlotAction(t("action_consumedrink", "Drink"), "Coffee") },
+                        m.Actions[0], m.Actions[1]
+                    };
+                    m.More = t("reallife_ui_buy_more", "More in the game's panel");
+                }
                 if (state == "paper_bag_minimap")
                 {
                     m.AvoidX = MinimapX;

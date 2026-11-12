@@ -136,6 +136,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-press")
+        {
+            UiPressAll();   // every command a kit screen lays out is answered by its Press, no range takes another's number, a refused press is written and said (UiPressChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 3 && args[0] == "--construction-debug")
         {
             ConstructionDebug(args[1], float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture), args.Length > 3 ? args[3] : "en");
