@@ -182,7 +182,9 @@ namespace RealLifeOverhaul.Permadeath
         // The obituary on the City Ledger's page, or as a message if that cannot be had, until it is put down.
         private IEnumerator Print(LifeStory story, bool test)
         {
-            if (Ui.UiScreenSwitches.On(Ui.EndingScreen.ScreenId) && Ui.UiDirector.Instance != null)
+            // The kit's page only while the kit draws (UiDirector.Ready's own two tests): with the RLO interface off its page refuses,
+            // and the obituary waited 30 seconds for it and was never shown.
+            if (Ui.UiDirector.On && Ui.UiFonts.Ready && Ui.UiScreenSwitches.On(Ui.EndingScreen.ScreenId) && Ui.UiDirector.Instance != null)
             {
                 Ui.NewsLive.EndingStory = story;
                 Ui.NewsLive.EndingOpen = true;
