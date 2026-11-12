@@ -19,7 +19,7 @@ What Real Life Overhaul 0.1.0 contains, and where each part came from. The in-ga
 | `Bundles/reallife_anim` | 77 animations | written as scripts in `CityAssets/scripts`, exported with Blender; see `CityAssets/CREDITS.md` |
 | `Sounds/*.ogg` | 33 recorded car sounds: four engines (a small petrol, a V8, a sports engine, a diesel) at steady revs on and off the throttle, exhaust pops, a turbo's whistle and flutter, a tyre squeal | real recordings from Freesound.org, cut, looped and levelled for this mod; every file, its source, author, licence and what was changed are in `Sounds/SOURCES.md`, which ships beside them |
 | `Sounds/SOURCES.md` | where each sound came from | written for this mod |
-| `thumbnail.jpg` | the Workshop picture | the author's own screenshot of the game with the mod running, cropped, with the title added (`make_thumbnail.ps1`) |
+| `thumbnail.jpg` | the Workshop picture | the author's own screenshot of the game with the mod running, cropped, with the title added (`make_thumbnail.py`) |
 
 ## What of the game is used, and what is not
 
