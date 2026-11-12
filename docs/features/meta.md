@@ -41,6 +41,8 @@ Meta/
                   the presets against the choices, the search
   Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
   Changelog       what changed per version, for the Guide's What's new page
+  VersionRules    a version's numbers, game-free: how two compare (a save's check, the welcome), and the order and What's new key the
+                  table gives a version, the same below and above 1.0.0
   SaveTools       prepare a save for removing the mod (.Steps: the backup and the purge), reset and repair (.Reset), the check after each load (.Load)
   MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
 ```
@@ -128,7 +130,14 @@ Today:
 | option | Relaxed | Standard | Realistic | Hardcore |
 |---|---|---|---|---|
 | `crime_against_player` | off | on | on | on |
-| `player_offences` | off | on | on | on |
+| `offence_red_light` | off | on | on | on |
+| `offence_speeding` | off | on | on | on |
+| `offence_pavement` | off | on | on | on |
+| `offence_wrong_way` | off | on | on | on |
+| `offence_drink` | off | on | on | on |
+| `offence_jaywalk` | off | on | on | on |
+| `offence_cross_red` | off | on | on | on |
+| `offence_horn` | off | on | on | on |
 | `crime_frequency` | 1 | 2 | 3 | 5 |
 | `job_pay` | 125 | 100 | 100 | 80 |
 | `economy_estate_rent` | 150 | 100 | 100 | 80 |
@@ -142,7 +151,7 @@ Today:
 | `police_pursuit` | off | on | on | on |
 
 A preset writes the PlayerPrefs keys the options page writes, calls `Settings.Reload()` (which is `Load` and then the `Settings.Changed` event) and has the page drawn again.
-The settings as they were go to `<persistentDataPath>/RealLifeOverhaul/settings_before_preset.txt` first; "Export" writes `settings.txt` there and "Import" reads it (`id=value` lines, key bindings included).
+The settings as they were go to `<persistentDataPath>/RealLifeOverhaul/settings_before_preset.txt` first; "Export" writes `settings.txt` there and "Import" reads it (`id=value` lines, key bindings included). A file an older version wrote has one `player_offences` line for the traffic offences, which Import reads as that value for each of the eight `offence_*` options (see [Crime](crime.md)).
 
 ## Save tools: what is removed, and how that was checked against the game
 

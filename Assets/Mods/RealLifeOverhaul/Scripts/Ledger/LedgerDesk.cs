@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Ledger
 {
@@ -30,7 +31,7 @@ namespace RealLifeOverhaul.Ledger
                     SecondOptionTextOverride = "reallife_ledger_desk_stop",
                     OnSecondOption = Stop,
                     OnCancel = HangUp
-                };
+                }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", price);
             }
             if (s.Subscribed)
             {
@@ -41,7 +42,7 @@ namespace RealLifeOverhaul.Ledger
                     OnConfirm = Resume,
                     CancelTextOverride = "reallife_ledger_desk_no_thanks",
                     OnCancel = HangUp
-                };
+                }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", price);
             }
             string home = d.HomeName;
             if (home == null)
@@ -56,7 +57,7 @@ namespace RealLifeOverhaul.Ledger
                 OnConfirm = Subscribe,
                 CancelTextOverride = "reallife_ledger_desk_no_thanks",
                 OnCancel = HangUp
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week_first", "amount", price);
         }
 
         private static DialogEntry Subscribe()

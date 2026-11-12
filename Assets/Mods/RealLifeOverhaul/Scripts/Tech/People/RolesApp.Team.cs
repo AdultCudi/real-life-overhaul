@@ -13,7 +13,20 @@ namespace RealLifeOverhaul.Tech
 
         private readonly int[] _roles = new int[TalentCatalogue.RoleCount];
         private readonly List<int> _certs = new List<int>(TalentCatalogue.CertCount);
+        private readonly Dictionary<BuildingRegistration, SeatRead> _seatRead = new Dictionary<BuildingRegistration, SeatRead>(32);   // each business's shifts and desks, kept between pages
+        private int _seatPage;
         private int _exam;
+
+        // What a page of the Team tab reads of one business to say whether its people have a desk and a shift: who holds a shift at a placed desk (one pass over its
+        // week) and, only when somebody has none, its placed workstations by the skills they list (one pass over its items). Asked for each of thousands of rows,
+        // and read again for each page: the sets are kept and filled again, so a page makes nothing but its rows.
+        private sealed class SeatRead
+        {
+            public readonly HashSet<string> Holders = new HashSet<string>();
+            public readonly SeatGame.Desks Desks = new SeatGame.Desks();
+            public int Page = -1;
+            public bool DesksRead;
+        }
 
         private TableSpec WriteTeam(InfoBox box, int day)
         {
@@ -21,6 +34,7 @@ namespace RealLifeOverhaul.Tech
             int year = GameCalendar.DaysPerYear;
             TableFilter businesses = RolesColumns.Team.Filters[0];
             businesses.Names.Clear();
+            _seatPage++;   // the shifts and desks of a business are read again, the first time a row of it asks, for each page
             Person picked = null;
             string id = Picked(_picked, TeamRow);
             int waiting = 0, leaving = 0, morale = 0;
@@ -125,13 +139,33 @@ namespace RealLifeOverhaul.Tech
         // Whether a professional of the game's has a desk to sit at and a shift at one: read from the business's items and schedule when a page is written.
         private enum Seat { Fine, NoDesk, NoShift }
 
-        private static Seat SeatOf(Person person)
+        private Seat SeatOf(Person person)
         {
-            if (person.Game == null || person.At == null || !TalentGame.Shifts(person.At) || TalentGame.StationShift(person.Game, person.At))
+            if (person.Game == null || person.At == null || !TalentGame.Shifts(person.At))
             {
                 return Seat.Fine;
             }
-            return SeatGame.DesksFor(person.Game, person.At) > 0 ? Seat.NoShift : Seat.NoDesk;
+            if (!_seatRead.TryGetValue(person.At, out SeatRead read))
+            {
+                read = new SeatRead();
+                _seatRead[person.At] = read;
+            }
+            if (read.Page != _seatPage)
+            {
+                read.Page = _seatPage;
+                read.DesksRead = false;
+                TalentGame.StationHolders(person.At, read.Holders);
+            }
+            if (read.Holders.Contains(person.Game.id))
+            {
+                return Seat.Fine;
+            }
+            if (!read.DesksRead)
+            {
+                read.Desks.Read(person.At);
+                read.DesksRead = true;
+            }
+            return read.Desks.For(person.Game) > 0 ? Seat.NoShift : Seat.NoDesk;
         }
 
         private void WriteFile(InfoBox box, Person person, int day, int year)

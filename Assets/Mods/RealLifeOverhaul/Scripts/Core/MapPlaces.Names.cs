@@ -84,7 +84,10 @@ namespace RealLifeOverhaul
                     return;
                 }
                 GuidersManager.SetGuiderTarget(place.Position + Vector3.up * MarkerHeight, place.Name ?? string.Empty, place.Owner.Icon, place.Owner.Colour, DirectionGuiderType.Destination);
-                city.cityMap.Toggle();
+                using (HotSpots.Game())
+                {
+                    city.cityMap.Toggle();   // the game's own shutting of its map, as M does it: the game's work, not the click's
+                }
             }
             catch (Exception e)
             {

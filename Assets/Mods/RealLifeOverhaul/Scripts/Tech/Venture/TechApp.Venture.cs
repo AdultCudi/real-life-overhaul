@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Tech
                     TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                     "claim", TechText.Bp(s.ClaimBp), "runway", VentureRules.Runway(s.Cash, s.Burn, s.Mrr) == int.MaxValue ? "-" : VentureRules.Runway(s.Cash, s.Burn, s.Mrr).ToString())
                 : TechText.T("reallife_vc_startup_no_diligence", "fee", TechText.Cents(_director.Level(VentureCatalogue.DiligenceFee))));
+            WriteStartupTerms(box, s);
             bool followOn = put > 0 && VentureRules.FollowOnOpen(s, day);   // once a round: gone when taken
             if (followOn)
             {
@@ -184,6 +185,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     WriteRaise(box, picked, day);
                 }
+                else if (_page == PageBooks)
+                {
+                    WriteBooks(box, picked, day);
+                }
                 else
                 {
                     WriteCap(box, picked, day);
@@ -219,8 +224,7 @@ namespace RealLifeOverhaul.Tech
                     {
                         words.Append(", ");
                     }
-                    words.Append(h.Kind == (int)HolderKind.Player ? TechText.T("reallife_vc_holder_you") : h.Kind == (int)HolderKind.Pool ? TechText.T("reallife_vc_holder_pool")
-                        : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
+                    words.Append(FoundText.HolderName(h, _director.Foundings, place)).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
                 }
                 box.Row("reallife_vc_cap_holders", words.ToString());
                 box.Line(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(),
@@ -230,6 +234,11 @@ namespace RealLifeOverhaul.Tech
             else
             {
                 box.Line(TechText.T("reallife_vc_cap_all_yours"));
+            }
+            if (c != null)
+            {
+                WriteAccount(box, firm, c, day);
+                WriteHeld(box, c);
             }
             // the chief executive: the player, or one of the firm's professionals
             _chiefs.Clear();
@@ -259,11 +268,18 @@ namespace RealLifeOverhaul.Tech
                 Refresh();
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_options", () => Do(() => _director.GrantOptions(place)));
+            if (c != null && StartupMoney.Has(c))
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_books", () =>
+                {
+                    _page = PageBooks;
+                    Refresh();
+                });
+            }
             Transform more = box.ButtonRow();
             if (c != null && c.VcSeats > 0)
             {
-                InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_sell", () => GameConfirm.Show("reallife_vc_confirm_sell_title", "reallife_vc_confirm_sell_body",
-                    () => UiClone.Safe(() => Do(() => _director.SellShares(place))), null, null, null, true, true));
+                InfoBox.Button(more, InfoBox.Additional, "reallife_exit_button_sell", () => Do(() => _director.OpenExits(place)));
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_listing", () => Do(() => _director.PrepareListing(place)));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
@@ -308,6 +324,7 @@ namespace RealLifeOverhaul.Tech
                     "amount", TechText.Cents(_director.Level(t.Amount)),
                     "pre", TechText.Cents(_director.Level(t.Pre)), "share", TechText.Mille(t.EquityMille),
                         "board", TechText.T(t.Board ? "reallife_vc_sheet_board" : "reallife_vc_sheet_no_board"), "day", t.Lapse.ToString()));
+                WriteOffer(box, firm, c, t);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => GameConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
                     () => UiClone.Safe(() => Do(() => _director.TakeSheet(place, index))), null, null, null, true, false));
             }

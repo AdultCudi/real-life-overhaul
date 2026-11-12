@@ -107,23 +107,33 @@ namespace RealLifeOverhaul.Economy
 
         public void BookCampaign(string place, int kind)
         {
+            Book(place, kind, false);
+        }
+
+        // A campaign booked at a business: by the player (quiet false: a refusal is told) or by a manager (quiet: they book only what the cash covers).
+        private bool Book(string place, int kind, bool quiet)
+        {
             CompanyShop shop = On(CompanyPart.Marketing) ? ShopAt(place) : null;
             int share, reach;
             if (shop != null && kind >= 0 && kind < CompanyCatalogue.CampaignKinds && !CampaignRules.CanBook(shop.File))
             {
                 Logger?.Info("Company: " + (CampaignKind)kind + " not booked for " + shop.Name + ": " + BusyLine(shop) + ". One campaign at a time at a business.");
-                return;
+                return false;
             }
             if (shop == null || kind < 0 || kind >= CompanyCatalogue.CampaignKinds || !Offered(shop, kind, out share, out reach) || !Promoted(shop))
             {
-                return;
+                return false;
             }
             int cost, percent, suit, repeat;
             CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
+            if (quiet && CompanyGame.Cash < cost)
+            {
+                return false;
+            }
             if (!Cost(cost, CompanyGame.CampaignKey, shop, shop.Name, CostKind.Marketing, null, (CampaignKind)kind + " at today's prices (" + _index + ")"))
             {
                 Notifications.ShowInsufficientMoney();
-                return;
+                return false;
             }
             CampaignRules.Book(shop.File, kind, cost, percent, Save.Day);
             Logger?.Info("Company: " + (CampaignKind)kind + " booked for " + shop.Name + ": cost " + cost + ", +" + percent + "% of customers (its own "
@@ -146,6 +156,52 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             Changed();
+            return true;
+        }
+
+        // A manager with marketing, at their hour: a business with no campaign gets the best of the company's own kinds (the cost and the customers
+        // each adds are the player's own quote) that fits what is left of the month's limit and adds enough to be worth it. The money is the company's, as
+        // when the player books it, and counts against the limit; a mistake books the cheapest that fits.
+        private void DecideMarketing(ManagedPlace mp, int skill, int review, string who, int day, int hour)
+        {
+            if (!On(CompanyPart.Marketing) || mp.Shop == null || !CampaignRules.CanBook(mp.Shop.File) || !Promoted(mp.Shop))
+            {
+                return;
+            }
+            ManagerFile m = mp.Own;
+            int left = ManagerRules.Left(CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.MarketingSteps, m.MarketingStep), _index), m.MarketingSpent);
+            if (left <= 0)
+            {
+                return;
+            }
+            var cost = new int[CompanyCatalogue.CampaignOwnKinds];
+            var effect = new int[CompanyCatalogue.CampaignOwnKinds];
+            for (int k = 0; k < CompanyCatalogue.CampaignOwnKinds; k++)
+            {
+                int suit, repeat;
+                CampaignQuote(mp.Shop, k, out cost[k], out effect[k], out suit, out repeat);
+                if (k == (int)CampaignKind.DiscountDay)
+                {
+                    cost[k] = 0;   // a discount day costs takings, not a sum to book: it is the owner's to choose
+                }
+            }
+            int roll;
+            bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Marketing, string.Empty, out roll);
+            int fair = ManagerRules.Campaign(cost, effect, cost.Length, left, ManagerCatalogue.CampaignLeast, false);
+            int pick = ManagerRules.Campaign(cost, effect, cost.Length, left, ManagerCatalogue.CampaignLeast, slip);
+            if (pick < 0 || !Book(mp.Place.Place, pick, true))
+            {
+                return;
+            }
+            m.MarketingSpent += cost[pick];
+            Decision d = Record(mp, ManagerTask.Marketing, string.Empty, who, day, hour, pick != fair);
+            d.A = pick;
+            d.B = cost[pick];
+            d.C = effect[pick];
+            d.D = CompanyCatalogue.CampaignDays[pick];
+            d.State = DecisionState.Closed;   // booked and paid: the campaign's own report says how it did
+            Logger?.Info("Company: " + who + " (manager, skill " + skill + ") booked " + (CampaignKind)pick + " at " + mp.Place.Name + " for " + cost[pick] + ", +" + effect[pick]
+                         + "% of customers, " + left + " left of the month's marketing limit" + (pick != fair ? ", a mistake: the cheapest that fitted" : string.Empty) + ".");
         }
 
         // For the log: what is booked at a business, how, and its days.

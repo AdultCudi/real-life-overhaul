@@ -135,14 +135,16 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The player's own businesses now, by the key the statements' addresses are compared under.
+            // The player's own businesses now, by the key the statements' addresses are compared under. A firm that listed on its own is a stock of its own and
+            // is not in the whole company's books: the same takings never feed two stocks.
             private static void Mine()
             {
                 Books.Businesses(Businesses);
+                ExitStockLinks.Remember();
                 Keys.Clear();
                 for (int i = 0; i < Businesses.Count; i++)
                 {
-                    if (Businesses[i] != null && Businesses[i].Address != null)
+                    if (Businesses[i] != null && Businesses[i].Address != null && !ExitStockLinks.IsListed(Businesses[i]))
                     {
                         Keys.Add(Books.Key(Businesses[i].Address));
                     }
@@ -298,7 +300,8 @@ namespace RealLifeOverhaul
                     }
                     ListingFile f = s.Listing;
                     bool book = f.Stage == ListingStage.Building || f.Stage == ListingStage.Priced;
-                    if (!book && market.MyCompany == null)
+                    bool company = book || market.MyCompany != null, firms = ExitStockLinks.Any(market);   // the whole company, or a firm that listed on its own
+                    if (!company && !firms)
                     {
                         return;
                     }
@@ -309,12 +312,19 @@ namespace RealLifeOverhaul
                         f.SetAsideDay = 0;
                     }
                     from = Math.Max(from, day - 400);
-                    OwnBooks b = Statements(from, day);
                     e.OwnFrom = from;
-                    e.OwnDays = Math.Max(0, day - from);
-                    e.OwnRev = b.Revenue;
-                    e.OwnProfit = b.Profit;
-                    e.OwnDebt = Facts().Debt;
+                    if (company)
+                    {
+                        OwnBooks b = Statements(from, day);
+                        e.OwnDays = Math.Max(0, day - from);
+                        e.OwnRev = b.Revenue;
+                        e.OwnProfit = b.Profit;
+                        e.OwnDebt = Facts().Debt;
+                    }
+                    if (firms)
+                    {
+                        ExitStockLinks.Env(ref e, from, day);
+                    }
                     FameFile fame = FameDirector.Instance != null ? FameDirector.Instance.File : null;
                     if (fame != null)
                     {
@@ -347,9 +357,10 @@ namespace RealLifeOverhaul
                 {
                     into.Clear();
                     Books.Businesses(Businesses);
+                    ExitStockLinks.Remember();
                     for (int i = 0; i < Businesses.Count; i++)
                     {
-                        if (Businesses[i] != null)
+                        if (Businesses[i] != null && !ExitStockLinks.IsListed(Businesses[i]))   // a firm that listed on its own is not the company's to hand over
                         {
                             into.Add(ServicesGame.Place(Businesses[i]));
                         }
@@ -421,12 +432,13 @@ namespace RealLifeOverhaul
                         return;
                     }
                     Books.Businesses(Businesses);
+                    ExitStockLinks.Remember();
                     Keys.Clear();
                     KeyTrades.Clear();
                     for (int i = 0; i < Businesses.Count; i++)
                     {
                         BuildingRegistration r = Businesses[i];
-                        int trade = r != null && r.Address != null ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                        int trade = r != null && r.Address != null && !ExitStockLinks.IsListed(r) ? MarketInputs.TradeOf(r.businessTypeName) : -1;
                         if (trade >= 0 && trade < into.Length)
                         {
                             Keys.Add(Books.Key(r.Address));

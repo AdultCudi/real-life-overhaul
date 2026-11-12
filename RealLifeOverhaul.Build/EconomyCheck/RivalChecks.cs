@@ -230,6 +230,15 @@ internal static partial class Program
                                      && (m.Amount <= worth / 10000L * RivalCatalogue.SuitShareMost || m.Amount == RivalCatalogue.SuitLeast);
                                 break;
                             case RivalMoveKind.Press: ok = m.Amount == RivalCatalogue.PressCustomers; break;
+                            case RivalMoveKind.PriceRise: ok = m.Amount == RivalCatalogue.PriceRiseCustomers; break;
+                            case RivalMoveKind.Borrowed:
+                                ok = m.Amount >= RivalCatalogue.BorrowedLeast
+                                     && m.Amount == Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.BorrowedBase * RivalRules.Power(Math.Max(1, tier), strength) / 1000);
+                                break;
+                            case RivalMoveKind.Shares:
+                                ok = m.Amount >= RivalCatalogue.BorrowedLeast
+                                     && m.Amount == Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.SharesBase * RivalRules.Power(Math.Max(1, tier), strength) / 1000);
+                                break;
                             default: ok = m.Amount == 0; break;
                         }
                         if (!ok)

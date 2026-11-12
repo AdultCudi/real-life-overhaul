@@ -137,6 +137,42 @@ internal static partial class Program
         Check(staff.Contains("\"reallife_wage_row_game\"") && staff.Contains("\"reallife_wage_row_city\"") && staff.Contains("\"reallife_wage_row_paid\"")
               && staff.Contains("CompanyText.Wage(f.Paid)"),
             "one wage: the Staff page names the game's wage, the city's prices and the raise when they differ, and the paid wage");
+        // The panel of an employee clicked at their station (Ui/Overlays) names the wage paid and a week's pay at it; no card of the overlays reads the game's raw wage.
+        string person = Read(System.IO.Path.Combine("Ui", "Overlays", "OverlayCardsLive.Person.cs"));
+        Check(person.Contains("float paid = WageShown.PaidMoney(who);") && person.Contains("UiText.Money(paid)) },") && person.Contains("OverlayRules.Earned(who.workedHoursThisWeek, paid)")
+              && person.Contains("k = k * 31 + WageShown.PaidCents(who);"),
+            "one wage: the panel of an employee clicked at their station names the wage paid an hour and a week's pay at it, and refreshes when the wage paid changes");
+        Check(Read(System.IO.Path.Combine("Ui", "Employees", "EmployeesScreen.View.cs")).Contains("private static float PaidMoney(EmployeeInstance e) => WageShown.PaidMoney(e);")
+              && Read(System.IO.Path.Combine("Ui", "Contacts", "ContactsScreen.Read.cs")).Contains("float paid = WageShown.PaidMoney(employee);"),
+            "one wage: the employees list, the contact card and the panel at the station all name the one figure, WageShown.PaidMoney");
+        // No screen of the mod reads an employee's game wage without asking for what is paid on the same line, but the wage a negotiation's offer, its ask or its terms name.
+        string raw = string.Empty;
+        foreach (string file in System.IO.Directory.GetFiles(System.IO.Path.Combine(root, "Ui"), "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            string[] lines = System.IO.File.ReadAllLines(file);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                bool reads = System.Text.RegularExpressions.Regex.IsMatch(lines[i], @"\.hourlyWage\b");
+                bool asks = lines[i].Contains("PaidWage.") || lines[i].Contains("WageShown.") || System.Text.RegularExpressions.Regex.IsMatch(lines[i], @"\b(offer|ask|n)\.hourlyWage\b");
+                raw += reads && !asks ? System.IO.Path.GetFileName(file) + ":" + (i + 1) + " " : string.Empty;
+            }
+        }
+        Check(raw.Length == 0, "one wage: no screen of the mod reads an employee's game wage as it is, apart from a negotiation's offer, ask and terms (" + (raw.Length == 0 ? "none do" : raw.Trim()) + ")");
+        Func<int> held = Prices.Factor;
+        Func<string, int> raised = PaidWage.Raise;
+        try
+        {
+            Prices.Factor = () => 1250;
+            PaidWage.Raise = id => id == "e1" ? 150 : 0;
+            float panel = PaidWage.Shown(20f, "e1", true) / 100f, foreign = PaidWage.Shown(20f, "e1", false) / 100f;
+            Check(panel == 26.5f && Math.Abs(RealLifeOverhaul.Ui.OverlayRules.Earned(12, panel) - 318f) < 0.01f && foreign == 20f && Math.Abs(RealLifeOverhaul.Ui.OverlayRules.Earned(12, foreign) - 240f) < 0.01f,
+                "one wage: the panel's case, 20.00 at prices of 125% with a raise of 1.50, reads 26.50 an hour and 318.00 for 12 hours (the game's own 20.00 and 240.00 only for another player's employee)");
+        }
+        finally
+        {
+            Prices.Factor = held;
+            PaidWage.Raise = raised;
+        }
         string links = Read(System.IO.Path.Combine("Wiring", "CompanyLinks.cs"));
         Check(links.Contains("PaidWage.Raise = RaiseOf;") && links.Contains("PaidWage.Raise = null;")
               && Read(System.IO.Path.Combine("Core", "RealLifeOverhaulMod.cs")).Contains("Guard.Add<WageShown>(_root)"),
@@ -158,6 +194,16 @@ internal static partial class Program
         string hire = words[0].TryGetValue("reallife_wage_hire_city", out string h) ? h : string.Empty;
         Check(hire.Length > 0 && hire.Length <= 240 && hire.Contains("{percent}") && hire.Contains("{ask}") && hire.Contains("{cost}") && hire.Contains("{name}"),
             "one wage's texts: the hiring notice names the asked wage, its cost and the price level, in 240 characters or fewer (" + hire.Length + ")");
+        string wageRow = WhatsNewKey(words[0], "Fixed: the panel of an employee you click at their station now shows the wage paid");   // the row that holds it
+        int fixes = Occurs(WhatsNewText(words[0], wageRow), FixMarks["en"]);
+        string apart = string.Empty;
+        for (int l = 0; l < codes.Length; l++)
+        {
+            string row = WhatsNewText(words[l], wageRow);
+            apart += fixes > 0 && Occurs(row, FixMarks[codes[l]]) == fixes ? string.Empty : " " + codes[l];
+        }
+        Check(WhatsNewHas(words[0], "Fixed: the panel of an employee you click at their station now shows the wage paid") && apart.Length == 0,
+            "one wage's texts: What's new says that the panel of an employee clicked at their station now shows the wage paid, and its row has as many fixes in every language as in English (not so in:" + apart + ")");
         for (int l = 0; l < codes.Length; l++)
         {
             string mark = FixMarks.TryGetValue(codes[l], out string m) ? m : "Fixed: ";

@@ -18,6 +18,7 @@ internal static partial class Program
     {
         BareFinderChecks();
         BareAuditChecks();
+        OfficeCountChecks();   // the load's office count a building a step (OfficeCountChecks.cs)
     }
 
     // The walk the director did before, kept here as the reference.

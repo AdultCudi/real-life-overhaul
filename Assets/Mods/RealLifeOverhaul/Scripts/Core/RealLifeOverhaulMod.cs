@@ -71,6 +71,9 @@ namespace RealLifeOverhaul
             Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
+            Guard.Step("the city's people pool for the work apps", Careers.PeoplePoolGame.Install);   // before anything asks whether the population is up: a wait that is not installed does not wait
+            Population.PopulationGame.Logger = context.Logger;
+            Guard.Step("the population's count in the game's customer calculators", Population.PopulationGame.InstallCalculators);   // before any customer is worked out
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -118,6 +121,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.HandlingId, "reallife_car_handling",
                     new[] { "reallife_car_handling_0", "reallife_car_handling_1", "reallife_car_handling_2", "reallife_car_handling_3" }, Settings.Handling,
                     v => Settings.Handling = v)
+                .AddToggle(Settings.HandlingOtherModsId, "reallife_car_handling_modded", Settings.HandlingOtherMods,
+                    v => Settings.HandlingOtherMods = v)
                 .AddSlider(Settings.HandlingSoftnessId, "reallife_car_handling_softness", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingSoftness,
                     v => { Settings.HandlingSoftness = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.HandlingBounceId, "reallife_car_handling_bounce", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingBounce,
@@ -134,6 +139,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_camera_test_pretend", CameraYield.TestPretend)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,
                     v => Settings.Speedometer = v)
+                .AddToggle(Settings.AutoSignalsId, "reallife_car_auto_signals", Settings.AutoSignals,
+                    v => Settings.AutoSignals = v)
                 .AddSlider(Settings.CameraFollowId, "reallife_camera_follow", 0, 10, Settings.CameraFollow,
                     v => Settings.CameraFollow = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.MapPlacesShownId, "reallife_map_places_shown", Settings.MapPlacesShown,
@@ -189,6 +196,12 @@ namespace RealLifeOverhaul
                     v => Settings.PolicePresence = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.PolicePursuitId, "reallife_police_pursuit", Settings.PolicePursuit,
                     v => Settings.PolicePursuit = v)
+                .AddToggle(Settings.PoliceCapsId, "reallife_police_caps", Settings.PoliceCaps,
+                    v =>
+                    {
+                        Settings.PoliceCaps = v;
+                        ActorPool.Instance?.CapsChanged();   // idle officers are dressed again for the new value, unseen
+                    })
                 .AddToggle(Settings.SirenId, "reallife_siren", Settings.Siren,
                     v => Settings.Siren = v)
                 .AddToggle(Settings.PeopleId, "reallife_people", Settings.People,
@@ -231,6 +244,7 @@ namespace RealLifeOverhaul
                         GameUi.PhoneLayoutPrefs.Tell();   // the phones lay themselves out again at once
                     })
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
+                .AddButton("reallife_windows_reset", Ui.UiGameWindowPrefs.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
                 .AddButton("reallife_phone_test_pages", GameUi.PhoneApp.TestPages)
@@ -238,6 +252,26 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
+                // Each kind of the mod's notifications pops up or goes straight into the list: the gate is placed again at once (GameUi/NoticeMute).
+                .AddToggle(Settings.NoticeShowRoadId, "reallife_notice_show_road", Settings.NoticeShowRoad,
+                    v => { Settings.NoticeShowRoad = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowMoneyId, "reallife_notice_show_money", Settings.NoticeShowMoney,
+                    v => { Settings.NoticeShowMoney = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowPropertyId, "reallife_notice_show_property", Settings.NoticeShowProperty,
+                    v => { Settings.NoticeShowProperty = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowWorkId, "reallife_notice_show_work", Settings.NoticeShowWork,
+                    v => { Settings.NoticeShowWork = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowBusinessId, "reallife_notice_show_business", Settings.NoticeShowBusiness,
+                    v => { Settings.NoticeShowBusiness = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowTechId, "reallife_notice_show_tech", Settings.NoticeShowTech,
+                    v => { Settings.NoticeShowTech = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowNewsId, "reallife_notice_show_news", Settings.NoticeShowNews,
+                    v => { Settings.NoticeShowNews = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowPeopleId, "reallife_notice_show_people", Settings.NoticeShowPeople,
+                    v => { Settings.NoticeShowPeople = v; GameUi.NoticeMute.Place(); })
+                .AddToggle(Settings.NoticeShowOtherId, "reallife_notice_show_other", Settings.NoticeShowOther,
+                    v => { Settings.NoticeShowOther = v; GameUi.NoticeMute.Place(); })
+                .AddButton("reallife_test_notice_mute", GameUi.NoticeMute.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
                 .AddButton("reallife_test_event_fridge", () => LifeEvents.Instance?.TriggerFridgeBill())
                 .AddButton("reallife_moods_test", MoodsTest.Run)
@@ -274,8 +308,22 @@ namespace RealLifeOverhaul
                     v => Settings.CrimeFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CrimeAgainstPlayerId, "reallife_crime_against_player", Settings.CrimeAgainstPlayer,
                     v => Settings.CrimeAgainstPlayer = v)
-                .AddToggle(Settings.PlayerOffencesId, "reallife_player_offences", Settings.PlayerOffences,
-                    v => Settings.PlayerOffences = v)
+                .AddToggle(Settings.OffenceRedLightId, "reallife_offence_red_light", Settings.OffenceRedLight,
+                    v => Settings.OffenceRedLight = v)
+                .AddToggle(Settings.OffenceSpeedingId, "reallife_offence_speeding", Settings.OffenceSpeeding,
+                    v => Settings.OffenceSpeeding = v)
+                .AddToggle(Settings.OffencePavementId, "reallife_offence_pavement", Settings.OffencePavement,
+                    v => Settings.OffencePavement = v)
+                .AddToggle(Settings.OffenceWrongWayId, "reallife_offence_wrong_way", Settings.OffenceWrongWay,
+                    v => Settings.OffenceWrongWay = v)
+                .AddToggle(Settings.OffenceDrinkId, "reallife_offence_drink", Settings.OffenceDrink,
+                    v => Settings.OffenceDrink = v)
+                .AddToggle(Settings.OffenceJaywalkId, "reallife_offence_jaywalk", Settings.OffenceJaywalk,
+                    v => Settings.OffenceJaywalk = v)
+                .AddToggle(Settings.OffenceCrossRedId, "reallife_offence_cross_red", Settings.OffenceCrossRed,
+                    v => Settings.OffenceCrossRed = v)
+                .AddToggle(Settings.OffenceHornId, "reallife_offence_horn", Settings.OffenceHorn,
+                    v => Settings.OffenceHorn = v)
                 .AddButton("reallife_test_crime", () => CrimeDirector.Instance?.StageNow(0))
                 .AddButton("reallife_test_crime_traffic", () => CrimeDirector.Instance?.StageNow(1))
                 .AddButton("reallife_test_crime_shop", () => CrimeDirector.Instance?.StageNow(2))
@@ -328,6 +376,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_career_dispatch", () => JobDirector.Instance?.TestShift(CareerWork.Dispatch, false))
                 .AddButton("reallife_test_career_lead", () => JobDirector.Instance?.TestShift(CareerWork.Lead, false))
                 .AddButton("reallife_test_career_gig", () => JobDirector.Instance?.TestGig())
+                .AddToggle(Settings.SideJobsId, "reallife_job_desk_enabled", Settings.SideJobs,
+                    v => Settings.SideJobs = v)
+                .AddButton("reallife_job_desk_test_cab", () => SideJobs.SideJobDirector.Instance?.TestSignOn(true))
+                .AddButton("reallife_job_desk_test_parcels", () => SideJobs.SideJobDirector.Instance?.TestSignOn(false))
+                .AddButton("reallife_job_desk_test_books", () => SideJobs.SideJobDirector.Instance?.TestBooks())
                 .AddToggle(Settings.CareersStudyId, "reallife_study_enabled", Settings.CareersStudy,
                     v => Settings.CareersStudy = v)
                 .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
@@ -379,6 +432,10 @@ namespace RealLifeOverhaul
                     v => Settings.CareersOwn = v)
                 .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,
                     v => Settings.CareersOwnOfferNotes = v)
+                .AddToggle(Settings.CareersOwnDeskId, "reallife_own_opt_desk", Settings.CareersOwnDesk,
+                    v => Settings.CareersOwnDesk = v)
+                .AddToggle(Settings.CareersOwnHoursId, "reallife_own_opt_hours", Settings.CareersOwnHours,
+                    v => Settings.CareersOwnHours = v)
                 .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
                 .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()
@@ -417,6 +474,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => Loyalty.LoyaltyOptions.AddLoyalty(o))   // loyalty cards for the player's shops (Scripts/Loyalty)
                 .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
                 .Guarded(o => Shops.ShopsOptions.AddShops(o))   // the ice cream parlour, tea bar and tobacconist (Scripts/Shops)
                 .AddHeader("reallife_home_header")
@@ -614,6 +672,9 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
+                    new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
+                    v => Settings.FamilyInterest = v)
                 .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
                     v => Settings.SocialNetworking = v)
                 .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
@@ -692,6 +753,10 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
                     new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
                     v => Settings.FlareCityPhotos = v)
+                .AddButton("reallife_flare_test_kit", () => Flare.FlareDirector.Instance?.TestKit(0))
+                .AddButton("reallife_flare_test_compose", () => Flare.FlareDirector.Instance?.TestKit(7))
+                .AddButton("reallife_flare_test_city_kit", () => Flare.FlareDirector.Instance?.TestKit(6))
+                .AddButton("reallife_flare_test_switch", () => Flare.FlareDirector.Instance?.TestKitSwitch())
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
@@ -712,6 +777,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
                 .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
+                .Guarded(o => Flare.FlareCityOptions.AddFlareCity(o))   // Flare in the city's option and tests (Scripts/Social/Flare/City)
                 .AddSplitter()
                 .AddHeader("reallife_fame_header")
                 .AddToggle(Settings.StandingId, "reallife_fame_enabled", Settings.Standing,
@@ -760,6 +826,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
+                .AddButton("reallife_testshops_all", () => TestShops.TestShopsGame.Run(true))
+                .AddButton("reallife_testshops_nearest", () => TestShops.TestShopsGame.Run(false))
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
@@ -843,6 +911,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_lic_points", () => LicenceDirector.Instance?.TestPoints())
                 .AddSplitter()
                 .Guarded(o => Seasons.SeasonOptions.AddSeasons(o))   // what sells in each season, and the snow (Scripts/Seasons)
+                .Guarded(o => Gfx.GraphicsOptions.AddGraphics(o))   // the look of the whole picture by the hour and the weather (Scripts/Graphics)
                 .AddHeader("reallife_planner_header")
                 .AddToggle(Settings.PlannerId, "reallife_planner_enabled", Settings.Planner,
                     v => Settings.Planner = v)
@@ -852,6 +921,8 @@ namespace RealLifeOverhaul
                     v => Settings.PlannerMorning = v)
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
+                .AddButton("reallife_ui_life_test_planner", () => Ui.LifeUiTests.OpenPlanner())
+                .AddButton("reallife_ui_life_test_switches", () => Ui.LifeUiTests.Switches())
                 .AddSplitter()
                 .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
                 .Guarded(o => Hustles.HustleOptions.AddHustles(o))   // the Marketplace and freelance visits (Scripts/Hustles)
@@ -862,6 +933,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyGradeUpNotes = v)
                 .AddToggle(Settings.EconomyDayResultId, "reallife_econ_opt_day_result", Settings.EconomyDayResult,
                     v => Settings.EconomyDayResult = v)
+                .AddToggle(Settings.EconomyGoalRewardsId, "reallife_econ_opt_goal_rewards", Settings.EconomyGoalRewards,
+                    v => Settings.EconomyGoalRewards = v)
                 .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
                     v => Settings.EconomyProducts = v)
                 .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,
@@ -871,6 +944,11 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.EconomyLevelId, "reallife_econ_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyLevel,
                     v => Settings.EconomyLevel = v)
+                .AddToggle(Settings.StartDebtId, "reallife_econ_opt_start_debt", Settings.StartDebt,
+                    v => Settings.StartDebt = v)
+                .AddDropdown(Settings.StartDebtDegreeId, "reallife_econ_opt_start_debt_degree",
+                    Economy.StartDebtRules.DegreeKeys, Settings.StartDebtDegree,
+                    v => Settings.StartDebtDegree = v)
                 .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
                 .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
                 .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())
@@ -891,6 +969,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_econ_test_lender", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestLenderText()))
                 .AddButton("reallife_econ_test_ways", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestWaysOut()))
                 .AddButton("reallife_econ_test_back", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestBack()))
+                .AddButton("reallife_econ_test_start_debt", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestStartDebt()))
                 .AddHeader("reallife_macro_header")
                 .AddToggle(Settings.EconomyCityId, "reallife_macro_enabled", Settings.EconomyCity,
                     v => Settings.EconomyCity = v)
@@ -948,10 +1027,16 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsDerivatives = v)
                 .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
                     v => Settings.MarketsBuilders = v)
+                .AddToggle(Settings.MarketsExtrasId, "reallife_stx_opt", Settings.MarketsExtras,
+                    v => Settings.MarketsExtras = v)
                 .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
                     new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
                     v => Settings.MarketsHolding = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
+                .AddButton("reallife_stk_test_open", () => Markets.MarketDirector.Instance?.TestKit())
+                .AddButton("reallife_stk_test_company", () => Markets.MarketDirector.Instance?.TestKitCompany())
+                .AddButton("reallife_stk_test_order", () => Markets.MarketDirector.Instance?.TestKitOrder())
+                .AddButton("reallife_stk_test_switch", () => Markets.MarketDirector.Instance?.TestKitSwitch())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
@@ -977,6 +1062,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompany = v)
                 .AddToggle(Settings.EconomyCompanyStaffId, "reallife_co_opt_staff", Settings.EconomyCompanyStaff,
                     v => Settings.EconomyCompanyStaff = v)
+                .AddSlider(Settings.EconomyCompanyAgreeUpToId, "reallife_co_opt_agree_up_to", 0, Economy.CompanyCatalogue.AgreeUpToMost, Settings.EconomyCompanyAgreeUpTo,
+                    v => Settings.EconomyCompanyAgreeUpTo = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EconomyCompanyCoverId, "reallife_co_opt_cover", Settings.EconomyCompanyCover,
                     v => Settings.EconomyCompanyCover = v)
                 .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
@@ -1009,10 +1096,192 @@ namespace RealLifeOverhaul
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
                 .AddButton("reallife_endscale_test_full", () => EndScaleTests.Phase(true))
+                .AddToggle(Settings.LivingPopulationId, "reallife_living_enabled", Settings.LivingPopulation,
+                    v => Settings.LivingPopulation = v)
+                .AddToggle(Settings.LivingDesksId, "reallife_session_enabled", Settings.LivingDesks,
+                    v => Settings.LivingDesks = v)
+                .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
+                .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
+                .AddToggle(Settings.UiInterfaceId, "reallife_ui_enabled", Settings.UiInterface,
+                    v => Settings.UiInterface = v)
+                .AddDropdown(Settings.UiMotionId, "reallife_ui_motion", new[] { "reallife_ui_motion_0", "reallife_ui_motion_1", "reallife_ui_motion_2" }, Settings.UiMotion,
+                    v => Settings.UiMotion = v)
+                .Guarded(o => Ui.UiSwitchOptions.Add(o))   // a switch for each screen on the RLO interface (Ui/UiScreenSwitches)
+                .AddButton("reallife_phone_test_second", Ui.PhoneKit.TestSecondPage)
+                .AddButton("reallife_phone_test_kit_folder", Ui.PhoneKit.TestFolder)
+                .AddButton("reallife_phone_test_classic", Ui.PhoneKit.TestClassic)
+                .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
+                .AddButton("reallife_ui_test_parts", () => Ui.UiDirector.Instance?.TestParts())
+                .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
+                .AddButton("reallife_ui_test_econoview", () => Ui.UiDirector.Instance?.TestEconoView())
+                .AddButton("reallife_ui_test_econoview_loans", () => Ui.UiDirector.Instance?.TestEconoViewLoans())
+                .AddButton("reallife_ui_test_econoview_switch", () => Ui.UiDirector.Instance?.TestEconoViewSwitch())
+                .AddButton("reallife_ui_test_finance", () => Ui.UiDirector.Instance?.TestFinance())
+                .AddButton("reallife_ui_test_banks", () => Ui.UiDirector.Instance?.TestBanks())
+                .AddButton("reallife_ui_test_own_bank", () => Ui.UiDirector.Instance?.TestOwnBank())
+                .AddButton("reallife_ui_test_utilities", () => Ui.UiDirector.Instance?.TestUtilities())
+                .AddButton("reallife_ui_test_money_switch", () => Ui.UiDirector.Instance?.TestMoneySwitch())
+                .AddButton("reallife_ui_test_career", () => Ui.UiDirector.Instance?.TestCareer())
+                .AddButton("reallife_ui_test_campus", () => Ui.UiDirector.Instance?.TestCampus())
+                .AddButton("reallife_ui_test_roles", () => Ui.UiDirector.Instance?.TestRoles())
+                .AddButton("reallife_ui_test_marketplace", () => Ui.UiDirector.Instance?.TestMarketplace())
+                .AddButton("reallife_ui_test_work_switch", () => Ui.UiDirector.Instance?.TestWorkSwitch())
+                .AddButton("reallife_ui_test_company", () => Ui.UiDirector.Instance?.TestCompany())
+                .AddButton("reallife_ui_test_company_manager", () => Ui.UiDirector.Instance?.TestCompanyManager())
+                .AddButton("reallife_ui_test_company_rota", () => Ui.UiDirector.Instance?.TestCompanyRota())
+                .AddButton("reallife_ui_test_company_switch", () => Ui.UiDirector.Instance?.TestCompanySwitch())
+                .AddButton("reallife_ui_test_economy", () => Ui.UiDirector.Instance?.TestEconomy())
+                .AddButton("reallife_ui_test_people", () => Ui.UiDirector.Instance?.TestPeople())
+                .AddButton("reallife_ui_test_newsstand", () => Ui.UiDirector.Instance?.TestNewsstand())
+                .AddButton("reallife_ui_test_ledger", () => Ui.UiDirector.Instance?.TestLedger())
+                .AddButton("reallife_ui_test_ending", () => Ui.UiDirector.Instance?.TestEnding())
+                .AddButton("reallife_ui_test_news_switch", () => Ui.UiDirector.Instance?.TestNewsSwitch())
+                .AddButton("reallife_ui_test_construction", () => Ui.UiDirector.Instance?.TestConstruction())
+                .AddButton("reallife_ui_test_construction_switch", () => Ui.UiDirector.Instance?.TestConstructionSwitch())
+                .AddButton("reallife_ui_test_build_catalogue", () => Ui.UiDirector.Instance?.TestBuildCatalogue())
+                .AddButton("reallife_ui_test_build_switch", () => Ui.UiDirector.Instance?.TestBuildSwitch())
+                .AddButton("reallife_ui_test_designer_state", () => Ui.UiDirector.Instance?.TestDesignerState())
+                .AddButton("reallife_ui_test_designer_switch", () => Ui.UiDirector.Instance?.TestDesignerSwitch())
+                .AddButton("reallife_ui_test_estate", () => Ui.UiDirector.Instance?.TestEstate())
+                .AddButton("reallife_ui_test_estate_rents", () => Ui.UiDirector.Instance?.TestEstateRents())
+                .AddButton("reallife_ui_test_dealer", () => Ui.UiDirector.Instance?.TestDealer())
+                .AddButton("reallife_ui_test_estate_switch", () => Ui.UiDirector.Instance?.TestEstateSwitch())
+                .AddButton("reallife_ui_test_services", () => Ui.UiDirector.Instance?.TestServices())
+                .AddButton("reallife_ui_test_services_sell", () => Ui.UiDirector.Instance?.TestServicesSell())
+                .AddButton("reallife_ui_test_services_switch", () => Ui.UiDirector.Instance?.TestServicesSwitch())
+                .AddButton("reallife_ui_test_tech", () => Ui.UiDirector.Instance?.TestTech())
+                .AddButton("reallife_ui_test_tech_game", () => Ui.UiDirector.Instance?.TestTechGame())
+                .AddButton("reallife_ui_test_tech_centre", () => Ui.UiDirector.Instance?.TestTechCentre())
+                .AddButton("reallife_ui_test_tech_switch", () => Ui.UiDirector.Instance?.TestTechSwitch())
+                .AddButton("reallife_ui_test_ventures", () => Ui.UiDirector.Instance?.TestVentures())
+                .AddButton("reallife_ui_test_brands", () => Ui.UiDirector.Instance?.TestBrands())
+                .AddButton("reallife_ui_test_webshop", () => Ui.UiDirector.Instance?.TestWebShop())
+                .AddButton("reallife_ui_test_ventures_switch", () => Ui.UiDirector.Instance?.TestVenturesSwitch())
+                .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
+                .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
+                .AddButton("reallife_ui_test_hud_box", () => Ui.UiDirector.Instance?.TestHudPrompt())
+                .AddButton("reallife_ui_test_hud_sides", () => Ui.UiDirector.Instance?.TestHudSides())
+                .AddButton("reallife_ui_test_hud_goals", () => Ui.UiDirector.Instance?.TestHudGoals())
+                .AddButton("reallife_ui_test_hud_summary", () => Ui.UiDirector.Instance?.TestHudSummary())
+                .AddButton("reallife_ui_test_hud_own", () => Ui.UiDirector.Instance?.TestHudOwn())
+                .AddButton("reallife_ui_test_activity_work", () => Ui.UiDirector.Instance?.TestActivityWork())
+                .AddButton("reallife_ui_test_activity_class", () => Ui.UiDirector.Instance?.TestActivityClass())
+                .AddButton("reallife_ui_test_activity_chair", () => Ui.UiDirector.Instance?.TestActivityChair())
+                .AddButton("reallife_ui_test_activity_skip", () => Ui.UiDirector.Instance?.TestActivitySkip())
+                .AddButton("reallife_ui_test_activity_funeral", () => Ui.UiDirector.Instance?.TestActivityFuneral())
+                .AddButton("reallife_ui_test_world_door", () => Ui.UiDirector.Instance?.TestWorldDoor())
+                .AddButton("reallife_ui_test_world_desk", () => Ui.UiDirector.Instance?.TestWorldDesk())
+                .AddButton("reallife_ui_test_world_bus", () => Ui.UiDirector.Instance?.TestWorldBus())
+                .AddButton("reallife_ui_test_world_building", () => Ui.UiDirector.Instance?.TestWorldBuilding())
+                .AddButton("reallife_ui_test_world_offer", () => Ui.UiDirector.Instance?.TestWorldOffer())
+                .AddButton("reallife_ui_test_world_custody", () => Ui.UiDirector.Instance?.TestWorldCustody())
+                .AddButton("reallife_ui_test_world_driver", () => Ui.UiDirector.Instance?.TestWorldDriver())
+                .AddButton("reallife_ui_test_world_items", () => Ui.UiDirector.Instance?.TestWorldItems())
+                .AddButton("reallife_ui_test_world_sign", () => Ui.UiDirector.Instance?.TestWorldSign())
+                .AddButton("reallife_ui_test_world_terminal", () => Ui.UiDirector.Instance?.TestWorldTerminal())
+                .AddButton("reallife_ui_test_world_preview", () => Ui.UiDirector.Instance?.TestWorldPreview())
+                .AddButton("reallife_ui_test_world_colour", () => Ui.UiDirector.Instance?.TestWorldColour())
+                .AddButton("reallife_ui_test_world_switch", () => Ui.UiDirector.Instance?.TestWorldSwitch())
+                .AddButton("reallife_ui_test_overlay_stock", () => Ui.UiDirector.Instance?.TestOverlayStock())
+                .AddButton("reallife_ui_test_overlay_machine", () => Ui.UiDirector.Instance?.TestOverlayMachine())
+                .AddButton("reallife_ui_test_overlay_switch", () => Ui.UiDirector.Instance?.TestOverlaySwitch())
+                .AddButton("reallife_ui_test_firm", () => Ui.UiDirector.Instance?.TestFirm())
+                .AddButton("reallife_ui_test_all_apps", () => Ui.UiDirector.Instance?.TestAllApps())
+                .AddButton("reallife_ui_test_question", () => Ui.UiDirector.Instance?.TestQuestion(false))
+                .AddButton("reallife_ui_test_question_negative", () => Ui.UiDirector.Instance?.TestQuestion(true))
+                .AddButton("reallife_ui_test_acknowledge", () => Ui.UiDirector.Instance?.TestAcknowledge())
+                .AddButton("reallife_ui_test_text_box", () => Ui.UiDirector.Instance?.TestTextBox())
+                .AddButton("reallife_ui_test_mod_box", () => Ui.UiDirector.Instance?.TestModBox())
+                .AddButton("reallife_ui_test_notices", () => Ui.UiDirector.Instance?.TestNotices())
+                .AddButton("reallife_ui_test_contacts_switch", () => Ui.UiDirector.Instance?.TestContactsSwitch())
+                .AddButton("reallife_ui_test_bizman", () => Ui.UiDirector.Instance?.TestBizMan())
+                .AddButton("reallife_ui_test_bizman_rival", () => Ui.UiDirector.Instance?.TestBizManRival())
+                .AddButton("reallife_ui_test_bizman_rent", () => Ui.UiDirector.Instance?.TestBizManRent())
+                .AddButton("reallife_ui_test_bizman_switch", () => Ui.UiDirector.Instance?.TestBizManSwitch())
+                .AddButton("reallife_ui_test_bizops_schedule", () => Ui.UiDirector.Instance?.TestBizOpsSchedule())
+                .AddButton("reallife_ui_test_bizops_managers", () => Ui.UiDirector.Instance?.TestBizOpsManagers())
+                .AddButton("reallife_ui_test_bizops_factory", () => Ui.UiDirector.Instance?.TestBizOpsFactory())
+                .AddButton("reallife_ui_test_bizops_warehouse", () => Ui.UiDirector.Instance?.TestBizOpsWarehouse())
+                .AddButton("reallife_ui_test_bizops_switch", () => Ui.UiDirector.Instance?.TestBizOpsSwitch())
+                .AddButton("reallife_ui_test_uniforms", () => Ui.UiDirector.Instance?.TestUniforms())
+                .AddButton("reallife_ui_test_uniforms_switch", () => Ui.UiDirector.Instance?.TestUniformsSwitch())
+                .AddButton("reallife_ui_test_contacts_call", () => Ui.UiDirector.Instance?.TestContactsCall())
+                .AddButton("reallife_ui_test_contacts_offer", () => Ui.UiDirector.Instance?.TestContactsOffer())
+                .AddButton("reallife_ui_test_contacts_tax", () => Ui.UiDirector.Instance?.TestContactsTax())
+                .AddButton("reallife_ui_test_contacts_wage", () => Ui.UiDirector.Instance?.TestContactsWage())
+                .AddButton("reallife_ui_test_dialog_bank", () => Ui.UiDirector.Instance?.TestDialogBank())
+                .AddButton("reallife_ui_test_dialog_wholesale", () => Ui.UiDirector.Instance?.TestDialogWholesale())
+                .AddButton("reallife_ui_test_dialog_import", () => Ui.UiDirector.Instance?.TestDialogImport())
+                .AddButton("reallife_ui_test_dialog_desk", () => Ui.UiDirector.Instance?.TestDialogDesk())
+                .AddButton("reallife_ui_test_dialog_court", () => Ui.UiDirector.Instance?.TestDialogCourt())
+                .AddButton("reallife_ui_test_dialog_tax_court", () => Ui.UiDirector.Instance?.TestDialogTaxCourt())
+                .AddButton("reallife_ui_test_dialog_fred", () => Ui.UiDirector.Instance?.TestDialogFred())
+                .AddButton("reallife_ui_test_dialog_switch", () => Ui.UiDirector.Instance?.TestDialogSwitch())
+                .AddButton("reallife_ui_test_employees", () => Ui.UiDirector.Instance?.TestEmployees())
+                .AddButton("reallife_ui_test_employee_page", () => Ui.UiDirector.Instance?.TestEmployeePage())
+                .AddButton("reallife_ui_test_employees_switch", () => Ui.UiDirector.Instance?.TestEmployeesSwitch())
+                .AddButton("reallife_ui_test_checkout", () => Ui.UiDirector.Instance?.TestCheckout())
+                .AddButton("reallife_ui_test_vehicle_buy", () => Ui.UiDirector.Instance?.TestVehicleBuy())
+                .AddButton("reallife_ui_test_item_panel", () => Ui.UiDirector.Instance?.TestItemPanel())
+                .AddButton("reallife_ui_test_cargo", () => Ui.UiDirector.Instance?.TestCargo())
+                .AddButton("reallife_ui_test_wardrobe", () => Ui.UiDirector.Instance?.TestWardrobe())
+                .AddButton("reallife_ui_test_buy_switch", () => Ui.UiDirector.Instance?.TestBuySwitch())
+                .AddButton("reallife_ui_test_pause_menu", () => Ui.UiDirector.Instance?.TestPauseMenu())
+                .AddButton("reallife_ui_test_pause_switch", () => Ui.UiDirector.Instance?.TestPauseSwitch())
+                .AddButton("reallife_ui_test_tooltip", () => Ui.UiDirector.Instance?.TestTooltip())
+                .AddButton("reallife_ui_test_worth_card", () => Ui.UiDirector.Instance?.TestNetWorthCard())
+                .AddButton("reallife_ui_test_tooltips_switch", () => Ui.UiDirector.Instance?.TestTooltipsSwitch())
+                .AddButton("reallife_ui_test_options", () => Ui.UiDirector.Instance?.TestOptions())
+                .AddButton("reallife_ui_test_options_switch", () => Ui.UiDirector.Instance?.TestOptionsSwitch())
+                .AddButton("reallife_ui_test_map_open", () => Ui.UiDirector.Instance?.TestMapOpen())
+                .AddButton("reallife_ui_test_map_switch", () => Ui.UiDirector.Instance?.TestMapSwitch())
+                .AddButton("reallife_ui_test_persona", () => Ui.UiDirector.Instance?.TestPersona())
+                .AddButton("reallife_ui_test_rivals", () => Ui.UiDirector.Instance?.TestRivals())
+                .AddButton("reallife_ui_test_market", () => Ui.UiDirector.Instance?.TestMarket())
+                .AddButton("reallife_ui_test_persona_switch", () => Ui.UiDirector.Instance?.TestPersonaSwitch())
+                .AddButton("reallife_ui_test_rivals_switch", () => Ui.UiDirector.Instance?.TestRivalsSwitch())
+                .AddButton("reallife_ui_test_market_switch", () => Ui.UiDirector.Instance?.TestMarketSwitch())
+                .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
+                    v => Settings.LivingStudio = v)
+                .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())
+                .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
+                .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
+                .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
+                .AddToggle(Settings.LivingFirmsId, "reallife_tech_mkt_enabled", Settings.LivingFirms,
+                    v => Settings.LivingFirms = v)
+                .AddButton("reallife_tech_mkt_test_software", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Software))
+                .AddButton("reallife_tech_mkt_test_lab", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.AiLab))
+                .AddButton("reallife_tech_mkt_test_consultancy", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Consultancy))
+                .AddButton("reallife_tech_mkt_test_security", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Security))
+                .AddButton("reallife_tech_mkt_test_agency", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.WebAgency))
+                .AddButton("reallife_tech_mkt_test_centres", () => Tech.TechDirector.Instance?.TestSectorDesks(-1))
+                .AddButton("reallife_tech_mkt_test_markets", () => Tech.TechDirector.Instance?.TestSectorMarkets())
+                .AddButton("reallife_tech_mkt_test_year", () => Tech.TechDirector.Instance?.TestSectorYear())
+                .AddToggle(Settings.LivingSchemesId, "reallife_scheme_enabled", Settings.LivingSchemes,
+                    v => Settings.LivingSchemes = v)
+                .AddButton("reallife_scheme_test_inquiry", () => Schemes.SchemeDirector.Instance?.TestInquiry())
+                .AddButton("reallife_scheme_test_step", () => Schemes.SchemeDirector.Instance?.TestStep())
+                .AddButton("reallife_scheme_test_fund", () => Schemes.SchemeDirector.Instance?.TestFund())
+                .AddButton("reallife_scheme_test_rival", () => Schemes.SchemeDirector.Instance?.TestRival())
+                .AddButton("reallife_scheme_test_standing", () => Schemes.SchemeDirector.Instance?.TestStanding())
+                .AddToggle(Settings.LivingTripsId, "reallife_trips_enabled", Settings.LivingTrips,
+                    v => Settings.LivingTrips = v)
+                .AddButton("reallife_trips_test", () => Economy.LogisticsDirector.Instance?.TestTrips())
+                .AddToggle(Settings.LivingSpoilageId, "reallife_spoil_enabled", Settings.LivingSpoilage,
+                    v => Settings.LivingSpoilage = v)
+                .AddToggle(Settings.LivingPartiesId, "reallife_party_enabled", Settings.LivingParties,
+                    v => Settings.LivingParties = v)
+                .AddButton("reallife_party_test_invite", () => Parties.PartyDirector.Instance?.TestInvite())
+                .AddButton("reallife_party_test_now", () => Parties.PartyDirector.Instance?.TestNow())
+                .AddButton("reallife_party_test_round", () => Parties.PartyDirector.Instance?.TestRound())
+                .AddButton("reallife_spoil_test", () => Economy.LogisticsDirector.Instance?.TestSpoilage())
+                .Guarded(o => Suppliers.SupplierOptions.AddSuppliers(o))   // suppliers and contracts, under the living economy (Scripts/Suppliers)
+                .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
                 .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_agree", () => Economy.CompanyDirector.Instance?.TestAgree())
                 .AddButton("reallife_co_test_picked_raise", () => Economy.CompanyDirector.Instance?.TestPickedRaise())
                 .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
                 .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())
@@ -1048,6 +1317,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
                 .AddButton("reallife_ob_test_level", () => Economy.OwnBankDirector.Instance?.TestTierReady())
+                .AddButton("reallife_ob_test_div", () => Economy.OwnBankDirector.Instance?.TestDividend())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
                 .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
                 .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())
@@ -1061,6 +1331,11 @@ namespace RealLifeOverhaul
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
                     v => Settings.EstateDuties = v)
+                .AddToggle(Settings.ParkingSpacesId, "reallife_space_enabled", Settings.ParkingSpaces,
+                    v => Settings.ParkingSpaces = v)
+                .AddButton("reallife_space_test_btn_buy", () => ParkSpaces.SpaceDirector.Instance?.TestBuy())
+                .AddButton("reallife_space_test_btn_day", () => ParkSpaces.SpaceDirector.Instance?.TestDay())
+                .AddButton("reallife_space_test_btn_rival", () => ParkSpaces.SpaceDirector.Instance?.TestRival())
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -1082,11 +1357,17 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
                 .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
                 .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
+                .AddToggle(Settings.TechSeatHiresId, "reallife_hire_opt_seat", Settings.TechSeatHires,
+                    v => Settings.TechSeatHires = v)
+                .AddButton("reallife_hire_test_seat", () => Tech.TechDirector.Instance?.TestSeatHires())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
+                .AddToggle(Settings.TechSearchRushId, "reallife_hire_rush_enabled", Settings.TechSearchRush,
+                    v => Settings.TechSearchRush = v)
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddButton("reallife_hire_test_rush", () => Tech.TechDirector.Instance?.TestSearchRush())
                 .AddButton("reallife_hire_test_buyout", () => Tech.TechDirector.Instance?.TestBuyout())
                 .AddButton("reallife_talent_test_buyout", () => Tech.TechDirector.Instance?.TestRivalBuyout())
                 .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())
@@ -1115,6 +1396,16 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
                 .AddButton("reallife_vc_test_round", () => Tech.TechDirector.Instance?.TestRound())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
+                .AddButton("reallife_vc_test_books", () => Tech.TechDirector.Instance?.TestBooks())
+                .AddButton("reallife_vc_test_wind_down", () => Tech.TechDirector.Instance?.TestWindDown())
+                .AddButton("reallife_vc_test_spend", () => Tech.TechDirector.Instance?.TestSpendElsewhere())
+                .AddButton("reallife_vc_test_terms", () => Tech.TechDirector.Instance?.TestTerms())
+                .AddButton("reallife_exit_test_stock", () => Tech.TechDirector.Instance?.TestExitStock())
+                .AddButton("reallife_exit_test_offer", () => Tech.TechDirector.Instance?.TestExitOffer())
+                .AddButton("reallife_exit_test_pricing", () => Tech.TechDirector.Instance?.TestExitPricing())
+                .AddButton("reallife_exit_test_hire", () => Tech.TechDirector.Instance?.TestStartupHire())
+                .AddButton("reallife_exit_test_lead", () => Tech.TechDirector.Instance?.TestExitLead())
+                .AddButton("reallife_exit_test_founder", () => Tech.TechDirector.Instance?.TestExitFounder())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
                 .AddToggle(Settings.TechSiteHqId, "reallife_sites_hq", Settings.TechSiteHq,
@@ -1150,12 +1441,18 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_dealer_test_mission", () => Economy.Dealership.DealerDirector.Instance?.TestMission())
                 .AddButton("reallife_dealer_test_back", () => Economy.Dealership.DealerDirector.Instance?.TestBack())
                 .AddButton("reallife_showroom_test_floor", () => Economy.Dealership.ShowroomFloor.Instance?.TestFloor())
+                .AddToggle(Settings.EconomyDealerSupplyId, "reallife_carsup_enabled", Settings.EconomyDealerSupply,
+                    v => Settings.EconomyDealerSupply = v)
+                .AddButton("reallife_carsup_test_order", () => Economy.Dealership.DealerDirector.Instance?.TestSupplyOrder())
+                .AddButton("reallife_carsup_test_manager_btn", () => Economy.Dealership.DealerDirector.Instance?.TestSupplyManager())
                 .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
                 .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
                 .AddButton("reallife_svc_test_offer", () => Economy.ServicesDirector.Instance?.TestSaleOffer())
                 .AddButton("reallife_svc_test_sale_paper", () => Economy.ServicesDirector.Instance?.TestSalePaper())
                 .AddButton("reallife_svc_test_part", () => Economy.ServicesDirector.Instance?.TestPart())
+                .AddButton("reallife_svc_test_rival_offer", () => Economy.ServicesDirector.Instance?.TestRivalOffer())
+                .AddButton("reallife_svc_test_rival_sale", () => Economy.ServicesDirector.Instance?.TestRivalSale())
                 .AddHeader("reallife_brand_header")
                 .AddToggle(Settings.EconomyBrandsId, "reallife_brand_enabled", Settings.EconomyBrands,
                     v => Settings.EconomyBrands = v)
@@ -1182,6 +1479,8 @@ namespace RealLifeOverhaul
                     v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.MinimapBaseId, "reallife_nav_base", Settings.MinimapBase,
                     v => Settings.MinimapBase = v)
+                .AddToggle(Settings.Minimap25Id, "reallife_nav_minimap25", Settings.Minimap25,
+                    v => Settings.Minimap25 = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
@@ -1259,10 +1558,7 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyWealthMood = v)
                 .AddToggle(Settings.FamilyExpectId, "reallife_family_expect_opt", Settings.FamilyExpect,
                     v => Settings.FamilyExpect = v)
-                .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
-                    new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
-                    v => Settings.FamilyInterest = v)
-                .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", 1, 12, Settings.FamilyYearWeeks,
+                .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", Family.ChildYearRules.WeeksLeast, Family.ChildYearRules.WeeksMost, Settings.FamilyYearWeeks,
                     v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())
                 .AddButton("reallife_family_test_work", () => Family.FamilyDirector.Instance?.TestWork())
@@ -1284,6 +1580,11 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
                 .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
+                .Guarded(o => Giving.GivingOptions.AddGiving(o))
+                .Guarded(o => Insurance.InsuranceOptions.AddInsurance(o))
+                .Guarded(o => Health.HealthOptions.AddHealth(o))
+                .Guarded(o => RivalsSeen.SeenOptions.AddSeen(o))
+                .Guarded(o => Dynasty.DynastyOptions.AddDynasty(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
@@ -1465,6 +1766,7 @@ namespace RealLifeOverhaul
             Guard.Step("the font's prewarm", () => ScenePrewarm.Add("game UI: the game's font being found", FindFont));
             Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
             Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);
+            Guard.Step("GameUi.NoticeMute", () => GameUi.NoticeMute.Logger = context.Logger);
             Guard.Step("GameUi.NoticeRoom", () => GameUi.NoticeRoom.Logger = context.Logger);
             Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // nothing per frame
             Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));
@@ -1559,6 +1861,7 @@ namespace RealLifeOverhaul
             Guard.Step("Hustles.HustleDirector", () => Guard.Add<Hustles.HustleDirector>(_root));   // the Marketplace: used goods and cars, freelance visits (Scripts/Hustles)
             Guard.Step("Seasons.SeasonDirector", () => Seasons.SeasonDirector.Logger = context.Logger);
             Guard.Step("Seasons.SeasonDirector", () => Guard.Add<Seasons.SeasonDirector>(_root));
+            Guard.Step("realistic graphics", () => Gfx.GraphicsDirector.Attach(_root, context.Logger));   // no Update: a look worked out when the hour or the weather moves
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
@@ -1592,8 +1895,21 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.ServicesApp", () => Economy.ServicesApp.Logger = context.Logger);
             Guard.Step("Economy.ServicesDirector", () => Guard.Add<Economy.ServicesDirector>(_root));
             Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));
+            Guard.Step("Economy.LogisticsDirector", () => Economy.LogisticsDirector.Logger = context.Logger);
+            Guard.Step("Economy.LogisticsDirector", () => Guard.Add<Economy.LogisticsDirector>(_root));   // after the company: its second follows the company's
             Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // after the company, so that its day follows the company's
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
+            Guard.Step("Sessions.SessionDirector", () => Sessions.SessionDirector.Logger = context.Logger);
+            Guard.Step("Sessions.SessionDirector", () => Guard.Add<Sessions.SessionDirector>(_root));   // a look once a second: the desk sessions at the player's firms
+            Guard.Step("Parties.PartyDirector", () => Parties.PartyDirector.Logger = context.Logger);
+            Guard.Step("Parties.PartyDirector", () => Parties.PartyGame.Logger = context.Logger);
+            Guard.Step("Parties.PartyDirector", () => Parties.PartyApp.Logger = context.Logger);
+            Guard.Step("Parties.PartyDirector", () => Guard.Add<Parties.PartyDirector>(_root));   // a look once a second: parties and company events
+            Guard.Step("Schemes.SchemeDirector", () => Schemes.SchemeDirector.Logger = context.Logger);
+            Guard.Step("Schemes.SchemeDirector", () => Guard.Add<Schemes.SchemeDirector>(_root));   // a look once a second: the day of the schemes and their inquiries
+            Guard.Step("Ui.UiDirector", () => Ui.UiDirector.Logger = context.Logger);
+            Guard.Step("Ui.UiDirector", () => Ui.UiDirector.ModRoot = context.ModRootPath);
+            Guard.Step("Ui.UiDirector", () => Guard.Add<Ui.UiDirector>(_root));   // the fonts behind the loading screen; a look once a second at Contacts
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
             Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings
@@ -1616,6 +1932,7 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavHud", () => Nav.NavHud.Logger = context.Logger);
             Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
             Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
+            Guard.Step("Nav.NavScene", () => Nav.NavScene.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // its own cast of five
@@ -1631,6 +1948,15 @@ namespace RealLifeOverhaul
             Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));
             Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));
             Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
+            Guard.Step("giving", () => Giving.GivingDirector.Attach(_root, context.Logger));
+            Guard.Step("insurance", () => Insurance.InsuranceDirector.Attach(_root, context.Logger));
+            Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
+            Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
+            Guard.Step("side jobs", () => SideJobs.SideJobDirector.Attach(_root, context.Logger));
+            Guard.Step("loyalty cards", () => Loyalty.LoyaltyDirector.Attach(_root, context.Logger));
+            Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));
+            Guard.Step("rivals seen", () => RivalsSeen.SeenDirector.Attach(_root, context.Logger));
+            Guard.Step("the dynasty", () => Dynasty.DynastyDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs
@@ -1643,8 +1969,10 @@ namespace RealLifeOverhaul
             Guard.Step("CarTuning", () => CarTuning.Logger = context.Logger);
             Guard.Step("SpeedReading", () => SpeedReading.Logger = context.Logger);
             Guard.Step("CarMeasure", () => CarMeasure.Logger = context.Logger);
+            Guard.Step("TurnSignals", () => TurnSignals.Logger = context.Logger);
             Guard.Step("CarTuning", () => Guard.Add<CarTuning>(_root));
             Guard.Step("Speedometer", () => Guard.Add<Speedometer>(_root));
+            Guard.Step("TurnSignals", () => Guard.Add<TurnSignals>(_root));   // the player's own car signals its turns; a look ten times a second while driving
             Guard.Step("GarageDirector", () => GarageDirector.Logger = context.Logger);
             Guard.Step("GarageShop", () => GarageShop.Logger = context.Logger);
             Guard.Step("GarageCar", () => GarageCar.Logger = context.Logger);
@@ -1661,6 +1989,8 @@ namespace RealLifeOverhaul
             Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
             Guard.Step("Photos.PhotosDirector", () => Photos.PhotosDirector.Logger = context.Logger);
             Guard.Step("Photos.PhotosDirector", () => Guard.Add<Photos.PhotosDirector>(_root));   // nothing per frame while shut
+            Guard.Step("Photos.CineDirector", () => Photos.CineDirector.Logger = context.Logger);
+            Guard.Step("Photos.CineDirector", () => Guard.Add<Photos.CineDirector>(_root));   // the cinematic shots, a developer's tool: off unless a run is on
             Guard.Step("PerfDirector", () => PerfDirector.Logger = context.Logger);
             Guard.Step("PerfDirector", () => Guard.Add<PerfDirector>(_root));
             Guard.Step("MapLinks", () => Guard.Add<MapLinks>(_root));   // every feature's places on the city map; no feature knows of it
@@ -1683,6 +2013,11 @@ namespace RealLifeOverhaul
             Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
             // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
             Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("DaySeries.DaySeriesDirector", () => DaySeries.DaySeriesDirector.Logger = context.Logger);
+            Guard.Step("DaySeries.DaySeriesDirector", () => Guard.Add<DaySeries.DaySeriesDirector>(_root));
+            Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
+            // The city's people: after the city's economy, the company, the estate and Uptown's buildings, whose figures it reads. No Update.
+            Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
@@ -1695,6 +2030,9 @@ namespace RealLifeOverhaul
             Guard.Step("Landmarks.LandmarksDirector", () => Landmarks.LandmarksDirector.Logger = context.Logger);
             // Uptown's landmarks: a time comparison a frame; their pieces stood in the game's late call.
             Guard.Step("Landmarks.LandmarksDirector", () => Guard.Add<Landmarks.LandmarksDirector>(_root));
+            Guard.Step("Subway.StationsDirector", () => Subway.StationsDirector.Logger = context.Logger);
+            // The districts' subway stations: after Uptown's ground, its parks, the campus and the buses, whose late pieces stand before its own; a time comparison a frame.
+            Guard.Step("Subway.StationsDirector", () => Guard.Add<Subway.StationsDirector>(_root));
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.
@@ -1745,6 +2083,7 @@ namespace RealLifeOverhaul
             _running = null;
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
             Guard.Step("the wiring", () => Wiring.Disconnect());
+            Guard.Step("Uptown's pedestrians' zones", () => Uptown.GroundDirector.Unloading("the city is unloading"));   // their people back to the game's pools while the pools stand
             Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
             Guard.Step("the culling check", SceneryCulling.WatchUnload);   // the game's culling lists counted once the menu's scene is in, the city's still there
             if (_root != null)

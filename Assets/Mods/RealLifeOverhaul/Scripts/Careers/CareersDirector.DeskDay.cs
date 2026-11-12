@@ -144,6 +144,21 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>
+        /// The minutes a working day begun at the desk now would run, nothing begun: the rest of the day as DeskBegin would
+        /// give it, or 0 when it could not begin now. For the panel's slider before it starts (DeskWork).
+        /// </summary>
+        internal int DeskPlan()
+        {
+            Job j = Work != null ? Work.Job : null;
+            if (j == null || Save == null)
+            {
+                return 0;
+            }
+            DeskState state = DeskRules.State(j, Save.Day, CareersGame.MinuteOfDay, CareersGame.AtHome(), out int minutes, out bool late);
+            return DeskRules.Startable(state) ? Math.Max(0, minutes) : 0;
+        }
+
         /// <summary>The first stint of a working day: its clock-in, and lateness counted once a day.</summary>
         private static void ClockIn(Job j, int day, bool late)
         {

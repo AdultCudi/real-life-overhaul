@@ -53,8 +53,14 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The listed companies at the market's last close, for the milestones; false (the list untouched) while no market runs here.</summary>
         public static Func<List<LedgerCompany>, bool> Companies;
 
+        /// <summary>A part of the market's name as the paper prints it, by the number a listed company carries; unset, no sector's lead is told.</summary>
+        public static Func<int, string> SectorName;
+
         /// <summary>The rival tycoons the player took over from a day up to another (not that day), with what each cost.</summary>
         public static Action<int, int, List<LedgerBeat>> Beaten;
+
+        /// <summary>The businesses of the city and of rivals that opened on the days from one day up to another (not that day), oldest first.</summary>
+        public static Action<int, int, List<LedgerOpening>> Opened;
 
         /// <summary>Test button: a takeover story's facts for a rival of the catalogue, nothing changed; null without the rivals' catalogue.</summary>
         public static Func<int, LedgerBeat> TestBeat;
@@ -62,7 +68,9 @@ namespace RealLifeOverhaul.Ledger
         public static void Reset()
         {
             Companies = null;
+            SectorName = null;
             Beaten = null;
+            Opened = null;
             TestBeat = null;
             PaperDay = null;
             Paper = null;

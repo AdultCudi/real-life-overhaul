@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
+using RealLifeOverhaul.DaySeries;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -28,6 +29,9 @@ namespace RealLifeOverhaul.Rivals
         private string _beforeTests;   // the line as it was before the first test button changed it; null with no test change in place
 
         public bool Running => _running && !_broken;
+
+        /// <summary>True once a fault has switched the rivals off for the session: nothing of theirs comes until the next session.</summary>
+        public bool Broken => _broken;
 
         /// <summary>The save's rivals; null while they do not run.</summary>
         public RivalFile File => Running ? _file : null;
@@ -231,6 +235,7 @@ namespace RealLifeOverhaul.Rivals
             }
             Orphans();
             Settle(day);
+            Firms(day);
             Rents(day);
             PayBreakUps(day);
             RivalMove announced = r.Announced > 0 ? _file.Move(r.Announced) : null;
@@ -253,6 +258,20 @@ namespace RealLifeOverhaul.Rivals
                              + "), the player " + rank + " on the rich list, " + _file.Moves.Count + " move(s) kept of " + RivalCatalogue.MovesKept + ": "
                              + (gap <= RivalRules.Gap(Math.Max(1, _file.Tier), Strength) + RivalCatalogue.JitterDays
                                  && _file.Moves.Count <= RivalCatalogue.MovesKept * 2 ? "PASS" : "the pace is off"));
+            }
+        }
+
+        // The tycoons' own businesses (RivalFirms): each outlet's crew and lease run by the staff and lease rules the player's company runs by; what they pay comes off
+        // the tycoon's worth, and the rises their landlords asked are told to the company, which sets the trend the player's landlords ask by.
+        private void Firms(int day)
+        {
+            int monthDays = Math.Max(1, _world.YearDays / 12), index = Math.Max(10, _world.Level / 10), trend = RivalBridges.LeaseTrend != null ? RivalBridges.LeaseTrend() : 0;
+            int before = _file.Outlets.Count;
+            long paid = RivalFirms.Day(_file, _file.Seed, day, monthDays, trend, index, RivalBridges.LeaseRenewed, RivalBridges.Seats);
+            paid += RivalBridges.StaffEvents != null ? RivalBridges.StaffEvents(_file, day, _world.Level) : 0L;   // (Parties: the outlets' staff events, by the player's own rule)
+            if (_file.Outlets.Count > 0 || before > 0)
+            {
+                Logger?.Info("Rivals: " + _file.Outlets.Count + " outlet(s) run by the tycoons paid " + paid + " in wages and rent on day " + day + ".");
             }
         }
 
@@ -412,6 +431,8 @@ namespace RealLifeOverhaul.Rivals
                     m.Second = (smear ? 1 : 0) | (paper ? 2 : 0);   // (which of its texts is true: a piece in the paper, or word round the city)
                     return true;
                 }
+                case RivalMoveKind.Shares:
+                    return t.Listed && RivalBridges.Shares != null && RivalBridges.Shares(m.Tycoon, m.Amount);   // (a real block, through the market's own rules)
                 default:
                     return false;
             }
@@ -505,7 +526,7 @@ namespace RealLifeOverhaul.Rivals
             {
                 return 0;
             }
-            return RivalRules.OutletDip(f, district, reg.businessTypeName);
+            return RivalRules.OutletDip(f, district, reg.businessTypeName) + RivalRules.PriceWar(f) + DaySeriesRules.CutFootfall(DaySeriesDirector.Book, RivalGame.Day);
         }
 
         /// <summary>The premium on buildings for sale in a district, per mille.</summary>
@@ -576,6 +597,10 @@ namespace RealLifeOverhaul.Rivals
                     into.Add(new NewsItem { Key = RivalText.PaperDoneKey(c.Kind), Data = RivalText.Data("rival", d.Name, "holding", d.Holding, "quip", RivalText.Quip(c.Tycoon)) });
                     added++;
                 }
+            }
+            if (added < RivalCatalogue.PiecesMost && RivalBridges.StaffEventsPaper != null)
+            {
+                added += RivalBridges.StaffEventsPaper(day, into, RivalCatalogue.PiecesMost - added);   // (Parties: an outlet's staff event of yesterday)
             }
             if (added < RivalCatalogue.PiecesMost && day % 7 == RivalCatalogue.RichListDay && RivalRules.AnyActive(f))
             {

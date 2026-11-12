@@ -4,6 +4,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -104,7 +105,8 @@ namespace RealLifeOverhaul.Construction
                 int days = PlanningRules.WorkingDays(p.Area);
                 string text = ConstructionText.Fill("reallife_bld_call_application", "project", d.ProjectName(p), "quality", p.Quality.ToString(), "fee", ConstructionText.Money(d.PlanningFee(p)),
                     "days", days.ToString());
-                return Page(text, "reallife_bld_call_submit", () => Answer(d.Apply(s.Project(id))), "reallife_bld_call_next", () => Applications(next, back));
+                return Page(text, "reallife_bld_call_submit", () => Answer(d.Apply(s.Project(id))), "reallife_bld_call_next", () => Applications(next, back))
+                    .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", ConstructionText.Money(d.PlanningFee(p)));
             }
             return Licence(back);
         }
@@ -120,7 +122,8 @@ namespace RealLifeOverhaul.Construction
             string text = ConstructionText.T("reallife_bld_call_licence", "licence", ConstructionText.LicenceWords(f), "fee", ConstructionText.Money(ConstructionDirector.LicenceFee),
                 "days", BuildCatalogue.LicenceDays.ToString());
             string ask = f.Licence == LicenceState.Granted ? "reallife_bld_call_renew" : "reallife_bld_call_apply";
-            return Page(text, ask, () => Answer(d.AskLicence()), "reallife_bld_call_next", () => Zoning(0, 0, back));
+            return Page(text, ask, () => Answer(d.AskLicence()), "reallife_bld_call_next", () => Zoning(0, 0, back))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", ConstructionText.Money(ConstructionDirector.LicenceFee));
         }
 
         // Each lot of the player's and each use it is not zoned for, a page; then back to the first topic.
@@ -147,7 +150,8 @@ namespace RealLifeOverhaul.Construction
                     string text = ConstructionText.Fill("reallife_bld_call_zoning", "lot", d.LotWords(id), "zones", ConstructionText.ZonesWords(d.ZonesNow(file)),
                         "use", ConstructionText.T(BuildCatalogue.UseKeys[u]), "fee", ConstructionText.Money(ConstructionDirector.ZoneFee),
                         "day", ConstructionText.Day(ConstructionDirector.CouncilDay(ConstructionGame.Day)));
-                    return Page(text, "reallife_bld_call_ask_council", () => Answer(d.AskZone(id, asked)), "reallife_bld_call_next", () => Zoning(nextLot, nextUse, back));
+                    return Page(text, "reallife_bld_call_ask_council", () => Answer(d.AskZone(id, asked)), "reallife_bld_call_next", () => Zoning(nextLot, nextUse, back))
+                        .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", ConstructionText.Money(ConstructionDirector.ZoneFee));
                 }
             }
             return Code(back);
@@ -182,9 +186,18 @@ namespace RealLifeOverhaul.Construction
             bool due = ConstructionDirector.DueInspection(p) >= 0;
             if (!p.Visited)
             {
-                return Page(text, "reallife_bld_notice_walk", () => Answer(d.Visit(id)), due ? "reallife_bld_notice_book" : null, due ? (Func<DialogEntry>)(() => Answer(d.BookInspection(id))) : null);
+                return Booked(Page(text, "reallife_bld_notice_walk", () => Answer(d.Visit(id)), due ? "reallife_bld_notice_book" : null,
+                    due ? (Func<DialogEntry>)(() => Answer(d.BookInspection(id))) : null), p, DialogButton.Second);
             }
-            return due ? Page(text, "reallife_bld_notice_book", () => Answer(d.BookInspection(id)), null, null) : Closing(text);
+            return due ? Booked(Page(text, "reallife_bld_notice_book", () => Answer(d.BookInspection(id)), null, null), p, DialogButton.Confirm) : Closing(text);
+        }
+
+        // An inspection is paid as it is booked: the fee the booking takes, under the answer that books it.
+        private static DialogEntry Booked(DialogEntry entry, ProjectFile p, DialogButton button)
+        {
+            int inspection = ConstructionDirector.DueInspection(p);
+            return inspection < 0 ? entry
+                : entry.Pays(button, "reallife_ui_dialog_cost_now", "amount", ConstructionText.Money((long)BuildCatalogue.InspectionFee[inspection] * ConstructionGame.Prices / 1000L));
         }
 
         // ------------------------------------------------------------------ pages

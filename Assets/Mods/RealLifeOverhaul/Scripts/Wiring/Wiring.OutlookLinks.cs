@@ -45,6 +45,15 @@ namespace RealLifeOverhaul
             private static bool Jobs(int cycle, out int unemployment, out int vacancies, out int seekers, out int layoffs)
             {
                 unemployment = vacancies = seekers = layoffs = 0;
+                if (Population.CityPopulation.Running && cycle == (int)CityEconomy.State && Population.CityPopulation.Jobs(out int open, out int looking, out int endsPerMillion))
+                {
+                    // The living population's measured market for the state the city is in now; the tables by cycle for any other the app asks of.
+                    unemployment = Math.Max(0, Population.CityPopulation.Unemployment);
+                    vacancies = open;
+                    seekers = looking;
+                    layoffs = Math.Max(1, endsPerMillion / 1000);
+                    return true;
+                }
                 if (!Settings.CareersJobs && !Settings.TechPeople)
                 {
                     return false;
@@ -198,7 +207,7 @@ namespace RealLifeOverhaul
                     {
                         return false;
                     }
-                    BudgetWeek week = OfficeRules.Week(government.Electorate(), government.State.Levers, state.Budget);
+                    BudgetWeek week = OfficeRules.Week(government.Payers(), government.State.Levers, state.Budget);
                     r.CouncilOn = true;
                     r.Reserve = Prices.At((int)Mathf.Clamp(state.Reserve, int.MinValue / 2, int.MaxValue / 2));
                     r.Revenue = Prices.At(week.Revenue);

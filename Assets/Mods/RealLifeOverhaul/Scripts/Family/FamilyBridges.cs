@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Family
         public static ILeisureBridge Leisure;
         public static ILawBridge Law;
         public static ISchoolBridge School;
+        /// <summary>Who carries on after the player, in a sentence (the dynasty's will or the law's order); null or empty while there is none to say.</summary>
+        public static Func<string> WillLine;
 
         public static void Reset()
         {
@@ -135,6 +137,7 @@ namespace RealLifeOverhaul.Family
             Leisure = null;
             Law = null;
             School = null;
+            WillLine = null;
         }
     }
 
@@ -167,6 +170,15 @@ namespace RealLifeOverhaul.Family
             if (Active)
             {
                 FamilyDirector.Instance.Guarded(() => HardTimes.Arrest(severity));
+            }
+        }
+
+        /// <summary>A firm that lost the family's money lets the partner down: points of trust and of affection lost, taken as a promise broken. Nothing without a partner.</summary>
+        public static void LetDown(float trust, float affection)
+        {
+            if (Active && HasPartner && (trust > 0f || affection > 0f))
+            {
+                FamilyDirector.Instance.Guarded(() => Partner.Tell(FamilyEvent.BrokenPromise, -affection, -trust));
             }
         }
 

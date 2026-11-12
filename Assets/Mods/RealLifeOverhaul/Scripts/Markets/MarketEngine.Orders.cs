@@ -61,7 +61,9 @@ namespace RealLifeOverhaul.Markets
             {
                 Shared(s, kept, qty);
             }
+            State.Extras.Push(s.Id, kept);   // the player's own lasting push: the fund never deals at a price it made better
             s.Last = s.MidCents;
+            ExtrasHeld(s, o);   // a holding that passed a whole 5% is told to the market (Extras/MarketEngine.Extras.cs)
             if (!o.Forced && State.Held(s.Id) == 0)
             {
                 CloseClosing(s.Id, o.Id);   // nothing held now: a stop loss or take profit left on it has nothing to close

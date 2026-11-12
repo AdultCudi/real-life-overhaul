@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Construction
             GrowProjectsDay(day);   // the player's Let it grow projects carried to City Hall by their builder (ConstructionDirector.LetItGrow)
             GrowDeedsDay();         // ... and their deeds asking their tier's rent once written
             FlatsHeldDay();         // the player's blocks with flats on sale: their unsold share let, or their residents' once the last is sold (ConstructionDirector.Projects)
+            KitDay(day);            // the licence by floors and the land's monthly asks (ConstructionDirector.Kit.cs)
             ParkDay(day);           // the car parks: the night's accounts, leases and offers, the programme's projects, the city's builders' lots (ConstructionDirector.ParkRun.cs)
             if (Verbose)
             {
@@ -316,11 +317,24 @@ namespace RealLifeOverhaul.Construction
             Tell(NotificationType.Success, "reallife_bld_notice_loan_paid", ProjectName(p), null, TabProjects, p.Id);
         }
 
+        /// <summary>What the city's people bring the company now, thousandths of the anchor day's: a thousand with no living population.</summary>
+        internal static int People(BuildDemand d)
+        {
+            int f = ConstructionBridges.People != null ? ConstructionBridges.People(d) : 0;
+            return f > 0 ? f : 1000;
+        }
+
+        // The city's demand behind a source of tenders: its pull and its businesses' takings for a client's or a refit, the council's taxes for a public building.
+        private static int TenderPeople(TenderSource source)
+        {
+            return People(source == TenderSource.Public ? BuildDemand.Public : BuildDemand.Clients);
+        }
+
         /// <summary>A day's chance of a buyer for one of a block's flats, at the asking price chosen; the money shared out.</summary>
         private void FlatDay(ProjectFile p, int day)
         {
             BuildRandom random = BuildRandom.Of(_state.Seed, p.Id, day * 3 + 211);
-            if (random.Chance(LandRules.BuyerChance(p.Ask, _state.Firm.Reputation)))
+            if (random.Chance(LandRules.BuyerChance(p.Ask, _state.Firm.Reputation, People(BuildDemand.Buyers))))
             {
                 FlatSale(p);
             }

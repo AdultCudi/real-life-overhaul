@@ -535,9 +535,14 @@ namespace RealLifeOverhaul.Construction
             exitsNeeded = PlansRules.ExitsNeeded(p.Storeys, p.Area);
             parkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, code);
             limit = PlansRules.HeightLimit(p.District, !string.IsNullOrEmpty(p.Lot), code);
+            if (VarianceCovers(p))
+            {
+                limit = Math.Max(limit, p.Storeys);   // a variance the council granted stands for the floors it was asked for
+            }
             engineer = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
             Exchange(_exchange);
-            return PlansRules.Costed(PlansRules.Estimate(p.Model, p.Use, p.Area, p.Storeys, p.ParkingUnder, exitsNeeded, ConstructionGame.Prices, _exchange, code), p.CostPermille);
+            return PlansRules.Costed(PlansRules.Estimate(p.Model, p.Use, p.Area, p.Storeys, p.ParkingUnder, exitsNeeded, ConstructionGame.Prices,
+                _exchange, code), p.CostPermille * FinishRules.CostOf(p.Finish) / 1000);
         }
 
         /// <summary>The architect's terms for a project's plans as chosen now.</summary>
@@ -737,6 +742,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_planning_waits";
             }
+            if (p.Variance == VarianceState.Pending)
+            {
+                return "reallife_ui_cons_answer_variance_waits";   // the council is still to hear the floors above the code
+            }
             string unfit = SiteBlock(p);
             if (unfit != null)
             {
@@ -808,7 +817,7 @@ namespace RealLifeOverhaul.Construction
                 Consult(p);
             }
             // The code in force on the day decides: the height limit and the parking asked are the elected government's now.
-            int limit = HeightLimitOf(p);
+            int limit = LimitFor(p);   // the code's limit, or the floors a council's variance allowed
             p.ParkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, Permits());
             bool engineerNeeded = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
             bool zoned = Zoned(p);
@@ -933,6 +942,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_licence";
             }
+            if (p.Storeys > FloorsLicensed)
+            {
+                return "reallife_ui_cons_answer_floors";   // the licence covers fewer floors: hire a builder licensed for them, or earn the next level
+            }
             if (_state.CrewsOn(p.Id) == 0)
             {
                 return "reallife_bld_answer_no_crew";
@@ -994,6 +1007,10 @@ namespace RealLifeOverhaul.Construction
             {
                 hours = Math.Min(BuildCatalogue.HoursMost, hours + RefitRules.Hours(p.Area));   // the interior's fit-out on top of the rebuild's own
             }
+            if (ConstructionDirector.FinishKind(p) && p.Finish > 0)
+            {
+                hours = Math.Min(BuildCatalogue.HoursMost, FinishRules.Hours(hours, FinishRules.TierOf(p.Finish)));   // a premium finish takes longer to fit out, a basic one less
+            }
             return hours;
         }
 
@@ -1001,6 +1018,7 @@ namespace RealLifeOverhaul.Construction
         // a plot's frame on its lot, a refit behind a hoarding at its front, a rebuild in the game's scaffolding to the roof.
         private int StartSite(ProjectFile p, int contractor, out string why)
         {
+            p.FinishFixed = true;   // the site is set out on the finish chosen, or the standard one
             p.Hours = SiteHours(p);
             if (p.Kind == ProjectKind.Parking)
             {

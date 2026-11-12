@@ -39,12 +39,16 @@ internal static partial class Program
             "the stops of the lines are laid in slices of about a millisecond, the slice handed down to the lane points"),
         ("Transport/TransitDirector.cs", "PrewarmDressings", new[] { "_bus.Prepare()", "_next.Prepare()", "_seenOff.Prepare()", "_spare.Add(" }, new string[0],
             "the buses' bodies are built behind the loading screen, so that the first bus sent in play builds nothing"),
-        ("Social/Flare/FlareDirector.cs", "OnDay", new[] { "FinishDay();", "_dayStep = 0", "DaySteps()" }, new[] { "PlayDay(", "DayStep()" },
+        ("Social/Flare/FlareDirector.cs", "OnDay", new[] { "FinishDay();", "_round.Begin(day)", "DaySteps()" }, new[] { "PlayDay(", "DayStep()" },
             "the day's round only queues its steps at midnight (32 to 46 ms in one frame in a player's log); a coroutine plays them a step a frame"),
         ("Social/Flare/FlareDirector.cs", "OnSave", new[] { "FinishDay();" }, new string[0],
             "a save holds the day that has turned, played"),
         ("Social/Flare/FlareDirector.cs", "StandDown", new[] { "FinishDay();" }, new string[0],
             "standing down plays the day owed before the account is kept"),
+        ("Social/Flare/FlareDirector.cs", "FinishDay", new[] { "_round.Finish(DayStep)" }, new[] { "ToLetStep", "ToLetSlice" },
+            "finishing the day plays its steps and never the walk over the city's premises to let, which the day only queues"),
+        ("Social/Flare/FlareDirector.Pages.cs", "ToLetSteps", new[] { "_toLet.Step(FlareBridges.ToLetSlice)", "yield return null", "_round.Owed" }, new[] { "ToLetSlice(" },
+            "the walk over the city's premises to let is a slice of buildings a frame, in a frame the hour's and the day's steps do not use"),
         ("Economy/Ventures/VenturesDirector.Day.cs", "InvestorsDay", new[] { "LookBegin(day, level)" }, new[] { "LookOne(", "LookRound.One(", "LookSteps(" },
             "the weekly look (22 ms in one frame in a player's log) is only begun at midnight; its businesses are looked at in the frames after"),
         ("Economy/Ventures/VenturesDirector.Day.cs", "LookBegin", new[] { "DaySpread.Shared.Add(", "_lookStep", "Time.frameCount" }, new[] { "LookOne(", "LookRound.One(" },
@@ -80,7 +84,16 @@ internal static partial class Program
         ("DistrictSave/DistrictSaveDirector.cs", "BeforeWrite", new[] { "CompanionGame.End(save);" }, new string[0],
             "the district save joins the report's text, written on a worker beside its section"),
         ("World/MapLinks.cs", "Feed", new[] { "apply: false", "Category.Show()" }, new string[0],
-            "a batch of markers is shown once, not once a marker (the row's markers were gone over for each)")
+            "a batch of markers is shown once, not once a marker (the row's markers were gone over for each)"),
+        ("DaySeries/DaySeriesDirector.cs", "OnDay", new[] { "DaySpread.Shared.Add(", "_dayStep", "Time.frameCount" }, new[] { "Record(", "CashFlow" },
+            "the day's figures are queued at midnight, not read: yesterday's movements are read in the frames after"),
+        ("Population/PopulationDirector.cs", "BeginDay", new[] { "DaySpread.Shared.Flush(this)", "DaySpread.Shared.Add(", "_dayStep", "Time.frameCount" },
+            new[] { "ReadSeeds(", "_sim.Step(", "RunAll(" }, "the city's day is queued at midnight, not lived: a day still owed is finished first, the businesses are read in the frames after"),
+        ("Population/PopulationDirector.cs", "DayStep", new[] { "WorkSlice.Of(StepMs", "_sim.Step(ref slice)", "ReadSeeds(" }, new[] { "WorkSlice.Whole", "RunAll(" },
+            "a step of the city's day is the businesses read, a slice of what people hear of them, or a slice of about a millisecond of the people's day"),
+        ("Population/PopulationDirector.cs", "OnSave", new[] { "DaySpread.Shared.Flush(this)" }, new string[0], "the save's line holds the city's whole day"),
+        ("Population/PopulationDirector.cs", "StandDown", new[] { "DaySpread.Shared.Flush(this)", "DaySpread.Shared.Drop(this)" }, new string[0],
+            "standing down plays the day owed before the line is kept, and leaves nothing queued")
     };
 
     private static void SliceChecks()

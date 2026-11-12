@@ -8,8 +8,8 @@
 [h1]Real Life Overhaul[/h1]
 Real Life Overhaul adds everyday life to the city of Big Ambitions. Things happen in the street, to others and to you. Work up a career, raise a family, stand for mayor, list your company or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
 
-[h1]Coming next: the living economy[/h1]
-The biggest update so far is in testing now. Try it early on the [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3828304001]beta item[/url], on a separate save.
+[h1]New in 1.0: the living economy[/h1]
+The biggest update so far. What comes after it is tried first on the [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3828304001]beta item[/url], for testers, on a separate save.
 [list]
 [*][b]A city of real people.[/b] Every home holds a household that works, pays rent and tax and shops at the businesses within reach. Your customers are those people. Births, deaths and moves change the city over the years, and developers build new homes when flats run short.
 [*][b]Flare with real followers.[/b] Your followers are the city's residents. A good post brings real customers, every business has a rating and reviews from people who shopped there, and trends move what the city wants.
@@ -18,11 +18,12 @@ The biggest update so far is in testing now. Try it early on the [url=https://st
 [*][b]Life events.[/b] Illness and hospital with a health plan, parties and company events, giving to charity, and a will with an heir to carry on as.
 [*][b]Rivals you can meet.[/b] Rival owners are seen around the city, bid for your businesses by name and sell to each other.
 [*][b]Schemes and inquiries.[/b] Dressed books, false claims and money to people with power, each with a real chance of being found out.
-[*][b]Next in the beta.[/b] An Insurance app for car, health, home and business cover, taxi and delivery shifts in your own car, and loyalty cards for your shops.
+[*][b]Insurance, shifts and loyalty cards.[/b] An Insurance app for car, health, home and business cover, taxi and delivery shifts in your own car, and loyalty cards for your shops.
 [*][b]A new interface.[/b] The HUD, BizMan, conversations, the interior designer and the phone's apps in the mod's own design, each with its own switch.
+[*][b]Realistic graphics.[/b] Under Performance in the options, pick a Natural, Filmic or Vivid look and the whole picture follows the hour, the weather and the season. It is off until you choose a look, and at its Free cost it draws nothing extra.
 [/list]
 
-[h1]What it adds today[/h1]
+[h1]What else it adds[/h1]
 [list]
 [*][b]A living street.[/b] People chat, eat, queue and busk. Accidents, fires, crimes, street events and weather, with ambulances and police.
 [*][b]Getting around.[/b] Buses, the subway, taxis, bicycles, a minimap with a GPS route, cars that handle by their kind, a garage and a driving school.
@@ -49,7 +50,7 @@ Apart from the cameras, buses in view and hair in motion, the mod does its work 
 [list]
 [*]Made for the current build of Big Ambitions on Steam's public branch. On an older build the mod says so, and how to update the game. Windows only.
 [*]The mod follows the game's language. Any other language, or a text not yet translated, is in English.
-[*]One DLL, a text file for each language and five asset files. No game files are replaced. It can be added to an existing save.
+[*]One DLL, a text file for each language and six asset files. No game files are replaced. It can be added to an existing save.
 [*]Made to work with Going Public, the multiplayer mod: what would put players out of step, such as fast forward, is set aside in a session.
 [*]Works beside Empire Motors, Meaningful Interiors and Meaningful Ambience: where those already do something, this mod's part stays off. While a camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside.
 [/list]
@@ -61,7 +62,7 @@ In each save you want to keep, press "Prepare this save for removing the mod" un
 Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
-Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.63.11) and your other mods.
+Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (1.0.0) and your other mods.
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul

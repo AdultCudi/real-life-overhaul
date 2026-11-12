@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI.Notification;
 using UnityEngine;
 
@@ -57,6 +58,7 @@ namespace RealLifeOverhaul.Meta
             }
             _app = null;
             _view = null;
+            SettingsScreen.Drop();
         }
 
         // A preset, an import or a reset read every option again: the page shows the new values if it is open.
@@ -108,15 +110,19 @@ namespace RealLifeOverhaul.Meta
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new SettingsView();
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_set_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(170, 180, 196, 255), new Color32(58, 70, 92, 255), 0.42f, "AppIcon-Settings"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = SettingsScreen.Make,
+                KitScreen = SettingsScreen.ScreenId,
+                KitIcon = UiIcon.Gear
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _failed = !tryAgain;
@@ -127,6 +133,7 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             _view = view;
+            UiShell.Face(_app, def);
             if (Dev.Verbose)
             {
                 MetaLog.Info("Meta check (settings app): the Settings app is on the phone: PASS.");

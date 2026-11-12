@@ -293,21 +293,24 @@ namespace RealLifeOverhaul
         private static string MessagesLine()
         {
             int unread = 0;
+            var senders = new System.Collections.Generic.List<string>(4);
             var contacts = SaveGameManager.Current.Contacts;
             if (contacts != null)
             {
                 for (int i = 0; i < contacts.Count; i++)
                 {
-                    if (contacts[i] != null && contacts[i].messagesQueue != null)
+                    if (contacts[i] != null && contacts[i].messagesQueue != null && contacts[i].NumberOfUnreadMessages > 0)
                     {
                         unread += contacts[i].NumberOfUnreadMessages;
+                        senders.Add(Localizor.LocalizorManager.IsLocalizedKey(contacts[i].id) ? Localizor.LocalizorManager.GetLocalization(contacts[i].id) : contacts[i].id);
                     }
                 }
             }
             string stamps = TravelText.T("reallife_travel_room_messages_stamps", "stamps", TravelText.Number(TravelState.Stamps),
                 "need", TravelText.Number(TravelCatalogue.StampsForFreeNight), "free", TravelText.Number(TravelState.FreeNights));
             string messages = unread > 0
-                ? TravelText.T("reallife_travel_room_messages", "count", TravelText.Number(unread))
+                ? TravelText.T("reallife_travel_room_messages_from", "count", TravelText.Number(unread),
+                    "who", RealLifeOverhaul.Ui.ContactsRules.Senders(RealLifeOverhaul.Ui.UiText.Words, senders.ToArray()))
                 : TravelText.T("reallife_travel_room_messages_none");
             return messages + " " + stamps;
         }

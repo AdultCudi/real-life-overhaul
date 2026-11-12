@@ -306,6 +306,7 @@ namespace RealLifeOverhaul.Flare
             {
                 BusinessEffect(p, false);
             }
+            CityGuestPost(p, who);   // the host's residents hear a guest's post about a business (FlareDirector.Residents)
             if (p.Source != FlareSource.Reply)
             {
                 FlareLiveRules.CityReplies(_file, p, null);

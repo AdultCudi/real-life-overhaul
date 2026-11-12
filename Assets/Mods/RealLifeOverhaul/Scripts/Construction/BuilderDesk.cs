@@ -4,6 +4,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Construction
@@ -123,7 +124,8 @@ namespace RealLifeOverhaul.Construction
             {
                 return Page(PlanningCall.Join(text, d.BlockWords(p, block)), null, null, "reallife_bld_desk_open_app", () => Quotes(project));
             }
-            return Page(text, "reallife_bld_desk_ask_hire", () => Sign(project, r), "reallife_bld_desk_open_app", () => Quotes(project));
+            return Page(text, "reallife_bld_desk_ask_hire", () => Sign(project, r), "reallife_bld_desk_open_app", () => Quotes(project))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_deposit_sign", "amount", ConstructionText.Money(CommissionRules.Deposit(price)));
         }
 
         // The contract signed as the app's Hire this builder signs it: the dialogue closed, the game's question box, then the hire.

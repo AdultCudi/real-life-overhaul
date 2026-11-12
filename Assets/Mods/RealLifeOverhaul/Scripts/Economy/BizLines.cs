@@ -37,13 +37,13 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
         public static readonly string[] TakingsKeys =
         {
-            P + "tech_takings", P + "tech_cloud_takings", P + "broadband_takings", P + "ownbank_takings",
+            P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "tech_bakeoff", P + "broadband_takings", P + "ownbank_takings",
             P + "study_academy", P + "bld_contract"
         };
 
@@ -53,26 +53,36 @@ namespace RealLifeOverhaul.Economy
             P + "tech_hosting", P + "tech_software", P + "tech_compute", P + "tech_util_power", P + "tech_util_water", P + "tech_marketing",
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
+            P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
+            P + "tech_founding_fees", P + "tech_founding_expand", P + "tech_founding_reseller",   // a startup's incorporation, a neighbouring niche opened, a partner's cut of what it resells
+            P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
+            P + "tech_listing_bankers",   // the bankers' retainer on the way to the market, at the firm
+            P + "tech_desk_costs",   // what a desk session's answer costs: data, credits to customers, an award's fee, a power price fixed
             P + "tech_recruitment_ad", P + "tech_recruitment_checks", P + "tech_recruitment_search",
             P + "tech_recruitment_buyout", P + "tech_recruitment_buyout_paid",   // the second is a rival's money in, counted against the recruiting costs as a refund is
+            P + "tech_recruitment_rush",   // a search firm paid to bring its candidates forward
             P + "broadband_network", P + "broadband_installs", P + "broadband_marketing", P + "broadband_wages", P + "broadband_licence",
             P + "ownbank_savers", P + "ownbank_losses", P + "ownbank_wages", P + "ownbank_systems", P + "ownbank_fine",
             P + "bld_crews", P + "bld_plant", P + "bld_fees", P + "bld_interest", P + "bld_land_tax", P + "bld_vacant_tax", P + "bld_cover",
-            P + "fire_repair", P + "holdup_till"
+            P + "fire_repair", P + "holdup_till",
+            P + "trips_fuel",   // a delivery trip's fuel, at its warehouse
+            P + "parties_staff"   // a company event for the staff, at their business (its refund is the same key, the other way)
         };
 
         /// <summary>Capital, financing, deposits and sales of assets: no income and no running cost, so not in the statement.</summary>
         public static readonly string[] CapitalKeys =
         {
             P + "tech_investment_racks", P + "tech_investment_fitout", P + "tech_relief", P + "tech_write_down",
+            P + "tech_game_advance", P + "tech_game_crowdfund",   // a publisher's advance against royalties and pledges: money in, never sales
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",
+            P + "tech_venture_dividend", P + "tech_venture_wind_down", P + "tech_venture_exit",
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",
             P + "bld_builder", P + "bld_builder_back", P + "bld_buyout", P + "bld_cash", P + "bld_conversion", P + "bld_conversion_back",
             P + "bld_demolition", P + "bld_demolition_back", P + "bld_fees_back", P + "bld_insurance", P + "bld_investor_in", P + "bld_investor_out",
-            P + "bld_land", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
+            P + "bld_land", P + "bld_land_auction", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
             P + "bld_materials", P + "bld_plant_buy", P + "bld_plant_sale", P + "bld_refit", P + "bld_refit_back", P + "bld_repay",
             P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land"
         };

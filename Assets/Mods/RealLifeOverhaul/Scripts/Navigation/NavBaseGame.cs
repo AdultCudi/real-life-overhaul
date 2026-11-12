@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Nav
 
         private static readonly Vector3[] Corner = new Vector3[8];
         private static int _solid;
+        private static float _low, _high;   // the height range of the box the last outline was taken from (metres, world)
 
         /// <summary>The game's build number, which names the kept file; 0 if it cannot be read.</summary>
         public static int Build()
@@ -96,6 +97,14 @@ namespace RealLifeOverhaul.Nav
         /// <summary>A building's outline from above, into arrays of 8: 8 corners for its own mesh's box, 4 for an upright box, else 0.</summary>
         public static int Outline(CityBuildingController building, float[] x, float[] z)
         {
+            return Outline(building, x, z, out _, out _);
+        }
+
+        /// <summary>As the outline, with the lowest and the highest point of the same box (world height in metres), for the blocks of the 2.5D map.</summary>
+        public static int Outline(CityBuildingController building, float[] x, float[] z, out float low, out float high)
+        {
+            low = 0f;
+            high = 0f;
             if (building == null)
             {
                 return 0;
@@ -103,6 +112,8 @@ namespace RealLifeOverhaul.Nav
             int boxed = Outline(building.lodVersion, x, z);
             if (boxed > 0)
             {
+                low = _low;
+                high = _high;
                 return boxed;
             }
             Renderer[] all = building.Renderers;
@@ -129,7 +140,13 @@ namespace RealLifeOverhaul.Nav
                     whole.Encapsulate(renderer.bounds);
                 }
             }
-            return any && Upright(whole, x, z) ? 4 : 0;
+            if (any && Upright(whole, x, z))
+            {
+                low = _low;
+                high = _high;
+                return 4;
+            }
+            return 0;
         }
 
         /// <summary>The outline of a building's box (the game's LOD box of it) from above, as <see cref="Outline(CityBuildingController, float[], float[])"/> reads it; 0 with none.</summary>
@@ -151,10 +168,14 @@ namespace RealLifeOverhaul.Nav
                     }
                     if (Fits(Corner, 8))
                     {
+                        _low = float.MaxValue;
+                        _high = float.MinValue;
                         for (int i = 0; i < 8; i++)
                         {
                             x[i] = Corner[i].x;
                             z[i] = Corner[i].z;
+                            _low = Mathf.Min(_low, Corner[i].y);
+                            _high = Mathf.Max(_high, Corner[i].y);
                         }
                         return 8;
                     }
@@ -175,6 +196,8 @@ namespace RealLifeOverhaul.Nav
                 return false;
             }
             Vector3 low = box.min, high = box.max;
+            _low = low.y;
+            _high = high.y;
             x[0] = low.x;
             z[0] = low.z;
             x[1] = high.x;

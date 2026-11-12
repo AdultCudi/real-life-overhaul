@@ -24,12 +24,20 @@ namespace RealLifeOverhaul
                     () => SteadyClimate.Rate + CityEconomy.BasePoints);
                 VenturesBridges.JobsHeld = JobsHeld;
                 VenturesBridges.Held = Held;
+                VenturesBridges.Morale = Morale;
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
             internal static void Disconnect()
             {
                 VenturesBridges.Reset();   // the Planner's director goes with the city, and its sources with it
+            }
+
+            /// <summary>The app id a calendar entry of the investors carries: the app, then the tab and row the entry is about (an offer, a promise, a deal).</summary>
+            internal static string CalendarApp(string app, int kind, int number)
+            {
+                string pick = kind == 1 ? "offer:" : kind == 2 ? "pledge:" : kind >= 3 ? "deal:" : null;
+                return pick != null ? app + GameUi.PhoneApp.WantMark + VenturesPhone.Investors + ":" + pick + number.ToString(System.Globalization.CultureInfo.InvariantCulture) : app;
             }
 
             private static int JobsHeld()
@@ -42,6 +50,36 @@ namespace RealLifeOverhaul
                 {
                     Fault("VenturesLinks.JobsHeld", e);
                     return 0;
+                }
+            }
+
+            // The staff's standing across the player's businesses, weighted by the people at each: what a promise to keep morale up is judged on.
+            private static int Morale()
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    if (company == null)
+                    {
+                        return -1;
+                    }
+                    var list = new System.Collections.Generic.List<BuildingRegistration>(16);
+                    Books.Businesses(list);
+                    long standing = 0;
+                    int staff = 0;
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        int count;
+                        int each = company.StandingAt(Books.Key(list[i].Address), out count);
+                        standing += (long)each * count;
+                        staff += count;
+                    }
+                    return staff > 0 ? (int)(standing / staff) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("VenturesLinks.Morale", e);
+                    return -1;
                 }
             }
 

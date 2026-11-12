@@ -27,7 +27,26 @@ namespace RealLifeOverhaul.Districts
 
         private void Card()
         {
-            if (!_showing || _panel == null || !_panel.Alive)
+            bool kit = OnKit;
+            if (kit != _wasKit && _showing)
+            {
+                // The page was switched between the dock and the old window while a layer shows: the one that is not drawing goes, the other says it afresh.
+                _wasKit = kit;
+                _carded = null;
+                if (!kit)
+                {
+                    KitTagsClear();
+                    Show();
+                    return;
+                }
+                _panel?.Show(false);
+            }
+            _kitStamp++;
+            if (kit)
+            {
+                KitTagChosen();   // the pointer on the map or a click there: the cyan tag goes to that district
+            }
+            if (kit || !_showing || _panel == null || !_panel.Alive)
             {
                 return;
             }
@@ -49,7 +68,6 @@ namespace RealLifeOverhaul.Districts
 
             // The key.
             _panel.Heading(T("reallife_dv_key"));
-            LayerSense sense = DistrictRules.Sense(which);
             int[] edges = _edges[layer];
             bool any = false, none = false;
             for (int i = 0; i < _districts.Count; i++)
@@ -59,7 +77,7 @@ namespace RealLifeOverhaul.Districts
             }
             if (any && edges == null)
             {
-                _panel.Swatch(DistrictRules.Colour(sense, DistrictRules.Bands / 2), T("reallife_dv_all_alike"));
+                _panel.Swatch(DistrictRules.Colour(DistrictRules.Bands / 2), T("reallife_dv_all_alike"));
             }
             else if (any)
             {
@@ -70,7 +88,7 @@ namespace RealLifeOverhaul.Districts
                         continue;   // (a range too narrow for five steps leaves a band no district can be in)
                     }
                     string words = T(Mod + "_dv_band_" + id + "_" + band.ToString(CultureInfo.InvariantCulture));
-                    _panel.Swatch(DistrictRules.Colour(sense, band), words + "  <color=#C9CED3>" + Range(which, edges, band) + "</color>");
+                    _panel.Swatch(DistrictRules.Colour(band), words + "  <color=#C9CED3>" + Range(which, edges, band) + "</color>");
                 }
             }
             if (none)
@@ -101,7 +119,7 @@ namespace RealLifeOverhaul.Districts
             {
                 MapDistrict d = order[i];
                 string figure = d.HasFigure[layer] ? Figure(which, d.Figure[layer]) : T("reallife_dv_no_figure");
-                _panel.District(DistrictRules.Colour(sense, d.Band[layer]), d.Id, "<b>" + d.Name + "</b>  <color=#C9CED3>" + figure + "</color>", d.Centre);
+                _panel.District(DistrictRules.Colour(d.Band[layer]), d.Id, "<b>" + d.Name + "</b>  <color=#C9CED3>" + figure + "</color>", d.Centre);
             }
             _panel.End();
         }

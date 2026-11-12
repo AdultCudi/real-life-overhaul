@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Flare
         public const int PostsCounted = 3;         // the player's posts a day that move the account; later ones are seen and liked only
         public const int DraftDays = 2;            // a draft made today can still be posted tomorrow
         public const int DraftsMost = 8;
-        public const int PostsMost = 220;          // the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays)
+        public const int PostsMost = 520;          // the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays): three busy days of a city this size
         public const int OwnMost = 40;             // ...of them the player's: older ones are folded into the totals
         public const int FeedRows = 120;           // only the cards in view are built (FlareList)
 

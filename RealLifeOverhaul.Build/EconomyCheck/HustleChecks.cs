@@ -57,11 +57,14 @@ internal static partial class Program
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (ThingDef d in HustleCatalogue.Things)
         {
-            things &= d.NewPrice > 0 && d.FixMinutes > 0 && d.FixMost > 0 && d.FixMost <= 100 && d.CleanGain >= 0 && d.NameKey == "reallife_hustle_thing_" + d.Id;
-            things &= d.Kind != ThingKind.Electronics ? d.CleanGain > 0 && !d.ShopFix : d.CleanGain == 0 && d.ShopFix;
+            // A lot of stock is sold as it is: nothing to mend or to clean. Every other thing mends and the electronics go to the repair shop.
+            things &= d.NewPrice > 0 && d.FixMost > 0 && d.FixMost <= 100 && d.CleanGain >= 0 && d.NameKey == "reallife_hustle_thing_" + d.Id;
+            things &= d.Kind == ThingKind.Stock ? d.FixMinutes == 0 && d.CleanGain == 0 && !d.ShopFix : d.FixMinutes > 0;
+            things &= d.Kind == ThingKind.Stock ? true : d.Kind != ThingKind.Electronics ? d.CleanGain > 0 && !d.ShopFix : d.CleanGain == 0 && d.ShopFix;
             ids &= seen.Add(d.Id) && HustleCatalogue.Thing(d.Id) == d;
         }
-        Check(things && ids && HustleCatalogue.Things.Length == 16, "hustles: sixteen kinds of goods, each with a price, a repair, its name's key, electronics to the repair shop and the rest to be cleaned");
+        Check(things && ids && HustleCatalogue.Things.Length == 25,
+            "hustles: sixteen kinds of household goods, five machines and four lots of stock, each with a price, a repair (but a lot), its name's key, electronics to the repair shop and the rest to be cleaned");
         bool gigs = HustleCatalogue.Gigs.Length == 4;
         for (int i = 0; i < HustleCatalogue.Gigs.Length; i++)
         {
@@ -112,7 +115,9 @@ internal static partial class Program
                 ThingDef def = HustleCatalogue.Thing(l.Thing);
                 int worth = HustleRules.GoodsWorth(def, l.Condition, 1000);
                 bounds &= def != null && l.Condition >= HustleCatalogue.ListingConditionLeast && l.Condition <= HustleCatalogue.ListingConditionMost;
-                bounds &= l.Asking >= HustleCatalogue.Share(worth, HustleCatalogue.AskingLeast) - 30 && l.Asking <= HustleCatalogue.Share(worth, HustleCatalogue.AskingMost) + 30;
+                int under = def != null && def.Kind == ThingKind.Stock ? HustleCatalogue.StockUnderBp : 0;   // a lot asks under what the wholesaler asks
+                bounds &= l.Asking >= HustleCatalogue.Share(worth, HustleCatalogue.AskingLeast) * (10000 - under) / 10000 - 30
+                    && l.Asking <= HustleCatalogue.Share(worth, HustleCatalogue.AskingMost) + 30;
                 if (l.Shown > l.Condition)
                 {
                     said++;

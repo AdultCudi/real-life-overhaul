@@ -62,6 +62,7 @@ namespace RealLifeOverhaul
 
         private const string ModifierPrefix = "reallife_happinessmodifier_";
         private const string KeySickUntil = "reallife:sick_until";
+        private const string KeySickSince = "reallife:sick_since";
         private const string KeyFriendDay = "reallife:friend_day";
         private const string KeyMomDay = "reallife:mom_day";
         private const string KeyMomGiftDay = "reallife:mom_gift_day";
@@ -88,6 +89,8 @@ namespace RealLifeOverhaul
 
         /// <summary>Game time in total minutes until which the player is sick; 0 when healthy.</summary>
         public static float SickUntil;
+        /// <summary>Game time in total minutes at which the sickness began; 0 when healthy or not known (a save from before it was kept).</summary>
+        public static float SickSince;
         public static int LastFriendCallDay;
         public static int LastMomCallDay;
         public static int LastMomGiftDay;
@@ -108,6 +111,7 @@ namespace RealLifeOverhaul
         {
             Loaded = false;
             SickUntil = 0f;
+            SickSince = 0f;
             LastFriendCallDay = 0;
             LastMomCallDay = 0;
             LastMomGiftDay = 0;
@@ -116,6 +120,8 @@ namespace RealLifeOverhaul
             SeenEvents.Clear();
             LastEventId = null;
             Leisure.LeisureState.Reset();
+            Economy.SendNowLimit.Reset();
+            Leisure.ClothesSeen.Reset();
             CharacterCatalogue.Leave();   // no save, no picks of the mod's looks
         }
 
@@ -130,6 +136,7 @@ namespace RealLifeOverhaul
             }
             Dictionary<string, string> data = save.modData;
             SickUntil = ReadFloat(data, KeySickUntil);
+            SickSince = ReadFloat(data, KeySickSince);
             LastFriendCallDay = (int)ReadFloat(data, KeyFriendDay);
             LastMomCallDay = (int)ReadFloat(data, KeyMomDay);
             LastMomGiftDay = (int)ReadFloat(data, KeyMomGiftDay);
@@ -143,6 +150,8 @@ namespace RealLifeOverhaul
             }
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
+            Economy.SendNowLimit.ReadSave(data);   // the routes BizMan sent today; an older save has none
+            Leisure.ClothesSeen.ReadSave(data);   // the garments the clothes shop has shown, for its New filter; an older save has none
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
             CharacterCatalogue.ReadSave(data);   // the player's picks of the mod's own hair and clothes, by id
 
@@ -208,6 +217,7 @@ namespace RealLifeOverhaul
                 return removed;
             }
             data[KeySickUntil] = SickUntil.ToString(CultureInfo.InvariantCulture);
+            data[KeySickSince] = SickSince.ToString(CultureInfo.InvariantCulture);
             data[KeyFriendDay] = LastFriendCallDay.ToString(CultureInfo.InvariantCulture);
             data[KeyMomDay] = LastMomCallDay.ToString(CultureInfo.InvariantCulture);
             data[KeyMomGiftDay] = LastMomGiftDay.ToString(CultureInfo.InvariantCulture);
@@ -224,6 +234,8 @@ namespace RealLifeOverhaul
             data[KeySeenEvents] = string.Join(",", SeenEvents);
             CharacterCatalogue.WriteSave(data);
             Leisure.LeisureState.WriteSave(data);
+            Economy.SendNowLimit.WriteSave(data, TimeHelper.CurrentDay);
+            Leisure.ClothesSeen.WriteSave(data);
             return removed;
         }
 

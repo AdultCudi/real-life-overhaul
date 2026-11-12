@@ -47,7 +47,8 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | --- | --- |
 | `ActorPool` | the twelve characters every scene shares: created once, reused in the same outfit, hidden when out of view; four may be out only to be seen and give way to any scene |
 | `Uniforms` | the one outfit every officer wears and the one every paramedic wears: named garments, fixed colours; the hi-vis shirt |
-| `ServiceKit` | what is worn with a uniform, on the bones: badge, belt, radio, cap, POLICE / PARAMEDIC panels, the medic bag; fitted to the measured body, the cap to the measured head (band above the brow, peak above the eyes) |
+| `ServiceKit` | what is worn with a uniform, on the bones: badge, belt, radio, cap, POLICE / PARAMEDIC panels, the medic bag; fitted to the measured body, the cap to the measured head (band above the brow, peak above the eyes); the cap only where it is asked for (`CapFitted` says it is on) |
+| `OfficerCapRules` | what an officer wears on the head by the "Police officers wear caps" option (`police_caps`): nothing with it off, else the modelled cap, else the game's hat (the hat again where the kit refused the cap); when a dressed officer is to be dressed again; the verdict of the self-check line (game-free: EconomyCheck's `CopCapChecks.cs`) |
 | `Stature` | how tall a character stands, from its joints and measured crown; the scale that makes officers 1.86 m (women 1.76 m) and no paramedic short |
 | `BonePose` | aim a bone, reach a hand to a place: shared by KneelPose, SupinePose and Crime/CuffPose |
 | `StreetActor` | one character: walk, stand, pose, kneel, gesture |
@@ -209,6 +210,12 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 
 - Officers and paramedics wear `People/Uniforms` and the equipment of `People/ServiceKit` (pieces on bones: no component, collider or shadow, hidden with the body, removed when the character is dressed as anyone else) and nothing else; civilians stay random.
   An ambulance is only ever a response vehicle (`TrafficTools.IsAmbulance`): never a wreck, a runner or a suspect, and no other vehicle stands in for one.
+
+- Officers wear a cap unless **Police officers wear caps** (`police_caps`, in the Police section of the options page, on) is off. Then `ActorPool.Dress`, the one place that dresses an officer, leaves the game's hat slot empty and fits no modelled cap, whichever cap they would have worn (`OfficerCapRules.First`); every officer of every scene, patrol and station follows it.
+  Only the cap is left off: the hair, the height (`Stature` takes the crown as measured before the modelled cap is hung on it) and the rest of the kit are as they were, and the cap's own fit (`ServiceKit.FitCap`) is not touched.
+  It stands apart from the Police main switch: officers stand at stations and crime scenes without it. No preset touches it, as it is a look and not a difficulty.
+  The pool remembers the value each person was dressed for (`StreetActor.CapsOn`). When the option moves, the page's switch tells the pool at once (`ActorPool.CapsChanged`), and a preset, an import or a reset does so through `Settings.Changed`: an idle officer dressed for the other value is dressed again on the shelf, one look at a time at `Looks`' pace and out of sight (`ActorPool.Tending`, as for a civilian's worn look). An officer a scene is about to be handed is dressed again first if the shelf has not caught up (`ActorPool.Take`, which also prefers one that is up to date), so nobody goes out in the wrong cap. An officer already out keeps what they wear until their scene ends.
+  With Developer diagnostics on, each officer dressed writes one `People check (an officer's head)` line: the option, the modelled cap on the kit and what the hat slot holds, PASS or FAIL.
 
 - People stand and walk at street level: positions come from `StreetSpots` (which refuses any walkable point that is not at the height of the ground beneath it) and they travel only by their navigation agent.
   Poses use animations the characters have (`StreetActor.Knows`) or `KneelPose`; a pose the animator lacks is skipped, never substituted blindly.

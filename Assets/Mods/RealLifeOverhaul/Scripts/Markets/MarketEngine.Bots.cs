@@ -403,6 +403,36 @@ namespace RealLifeOverhaul.Markets
                 }
                 BotLimit(b, phase);
             }
+            if (k == 0)
+            {
+                RuleBots.Step(State, day, phase, PlaceRule, _botWork);
+            }
+        }
+
+        // A player's rule, through the same place as a hand order. The mark names the fill on the tape.
+        private bool PlaceRule(RuleBot rule, int stockId, bool buy, long qty, int limitCents, OrderType type)
+        {
+            TradeLog.RuleMark = rule.Id;
+            try
+            {
+                Order order = Place(stockId, buy ? OrderSide.Buy : OrderSide.Sell, type, OrderLife.Day, qty, limitCents, 0, true, false, false, out OrderWhy _);
+                if (order == null)
+                {
+                    return false;
+                }
+                Stock s = State.Stock(stockId);
+                long cost = s != null ? qty * s.Last / 100L : 0L;
+                rule.Cash += buy ? -cost : cost;
+                if (rule.Cash < 0)
+                {
+                    rule.Cash = 0;
+                }
+                return true;
+            }
+            finally
+            {
+                TradeLog.RuleMark = 0;
+            }
         }
 
         // At the close, a piece of its own per bot: its month's statement, the drawdown, and its decision (tens of microseconds).
@@ -636,6 +666,7 @@ namespace RealLifeOverhaul.Markets
             {
                 Shared(s, kept, qty);
             }
+            State.Extras.Push(s.Id, kept);   // a bot's trade is the player's push too
             s.Last = s.MidCents;
             return true;
         }
@@ -693,7 +724,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 b.Cash += money;
                 long gain = money - h.Cost;
-                b.Realised += gain;
+                MarketBots.BookGain(b, gain, State.Day);
                 h.Gain += gain;
                 b.Closed++;
                 b.Wins += h.Gain > 0 ? 1 : 0;

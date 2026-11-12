@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 string type = t.transactionType ?? string.Empty;
                 int category = CashCategory.For(type);
-                var entry = new CashEntry { Type = type, Data = t.transactionData, Amount = t.amount, Day = day, Category = category };
+                var entry = new CashEntry { Type = type, Data = t.transactionData, Amount = t.amount, Day = day, Hour = t.timestamp.Hour, Category = category };
                 Entries.Add(entry);
                 if (t.amount > 0f)
                 {

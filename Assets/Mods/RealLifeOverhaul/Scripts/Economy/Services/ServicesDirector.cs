@@ -283,15 +283,19 @@ namespace RealLifeOverhaul.Economy
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new ServicesApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_svc_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(96, 196, 178, 255), new Color32(34, 122, 128, 255), 0.42f, "AppIcon-Services"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.ServicesScreen(RealLifeOverhaul.Ui.ServicesLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.ServicesScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Handshake
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -303,6 +307,8 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.ServicesLive.WantFrom;   // a calendar entry opens the app on its tab and row
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick); the old pages stay the way back
             Badge();
         }
 
@@ -484,6 +490,7 @@ namespace RealLifeOverhaul.Economy
 
         private void Open(int tab, string pick)
         {
+            RealLifeOverhaul.Ui.ServicesLive.Want(tab, pick);
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab, pick);
@@ -508,6 +515,34 @@ namespace RealLifeOverhaul.Economy
 
         public static bool CanClean => Instance != null && Instance.CleaningOn && Instance._app != null;
 
+        /// <summary>
+        /// Whether a business can be put up for sale now. False with no key: selling is not offered at all (off in the options or stopped). False with a key: it is offered
+        /// but refused now, and the key says why (in a Going Public session, or what stands in the way of the sale). The same refusals the sale's questions give, shown first.
+        /// </summary>
+        public static bool CanSellPlace(string place, out string reasonKey)
+        {
+            reasonKey = null;
+            ServicesDirector d = Instance;
+            if (d == null || d._app == null || !d._running || d._broken || d._saleBroken || !Settings.EconomySale)
+            {
+                return false;
+            }
+            if (GoingPublic.InSession)
+            {
+                reasonKey = "reallife_ui_svc_going_public";
+                return false;
+            }
+            return SaleRefusal(ServicesGame.Find(place), out reasonKey);
+        }
+
+        /// <summary>True when the business can be sold now; otherwise the text key of why not.</summary>
+        public static bool SaleRefusal(BuildingRegistration reg, out string reasonKey)
+        {
+            SaleBlock block = ServicesGame.Blocked(reg);
+            reasonKey = BlockKeys[(int)block];
+            return block == SaleBlock.None;
+        }
+
         /// <summary>The app has been opened: the crew and the clients are read again, so the page shows the floors as they are.</summary>
         public bool AppOpened()
         {
@@ -531,12 +566,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>Moves with every change to the cleaning service or the sales: the kit's page is written again when it does.</summary>
+        public int Revision { get; private set; }
+
         private void Changed()
         {
             if (!_running || Save == null)
             {
                 return;
             }
+            Revision++;
             Badge();
             _view?.Changed();
         }
@@ -549,14 +588,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How many things wait for the player's answer: contract offers and offers for a business.</summary>
+        /// <summary>How many things wait for the player's answer: contract offers, offers for a business and rivals' businesses for sale.</summary>
         public int Waiting()
         {
             if (!_running)
             {
                 return 0;
             }
-            return (CleaningOn ? _state.Offers.Count : 0) + (SaleOn ? _state.SaleOffers.Count : 0);
+            return (CleaningOn ? _state.Offers.Count : 0) + (SaleOn ? _state.SaleOffers.Count + _state.RivalSales.Count : 0);
         }
 
         /// <summary>For the save tools: no shift of the mod's stays in any schedule; the timer starts the feature again if an option is on.</summary>

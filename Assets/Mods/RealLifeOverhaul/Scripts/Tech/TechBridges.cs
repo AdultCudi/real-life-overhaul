@@ -9,8 +9,34 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class TechBridges
     {
+        /// <summary>A firm's week as its weekly team meeting set it: extra output and burnout a day worked, thousandths; false with none.</summary>
+        public delegate bool TeamAsk(string place, int day, out int output, out int burnout);
+
+        /// <summary>The week a firm's team meeting set (the desk sessions, Wiring/Wiring.SessionLinks). Default: none.</summary>
+        public static TeamAsk TeamWeek;
+
+        /// <summary><see cref="TeamWeek"/> asked: nothing with no answer, or if the sessions fault.</summary>
+        public static void TeamWeekAt(string place, int day, out int output, out int burnout)
+        {
+            output = burnout = 0;
+            try
+            {
+                if (TeamWeek == null || !TeamWeek(place, day, out output, out burnout))
+                {
+                    output = burnout = 0;
+                }
+            }
+            catch (Exception)
+            {
+                output = burnout = 0;
+            }
+        }
+
         /// <summary>The player's standing as an employer, -10 to 10 (Standing's workers). Default: 0.</summary>
         public static Func<int> Esteem;
+
+        /// <summary>Thousandths of the anchor day's professions' jobseekers among the city's people (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Seekers;
 
         /// <summary>A rival's name for an approach to one of the player's people at a business. Default: one of the city's tech companies.</summary>
         public static Func<BuildingRegistration, string> Rival;
@@ -27,8 +53,161 @@ namespace RealLifeOverhaul.Tech
         /// <summary>News of a listed company moves its share price: the stock market's id and the move in basis points. Default: nothing.</summary>
         public static Action<int, int> Stock;
 
+        /// <summary>The player's own listed company's id on the stock market while it trades, 0 while not listed (the studio's releases move it). Default: none.</summary>
+        public static Func<int> OwnStock;
+
+        public static int OwnStockNow() => Ask(OwnStock, 0, int.MaxValue, 0);
+
+        /// <summary>True while desk sessions run (the sessions' option and the master one): the studio's pitch is then held at the desk. Default: not running.</summary>
+        public static Func<bool> Desks;
+
+        public static bool DesksNow()
+        {
+            try
+            {
+                return Desks != null && Desks();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The owner's desk the desk sessions hold in the business the player stands in (Wiring/Wiring.SessionLinks): a click on it
+        /// opens the sessions' panel, which offers the work at it too, so the own desk's work is offered there through that panel
+        /// and not by a click of its own. Default: none.
+        /// </summary>
+        public static Func<EmployeeStationController> SessionDesk;
+
+        /// <summary><see cref="SessionDesk"/> asked: none with no answer, or if the sessions fault.</summary>
+        public static EmployeeStationController SessionDeskNow()
+        {
+            try
+            {
+                return SessionDesk != null ? SessionDesk() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The game studio's desk sessions put in (true) or taken out of the sessions' registry as the studio starts and stops. Default: nothing.</summary>
+        public static Action<bool> StudioSessions;
+
+        /// <summary><see cref="StudioSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void StudioSessionsNow(bool on)
+        {
+            try
+            {
+                StudioSessions?.Invoke(on);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the studio runs on, its sessions as they were
+            }
+        }
+
+        /// <summary>A desk session's record at a business: the day last held (-1 never) and whether a manager takes it; false while sessions are off.</summary>
+        public delegate bool DeskAsk(string place, string session, out int held, out bool delegated);
+
+        /// <summary>The sessions' records (Wiring/Wiring.SectorLinks). Default: none, so no session is shown as due.</summary>
+        public static DeskAsk DeskRecord;
+
+        /// <summary><see cref="DeskRecord"/> asked: false with no answer, or if the sessions fault.</summary>
+        public static bool DeskRecordAt(string place, string session, out int held, out bool delegated)
+        {
+            held = -1;
+            delegated = false;
+            try
+            {
+                return DeskRecord != null && DeskRecord(place, session, out held, out delegated);
+            }
+            catch (Exception)
+            {
+                held = -1;
+                delegated = false;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The other tech firms' desk sessions put in or taken out as the sector starts and stops: the firms' kinds,
+        /// and the data centres' while the player has one. Default: nothing.
+        /// </summary>
+        public static Action<bool, bool> SectorSessions;
+
+        /// <summary><see cref="SectorSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void SectorSessionsNow(bool firms, bool centres)
+        {
+            try
+            {
+                SectorSessions?.Invoke(firms, centres);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the firms run on, their sessions as they were
+            }
+        }
+
         /// <summary>Opens a case for a data protection offence against a firm (its name), on a summons; the case's number or 0. Default: none.</summary>
         public static Func<string, int> Prosecute;
+
+        /// <summary>Files the investors' civil claim for money of a firm that was spent elsewhere:
+        /// the sum in whole money, the firm, the lead investor; the suit's number or 0. Default: none.</summary>
+        public static Func<long, string, string, int> InvestorClaim;
+
+        /// <summary>Opens the criminal case for investor fraud on a summons: the sum in whole money and the audit's evidence, 0 to 1; the case's number or 0. Default: none.</summary>
+        public static Func<int, float, int> InvestorFraud;
+
+        /// <summary>The player's own skill in points (a TalentCatalogue skill's number in, 0 to 100 out). Default: none, so 0.</summary>
+        public static Func<int, int> Skill;
+
+        /// <summary>Adds thousandths of a point to one of the player's skills by doing: a TalentCatalogue skill's number and the thousandths (Careers' StudyRules.Learn). Default: none.</summary>
+        public static Action<int, int> Learn;
+
+        /// <summary><see cref="Learn"/> told; a fault in Careers changes nothing here.</summary>
+        public static void LearnNow(int skill, int thousandths)
+        {
+            try
+            {
+                Learn?.Invoke(skill, thousandths);
+            }
+            catch (Exception)
+            {
+                // the skill does not grow this time
+            }
+        }
+
+        /// <summary><see cref="Skill"/> asked: 0 with no answer, or if Careers fault.</summary>
+        public static int SkillNow(int skill)
+        {
+            try
+            {
+                return Skill != null ? Math.Max(0, Math.Min(100, Skill(skill))) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>The board's question session put in (true) or taken out of the sessions' registry as the venture part starts and stops. Default: nothing.</summary>
+        public static Action<bool> BoardSessions;
+
+        /// <summary><see cref="BoardSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void BoardSessionsNow(bool on)
+        {
+            try
+            {
+                BoardSessions?.Invoke(on);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the board's question is then answered from the firm's page
+            }
+        }
 
         /// <summary>A loss at a business the company's liability cover may meet: the business and the loss in whole money. Default: nobody is told.</summary>
         public static Action<BuildingRegistration, int> Claim;
@@ -197,6 +376,44 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
+        /// <summary>
+        /// A contract of the player's worked at a free desk of their own firm (Careers: the freelance work of the Own work tab): true when Careers took the click, the work panel offered
+        /// or the refusal said; false when no contract can be worked there and the firm's own work is offered. Default: none is.
+        /// </summary>
+        public static Func<EmployeeStationController, bool> ContractDesk;
+
+        /// <summary><see cref="ContractDesk"/> asked: false with no answer, or if Careers faults.</summary>
+        public static bool ContractAt(EmployeeStationController desk)
+        {
+            try
+            {
+                return ContractDesk != null && ContractDesk(desk);
+            }
+            catch (Exception)
+            {
+                return false;   // Careers' fault: the firm's own work is offered, as with none
+            }
+        }
+
+        /// <summary>
+        /// The client of the contract Careers would have the player work at a free desk of their own firm, or null for none: the firm asks, to say which work a click may be for.
+        /// Default: none.
+        /// </summary>
+        public static Func<EmployeeStationController, string> ContractClient;
+
+        /// <summary><see cref="ContractClient"/> asked: none with no answer, or if Careers faults.</summary>
+        public static string ContractClientAt(EmployeeStationController desk)
+        {
+            try
+            {
+                return ContractClient != null ? ContractClient(desk) : null;
+            }
+            catch (Exception)
+            {
+                return null;   // Careers' fault: only the firm's own work is offered, as with none
+            }
+        }
+
         /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers). Default: nothing.</summary>
         public static Func<int> Founder;
 
@@ -301,6 +518,7 @@ namespace RealLifeOverhaul.Tech
 
         public static void Reset()
         {
+            Seekers = null;
             UtilitiesByPhone = null;
             Esteem = null;
             Comfort = null;
@@ -311,7 +529,18 @@ namespace RealLifeOverhaul.Tech
             Held = null;
             Books = null;
             Stock = null;
+            OwnStock = null;
+            StudioSessions = null;
+            SectorSessions = null;
+            DeskRecord = null;
+            Desks = null;
+            SessionDesk = null;
             Prosecute = null;
+            InvestorClaim = null;
+            InvestorFraud = null;
+            Skill = null;
+            Learn = null;
+            BoardSessions = null;
             Claim = null;
             Fame = null;
             Ipo = null;
@@ -326,6 +555,8 @@ namespace RealLifeOverhaul.Tech
             Founder = null;
             Owner = null;
             OwnerWorked = null;
+            ContractDesk = null;
+            ContractClient = null;
             CourseShareBp = null;
             DegreeFee = null;
             OthersPicked = null;

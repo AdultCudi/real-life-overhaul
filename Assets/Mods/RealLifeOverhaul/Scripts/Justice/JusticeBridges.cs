@@ -170,6 +170,15 @@ namespace RealLifeOverhaul
             /// <summary>A hearing of the player's is over (somebody famous makes it a story).</summary>
             public static Action Heard;
 
+            /// <summary>A tax case settled with the city, on this day: the tax inspector comes to the player's businesses less often for a while. Null: nothing follows.</summary>
+            public static Action<int> TaxSettled;
+
+            /// <summary>What else hangs over the player, a sentence each, for the Legal file (an inquiry not yet before the court). Null: nothing more.</summary>
+            public static Action<System.Collections.Generic.List<string>> FileLines;
+
+            /// <summary>What else the player can do from the Legal file: each act's name, what it means, and what to say once it is done. Null: nothing more.</summary>
+            public static Action<Action<string, string, Func<string>>> FileActs;
+
             public static void Reset()
             {
                 Law = null;
@@ -178,6 +187,9 @@ namespace RealLifeOverhaul
                 Transport = null;
                 Fame = null;
                 Heard = null;
+                TaxSettled = null;
+                FileLines = null;
+                FileActs = null;
             }
         }
 

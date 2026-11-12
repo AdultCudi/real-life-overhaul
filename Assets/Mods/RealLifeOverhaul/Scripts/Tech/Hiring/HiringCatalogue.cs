@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Tech
         public const int StartLeast = 1, StartUnemployedMost = 3;
         public const int StartTries = 3;   // days past the first day that a start the game refuses is tried again before the applicant withdraws, and the player is told
         public const int ApplicantsMost = 120;
+        public const int CandidatesMost = 512;   // files made ahead for candidates of the game's (the office's waiting ones and the hires lately made): the table of them in the save
 
         // Buying out a notice: the hiring firm pays the employer to let them go early, the player for a hire, a rival for one of the player's staff
         public const int BuyoutBp = 15000;   // the price over the pay for the days saved: their pay in lieu of notice, and half as much again for the employer's cost of replacing them sooner
@@ -84,6 +85,7 @@ namespace RealLifeOverhaul.Tech
         public const int SearchDaysLeast = 4, SearchDaysMost = 8;
         public const int SearchCandidates = 3;
         public const int SearchLeastLevel = TalentCatalogue.Senior;
+        public const int SearchRushBp = 500;        // basis points of a search's fee for each day its candidates are brought forward to tomorrow
 
         // A data centre's crew by a search firm, briefed from the player's headquarters: juniors to staff level, a fee a hire
         public const string Headquarters = "ba:businesstype_headquarters";      // the game's business type of a company's headquarters

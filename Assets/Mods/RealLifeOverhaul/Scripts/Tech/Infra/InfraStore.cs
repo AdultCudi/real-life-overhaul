@@ -35,7 +35,14 @@ namespace RealLifeOverhaul.Tech
                 }
                 w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages)
                     .Add(d.DownUntil).Add(d.Takings30).Add(days.ToString())
-                    .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security]);
+                    .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security])
+                    .Add(d.Prev30).Add(d.PrevDays).Add(d.Outage90[0]).Add(d.Outage90[1]).Add(d.Outage90[2]);
+            }
+            // the named colocation contracts, a part of their own after the centres: a save from before them has none, and its centres' racks are placed on their next day
+            w.Part('k').Record().Add(f.NextColo);
+            foreach (ColoContract k in f.Colo)
+            {
+                w.Record().Add(k.Id).Place(k.Place).Add(k.Client).Add(k.Racks).Add(k.Fee).Add(k.Start).Add(k.End).Add(k.Rival).Add(k.Weighed);
             }
             return w.ToString();
         }
@@ -84,9 +91,35 @@ namespace RealLifeOverhaul.Tech
                 {
                     d.Crew[k] = Math.Max(0, x.Int());
                 }
+                // the month before the ring and the 90 day outage ring, appended last: a save from before them has none, and its centres count as always up
+                d.Prev30 = Math.Max(0, x.Long());
+                d.PrevDays = Math.Max(0, Math.Min(TechStatusRules.ChangeFromDays, x.Int()));
+                for (int k = 0; k < d.Outage90.Length; k++)
+                {
+                    d.Outage90[k] = x.Int() & 0x3FFFFFFF;
+                }
                 if (f.Centres.Count < InfraCatalogue.CentresMost)
                 {
                     f.Centres.Add(d);
+                }
+            }
+            bool first = true;
+            foreach (Fields x in r.Records('k'))
+            {
+                if (first)
+                {
+                    first = false;
+                    f.NextColo = Math.Max(1, x.Int(1));
+                    continue;
+                }
+                var k = new ColoContract
+                {
+                    Id = x.Int(), Place = x.Place(), Client = x.Int(), Racks = Math.Max(0, x.Int()), Fee = Math.Max(0, x.Long()), Start = x.Int(), End = x.Int(), Rival = x.Int(-1), Weighed = x.Bool()
+                };
+                if (k.Id > 0 && k.Racks > 0 && f.Colo.Count < ColoRules.ContractsMost)
+                {
+                    f.Colo.Add(k);
+                    f.NextColo = Math.Max(f.NextColo, k.Id + 1);
                 }
             }
             return f;

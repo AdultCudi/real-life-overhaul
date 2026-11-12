@@ -504,7 +504,7 @@ namespace RealLifeOverhaul
                 return 0f;
             }
             _gov.Weights(_weights);
-            BudgetWeek week = OfficeRules.Week(_gov.Electorate(), Gov.Levers, State.Budget);
+            BudgetWeek week = OfficeRules.Week(_gov.Payers(), Gov.Levers, State.Budget);
             return OfficeRules.BudgetApproval(State.Budget, _weights, State.Reserve, week.Revenue) * 0.8f;
         }
 

@@ -1,0 +1,83 @@
+using System.Globalization;
+using BigAmbitions.Mods;
+using RealLifeOverhaul.Meta;
+
+namespace RealLifeOverhaul.Population
+{
+    /// <summary>
+    /// The population's entry in the feature list (under the living economy's master option, Living population, which the "living" feature owns): its
+    /// save line, its three tests, its Guide page and the figures the page names, each {name} filled from the catalogue when the page opens.
+    /// </summary>
+    public static class PopulationGuide
+    {
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        public static void Register()
+        {
+            Features.Add("population", "reallife_meta_title_population")
+                .About("reallife_guide_population_about").Help("reallife_guide_population")
+                .Data(PopulationStore.Key)
+                .Data(PopDemandStore.Key)
+                .Test("reallife_pop_test_generate", () => PopulationDirector.Instance?.TestGenerate())
+                .Test("reallife_pop_test_month", () => PopulationDirector.Instance?.TestMonth())
+                .Test("reallife_pop_test_household", () => PopulationDirector.Instance?.TestHousehold())
+                .Test("reallife_pop_test_demand", () => PopulationDirector.Instance?.TestDemand())
+                .Fact("pop_flat_net", () => Whole(PopulationCatalogue.HomeNetShare / 10) + "%")
+                .Fact("pop_flat_least", () => Whole(FlatSqm(false)))
+                .Fact("pop_flat_most", () => Whole(FlatSqm(true)))
+                .Fact("pop_household", () => (MeanSize(PopulationCatalogue.ClassSizes[1]) / 100.0).ToString("0.#", Inv))
+                .Fact("pop_desk", () => Whole(PopulationCatalogue.DeskSqm))
+                .Fact("pop_free", () => Whole(PopulationCatalogue.TargetVacancy / 10) + "%")
+                .Fact("pop_retire", () => Whole(PopulationCatalogue.RetireAge))
+                .Fact("pop_sales_tax", () => (PopulationCatalogue.SalesTax / 10.0).ToString("0.#", Inv) + "%")
+                .Fact("pop_property_tax", () => Whole(PopulationCatalogue.PropertyTaxShare / 10) + "%")
+                .Fact("pop_rent_burden", () => Whole(PopulationCatalogue.RentBurdenMove / 10) + "%")
+                .Cleanup(() => PopulationDirector.Instance?.Forget())
+                .ResetData(() => PopulationDirector.Instance?.Forget());
+        }
+
+        private static string Whole(int value)
+        {
+            return value.ToString(Inv);
+        }
+
+        // The smallest or largest flat of the game's districts, m2 net (a district of houses left out).
+        private static int FlatSqm(bool largest)
+        {
+            int found = largest ? 0 : int.MaxValue;
+            foreach (var d in PopulationCatalogue.DistrictHomes)
+            {
+                if (d.FlatSqm > 0)
+                {
+                    found = largest ? System.Math.Max(found, d.FlatSqm) : System.Math.Min(found, d.FlatSqm);
+                }
+            }
+            return found == int.MaxValue ? 0 : found;
+        }
+
+        // A size table's mean people a household, hundredths.
+        private static int MeanSize(int[] sizes)
+        {
+            long people = 0, all = 0;
+            for (int i = 0; i < sizes.Length; i++)
+            {
+                people += (long)sizes[i] * (i + 1);
+                all += sizes[i];
+            }
+            return all > 0 ? (int)(people * 100 / all) : 0;
+        }
+    }
+
+    /// <summary>The population's tests on the options page, after the living economy's master option.</summary>
+    public static class PopulationOptions
+    {
+        public static ModOptions AddPopulation(this ModOptions options)
+        {
+            return options
+                .AddButton("reallife_pop_test_generate", () => PopulationDirector.Instance?.TestGenerate())
+                .AddButton("reallife_pop_test_month", () => PopulationDirector.Instance?.TestMonth())
+                .AddButton("reallife_pop_test_household", () => PopulationDirector.Instance?.TestHousehold())
+                .AddButton("reallife_pop_test_demand", () => PopulationDirector.Instance?.TestDemand());
+        }
+    }
+}

@@ -37,6 +37,7 @@ internal static partial class Program
             PhotoHold();
             PhotoSources();
             PhotoWords();
+            CameraGalleryChecks();   // the camera and the gallery rebuilt (CameraGalleryChecks.cs)
             PhotoFixes(System.IO.Path.Combine(scratch, "fixes"));   // (PhotoFixChecks.cs)
         }
         finally
@@ -428,10 +429,20 @@ internal static partial class Program
         Check(CameraRules.Wrap(540f) == 180f && CameraRules.Wrap(-190f) == 170f && CameraRules.Wrap(float.NaN) == 0f, "camera: an angle is kept between -180 and 180");
         Check(Math.Abs(CameraRules.FilmBar(16f / 9f) - 0.128f) < 0.001f && CameraRules.FilmBar(2.39f) == 0f && CameraRules.FilmBar(3f) == 0f && CameraRules.FilmBar(0f) == 0f,
             "camera: the film frame's bars leave 2.39 to 1 on a 16 by 9 screen, and none on a screen as wide or wider");
-        Check(CameraRules.Filters.Length == 5 && !CameraRules.Graded(0) && CameraRules.Graded(3) && !CameraRules.Graded(9) && CameraRules.ClampFilter(9) == 0 && CameraRules.ClampFilter(-1) == 0,
-            "camera: five filters, the first natural, and a filter that is not there is the natural one");
-        Check(CameraRules.Filters[3].Saturation == -100f && CameraRules.FrameKeys.Length == 3 && CameraRules.ClampFrame(2) == CameraFrame.Film && CameraRules.ClampFrame(7) == CameraFrame.None,
-            "camera: black and white has no colour at all; three frames, and a frame that is not there is none");
+        Check(CameraRules.Filters.Length == 11 && CameraRules.ClassicFilters == 6 && !CameraRules.Graded(0) && CameraRules.Graded(3) && CameraRules.Graded(5) && CameraRules.Graded(10) && !CameraRules.Graded(11) && CameraRules.ClampFilter(11) == 0 && CameraRules.ClampFilter(-1) == 0,
+            "camera: the six filters of the old camera first (the first natural, Fade sixth) then five more, and a filter that is not there is the natural one");
+        var side = new PhotoSidecar { Place = "Broadway", District = "Midtown", Filter = 1, Frame = 2, Hour = 21, Day = 34, Celsius = 18, Weather = "sunny" };
+        Check(PhotoSidecarRules.Parse(PhotoSidecarRules.Format(side), out PhotoSidecar back) && back.Place == "Broadway" && back.District == "Midtown"
+              && back.Filter == 1 && back.Frame == 2 && back.Hour == 21 && back.Day == 34 && back.Celsius == 18 && back.Weather == "sunny"
+              && PhotoSidecarRules.Night(21) && PhotoSidecarRules.Night(5) && !PhotoSidecarRules.Night(8) && PhotoSidecarRules.Parse("later=1\n", out _) == false,
+            "camera: a photo's place, filter and frame round trip in the sidecar, and a line this version does not know is ignored");
+        string[] tags = new string[4];
+        PhotoSidecarRules.Tags(side, "Night lights", "Sunny", tags);
+        Check(PhotoSidecarRules.TagCount(tags) == 3 && tags[0] == "Broadway" && tags[1] == "Midtown" && tags[2] == "Night lights"
+              && PhotoSidecarRules.Title(side, "{place} at night", "A photo") == "Broadway at night",
+            "camera: a night photo's title and tags come from the saved place and the hour");
+        Check(CameraRules.Filters[3].Saturation == -100f && CameraRules.FrameKeys.Length == 4 && CameraRules.ClampFrame(2) == CameraFrame.Film && CameraRules.ClampFrame(3) == CameraFrame.Border && CameraRules.ClampFrame(1) == CameraFrame.Polaroid && CameraRules.ClampFrame(7) == CameraFrame.None,
+            "camera: black and white has no colour at all; four frames (the old Border keeps its number as Polaroid), and a frame that is not there is none");
         Check(CameraRules.GridLines.Length == 2 && Math.Abs(CameraRules.GridLines[0] - 1f / 3f) < 1e-6 && Math.Abs(CameraRules.GridLines[1] - 2f / 3f) < 1e-6, "camera: the grid is the rule of thirds");
     }
 
@@ -586,6 +597,29 @@ internal static partial class Program
         // What's new: the line is looked for in every row, so that it is found before a release and after it numbers the row.
         Check(WhatsNewHas(en, "A Camera and a Gallery on the phone") && WhatsNewHas(pt, "Uma Câmera e uma Galeria no celular") && WhatsNewHas(zh, "手机新增相机和图库"),
             "photos words: What's new has the Camera and Gallery's line in each of the three languages (any of its rows)");
+    }
+
+    // The key of the What's new row that holds an English line: the next row before a release, the version's own row after it
+    // (the version step moves the lines there). The next row's key when no row holds the line.
+    private static string WhatsNewKey(Dictionary<string, string> english, string line)
+    {
+        if (english != null)
+        {
+            foreach (KeyValuePair<string, string> row in english)
+            {
+                if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+                {
+                    return row.Key;
+                }
+            }
+        }
+        return "reallife_changes_next";
+    }
+
+    // A language's text of a What's new row; empty when it has none.
+    private static string WhatsNewText(Dictionary<string, string> words, string key)
+    {
+        return words != null && words.TryGetValue(key, out string text) ? text : string.Empty;
     }
 
     // Whether any row of What's new (reallife_changes_next or a numbered version's) has the words.

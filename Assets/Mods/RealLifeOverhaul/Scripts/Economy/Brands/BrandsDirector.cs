@@ -193,6 +193,7 @@ namespace RealLifeOverhaul.Economy.Brands
             _state = state;
             _holding = false;
             _running = true;
+            ExtraStart();
             _sitesFor = 0;
             int left;
             Read(today, out left);
@@ -318,15 +319,19 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             var view = new BrandsApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_brand_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(236, 150, 84, 255), new Color32(176, 84, 40, 255), 0.42f, "AppIcon-Brands"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.VentScreen(RealLifeOverhaul.Ui.BrandsLive.Instance, RealLifeOverhaul.Ui.BrandsLive.ScreenId),
+                KitScreen = RealLifeOverhaul.Ui.BrandsLive.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Tag
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -338,6 +343,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.BrandsLive.WantFrom;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on
             Badge();
         }
 
@@ -403,6 +410,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 KeepRound(true);   // before the chains look at the prices
                 float read = Time.realtimeSinceStartup;
                 RulesDay(day);
+                ExtraDay(day);
                 Recount();
                 float ruled = Time.realtimeSinceStartup;
                 int written = WriteAll(true, true);
@@ -463,6 +471,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[BrandStore.Key] = BrandStore.Write(_state);
+            BrandExtraStore.Save(save.modData, _extra);
             if (_beforeTests != null)
             {
                 save.modData[BrandStore.TestKey] = _beforeTests;
@@ -512,6 +521,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         public void Open(int tab, string pick)
         {
+            RealLifeOverhaul.Ui.BrandsLive.Want(tab, pick);
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab, pick);
@@ -558,6 +568,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Sync();
             }
             BuildAlerts(Save.Day);
+            Revision++;
             Badge();
             if (_view != null)
             {

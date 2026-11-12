@@ -7,7 +7,9 @@ namespace RealLifeOverhaul.Hustles
         Furniture = 1,
         Clothes = 2,
         Shoes = 3,
-        Car = 4
+        Car = 4,
+        Machine = 5,   // used equipment a business runs on (a grill, a fridge, a mixer)
+        Stock = 6      // a lot of goods a business sells, at a price under what it would pay the wholesaler
     }
 
     /// <summary>The freelance work clients ask for: each a visit to an address, Moving two.</summary>
@@ -40,6 +42,17 @@ namespace RealLifeOverhaul.Hustles
             FixMost = fixMost;
             CleanGain = cleanGain;
         }
+
+        /// <summary>A lot of stock: the game's own good it is made of and how many of it, so its price is the wholesale price of the game's good times the lot.</summary>
+        public ThingDef Of(string item, int lot)
+        {
+            Item = item;
+            Lot = lot;
+            return this;
+        }
+
+        public string Item;   // the game's item name of a lot of stock; null for everything else
+        public int Lot;       // how many of it a lot holds
 
         /// <summary>Only electronics are taken in by a repair shop (the city's electronics stores).</summary>
         public bool ShopFix => Kind == ThingKind.Electronics;
@@ -100,7 +113,16 @@ namespace RealLifeOverhaul.Hustles
             new ThingDef("suit", "reallife_hustle_thing_suit", ThingKind.Clothes, 450, 60, 85, 16),
             new ThingDef("trainers", "reallife_hustle_thing_trainers", ThingKind.Shoes, 160, 30, 80, 20),
             new ThingDef("boots", "reallife_hustle_thing_boots", ThingKind.Shoes, 220, 45, 85, 16),
-            new ThingDef("heels", "reallife_hustle_thing_heels", ThingKind.Shoes, 380, 45, 85, 16)
+            new ThingDef("heels", "reallife_hustle_thing_heels", ThingKind.Shoes, 380, 45, 85, 16),
+            new ThingDef("espresso_machine", "reallife_hustle_thing_espresso_machine", ThingKind.Machine, 2600, 120, 90, 6),
+            new ThingDef("commercial_grill", "reallife_hustle_thing_commercial_grill", ThingKind.Machine, 3200, 150, 88, 8),
+            new ThingDef("display_fridge", "reallife_hustle_thing_display_fridge", ThingKind.Machine, 1500, 120, 90, 6),
+            new ThingDef("dough_mixer", "reallife_hustle_thing_dough_mixer", ThingKind.Machine, 5800, 150, 88, 6),
+            new ThingDef("chest_freezer", "reallife_hustle_thing_chest_freezer", ThingKind.Machine, 1700, 120, 90, 6),
+            new ThingDef("sugar_lot", "reallife_hustle_thing_sugar_lot", ThingKind.Stock, 600, 0, 100, 0).Of("ba:itemname_sugar", 60),
+            new ThingDef("milk_lot", "reallife_hustle_thing_milk_lot", ThingKind.Stock, 500, 0, 100, 0).Of("ba:itemname_milk", 60),
+            new ThingDef("beer_lot", "reallife_hustle_thing_beer_lot", ThingKind.Stock, 900, 0, 100, 0).Of("ba:itemname_beer", 60),
+            new ThingDef("tomato_lot", "reallife_hustle_thing_tomato_lot", ThingKind.Stock, 400, 0, 100, 0).Of("ba:itemname_tomato", 60)
         };
 
         public static readonly GigDef[] Gigs =
@@ -116,8 +138,10 @@ namespace RealLifeOverhaul.Hustles
         };
 
         // The day's listings
+        public const int StockUnderBp = 1500;       // a lot of stock asks this much under the wholesale price
         public const int GoodsADay = 9;             // goods the city's people put up each morning
         public const int CarsADay = 2;              // and cars
+        public const int ListingsPeopleMost = 3000; // thousandths: the most the city's sellers multiply a day's listings by (a bound for the arithmetic)
         public const int ListingConditionLeast = 12, ListingConditionMost = 88;   // percent, goods
         public const int OverstateChance = 250;     // an electronics seller who says it is better than it is
         public const int OverstateLeast = 8, OverstateMost = 22;                  // ...by this much
@@ -223,6 +247,8 @@ namespace RealLifeOverhaul.Hustles
                 case ThingKind.Furniture: return "reallife_hustle_kind_furniture";
                 case ThingKind.Clothes: return "reallife_hustle_kind_clothes";
                 case ThingKind.Shoes: return "reallife_hustle_kind_shoes";
+                case ThingKind.Machine: return "reallife_hustle_kind_machine";
+                case ThingKind.Stock: return "reallife_hustle_kind_stock";
                 default: return "reallife_hustle_kind_car";
             }
         }

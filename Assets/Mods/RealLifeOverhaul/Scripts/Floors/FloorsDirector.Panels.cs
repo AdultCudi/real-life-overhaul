@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Floors
             WorldPanel panel = host.DoorPanel.Panel;
             host.DoorLine(open, out string left, out string right, out Color32 colour);
             panel.Lines(host.Name, left, right, colour);
-            Buttons(host, panel, host.DoorPress, host.DoorFloors, host.DoorPage, 0, true);
+            Buttons(host, panel, host.DoorPress, host.DoorFloors, host.DoorPage, 0, 0, true);
             bool up = host.DoorPanel.Show(host.Door, at, 2.2f, host.DoorWords(open));
             host.DoorUp(up, open);
         }
@@ -146,14 +146,15 @@ namespace RealLifeOverhaul.Floors
             Prepare(host);
             WorldPanel panel = host.LiftPanel.Panel;
             panel.Lines(host.Name, v.Place.LiftLine(v.Floor, v.Part), null, WorldPanel.White());
-            Buttons(host, panel, host.LiftPress, host.LiftFloors, host.LiftPage, v.Floor, false);
+            Buttons(host, panel, host.LiftPress, host.LiftFloors, host.LiftPage, v.Floor, OwnFloor(host, v.Floor), false);
             host.LiftPanel.Show(v.Spawn, at, 2.1f, host.LiftWords(v.Floor));
         }
 
-        // Up to four buttons: the floors on this page (leaving out the one the player is on), or three and "more floors" when they do not fit.
-        private static void Buttons(FloorHost host, WorldPanel panel, Action[] press, int[] floors, int page, int skip, bool door)
+        // Up to four buttons: the floors on this page (leaving out the one the player is on), or three and "more floors" when they
+        // do not fit. At the lift, the player's own floor (pin) first on every page, on its main button: "Go up to floor 9".
+        private static void Buttons(FloorHost host, WorldPanel panel, Action[] press, int[] floors, int page, int skip, int pin, bool door)
         {
-            FloorsRules.Page(host.Floors, skip, page, floors);
+            FloorsRules.Page(host.Floors, skip, pin, page, floors);
             for (int slot = 0; slot < floors.Length; slot++)
             {
                 int floor = floors[slot];
@@ -169,9 +170,34 @@ namespace RealLifeOverhaul.Floors
                     panel.Button(slot, null, null, false, false);
                     continue;
                 }
+                if (slot == 0 && pin > 0 && floor == pin)
+                {
+                    panel.Button(slot, floor > skip ? "reallife_floors_lift_up" : "reallife_floors_lift_down", host.GoArgs(floor), press[slot], true, true);
+                    continue;
+                }
                 place.Button(floor, host.PartOf(floor), out string key, out object args, out bool marked);
                 panel.Button(slot, key, args, press[slot], !door || place.Open(), marked || slot == 0);
             }
+        }
+
+        // The floor the player is wanted on in this building (their desk in a tower, today's class at the university), as its
+        // places mark it on their buttons; 0 when there is none or the player is on it. A few calls a place, while at the lift.
+        private static int OwnFloor(FloorHost host, int at)
+        {
+            for (int floor = 1; floor <= host.Floors; floor++)
+            {
+                FloorPlace place = host.PlaceOn(floor);
+                if (place == null)
+                {
+                    continue;
+                }
+                place.Button(floor, host.PartOf(floor), out _, out _, out bool marked);
+                if (marked)
+                {
+                    return floor == at ? 0 : floor;
+                }
+            }
+            return 0;
         }
 
         // The panels' button actions of a building, made once (each marks the frame its key ran on its own panel).
@@ -225,7 +251,7 @@ namespace RealLifeOverhaul.Floors
             }
             if (floor < 0)
             {
-                host.LiftPage = FloorsRules.NextPage(host.LiftPage, host.Floors, v.Floor, FloorsRules.Slots);
+                host.LiftPage = FloorsRules.NextPage(host.LiftPage, host.Floors, v.Floor, OwnFloor(host, v.Floor), FloorsRules.Slots);
                 if (FloorsGame.PlayerAt(out Vector3 at, out _))
                 {
                     LiftPanel(v, at);   // the next page at once, on the press

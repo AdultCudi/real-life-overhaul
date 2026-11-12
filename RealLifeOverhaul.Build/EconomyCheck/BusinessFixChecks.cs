@@ -74,8 +74,10 @@ internal static partial class Program
     {
         string own = ModSource(@"Careers\CareersDirector.Own.cs");
         string pick = MemberText(own, "private BuildingRegistration OwnOffice(Profession p, bool here)");
+        string fits = MemberText(own, "private static bool OfficeFits(Profession p, BuildingRegistration reg)");
         string can = MemberText(own, "public string CanWorkContract(Contract c)");
-        Check(pick.Contains("ba:businesstype_headquarters") && pick.Contains("ba:buildingtype_office") && pick.Contains("(!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber))")
+        Check(fits.Contains("ba:businesstype_headquarters") && fits.Contains("ba:buildingtype_office") && pick.Contains("OfficeFits(p, reg)")
+              && pick.Contains("(!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber))")
               && pick.Contains("for (int i = 0; i < _mine.Count; i++)") && can.Contains("OwnOffice(p, true) != null ? null : \"reallife_own_why_desk\""),
             "own contracts: desk work counts inside any office business of the player's, the headquarters and any business in an office building, not only the first one found");
     }

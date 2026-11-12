@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // Repaying a loan and changing its daily payment stay where the game has them: its own loans page.
-        private void OpenEconoView()
+        internal void OpenEconoView()
         {
             if (_menu != null)
             {

@@ -51,8 +51,11 @@ namespace RealLifeOverhaul
         /// <summary>A set booked at a venue (the agency's bookings); null otherwise.</summary>
         public BookedGig Gig;
 
-        /// <summary>A whole shift's work whatever is left of the day's freelance amount: a test, a rota shift, a booked set.</summary>
-        public bool FullShift => Test || Shift != null || Gig != null;
+        /// <summary>A shift signed on for at a firm's desk in the player's own vehicle (Scripts/SideJobs); null otherwise.</summary>
+        public DeskShift Desk;
+
+        /// <summary>A whole shift's work whatever is left of the day's freelance amount: a test, a rota shift, a booked set, a desk shift (which keeps its own day).</summary>
+        public bool FullShift => Test || Shift != null || Gig != null || Desk != null;
 
         public bool Perk(CareerPerk perk) => Shift != null && Shift.Rank.Has(perk);
 
@@ -188,6 +191,11 @@ namespace RealLifeOverhaul
 
         /// <summary>The player has just been signalled to pull over (PoliceAttention.PulledOver became true).</summary>
         public virtual void OnPoliceStop()
+        {
+        }
+
+        /// <summary>The police have booked the player at a stop: how many offences were on the bill, and whether they had driven off first.</summary>
+        public virtual void OnOffences(int offences, bool fled)
         {
         }
 

@@ -76,7 +76,26 @@ namespace RealLifeOverhaul
                 entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
                 entry.OnConfirm = () => Page(0);
             }
+            string party = SocialPhone.PartyLabel != null ? SocialPhone.PartyLabel() : null;
+            if (party != null)
+            {
+                entry.SecondOptionTextOverride = party;
+                entry.OnSecondOption = HostParty;
+            }
             return entry;
+        }
+
+        // Parties: the call ends and the Parties app opens on Host a party.
+        private static DialogEntry HostParty()
+        {
+            DialogEntry closing = PhoneContacts.Closing("reallife_party_people_closing");
+            Action finish = closing.OnVisible;
+            closing.OnVisible = () =>
+            {
+                finish?.Invoke();
+                SocialPhone.PartyOpen?.Invoke();
+            };
+            return closing;
         }
 
         private DialogEntry Page(int at)
@@ -96,10 +115,15 @@ namespace RealLifeOverhaul
             data["birthday"] = birthday == 0 ? SocialLife.T("reallife_social_people_birthday_today")
                 : SocialLife.T("reallife_social_people_birthday_in").Replace("{days}", birthday.ToString());
             string network = SocialPhone.NetworkLine != null ? SocialPhone.NetworkLine(p) : null;   // their position, and what they could do next
+            string extra = !p.Together && SocialState.Partner == null && SocialLife.Romantic(p) ? SocialLife.T("reallife_social_people_romance") : null;   // who Ask them out is for
+            if (network != null)
+            {
+                extra = extra == null ? network : extra + "\n" + network;
+            }
             var entry = new DialogEntry
             {
-                messageData = network != null
-                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + network } })
+                messageData = extra != null
+                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + extra } })
                     : "reallife_social_people_page".Localize(data),
                 OnCancel = PhoneContacts.HangUp
             };

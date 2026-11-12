@@ -27,6 +27,12 @@ namespace RealLifeOverhaul.Economy
 
         public static void Wanted(LoanMark mark, float multiplier, int daysPerYear, out int interest, out int payment)
         {
+            if ((mark.Held & LoanHold.Fixed) != 0)
+            {
+                interest = mark.OwnInterest;
+                payment = mark.OwnPayment;
+                return;
+            }
             if ((mark.Held & LoanHold.Frozen) != 0)
             {
                 interest = 0;
@@ -112,6 +118,14 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static void Repriced(LoanMark mark, ref int interest, ref int payment, float was, float now, int years, int daysPerYear, bool holds)
         {
+            if ((mark.Held & LoanHold.Fixed) != 0)
+            {
+                interest = mark.OwnInterest;
+                payment = mark.OwnPayment;
+                mark.Interest = interest;
+                mark.Payment = payment;
+                return;
+            }
             bool held = mark.Held != LoanHold.None;
             int own = GameLoanMath.Repriced(held ? mark.OwnInterest : mark.Interest, mark.Total, was, now, years, daysPerYear);
             interest = own >= 0 ? own : interest;

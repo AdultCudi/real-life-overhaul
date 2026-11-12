@@ -53,11 +53,19 @@ namespace RealLifeOverhaul.Seasons
         /// <summary>The size option's value the piece is laid out at; -1 before it is.</summary>
         public static int Size => _size;
 
+        /// <summary>True while the RLO interface's HUD shows the season in its status bar: the piece stays down meanwhile.</summary>
+        public static bool Held;
+
         /// <summary>Shows <paramref name="line"/> with <paramref name="season"/>'s picture; pass the same string object while nothing changes.</summary>
         public static void Show(string line, int season)
         {
             if (_failed)
             {
+                return;
+            }
+            if (Held)
+            {
+                Hide();
                 return;
             }
             try

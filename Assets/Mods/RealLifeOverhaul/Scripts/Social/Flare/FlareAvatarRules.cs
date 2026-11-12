@@ -72,6 +72,36 @@ namespace RealLifeOverhaul.Flare
 
         private const int SaltSex = 610, SaltAge = 611, SaltSeed = 612, SaltSeedLow = 613, SaltBoss = 620;
 
+        /// <summary>
+        /// The contact on the phone whose picture is this account's face (a person met, or an influencer who is one), or null for an account with
+        /// none; Contacts shows the same picture for the same contact.
+        /// </summary>
+        public static string ContactOf(string key, IReadOnlyList<FlarePerson> people, FlareFile file)
+        {
+            if (string.IsNullOrEmpty(key) || key.Length < 2 || people == null)
+            {
+                return null;
+            }
+            int n, person = -1;
+            if ((key[0] == 'f' || key[0] == 'p') && key[1] != ':' && int.TryParse(key.Substring(1), out n))
+            {
+                person = n;
+            }
+            else if (key[0] == 'i' && key[1] == ':' && file != null && int.TryParse(key.Substring(2), out n))
+            {
+                FlareInfluencer inf = file.Influencer(n);
+                person = inf != null ? inf.Person : -1;
+            }
+            for (int i = 0; person >= 0 && i < people.Count; i++)
+            {
+                if (people[i].Index == person)
+                {
+                    return people[i].Contact;
+                }
+            }
+            return null;
+        }
+
         /// <summary>The picture an account shows, by any key the app shows an account by.</summary>
         public static FlareAvatarPlan Plan(string key, FlareAvatarFacts facts)
         {

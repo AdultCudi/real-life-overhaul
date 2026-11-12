@@ -263,7 +263,7 @@ namespace RealLifeOverhaul
             if (!State.ReserveSet)
             {
                 State.ReserveSet = true;
-                State.Reserve = OfficeRules.StartReserve(_gov.Electorate());
+                State.Reserve = OfficeRules.StartReserve(_gov.Payers());
                 State.WeekDay = day + 7;
                 State.BudgetDay = day + OfficeRules.BudgetEvery;
                 OfficeRules.CityBudget(Gov.Mayor.Lead, State.Budget);
@@ -272,7 +272,7 @@ namespace RealLifeOverhaul
             if (day >= State.WeekDay)
             {
                 State.WeekDay = day + 7;
-                BudgetWeek week = OfficeRules.Week(_gov.Electorate(), Gov.Levers, State.Budget);
+                BudgetWeek week = OfficeRules.Week(_gov.Payers(), Gov.Levers, State.Budget);
                 State.Reserve += week.Balance;
             }
             if (!Sits() && day >= State.BudgetDay)

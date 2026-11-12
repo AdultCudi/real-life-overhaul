@@ -95,6 +95,10 @@ namespace RealLifeOverhaul
                 return;
             }
             bool free = !SocialState.Offer.Active && !SocialState.Plan.Active;
+            if (free && Giving.GivingDirector.Instance != null && Giving.GivingDirector.Instance.TryAsk(person))
+            {
+                return;   // somebody in real trouble asked the player for help (Giving): rare, and nothing else waits
+            }
             float roll = Random.value;
             if (free && Settings.SocialOutings && roll < 0.38f)
             {

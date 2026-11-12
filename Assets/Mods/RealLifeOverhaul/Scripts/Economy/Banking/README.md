@@ -30,6 +30,7 @@ Every number is a constant of `Terms/CreditCatalogue.cs` (the rating and a bank'
 | The game's interest multiplier, and its keys for loans | `Loans/GameLoans` (`Multiplier`, `ExpenseCategory`, `LoanPaidEvent`); the quest ids in `Loans/BankTerms`. When the multiplier changes, each loan keeps its own rate: `Terms/GameLoanMath.Repriced`, `Loans/LoanHolds.Repriced`, called by `EconomyDirector.KeepLoanRates` |
 | An account's daily interest | `Accounts/AccountRules.Interest` (whole money, the rest carried), at `CreditAccount.RateNow` |
 | Approval money held, the private lender | `Terms/ProductTerms.AdvanceCharge` (nothing bought: all of it, every day held, `Debt/ReliefRules.CancelCharge`) and `PurchaseCharge` (bought: the financed part only, to the day before, `ReliefRules.PurchaseCharge`); `Debt/SharkRules.ADay` |
+| A new game's student loan | `Terms/StartDebtRules` (the amount for each study, the payment, the interest at the Careers student loan's rate); made by `Desk/CreditDesk.StartDebt` |
 | Fees | phone fee `LendingTerms.PhoneFee` / `BankRules.Fee`; card cash `AccountRules.CashFee`; late fee `AccountRules.LateFee`; claim costs `LadderRules.ClaimCosts`; consolidation `ProductTerms.ConsolidationFee`; extension `SharkRules.ExtendFee` |
 
 ## Documentation

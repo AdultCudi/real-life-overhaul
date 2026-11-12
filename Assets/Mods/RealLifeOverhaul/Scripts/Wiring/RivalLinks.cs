@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Fame;
+using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Ledger;
 using RealLifeOverhaul.Markets;
 using RealLifeOverhaul.Rivals;
@@ -21,6 +22,34 @@ namespace RealLifeOverhaul
             private static Func<BuildingRegistration, int> _ambientBefore;
             private static Func<string, int, int> _weightBefore;
             private static Action<int, List<NewsItem>> _extraBefore;
+
+            // The player has a campaign running today, from Flare or the company's page: the rivals answer it in the paper.
+            private static bool CampaignRunning()
+            {
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    if (flare == null)
+                    {
+                        return false;
+                    }
+                    List<FlareCampaign> all = flare.Campaigns();
+                    int day = RivalGame.Day;
+                    for (int i = 0; i < all.Count; i++)
+                    {
+                        if (all[i].From <= day && day <= all[i].To)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.CampaignRunning", e);
+                    return false;
+                }
+            }
 
             internal static void Connect()
             {
@@ -44,6 +73,7 @@ namespace RealLifeOverhaul
                 RivalBridges.Footfall = Footfall;
                 RivalBridges.StaffOn = () => CompanyDirector.Instance != null && CompanyDirector.Instance.On(CompanyPart.Staff);
                 RivalBridges.Offer = Offer;
+                RivalBridges.CampaignOn = CampaignRunning;
                 RivalBridges.CourtOn = () => DebtClaims.Available;
                 RivalBridges.Sue = RivalClaims.File;
                 RivalBridges.Withdraw = Withdraw;
@@ -52,6 +82,9 @@ namespace RealLifeOverhaul
                 RivalBridges.PaperOn = () => Settings.SocialNewspaper;
                 RivalBridges.ShowList = ShowList;
                 RivalBridges.Open = Finance.OpenRivals;
+                RivalBridges.LeaseTrend = () => CompanyDirector.Instance != null ? CompanyDirector.Instance.CityTrend : 0;
+                RivalBridges.LeaseRenewed = (district, rise) => CompanyDirector.Instance?.RivalRenewed(district, rise);
+                RivalBridges.Seats = RivalSeatsGame.Instance;
                 EconomyBridges.Rivals = new StandingPage { On = RivalPage.On, Spec = RivalPage.Spec, Write = RivalPage.Write };
                 _ambientBefore = BusinessGame.Ambient;
                 BusinessGame.Ambient = Ambient;

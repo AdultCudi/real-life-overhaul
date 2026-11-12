@@ -74,9 +74,11 @@ internal static partial class Program
         TestRoutes();   // the driving school's route: planned round lanes an accident has closed, and what the player is told (TestRouteCheck.cs)
         LoadPace();
         DayWarms();      // the mod's code for the game's midnight compiled ahead: what the walk takes in, sliced as whole, the budget (DayWarmCheck.cs)
+        MomentWarms();   // the code of moments of play compiled behind the loading screen, and the frames those moments were cut into (MomentWarmCheck.cs)
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
         PhoneInstalls(); // the phone apps go on one a frame in their order, the phones' names read once, the pages laid out once (PhoneInstallCheck.cs)
         Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
+        Unzones();       // the pedestrian zones met the game's dropped pools at the quit: cleared on the unload event, Unzone asks first (UnzoneCheck.cs)
         MapRows();       // the mod's places on the city map: a row and an icon for every kind, a row of its own for every claimed building, nothing before the map can take it (MapRowCheck.cs)
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
@@ -109,6 +111,7 @@ internal static partial class Program
         Uptowns(Array.IndexOf(args, "--uptown") >= 0);   // Uptown's ground: the band's lots, the first block's streets through 1st Avenue, its walking ground (UptownCheck.cs)
         UptownStreets(Array.IndexOf(args, "--uptown") >= 0);  // Uptown's streets: its buses' two routes and their reach over every block, its street furniture at Manhattan's spacing (UptownStreetsCheck.cs)
         UptownParks(Array.IndexOf(args, "--parks") >= 0);    // Uptown's parks: laid in their squares, walked end to end, the search for the game's pieces, the sources and the texts (UptownParksCheck.cs)
+        UptownSubway(Array.IndexOf(args, "--subway") >= 0);   // the districts' subway stations: off every lot and carriageway, clear of what stands there, their riders up on both walking plans (UptownSubwayCheck.cs)
         GroundSurveys();  // "What is this ground?": the bare blocks, every lot read back as itself, the streets, the game's own city, the sources, the texts (GroundSurveyCheck.cs)
         HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
@@ -320,6 +323,16 @@ internal static partial class Program
         Check(NavMath.Classify(90f) == NavTurnKind.Left && NavMath.Classify(-90f) == NavTurnKind.Right && NavMath.Classify(120f) == NavTurnKind.Left, "turn left and right");
         Check(NavMath.Classify(170f) == NavTurnKind.UTurn && NavMath.Classify(-155f) == NavTurnKind.UTurn, "a U-turn either way");
         Check(NavMath.RoundMetres(3f) == 10 && NavMath.RoundMetres(44f) == 40 && NavMath.RoundMetres(196f) == 200 && NavMath.RoundMetres(430f) == 450 && NavMath.RoundMetres(1930f) == 1900, "distances as a satnav says them");
+        // The label on the route drawn on the city map stands halfway along the line by its length, on the line.
+        float[] hx = { 0f, 10f, 30f }, hy = { 0f, 0f, 4f }, hz = { 0f, 0f, 0f };
+        Check(NavMath.Halfway(hx, hy, hz, 3, out float mx, out float my, out float mz) && Near(mx, 15f) && Near(my, 1f) && Near(mz, 0f), "the label's place: halfway along a straight line of 30 m is 15 m on, at the height the line has there");
+        float[] lx = { 0f, 0f, 10f }, ly = { 5f, 5f, 5f }, lz = { 0f, 10f, 10f };
+        Check(NavMath.Halfway(lx, ly, lz, 3, out mx, out my, out mz) && Near(mx, 0f) && Near(mz, 10f), "the label's place: halfway along an L of 10 m and 10 m is its corner");
+        float[] ux = { 0f, 60f, 60f }, uz = { 0f, 0f, 20f };
+        Check(NavMath.Halfway(ux, new float[3], uz, 3, out mx, out my, out mz) && Near(mx, 40f) && Near(mz, 0f), "the label's place: halfway along a leg of 60 m and one of 20 m is on the first leg, 40 m on");
+        Check(!NavMath.Halfway(hx, hy, hz, 1, out mx, out my, out mz) && !NavMath.Halfway(null, hy, hz, 3, out mx, out my, out mz) && !NavMath.Halfway(new float[] { 5f, 5f }, new float[2], new float[] { 5f, 5f }, 2, out mx, out my, out mz)
+              && !NavMath.Halfway(hx, hy, hz, 9, out mx, out my, out mz), "the label's place: no line, one point, no length or a count past the arrays has none");
+        Check(NavMath.Halfway(new float[] { 0f, 4f, 4f }, new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 3, out mx, out my, out mz) && Near(mx, 2f), "the label's place: a line whose last point repeats its one before still has its middle");
     }
 
     private static void SearchWholeAndSliced()

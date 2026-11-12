@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Tech
         public const string SearchKey = "reallife_transaction_tech_recruitment_search";
         public const string BuyoutKey = "reallife_transaction_tech_recruitment_buyout";        // the player buys out a hire's notice
         public const string BuyoutPaidKey = "reallife_transaction_tech_recruitment_buyout_paid";   // a rival buys out the notice of one of the player's staff
+        public const string RushKey = "reallife_transaction_tech_recruitment_rush";            // the player pays a search firm to bring its candidates forward
         private const string FullTime = "ba:jobdemand_fulltime";
 
         public static IModLogger Logger;

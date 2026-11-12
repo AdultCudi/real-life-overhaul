@@ -122,6 +122,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The same with the building's connection setting the bound (<see cref="Most"/>).</summary>
         public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops, int mbps)
         {
+            return PerDay(quality, inHouse, lines, need, price, promise, stars, ads, campaign, cycle, season, shops, mbps, 1000);
+        }
+
+        /// <summary>The same with the city's households' online spending of the shop's kind against the anchor day's (the living population), within the bound.</summary>
+        public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops, int mbps, int people)
+        {
             int q = OnlineCatalogue.Quality(quality);
             long v = OnlineCatalogue.OrdersADay[q] * 1000L;
             v = v * (inHouse ? OnlineCatalogue.AgencyOrders : 1000) / 1000;
@@ -134,6 +140,7 @@ namespace RealLifeOverhaul.Economy
             v = v * OnlineCatalogue.CycleFactor[OnlineCatalogue.Clamp(cycle, 0, 3)] / 1000;
             v = v * OnlineCatalogue.SeasonFactor[OnlineCatalogue.Clamp(season, 0, 3)] / 1000;
             v = v * Crowd(shops) / 1000;
+            v = v * Math.Max(0, people) / 1000;
             return (int)Math.Min(v, Most(quality, mbps) * 1000L);
         }
 
@@ -179,13 +186,14 @@ namespace RealLifeOverhaul.Economy
             site.Cycle = cycle;
             site.Season = season;
             site.Crowd = shops;
-            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops, site.Mbps);
+            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops, site.Mbps,
+                site.People > 0 ? site.People : 1000);
         }
 
         public static WebOrder NewOrder()
         {
             WebOrder o = Pool.Count > 0 ? Pool.Pop() : new WebOrder();
-            o.Id = o.District = o.Placed = o.Due = o.Arrive = o.Count = o.Total = o.Tilt = 0;
+            o.Id = o.District = o.Placed = o.Due = o.Arrive = o.Count = o.Total = o.Tilt = o.PickAt = 0;
             o.Stage = OrderStage.Waiting;
             o.Short = false;
             for (int i = 0; i < OnlineCatalogue.OrderLines; i++)
@@ -228,6 +236,24 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static int Arrive(OnlineState s, WebShop shop, Site site, int hour)
         {
+            // What the extras say about a shop (area, night orders, prices that follow rivals) is asked through these, set by the director; unset, nothing is changed.
+            return Arrive(s, shop, site, hour, Gate, PriceHook);
+        }
+
+        /// <summary>Asked of an order about to be placed: false turns it away (an area not served, a night order the shop does not take).</summary>
+        public static Func<WebShop, int, int, bool> Gate;
+
+        /// <summary>Asked of an order just placed: the hours it is held before it may be picked (0 for none).</summary>
+        public static Func<WebShop, int, int> HoldHook;
+
+        /// <summary>Asked of a product's price in an order: the price the customer sees, given the shop's own.</summary>
+        public static Func<WebShop, int, int, int> PriceHook;
+
+        /// <summary>Told when an order reaches its door: the shop, the order and whether it was late. Returns what the customer paid towards delivery, in cents.</summary>
+        public static Func<WebShop, WebOrder, bool, int> ArrivedHook;
+
+        private static int Arrive(OnlineState s, WebShop shop, Site site, int hour, Func<WebShop, int, int, bool> gate, Func<WebShop, int, int, int> price)
+        {
             if (site.PerDay <= 0 || shop.Offline || site.Down)
             {
                 return 0;
@@ -245,6 +271,21 @@ namespace RealLifeOverhaul.Economy
                 if (o == null)
                 {
                     break;
+                }
+                if (gate != null && !gate(shop, o.District, hour))
+                {
+                    shop.Today.Turned++;
+                    continue;
+                }
+                if (HoldHook != null)
+                {
+                    int held = Math.Max(0, HoldHook(shop, hour));   // hours a night order waits for the morning
+                    o.PickAt = hour + held;
+                    o.Due += held;
+                }
+                for (int c = 0; price != null && c < o.Count; c++)
+                {
+                    o.Unit[c] = price(shop, o.Line[c], o.Unit[c]);
                 }
                 shop.Orders.Add(o);
                 shop.Today.Orders++;

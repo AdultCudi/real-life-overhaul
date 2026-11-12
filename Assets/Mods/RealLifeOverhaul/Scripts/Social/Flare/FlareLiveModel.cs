@@ -67,7 +67,8 @@ namespace RealLifeOverhaul.Flare
         Everyday = 12,
         Night = 13,
         Food = 14,
-        Sport = 15
+        Sport = 15,
+        Visit = 16       // one of the city's people at a real business of the city's: where they ate, trained or shopped (Place, Name, District)
     }
 
     /// <summary>The kinds of a reply of one of the city's people. Saved as a number.</summary>
@@ -149,7 +150,16 @@ namespace RealLifeOverhaul.Flare
         Case = 4,
         Dm = 5,
         Going = 6,
-        Review = 7
+        Review = 7,
+        Follow = 8,      // the day's new followers, from the account's history (the kit's list: FlareLiveRules.AllNotices)
+        Offer = 9,       // a business of the city's offers paid posts
+        Job = 10,        // one of the city's people writes about a job
+        Campaign = 11,   // an influencer hired posted, and what it brought
+        Promo = 12,      // a post's boost ran its hours, and what it brought
+        Milestone = 13,  // a tier passed (FlareNoticeRules.TierUp keeps the day)
+        Gained = 14,     // the followers a post of the player's brought
+        TrendPart = 15,  // a tag is trending and a post of the player's is part of it
+        Rival = 16       // a rival's or the city's business runs a promoted post in a district
     }
 
     /// <summary>What one of the city's people is like: what they post about.</summary>
@@ -323,6 +333,7 @@ namespace RealLifeOverhaul.Flare
         public int DmDay = -1;           // the last day one of the city's people wrote
         public string HostKey;           // a guest: the host and session whose NetIds this save's posts carry (FlareNetShare.NewHost)
         public int CitySeed;             // the seed of the city's people: this save's, or the host's it followed, so their names stay
+        public int PeopleFrom = -1;      // the oldest day whose people's posts (visits, shops' offers) are made: the days from it to the city day are covered; -1 none yet
 
         public FlareCase Case(int id)
         {

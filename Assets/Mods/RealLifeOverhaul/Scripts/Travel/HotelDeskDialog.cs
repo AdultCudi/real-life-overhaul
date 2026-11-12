@@ -1,6 +1,7 @@
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -94,7 +95,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_travel_desk_more_nights",
                 OnSecondOption = () => Nights(room, choice + 1),
                 OnCancel = DialogController.current.CancelDialog
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", TravelText.Money(Mathf.Max(total - voucher, 0)));
         }
 
         private static DialogEntry Pay(RoomType room, int nights)
@@ -116,7 +117,8 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_travel_desk_pay_deposit",
                 OnSecondOption = () => Finish(room, nights, true),
                 OnCancel = DialogController.current.CancelDialog
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", TravelText.Money(Mathf.Max(total - voucher, 0)))
+             .Pays(DialogButton.Second, "reallife_ui_dialog_cost_deposit", "amount", TravelText.Money(Mathf.Max(perNight - voucher, 0)), "later", TravelText.Money(later));
         }
 
         private static DialogEntry Finish(RoomType room, int nights, bool deposit)

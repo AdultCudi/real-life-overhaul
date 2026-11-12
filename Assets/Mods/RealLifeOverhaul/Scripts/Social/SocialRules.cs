@@ -145,9 +145,22 @@ namespace RealLifeOverhaul
             return person.Together && (person.Affection < BreakUpAffection || person.Trust < BreakUpTrust);
         }
 
-        public static bool WouldDate(SocialPerson person)
+        /// <summary>
+        /// Whether a romance with them is possible for the player now: they are open to one (<see cref="SocialPerson.Compatible"/>, rolled
+        /// when they were made or met), of a sex the player is interested in and near the player's age today (<see cref="RomanceRules"/>).
+        /// Worked out when asked, from saved numbers and the player's own, so a person met under another face, or a player grown older,
+        /// is judged as they are now. <paramref name="playerAge"/> 0: not known, and no age rules anybody out.
+        /// </summary>
+        public static bool Romantic(SocialPerson person, int interest, int playerAge, int day, int daysPerYear)
         {
-            return person.Compatible && !person.Together && person.Stage >= SocialStage.Friend
+            return person != null && person.Compatible
+                   && RomanceRules.Fits(interest, person.Female, AgeOn(person.Age, person.AgeDay, person.Birthday, day, daysPerYear), playerAge);
+        }
+
+        /// <summary><paramref name="romantic"/> is <see cref="Romantic"/>: only somebody the player could fall for says yes, and then at their figures.</summary>
+        public static bool WouldDate(SocialPerson person, bool romantic)
+        {
+            return romantic && !person.Together && person.Stage >= SocialStage.Friend
                    && person.Affection >= DateAffection && person.Trust >= DateTrust;
         }
 
@@ -299,6 +312,20 @@ namespace RealLifeOverhaul
         private static int BirthdaysBy(int day, int first, int perYear)
         {
             return day >= first ? (day - first) / perYear + 1 : 0;
+        }
+
+        /// <summary>
+        /// Gives somebody of the cast the age they have on game <paramref name="day"/>: <paramref name="years"/>, true that day, so
+        /// <see cref="AgeOn"/> adds only the birthdays after it. For a seat that takes the age of a face it is met by (a stranger in
+        /// the street, a city person on Flare, a roommate who moves in): setting <see cref="SocialPerson.Age"/> alone leaves the day it
+        /// is true on at the day the seat was dealt, and every birthday since is added to an age that is already today's (a woman of
+        /// 30 on Flare, a seat dealt ten years before, shows as 40 and is out of the player's window). Every place that replaces a
+        /// person's age does it here. The day is never before the first.
+        /// </summary>
+        public static void SetAge(SocialPerson person, int years, int day)
+        {
+            person.Age = years;
+            person.AgeDay = Math.Max(1, day);
         }
 
         /// <summary>

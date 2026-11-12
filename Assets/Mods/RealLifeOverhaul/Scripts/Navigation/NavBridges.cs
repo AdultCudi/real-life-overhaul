@@ -5,11 +5,28 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
 {
+    /// <summary>
+    /// The kit's HUD as the minimap must stand clear of it, in the game HUD's canvas units from the bottom of the screen: its
+    /// bottom bar's top, its left column's right and lower edges, and the sort order the minimap's canvas takes over it.
+    /// </summary>
+    public struct NavKitSpace
+    {
+        public bool Up;                         // the kit's HUD is on screen
+        public float BarTop;
+        public bool HasColumn;                  // an info panel or objectives stand in the left column
+        public float ColumnRight, ColumnBottom;
+        public float ChipsLeft, ChipsTop;       // the key chips over the bar's right end; ChipsTop below 0 for none
+        public int Order;
+    }
+
     /// <summary>What the minimap and the GPS ask of the rest of the mod, filled in by Wiring/NavLinks.cs; each has a default.</summary>
     public static class NavBridges
     {
         /// <summary>True while a scene of the mod's has the screen, such as custody or photo mode: the minimap hides. Default: never.</summary>
         public static Func<bool> HudHeld;
+
+        /// <summary>Where the kit's HUD stands now and what order its canvas has, read on the slow tick (Up false while it is not on screen). Default: not up.</summary>
+        public static Func<NavKitSpace> KitHud;
 
         /// <summary>Makes the nearest police station the game's destination; false if there is none. Default: none.</summary>
         public static Func<bool> GuideToStation;

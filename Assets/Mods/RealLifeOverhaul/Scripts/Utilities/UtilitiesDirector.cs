@@ -31,6 +31,16 @@ namespace RealLifeOverhaul.Utilities
         public static IModLogger Logger;
         public static UtilitiesDirector Instance { get; private set; }
 
+        /// <summary>Counts every change the app's pages would show (an account paid, a plan bought, the day's books), so the kit's face reads again only then.</summary>
+        public int Revision { get; private set; }
+
+        // Something the Utilities pages show changed: the old panel writes itself again if it is showing, and the kit's face reads again.
+        private void Touch()
+        {
+            Revision++;
+            _view?.Changed();
+        }
+
         /// <summary>True while the office's panel is up, or its button was pressed this frame.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door != null && Instance._door.TakesKey;
 
@@ -449,6 +459,7 @@ namespace RealLifeOverhaul.Utilities
         {
             float started = Time.realtimeSinceStartup;
             int monthDays = GameCalendar.MonthDays;
+            int billing = CalendarRules.BroadbandBillingDays(Settings.LivingPopulation, GameCalendar.DaysPerYear);   // the one month rule: a month's price over its days (off: the save's month)
             int level = Prices.Level;
             Sync(today, false);
             _company.Morning(today);
@@ -478,10 +489,10 @@ namespace RealLifeOverhaul.Utilities
                     Account a = _state.Accounts[i];
                     if (a.Service == Service.Internet)
                     {
-                        InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
+                        InternetRules.AddDay(a, billing, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
                     }
                 }
-                _company.Day(d, level, monthDays);
+                _company.Day(d, level, billing);
                 if (d + 1 - _state.MonthStart >= monthDays)
                 {
                     NewMonth(d + 1, level);
@@ -519,7 +530,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Unconnected();
             Effects();
-            _view?.Changed();
+            Touch();
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Utilities check (day " + today + "): " + _state.Accounts.Count + " account(s), " + bills + " bill(s) of " + billed + "; the month began on day "
@@ -692,7 +703,7 @@ namespace RealLifeOverhaul.Utilities
                 Logger?.Info("Utilities: " + (phone ? "no office to visit now; the Utilities app takes applications by phone."
                     : "the office is open again at " + OfficeName() + "; applications are in person again."));
             }
-            _view?.Changed();
+            Touch();
         }
 
         private void OfficePanel()
@@ -733,15 +744,19 @@ namespace RealLifeOverhaul.Utilities
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new UtilitiesApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_util_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(250, 205, 90, 255), new Color32(40, 120, 150, 255), 0.42f, "AppIcon-Utilities"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.UtilitiesScreen(RealLifeOverhaul.Ui.UtilitiesLive.Instance, RealLifeOverhaul.Ui.UtilitiesLive.Words()),
+                KitScreen = RealLifeOverhaul.Ui.UtilitiesScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Globe
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -753,6 +768,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()

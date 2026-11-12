@@ -154,7 +154,7 @@ namespace RealLifeOverhaul
             if (rank == null || !_career.TestShift(employer, rank, out reason))
             {
                 Logger?.Info("Careers: test shift could not start (" + reason + ").");
-                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now", 8f);
+                Notifications.Show(NotificationType.Warning, reason ?? "reallife_job_no_now", _career.OfficeData(CareerCatalogue.IndexOf(employer.Id)), 8f);
             }
         }
 

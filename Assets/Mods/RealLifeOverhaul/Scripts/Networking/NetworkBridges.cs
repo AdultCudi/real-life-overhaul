@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Networking
         public static Func<int, NetResult> Freelance;            // the salt: the client and the fee
         public static Func<int, string, NetResult> Investor;     // the salt, from whom: the investor's name
 
+        /// <summary>True for somebody whose next favour was bought: it is done without the friendship, the days known or the wait. Told when it is used.</summary>
+        public static Func<int, bool> Bought;
+        public static Action<int> BoughtUsed;
+
         public static void Reset()
         {
             Person = null;
@@ -35,6 +39,8 @@ namespace RealLifeOverhaul.Networking
             JobLead = null;
             Freelance = null;
             Investor = null;
+            Bought = null;
+            BoughtUsed = null;
         }
     }
 }

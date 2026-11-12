@@ -68,6 +68,9 @@ namespace RealLifeOverhaul
                 TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
                 TechBridges.Owner = Owner;
                 TechBridges.OwnerWorked = (prof, rank, minutes) => CareersDirector.Instance?.FirmWorked(prof, rank, minutes);
+                TechBridges.ContractDesk = ContractDesk;
+                TechBridges.ContractClient = ContractClient;
+                CareersBridges.FirmDesk = FirmDesk;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 FitOut.FitDesks.Wanted = CareersDirector.DeskWanted;
@@ -89,6 +92,8 @@ namespace RealLifeOverhaul
                 TechBridges.Founder = null;
                 TechBridges.Owner = null;
                 TechBridges.OwnerWorked = null;
+                TechBridges.ContractDesk = null;
+                TechBridges.ContractClient = null;
                 TechBridges.AcademyType = null;
                 TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
@@ -98,9 +103,9 @@ namespace RealLifeOverhaul
                 _paperBefore = null;
             }
 
-            // The gig work's own employers (Scripts/Jobs) and where each one's help-wanted board stands, for the Career app's Show on map.
-            // An employer with a board has an address; one without has none in this city and is hired through the phone. The building trades
-            // (no board: their works sites and floors) are not listed.
+            // Every employer of the gig work and the building trades (Scripts/Jobs) and where its work is done, for the Career app's Show on
+            // map: a help-wanted board outside a shop, the practice's floor, or the nearest works site. One with a place standing has an
+            // address; one without has none in this city and is hired through the phone. The building trades are listed with a line of their own.
             private static void BoardEmployers(List<BoardEmployer> into)
             {
                 try
@@ -114,11 +119,12 @@ namespace RealLifeOverhaul
                     for (int e = 0; e < CareerCatalogue.All.Length; e++)
                     {
                         Employer employer = CareerCatalogue.All[e];
-                        if (employer.Premises.Length == 0)
+                        bool works = employer.Place != EmployerPlace.Board;
+                        into.Add(new BoardEmployer
                         {
-                            continue;
-                        }
-                        into.Add(new BoardEmployer { Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e) });
+                            Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e), Works = works,
+                            Line = works ? CareerOfficeRules.WorksListKey(employer.Place, career.WhereOf(e)) : null
+                        });
                     }
                 }
                 catch (Exception e)
@@ -127,7 +133,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The destination marker on an employer's board: the employer's own show-me-the-office, the phone closed so the marker shows.
+            // The destination marker on an employer's place: the employer's own show-me-the-office, the phone closed so the marker shows.
             private static string ShowBoard(int employer)
             {
                 try
@@ -140,7 +146,8 @@ namespace RealLifeOverhaul
                     }
                     if (!career.ShowOffice(employer))
                     {
-                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : "reallife_career_why_board_busy";
+                        bool works = CareerCatalogue.All[employer].Place != EmployerPlace.Board;
+                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : works ? "reallife_career_why_works_busy" : "reallife_career_why_board_busy";
                     }
                     return null;
                 }
@@ -333,6 +340,51 @@ namespace RealLifeOverhaul
                 why = "reallife_tech_own_why_off";
                 professions = string.Empty;
                 return false;
+            }
+
+            // A contract of the player's worked at a free desk of their own tech firm: the click the firm's own work waits on (Careers/CareersDirector.OwnStint).
+            private static bool ContractDesk(EmployeeStationController desk)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    return d != null && d.ContractAtDesk(desk);
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.ContractDesk", e);
+                    return false;
+                }
+            }
+
+            // The client of the contract that click would work, so the firm can ask which of the two the player means (Tech/TechDirector.OwnDesk).
+            private static string ContractClient(EmployeeStationController desk)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    return d != null ? d.ContractClientAt(desk) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.ContractClient", e);
+                    return null;
+                }
+            }
+
+            // True while the tech firm's click (or the sessions' Work button) leads to work at a desk, which a contract rides on: Careers clicks a desk of its own where it does not.
+            private static bool FirmDesk()
+            {
+                try
+                {
+                    TechDirector t = TechDirector.Instance;
+                    return t != null && t.OwnDeskOffered;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.FirmDesk", e);
+                    return false;
+                }
             }
 
             // The banking licence's qualified person: the player with a finance qualification, or a senior professional of theirs in finance.

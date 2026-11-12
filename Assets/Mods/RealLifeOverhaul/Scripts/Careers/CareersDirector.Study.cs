@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     LadderWrite(data);
                 }
+                PeopleWrite(data);   // the campus's cohorts and the standing at work, in lines of their own
             }
         }
 
@@ -317,6 +318,11 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_closed";
             }
             EnrolRefusal refusal = StudyRules.CanEnrol(_study, c, mode);
+            string campus = refusal == EnrolRefusal.None ? CampusWhy(c) : null;   // a skill floor, and a seat in the cohort
+            if (campus != null)
+            {
+                return campus;
+            }
             if (refusal == EnrolRefusal.Passed && c.Id == StudyCatalogue.DrivingRefresher)
             {
                 refusal = EnrolRefusal.None;   // a refresher can be taken again
@@ -352,6 +358,7 @@ namespace RealLifeOverhaul.Careers
                 e.SettledDay = day;
             }
             _study.Courses.Add(e);
+            CampusEnrolled(c, day);
             if (!c.Timetabled)
             {
                 StudyRules.Advance(e, day);   // a certificate with no homework set goes straight to its exam
@@ -401,15 +408,19 @@ namespace RealLifeOverhaul.Careers
             }
             var view = new CampusApp(this);
             bool tryAgain;
-            _campusApp = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = CampusAppId,
                 TitleKey = "reallife_campus_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(CampusGlyphs), new Color32(232, 176, 72, 255), new Color32(168, 96, 40, 255), 0.42f, "AppIcon-Campus"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.CampusLive.Instance),
+                KitScreen = "campus",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Cap
+            };
+            _campusApp = PhoneApp.Install(kitDef, out tryAgain);
             if (_campusApp == null)
             {
                 _campusGaveUp = !tryAgain;
@@ -420,6 +431,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_campusApp, kitDef);   // the kit's face over the app, once its switch is on
             _campusView = view;
             CampusBadge();
         }

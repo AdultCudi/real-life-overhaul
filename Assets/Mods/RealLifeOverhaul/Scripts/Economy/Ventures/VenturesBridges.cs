@@ -20,11 +20,15 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>True while something of the mod's holds the player, so no meeting can be held (the game's: <see cref="VenturesGame.Busy"/>). Default: never.</summary>
         public static Func<bool> Held;
 
+        /// <summary>The staff's standing on average across the player's businesses, 0 to 100, or -1 with no staff. Default: not known.</summary>
+        public static Func<int> Morale;
+
         public static void Reset()
         {
             _climate = SteadyClimate.Instance;
             JobsHeld = null;
             Held = null;
+            Morale = null;
         }
     }
 

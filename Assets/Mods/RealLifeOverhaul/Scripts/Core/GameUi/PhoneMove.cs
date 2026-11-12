@@ -50,13 +50,13 @@ namespace RealLifeOverhaul.GameUi
             string name = TitleOf(button);
             int now = PhoneLayoutPrefs.Layout.Place(id);
             int usual = PhoneLayoutRules.DefaultOf(id);
-            list.Begin(T("reallife_phone_move_title", "app", name), T("reallife_phone_move_info"));
+            list.Begin(T("reallife_phone_move_title", "app", name), T("reallife_phone_move_info_first"));
             for (int k = 0; k < Places.Length; k++)
             {
                 int place = Places[k];
                 bool can = PhoneLayoutRules.CanMove(now, place, pager.InDock);
                 string note = place == now ? T("reallife_phone_move_here")
-                    : place == PhoneLayoutRules.Dock && !can ? T("reallife_phone_move_dock_full")
+                    : place == PhoneLayoutRules.Dock && !can ? T("reallife_phone_move_first_full")
                     : place == usual ? T("reallife_phone_move_usual")
                     : string.Empty;
                 list.Add(k, PlaceName(place), note, "reallife_phone_move_button", can);
@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.GameUi
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Game UI: the list to move '" + id + "' is open: it is in " + PhoneLayoutRules.Token(now) + ", its usual place " + PhoneLayoutRules.Token(usual)
-                             + ", the dock holds " + pager.InDock + " of " + PhoneLayoutRules.DockMost + ".");
+                             + ", " + pager.InDock + " of " + PhoneLayoutRules.DockMost + " kept first.");
             }
         }
 
@@ -101,10 +101,10 @@ namespace RealLifeOverhaul.GameUi
             _name = null;
         }
 
-        /// <summary>A place's name: a folder's, the home screen or the dock.</summary>
+        /// <summary>A place's name: a folder's, the home screen or first on it.</summary>
         public static string PlaceName(int place)
         {
-            return place == PhoneLayoutRules.Dock ? T("reallife_phone_place_dock")
+            return place == PhoneLayoutRules.Dock ? T("reallife_phone_place_first")
                 : place >= 0 && place < PhoneLayoutRules.FolderCount ? T(PhoneLayoutRules.FolderKeys[place])
                 : T("reallife_phone_place_home");
         }
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.GameUi
             return string.IsNullOrEmpty(words) ? button.name : words;
         }
 
-        /// <summary>The options page's button: every app back in its usual place, and the dock as it came.</summary>
+        /// <summary>The options page's button: every app back in its usual place, the Planner and Flare first again.</summary>
         public static void ResetAll()
         {
             try

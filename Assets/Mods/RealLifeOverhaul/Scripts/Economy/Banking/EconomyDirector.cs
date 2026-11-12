@@ -247,6 +247,7 @@ namespace RealLifeOverhaul.Economy
                 return;   // LifeEvents makes the save's modData ready first
             }
             KeepDayResult();
+            KeepGoalRewards(Settings.Economy && _running);   // goals reached since the last second: paid while the economy runs, else only counted
             if (!Settings.Economy)
             {
                 if (_running)
@@ -322,7 +323,7 @@ namespace RealLifeOverhaul.Economy
                 file.FirstCreditDay = today;   // a loan taken while the economy was off: its history starts when it is first seen
             }
             file.Roll(today);
-            DeskDo("the start", () => _desk.Start(file, today));   // the mod's accounts join the rating before it is first worked out
+            DeskDo("the start", () => _desk.Start(file, today, fresh));   // the mod's accounts join the rating before it is first worked out; a new game's student loan is made
             int score = CreditLedger.Refresh();
             CreditLedger.GradeChanged -= _onGrade;
             CreditLedger.GradeChanged += _onGrade;

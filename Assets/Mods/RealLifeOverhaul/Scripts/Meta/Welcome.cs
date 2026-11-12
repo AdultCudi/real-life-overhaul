@@ -10,6 +10,9 @@ namespace RealLifeOverhaul.Meta
         private const string SeenId = "meta_seen_release";
         private const string DevelopmentSeenId = "meta_seen_version";   // written by the development builds: deleted, never read
 
+        /// <summary>True when this version's notes have not been opened yet, so the Guide marks the newest one.</summary>
+        internal static bool Unread => SeenVersion != Changelog.Shown;
+
         /// <summary>The version whose welcome the player has seen, or null.</summary>
         private static string SeenVersion
         {

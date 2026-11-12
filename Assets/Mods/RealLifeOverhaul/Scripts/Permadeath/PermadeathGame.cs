@@ -391,6 +391,18 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
+        /// <summary>The game's own list of saves, so a backup can be loaded. Nothing of the dead save is written over.</summary>
+        public static void LoadSaves()
+        {
+            LoadScene.LoadTransitionToSave();
+        }
+
+        /// <summary>Leaves the game. The death is already saved.</summary>
+        public static void QuitDesktop()
+        {
+            UnityEngine.Application.Quit();
+        }
+
         /// <summary>Back to the main menu, as the game's funeral screen goes; the save's files are left as they are.</summary>
         public static void MainMenu()
         {

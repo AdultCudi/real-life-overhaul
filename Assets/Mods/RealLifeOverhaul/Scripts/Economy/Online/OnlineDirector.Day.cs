@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Economy
                         Tell(NotificationType.Warning, "reallife_online_note_idle", new Dictionary<string, string>
                         {
                             { "name", place.Shop.Name }, { "count", place.Shop.Count(OrderStage.Waiting).ToString() }
-                        }, TabOrders, null);
+                        }, TabOrders, "shop:" + place.Shop.Place);
                     }
                 }
                 _state.LastHour = hour;
@@ -259,6 +259,8 @@ namespace RealLifeOverhaul.Economy
             OnlineGame.GuessRoads(place, _centres, _hasCentre);
             place.Site.Mbps = Speed(place.Reg, -1);
             int campaign = OnlineBridges.Campaign != null && place.Reg != null ? OnlineBridges.Campaign(place.Reg) : 0;
+            // The households' online share of what the shop sells, where the living population runs.
+            place.Site.People = OnlineBridges.People != null && place.Reg != null ? Math.Max(0, OnlineBridges.People(place.Reg.businessTypeName)) : 0;
             OnlineRules.Plan(place.Shop, place.Site, day, campaign, cycle, season, _state.Shops.Count);
             if (Verbose && say)
             {

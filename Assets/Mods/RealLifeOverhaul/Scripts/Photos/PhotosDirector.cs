@@ -64,6 +64,40 @@ namespace RealLifeOverhaul.Photos
 
         public bool IsFavourite(string name) => name != null && _favourites.Contains(name);
 
+        /// <summary>Counts every change of the list, the favourites and the posted names: a screen laid out for an older one lays out again.</summary>
+        public int Version { get; private set; }
+
+        /// <summary>The small copies the kit's Gallery and Flare's photo picker show: only the photos in view, at most 120.</summary>
+        internal PhotoThumbCache Thumbs { get; } = new PhotoThumbCache();
+
+        private readonly HashSet<string> _posted = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>The photos a post of the player's carries, by name; read again by <see cref="RefreshPosted"/>.</summary>
+        public HashSet<string> Posted => _posted;
+
+        /// <summary>
+        /// Asks Flare which photos its posts carry (Flare's own record of a post's picture is the photo's path) and keeps their names.
+        /// One pass over the photos on a click, as the Gallery opens or a photo is shared; false where Flare is not running.
+        /// </summary>
+        public bool RefreshPosted()
+        {
+            Version++;
+            _posted.Clear();
+            Flare.FlareDirector flare = Flare.FlareDirector.Instance;
+            if (flare == null || !flare.Running || _folder == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < _photos.Count; i++)
+            {
+                if (flare.PictureStory(Path.Combine(_folder, _photos[i].Name), out _, out _, out _, out _))
+                {
+                    _posted.Add(_photos[i].Name);
+                }
+            }
+            return true;
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -154,6 +188,8 @@ namespace RealLifeOverhaul.Photos
             DropLatest();
             _wallpaperWrites = new LastWins();
             _favourites.Clear();
+            _posted.Clear();
+            Thumbs.Clear();
             _favouriteWrites = new LastWins();
             _folder = PhotoStore.Folder(_root, id);
             StartCoroutine(Guard.Routine(List(_root, id, _folder, _generation)));
@@ -169,6 +205,7 @@ namespace RealLifeOverhaul.Photos
             {
                 adopted = PhotoStore.Adopt(root, id);   // an earlier build's folder name for this save
                 bool read = PhotoStore.List(folder, found);
+                PhotoStore.ReadSides(folder, found);   // what the camera knew of each photo: a few hundred small files, once, on this worker
                 wallpaper = PhotoStore.Wallpaper(folder);
                 PhotoStore.Favourites(folder, favourites);
                 return read;
@@ -191,6 +228,7 @@ namespace RealLifeOverhaul.Photos
             }
             _photos.Clear();
             _photos.AddRange(found);
+            Version++;
             _listed = true;
             _listedWhole = work.Status == TaskStatus.RanToCompletion && work.Result;
             _wallpaper = wallpaper;
@@ -217,6 +255,8 @@ namespace RealLifeOverhaul.Photos
             DropLatest();
             _photos.Clear();
             _favourites.Clear();
+            _posted.Clear();
+            Thumbs.Clear();
             _listed = _listedWhole = false;
             _folder = null;
             _saveId = null;
@@ -285,9 +325,12 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: not now (" + refusal + ").");
         }
 
-        // The phone's close fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
+        // A frame is let go first: pressed from the closed phone, the app is switched on before the game opens the menu, so a close
+        // asked at once finds the menu not yet open, and the camera would wait on a menu that then stays up. The phone's close
+        // fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
         private IEnumerator OpenWhenPutAway(bool selfie, bool fromFlare)
         {
+            yield return null;
             PhotosGame.CloseMenu();
             float until = Time.unscaledTime + 0.25f;
             while (Time.unscaledTime < until || PhotosGame.MenuOpen)
@@ -352,13 +395,15 @@ namespace RealLifeOverhaul.Photos
         /// A photo just written into <paramref name="folder"/>, the folder the shot took; returns the latest small copy. The
         /// folder is compared, never taken from the path, since the game's Mono and the engine write its separators apart.
         /// </summary>
-        internal Texture Added(string folder, string path, PhotosGame.Developed made)
+        internal Texture Added(string folder, string path, PhotosGame.Developed made, PhotoSidecar side)
         {
             var entry = new PhotoEntry();
             if (path == null || !PhotoStoreRules.Parse(Path.GetFileName(path), entry) || !PhotoStoreRules.SameFolder(folder, _folder))
             {
                 return _latest;   // a photo of a save no longer followed
             }
+            entry.Take(side);
+            Version++;
             _photos.Insert(0, entry);
             PhotoStoreRules.Order(_photos);
             DropLatest();
@@ -397,6 +442,7 @@ namespace RealLifeOverhaul.Photos
             {
                 if (gone.Contains(_photos[i].Name))
                 {
+                    Thumbs.Forget(_photos[i].Name);
                     latest |= _photos[i].Name == _latestName;
                     wallpaper |= _photos[i].Name == _wallpaper;
                     _photos.RemoveAt(i);
@@ -421,7 +467,60 @@ namespace RealLifeOverhaul.Photos
             {
                 PhotosGame.Tell(NotificationType.Warning, "reallife_gallery_note_delete_failed");
             }
+            Version++;
             _galleryApp.Changed();
+        }
+
+        /// <summary>
+        /// Saves an edit of a photo as a new photo beside it (the original stays): its pixels are worked and encoded on a worker, its
+        /// sidecar is the original's with what the edit changed, and the list takes it in. <paramref name="done"/> gets the new
+        /// photo's name, or null if it could not be made (the gallery full, the disk, the pixels).
+        /// </summary>
+        internal IEnumerator SaveEdit(PhotoEntry original, PhotosGame.Edit edit, Action<string> done)
+        {
+            int generation = _generation;
+            string folder = _folder, saveId = _saveId;
+            if (folder == null || PhotoStoreRules.Full(_photos.Count))
+            {
+                PhotosGame.Drop(edit);
+                done(null);
+                yield break;
+            }
+            DateTime taken = DateTime.Now;
+            bool selfie = original.Selfie;
+            string path = null;
+            PhotoSidecar side = original.HasSide ? original.Side : default;
+            Task<PhotosGame.Developed> work = Task.Run(() =>
+            {
+                path = PhotoStore.NewPath(folder, saveId, taken, selfie, original.Day, original.Hour);
+                return path != null ? PhotosGame.Finish(edit, path) : null;
+            });
+            while (!work.IsCompleted)
+            {
+                yield return null;
+            }
+            PhotosGame.Developed made = work.Status == TaskStatus.RanToCompletion ? work.Result : null;
+            if (made == null || generation != _generation)
+            {
+                Logger?.Warn("Gallery: the edited photo could not be saved" + (work.Exception != null ? " (" + work.Exception.GetBaseException().Message + ")" : string.Empty) + ".");
+                done(null);
+                yield break;
+            }
+            // The edit is worked on the photo as it is, whose own filter and frame are in its pixels: only a filter or a frame the edit adds is new.
+            side.Filter = edit.Filter != 0 ? edit.Filter : side.Filter;
+            side.Frame = edit.Frame != CameraFrame.None ? (int)edit.Frame : side.Frame;
+            side.Aspect = edit.Crop != CameraAspect.Unknown ? (int)edit.Crop : side.Aspect;
+            side.Original = original.Name;
+            side.Edits = PhotoSeenRules.Edits(edit.Filter != 0, edit.Frame != CameraFrame.None, edit.Quarters, edit.Crop != CameraAspect.Unknown);
+            side.Day = original.Day;
+            side.Hour = original.Hour;
+            side.Minute = original.Minute >= 0 ? original.Minute : 0;
+            side.HasMinute = original.Minute >= 0;
+            PhotoSidecarFile.Write(path, side);
+            Added(folder, path, made, side);
+            Logger?.Info("Gallery: an edit of " + original.Name + " saved as " + Path.GetFileName(path) + " (" + made.Width + " x " + made.Height
+                         + ", " + (made.Bytes / 1024) + " KB); the original stays.");
+            done(Path.GetFileName(path));
         }
 
         /// <summary>A token for a worker's answer, so an answer for an earlier save is let go.</summary>
@@ -465,8 +564,29 @@ namespace RealLifeOverhaul.Photos
                 return false;
             }
             bool now = GalleryRules.Toggle(_favourites, name);
+            Version++;
             WriteFavourites();
             return now;
+        }
+
+        /// <summary>Several photos marked as favourites, or unmarked, with one write of the file; the number of photos changed.</summary>
+        public int SetFavourites(List<string> names, bool on)
+        {
+            int changed = 0;
+            for (int i = 0; _folder != null && i < names.Count; i++)
+            {
+                if (GalleryRules.IndexOf(_photos, names[i]) < 0)
+                {
+                    continue;
+                }
+                changed += (on ? _favourites.Add(names[i]) : _favourites.Remove(names[i])) ? 1 : 0;
+            }
+            if (changed > 0)
+            {
+                Version++;
+                WriteFavourites();
+            }
+            return changed;
         }
 
         // Written whole on a worker from a copy taken now; of two quick changes the later wins.

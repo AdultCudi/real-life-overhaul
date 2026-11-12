@@ -197,6 +197,7 @@ namespace RealLifeOverhaul.Economy
             });
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
         }
+
 
         // The game's own question box: everything the loan costs is said before it is taken.
         private void ApplyLoan(int amount)

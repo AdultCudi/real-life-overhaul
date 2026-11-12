@@ -12,6 +12,10 @@ namespace RealLifeOverhaul.Flare
             FlareRow head = Row(CellProfile);
             head.Key = key;
             head.Text = AboutOf(file, key);
+            if (key == "me" && _at.Tab == 0)
+            {
+                WriteCityAccount(file);   // Flare in the city: followers here and beyond, and what the newest posts did (FlareApp.City)
+            }
             int shown = 0;
             for (int i = file.Posts.Count - 1; i >= 0 && shown < FlareRules.FeedRows; i--)
             {

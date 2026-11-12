@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Economy
         private const string GuideTitle = "reallife_meta_title_economy";   // the Guide's page each page points to at its foot
 
         private static readonly string[] TabKeys = { "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash", "reallife_econ_tab_accounts" };
-        private static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
+        internal static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
 
         public static IModLogger Logger;
 
@@ -347,6 +347,7 @@ namespace RealLifeOverhaul.Economy
                 case ProductAnswer.TooLittle: return FinanceText.T("reallife_econ_why_too_little");
                 case ProductAnswer.TooMuch: return FinanceText.T("reallife_econ_why_too_much");
                 case ProductAnswer.NoSecurity: return FinanceText.T("reallife_econ_why_no_security", "days", ProductCatalogue.BusinessDaysOnRecord.ToString());
+                case ProductAnswer.NoCover: return FinanceText.T("reallife_econ_why_no_cover", "cover", ProductCatalogue.BusinessCoverTimes.ToString());
                 case ProductAnswer.NoCash: return FinanceText.T("reallife_econ_why_no_cash");
                 case ProductAnswer.NothingOwed: return FinanceText.T("reallife_econ_why_nothing");
                 case ProductAnswer.Busy: return FinanceText.T("reallife_econ_why_busy");

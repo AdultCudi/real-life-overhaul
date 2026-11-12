@@ -45,12 +45,13 @@ namespace RealLifeOverhaul
                 private static readonly string[] Ids =
                 {
                     PlannerStore.NoteSourceId, "tax", "work", "profession", "freelance", "study", "court", "cell", "licence", "family", "social", "travel",
-                    "event", "civic", "health", "markets", "listing", "utilities", "newsstand", "ventures", "services", "standing"
+                    "event", "civic", "health", "markets", "listing", "utilities", "newsstand", "ventures", "services", "standing", "parties", "healthcare"
                 };
                 private static readonly string[] Apps =
                 {
                     "RealLifePlanner", null, null, "RealLifeCareer", "RealLifeCareer", "RealLifeCampus", null, null, null, null, null, null,
-                    null, null, null, "RealLifeStocks", "RealLifeStocks", "RealLifeOverhaulUtilities", "RealLifeNewsstand", "RealLifeVentures", "RealLifeServices", "RealLifeFinance"
+                    null, null, null, "RealLifeStocks", "RealLifeStocks", "RealLifeOverhaulUtilities", "RealLifeNewsstand", "RealLifeVentures", "RealLifeServices", "RealLifeFinance",
+                    "RealLifeParties", "RealLifeHealth"
                 };
                 private static readonly Func<string, bool> Wanted = id => Array.IndexOf(Ids, id) >= 0;   // made once
 
@@ -74,6 +75,7 @@ namespace RealLifeOverhaul
                         }
                         e.Start = p.Start >= 0 ? p.Start : p.Deadline && p.End >= 0 ? p.End : -1;
                         e.Title = p.Title;
+                        e.Done = p.Done;
                         if (p.Owes > 0f)
                         {
                             e.Sign = -1;
@@ -81,7 +83,8 @@ namespace RealLifeOverhaul
                         }
                         e.Value = group == CalendarGroup.Money && !string.IsNullOrEmpty(p.Money) ? p.Money : PlannerText.When(p);
                         int at = Array.IndexOf(Ids, p.Id.Source);
-                        e.App = at >= 0 ? Apps[at] : null;
+                        e.App = at >= 0 ? (p.Id.Source == "services" ? ServicesLinks.CalendarApp(Apps[at], p.Id.A,
+                            p.Id.B) : p.Id.Source == "ventures" ? VenturesLinks.CalendarApp(Apps[at], p.Id.A, p.Id.B) : Apps[at]) : null;
                     }
                 }
             }

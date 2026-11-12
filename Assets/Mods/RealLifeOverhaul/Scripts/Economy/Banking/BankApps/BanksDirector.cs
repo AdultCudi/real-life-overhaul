@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
         public static BanksDirector Instance { get; private set; }
 
+        /// <summary>The kit's apply at the bank showing.</summary>
+
         private PhoneApp _app;
         private BankApp _view;
         private readonly List<Lender> _banks = new List<Lender>(BankRules.AppsMost);   // the banks the app shows, largest first
@@ -168,7 +170,7 @@ namespace RealLifeOverhaul.Economy
             var view = new BankApp(credit, AppId);
             view.Offer(_banks);
             bool tryAgain;
-            PhoneApp app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_banks_app",
@@ -179,8 +181,12 @@ namespace RealLifeOverhaul.Economy
                 {
                     view.Closed();
                     Badges();
-                }
-            }, out tryAgain);
+                },
+                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.BanksLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.BanksScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Bank
+            };
+            PhoneApp app = PhoneApp.Install(def, out tryAgain);
             if (app == null)
             {
                 _gaveUp = !tryAgain;
@@ -192,6 +198,7 @@ namespace RealLifeOverhaul.Economy
             }
             _app = app;
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badges();
             if (Verbose)
             {

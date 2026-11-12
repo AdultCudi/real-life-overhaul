@@ -13,6 +13,7 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 | --- | --- |
 | `SocialModel` | the cast's records, the plan, what waits for an answer: game-free |
 | `SocialRules` | stages, what things are worth, neglect: game-free |
+| `RomanceRules` | who the player can fall for: the sex they are interested in, an age near their own: game-free |
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
@@ -115,6 +116,60 @@ The answers are written lines in every RLO Texts pack (`StreetCards.Aged`): no d
 
 Test: Options, Street talk, "Street talk: ask the nearest passer-by their age" (`StreetDirector.TestAge`) stops the nearest person within 8 m with time to talk, today's answer forgotten, and the blue button asks their age. The answer writes `Street talk check (age)`: the age said and how, and for somebody the player knows the People page's age, PASS or FAIL; swapping numbers afterwards writes the same check against their new People page.
 
+## Who the player can fall for (`RomanceRules`)
+
+Players found that the people they could ask out were often twice their age, that more men than women came up whatever they were, and that asking out worked for one character and not for another.
+The cause was one roll.
+Whether somebody "could become more than a friend" (`SocialPerson.Compatible`) was made when the person was dealt, from a coin flip and an age under 50, so it ignored their sex, the player's wish and the player's own age.
+A person met as a street figure or a Flare face kept it while their sex and age were replaced by the figure's (up to 64 in the street, 82 on Flare).
+A stranger's answer to a flirt in the street was a second, unrelated roll (`StreetStranger.Compatible`, adults 21 to 60) that never reached their record, so a warm answer to a flirt could be followed by no Ask them out, ever.
+The sex roll itself is even: about half of everybody dealt is a woman (EconomyCheck `--romance`: 18,000 people of first casts and 16,000 later ones for each wish), so nothing deals men more often.
+What a player sees is a first cast of six, where four of one sex is common, and a roll for being open that did not care which.
+
+One rule now judges everybody, every time it is asked (`SocialRules.Romantic`, game-free; `SocialLife.Romantic` asks it with the player's wish and age of today):
+
+| they are | rule |
+|---|---|
+| open to a romance | `SocialPerson.Compatible`: a roll made when they were dealt, or (a street figure) talked to; nothing else about them follows from it |
+| of a sex the player is interested in | the option **Who you are interested in** (Options, Friends and social life; `family_interest`, saved under the id it had as Family's option; anyone by default): `RomanceRules.SexFits`, a woman for "women", a man for "men", everybody for "anyone" |
+| near the player's age | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) no more than `RomanceRules.AgeGap` (8) years above or below the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it |
+
+The gap is the one the city's own people pair up by (`Population/LifeRules.AgeGapMost`, which `RomanceRules.AgeGap` reads), so the player is held to what the city's couples keep.
+They pair only within it, and a few in a hundred are of the same sex (`LifeRules.SameSexShare`), as the player's "anyone" allows.
+EconomyCheck runs the population for two years and holds every couple, generated and formed, to the gap.
+
+Where it is asked:
+
+- **The phone.**
+  Ask them out is offered only to a friend or closer the rule allows (`PersonDialog.Menu`), and asking decides by it (`SocialRules.WouldDate(person, romantic)`), then by affection 60 and trust 45 as before.
+  A person's page in People (`PeopleDialog.Page`) says "They could be more than a friend." while the player has no partner and the rule allows, so a player who cannot move on from friends can see who can.
+  Somebody the player is already dating or with is never parted from them because the rule would now say no: only affection and trust end it.
+- **The street.**
+  A stranger is open with `StreetRules.CompatiblePercent` (45 in a hundred), of any age.
+  `StreetRules.Romantic(stranger, facts)` weighs their sex and age against `StreetFacts.Interest` and `PlayerAge`, which `StreetLinks.Facts` fills.
+  The flirt is on offer only for people of the sex the player is interested in (`StreetRules.Offered`) and works only with somebody the rule allows (`StreetRules.Answer`); typed flirting at anyone else gets the usual no.
+  A stranger who swaps numbers brings their roll (`StreetMeet.Compatible`, set on the record in `StreetLinks.MeetInStreet`), so what the phone allows is what the talk showed.
+- **Flare.**
+  `FlarePerson.Compatible` is the rule's answer (`FlareLinks.People`): a post that tags somebody the player could fall for makes a partner jealous, as before.
+- **New people.**
+  `SocialCatalogue.MakeCast`, `MakeNew` and `MakeRolled` take the player's age and wish (the load of a new cast, `SocialDirector.Newcomer`, losing touch with somebody), and whoever is open to a romance is made to fit (`FitToPlayer`): of the sex the player asked for when the caller left the sex open, and of an age one year inside the gap, from 7 under the player's to 7 over it (`RomanceRules.AgeNear`, `AgeMargin`; never under 18).
+  Never on the gap's edge: the person's birthday and the player's are different days, so somebody made exactly 8 years away would be 9 years away from their birthday to the player's, and out of the window for part of every year, with Ask them out and the People line going and coming back.
+  Somebody rolled on the edge is made again like somebody beyond it (`RomanceRules.AgeSteady`), so nobody the mod makes for the player ever leaves the window at a birthday (EconomyCheck `--romance` runs three years of days for every pair of birthdays).
+  The age is rolled from the person's own seed on a stream apart, so no other roll of the cast moves: a cast dealt without the player's age and wish is the cast every version dealt, and the first eight still hold at least two people open to a romance.
+  Everybody not open is a man or a woman as the roll fell, whatever the wish, so the world is not all one sex.
+  When the caller asks for a man or a woman (a figure in the street, a face on Flare), that is who they are.
+- **A face met.**
+  A seat of the cast that takes the age of a face (a stranger who swaps numbers in the street, a city person who says yes on Flare, a roommate who moves in) takes it as of the day it is taken, through `SocialRules.SetAge`: `SocialPerson.Age` is years on `AgeDay`, and an age set alone would leave `AgeDay` on the day the seat was dealt, with every birthday since added to an age that is already today's (a woman of 30 on Flare shown as 40 on People, out of the window of a player of 28).
+  `StreetLinks.MeetInStreet`, `FlareInviteLinks.MeetOnline` and `RoommateLinks.MakeFriend` all call it, and EconomyCheck reads the wiring for any other place that sets a person's age alone.
+- **Saves.**
+  Nothing in a record is changed or saved for it: people already in the cast are judged as they are today, so one who does not fit the player is a friend only (an heir who takes over, an older player and a changed wish work the same way).
+  Going Public: nothing here is shared or sent; the wish, the player's age and the cast are this machine's.
+
+Not changed: Family's own stand-in partner (the "Someone special" contact while Social does not keep the partner) is still 24 to 37, drawn from its seed, but follows the wish (`Partner.Meet(Settings.FamilyInterest)`).
+
+Self-check (Developer diagnostics): `Social check (romance)` for each new person open to a romance, with their sex and age, the player's and the wish, PASS or FAIL.
+The test "Move the chosen person one stage closer" (`SocialDirector.TestAdvance`) asks the same rule before it starts a dating.
+
 ## The relationship model (`SocialRules`)
 
 Per person: familiarity, affection, trust (0 to 100), today's mood, last contact, up to six memories, what they would like to do.
@@ -125,7 +180,7 @@ The People page (`reallife-people`, a contact that is called) shows all of it.
 | acquaintance | numbers were swapped | (drifts: familiarity under 8 and ten days without a word; a call brings them back) |
 | friend | familiarity 30, affection 30, trust 20, two things done together | any of the three 10 below that |
 | close friend | 60 / 60 / 55, five things done together, known ten days | any of the three 10 below that |
-| dating | asked on the phone; they say yes at affection 60 and trust 45, only people marked compatible (half of the six, never fewer than two), one at a time | affection under 35 or trust under 25: they end it |
+| dating | asked on the phone; they say yes at affection 60 and trust 45, only somebody the player could fall for ([the rule](#who-the-player-can-fall-for-romancerules); about half of a new cast of six are open to it, never fewer than two), one at a time | affection under 35 or trust under 25: they end it |
 | partner | asked; yes at affection 80, trust 70, fourteen days of dating and four dates | as above |
 | living together | asked; yes at trust 85 and twenty-one days as partners. Text and state only: a daily mood, their texts | with the break-up |
 
@@ -316,16 +371,18 @@ Each morning after six the paper is written once (`News.Compose`): the worst two
 It arrives as messages from the `reallife-ledger` contact (one notification) and is read out when that contact is called.
 The log, the paper and the fillers seen are in modData.
 
-### Milestones and rivals beaten (`LedgerStories`)
+### Milestones, sector leaders and rivals beaten (`LedgerStories`, `LedgerLeads`)
 
-Read when an edition is first printed (`LedgerDirector.Stories`), kept when it is written again, behind the option `ledger_stories`:
+Read when an edition is first printed (`LedgerDirector.Stories`), kept when it is written again, behind the option `ledger_stories` ("Company milestones and rivals in the City Ledger"). A rival tycoon's company is a rival's holding on the market (`LedgerCompany.Rival`: one of the mod's tycoons' holdings, or one of the game's own rivals' listed under its name), and is told as a player's company is:
 - A rival tycoon the player took over (`Tycoon.DefeatedDay` in the edition's window, the cost from the rivals' counter note, the break-up money until it is paid): a front page business story in one of three versions, drawn from the rivals' seed, the day and the rival, or a plain one without the cost. It replaces the rivals' own one line of the same takeover.
-- A listed company's market value at the last close against the ladder (100 and 250 million, 500 million, each billion to ten, then 25, 50 and 100 billion): a player's company has one story for the highest figure it passed (front page weight from a billion), a city company one for its first billion. The city's companies start between about 140 million and 58 billion, so every figure can be reached.
-- The city's most valuable company: it changes hands only when the leader is 2% ahead of the holder (or the holder left the market); a player's company has its own stories for the first time, again, and losing it.
+- A listed company's market value at the last close against the ladder (100 and 250 million, 500 million, each billion to ten, then 25, 50 and 100 billion): a player's company has one story for the highest figure it passed (front page weight from a billion), a rival tycoon's holding one for the highest figure it passed too (`ledger_mile_rival`, the markets page), a city company one for its first billion. The city's companies start between about 140 million and 58 billion, so every figure can be reached.
+- The city's most valuable company: it changes hands only when the leader is 2% ahead of the holder (or the holder left the market); a player's company has its own stories for the first time, again, and losing it, and a rival tycoon's holding taking it has one of its own (`ledger_top_rival`).
+- A sector's leader (`LedgerLeads.Pass`, run before the milestones so the record of who was on the market is still the morning before's): the most valuable listed company of each of the market's 24 sectors (`LedgerCompany.Sector`). Another company takes the lead only when it is 5% ahead of the holder (`LeadBp`; a tie goes to the lower id), and is told only when both were on the market at the edition before and the holder is a major company, worth at least the ladder's first figure (100 million). A holder that left the market or the sector, a company new to the market and a sector's first morning move the lead without a story. Four stories, on the markets page: a player's company taking the lead (`ledger_lead_own`, "MILESTONE"), a player's company losing it (`ledger_lead_lost`), a rival tycoon's holding taking it (`ledger_lead_rival`) and one of the city's companies taking it (`ledger_lead_city`, at most two a morning: `CityMost`; the others move the lead unprinted). The company passed is named, so a player's company that overtakes a rival's holding is the paper's "industry leader beats a major rival".
 - A takeover completed by a listed bidder (the bidder stays on the company that left): a business story naming the buyer, in place of the markets' line.
-- The record is `LedgerState.Marks` (the highest figure per company, whether it was ever first) and `TopId`, one `M|` line of `reallife:ledger`. A save without it sets every company where it stands on its first morning, with no story; an older version leaves the line alone.
-- Going Public: the host prints them from the shared market and they go to guests in the edition as any piece; nothing new is on the market's tape. A guest following the host's paper keeps its record in step quietly, and sends its own rival's story (a piece about its player) with its other pieces.
-- Self-check (Developer diagnostics): `City Ledger check (milestones and rivals)` once an edition. Test: "Put a rival's takeover and a stock milestone in today's City Ledger".
+- The record is `LedgerState.Marks` (the highest figure per company, whether it was ever first) and `TopId`, one `M|` line of `reallife:ledger`, and `LedgerState.Leads` (the company that led each sector), one `L|` line. A save without a line sets every company, or every sector, where it stands on its first morning, with no story; an older version leaves the lines alone.
+- Going Public: the host prints them from the shared market and they go to guests in the edition as any piece; nothing new is on the market's tape. A guest following the host's paper keeps its records in step quietly (the leaders too), and sends its own rival's story (a piece about its player) with its other pieces. A sector's lead is worked out from the shared market in the same order on every machine.
+- Self-check (Developer diagnostics): `City Ledger check (milestones and rivals)` once an edition, with the new sector leaders in it. Test: "Put a takeover, a milestone and a sector lead in the City Ledger" (the player's company in its sector against the most valuable other company there, else the most valuable company that has another in its sector; nothing of the record changes).
+- Checks: EconomyCheck's `--ledgerstories` (`LedgerStoriesChecks.cs`, `LedgerLeadsChecks.cs`).
 
 ## Rules kept
 

@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Economy
         public string Subject = string.Empty;   // the employee an exception is about; a rule's number for a proposal
         public string Detail = string.Empty;    // a name, as it was when raised
         public string By = string.Empty;        // who settled it or passed it on last
+        public bool Down;                       // the owner left it a day and it was passed down to the area's executive: once, never back and forth
 
         public bool Open => State == (int)EscalationState.Open;
     }
@@ -91,7 +92,11 @@ namespace RealLifeOverhaul.Economy
         Paid = 10,          // an executive's allowance: A the amount
         Raises = 11,        // a batch of raises: A how many, B the raise a day in all
         Hired = 12,         // a gap filled from another place's board: detail the name
-        Policy = 13         // a rule changed by the owner's approval: A the rule, B the step
+        Policy = 13,        // a rule changed by the owner's approval: A the rule, B the step
+        Bonus = 14,         // a one-off bonus given in place of a raise by the owner: A the amount, detail the name
+        Limit = 15,         // a manager's raise limit raised by the owner: A the pay band step, B the largest raise's step, detail the name
+        HandedDown = 16,    // an escalation the owner left a day passed down to the area's executive: A its id, B the level, C its kind
+        Reserve = 17        // the finance chief put money into the tax reserve when a quarter closed: A the amount, B what the reserve holds now, C the year's tax so far
     }
 
     /// <summary>One executive: their area, who they are (a professional of the player's), and their month.</summary>
@@ -242,6 +247,18 @@ namespace RealLifeOverhaul.Economy
             var e = new Escalation { Id = NextId++, Kind = (int)kind, Place = place ?? string.Empty, Level = level, Day = day, Moved = day };
             Escalations.Add(e);
             return e;
+        }
+
+        /// <summary>An escalation closed: its state and the day, who closed it where that is known, and one more settled for the week when it was resolved.</summary>
+        public void Close(Escalation e, EscalationState state, string who, int day)
+        {
+            e.State = (int)state;
+            e.Moved = day;
+            if (!string.IsNullOrEmpty(who))
+            {
+                e.By = HierarchyStore.Clean(who);
+            }
+            Settled += state == EscalationState.Resolved ? 1 : 0;
         }
 
         /// <summary>A log entry at the end, the oldest let go past the number kept.</summary>

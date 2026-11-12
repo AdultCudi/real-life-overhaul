@@ -317,8 +317,8 @@ internal static partial class Program
         Check(GameContract.FarDistricts.Off && ContractBook.OffParts().Count == 1, "one type of a list missing switches off the part that needs the whole list");
         ContractBook.Mark(m => m == GameContract.CtaBehaviours || m == GameContract.LampIsOn ? "the field is missing" : null);
         Check(GameContract.ClickHome.Off && GameContract.ClickLedger.Off && GameContract.ClickBusStop.Off && GameContract.ClickDesk.Off && GameContract.ClickBuilderDesk.Off
-              && GameContract.ClickCarPark.Off && GameContract.StreetLamps.Off && ContractBook.OffParts().Count == 7, "two missing pieces switch off what stands on either");
-        Check(ContractBook.FeaturesHit().SetEquals(new[] { "home", "ledger", "transport", "careers_study", "construction", "performance" }), "...and hit those features only");
+              && GameContract.ClickCarPark.Off && GameContract.ClickSession.Off && GameContract.StreetLamps.Off && ContractBook.OffParts().Count == 8, "two missing pieces switch off what stands on either");
+        Check(ContractBook.FeaturesHit().SetEquals(new[] { "home", "ledger", "transport", "careers_study", "construction", "living", "performance" }), "...and hit those features only");
         ContractBook.Mark(m => null);
         Check(ContractBook.OffParts().Count == 0 && ContractBook.FeaturesHit().Count == 0, "with every piece there, every part is on");
     }

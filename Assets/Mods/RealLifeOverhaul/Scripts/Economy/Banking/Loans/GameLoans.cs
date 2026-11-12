@@ -18,6 +18,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The game's interest multiplier on every loan (a setting of the save); 1 without a save.</summary>
         public static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
 
+        /// <summary>The interest multiplier a set of the game's variables holds (the custom difficulty's, before they are applied).</summary>
+        public static float MultiplierOf(GameVariables v) => v != null ? v.bankInterestMultiplier : 1f;
+
         public string Key => AccountKey;
         public string NameKey => "reallife_econ_account_loans";
 
@@ -125,6 +128,18 @@ namespace RealLifeOverhaul.Economy
                 owed += save.Loans[i].remainingAmount;
             }
             return WholeMoney.Floor(most - owed);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
+        }
+
+        /// <summary>Writes a fixed rate onto the game's loan. The mark keeps the same figures so a later save does not put the old rate back.</summary>
+        public static void WriteTerms(LoanView view, int interest, int payment)
+        {
+            var loan = view.Ref as Loan;
+            if (loan == null)
+            {
+                return;
+            }
+            loan.dailyInterest = Mathf.Max(0, interest);
+            loan.dailyPayment = Mathf.Max(0, payment);
         }
     }
 }

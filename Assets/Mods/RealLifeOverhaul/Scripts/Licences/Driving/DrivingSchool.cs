@@ -5,6 +5,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -581,6 +582,7 @@ namespace RealLifeOverhaul
             {
                 entry.ConfirmTextOverride = "reallife_school_take".Localize();
                 entry.OnConfirm = () => Take(service);
+                entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", Licences.Money(DrivingSchool.Fee(service)));
                 entry.SecondOptionTextOverride = "reallife_school_next";
                 entry.OnSecondOption = () => Offer(next);
             }

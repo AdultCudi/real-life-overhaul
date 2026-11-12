@@ -57,7 +57,6 @@ namespace RealLifeOverhaul
             _cars = 0;
             Vector3 player = PlayerHelper.GetPosition();
             ReadPlayer(traffic, player, now);
-            _game.BeginLook();
             float near = DriverRules.Near * DriverRules.Near;
             float far = DriverRules.ObstaclesNear * DriverRules.ObstaclesNear;
             for (int i = 0; i < pooled.Count; i++)
@@ -75,7 +74,7 @@ namespace RealLifeOverhaul
                 Transform body = _game.At(index, car);
                 if (body == null)
                 {
-                    continue;   // not measured yet, and enough have been at this look
+                    continue;   // not measured yet: in a frame of its own (DriverGame.MeasureWaiting), before the next look
                 }
                 Vector3 at = body.position;
                 float dx = at.x - player.x;
@@ -412,12 +411,14 @@ namespace RealLifeOverhaul
                 return;
             }
             _nextSample = now + SampleEvery;
+            Quiet();
             bool gentle = DriverRules.Gentle(best.Need);
             Logger?.Info(System.FormattableString.Invariant(
                              $"Traffic check (braking in good time): '{TrafficTools.Name(car)}' at {speed * 3.6f:F0} km/h began to slow for {Said(best.Why)} {best.Distance:F0} m ahead, ")
                          + System.FormattableString.Invariant($"needing {best.Need:F1} m/s2 to reach it at {best.PointSpeed * 3.6f:F0} km/h (an ordinary slowing is under {DriverRules.Firm:F1}; ")
                          + System.FormattableString.Invariant($"the game alone would have stopped it within {DriverRules.GameStop:F2} m of its sensor): ")
                          + (gentle ? "PASS" : System.FormattableString.Invariant($"a firm stop: it was {best.Distance:F0} m off when it came into view")));
+            Loud();
         }
 
         // The car stands for what it slowed for: the self-checks that are about a stop say so, once.
@@ -427,6 +428,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            Quiet();
             if ((best.Why == DriverRules.Why.Parking || best.Why == DriverRules.Why.PlayerRoom || (best.Why == DriverRules.Why.HoldLine && LineIs(best.Obstacle, ReverseLine)))
                 && (_said[index] & SaidRoom) == 0)
             {
@@ -448,6 +450,7 @@ namespace RealLifeOverhaul
                              + System.FormattableString.Invariant($"(wanted under {DriverRules.YieldMost:F1}): ")
                              + (pass ? "PASS" : "FAIL, it was too close to give way gently"));
             }
+            Loud();
         }
 
         private static string Said(DriverRules.Why why)

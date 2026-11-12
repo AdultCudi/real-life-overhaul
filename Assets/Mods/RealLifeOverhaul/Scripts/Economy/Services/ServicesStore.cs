@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             {
                 t.Append('|').Append(s.FeeIncome[i].ToString(Inv));
             }
+            t.Append('|').Append(s.RivalSaleDay.ToString(Inv));
             t.Append("^k:");
             for (int i = 0; i < s.Crew.Count && i < ServicesCatalogue.CrewMost; i++)
             {
@@ -68,7 +69,7 @@ namespace RealLifeOverhaul.Economy
             {
                 SaleListing l = s.Listings[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(l.Place)).Append('|').Append(Clean(l.Name)).Append('|');
-                Join(t, l.ListedDay, l.Step, l.Asking, l.Value, l.NextOfferDay, l.OffersMade);
+                Join(t, l.ListedDay, l.Step, l.Asking, l.Value, l.NextOfferDay, l.OffersMade, l.Lift);
             }
             t.Append("^f:");
             for (int i = Math.Max(0, s.SaleOffers.Count - ServicesCatalogue.OffersKept), n = 0; i < s.SaleOffers.Count; i++, n++)
@@ -78,6 +79,8 @@ namespace RealLifeOverhaul.Economy
                 Join(t, o.Id);
                 t.Append('|').Append(Clean(o.Place)).Append('|');
                 Join(t, o.Buyer, o.Price, o.Ceiling, o.KeepsStaff ? 1 : 0, o.Parts, o.ClauseDays, o.Deadline, o.Countered ? 1 : 0, o.Face);
+                t.Append('|').Append(Clean(o.Who)).Append('|').Append(Clean(o.WhoName)).Append('|');
+                Join(t, o.WhoCount, o.Lift);
             }
             t.Append("^d:");
             for (int i = Math.Max(0, s.Dues.Count - ServicesCatalogue.DuesMost), n = 0; i < s.Dues.Count; i++, n++)
@@ -102,6 +105,17 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(r.Name)).Append('|');
                 Join(t, r.Price, r.Gain);
             }
+            t.Append("^v:");
+            for (int i = Math.Max(0, s.RivalSales.Count - ServicesCatalogue.RivalSalesMost), n = 0; i < s.RivalSales.Count; i++, n++)
+            {
+                RivalSale v = s.RivalSales[i];
+                t.Append(n > 0 ? ";" : string.Empty);
+                Join(t, v.Id);
+                t.Append('|').Append(Clean(v.Place)).Append('|').Append(Clean(v.Business)).Append('|').Append(Clean(v.Seller)).Append('|').Append(Clean(v.SellerName))
+                    .Append('|').Append(Clean(v.Buyer)).Append('|').Append(Clean(v.BuyerName)).Append('|');
+                Join(t, v.Price, v.Weekly, v.Day, v.Deadline);
+            }
+            WriteMore(t, s);
             return t.ToString();
         }
 
@@ -147,6 +161,7 @@ namespace RealLifeOverhaul.Economy
                                 s.VanCost[i] = Math.Max(0, I(c, 7 + i));
                                 s.FeeIncome[i] = I(c, 14 + i);
                             }
+                            s.RivalSaleDay = Math.Max(0, I(c, 21));
                             header = true;
                             break;
                         }
@@ -193,7 +208,8 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Place = c[0], Name = c[1], ListedDay = Math.Max(0, I(c, 2)),
                                         Step = ServicesCatalogue.Clamp(I(c, 3, ServicesCatalogue.AskingDefault), 0, ServicesCatalogue.AskingPct.Length - 1),
-                                        Asking = Math.Max(0, I(c, 4)), Value = Math.Max(0, I(c, 5)), NextOfferDay = Math.Max(0, I(c, 6)), OffersMade = Math.Max(0, I(c, 7))
+                                        Asking = Math.Max(0, I(c, 4)), Value = Math.Max(0, I(c, 5)), NextOfferDay = Math.Max(0, I(c, 6)), OffersMade = Math.Max(0, I(c, 7)),
+                                        Lift = Math.Max(0, I(c, 8))
                                     });
                                 }
                             }
@@ -211,7 +227,7 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Buyer = buyer, Price = price, Ceiling = Math.Max(price, I(c, 4)), KeepsStaff = I(c, 5) != 0,
                                         Parts = ServicesCatalogue.Clamp(I(c, 6), 0, 12), ClauseDays = Math.Max(0, I(c, 7)), Deadline = Math.Max(0, I(c, 8)), Countered = I(c, 9) != 0,
-                                        Face = Math.Max(0, I(c, 10))
+                                        Face = Math.Max(0, I(c, 10)), Who = S(c, 11), WhoName = S(c, 12), WhoCount = Math.Max(0, I(c, 13)), Lift = Math.Max(0, I(c, 14))
                                     });
                                 }
                             }
@@ -239,6 +255,27 @@ namespace RealLifeOverhaul.Economy
                                     s.Clauses.Add(new SaleClause
                                     {
                                         Type = c[0], District = c[1], Name = c[2], FromDay = Math.Max(0, I(c, 3)), Until = Math.Max(0, I(c, 4)), Price = Math.Max(0, I(c, 5))
+                                    });
+                                }
+                            }
+                            break;
+                        case 'g':
+                        case 'm':
+                        case 'b':
+                        case 'q':
+                        case 'w':
+                            ReadMore(s, part[0], records, part);
+                            break;
+                        case 'v':
+                            foreach (string record in records)
+                            {
+                                string[] c = record.Split('|');
+                                if (c.Length >= 11 && c[1].Length > 0 && c[3].Length > 0 && s.RivalSales.Count < ServicesCatalogue.RivalSalesMost && s.RivalSale(I(c, 0)) == null)
+                                {
+                                    s.RivalSales.Add(new RivalSale
+                                    {
+                                        Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Business = c[2], Seller = c[3], SellerName = c[4], Buyer = c[5], BuyerName = c[6],
+                                        Price = Math.Max(0, I(c, 7)), Weekly = Math.Max(0, I(c, 8)), Day = Math.Max(0, I(c, 9)), Deadline = Math.Max(0, I(c, 10))
                                     });
                                 }
                             }
@@ -288,6 +325,145 @@ namespace RealLifeOverhaul.Economy
             return client;
         }
 
+        // The parts a later version added, each its own letter so an older reader skips them and an older save has none: the named crews, the fees contracted by month and the
+        // contracts rivals took, the rivals' bids on the open offers, the crew each contract has, and the worth of each business by day.
+        private static void WriteMore(StringBuilder t, ServicesState s)
+        {
+            t.Append("^g:");
+            for (int i = 0; i < s.Places.Count && i < ServicesCatalogue.CrewMost; i++)
+            {
+                t.Append(i > 0 ? ";" : string.Empty).Append(Clean(s.Places[i].Id)).Append('|');
+                Join(t, s.Places[i].Group);
+            }
+            t.Append("^m:");
+            Join(t, s.FeeMonth, s.FeeNoted, s.RivalWon);
+            for (int i = 0; i < s.FeeMonths.Length; i++)
+            {
+                t.Append('|').Append(s.FeeMonths[i].ToString(Inv));
+            }
+            t.Append("^b:");
+            int n = 0;
+            for (int i = 0; i < s.Offers.Count && i < ServicesCatalogue.OffersMost; i++)
+            {
+                CleaningOffer o = s.Offers[i];
+                if (o.Rivals.Count == 0)
+                {
+                    continue;
+                }
+                t.Append(n++ > 0 ? ";" : string.Empty).Append(Clean(o.Place));
+                for (int r = 0; r < o.Rivals.Count && r < ServicesCatalogue.RivalBidsMost; r++)
+                {
+                    t.Append('|');
+                    Triple(t, o.Rivals[r].Firm, o.Rivals[r].Pct, o.Rivals[r].Skill);
+                }
+            }
+            t.Append("^q:");
+            n = 0;
+            for (int i = 0; i < s.Clients.Count && i < ServicesCatalogue.ClientsMost; i++)
+            {
+                if (s.Clients[i].Crew >= 0)
+                {
+                    t.Append(n++ > 0 ? ";" : string.Empty).Append(Clean(s.Clients[i].Place)).Append('|');
+                    Join(t, s.Clients[i].Crew);
+                }
+            }
+            t.Append("^w:");
+            for (int i = 0; i < s.Worths.Count && i < ServicesCatalogue.ListingsMost; i++)
+            {
+                WorthRing w = s.Worths[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(Clean(w.Place));
+                for (int d = 0; d < w.Day.Length; d++)
+                {
+                    if (w.Day[d] > 0)
+                    {
+                        t.Append('|');
+                        Triple(t, d, w.Day[d], w.Value[d]);
+                    }
+                }
+            }
+        }
+
+        private static void ReadMore(ServicesState s, char kind, string[] records, string part)
+        {
+            switch (kind)
+            {
+                case 'g':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        int group = I(c, 1, -1);
+                        if (c.Length >= 2 && c[0].Length > 0 && group >= 0 && group < ServicesCatalogue.CrewGroups && s.Places.Count < ServicesCatalogue.CrewMost && s.GroupOf(c[0]) < 0)
+                        {
+                            s.Places.Add(new CrewPlace { Id = c[0], Group = group });
+                        }
+                    }
+                    break;
+                case 'm':
+                {
+                    string[] c = part.Substring(2).Split('|');
+                    s.FeeMonth = Math.Max(-1, I(c, 0, -1));
+                    s.FeeNoted = ServicesCatalogue.Clamp(I(c, 1), 0, ServicesCatalogue.FeeMonths);
+                    s.RivalWon = Math.Max(0, I(c, 2));
+                    for (int i = 0; i < s.FeeMonths.Length; i++)
+                    {
+                        s.FeeMonths[i] = Math.Max(0, I(c, 3 + i));
+                    }
+                    break;
+                }
+                case 'b':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        CleaningOffer o = c.Length > 1 ? s.Offer(c[0]) : null;
+                        for (int r = 1; o != null && r < c.Length && o.Rivals.Count < ServicesCatalogue.RivalBidsMost; r++)
+                        {
+                            string[] b = c[r].Split(',');
+                            o.Rivals.Add(new RivalBid
+                            {
+                                Firm = ServicesCatalogue.Clamp(I(b, 0), 0, ServicesCatalogue.RivalFirms.Length - 1), Pct = ServicesCatalogue.Clamp(I(b, 1, 100), 50, 150),
+                                Skill = ServicesCatalogue.Clamp(I(b, 2, 50), 0, 100)
+                            });
+                        }
+                    }
+                    break;
+                case 'q':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        CleaningClient client = c.Length >= 2 ? s.Client(c[0]) : null;
+                        if (client != null)
+                        {
+                            client.Crew = ServicesCatalogue.Clamp(I(c, 1, -1), -1, ServicesCatalogue.CrewGroups - 1);
+                        }
+                    }
+                    break;
+                case 'w':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        if (c[0].Length == 0 || s.Worths.Count >= ServicesCatalogue.ListingsMost)
+                        {
+                            continue;
+                        }
+                        var ring = new WorthRing { Place = c[0] };
+                        for (int i = 1; i < c.Length; i++)
+                        {
+                            string[] x = c[i].Split(',');
+                            int slot = I(x, 0, -1);
+                            if (slot >= 0 && slot < ring.Day.Length)
+                            {
+                                ring.Day[slot] = Math.Max(0, I(x, 1));
+                                ring.Value[slot] = Math.Max(0, I(x, 2));
+                            }
+                        }
+                        s.Worths.Add(ring);
+                    }
+                    break;
+            }
+        }
+
+        private static void Triple(StringBuilder t, int a, int b, int c) => t.Append(a.ToString(Inv)).Append(',').Append(b.ToString(Inv)).Append(',').Append(c.ToString(Inv));
+
         private static void Join(StringBuilder t, params int[] values)
         {
             for (int i = 0; i < values.Length; i++)
@@ -295,6 +471,8 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? "|" : string.Empty).Append(values[i].ToString(Inv));
             }
         }
+
+        private static string S(string[] c, int at) => at < c.Length ? c[at] : string.Empty;
 
         private static int I(string[] c, int at, int fallback = 0)
         {

@@ -35,6 +35,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 | `FamilyPage` | the Family page's five pages |
 | `FamilyTalk / FamilyText / FamilyCalendar` | conversations and menus, text and its fillers, what happens by the hour and the day |
 | `HeldTextRules` | game-free (EconomyCheck, `FamilyHeldTextChecks.cs`): the family texts kept for the morning, how many, and how late one may still go out |
+| `ChildYearRules` | game-free (EconomyCheck, `ChildYearChecks.cs`): a child's year (1 to 52 weeks of seven days), a child's age counted in whole days of it, the day of the next birthday, how long a pregnancy and an adoption take and how far apart their texts fall |
 
 ## How it talks to other features
 
@@ -45,7 +46,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 A partner who moves in, an engagement and a wedding, children, the wider family, and the hard times (`Scripts/Family`).
 Everything is optional: the group "Family" on the options page has a switch for the whole of it and one each for the partner being shown at home, engagement and wedding, children, relatives, and hard times (chores, arguments, separation, divorce: off, and none of them ever happen).
 
-Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the default introduction follows the "introduces you to" choice (anyone / women / men).
+Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the default introduction follows the "Who you are interested in" choice (anyone / women / men), which the social life follows too.
 
 **What family life puts on screen.** Everything is the game's own interface; the mod draws nothing of its own.
 A prompt ("buy a pushchair", "talk to Sam", "go in to the scan") is the game's panel over a place (`GameUi.DoorPanel`, a `WorldPanel` with one button): over the partner when the prompt is about them (`Follow`), otherwise over the player.
@@ -251,7 +252,8 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 - **Deciding** is a talk at home: both must want it.
   The partner may not be sure (about one in five); they need time, not persuading, and have come round by a second talk ten days later in a happy home.
   Then: a baby (carried by either of you: it is asked) or adoption (a baby, a toddler, or a child of school age).
-- **Pregnancy**: three quarters of a child's year (21 days at the default scale).
+- **Pregnancy**: three quarters of a child's year (21 days at the default scale, 273 at 52 weeks), six days at the least.
+  The partner's texts about it come every four days at the default scale and further apart in step with a longer year (`ChildYearRules.TextGap`), so a pregnancy has about five at any year of four weeks or more (a text every four days would have made 68 at 52 weeks).
   A scan at a fifth and at half way (120 each), a birth class at three quarters, each an appointment at a real hospital or clinic with the marker, a prompt and an hour or two skipped.
 
   **The nursery**: a cot (450, inside a furniture store), a pushchair (380, a gift or clothing shop), supplies (220, a supermarket), each a prompt inside a real shop of that kind.
@@ -260,6 +262,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
   Missed, the child is born all the same and the player is told to come home; if the player is the one carrying, it cannot be missed.
 
 - **Adoption**: papers filed in person (1,500; a law firm, else the tax office), a home visit a third of the way through (be at home that day), the call, the day to meet.
+  The wait is three fifths of a child's year (17 days at the default scale, 218 at 52 weeks), six days at the least, and its texts are spaced as a pregnancy's are.
   A missed day is simply moved.
 - **Then**: three days at home (a mood, and the partner there all day).
   Broken nights for the first half year unless there is a nanny, every other night when the partner lives in (Home bridge; default a mood).
@@ -282,8 +285,16 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 
 - **A pushchair walk** (from the Family contact, out of doors): 220 m wherever the player likes, the pushchair in front of them, the partner alongside when they are home and free; small sights on the way; the key ends it early (half way counts).
   Good for the mood, the child and the two of you.
-- **Time scale**: one year of a child's age per four in-game weeks by default (options: 1 to 12 weeks).
+- **Time scale**: one year of a child's age per four in-game weeks by default (the option "Weeks per year of a child's age": 1 to 52 weeks of seven days).
+  52 weeks is 364 days, the most whole weeks inside the longest year the game allows (365), so a child's year can be as long as a long game year: every game year of 60 to 365 days that divides by 28 (by 7 for the weeks, by 4 for the four seasons of Alcware Seasons: 84, 112 and so on to 364 days, eleven of them) can be matched exactly, and a child then has their birthday on the same day of the game's year every year.
   The game's own year (`gameVariables.daysPerYear`, 60 days) is used only for the holiday calendar.
+  `ChildYearRules` is the one table every reader goes through: `Children.DaysPerYear`, the slider's ends and the Guide's figure all read it, and a value outside 1 to 52 reads as the nearest end.
+  - **Ageing** (`Children.Grow`, through `ChildYearRules.Aged`) is counted in whole days of the child's year and divided once in double precision, so a child is exactly N days older after N days, a year older after exactly seven times the weeks, and the same whether the day's round hands over one day or a fortnight.
+    It was once a sum of one share a day in single precision, which came a day late somewhere at every length of year (at the default, a first birthday on day 29). An age between two days (an adopted baby's, or one an older save kept) is taken to the nearest day.
+  - **Birthdays**: `ChildYearRules.BirthdayIn` and `Turning` give the Family page's and the Calendar's day and age from the same day count, so they never differ by a day; the Calendar lists them up to the one at which a child grows up (`FamilyBalance.GrownUp`) and no further.
+  - **Pregnancy and adoption** take a share of the child's year (`ChildYearRules.Span`) and their texts are spaced in proportion, as above.
+  - **School years**: school from five, check-ups, reports (every third of a year), drawings, the school play and the parents' evening (a year apart) and the milestones are all ages in years, so they follow the year at any length. The schools' terms and results day follow the game's year (`Schools`).
+  - **By the day, not by the year**: what the children cost (the nursery, the nanny, private school and pocket money, charged each week), the energy of looking after a small child, broken nights and how fast closeness drifts are counted by the in-game day, so a longer year holds more of them.
 
 ## Wider family, hard times
 
@@ -331,6 +342,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 - **Family**: five short pages (household, the family, coming up, memories, budget) and "things to do", one at a time with "do it", "something else" and leaving, which is every decision above.
 - **The partner's texts** come from Family's stand-in partner contact while Social does not keep the partner, and from the partner's own contact in People while it does (`FamilyPhone.PartnerContact`, through `ISocialBridge.PartnerContact`), so they are always a text in a thread and never only a notice.
 - **Someone special** (only while Social does not keep the partner): ask a friend to introduce you to someone, and from then on ring them: a chat a day, an evening out, and the same things to do.
+  Who they introduce follows the option **Who you are interested in** (anyone, women or men: `Settings.FamilyInterest`), which is the social life's too (see [Social life](social.md#who-the-player-can-fall-for-romancerules)).
 - **The in-laws**: a chat, advice, or the favour they asked.
   With the phone contacts option off, "Test: open the Family page" opens the same page face to face.
 

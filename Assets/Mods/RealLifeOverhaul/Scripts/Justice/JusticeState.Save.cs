@@ -80,6 +80,7 @@ namespace RealLifeOverhaul
                 }
                 // After the charges, which hold no comma: an older build reads the line up to them and stops there.
                 text.Append(',').Append(c.Damages.ToString(CultureInfo.InvariantCulture));
+                text.Append(',').Append(c.Amount.ToString(CultureInfo.InvariantCulture));
             }
             text.Append("|D:");
             for (int i = 0; i < Debts.Count; i++)
@@ -240,7 +241,7 @@ namespace RealLifeOverhaul
             int stage = f.Int();
             int outcome = f.Int();
             c.Stage = stage >= 0 && stage <= 3 ? (CaseStage)stage : CaseStage.Closed;
-            c.Outcome = outcome >= 0 && outcome <= 6 ? (CaseOutcome)outcome : CaseOutcome.None;
+            c.Outcome = outcome >= 0 && outcome <= (int)CaseOutcome.Settled ? (CaseOutcome)outcome : CaseOutcome.None;
             c.Witnesses = f.Int();
             int flags = f.Int();
             c.Cameras = (flags & 1) != 0;
@@ -293,6 +294,7 @@ namespace RealLifeOverhaul
                 }
             }
             c.Damages = f.Int();   // absent from older saves: none held
+            c.Amount = f.Int();   // absent from older saves: no sum told
             if (c.Number <= 0)
             {
                 return null;

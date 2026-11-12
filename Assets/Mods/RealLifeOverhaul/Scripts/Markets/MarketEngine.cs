@@ -275,6 +275,8 @@ namespace RealLifeOverhaul.Markets
             if (phase >= MarketCatalogue.PhaseClose)
             {
                 State.Day = day + 1;
+                MarketBots.Turn(State, day + 1);   // the day turn: what the bots and the rules gained today is nothing again, and this week's on a Monday
+                RuleBots.Turn(State, day + 1);
                 State.Phase = MarketCatalogue.PhaseNone;
                 return 1;
             }
@@ -468,6 +470,11 @@ namespace RealLifeOverhaul.Markets
             if (e.Kind == MarketInputs.EventBuilder)
             {
                 BuilderEvent(e);   // MarketEngine.Builders.cs
+                return;
+            }
+            if (e.Kind == MarketInputs.EventSplit)
+            {
+                SplitEvent(e);   // Extras/MarketEngine.Extras.cs
                 return;
             }
             if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)

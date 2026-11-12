@@ -50,6 +50,17 @@ namespace RealLifeOverhaul
                 Dismiss(c, announce: false);
                 return;
             }
+            if (result.Outcome == CaseOutcome.Settled)
+            {
+                // Paid as a fine is (at once, or a plan), and nothing on the record: the charge is dropped.
+                c.FineImposed = result.FineDue;
+                ImposeFine(c, result.FineDue, "reallife_transaction_court_settlement");
+                CloseCase(c, CaseOutcome.Settled);
+                CallBridge(() => Justice.Bridges.TaxSettled?.Invoke(today));
+                JusticeText.Toast(NotificationType.Success, "reallife_justice_toast_settled", "amount", JusticeText.Money(result.FineDue), 12f);
+                Logger?.Info("Justice: case " + c.Number + ": settled with the city for " + result.FineDue + "; the charge is dropped and nothing goes on the record.");
+                return;
+            }
             if (result.Outcome == CaseOutcome.Acquitted)
             {
                 int back = Mathf.Max(0, c.PaidAtScene);
@@ -149,7 +160,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        private void ImposeFine(JusticeCase c, int amount)
+        private void ImposeFine(JusticeCase c, int amount, string transaction = "reallife_transaction_court_fine")
         {
             if (amount <= 0)
             {
@@ -158,7 +169,7 @@ namespace RealLifeOverhaul
             float cash = Crime.Cash;
             if (amount <= cash * JusticeLaw.PayNowShare && cash - amount >= JusticeLaw.CashFloor)
             {
-                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_court_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: true);
             }
             else
             {

@@ -25,6 +25,12 @@ namespace RealLifeOverhaul.Hustles
 
         public static bool Busy => OnShift != null && OnShift();
 
+        /// <summary>Thousandths of the anchor day's households that would sell things second hand (the living population); 0 for none, as before. Default: none.</summary>
+        public static System.Func<int> Sellers;
+
+        /// <summary>Thousandths of the anchor day's working and middle class households' spending on goods (the living population); 0 for none. Default: none.</summary>
+        public static System.Func<int> Buyers;
+
         /// <summary>Back to the defaults, when the city goes.</summary>
         public static void Clear()
         {
@@ -32,6 +38,8 @@ namespace RealLifeOverhaul.Hustles
             HireVan = null;
             ReturnVan = null;
             OnShift = null;
+            Sellers = null;
+            Buyers = null;
         }
     }
 }

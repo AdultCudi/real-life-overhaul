@@ -26,8 +26,7 @@ namespace RealLifeOverhaul.Flare
 
         private readonly List<FlarePerson> _people = new List<FlarePerson>(12);
         private readonly FlareHourSteps _hourSteps = new FlareHourSteps();
-        private int _dayStep = -1;        // the next of the day's steps (DayStep), or -1 when none is owed
-        private int _dayFor;               // the day they are for
+        private readonly FlareDayRound _round = new FlareDayRound();   // the day's steps still owed (DayStep)
         private FlareDayReport _dayReport; // what the first step worked out, for the last
         private bool _dayStepping;         // the day's steps' coroutine is running
         private bool _stepping;   // the hour's steps' coroutine is running
@@ -39,6 +38,8 @@ namespace RealLifeOverhaul.Flare
 
         public bool Running => _running && !_broken;
 
+        /// <summary>Moves when the account changes, so a screen lays out again and not every frame.</summary>
+        public int Revision { get; private set; }
         internal bool Faulted => _broken;
 
         /// <summary>The save's account; null while Flare is not running.</summary>
@@ -60,7 +61,9 @@ namespace RealLifeOverhaul.Flare
             _openBusinessTab = () => Open(TabBusiness);
             _openMessages = () => Open(TabMessages);
             _openCompose = () => Open(TabPost);
+            _cityStep = CityStep;
             ShareRegister();
+            CityShareRegister();   // Flare in the city's own part (FlareDirector.Residents)
             FlareFacePainter.HoldAtLoad();   // the likeliest faces are drawn while the loading screen is up (Core/LoadHold)
             StartCoroutine(Guard.Routine(Tick()));
         }
@@ -146,6 +149,7 @@ namespace RealLifeOverhaul.Flare
                 CommentsSecond();   // a comment's words came back: the next is asked; one comparison otherwise
                 WordsHoldSecond();  // with a model present, what is due without its words is held back until they come (FlareDirector.Hold)
             }
+            CitySecond();   // the residents' side (FlareDirector.Residents): started, stood down or brought to the day; a few comparisons otherwise
         }
 
         private void StartUp()
@@ -183,6 +187,7 @@ namespace RealLifeOverhaul.Flare
             }
             ShareStart();
             PhotosStart();
+            ToLetQueue();   // the city's premises to let are walked once from now, sliced: the city page has its figures before the first midnight
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed "
                                             + file.Seed + ")"
                                             : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), "
@@ -199,7 +204,9 @@ namespace RealLifeOverhaul.Flare
                 FinishDay();
                 FlareStore.Save(Save.modData, _file);
             }
-            _dayStep = -1;
+            CityStop(keep, "Flare stands down");
+            _round.End();
+            _toLet.Forget();
             _hourSteps.Clear();
             ShareStop();
             PhotosStop();
@@ -211,6 +218,7 @@ namespace RealLifeOverhaul.Flare
             {
                 _view.Dispose();
             }
+            RealLifeOverhaul.Ui.FlareScreen.Release();   // the kit face's pictures go with the old panel's
             if (_app != null)
             {
                 _app.Remove();
@@ -240,6 +248,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>For the options page: everything of Flare's for this save is forgotten, and a new account opens on the next second.</summary>
         public void Forget()
         {
+            ForgetCity();
             _running = false;
             _file = null;
             ForgetAsked();
@@ -267,15 +276,19 @@ namespace RealLifeOverhaul.Flare
             }
             var view = new FlareApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_flare_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(255, 150, 92, 255), new Color32(214, 62, 98, 255), 0.42f, "AppIcon-Flare"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.FlareScreen(this),
+                KitScreen = "flare",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Fire
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -286,6 +299,7 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 
@@ -395,6 +409,8 @@ namespace RealLifeOverhaul.Flare
                     break;
                 case FlareHourSteps.Milestones:
                     Milestones(day, hour);
+                    PlanHour(day, hour);   // this week's content plan: its post due, a storm answered (FlareDirector.Desk)
+                    UseHour(day, hour);
                     break;
                 default:
                     LiveHour(day, hour, step);   // the cases, the invitations, the unread count, the words (FlareDirector.Live)
@@ -454,8 +470,7 @@ namespace RealLifeOverhaul.Flare
                 int day = Save.Day;
                 if (day != _file.SettledDay)
                 {
-                    _dayFor = day;
-                    _dayStep = 0;
+                    _round.Begin(day);
                     if (!_dayStepping)
                     {
                         _dayStepping = true;
@@ -474,12 +489,12 @@ namespace RealLifeOverhaul.Flare
         // The day's round a step a frame, once the hour's steps are done (the day follows the hour's, as it did).
         private IEnumerator DaySteps()
         {
-            while (_dayStep >= 0)
+            while (_round.Owed)
             {
                 yield return null;
                 if (!Running || Save == null || _file == null)
                 {
-                    _dayStep = -1;
+                    _round.End();
                     break;
                 }
                 if (_hourSteps.Busy)
@@ -489,7 +504,7 @@ namespace RealLifeOverhaul.Flare
                 using var hotSpot = HotSpots.Time(HotDayStep);
                 try
                 {
-                    if (_dayStep >= 0)
+                    if (_round.Owed)
                     {
                         using var piece = SessionWatch.Piece("flare: a step of the day's round");
                         DayStep();
@@ -497,33 +512,32 @@ namespace RealLifeOverhaul.Flare
                 }
                 catch (Exception e)
                 {
-                    _dayStep = -1;
+                    _round.End();
                     Fault("the day", e);
                 }
             }
             _dayStepping = false;
         }
 
-        // What is left of the day's steps, at once: the save, the next day and standing down need the day played first.
+        // What is left of the day's steps, at once: the save, the next day and standing down need the day played first. The walk over the city's
+        // premises to let is not one of them (its step only queues it), so a save just after midnight or a day of a time skip never pays for it.
         private void FinishDay()
         {
-            while (_file != null && _dayStep >= 0)
-            {
-                DayStep();
-            }
+            _round.Finish(DayStep);
         }
 
         // One step of the day's round, in the order it ran in one frame.
         private void DayStep()
         {
-            int day = _dayFor;
-            int step = _dayStep++;
+            int day = _round.Day;
+            int step = _round.Take();
             switch (step)
             {
                 case 0:
                     ReadPeople();
                     Talked(_talked);
                     _dayReport = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
+                    TierDay(day);   // a tier passed by followers alone is a milestone too, not only one passed while posting
                     Rewrite(_talked, true);
                     break;
                 case 1:
@@ -536,9 +550,15 @@ namespace RealLifeOverhaul.Flare
                     LiveDay(day);
                     break;
                 case 4:
-                    FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
+                    if (LiveBefore(day))
+                    {
+                        _round.Back(4);   // another day before it, the next frame (a day a step: a new city's first morning, a save from before growing)
+                    }
                     break;
                 case 5:
+                    FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
+                    break;
+                case 6:
                     List<BuildingRegistration> shops = FlareGame.Businesses();
                     for (int i = 0; i < shops.Count; i++)
                     {
@@ -550,8 +570,11 @@ namespace RealLifeOverhaul.Flare
                         }
                     }
                     break;
+                case 7:
+                    ToLetQueue();   // a new pass over the city's premises to let, walked a slice a frame once the round is over
+                    break;
                 default:
-                    _dayStep = -1;
+                    _round.End();
                     FlareDayReport r = _dayReport;
                     if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)
                     {
@@ -568,8 +591,7 @@ namespace RealLifeOverhaul.Flare
         // The whole day's round at once: a test button, and nothing else.
         private void PlayDay(int day)
         {
-            _dayFor = day;
-            _dayStep = 0;
+            _round.Begin(day);
             FinishDay();
         }
 
@@ -701,6 +723,7 @@ namespace RealLifeOverhaul.Flare
 
         private void Changed()
         {
+            Revision++;
             Badge();
             if (_view != null)
             {
@@ -725,6 +748,7 @@ namespace RealLifeOverhaul.Flare
                     FinishHours();   // the save holds every hour that has begun, done
                     FinishDay();     // and the day that has turned
                     FlareStore.Save(Save.modData, _file);
+                    CitySave();      // the residents' side, its own line
                 }
             }
             catch (Exception e)

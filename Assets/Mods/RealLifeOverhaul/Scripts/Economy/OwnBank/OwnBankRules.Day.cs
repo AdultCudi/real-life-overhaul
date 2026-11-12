@@ -12,8 +12,8 @@ namespace RealLifeOverhaul.Economy
         /// <summary>
         /// One day of a running bank: confidence, savers (no new money past its level's deposits), loans, lending (no further
         /// than its level's book, and never into a fixed pay it holds back), the fund, the staff, the profit into the capital,
-        /// a fire sale if the savers cannot be paid, the regulator, then the owner's pay. A bank closed is wound up at once
-        /// (into.WoundUp).
+        /// a fire sale if the savers cannot be paid, the regulator, then the owner's pay and an automatic dividend when one
+        /// falls due. A bank closed is wound up at once (into.WoundUp).
         /// </summary>
         public static void Day(OwnBank b, BankCity c, int day, IList<FundQuote> quotes, BankDay into)
         {
@@ -188,6 +188,7 @@ namespace RealLifeOverhaul.Economy
                 b.PaidMonth += pay;
                 b.PaidAll += pay;
             }
+            Dividends(b, c, day, into);
             if (b.Scare > 0)
             {
                 b.Scare = Math.Max(0, b.Scare - Math.Max(1, b.Scare * OwnBankCatalogue.ScareFade / (1000 * m)));
@@ -404,6 +405,8 @@ namespace RealLifeOverhaul.Economy
             b.Deadline = b.Deadline > 0 ? b.Deadline - days : 0;
             b.RunFrom = b.RunFrom > 0 ? b.RunFrom - days : 0;
             b.WatchTold = b.WatchTold == int.MinValue ? int.MinValue : b.WatchTold - days;
+            b.DivFrom -= days;
+            b.DivDay = b.DivDay > 0 ? b.DivDay - days : 0;
         }
     }
 }

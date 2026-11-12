@@ -73,7 +73,7 @@ What cannot be told from the one log there is: its last transit line is the only
 
 - **The network** (`TransitMap`, `RouteSearch`) is laid out by rule in the first seconds out of doors after a city load and kept in memory only.
   The ends of the routes are the game's subway stations in the order of `SubwayStationName`: up to six times over, the first station not yet used, and the unused station furthest from it (500 m to 2.8 km) that can be driven to **and back from**.
-  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name: a district of the mod's own has no subway station, and the game's station names are a fixed list ([New ground](new-ground.md)). With none, the network is as before.
+  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name. The stations are the game's own twenty alone: the ones the mod stands in Uptown and Cedar Heights ([Subway in Uptown](subway-uptown.md)) are left out (`OwnStations.Is`), so the lines are the same with or without them. With no terminus, the network is as before.
 
   After the paired routes come a district's own (`TransitMap.AddRoute`, `TransitPlan.Route`; Uptown's two, [Uptown](uptown.md)): a way through given points, each stretch the shortest to the kerb lanes round the next point, and its stops where they are wanted, each at the nearest lane point round the place that takes a stop by the rules below (26 m of plain lane either side, or 18 m a little further off, as an avenue between near crossings holds), or shared with a line stopping there. They run as local lines numbered on after the paired ones, so the main lines stay the paired routes they were. `Transit check (district routes): ...` says how many stops were wanted, laid and missed.
 
@@ -331,13 +331,14 @@ Service follows the game's clock, the same on every load of the same day: a trai
 In one three-hour window in eight there are delays of 6 to 14 minutes, which arrive as texts from the City Transit contact (it can also be called for the state of the service and a day pass).
 The journey is the wait (a part of the interval, plus delays) and 2 minutes a stop (one per 650 m, at least one).
 
-When the game's ride is over (`SubwaySystem.IsRiding` falls; its two stations are read as it rises), what the journey takes beyond the minutes the game's ride took is run under the bus ride's fade with the time machine (`TransitRide`, without the card's tap), and a note says where the player came up and how long the journey took.
+When the game's ride is over (`SubwaySystem.IsRiding` falls; its two ends are recorded, with their names, as it rises: the game forgets the origin in that same frame, because the map's close sets `lastSubwayStation` to null, so the origin is the station at the ride camera's start (`SubwaySystem.CurrentPosition`, `SubwayRideRules.Origin`) or the one seen while the map was open), what the journey takes beyond the minutes the game's ride took is run under the bus ride's fade with the time machine (`TransitRide`, without the card's tap), and a note says where the player came up and how long the journey took.
 The game's own ride gives its subway mood.
 
 A day pass gives the game's fare back as the ride begins (`reallife_transaction_subway_pass`); civic life counts such a ride as not paid for, and counts no ride while a train is under way.
 The night closure of a station for track work went with the mod's own list: the game's map offers every station and cannot be told that one is shut.
 
 With "Subway journeys take time" off the game's subway is as it is, and a day pass still gives its fare back.
+The three stations the mod stands in Uptown and Cedar Heights ([Subway in Uptown](subway-uptown.md)) are stations of the game's list like the twenty: the panel, the journey's time and the day pass treat them alike, each named by its own key (`GameMembers.NameKey`).
 No late-night crime is tied in: the crime system has no call for staging something on the player other than its test button.
 
 ## Car ownership

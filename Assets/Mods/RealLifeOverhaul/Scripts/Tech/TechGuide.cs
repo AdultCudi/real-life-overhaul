@@ -204,6 +204,10 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < VentureCatalogue.Firms.Length; i++)
             {
                 VcDef vc = VentureCatalogue.Firms[i];
+                if (!vc.Leads)
+                {
+                    continue;
+                }
                 text.Append("- ").Append(TechText.Fill(vc.Angels ? "reallife_guide_vc_angels" : "reallife_guide_vc_firm", "name", vc.Name,
                     "least", TechText.RoundName((RoundStage)vc.Least), "most", TechText.RoundName((RoundStage)vc.Most))).Append('\n');
             }
@@ -249,6 +253,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
                 .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
                 .Fact("hire_buyout", () => Factor(HiringCatalogue.BuyoutBp))
+                .Fact("hire_rush", () => Bp(HiringCatalogue.SearchRushBp))
                 .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
                 .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10) + "%")
                 .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))

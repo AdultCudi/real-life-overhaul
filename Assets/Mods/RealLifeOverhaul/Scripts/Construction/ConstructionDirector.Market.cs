@@ -226,7 +226,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _state.NextClientDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Client);
+            _state.NextClientDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Client, TenderPeople(TenderSource.Client));
             BuildRandom random = BuildRandom.Of(_state.Seed, day, 227);
             if (!ConstructionGame.Client(random.Range(0, 100000), out BuildingView b))
             {
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _state.NextPublicDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Public);
+            _state.NextPublicDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Public, TenderPeople(TenderSource.Public));
             IReadOnlyList<LotView> lots = Lots;
             BuildRandom random = BuildRandom.Of(_state.Seed, day, 229);
             int start = random.Range(0, Math.Max(1, lots.Count));
@@ -442,6 +442,8 @@ namespace RealLifeOverhaul.Construction
                 Tell(NotificationType.Info, "reallife_bld_notice_tender_lost", TenderName(t), BuildCatalogue.RivalKeys[won.Bidder], TabTenders, t.Id);
             }
             _state.Rivals[won.Bidder].Won++;
+            // what the works clear for the builder that won them
+            _state.Rivals[won.Bidder].Gained += won.Price * BuildCatalogue.RivalMarginPermille[BuildCatalogue.Clamp(won.Bidder, 0, BuildCatalogue.RivalCount - 1)] / 1000L;
             RivalWorks(t, won);
         }
 

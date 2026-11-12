@@ -31,6 +31,48 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
+    /// A shift whose length the player picks on the panel's slider before it starts (whole values between two ends), as the game's
+    /// own activities offer: <see cref="ISkippableShift.SkipMinutes"/> then follows the slider. Optional: a shift without it has no slider.
+    /// </summary>
+    public interface ISlidingShift : ISkippableShift
+    {
+        /// <summary>The slider's left end.</summary>
+        int SlideLeast { get; }
+
+        /// <summary>The slider's right end.</summary>
+        int SlideMost { get; }
+
+        /// <summary>Where the slider stands.</summary>
+        int SlideNow { get; }
+
+        /// <summary>The player moved the slider to this value: kept, held between the two ends.</summary>
+        void Slide(int value);
+
+        /// <summary>The words beside the slider for where it stands (a game text key and its arguments).</summary>
+        (string key, object arguments) SlideInfo();
+    }
+
+    /// <summary>
+    /// What a shift can tell the work panel beyond its own words, so the card says what the shift pays, trains and costs before it
+    /// starts and the strip what it has earned while it runs. Optional: a shift without it shows only the lines it writes itself.
+    /// The sums are the ones the shift settles with (<see cref="ShiftFactsRules"/>), so the card and the pay agree to the unit.
+    /// </summary>
+    public interface IShiftFacts
+    {
+        /// <summary>The whole money the first <paramref name="minutes"/> of the run settle to, before tax; the pay of the units done by then.</summary>
+        int PayFor(int minutes);
+
+        /// <summary>The game's skill the shift trains, or null for none.</summary>
+        string SkillKey { get; }
+
+        /// <summary>The skill points the first <paramref name="minutes"/> of the run train.</summary>
+        float SkillFor(int minutes);
+
+        /// <summary>The stress the shift adds a game hour; 0 when the hourly upkeep adds none for it.</summary>
+        float StressRate { get; }
+    }
+
+    /// <summary>
     /// The rest of a shift left to the clock as the game's own employer job does it (<c>PlayerActivity.WorkActivity</c>): one of
     /// its activities on its panel, with Start, the skip-time button, a progress bar and Stop. No walk order is given (the panel
     /// would call it off); it is seen on its way for one frame, the step in which the panel lets the clock run.
@@ -41,6 +83,7 @@ namespace RealLifeOverhaul
 
         private readonly MonoBehaviour _host;
         private ISkippableShift _shift;
+        private readonly ISlidingShift _slide;   // the shift's own slider, if it has one: asked once
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private LabelInfo[] _labels;
@@ -54,8 +97,23 @@ namespace RealLifeOverhaul
         {
             _host = host;
             _shift = shift;
+            _slide = shift as ISlidingShift;
             _total = Mathf.Max(1, shift.SkipMinutes);
         }
+
+        /// <summary>True when the shift's length is the player's to pick on the panel's slider before it starts.</summary>
+        public bool Slides => _slide != null;
+
+        /// <summary>The minutes the shift would run as the slider stands (the whole shift's, once begun); 0 when it has let go.</summary>
+        public int ChosenMinutes => _shift != null ? Mathf.Max(0, _shift.SkipMinutes) : 0;
+
+        /// <summary>What the shift says of its pay, skill and stress, or null when it says none (or has let go).</summary>
+        public IShiftFacts Facts => _shift as IShiftFacts;
+
+        /// <summary>The game minutes of the run passed so far, and its length: what the strip's hour and sum are read from.</summary>
+        public int DoneMinutes => _begun ? _done : 0;
+
+        public int TotalMinutes => _total;
 
         /// <summary>True from the offer until it is over, whichever way.</summary>
         public bool Open => _state != PlayerActivityState.Finished;
@@ -330,11 +388,90 @@ namespace RealLifeOverhaul
             }
         }
 
-        public bool HasSlider() => false;
-        public int GetMinSliderValue() => 0;
-        public int GetMaxSliderValue() => 0;
-        public float GetCurrentSliderValue() => 0f;
-        public void OnSliderValueChanged(int value) { }
-        public (string key, object arguments) GetSliderInfo() => (null, null);
+        // The length of a shift that has a slider (ISlidingShift), picked before it starts; the rest have none.
+        public bool HasSlider()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return _slide != null && _shift != null && _state == PlayerActivityState.NotStarted && _slide.SlideMost > _slide.SlideLeast;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+
+        public int GetMinSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.SlideLeast : 0;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+
+        public int GetMaxSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.SlideMost : 0;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
+
+        public float GetCurrentSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.SlideNow : 0f;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
+
+        public void OnSliderValueChanged(int value)
+        {
+            try
+            {
+                if (_slide != null && _shift != null && _state == PlayerActivityState.NotStarted)   // the panel sets its slider up for every activity, with or without one
+                {
+                    _slide.Slide(value);
+                    _total = Mathf.Max(1, _shift.SkipMinutes);
+                    _labels = _shift.SkipLabels();   // its pay and time lines follow the part the slider keeps
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
+        }
+
+        public (string key, object arguments) GetSliderInfo()
+        {
+            if (FrameGuard.Off)
+            {
+                return (null, null);
+            }
+            try
+            {
+                return HasSlider() ? _slide.SlideInfo() : (null, null);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
     }
 }

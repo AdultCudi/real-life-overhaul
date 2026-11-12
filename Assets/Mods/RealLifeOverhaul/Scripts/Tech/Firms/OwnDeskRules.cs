@@ -24,9 +24,29 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class OwnDeskRules
     {
-        public const int StintMinutes = TalentCatalogue.DayHours * 60;   // minutes: a stint at the desk is a working day at most, stopped at any time
+        public const string HoursKey = "reallife:own_desk_hours";   // the save's line: the hours last chosen for a stint, a whole number; none in a save from before
+        public const int DefaultHours = TalentCatalogue.DayHours;     // hours: a working day, what a stint is until the player picks another
+        public const int LeastHours = 1;                              // hours: the shortest stint the panel's slider offers
+        public const int MostHours = 12;                              // hours: the longest; a stint is stopped at any time, and the day holds 24 (DayMost)
+        public const int StintMinutes = DefaultHours * 60;            // minutes: the default stint, a full working day (the pages' "in a full day"), stopped at any time
         public const int Morale = 750;        // thousandths: the owner's heart in their own firm, an output factor of one (TalentRules.Output's 700 + 750 * 400 / 1000)
         public const int DayMost = 24 * 60;   // minutes a day can hold, whatever a fast forward over midnight credits
+
+        /// <summary>The hours of a stint held between <see cref="LeastHours"/> and <see cref="MostHours"/>.</summary>
+        public static int ClampHours(int hours) => hours < LeastHours ? LeastHours : hours > MostHours ? MostHours : hours;
+
+        /// <summary>The minutes of a stint of these hours (held to the range).</summary>
+        public static int MinutesFor(int hours) => ClampHours(hours) * 60;
+
+        /// <summary>The hours a save's line gives: none, or a line that is no whole number, is the default; any number is held to the range.</summary>
+        public static int HoursFrom(string text)
+        {
+            return string.IsNullOrEmpty(text) || !int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int hours)
+                ? DefaultHours : ClampHours(hours);
+        }
+
+        /// <summary>The save's line for hours chosen (held to the range).</summary>
+        public static string HoursLine(int hours) => ClampHours(hours).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>Minutes worked at a firm on a day: added to that day's count; a later day starts a new count and keeps the one before.</summary>
         public static void Credit(Firm f, int day, int minutes)

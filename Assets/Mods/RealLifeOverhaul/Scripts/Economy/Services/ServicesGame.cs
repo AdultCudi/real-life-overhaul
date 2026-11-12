@@ -29,8 +29,35 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Tells "running a business" that a business, by its place, is no longer the player's. Default: nobody.</summary>
         public static Action<string> BusinessGone;
 
+        /// <summary>Staff a buyer kept, by their employee ids, told before the game drops them: the living population holds them to their jobs for 30 days. Default: nobody.</summary>
+        public static Action<List<string>> StaffKept;
+
+        /// <summary>A rival's business passed to another owner, by its address: its staff are held to their jobs likewise. Default: nobody.</summary>
+        public static Action<Address> RivalHanded;
+
+        /// <summary>True when a kept staff is really held (the living population runs). Default: false, and the sale's words say only that the staff leave the payroll.</summary>
+        public static Func<bool> HoldsStaff;
+
         /// <summary>A business sold, by its place, and its whole price, for the player's listed company (Markets/Listing). Default: nobody.</summary>
         public static Action<string, int> Sold;
+
+        /// <summary>A business's recent profit as its books show it to whoever values it (Scripts/Schemes): the business, the true figure. Default: the game's own.</summary>
+        public static Func<BuildingRegistration, float, float> BooksShown;
+
+        /// <summary>Thousandths the books of a business show over the truth right now, by its place: stamped on a listing and an offer when their price is made. Default: 0.</summary>
+        public static Func<string, int> BooksLift;
+
+        /// <summary>
+        /// A buyer about to pay sees through dressed books and walks: the place, the kind of buyer, the offer (a quick sale's is minus its
+        /// price) and the lift stamped on it when its price was made. Default: nobody looks.
+        /// </summary>
+        public static Func<string, int, int, int, bool> SeesThrough;
+
+        /// <summary>A business sold: its place, the price and the lift its price was made from. The schemes put the part the lift made on the trail. Default: nobody.</summary>
+        public static Action<string, long, int> SoldBooks;
+
+        /// <summary>The save's investors by name (Ventures' own), for a buyer of a business. Default: none, and the catalogue's investment firms buy.</summary>
+        public static Action<List<string>> Investors;
 
         public static void Reset()
         {
@@ -39,7 +66,11 @@ namespace RealLifeOverhaul.Economy
             LoansOwed = null;
             SettleLoans = null;
             BusinessGone = null;
+            StaffKept = null;
+            RivalHanded = null;
+            HoldsStaff = null;
             Sold = null;
+            Investors = null;
         }
     }
 

@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Economy
                 ManagerFile m = s.Managers[i];
                 t.Append(n > 0 ? ";" : string.Empty);
                 Join(t, m.Role, m.From, m.Tasks, m.WageBand, m.StockDays, m.PriceLow, m.PriceHigh, m.Budget, m.Keep, m.Spent, m.Decided, m.Mistakes, m.Undone, m.Paid,
-                    m.LastDecided, m.LastMistakes, m.LastUndone, m.LastPaid, m.LastSpent, m.SnapDay, m.SnapHour, 0, 0, 0);
+                    m.LastDecided, m.LastMistakes, m.LastUndone, m.LastPaid, m.LastSpent, m.SnapDay, m.SnapHour, PriceStrategyRules.Pack(m.Strategy), 0, 0);
                 t.Append('|').Append(Clean(m.Place)).Append('|').Append(Clean(m.Id)).Append('|').Append(Clean(m.Base)).Append('|');
                 for (int k = 0; k < m.Snaps.Count && k < ManagerCatalogue.SnapsMost; k++)
                 {
@@ -55,6 +55,14 @@ namespace RealLifeOverhaul.Economy
                     t.Append(k > 0 ? "/" : string.Empty).Append(Word(m.Held[k]));
                 }
                 t.Append('|').Append(Clean(m.Name));   // as last read: said if they are gone before the first read after a load
+                // After the name, in this order: a newer figure goes at the end, an older line has none (the reader's fallbacks are the starting steps).
+                t.Append('|');
+                for (int k = 0; k < m.Speeds.Count && k < ManagerCatalogue.SpeedKept; k++)
+                {
+                    t.Append(k > 0 ? "/" : string.Empty).Append(m.Speeds[k].ToString(Inv));
+                }
+                t.Append('|').Append(m.HandDown ? '1' : '0').Append('|').Append((m.MarketingStep + 1).ToString(Inv)).Append('|').Append((m.LeaseStep + 1).ToString(Inv))
+                    .Append('|').Append(m.MarketingSpent.ToString(Inv));
             }
             t.Append("^d:");
             for (int i = Math.Max(0, s.Decisions.Count - ManagerCatalogue.DecisionsKept), n = 0; i < s.Decisions.Count; i++, n++)
@@ -63,6 +71,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(n > 0 ? ";" : string.Empty);
                 Join(t, d.Id, d.Day, d.Hour, d.Task, (int)d.State, d.Mistake ? 1 : 0, d.A, d.B, d.C, d.D, d.E, d.F);
                 t.Append('|').Append(Clean(d.Place)).Append('|').Append(Clean(d.Subject)).Append('|').Append(Clean(d.Who)).Append('|').Append(Clean(d.Detail));
+                t.Append('|').Append(d.G.ToString(Inv));   // after the detail: a newer figure goes at the end, an older line has none
             }
             return t.ToString();
         }
@@ -163,6 +172,7 @@ namespace RealLifeOverhaul.Economy
                 LastSpent = Math.Max(0, I(c, 18)),
                 SnapDay = Math.Max(0, I(c, 19)),
                 SnapHour = CompanyCatalogue.Clamp(I(c, 20), 0, 23),
+                Strategy = PriceStrategyRules.Unpack(I(c, 21)),   // 0 in a line from before the strategy: the default
                 Place = c[ManagerFields],
                 Id = c[ManagerFields + 1],
                 Base = c.Length > ManagerFields + 2 ? c[ManagerFields + 2] : string.Empty
@@ -185,6 +195,20 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             m.Name = c.Length > ManagerFields + 5 ? c[ManagerFields + 5] : string.Empty;
+            int later = ManagerFields + 6;
+            foreach (string one in Records(c.Length > later ? c[later] : string.Empty, '/'))
+            {
+                int days;
+                if (int.TryParse(one, NumberStyles.Integer, Inv, out days) && m.Speeds.Count < ManagerCatalogue.SpeedKept)
+                {
+                    m.Speeds.Add(CompanyCatalogue.Clamp(days, 0, 99));
+                }
+            }
+            m.HandDown = I(c, later + 1) != 0;
+            int marketing = I(c, later + 2), lease = I(c, later + 3);   // written one more than the step, so an older line's 0 means the starting step
+            m.MarketingStep = marketing > 0 ? Bound(marketing - 1, ManagerCatalogue.MarketingSteps) : ManagerCatalogue.MarketingDefault;
+            m.LeaseStep = lease > 0 ? Bound(lease - 1, ManagerCatalogue.LeaseRises) : ManagerCatalogue.LeaseDefault;
+            m.MarketingSpent = Math.Max(0, I(c, later + 4));
             return m;
         }
 
@@ -202,7 +226,8 @@ namespace RealLifeOverhaul.Economy
                 Place = c[DecisionFields],
                 Subject = c.Length > DecisionFields + 1 ? c[DecisionFields + 1] : string.Empty,
                 Who = c.Length > DecisionFields + 2 ? c[DecisionFields + 2] : string.Empty,
-                Detail = c.Length > DecisionFields + 3 ? c[DecisionFields + 3] : string.Empty
+                Detail = c.Length > DecisionFields + 3 ? c[DecisionFields + 3] : string.Empty,
+                G = Math.Max(0, I(c, DecisionFields + 4))
             };
         }
 

@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Rivals
                 .Data(RivalStore.Key, RivalStore.TestKey)
                 .Test("reallife_rival_test_property", "reallife_rival_test_outlet", "reallife_rival_test_poach", "reallife_rival_test_stake", "reallife_rival_test_bid",
                     "reallife_rival_test_lobby", "reallife_rival_test_suit", "reallife_rival_test_press", "reallife_rival_test_next", "reallife_rival_test_forward",
-                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first")
+                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first",
+                    "reallife_testshops_all", "reallife_testshops_nearest")
                 .Fact("rival_tens", () => Money(RivalRules.FirstFrom(Settings.RivalsFirst)))   // (the option's amount: the Guide says when they come in this game)
                 .Fact("rival_hundreds", () => Money(RivalCatalogue.TierFrom[2]))
                 .Fact("rival_billions", () => Money(RivalCatalogue.TierFrom[3]))

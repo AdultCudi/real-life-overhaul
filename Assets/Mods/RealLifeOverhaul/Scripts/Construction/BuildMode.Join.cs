@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The panel for squares no design fits: why, the join that would help, the use that already has designs, and the buttons.
-        private void WriteNoDesign(BuildModeSheet s, bool parks)
+        private void WriteNoDesign(IBuildSheet s, bool parks)
         {
             s.Line(T("reallife_bld_mode_place_none"), BuildModeBar.Red);
             bool join = _offer.Kind == PlotJoinRules.Offer;

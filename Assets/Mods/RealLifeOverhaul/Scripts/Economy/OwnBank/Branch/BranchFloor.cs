@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Economy
             }
             _hour = br.HourIndex;
             _shown = _skipped = 0;
-            BranchRules.Floor(bank.Seed, br.HourIndex, br.Place, br.HourOpen ? br.HourVisitors : 0, br.HourServed, bank.Run, _plan);
+            BranchRules.Floor(bank.Seed, br.HourIndex, br.Place, br.HourOpen ? br.HourVisitors : 0, br.HourServed, bank.Run, br.HourPeople, _plan);
             _next = 0;
             if (walkingIn)
             {

@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Family
         public Func<LanguageChangeEventDataHolder> Text;      // what the line says, with today's figures
         public string DoKey;                                  // the label of the button that does it
         public Func<DialogEntry> Do;
+        public Action<DialogEntry> Costs;                     // what taking it pays, told under its answer (DialogAnswers); null for nothing
 
         public Choice(Func<bool> when, Func<LanguageChangeEventDataHolder> text, string doKey, Func<DialogEntry> action)
         {
@@ -161,6 +162,7 @@ namespace RealLifeOverhaul.Family
                 entry.SecondOptionTextOverride = "reallife_family_menu_next";
                 entry.OnSecondOption = Safe(() => Menu(choices, from, nothingKey));
             }
+            choice.Costs?.Invoke(entry);
             return entry;
         }
 

@@ -181,10 +181,14 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(EndScaleRules.Full, (least - before) * EndScaleRules.Full / (scale - before));
         }
 
-        /// <summary>The capital the bank keeps whatever it pays out: its level's least, and its loans' and fund's weight at the lending line.</summary>
+        /// <summary>
+        /// The capital the bank keeps whatever it pays out: its level's least, and its loans' and fund's weight at the lending line, and over those the money an
+        /// offer of its shares raised from the public while the stock trades (<see cref="OwnBank.Public"/>): that is theirs, and no pay, dividend or sale takes it.
+        /// </summary>
         public static long Keep(OwnBank b, int level)
         {
-            return Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
+            return Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000)
+                   + Math.Max(0, b.Public);
         }
 
         /// <summary>

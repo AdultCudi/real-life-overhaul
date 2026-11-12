@@ -101,6 +101,11 @@ Read in the decompiled game and in its scene data (`evidence/uitools`, and a stu
   First choice: the game's left column, between the control hints and the task panel, the map as high as the room between them (it is square when there is room).
   Each of the game's panels is measured where it is on the screen, so the interface zoom and the screen's shape need no table.
 
+  While the interface kit's HUD is up, the panel also stands above its bottom bar (as the bar is laid out, whatever its height), under its left column and clear of its key chips, and is drawn over the kit's HUD (its own canvas, one order over it) and under every window; the kit's notice cards, objectives, world prompt and activity strip keep clear of it.
+
+  The kit's item panel (what the player holds or drives) stands at the bottom right, away from the card: over the kit phone's card, right edges lined up and a grid step (8 px) above it, or above the bar where no phone shows; its foot keeps over the key chips, and it stays as low as that allows, so notice cards that reach down to it are covered only at their lower part (`UiItemPanel.Place`; the chips, the phone and the notices are read four times a second, `ItemPanelKit`).
+  While the player drives, it is a small card no wider than the phone's (308 by 120 px at 1920 x 1080): the car's name and whose it is, the speed with its meter, the parking zone, and the game's keys (Park, Sell for its short price, Sleep or Auto park when the game offers them) as key chips in the HUD's style. A parked car walked up to or clicked keeps the full panel.
+
   When a long task list leaves less than 240 units for the map there, the panel stands at the bottom beside the column instead, lifted over the address labels or the item panel if it would reach them (a 4:3 screen).
   With no room in either place it is hidden and one line says so.
 
@@ -240,3 +245,110 @@ The option "Buildings and water on the minimap" (on by default; off, the minimap
   Every load after that: one read, one drawing on a pool thread, one upload.
 - **Not seen running**: whether every piece of ground the city stands on has something solid under it far from the player, and what the palette's dark blue looks like on the panel.
   The tests "minimap, buildings and water alone" and "minimap, mark three buildings" are for judging both, and the two `Minimap check` lines say what was made.
+
+## The minimap in 2.5D, and the city map as the game draws it (`Scripts/Ui/Map`, `NavScene`, `NavMapCamera`, `NavHud.Scene`)
+
+The owner's call (3 Nov 2026): the minimap looks flat seen from straight above, and chunky buildings rise when the view is tilted or turned. One option, on by default: "Minimap shows buildings as 2.5D blocks" (`nav_minimap25`). Off, the flat minimap is as it was. Display only: nothing is saved or sent. **The owner's decision of 5 Nov 2026: the full city map shows the game's own buildings again.** The mod's 2.5D picture of the city map (its render texture, its culling mask swap, its marker, its street names, its tint pass, its option `nav_map25`) was taken out: the game's city under its own camera is on screen at all times, panned or still, which also cured the twitching (the picture showed only while the camera stood still, so every pan flipped between it and the game's city). The map has the game's own player pin, street names, hover, tint, outline, pins, filters and route; what the mod keeps on it is its GPS route line (`NavCityMap`, under the game's pins) and the 2D and 3D button's tilt of the game's camera (`NavMapCamera`). The section "City map" of the options page keeps the map's place filters (`map_places_shown`) and the special names (`special_names`).
+
+```
+Ui/Map/  (game-free except Map25Scene, which uses only the engine, so the preview draws with it too)
+  Map25Math     matrices as the engine keeps them, view, frustum, a place on the picture and back, half floats, a seeded generator
+  Map25Palette  the mockups' colours and the shading rules (light from the west, a foot darkened in metres, podium and crown)
+  Map25Builder  vertices and triangles into growing arrays, handed out as chunks (16 bit indices, colours as half floats)
+  Map25Height   how tall a block is drawn: a knee and a cap that follow the lot's sides (the mockups' chunky blocks)
+  Map25Blocks   one building: walls shaded by the way they face with a band of window colour every three floors, a heavier foot, cornice, parapet rim, a crown (setback) on a wide
+  (+ .Props,    tower, water tank on legs, air conditioners, stair hut, the contact patch under it
+   .Contact)
+  Map25Layer    the kinds of drawing (blocks, crowns, contacts), a layer of chunks for each, and which a view draws (Map25Rules)
+  Map25Set      the whole city in 192 m chunks, built once for the minimap
+  Map25Ground   the land as a marching squares outline of the water grid, the roads as a band a lane with lane marking on the avenues, the
+                trees and the green ground they make, the route's strip, the view cone
+                trees and the green ground they make, the rings and roof lines of tinted buildings, the zones, the route's strip, the view cone
+  Map25Under    land, green ground, roads, lane marking and trees made together, on a pool thread
+  Map25View     the minimap's camera, its planes, the pitch the map button's tilt asks for, what a pixel is
+  Map25Marks    the route, cone and halo as a few pixels of the picture, in metres where they lie
+  Map25Scene    meshes from chunks a slice at a time, the command buffer, the one draw into the minimap's render texture, the self-test
+Navigation/
+  NavScene      makes the city from NavBase's outlines (with each building's ground and height, file format 3), the road graph and the game's
+                trees, on a pool thread, then the meshes at 0.6 ms a frame
+  NavMapCamera  the city map button's tilt of the game's own camera (nothing is drawn); NavMapLatch the minimap's black picture, latched for the session
+  NavHud.Scene  the minimap: the picture in its view, the pins placed by the camera, drawn when the view moved a pixel
+  NavDirector.Scene  when the scene is made, the route into the strips, the map camera on and off with the map, and let go
+RealLifeOverhaul.Build/Shared/  (preview and checks only, never in the mod)
+  Map25Fixture  a made-up city of the grain of the game's, and the heights' model
+  Map25Real     the owner's own footprints and water from the file their minimap keeps; the heights, roads and trees made up, and said so
+```
+
+- **Why the minimap is a picture and the city map is not.** The minimap is made from data (the footprints the minimap already measured), some sixty chunks, drawn only when its view moves. The city map is the game's own city under its own camera, so it costs what the game's full city render cost before the mod, and the mod makes no render target and never swaps the camera's culling mask there (EconomyCheck holds this by reading the source).
+- **One render, outside the game's pipeline.** A command buffer with the engine's own colour shader (`Hidden/Internal-Colored`) into an sRGB render texture, run from LateUpdate: no light, no exposure, no volume, so the picture is the mockup's at any hour. A 16 pixel self-test at the first use reads back where a mark lands and which way the depth runs (the built-in pipeline and a scriptable one differ in both) and picks the projection and the depth test that work; if none does, or the shader is missing, the feature stands down with one line and the game's own map and the flat minimap stay. A picture that comes out black is latched for the session (`NavMapLatch`, said once in the log): the map is never again covered by it.
+- **How tall a block is** (`Map25Height`). The game's real heights run from a shed to a tower of well over a hundred metres on a lot ten metres wide, and a block that high on a thin lot is a needle that hides its streets. A height is kept as it is up to a knee (8 m and 1.4 m for each metre of the lot's shorter side: 22 m at 10 m, 29 m at 15 m, 43 m at 25 m); above it 15 per cent of the rest is drawn, up to a cap (6 m and 3.4 m a metre of the shorter side, never more than 10 m and 2 m a metre of the longer: a 10 by 10 m lot tops out at 30 m, an 8 by 30 m sliver at 33 m). The owner's 883 footprints with a height model (real p90 64 m, max 129 m) are drawn p90 36 m, max 76 m; with a deliberately tall one (max 258 m) the most is 95 m; the first build drew 181 m and 363 m. The tallest block is at most 4.4 times its shorter side. The pins and the route line are the game's own and stand at the game's real roof; the picture's roofs can be lower than a tall building's pin.
+- **What is drawn, and when** (`Map25Kind`, `Map25Rules`): the blocks always; the crowns (the setback of a lot at least 26 m wide and 21 m tall: 22 per cent of the width in, 42 per cent of the height up, at most 45 per cent of the width) and the contact patches from a tenth of full height, so the flat picture has no frame inside a frame.
+- **The rest of the block's detail.** The foot of a wall is darkened in metres from the ground (0.55 at the ground, 0.14 at 12 m, none from 28 m), not as a share of its height, and the wall's pieces break at those metres. A water tank is a drum on four thin legs with a lid and a cone, on some roofs with air conditioners and a stair hut.
+- **The ground.** The roads are a band a lane, as wide as the gap they lie in; the avenues' lanes carry a dash of lane marking each, on the left. Trees come from `TreeController.AllTrees` (the places every tree of the game joins as it starts, read once when the scene is made, at most 14,000): a six sided dome in two greens, 13 vertices. The game keeps no polygon of a park, so green ground is where trees stand together: a 10 m square is green when at least seven trees stand in it and the eight round it (a row of street trees on each side of an avenue has six at the most). The squares are then closed and rounded as a ground is drawn: a square the green ones hold a majority of (five of the nine round it, itself counted) is green and a lone one or a spur of one is not, so a thin place among the trees is no square hole, and the outline is cut through the middle of the squares' edges as the coast is, so a corner is a slant and a park a polygon. The trees stand where they stand. The game's own trees and parks are not drawn behind the picture, so these stand in for them.
+- **Sizes in pixels** (`Map25Marks`). The minimap's route line is 4.2 pixels of a minimap 300 wide, its casing 1.75 times that; the view cone is 55 pixels long (30 degrees either side), the halo's radius 11.6: the mockups' sizes at any zoom, turned into metres by what a pixel is at the middle of the picture, in steps of an eighth so a zoom writes the route again only when it matters.
+- **The city map's tilt button** (`NavMapCamera`, on only while the map is open): the 2D button turns the game's own map camera flat (85 degrees) or back to the game's 47 by moving the virtual camera along the arc round the pivot; `CityMapCam.MoveCamera` recomputes the camera's place from its direction and distance every frame, so a pan, a zoom or a turn keeps the pitch. At the game's own tilt, the default, nothing at all is done. The game's tilt is given back as the map shuts. It works in every frame the map is open, panned or not, and never touches the main camera.
+- **The minimap** draws the minimap's detail (a band every three floors) from a camera of its own, 40 degrees down, heading up when the minimap turns, into a render texture the size of its view; the route is a strip in the picture, the player's view cone and halo lie on the ground under the blocks, the destination and the pins are the panel's own objects placed by projection. Drawn again only when the view has moved a pixel's worth, turned half a degree or changed its scale, at most 30 times a second; nothing is drawn while the player stands still. The minimap shows no highlight.
+- **The minimap's strip, compass and scale bar** (`NavHud.Strip`) sit inside the card's view: the district's name in capitals and the street under the player, a dot on a ring that goes round to where north is, and a bar of the longest round number of metres that takes a third of the view's width. They never touch the card's place, size, canvas order or the pointer (EconomyCheck's `Map25MinimapChecks` reads the source for that, beside the HUD fix's 22 checks).
+- **The map check after the map shut** (RLO-PERF-022, the `route on the map` part of `MapParts`): the route's object off with the map and the camera's tilt given back; the look allocates nothing.
+- **Memory** while on (the owner's 883 footprints with the height model): the minimap's set is 2.6 MB on the graphics card (graphics card only), the roads, lane marking, land, green ground and trees about 2 MB: some 5 MB in all.
+
+### Cost
+
+| when | what | cost (measured outside the game on the owner's 883 footprints with the height model, .NET) |
+|---|---|---|
+| once per game build | each building's ground and height, with its outline | in the one measure `NavBase` already does (0.8 ms a frame at most); the file grows by 8 bytes a building |
+| once per city load | the blocks, the roads, the land, the green ground and the trees | 15 ms for the blocks, about 10 ms for the rest, on a pool thread (Mono is several times slower); then the meshes at 0.6 ms a frame, not behind the loading screen and not in a frame over 50 ms, for some 200 chunks |
+| per frame, map shut | nothing | the object is inactive |
+| per frame, city map open | the game's own city render, as before the mod; the mod's tilt compare when the button is not at the game's tilt | the game's own; nothing of the mod's drawn |
+| per frame, minimap moving | the same into a small texture, at most 30 a second | the same; nothing while standing still |
+
+EconomyCheck's `Map25Checks.cs`, `Map25LookChecks.cs` and `Map25LogicChecks.cs` (`--map25` runs them alone, `RLO_MAP25_REPORT=1` prints the figures) pin the minimap's build, the budget (also on the owner's own footprints when their minimap file is on the machine), byte for byte repeatability, the height policy, the foot, the crowns, the tank, the lane marking, the trees and parks, the pixel sizes, which kinds a view draws and in what order, the latch, and, by reading the source, that the city map never swaps the camera's culling mask and never makes a render target, that the tilt button moves only the game's own map camera and gives its tilt back, and that the map check after the map shut asks for that.
+
+### Previews
+
+`not-in-repo/previews/ui/map/` holds real renders by the renderer the game runs, drawn outside the game (`preview.ps1 -Method Map25Preview.Render`): the city is the owner's own, read from their minimap file (883 footprints and the water). What is made up, and said in `Map25Real`: the heights (a model: half low rise, most of the rest mid rise, a few towers, more near the middle), the roads (the gaps that run clear through the buildings of a window are avenues and streets, with lanes filling them), the trees (a street tree every 28 m, from one side of an avenue and the other in turn, thinned from the first previews' two every 14 m, which overstated them, and one park in the largest hole of the buildings), and the roads and trees keep to the land (none in the sea). The previews tint the way the game does, by the scene's own retint of the full map's set after the sets are built, so the minimap's pictures show no highlight. `real_full_flat_bare` and `real_mini_flat_bare` are the flat shots without the player's cone and halo, for measuring their share in rendered pixels. The two discs in the full shots are the preview's stand-ins for the interface's pins. A second set is drawn with a deliberately tall model.
+
+### Not verified (the game could not be run)
+
+That `Hidden/Internal-Colored` is found and draws in the game's player (the self-test says so in the log line "the minimap's 2.5D picture is made"), that the pins land on the minimap's roofs, that `TreeController.AllTrees` is complete when the scene is made and that the trees are the size of the picture's, the real heights, the look in the real city, and that the 2D button's tilt of the game's map camera holds while panning and zooming (`CityMapCam.MoveCamera` keeps the direction, read in its source). Each has a fallback that leaves the flat minimap or the game's own map.
+
+## The city map's panels (`Scripts/Ui/MapDock`)
+
+The map's side panels are drawn on the interface kit over the game's own windows. Those stay up underneath with only their own leaves hidden, and every press goes to the game's own widget. So every rule of the game's, Going Public's lines and the other mods' rows stay the game's. Each panel has its own option under "RLO interface": `map_filters` (the filters with the place card), `map_subway` (the list of stations), `map_picker` (the mod's choices of a place) and `map_district` (the district view's page). With one off, that window is the game's own again. The panels take the pointer only, because the stick and the movement keys pan and turn the map.
+
+| File | What it is |
+| --- | --- |
+| `MapFiltersGame`, `MapKits` | binds the game's filter window and its station list to the host, installs and removes them, and puts a choice of a place on the HUD's modal piece |
+| `MapLive` (`.Build`, `.Lines`, `.Picked`, `.Place`, `.Actions`, `.Picker`) | the one screen: looks at the game's state four times a second and lays out only when it changed |
+| `UiMapFilters`, `UiMapPlace`, `UiMapDistrict`, `UiMapChrome` | the dock's pages, the route strip, the layers, the buttons, the labels (game-free, so the preview draws them and EconomyCheck lays them out) |
+| `MapCountRules`, `MapSaved`, `MapBusy` | the counts, the quick chips, the place card's rules, the route's minutes, the saved places and the usual busy figures (game-free) |
+| `MapStoreGame`, `MapSavedGame` | the game's side of those: the save's lines, the row of saved places on the map |
+| `MapRouteTag` | the label on the route's line over the open map |
+
+- **The filters page.** A rail of the groups with a count each, a search, quick chips (Food, Groceries, Fuel, Parking, Jobs, For rent, Your places) only where the game has lines for them, the count "11 of 31 on" (only lines the map can show now), the groups with their lines, each with a switch and a Locate. The game's own search filters the lines. Places that match the words are listed under the field. The lines are read from each group's own list, because a mod's rows are taken out of the game's table of lines, so the lines of Going Public (`bamp_players`) and of other mods show under "Other mod" and are only ever switched, never changed.
+- **The picked place** (the game's building card) is a block at the foot of the dock: name, address, the way there (by road when the roads know it, else in a straight line), what it is now, Locate and Set destination. In taxi mode the button says the taxi's minutes and price. In subway mode the page is the list of stations with each one's district and where the player stands.
+- **The place card** is the page the block opens. The rating and the reviews come from the Flare city's own figures, and a price tier ("$$") only shows where it can be worked out from the place's price against the city's typical one. The reviews' words are picked by the resident and the day from two lines for each rating and reason, so the same review always reads the same and nothing is saved. Tabs: Overview (address, how far it is, hours today, the unit for rent next door, busy times by the hour, what people say), Reviews and Business. Busy times are the simulation's own hourly multipliers, and "Busier than usual" is today's arrivals against a rolling average kept per place (`reallife:map_busy`, 64 places at most, the longest unlooked at dropped first). "Save" keeps a place in a list (`reallife:map_places`, 40 at most, the newest first) that is also a row of the map's filter list, "Saved places".
+- **The route strip** sits over the top when Directions is chosen: Walk, Taxi, Subway and Your car with their minutes and fare and Go. Walking and driving come from the walking and driving graphs, the taxi's from `TaxiDirector.Quote` (its wait, its ride and its fare), the subway's from the two nearest stations (walk, wait, ride, walk) and only where that beats the way by road by a margin. Each option is as wide as its words need, and they give up room evenly only when the strip would meet the Layers panel. Go sets the destination as the game's own button does. By taxi it shuts the map and opens the City Cabs offer with its own Send.
+- **On the map itself.** The Layers panel (the map's main lines as switches and Hide all), the map's buttons (north, centre on me, zoom in and out, tilt), a label "For rent next door" where that unit stands while the pointer rests on its row, and, when the district view is on, each district's name with the layer's figure (the cyan one is the district the page is about). The label on the route's line is `MapRouteTag`: Navigation hands it over (`NavDirector.RouteLabelTo`) when the route or the map changes and takes it back when the route is gone or the map shut. It shows the minutes and the way to go that the minimap's destination block shows, with a walker or a car, halfway along the line as drawn (`NavMath.Halfway`). The fare of a taxi or the subway is on the strip. Neither has a line of its own on the map.
+- **The district view's page** has the ten layers as a rail, the city average, a donut where one helps (the classes, the rent by kind of space, who runs the businesses), the key (the kit's ramp, `UiTokens.Ramp`), the district the page is about with its rank and its residents, and every district ranked with its figure, how it moved this month and the share of space standing empty. The month's change comes from a snapshot kept once a calendar month (`reallife:district_months`, 12 months), so it says "no change yet" until a second month has been kept. The old window is still there when its switch is off.
+- **The minimap's destination block** (the place's name and address, the minutes and the distance) is part of the minimap, see above.
+
+### Cost
+
+Nothing while the map is shut. While it is open, one look at the game's windows four times a second (a few dozen numbers) and a layout when something changed. The counts are made when the map opens, because the map pauses the game. The route's label is handed over only when the route or the map changes. The district tags are a few small pieces moved by the HUD's host, one projection each a frame while the view is on.
+
+### Safety
+
+Everything is read from this player's own city and nothing new goes on the network. The saved places and the busy figures are the player's own lines. Going Public's rows are only read and switched on and off, and nothing of another player's is changed or kept.
+
+### Checks
+
+EconomyCheck `--map5` runs the rules (counts, chips, the card, the route, the saved places, the months, busy times, the tags and every command reaching its call), the screens' own cases (`map_filters`, `map_subway`, `map_picker`, `map_district`) are laid out in every language, shape and input by `--ui`, and NavCheck holds `NavMath.Halfway`. `--map25` still holds the picture and the minimap.
+
+### Previews
+
+`not-in-repo/previews/ui/map5/` holds a sheet for every state in English, Portuguese and Chinese at 1080 and 720, with the keys, the pad and the pointer.
+
+### Not verified (the game could not be run)
+
+That the host binds the filter window and the station list as the games' windows are built, that the pointer's glide to a place of a choice works, that the HUD's host shows the tags and the labels over the map (it may sleep while the map is up), that the saved places' row and the taxi's hand-over to City Cabs work, and that the game's own building box does not also show beside the picked place's block.

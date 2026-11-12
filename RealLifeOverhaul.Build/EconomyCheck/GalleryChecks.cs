@@ -448,7 +448,7 @@ internal static partial class Program
         // 2. A whole photo no longer wanted (another photo shown, the app closed) is read but never decoded.
         string game = Read(@"Photos\PhotosGame.cs"), gallery = GalleryText();
         string load = Between(game, "public static IEnumerator Load(", "private static Texture2D Decode(");
-        int asked = load.IndexOf("if (wanted != null && !wanted())", StringComparison.Ordinal), decoded = load.IndexOf("texture = Decode(bytes);", StringComparison.Ordinal);
+        int asked = load.IndexOf("if (wanted != null && !wanted())", StringComparison.Ordinal), decoded = load.IndexOf("texture = Decode(bytes, readable);", StringComparison.Ordinal);
         Check(load.Contains("Func<bool> wanted = null") && asked > 0 && decoded > asked && load.IndexOf("work.IsCompleted", StringComparison.Ordinal) < asked
               && gallery.Contains("() => load == _wholeLoad && Showing)"),
             "gallery review: a stale load of a whole photo is let go after its read and before the decode");

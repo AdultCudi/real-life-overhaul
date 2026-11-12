@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     Said(_said[e], deal, b, day);
                 }
             }
+            ExtraDay(day);
             if (Settings.VenturesInvestors && day - _file.OfferDay >= VenturesCatalogue.OfferEveryDays)
             {
                 _file.OfferDay = day;
@@ -106,6 +107,8 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         private void Said(DealEvent e, Deal deal, in BusinessFigures b, int day)
         {
+            Heard(e, day);
+            Action click = OpenOn("deal:" + deal.Id);
             string name = NameOf(e.InvestorId), business = e.Business, amount = FinanceText.Money(e.Amount);
             if (Verbose)
             {
@@ -116,57 +119,57 @@ namespace RealLifeOverhaul.Economy.Ventures
             switch (e.What)
             {
                 case DealNews.TargetMet:
-                    Tell(NotificationType.Success, "reallife_ven_note_target_met", _openInvestors, "name", name, "business", business, "amount", amount);
+                    Tell(NotificationType.Success, "reallife_ven_note_target_met", click, "name", name, "business", business, "amount", amount);
                     break;
                 case DealNews.Warned:
-                    Tell(NotificationType.Warning, "reallife_ven_note_warned", _openInvestors, "name", name, "business", business, "amount", amount, "day", deal.TargetDay.ToString());
+                    Tell(NotificationType.Warning, "reallife_ven_note_warned", click, "name", name, "business", business, "amount", amount, "day", deal.TargetDay.ToString());
                     break;
                 case DealNews.Demanded:
                     _file.Unseen++;
-                    Tell(NotificationType.Warning, "reallife_ven_note_demand", _openInvestors, "name", name, "business", business, "day", deal.DemandDay.ToString());
+                    Tell(NotificationType.Warning, "reallife_ven_note_demand", click, "name", name, "business", business, "day", deal.DemandDay.ToString());
                     break;
                 case DealNews.DemandDefault:
-                    Tell(NotificationType.Warning, deal.BoardUntil > 0 ? "reallife_ven_note_demand_seat" : "reallife_ven_note_demand_costs", _openInvestors, "name", name, "business", business,
+                    Tell(NotificationType.Warning, deal.BoardUntil > 0 ? "reallife_ven_note_demand_seat" : "reallife_ven_note_demand_costs", click, "name", name, "business", business,
                         "share", VenturesText.Share(deal.ShareNow(day)), "day", (deal.BoardUntil > 0 ? deal.BoardUntil : deal.CostDay).ToString());
                     break;
                 case DealNews.PromiseKept:
-                    Tell(NotificationType.Success, "reallife_ven_note_promise_kept", _openInvestors, "name", name, "business", business);
+                    Tell(NotificationType.Success, "reallife_ven_note_promise_kept", click, "name", name, "business", business);
                     break;
                 case DealNews.PromiseBroken:
-                    Tell(NotificationType.Warning, "reallife_ven_note_promise_broken", _openInvestors, "name", name, "business", business, "amount", amount);
+                    Tell(NotificationType.Warning, "reallife_ven_note_promise_broken", click, "name", name, "business", business, "amount", amount);
                     break;
                 case DealNews.WentCold:
-                    Tell(e.Amount > 0 ? NotificationType.Warning : NotificationType.Info, e.Amount > 0 ? "reallife_ven_note_cold_unpaid" : "reallife_ven_note_cold", _openInvestors,
+                    Tell(e.Amount > 0 ? NotificationType.Warning : NotificationType.Info, e.Amount > 0 ? "reallife_ven_note_cold_unpaid" : "reallife_ven_note_cold", click,
                         "name", name, "business", business);
                     break;
                 case DealNews.PaidBack:
-                    Tell(NotificationType.Success, "reallife_ven_note_paid_back", _openInvestors, "name", name, "business", business);
+                    Tell(NotificationType.Success, "reallife_ven_note_paid_back", click, "name", name, "business", business);
                     break;
                 case DealNews.Called:
                     _file.Unseen++;
-                    Tell(NotificationType.Error, "reallife_ven_note_called", _openInvestors, "name", name, "business", business, "amount", amount, "per_day", FinanceText.Money(deal.CallPerDay));
+                    Tell(NotificationType.Error, "reallife_ven_note_called", click, "name", name, "business", business, "amount", amount, "per_day", FinanceText.Money(deal.CallPerDay));
                     break;
                 case DealNews.BusinessGone:
-                    Tell(NotificationType.Warning, "reallife_ven_note_gone", _openInvestors, "name", name, "business", business, "amount", amount, "per_day", FinanceText.Money(deal.CallPerDay));
+                    Tell(NotificationType.Warning, "reallife_ven_note_gone", click, "name", name, "business", business, "amount", amount, "per_day", FinanceText.Money(deal.CallPerDay));
                     break;
                 case DealNews.Settled:
-                    Tell(NotificationType.Info, "reallife_ven_note_settled", _openInvestors, "name", name, "business", business);
+                    Tell(NotificationType.Info, "reallife_ven_note_settled", click, "name", name, "business", business);
                     break;
                 case DealNews.CallMissed:
-                    Tell(NotificationType.Error, DealRules.NoCourt(deal) ? "reallife_ven_note_call_missed_no_court" : "reallife_ven_note_call_missed", _openInvestors, "name", name,
+                    Tell(NotificationType.Error, DealRules.NoCourt(deal) ? "reallife_ven_note_call_missed_no_court" : "reallife_ven_note_call_missed", click, "name", name,
                         "amount", amount, "count", deal.CallMisses.ToString(), "most", VenturesCatalogue.CallMissesMost.ToString());
                     break;
                 case DealNews.CallDone:
-                    Tell(NotificationType.Success, "reallife_ven_note_call_done", _openInvestors, "name", name);
+                    Tell(NotificationType.Success, "reallife_ven_note_call_done", click, "name", name);
                     break;
                 case DealNews.Claimed:
-                    Tell(NotificationType.Error, "reallife_ven_note_claimed", _openInvestors, "name", name, "amount", amount);
+                    Tell(NotificationType.Error, "reallife_ven_note_claimed", click, "name", name, "amount", amount);
                     break;
                 case DealNews.Short:
-                    Tell(NotificationType.Warning, "reallife_ven_note_short", _openInvestors, "name", name, "amount", amount);
+                    Tell(NotificationType.Warning, "reallife_ven_note_short", click, "name", name, "amount", amount);
                     break;
                 case DealNews.BoardEnded:
-                    Tell(NotificationType.Info, "reallife_ven_note_seat_ended", _openInvestors, "name", name, "business", business, "share", VenturesText.Share(deal.ShareBp));
+                    Tell(NotificationType.Info, "reallife_ven_note_seat_ended", click, "name", name, "business", business, "share", VenturesText.Share(deal.ShareBp));
                     break;
             }
         }
@@ -254,7 +257,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             if (offer != null)
             {
-                Tell(NotificationType.Success, offer.Source == OfferSource.FollowOn ? "reallife_ven_note_follow_on" : "reallife_ven_note_offer", _openInvestors, "name", investor.Name,
+                Tell(NotificationType.Success, offer.Source == OfferSource.FollowOn ? "reallife_ven_note_follow_on" : "reallife_ven_note_offer", OpenOn("offer:" + offer.Id), "name", investor.Name,
                     "business", offer.Business, "amount", FinanceText.Money(offer.Amount), "share", VenturesText.Share(offer.ShareBp), "day", offer.LapseDay.ToString());
             }
         }
@@ -277,7 +280,8 @@ namespace RealLifeOverhaul.Economy.Ventures
                     continue;   // no room for another deal: the promise waits, and lapses if none is made
                 }
                 _wallet.Give(deal.Amount, VenturesMoney.Invested, investor.Name);
-                Tell(NotificationType.Success, "reallife_ven_note_pledge_paid", _openInvestors, "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(deal.Amount),
+                NewDeal(deal, investor, -pledge.Id, day);
+                Tell(NotificationType.Success, "reallife_ven_note_pledge_paid", OpenOn("deal:" + deal.Id), "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(deal.Amount),
                     "share", VenturesText.Share(deal.ShareBp));
                 Detail("the promise " + pledge.Id + " from " + investor.Name + " is paid on day " + day + ": " + deal.Amount + " for " + deal.ShareBp + " bp of " + deal.Business);
             }

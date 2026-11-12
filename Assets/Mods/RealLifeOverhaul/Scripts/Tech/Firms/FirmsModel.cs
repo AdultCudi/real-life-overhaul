@@ -17,6 +17,13 @@ namespace RealLifeOverhaul.Tech
         public int ReliefDay;            // the day the last relief was given
         public long Revenue30;           // takings of the last 30 days, cents (rolled each day)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
+        public long Prev30;              // the month before the ring's, cents: aged a day at a time (TechStatusRules.Age), so the table can say how takings moved
+        public int PrevDays;             // the days Prev30 has gathered, up to a month
+        // Of the takings above, what the player's own other businesses paid the firm (a contract with a client that is theirs): money from one pocket to the other, so a
+        // listing never counts it. The same three figures as the takings' own, rolled by the same day.
+        public long Self30;
+        public readonly long[] SelfDays = new long[FirmsCatalogue.MonthDays];
+        public long SelfPrev30;
         // the owner's own minutes at a desk here (OwnDeskRules.Credit): the day being counted and the one before, as a professional's hours are kept
         public int OwnDay = -1, OwnMinutes;
         public int OwnPrevDay = -1, OwnPrevMinutes;
@@ -51,7 +58,7 @@ namespace RealLifeOverhaul.Tech
         public int LastRelease;               // day
         public long Carry;                    // millionths of a customer carried from one day's growth to the next
         public long Compute;                  // an AI model's training so far towards its next generation, AI compute unit-days
-        public int Train;                     // how hard an AI model is trained, 0 to 4 (InfraRules.TrainLevels)
+        public int Train;                     // how hard an AI model is trained, a level of InfraRules.TrainLevels: past 4 only with the player's own AI racks (InfraRules.TrainMost)
 
         public ProductKind K => (ProductKind)Kind;
         public Segment S => (Segment)Segment;
@@ -92,6 +99,34 @@ namespace RealLifeOverhaul.Tech
         public long Won, Lost, Takings, Hosting, Marketing;
         public bool Outage, Breach, RivalShipped;
         public long Affected, Fine;
+    }
+
+    /// <summary>
+    /// What a product's next feature still waits for (<see cref="FirmsRules.Wait"/>): the work still to put in, the work already past
+    /// the feature's cost, and for an AI model the training still to come. Nothing here is below zero. A withdrawn product waits
+    /// for nothing (<see cref="Closed"/>): the day builds no work into it and the cloud trains nothing for it.
+    /// </summary>
+    public readonly struct FeatureWait
+    {
+        public readonly int Points;      // work points still to put in; 0 once the feature's cost is in
+        public readonly int Ahead;       // work points in beyond the cost: kept for the features after it, while a model waits for its training
+        public readonly long Training;   // AI compute unit-days a model's generation still needs; 0 for any other product, or once it is trained
+        public readonly int Days;        // days that training takes at the model's daily level; 0 when none is to come, -1 when the level gives none
+        public readonly int Done;        // thousandths of the feature done: the lesser of its work and its training
+        public readonly bool Closed;     // the product is withdrawn: no work is built into it and no training is run for it, so every figure above is 0
+
+        public FeatureWait(int points, int ahead, long training, int days, int done, bool closed = false)
+        {
+            Points = points;
+            Ahead = ahead;
+            Training = training;
+            Days = days;
+            Done = done;
+            Closed = closed;
+        }
+
+        /// <summary>The work is in and the feature waits for its training alone.</summary>
+        public bool Trains => !Closed && Points == 0 && Training > 0;
     }
 
     /// <summary>What a firm's people can do on a day, counted from their files.</summary>

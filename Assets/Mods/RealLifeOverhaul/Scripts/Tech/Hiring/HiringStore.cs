@@ -25,13 +25,22 @@ namespace RealLifeOverhaul.Tech
             {
                 Profile p = s.P;
                 w.Record().Add(s.Id).Add(p.Role).Add(p.Level).Add(p.Main).Add(p.A).Add(p.B).Add(p.YearsDays).Add(p.School).Add(p.Certs).Add(p.Record).Add(p.Female).Add(p.Age)
-                    .Add(p.Name).Add(s.District).Add(s.Employed).Add(s.Employer).Add(s.Ask).Add(s.Want).Add(s.Until).Add(s.Fit).Add(s.Claim).Add(s.Refs).Add(s.Notice).Add(s.Taken).Add(s.Passive);
+                    .Add(p.Name).Add(s.District).Add(s.Employed).Add(s.Employer).Add(s.Ask).Add(s.Want).Add(s.Until).Add(s.Fit).Add(s.Claim).Add(s.Refs).Add(s.Notice).Add(s.Taken).Add(s.Passive)
+                    .Add(s.History);
             }
             w.Part('a');
             foreach (JobAd a in f.Ads)
             {
                 w.Record().Add(a.Id).Place(a.Place).Add(a.Role).Add(a.Level).Add(a.PayLeast).Add(a.PayMost).Add(a.MinSkill).Add(a.Work).Add(a.From).Add(a.To).Add(a.Boost).Add(a.Came)
                     .Add(a.Search).Add(a.Fee).Add(a.FeePaid).Add(a.Due).Add(a.Crew).Add(a.Hired);
+            }
+            w.Part('q');   // the posts of an ad that fills more than one: a part of its own, so a line from before reads as it did
+            foreach (JobAd a in f.Ads)
+            {
+                if (a.Posts > 1)
+                {
+                    w.Record().Add(a.Id).Add(a.Posts);
+                }
             }
             w.Part('r');
             foreach (RivalAd r in f.RivalAds)
@@ -42,7 +51,7 @@ namespace RealLifeOverhaul.Tech
             foreach (Applicant a in f.Applicants)
             {
                 w.Record().Add(a.Id).Add(a.Seeker).Add(a.Ad).Add(a.Day).Add(a.Stage).Add(a.Refs).Add(a.Background).Add(a.Interviewed).Add(a.Interest).Add(a.Offer).Add(a.OfferDay)
-                    .Add(a.Counter).Add(a.RivalBid).Add(a.RivalBy).Add(a.Start).Add(a.Revealed);
+                    .Add(a.Counter).Add(a.RivalBid).Add(a.RivalBy).Add(a.Start).Add(a.Revealed).Add(a.RivalLapse);
             }
             w.Part('o');
             foreach (OfficeCampaign c in f.Campaigns)
@@ -97,6 +106,7 @@ namespace RealLifeOverhaul.Tech
                 s.Notice = x.Int();
                 s.Taken = x.Bool();
                 s.Passive = x.Bool();
+                s.History = x.Text();
                 if (f.Seekers.Count < HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost)
                 {
                     f.Seekers.Add(s);
@@ -117,6 +127,14 @@ namespace RealLifeOverhaul.Tech
                     f.Ads.Add(a);
                 }
             }
+            foreach (Fields x in r.Records('q'))
+            {
+                JobAd ad = f.AdOf(x.Int());
+                if (ad != null)
+                {
+                    ad.Posts = TalentCatalogue.Clamp(x.Int(1), 1, HireOffers.PostsMost);
+                }
+            }
             foreach (Fields x in r.Records('r'))
             {
                 if (f.RivalAds.Count < HiringCatalogue.RivalAdsMost)
@@ -128,8 +146,10 @@ namespace RealLifeOverhaul.Tech
             {
                 var a = new Applicant
                 {
-                    Id = x.Int(), Seeker = x.Int(), Ad = x.Int(), Day = x.Int(), Stage = x.Int(), Refs = x.Bool(), Background = x.Bool(), Interviewed = x.Bool(), Interest = x.Int(500),
-                    Offer = x.Int(), OfferDay = x.Int(), Counter = x.Int(), RivalBid = x.Int(), RivalBy = x.Text(), Start = x.Int(), Revealed = x.Int()
+                    Id = x.Int(), Seeker = x.Int(), Ad = x.Int(), Day = x.Int(), Stage = x.Int(), Refs = x.Bool(), Background = x.Bool(),
+                        Interviewed = x.Bool(), Interest = x.Int(500),
+                    Offer = x.Int(), OfferDay = x.Int(), Counter = x.Int(), RivalBid = x.Int(), RivalBy = x.Text(), Start = x.Int(),
+                        Revealed = x.Int(), RivalLapse = x.Int()
                 };
                 if (f.Applicants.Count < HiringCatalogue.ApplicantsMost + HiringCatalogue.SearchSeekersMost)
                 {
@@ -156,7 +176,7 @@ namespace RealLifeOverhaul.Tech
                 c.P.School = x.Int();
                 c.P.Certs = x.Int();
                 c.P.Record = x.Bool();
-                if (f.Candidates.Count < 64)
+                if (f.Candidates.Count < HiringCatalogue.CandidatesMost)
                 {
                     f.Candidates.Add(c);
                 }

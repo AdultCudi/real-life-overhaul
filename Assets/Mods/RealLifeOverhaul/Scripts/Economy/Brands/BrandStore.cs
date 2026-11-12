@@ -265,15 +265,17 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             var b = new Brand
             {
-                Id = id, Name = c[1], Type = c[2], Flagship = c[3], Founded = Math.Max(0, I(c, 4)), Age = Math.Max(0, I(c, 5)), City = BrandCatalogue.Clamp(I(c, 6), 0, BrandCatalogue.RecMost),
-                Standards = BrandCatalogue.Clamp(I(c, 7), 0, 100), Offered = I(c, 9) != 0, Fund = Math.Max(0, I(c, 14)), Ticket = Math.Max(0, I(c, 15)), Net = I(c, 16), Earned = Math.Max(0, I(c, 17)),
+                Id = id, Name = c[1], Type = c[2], Flagship = c[3], Founded = Math.Max(0, I(c, 4)), Age = Math.Max(0, I(c, 5)), City = BrandCatalogue.Clamp(I(c, 6), 0,
+                    BrandCatalogue.RecMost),
+                Standards = BrandCatalogue.Clamp(I(c, 7), 0, 100), Offered = I(c, 9) != 0, Fund = Math.Max(0, I(c, 14)), Ticket = Math.Max(0, I(c, 15)), Net = I(c, 16),
+                    Earned = Math.Max(0, I(c, 17)),
                 Failed = Math.Max(0, I(c, 18)), Bid = Math.Max(0, I(c, 19)), BidBy = Math.Max(0, I(c, 20)), BidUntil = Math.Max(0, I(c, 21)), AskRest = Math.Max(0, I(c, 22)),
                 Keep = I(c, 23) != 0, Local = I(c, 24) != 0
             };
             int minimum = I(c, 8, BrandCatalogue.OfferStandards);
             b.Minimum = Array.IndexOf(BrandCatalogue.MinimumSteps, minimum) >= 0 ? minimum : BrandCatalogue.OfferStandards;
             int push = I(c, 10, -1);
-            if (push == BrandCatalogue.PushLocal || push == BrandCatalogue.PushCity)
+            if (push == BrandCatalogue.PushLocal || push == BrandCatalogue.PushCity || push == BrandCatalogue.PushCreators)
             {
                 b.Push = push;
                 b.PushFrom = Math.Max(0, I(c, 11));
@@ -289,7 +291,8 @@ namespace RealLifeOverhaul.Economy.Brands
             int hold = I(c, 8, (int)Hold.Books);
             return new Franchise
             {
-                Id = id, BrandId = I(c, 1), Name = c[2], Temper = (Temper)BrandCatalogue.Clamp(I(c, 3), 0, 2), Ability = BrandCatalogue.Clamp(I(c, 4, 50), 0, 100), District = c[5], Place = c[6],
+                Id = id, BrandId = I(c, 1), Name = c[2], Temper = (Temper)BrandCatalogue.Clamp(I(c, 3), 0, 2), Ability = BrandCatalogue.Clamp(I(c, 4, 50), 0, 100),
+                    District = c[5], Place = c[6],
                 GameName = c[7], Hold = hold >= 0 && hold <= (int)Hold.Books ? (Hold)hold : Hold.Books, X = I(c, 9), Z = I(c, 10), HasSpot = I(c, 11) != 0, Base = Math.Max(0, I(c, 12)),
                 Signed = Math.Max(0, I(c, 13)), Until = Math.Max(0, I(c, 14)), Term = Math.Max(1, I(c, 15, 1)), EntryFee = Math.Max(0, I(c, 16)),
                 RoyaltyBp = BrandCatalogue.Clamp(I(c, 17), 0, BrandCatalogue.RoyaltyBp[BrandCatalogue.Tiers - 1]),

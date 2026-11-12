@@ -28,6 +28,9 @@ namespace RealLifeOverhaul.Districts
         public long Value;                      // money a square metre
         public int Traffic;                     // tenths of the game's traffic index, averaged over the buildings that are not homes
         public int Businesses, Mine, Rivals;
+        public int Residents = -1;              // the living population's people there, or -1 where it does not run
+        public long LetArea, EmptyArea;         // square metres of the buildings that are not homes, and of those standing empty (to let, with no business)
+        public readonly int[] Vacant = new int[4];   // buildings standing empty by kind: retail, office, home, warehouse (VacantKind)
         public readonly List<KeyValuePair<string, int>> Types = new List<KeyValuePair<string, int>>(3);   // the three kinds of business most open there
 
         // From the other features, on each refresh (DistrictBridges).
@@ -192,6 +195,8 @@ namespace RealLifeOverhaul.Districts
                 index[d.Id] = i;
                 types[i] = new Dictionary<string, int>(16, StringComparer.Ordinal);
                 d.Buildings = d.Businesses = d.Mine = d.Rivals = 0;
+                d.LetArea = d.EmptyArea = 0;
+                Array.Clear(d.Vacant, 0, d.Vacant.Length);
                 d.Types.Clear();
                 NeighborhoodData data = null;
                 try
@@ -245,10 +250,17 @@ namespace RealLifeOverhaul.Districts
                 {
                     // (a building of a kind the game's size or type data does not know: left out of the averages)
                 }
+                bool empty = reg.AvailableForRent && !reg.RentedByPlayer && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty);
                 if (!home)
                 {
                     traffic[i, 0] += building.trafficIndex;
                     traffic[i, 1]++;
+                    d.LetArea += sqm;
+                    d.EmptyArea += empty ? sqm : 0;
+                }
+                if (empty)
+                {
+                    d.Vacant[VacantKind(building.BuildingType)]++;
                 }
                 if (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || !reg.HasEstablishedBusiness)
                 {
@@ -283,6 +295,21 @@ namespace RealLifeOverhaul.Districts
                 {
                     d.Types.RemoveRange(3, d.Types.Count - 3);
                 }
+            }
+        }
+
+        /// <summary>
+        /// A building type's place among the four kinds the district view counts as standing empty: 0 retail (and the theatres, cinemas and the like), 1 office, 2 home,
+        /// 3 warehouse.
+        /// </summary>
+        public static int VacantKind(string buildingType)
+        {
+            switch (buildingType)
+            {
+                case "ba:buildingtype_office": return 1;
+                case Residential: return 2;
+                case "ba:buildingtype_warehouse": return 3;
+                default: return 0;
             }
         }
 
@@ -394,6 +421,66 @@ namespace RealLifeOverhaul.Districts
         public static string TypeName(string type)
         {
             return string.IsNullOrEmpty(type) ? string.Empty : type.GetLocalization();
+        }
+    }
+
+    /// <summary>
+    /// The premises to let in each neighbourhood (the game's own id): a building for rent that nobody rents and that holds no business. The city's
+    /// buildings are walked a few hundred a step, a frame at a time (FlareToLetWalk), so no frame pays for the whole city; the finished map is what
+    /// the pages read. COST: <c>most</c> buildings a step, one pass at start-up and one a game day. It sits in this file because this is where the mod
+    /// picks the game's buildings (the DLC census, ContractCheck).
+    /// </summary>
+    internal sealed class ToLetScan
+    {
+        private const string EmptyBusiness = "ba:businesstype_empty";
+
+        private CityBuildingController[] _all;
+        private int _at;
+        private readonly Dictionary<string, int> _into = new Dictionary<string, int>(16, StringComparer.Ordinal);
+
+        /// <summary>The last finished map: premises to let by neighbourhood id.</summary>
+        public readonly Dictionary<string, int> Done = new Dictionary<string, int>(16, StringComparer.Ordinal);
+
+        /// <summary>A pass starts over the city as it is now.</summary>
+        public void Begin()
+        {
+            _into.Clear();
+            _at = 0;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            _all = GameDlc.Open(city);
+        }
+
+        /// <summary>Walks up to <paramref name="most"/> buildings on; true when the pass is finished and <see cref="Done"/> holds its map.</summary>
+        public bool Step(int most)
+        {
+            if (_all == null)
+            {
+                return true;
+            }
+            int end = Math.Min(_all.Length, _at + Math.Max(1, most));
+            for (; _at < end; _at++)
+            {
+                CityBuildingController c = _all[_at];
+                BuildingRegistration reg = c != null ? c.buildingRegistration : null;
+                if (reg == null || c.building == null || string.IsNullOrEmpty(c.building.Neighbourhood) || !reg.AvailableForRent || reg.RentedByPlayer
+                    || !(string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == EmptyBusiness))
+                {
+                    continue;
+                }
+                _into.TryGetValue(c.building.Neighbourhood, out int n);
+                _into[c.building.Neighbourhood] = n + 1;
+            }
+            if (_at < _all.Length)
+            {
+                return false;
+            }
+            Done.Clear();
+            foreach (KeyValuePair<string, int> kv in _into)
+            {
+                Done[kv.Key] = kv.Value;
+            }
+            _all = null;
+            return true;
         }
     }
 }

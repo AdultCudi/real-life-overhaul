@@ -29,8 +29,10 @@ namespace RealLifeOverhaul
             public Sprite Sprite;
             public bool Drawn;          // painted with the look it has now
             public bool Queued;
+            public bool Hurried;        // in the painter urgent line: the interface shows this face now
             public int Tries;
             public string Described;    // the save in which a feature gave this person their own look; null for the catalogue's
+            public Ui.UiFaceSource Face;   // what the interface asks for this person's picture (Ui/Faces/PictureFace), made once
         }
 
         private static readonly Dictionary<string, Picture> Pictures = new Dictionary<string, Picture>(48, StringComparer.Ordinal);
@@ -65,6 +67,12 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);   // a contact without its picture still works: the game shows its empty square
             }
+        }
+
+        /// <summary>What the interface asks for a person's picture (their contact's id), or null for a logo or a contact with none.</summary>
+        internal static Ui.UiFaceSource FaceOf(string id)
+        {
+            return !string.IsNullOrEmpty(id) && Pictures.TryGetValue(id, out Picture p) && p.Look.Kind == PictureKind.Person ? p.Face ??= new Ui.PictureFace(p) : null;
         }
 
         /// <summary>A person whose look another feature gives (the sex, age and seed it builds them from): their own face.</summary>
@@ -133,6 +141,12 @@ namespace RealLifeOverhaul
             {
                 p.Queued = true;
                 ContactPainter.Want(p);
+            }
+            if (look.Kind == PictureKind.Person)
+            {
+                // The interface shows this person by this picture, drawn from the look they are built with in the world, never a painted face.
+                Ui.UiFaces.Traits(id, look.Female, look.Age);
+                Ui.UiFaces.Source(id, p.Face ??= new Ui.PictureFace(p));
             }
         }
 

@@ -48,6 +48,18 @@ namespace RealLifeOverhaul.GameUi
 
         public bool Timing => _timing;
 
+        /// <summary>True while the bar is switched on.</summary>
+        public bool On => _on && _root != null;
+
+        /// <summary>A timing's zone and its better part as shares of the bar (below zero for none), as last written.</summary>
+        public void Zones(out float from, out float to, out float bestFrom, out float bestTo)
+        {
+            from = _zoneFrom;
+            to = _zoneTo;
+            bestFrom = _bestFrom;
+            bestTo = _bestTo;
+        }
+
         /// <summary>A bar hung on <paramref name="parent"/>, off, in its middle. Null, with one log line, without the game's top bar to copy.</summary>
         public static GameBar Make(Transform parent, string name)
         {

@@ -281,6 +281,22 @@ namespace RealLifeOverhaul.Tech
         public const int PoachAnswerDays = 3;      // days to answer an approach
         public const int PoachRestDays = 21;       // days after an answer before the next approach
 
+        // What a day of the people part tells the player one by one: a save of thousands of professionals has dozens of reviews and offers at midnight, and
+        // the game's notification makes a panel and plays a sound for each, so the rest of a kind are told together.
+        public const int NoticesMost = 3;          // reviews, and rivals' offers, told by name in a day; the rest of each kind in one notice with their number
+
+        // What the people part's own work is wanted to take: a fixed part (the game's employees read, the market's shortages, the names) and a part for each
+        // professional on file. The day's is kept in the game's midnight frame (it sets the moods and sick days the game reads next), the hour's runs on each
+        // game hour; both are written to the log as FAIL when over (Developer diagnostics), and held offline at 6,000 files (EconomyCheck, TechStaffChecks).
+        public const int DayMsFixed = 6, DayMsPerThousand = 2;     // milliseconds, and milliseconds for each thousand professionals
+        public const int HourMsFixed = 2, HourMsPerThousand = 1;   // the same for an hour's count of who is on a shift (seating is timed by its own lines)
+
+        /// <summary>The milliseconds the people part's day is wanted under for so many professionals on file.</summary>
+        public static int DayMs(int files) => DayMsFixed + (int)((long)Math.Max(0, files) * DayMsPerThousand / 1000);
+
+        /// <summary>The milliseconds the people part's hour is wanted under for so many professionals on file.</summary>
+        public static int HourMs(int files) => HourMsFixed + (int)((long)Math.Max(0, files) * HourMsPerThousand / 1000);
+
         /// <summary>A number of days written for a year of 365, in a year of the game's length (at least one).</summary>
         public static int Scaled(int days, int year)
         {

@@ -23,8 +23,21 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The chance, in thousandths, that an owner comes to the agency on a day.</summary>
         public static int InstructionChance(int reputation, int cycle)
         {
+            return InstructionChance(reputation, cycle, 1000);
+        }
+
+        /// <summary>The same with the households moving and owners selling against the anchor day's (the living population).</summary>
+        public static int InstructionChance(int reputation, int cycle, int movers)
+        {
             long chance = EstateCatalogue.InstructionBase + (long)EstateCatalogue.Clamp(reputation, 0, 1000) * EstateCatalogue.InstructionPerPoint / 1000;
-            return (int)Math.Min(1000, chance * EstateCatalogue.ApplicantCycle[EstateCatalogue.Clamp(cycle, 0, 3)] / 1000);
+            return (int)Math.Min(1000, chance * EstateCatalogue.ApplicantCycle[EstateCatalogue.Clamp(cycle, 0, 3)] / 1000 * Math.Max(0, movers) / 1000);
+        }
+
+        /// <summary>The households moving and owners selling in a district: the city's against the anchor day's, leaned by the district's housing market; a thousand with none.</summary>
+        public static int Movers(EstateClimate c, string district)
+        {
+            int lean = c.HousingIn != null && district != null ? c.HousingIn(district) : 0;
+            return (int)Math.Min(EstateCatalogue.PeopleMost, (long)EstateRules.People(c.Movers) * EstateRules.People(lean) / 1000);
         }
 
         /// <summary>An agent's hours an instruction takes, in tenths.</summary>
@@ -79,7 +92,7 @@ namespace RealLifeOverhaul.Economy
                 return null;
             }
             DistrictRep d = agency.Districts[EstateRules.Between(EstateRules.Roll(seed, day, ForDistrict, 0), 0, agency.Districts.Count - 1)];
-            if (d.SqmPrice <= 0 || (!whatever && EstateRules.Roll(seed, day, ForArrive, 0) >= InstructionChance(d.Rep, c.Cycle)))
+            if (d.SqmPrice <= 0 || (!whatever && EstateRules.Roll(seed, day, ForArrive, 0) >= InstructionChance(d.Rep, c.Cycle, Movers(c, d.Name))))
             {
                 return null;
             }

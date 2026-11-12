@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CloseSitting();
             }
+            OwnDeskDown("the working life stopped");
             DeskRelease("the working life stopped");
             DeskGame.Remove();
             Guard.Step("the recruitment desk's two ways", AgencyDesk.Give);   // the game's own dialogue again
@@ -152,6 +153,7 @@ namespace RealLifeOverhaul.Careers
             Applications(day);
             VacanciesLater(day);   // the job board's renewal: nothing the game reads, made in the frames after (Core/DaySpread)
             LadderDay(day);   // before the review, which reads the performance score
+            StandingDay(day);   // the week's score into the ring, before the review settles it
             WorkDayMore(day);
             if (OwnOn)
             {
@@ -174,12 +176,17 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
+            int shiftMinutes = j.TodayDay == day ? j.TodayMinutes : 0;   // read before the settling closes the day
             bool worked = ProRules.Settle(j, day);
             if (worked)
             {
                 _study.Work.DaysWorked++;
+                RecordShift(j, day, shiftMinutes);
+                CareersBridges.ShiftWorked?.Invoke(j.Def.SkillA);
                 return;
             }
+            // Health's sick leave settles the day first (the days running, the note, the paid days), then says below whether it is excused.
+            CareersBridges.DayMissed?.Invoke(day, (int)Math.Min(int.MaxValue / 2, ProRules.Wage(Prices.At(j.Pay), j.Def.Hours * 60)), j.Hired, j.Def.Hours * 60, shiftMinutes);
             if (Excused(day) || j.OffUntil >= day)
             {
                 ProRules.Excuse(j);
@@ -473,7 +480,7 @@ namespace RealLifeOverhaul.Careers
         // A skill learnt from hours of work, less the more of it the player has.
         private void LearnAtWork(int skill, int hours, int day)
         {
-            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100 * LadderLearn() / 1000, day);
+            StudyRules.Learn(_study, skill, StudyRules.WorkGain(_study, skill, hours, LadderLearn()), day);
         }
 
         /// <summary>The pay for minutes worked, with the student loan's repayment taken from it.</summary>
@@ -564,15 +571,19 @@ namespace RealLifeOverhaul.Careers
             }
             var view = new CareerApp(this);
             bool tryAgain;
-            _careerApp = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = CareerAppId,
                 TitleKey = "reallife_career_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(CareerGlyphs), new Color32(84, 132, 214, 255), new Color32(40, 64, 128, 255), 0.42f, "AppIcon-Career"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.CareerLive.Instance),
+                KitScreen = "career",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Briefcase
+            };
+            _careerApp = PhoneApp.Install(kitDef, out tryAgain);
             if (_careerApp == null)
             {
                 _careerGaveUp = !tryAgain;
@@ -583,6 +594,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_careerApp, kitDef);   // the kit's face over the app, once its switch is on
             _careerView = view;
             CareerBadge();
         }

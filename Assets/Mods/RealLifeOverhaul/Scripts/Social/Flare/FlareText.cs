@@ -59,6 +59,7 @@ namespace RealLifeOverhaul.Flare
             new[] { "reallife_flare_post_interior_1", "reallife_flare_post_interior_2" }
         };
         private static readonly string[] RoadsKeys = { "reallife_flare_post_issue_roads_1", "reallife_flare_post_issue_roads_2" };
+        private static readonly string[] PaidPostKeys = { "reallife_flare_post_deal_1", "reallife_flare_post_deal_2" };   // a paid post about a business of the city's
         private static readonly string[][] ToneLineKeys =
         {
             new[] { "reallife_flare_tone_0_1", "reallife_flare_tone_0_2" },
@@ -181,7 +182,9 @@ namespace RealLifeOverhaul.Flare
                 Words.Append(Fill(topic[p.Arg % 10 % topic.Length], "job", job, "district", district));
                 return Words.ToString();
             }
-            string[] post = p.Source == FlareSource.Issue && p.Arg == (int)FlareIssue.Roads ? RoadsKeys : PostKeys[FlareRules.Clamp((int)p.Source, 0, PostKeys.Length - 1)] ?? PostKeys[1];
+            string[] post = p.Source == FlareSource.Issue && p.Arg == (int)FlareIssue.Roads ? RoadsKeys
+                : p.Source == FlareSource.Sponsored && p.Arg == FlareCityRules.DealArg ? PaidPostKeys
+                : PostKeys[FlareRules.Clamp((int)p.Source, 0, PostKeys.Length - 1)] ?? PostKeys[1];
             Words.Append(Fill(post[Pick(p.Seed, 1, post.Length) - 1], "name", p.Name, "kind", Outing(p.Arg)));
             if (p.Disclosed)
             {

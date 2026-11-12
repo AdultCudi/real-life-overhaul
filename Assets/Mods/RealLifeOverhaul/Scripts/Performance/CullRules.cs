@@ -63,7 +63,7 @@ namespace RealLifeOverhaul
                 "dressed within 260 m and taken in beyond 330 m: drawn only to the far band in between"),
             new Thing("the university's, the courthouse's and the driving school's signs", Way.Here, Kind.BuildingSign,
                 "Careers/CampusBuilding.cs Justice/Courthouse.cs Licences/Driving/DrivingSchool.cs", "they stand all session"),
-            new Thing("help-wanted boards", Way.Here, Kind.JobBoard, "Jobs/JobBoards.cs", "they stand all session"),
+            new Thing("help-wanted boards and the firms' sign-on desks beside them", Way.Here, Kind.JobBoard, "Jobs/JobBoards.cs SideJobs/SideJobDesks.cs", "they stand all session"),
             new Thing("newspaper kiosks", Way.Here, Kind.NewsKiosk, "Ledger/LedgerKiosks.cs", "they stand all session near the home"),
             new Thing("hotel fronts and the doorman", Way.OwnDistance, Kind.Count, "Travel/Hotels.Frontage.cs", "dressed within 150 m"),
             new Thing("data centre fronts", Way.OwnDistance, Kind.Count, "Tech/Sites/Frontages.cs", "dressed within 160 m"),

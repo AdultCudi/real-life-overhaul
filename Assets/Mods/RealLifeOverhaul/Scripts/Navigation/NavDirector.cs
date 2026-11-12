@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Nav
             Instance = this;
             NavMarks.Reset();
             _onMap = Guard.Wrap<bool>(OnMap);
-            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
+            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map); the camera's tilt is in it
             OtherMods.Look(Logger);   // done once for the city already; a loop over the table
             _voogle = OtherMods.VoogleRoute.Loaded;
             ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);
@@ -104,6 +104,7 @@ namespace RealLifeOverhaul.Nav
             GlobalEvents.onCityMapToggle -= _onMap;
             Remove();
             _base.Drop(false);   // the picture is kept for the next load of the same city
+            SceneRemove();
             _graph.Dispose();
             RoadGraph.Forget();   // the city's one road graph goes with it
             NavMarks.Reset();
@@ -155,6 +156,7 @@ namespace RealLifeOverhaul.Nav
                 {
                     _base.Step(SaveGameManager.Current != null && !LoadScene.isLoading);
                 }
+                SceneStep();
                 if (_showing && Settings.Minimap)
                 {
                     View();
@@ -190,7 +192,14 @@ namespace RealLifeOverhaul.Nav
             _heading = _follow.eulerAngles.y;
             float speed = _driving && _body != null ? _body.velocity.magnitude : 0f;
             _metres = NavView.Ease(_metres, NavView.MetresAcross(Settings.MinimapZoom, speed), Time.unscaledDeltaTime, 1.6f);
-            _hud.Frame(_px, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate);
+            if (_hud.SceneMode)
+            {
+                _hud.SceneFrame(_px, _py, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate, NavMarks.All);
+            }
+            else
+            {
+                _hud.Frame(_px, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate);
+            }
         }
 
         // Degrees clockwise from north of what is ahead on the screen; a camera looking straight down has its screen's up as
@@ -217,6 +226,7 @@ namespace RealLifeOverhaul.Nav
         // Four times a second.
         private void Slow(float now)
         {
+            RouteLabelKeep();
             bool wantMap = Settings.Minimap;
             bool wantGps = Settings.Gps && !RouteLeft;
             if (_voogle && !_otherSaid && Meta.Dev.Verbose)
@@ -227,11 +237,22 @@ namespace RealLifeOverhaul.Nav
                              + ", and nothing of this mod's is on the city map (" + (_map == null ? "no object there: PASS" : "FAIL: its route object is still there") + ").");
             }
             BaseWanted(wantMap);
+            SceneWanted(wantMap);
+            BaseRedraw();
+            bool inGame = SaveGameManager.Current != null && !LoadScene.isLoading;
             if (!wantMap && !wantGps)
             {
                 if (_hud != null || _map != null || _hasGoal)
                 {
                     Remove();
+                }
+                if (SceneWantsBase && !_graph.Finished)
+                {
+                    _graph.Step();   // the 2.5D city map alone is on: its roads are still made a step a tick
+                }
+                if (inGame && !_voogle)
+                {
+                    KeepMapEvent();   // the map button's tilt needs the map's own event whatever the minimap and the GPS are
                 }
                 return;
             }
@@ -239,16 +260,12 @@ namespace RealLifeOverhaul.Nav
             {
                 _graph.Step();   // one step a tick, where the prewarm could not make it
             }
-            if (SaveGameManager.Current == null || LoadScene.isLoading)
+            if (!inGame)
             {
                 Show(false);
                 return;
             }
-            EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);   // the game clears its events on every load
-            if (CityMap.IsOpen != _mapOpen)
-            {
-                OnMap(CityMap.IsOpen);
-            }
+            KeepMapEvent();
             if (!wantGps && _map != null)
             {
                 UnityEngine.Object.Destroy(_map.gameObject);   // the GPS was switched off: nothing of it stays on the city map
@@ -258,6 +275,7 @@ namespace RealLifeOverhaul.Nav
             Clock();
             if (_hud != null && !_hud.Alive)
             {
+                _hud.Destroy();   // the copy went with the game's HUD; the 2.5D picture's texture is the mod's and goes now
                 _hud = null;   // the game rebuilt its HUD: the copy went with it
                 _pictureGiven = false;
                 _baseGiven = false;
@@ -295,10 +313,16 @@ namespace RealLifeOverhaul.Nav
             if (_hud != null)
             {
                 _hud.Place(Settings.MinimapSize, wantMap, lines);
+                bool tilted = NavTilt.Minimap;
+                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready && !_hud.SceneBroken, tilted);
+                _hud.SwitchShows(tilted);
+                _hud.SwitchPressed = SwitchPicture;
+                SceneStrip();
                 if (lines)
                 {
                     _hud.Lines(_line1, _line2);
                 }
+                _hud.Destination(lines ? _goalAddress : null, lines ? _minutesWords : null, lines ? _distanceWords : null);
             }
             Show(show);
             if (show && wantMap)
@@ -308,8 +332,12 @@ namespace RealLifeOverhaul.Nav
                     _nextMarks = now + MarksEvery;
                     NavMarks.Gather(_hasGoal ? _guider : null);
                     _hud.MarksChanged();
+                    _hud.SceneMarksChanged();
                 }
-                _hud.Marks(NavMarks.All, _px, _pz, _metres);
+                if (!_hud.SceneMode)
+                {
+                    _hud.Marks(NavMarks.All, _px, _pz, _metres);
+                }
                 if (!_hudSaid && Meta.Dev.Verbose)
                 {
                     _hudSaid = true;
@@ -317,6 +345,16 @@ namespace RealLifeOverhaul.Nav
                                  + Mathf.RoundToInt(_hud.ViewHeight) + " units; road picture " + (_graph.Picture != null ? "there" : "not there yet") + "; "
                                  + NavMarks.All.Count + " places known, " + NavHud.Pool + " markers pooled.");
                 }
+            }
+        }
+
+        // The game clears its events on every load: the one for the city map opening is held, and the map's state is looked at when the event was missed.
+        private void KeepMapEvent()
+        {
+            EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
+            if (CityMap.IsOpen != _mapOpen)
+            {
+                OnMap(CityMap.IsOpen);
             }
         }
 
@@ -425,6 +463,7 @@ namespace RealLifeOverhaul.Nav
             _baseGiven = false;
             _aloneUntil = 0f;
             _hudSaid = false;
+            RouteLabelKeep();   // no route, no map object: the label on the map goes with them
         }
 
         /// <summary>For the save tools: off the HUD and the map. It comes back with the options on the next tick.</summary>

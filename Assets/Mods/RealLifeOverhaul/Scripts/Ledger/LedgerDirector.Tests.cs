@@ -85,9 +85,10 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// Test button: today's paper written again with a rival's takeover story and a milestone story (the player's listed
-        /// company, else the city's most valuable), and opened. Nothing of the rivals, the market or the record changes; a
-        /// notice says why the milestone is not the player's, or why there is none.
+        /// Test button: today's paper written again with a rival's takeover story, a milestone story (the player's listed
+        /// company, else the city's most valuable) and a sector's lead changing hands (the player's listed company in its
+        /// sector, else the most valuable company that has another in its sector), and opened. Nothing of the rivals, the
+        /// market or the record changes; a notice says why the milestone is not the player's, or why there is none.
         /// </summary>
         public void TestStories()
         {
@@ -107,7 +108,7 @@ namespace RealLifeOverhaul.Ledger
                 return;
             }
             GameInstance save = Save;
-            LedgerPiece rival = TestStoriesReady(save.Day, out LedgerPiece mark, out bool own, out string name);
+            LedgerPiece rival = TestStoriesReady(save.Day, out LedgerPiece mark, out bool own, out string name, out LedgerPiece lead, out string leadName);
             Print(save.Day, Mathf.Max(save.Hour, LedgerCatalogue.DeliveryHour + 1), _state.Edition != null && _state.Edition.Day == save.Day);
             if (!Read(LedgerPage.FromTest))
             {
@@ -124,7 +125,8 @@ namespace RealLifeOverhaul.Ledger
                 Notifications.Show(NotificationType.Info, "reallife_ledger_test_stories_city", LedgerText.Data("name", name, "mark", first), 8f);
             }
             Logger?.Info(Test + " test: the edition of day " + _state.Edition.Day + " is open with " + (rival != null ? "a rival's takeover (" + rival.Key + ")" : "no rival's story")
-                         + " and " + (mark != null ? "a milestone of " + name + (own ? ", the player's company" : ", a city company") + " (" + mark.Key + ")" : "no milestone (no market here)")
+                         + ", " + (mark != null ? "a milestone of " + name + (own ? ", the player's company" : ", a city company") + " (" + mark.Key + ")" : "no milestone (no market here)")
+                         + " and " + (lead != null ? "the lead of a sector taken by " + leadName + " (" + lead.Key + ")" : "no sector lead (no market here)")
                          + "; the rivals, the market and the record are unchanged.");
         }
 

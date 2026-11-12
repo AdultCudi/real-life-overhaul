@@ -176,8 +176,12 @@ internal static partial class Program
               && Body(pager, "private void FitLater()")?.Contains("Canvas.willRenderCanvases += _late;") == true,
             "the phone's heights as the game built them are read once when the HUD pager comes, and a change of its parts' size is one pass before the canvas is drawn");
         string apply = Body(pager, "private void Apply()") ?? string.Empty;
-        Check(apply.Contains("for (int hiding = 1; hiding >= 0; hiding--)") && apply.Contains("if (show == (hiding == 1))"),
-            "a page turn hides the last page's buttons before it shows the next page's, so no mod counting the buttons showing sees more than a page");
+        string folders = Body(pager, "private void ShowFolders(bool hiding)") ?? string.Empty;
+        string gaps = Body(pager, "private void ShowGaps(int count, bool hiding)") ?? string.Empty;
+        Check(apply.Contains("for (int hiding = 1; hiding >= 0; hiding--)") && apply.Contains("if (show == (hiding == 1))")
+              && apply.Contains("ShowFolders(hiding == 1);") && apply.Contains("ShowGaps(gaps, hiding == 1);")
+              && folders.Contains("if (on != hiding)") && gaps.Contains("on != hiding"),
+            "a page turn hides the last page's buttons, folder tiles and empty tiles before it shows the next page's, so no mod counting what shows sees more than a page");
         Check(Body(pager, "internal string VisitorCheck()")?.Contains("visitor.SetActive(true);   // its own mod shows it again") == true,
             "the test Check the phone's pages shows a stand-in for another mod's button again on a page not showing");
     }

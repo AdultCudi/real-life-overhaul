@@ -58,8 +58,22 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The player's construction company's own takings over the days from one up to, not with, another; under nothing for none.</summary>
         public static Func<int, int, long> BuilderBooks;
 
+        /// <summary>The founder dealt in a firm's shares: the stock, the shares (under nothing: sold), the price in cents,
+        /// the money before commission and the commission.</summary>
+        public static Action<int, long, int, long, long> FirmDealt;
+
+        /// <summary>The founder dealt in the whole company's shares, or put money into the stake without shares: its name, the shares (under nothing: sold; nothing: money put in), the
+        /// price in cents, the money after the reserve the deal moved, the commission with a short swing paid back, and the shares held before. The tax return follows.</summary>
+        public static Action<string, long, int, long, long, long> CompanyDealt;
+
+        /// <summary>A bid for the whole company won, every share the founder held paid: its name, the founder's shares, the shares in issue, the price in cents and the money.</summary>
+        public static Action<string, long, long, int, long> CompanyTaken;
+
         public static void Reset()
         {
+            FirmDealt = null;
+            CompanyDealt = null;
+            CompanyTaken = null;
             City = null;
             Rivals = null;
             Old = null;

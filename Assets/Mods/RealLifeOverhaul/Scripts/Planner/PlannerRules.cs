@@ -5,14 +5,15 @@ namespace RealLifeOverhaul.Planner
 {
     // Game-free: PlannerCheck compiles this file as it is.
 
-    /// <summary>The filter over the Planner's tabs: four groups of the kinds of entry.</summary>
+    /// <summary>The filter over the Planner's tabs. Study is classes and exams, split out of work.</summary>
     public enum PlannerGroup
     {
-        Work = 0,       // shifts, working days, interviews, classes, exams
+        Work = 0,       // shifts, working days, interviews
         Money = 1,      // bills, bonds, dividends, loans, taxes
         Life = 2,       // every other kind, the player's own entries too
         Business = 3,
-        Count = 4
+        Study = 4,      // classes, exams and a graduation (the study source)
+        Count = 5
     }
 
     /// <summary>How often one of the player's own entries comes back.</summary>
@@ -95,7 +96,7 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                int g = (int)GroupOf(e.Category);
+                int g = (int)GroupOf(e);
                 all++;
                 ofGroup += g == group ? 1 : 0;
                 held |= 1 << g;
@@ -113,6 +114,16 @@ namespace RealLifeOverhaul.Planner
                 case PlannerCategory.Business: return PlannerGroup.Business;
                 default: return PlannerGroup.Life;
             }
+        }
+
+        /// <summary>An entry's group. Classes and exams (the study source) stand apart from work.</summary>
+        public static PlannerGroup GroupOf(PlannerEntry entry)
+        {
+            if (entry != null && string.Equals(entry.Id.Source, "study", StringComparison.Ordinal))
+            {
+                return PlannerGroup.Study;
+            }
+            return GroupOf(entry != null ? entry.Category : PlannerCategory.Note);
         }
 
         public static float Metres(float ax, float az, float bx, float bz)

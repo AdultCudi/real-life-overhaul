@@ -36,7 +36,10 @@ namespace RealLifeOverhaul
     {
         None, Met, Coffee, Meal, Drinks, Cinema, Walk, Drive, Workout, Business, Lift, Moving, Loan, Borrowed, Birthday,
         StoodUp, Late, Rude, Arrest, Crash, AskedOut, Official, MovedIn, BreakUp, Introduced, DroppedBy, NotRepaid,
-        Posted     // tagged in a post of the player's on Flare
+        Posted,    // tagged in a post of the player's on Flare
+        Party,     // came to a party the player hosted (Parties)
+        PartyBad,  // ...one that went badly
+        PartyTheirs   // the player came to a party of theirs
     }
 
     /// <summary>
@@ -60,8 +63,8 @@ namespace RealLifeOverhaul
         public int Index;
         public string Name;
         public bool Female;
-        public int Age;              // years on AgeDay, as their look has it; today's is SocialRules.AgeOn, a year more each birthday
-        public int AgeDay = 1;       // the game day Age is true on: the day the cast was made, or an older save's first load with it
+        public int Age;              // years on AgeDay, as their look has it; today's is SocialRules.AgeOn, a year more each birthday. A face that replaces it sets both: SocialRules.SetAge
+        public int AgeDay = 1;       // the game day Age is true on: the day the cast was made, the day a face's age was taken (SocialRules.SetAge), or an older save's first load with it
         public int Seed;             // of their look; a kept look's own (People/PersonLook.SeedOf)
         public SocialOrigin Origin;
         public SocialTrait Traits;
@@ -70,7 +73,7 @@ namespace RealLifeOverhaul
         public int FreeFrom = 17;    // hours of a weekday they can be met between; weekends are 10 to 23 for everyone
         public int FreeTo = 23;
         public int Birthday = 1;     // day of the year, 1 to the game's days per year
-        public bool Compatible;      // a romance is possible
+        public bool Compatible;      // open to a romance, a roll when they were made or met; with this player it is SocialRules.Romantic
 
         public bool Met;
         public int MetDay;
@@ -196,6 +199,7 @@ namespace RealLifeOverhaul
     public sealed class SocialOffer
     {
         public const int Loan = 100;   // Kind for a loan; anything else is a PlanKind
+        public const int Help = 101;   // Kind for a plea for money (Giving): the person is in trouble and asks, Amount is what they ask
 
         public int Person = -1;
         public int Kind;

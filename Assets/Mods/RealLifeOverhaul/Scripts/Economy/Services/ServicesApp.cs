@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Economy
         private DataTable _table;
         private TableSpec _spec = ServicesTables.Off;   // the table of the page being written
         private int _tab, _wanted = -1;
-        private string _pick, _wantPick;   // what is picked: a row's id ("cli:...", "add:...", "emp:...", "offer:...", "con:...", "sell:...", "bid:...")
+        private string _pick, _wantPick;   // what is picked: a row's id ("cli:...", "add:...", "emp:...", "offer:...", "con:...", "sell:...", "bid:...", "rsale:...")
         private bool _ready;               // the director has read the game for this opening
         private bool _writing;             // a page is being written: a change it causes does not write it again
 

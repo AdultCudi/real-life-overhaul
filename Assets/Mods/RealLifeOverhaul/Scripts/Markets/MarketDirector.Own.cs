@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            int from = Math.Max(f.BooksDay + 1, day - Year * 3);
+            int from = Math.Max(f.BooksDay + 1, day - Year * ListingCatalogue.BooksLookBackYears);
             for (int d = from; d < day - 1; d++)
             {
                 OwnBooks b = books(d, d + 1);
@@ -275,9 +275,20 @@ namespace RealLifeOverhaul.Markets
             return new ListingFacts { Standing = -1 };
         }
 
-        public OwnQuote Quote(OwnAction action, long value)
+        /// <summary>The company a founder's sheet is about: the player's whole company, or with a stock's id a firm of theirs that listed on its own; null for neither.</summary>
+        public Stock FounderStock(int stockId)
         {
-            Stock own = MyCompany;
+            if (stockId <= 0)
+            {
+                return MyCompany;
+            }
+            Stock k = Running ? _engine.State.Stock(stockId) : null;
+            return k != null && k.Listed && k.Own != null && k.Own.Firm && _engine.Mine(k) ? k : null;
+        }
+
+        public OwnQuote Quote(OwnAction action, long value, int stockId = 0)
+        {
+            Stock own = FounderStock(stockId);
             if (own == null)
             {
                 return new OwnQuote { Why = OwnWhy.NotListed };
@@ -309,19 +320,19 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>A founder's action, checked as the market will at its moment, and the cash for it, put on the tape for the next moment.</summary>
-        public OwnWhy Ask(OwnAction action, long value)
+        public OwnWhy Ask(OwnAction action, long value, int stockId = 0)
         {
             FinishMoment();
             if (action == OwnAction.Audit || value > int.MaxValue || value < int.MinValue)
             {
                 return OwnWhy.TooLarge;
             }
-            OwnQuote q = Quote(action, value);
+            OwnQuote q = Quote(action, value, stockId);
             if (q.Why != OwnWhy.None)
             {
                 return q.Why;
             }
-            Stock own = MyCompany;
+            Stock own = FounderStock(stockId);
             _engine.Event(MarketInputs.EventOwn + (int)action, own.Id, (int)value);
             if (Verbose)
             {
@@ -419,6 +430,10 @@ namespace RealLifeOverhaul.Markets
                 return k != null && k.Own != null && news.Kind >= MarketNewsKind.OwnPriced;   // another player's company's founder news is theirs
             }
             OwnListing o = k.Own;
+            if (o.Firm && news.Kind != MarketNewsKind.OwnDeal && news.Kind != MarketNewsKind.OwnRefused && news.Kind != MarketNewsKind.OwnDisgorged)
+            {
+                return true;   // a firm that listed on its own tells its founder in the tech sector's words; its results and meetings are on its page
+            }
             switch (news.Kind)
             {
                 case MarketNewsKind.Listing:
@@ -479,6 +494,9 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
+                    break;
+                case MarketNewsKind.Reverse:
+                    Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
             }
             return true;

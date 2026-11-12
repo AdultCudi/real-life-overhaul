@@ -28,6 +28,9 @@ namespace RealLifeOverhaul.Tech
         public readonly int Diligence;        // 0 to 1000: how hard it looks
         public readonly bool Angels;
 
+        /// <summary>Leads rounds of the stages it names; the friends and family and the accelerator of a founded startup lead none.</summary>
+        public bool Leads => Least >= 0;
+
         public VcDef(int id, string name, int least, int most, int likes, int diligence, bool angels)
         {
             Id = id;
@@ -53,10 +56,14 @@ namespace RealLifeOverhaul.Tech
             new VcDef(4, "Granite Peak Ventures", 2, 5, (1 << 0) | (1 << 3) | (1 << 7) | (1 << 8), 750, false),
             new VcDef(5, "Northlight Partners", 3, 5, 0x1FF, 800, false),
             new VcDef(6, "Ironbark Growth", 4, 5, (1 << 1) | (1 << 3) | (1 << 5), 850, false),
-            new VcDef(7, "Lantern Row Angels", 0, 1, (1 << 2) | (1 << 4) | (1 << 6), 200, true)
+            new VcDef(7, "Lantern Row Angels", 0, 1, (1 << 2) | (1 << 4) | (1 << 6), 200, true),
+            // The first money of a startup the player founds (Founding/): they lead no round, and are investors on the cap table all the same.
+            new VcDef(FamilyId, "Friends and family", -1, -1, 0x1FF, 100, true),
+            new VcDef(AcceleratorId, "Launchpad Accelerator", -1, -1, 0x1FF, 350, false)
         };
 
-        public const int FirmCount = 8;
+        public const int FamilyId = 8, AcceleratorId = 9;
+        public const int FirmCount = 10;
 
         // The city's startups
         public const int StartupsMost = 20;             // startups running at once
@@ -110,6 +117,12 @@ namespace RealLifeOverhaul.Tech
         public const int VestYears = 4, CliffYears = 1;   // years of the game's length
         public const int OptionMorale = 100;            // thousandths of morale a grant adds
         public const int OptionPoach = 600;             // thousandths of the rivals' approaches with options unvested
+
+        // Whole keys, so the text checks can find each one.
+        public static readonly string[] MoodKeys = { "reallife_vc_mood_0", "reallife_vc_mood_1", "reallife_vc_mood_2", "reallife_vc_mood_3" };
+        public static readonly string[] TierKeys = { "reallife_vc_related_tier_0", "reallife_vc_related_tier_1", "reallife_vc_related_tier_2" };
+
+        public static string MoodKey(int mood) => MoodKeys[System.Math.Max(0, System.Math.Min(MoodKeys.Length - 1, mood))];
 
         /// <summary>Names for the city's startups: two halves.</summary>
         public static readonly string[] NameA =

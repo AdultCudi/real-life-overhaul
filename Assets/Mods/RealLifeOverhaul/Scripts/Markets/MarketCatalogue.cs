@@ -500,6 +500,22 @@ namespace RealLifeOverhaul.Markets
             return id >= 900 && id < 1000;
         }
 
+        public const int StartupFirst = 2001, StartupCount = 99;   // the ids of the city's startups that listed (above the player's, which end at 1998)
+        public const int StartupsMost = 6;                         // listed at once, so the market is never filled up by them
+
+        public static bool IsStartup(int id)
+        {
+            return id >= StartupFirst && id < StartupFirst + StartupCount;
+        }
+
+        /// <summary>A startup of the city that listed as a catalogue row: small, its sector's figures moved by its id; kept in its record in the save, as a rival's name is.</summary>
+        public static CompanyDef StartupDef(int id, string name, string ticker, MarketSector sector, int revenueM, string trade)
+        {
+            var d = new CompanyDef(id, string.IsNullOrEmpty(name) ? ticker : name, ticker, sector, MarketSize.Small, Math.Max(1, revenueM), 0, trade);
+            Profile(d);
+            return d;
+        }
+
         /// <summary>
         /// A player's company as a catalogue row: small, its sector's figures moved by its id, but none of the cycle or
         /// inflation made up for it (its books carry those), and its debt its own.

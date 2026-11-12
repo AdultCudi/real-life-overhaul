@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Wanting = new int[RotaCatalogue.Cells];   // customers were the stations no limit (the game's shop forecast stops at them)
         public readonly bool[] Open = new bool[RotaCatalogue.Cells];    // the hours it keeps now
         public readonly int[] DayFee = new int[RotaCatalogue.Days];     // the game's licensing fee, charged on a day it opens at all
+        public readonly int[] Floor = new int[RotaCatalogue.Cells];     // the crew a plan in use asks for in each hour at least; 0: the planner's own need
+        public bool HasFloor;           // some hour has a floor
         public int Margin;              // takings less the cost of the goods, a customer served
         public int Takings;             // a customer served
         public bool HasCustomers;       // false: nobody walks in (a factory, a headquarters): every work station is wanted every open hour
@@ -61,6 +63,8 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(Wanting, 0, Wanting.Length);
             Array.Clear(Open, 0, Open.Length);
             Array.Clear(DayFee, 0, DayFee.Length);
+            Array.Clear(Floor, 0, Floor.Length);
+            HasFloor = false;
             Margin = Takings = DirtEvents = CleanHours = 0;
             HasCustomers = FixedHours = false;
             Stock.Clear();

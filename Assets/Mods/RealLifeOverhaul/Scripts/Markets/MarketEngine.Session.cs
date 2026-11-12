@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (s.SplitDay > 0 && s.SplitDay <= day)
             {
-                MarketLife.Split(State, s, s.SplitRatio);
+                SplitNow(s, day);   // Extras/MarketEngine.Extras.cs: a split, or shares put together
             }
             if (TrustRules.Is(s))
             {
@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Markets
                 s.Sent = s.Sent * (1.0 - Kappa * night) + mood;
                 s.Mis += news + (s.Sent - was);
             }
+            ExtrasCap(s);   // a bank's stock is never worth more than three times the capital it holds (Extras/MarketEngine.Extras.cs)
             if (s.LastBarCount >= 0 && s.BarCount > 0)
             {
                 Array.Copy(s.Bars, s.LastBars, s.BarCount);
@@ -191,10 +192,39 @@ namespace RealLifeOverhaul.Markets
             {
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.Rate, A = env.RateBp - _openRate, B = (int)((long)(indexNow - _openIndex) * 10000L / _openIndex) });
             }
+            if (_openRate >= 0 && env.RateBp > _openRate)
+            {
+                FixRivalDebt(env.RateBp);
+            }
             State.RateSeenBp = env.RateBp;
+            State.Extras.Fade(Kappa * _openNight);   // the player's own push fades with the night's mood
             OpenOrders(day);
             BotsOpen();   // stops the night went through, and floors
             Margin(day, MarketCatalogue.PhaseOpen);
+        }
+
+        // A rival company fixes its debt on the same rule as the player's loan, when the bank rate is set to rise and the fixed day is cheaper.
+        // A rival has no credit file, so the terms use the middle of the score scale.
+        private void FixRivalDebt(int rateBp)
+        {
+            int days = State.YearDays > 0 ? State.YearDays : Economy.NewsRules.YearDays;
+            int score = (Economy.CreditCatalogue.ScoreMin + Economy.CreditCatalogue.ScoreMax) / 2;
+            for (int i = 0; i < State.Stocks.Count; i++)
+            {
+                Stock s = State.Stocks[i];
+                if (s == null || string.IsNullOrEmpty(s.RivalId) || s.Debt <= 1.0 || s.DebtRate <= 0.0)
+                {
+                    continue;
+                }
+                int amount = s.Debt > int.MaxValue ? int.MaxValue : (int)s.Debt;
+                int variable = (int)Math.Round(s.Debt * s.DebtRate / days);
+                Economy.NewsRules.Offer(amount, variable, score, rateBp, days, out int fixedDaily);
+                if (!Economy.NewsRules.WillFix(true, variable, fixedDaily) || fixedDaily <= 0)
+                {
+                    continue;
+                }
+                s.DebtRate = fixedDaily * (double)days / s.Debt;
+            }
         }
 
         private void Business(Stock s, int day)
@@ -207,7 +237,7 @@ namespace RealLifeOverhaul.Markets
             MarketEnv env = _openEnv;
             if (s.Own != null)
             {
-                OwnBusiness(s, env, from, day);   // its business is its founder's books
+                OwnBusiness(s, s.Own.Firm ? ListingFirm.EnvFor(env, s.Id) : env, from, day);   // its business is its founder's books; a firm's are its own statements', not the whole company's
                 return;
             }
             double competition = Competition(s, env);
@@ -410,6 +440,7 @@ namespace RealLifeOverhaul.Markets
                     s.Impact = s.Impact > 1.0 ? s.Impact * decay : 0.0;
                 }
             }
+            State.Extras.Fade(fade);   // the player's own push fades as the mood does (usually nothing to fade)
             Index(out int index);
             int prev = State.IndexBarCount > 0 ? State.IndexBars[State.IndexBarCount - 1].C : State.IndexOpen;
             if (State.IndexBarCount < State.IndexBars.Length)
@@ -444,6 +475,9 @@ namespace RealLifeOverhaul.Markets
             s.Low = Math.Min(s.Low, l);
             s.Last = c;
             s.DayVolume += v;
+            int phase = MarketCatalogue.PhaseOpen + k;
+            State.Names.NoteFlow(s.Id, o, c, v, day, phase);
+            State.Charts.Check(s.Id, c, day);
         }
 
         private static int Cents(double logPrice)

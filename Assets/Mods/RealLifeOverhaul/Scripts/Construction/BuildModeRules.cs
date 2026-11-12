@@ -33,7 +33,9 @@ namespace RealLifeOverhaul.Construction
         Value = 2,       // land value: each cell's price among the district's
         Occupancy = 3,   // buildings with room to let, and full ones
         UnderWay = 4,    // buildings under construction, their share built
-        Count = 5
+        Rents = 5,       // what a square metre lets for in the city, by the use of the building or the zone (RentMapData)
+        Traffic = 6,     // the traffic index the game gives each building (0 to 100), by the cell's lot
+        Count = 7
     }
 
     /// <summary>What happens to build mode.</summary>
@@ -122,7 +124,10 @@ namespace RealLifeOverhaul.Construction
         public const int RunDownFill = 33;   // occupancy: a building run down after standing mostly empty (GrowRules)
         public const int HeldFill = 34;      // ground held by something that is not for sale: a landmark's lots, ground kept clear, a special place's, a park's, the campus's, the district's edge
         public const int LineHeld = 35;      // its edge: a cool blue, so held ground reads apart from land for sale (white) and the plain grid
-        public const int PaletteSize = 36;
+        public const int RentRamp = 36;      // rents: RentRamp + 0 (least a square metre) to RentRamp + RampSteps - 1 (most)
+        public const int TrafficRamp = 41;   // traffic: TrafficRamp + 0 (quietest) to TrafficRamp + RampSteps - 1 (busiest)
+        public const int RampSteps = 5;
+        public const int PaletteSize = 46;
 
         /// <summary>
         /// The palette (red, green, blue, alpha, 0 to 255). The four uses, for sale and the player's colour are the game's own
@@ -166,7 +171,17 @@ namespace RealLifeOverhaul.Construction
             new byte[] { 225, 75, 95, 170 },    // a rival's building
             new byte[] { 150, 95, 60, 190 },    // run down
             new byte[] { 70, 120, 170, 120 },   // held: slate blue, light enough to leave the ground and its trees showing
-            new byte[] { 120, 200, 255, 255 }   // held: its edge
+            new byte[] { 120, 200, 255, 255 },  // held: its edge
+            new byte[] { 24, 70, 52, 165 },     // rents, least
+            new byte[] { 36, 120, 80, 165 },
+            new byte[] { 52, 170, 104, 165 },
+            new byte[] { 120, 220, 120, 170 },
+            new byte[] { 214, 245, 120, 175 },  // rents, most
+            new byte[] { 40, 70, 110, 150 },    // traffic, quietest
+            new byte[] { 60, 120, 160, 160 },
+            new byte[] { 130, 170, 190, 165 },
+            new byte[] { 235, 170, 80, 175 },
+            new byte[] { 235, 70, 60, 185 }     // traffic, busiest
         };
 
         /// <summary>Colours the mixed zoning may take: the first far from every colour the game gives its types and the player.</summary>
@@ -215,7 +230,8 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The views' names, by BuildView (the modal's view buttons, as Cities Skylines' info views).</summary>
         public static readonly string[] ViewKeys =
         {
-            "reallife_bld_mode_view_status", "reallife_bld_mode_view_zoning", "reallife_bld_mode_view_value", "reallife_bld_mode_view_occupancy", "reallife_bld_mode_view_underway"
+            "reallife_bld_mode_view_status", "reallife_bld_mode_view_zoning", "reallife_bld_mode_view_value", "reallife_bld_mode_view_occupancy", "reallife_bld_mode_view_underway",
+            "reallife_bld_mode_view_rents", "reallife_bld_mode_view_traffic"
         };
 
         /// <summary>The view a tool opens on: Buy land and Zone on the zoning (the owner, 26 Oct 2026: "How do I see the zoning?"), the rest on the land's status.</summary>
@@ -365,6 +381,8 @@ namespace RealLifeOverhaul.Construction
             public int Zones;        // the uses the council zones the column for (BuildCatalogue.Zone bits)
             public int MainUse;      // the plan's main use there (BuildCatalogue.ClassUse), -1 for none
             public int ValueStep;    // its land's price among the district's, 0 (lowest) to ValueSteps - 1
+            public int RentStep;     // what its use lets for a square metre among the uses', 0 (least) to RampSteps - 1; -1 where it has no use or no rent is read yet
+            public int TrafficStep;  // its lot's traffic index in five steps, 0 (quietest) to RampSteps - 1; -1 where not known
             public bool HasProject;  // a project of the player's on their land there (any stage): no second building placed on it
             public string Squares;   // the player's: this column's own digit a row (ZoneRules), null when every square takes Paint
             public string Council;   // free land: the council's digit a row for this column (ZoneRules), null for the plan's use on every row
@@ -463,6 +481,14 @@ namespace RealLifeOverhaul.Construction
                     fill = Value + Math.Max(0, Math.Min(ValueSteps - 1, c.ValueStep));
                     line = c.Free || behind ? LineForSale : c.Mine ? LineYours : LinePlain;
                     return;
+                case BuildView.Rents:
+                    fill = c.RentStep >= 0 ? RentRamp + Math.Min(RampSteps - 1, c.RentStep) : Nothing;
+                    line = c.Free || behind ? LineForSale : c.Mine || c.MyBuilding ? LineYours : LinePlain;
+                    return;
+                case BuildView.Traffic:
+                    fill = c.TrafficStep >= 0 ? TrafficRamp + Math.Min(RampSteps - 1, c.TrafficStep) : Nothing;
+                    line = c.Free || behind ? LineForSale : c.Mine || c.MyBuilding ? LineYours : LinePlain;
+                    return;
                 case BuildView.Occupancy:
                     if (c.Building)
                     {
@@ -538,6 +564,24 @@ namespace RealLifeOverhaul.Construction
             return row < done;
         }
 
+        /// <summary>A figure's step among the least and most of its kind, 0 to RampSteps - 1 (all alike: the middle); -1 for a figure not known (below zero).</summary>
+        public static int RampStepOf(long figure, long least, long most)
+        {
+            if (figure < 0L)
+            {
+                return -1;
+            }
+            if (most <= least)
+            {
+                return RampSteps / 2;
+            }
+            long step = (Math.Max(least, Math.Min(most, figure)) - least) * RampSteps / (most - least + 1);
+            return (int)Math.Max(0, Math.Min(RampSteps - 1, step));
+        }
+
+        /// <summary>The traffic index the game gives a building (0 to 100) in five steps; -1 where it is not known.</summary>
+        public static int TrafficStepOf(int index) => index < 0 ? -1 : (int)Math.Min(RampSteps - 1, Math.Max(0, index) * RampSteps / 101);
+
         /// <summary>A price's land value step among the district's least and most (0 to ValueSteps - 1; all alike: the middle).</summary>
         public static int ValueStepOf(long price, long least, long most)
         {
@@ -578,6 +622,16 @@ namespace RealLifeOverhaul.Construction
                     n = Key(fills, lines, keys, n, Vacant, LinePlain, "reallife_bld_mode_key_vacant");
                     n = Key(fills, lines, keys, n, RunDownFill, LinePlain, "reallife_bld_mode_key_rundown");
                     n = Key(fills, lines, keys, n, -1, LineYours, "reallife_bld_mode_key_yours_edge");
+                    break;
+                case BuildView.Rents:
+                    n = Key(fills, lines, keys, n, RentRamp, LinePlain, "reallife_bld_mode_key_rent_low");
+                    n = Key(fills, lines, keys, n, RentRamp + RampSteps - 1, LinePlain, "reallife_bld_mode_key_rent_high");
+                    n = Key(fills, lines, keys, n, -1, LineForSale, "reallife_bld_mode_key_forsale_edge");
+                    break;
+                case BuildView.Traffic:
+                    n = Key(fills, lines, keys, n, TrafficRamp, LinePlain, "reallife_bld_mode_key_traffic_low");
+                    n = Key(fills, lines, keys, n, TrafficRamp + RampSteps - 1, LinePlain, "reallife_bld_mode_key_traffic_high");
+                    n = Key(fills, lines, keys, n, -1, LineForSale, "reallife_bld_mode_key_forsale_edge");
                     break;
                 case BuildView.UnderWay:
                     n = Key(fills, lines, keys, n, UnderWayDone, LinePlain, "reallife_bld_mode_key_built");

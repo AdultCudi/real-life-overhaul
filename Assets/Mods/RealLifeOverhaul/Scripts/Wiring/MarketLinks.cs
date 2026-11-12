@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
                 PlannerDirector.Instance?.AddSource(Source);
+                ExitStockLinks.Connect();   // the tech sector's firms that listed, as stocks (Tech/Venture/ExitStockRules)
                 _leversSeen = -1;
                 _electionsSeen = -1;
                 _storming = false;
@@ -53,6 +54,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 MarketBridges.Reset();
+                ExitStockLinks.Disconnect();
                 News.Reported -= Reported;
                 FireLosses.Billed -= Fire;
             }

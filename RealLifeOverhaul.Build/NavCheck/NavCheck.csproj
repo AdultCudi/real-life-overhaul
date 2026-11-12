@@ -50,6 +50,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EventHold.cs" Link="Mod\EventHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkRings.cs" Link="Mod\WorkRings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HotSpots.cs" Link="Mod\HotSpots.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiCost.cs" Link="Mod\UiCost.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SearchPace.cs" Link="Mod\SearchPace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFaceMoment.cs" Link="Mod\FlareFaceMoment.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PointGrid.cs" Link="Mod\PointGrid.cs" />
@@ -152,6 +153,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SolidRules.cs" Link="Mod\Uptown\SolidRules.cs" />
     <!-- Uptown's streets (UptownStreetsCheck.cs): its buses' routes to every block and their reach, its street furniture, game-free; the bus network's routes of a district's own. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StreetsRules.cs" Link="Mod\Uptown\StreetsRules.cs" />
+    <!-- The districts' subway stations (UptownSubwayCheck.cs): where they stand, what they keep clear of and where their riders come up, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Subway\StationsRules.cs" Link="Mod\Subway\StationsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Journeys.cs" Link="Mod\TransitPlan.Journeys.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Routes.cs" Link="Mod\TransitPlan.Routes.cs" />

@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Flare
         private void EnsureCitizens(FlareFile file)
         {
             int seed = FlareLiveRules.CitySeed(file);
-            if (seed == _citizensSeed && _citizens.Count > 0)
+            if (seed == _citizensSeed && _citizens.Count > 0 && _cityVoiced == _cityVoices)
             {
                 FlareBridges.CitizensChanged?.Invoke(seed, _citizens);
                 return;
@@ -91,6 +91,8 @@ namespace RealLifeOverhaul.Flare
             FlareGame.Districts(_districts);
             FlareLiveRules.CitizensOf(seed, _districts, _citizens);
             _citizensSeed = seed;
+            _cityVoiced = _cityVoices;
+            CityVoices(seed);   // with the residents' side on, each of the city's people is a resident (FlareDirector.Residents)
             FlareBridges.CitizensChanged?.Invoke(seed, _citizens);
         }
 
@@ -127,6 +129,10 @@ namespace RealLifeOverhaul.Flare
             {
                 CityMade(_made[i]);
             }
+            if (newDay && made > 0)
+            {
+                BusinessPostsHeard(day);   // the city's businesses' own posts of the day, heard by their followers
+            }
             if (newDay)
             {
                 Tycoons(day);
@@ -140,6 +146,23 @@ namespace RealLifeOverhaul.Flare
             }
             Recount();
             TextsAhead();   // the day's posts: their words asked now, each by its own minute
+        }
+
+        // A day before the city day, one a step (FlareLiveRules.PeopleBefore): the city's people and its shops, so Home has a day behind it on
+        // a new city's first morning and a save from before grows to its size. True while another day waits. Cost: about a hundred posts, a step.
+        private bool LiveBefore(int day)
+        {
+            if (_file == null || _facts.Day != day || Following)
+            {
+                return false;
+            }
+            bool more = FlareLiveRules.PeopleBefore(_file, _facts, _citizens, _made, out int made);
+            if (made > 0)
+            {
+                Logger?.Info("Flare: the city's people and shops before day " + day + ": " + made + " post(s) made, down to day " + Math.Max(0, _file.Net.PeopleFrom) + ".");
+                ShareChanged(null);
+            }
+            return more;
         }
 
         private void ReadFacts(int day)
@@ -291,14 +314,14 @@ namespace RealLifeOverhaul.Flare
         private void CityDm(int day)
         {
             bool hiring = day - _hiringDay <= 7 || FlareBridges.Ask(FlareBridges.Hiring, false);
-            string with, what;
+            string with, what, about;
             long at;
-            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at))
+            if (!FlareLiveRules.CityDm(_file, day, hiring, _myPlaces, out with, out what, out at, out about))
             {
                 return;
             }
             string name = AccountName(with);
-            FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), null);
+            FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), about != null ? "business=" + about.Replace('~', ' ') : null);
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");
         }
 
@@ -419,6 +442,9 @@ namespace RealLifeOverhaul.Flare
                     return key.Length == 1 ? FlareText.T("reallife_flare_your_boss") : key.Substring(2);
                 case 'l':
                     return FlareText.T("reallife_flare_ledger_name");
+                case 'd':
+                    FlareOffer offer = OfferOf(FlareLiveRules.OfferOf(key));   // a business's offer of paid posts writes as the business
+                    return offer != null && !string.IsNullOrEmpty(offer.Name) ? offer.Name : "?";
                 default:
                     return key.Length > 2 ? key.Substring(2) : key;
             }

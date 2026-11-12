@@ -10,17 +10,20 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Crime](crime.md): crime near, by and against the player.
 - [Law](law.md): police precincts, arrests, custody, the record and reputation.
 - [Justice](justice.md): cases, bail, lawyers, the courthouse, sentences and prison.
+- [Schemes and inquiries](schemes.md): white collar schemes that pay at first and leave a trail, the inquiries that follow it into the courts, and the rivals who do the same.
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.
+- [Realistic graphics](graphics.md): a look for the whole picture that follows the clock, the weather and the season, with nothing added for the graphics card to draw.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
 - [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground; a construction company of the player's: land, plans, planning permission, sites, money, tenders and the city's builders.
 - [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).
 - [New buildings](new-buildings.md): buildings of the mod's own for its places, copied from the city's own designs, and the finished looks of the construction sites.
 - [Uptown](uptown.md): a district of the mod's own north of Manhattan, three rows of eighteen blocks, its streets, ground and lots laid at every load.
+- [Subway in Uptown](subway-uptown.md): three subway stations in Uptown and Cedar Heights on the game's own subway, at its own fare, with the city's people on the line.
 - [Uptown's landmarks](landmarks.md): Summit Tower, Uptown Galleria and Crest Field, the city's megaprojects in the new district: tendered, built, opened, and what they do for the lots round them.
 - [Birchwood School](schools.md): a school campus on Uptown's west square, and the city's schools as one market the player may buy into, run by the same rules for the trusts and the council.
-- [Staff and roles](staffing.md): an exact, searchable reference of the staff of every business of the mod and of every role, generated from the code's own tables, in the Guide, the game's help and the Discord guide.
+- [Staff and roles](staffing.md): an exact, searchable reference of the staff of every business of the mod and of every role, generated from the code's own tables, in the Guide, the game's help and the Discord guide; and how a hire at a tech firm gets a role in the mod's files and a free desk with a week of shifts.
 
 ## The player's life
 
@@ -29,6 +32,11 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
 - [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
+- [Giving](giving.md): gifts to the city's charities, money given or lent to people, the deduction on the tax return and the people who ask.
+- [Insurance](insurance.md): a tier for each car's policy, a policy for each home, and one app for those, the health plan and the business cover, with claims taken off the bill.
+- [Health](health.md): illnesses and injuries that can turn serious, the doctor's appointment, hospital stays, health plans, medical debt and sick leave, for the player, their staff, the rivals and the city.
+- [Rivals seen around the city](rivals-seen.md): rival owners and tycoons at places that fit how their business is doing, their cars, a greeting, sightings on Flare and in the paper.
+- [Dynasty](dynasty.md): a will, estate tax, retiring and an heir who carries on; the rivals' lines and the city's estates.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.
@@ -36,18 +44,21 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 
 ## Getting about
 
-- [Driving](driving.md): each car's performance and the eased throttle.
+- [Driving](driving.md): each car's performance, the eased throttle and automatic turn signals.
 - [Driving licences](licences.md): the driving school, tests, points and enforcement.
 - [Transport](transport.md): buses, the subway and owning a car.
 - [Taxi by phone](taxi.md): a taxi sent to where you are.
 - [Garage](garage.md): the custom shop, bicycles and motorbikes.
+- [Car suppliers](car-suppliers.md): a supplier for each kind of new car at the Car Showroom, standing orders a manager fills, the other dealers' suppliers.
 - [Walking](walking.md): the walk key on foot.
 - [Minimap and GPS](navigation.md): a minimap and a route along the roads.
 
 ## Work and careers
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
+- [Taxi and delivery shifts](side-jobs.md): metered fares and timed delivery runs in the player's own car, signed on for at the cab office's and the parcel depot's desks.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
+- [Hiring professionals](tech-hiring.md): the jobs board, applicants and offers in Open Roles, a search firm's search for senior people and for a data centre's crew, and paying to bring a hire's start forward: a search rushed, a notice bought out.
 - [Building trades](trades.md): the trades at the city's works sites, each with a game of its own, the architects' practice on a floor (the floor plan, the facade and the frame), the trades' courses and three ladders.
 - [Legal hustles](hustles.md): the Marketplace, used goods and cars to fix up and sell on, and freelance visits for clients.
 
@@ -61,6 +72,12 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Investors](economy-investors.md): investors, pitches and the lettings page.
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).
+- [Selling a business](economy-sale.md): its value and quality, named buyers with the game's rivals among them, and the rivals' own sales.
+- [The game studio](game-studio.md): games from a concept pitched at your desk to a life after launch, sold to a real audience with no cap, against rival studios.
+- [The tech firms' markets](tech-firms.md): software, AI, consultancy, security, web, design and data centres in markets sized from the city, against rivals by the same rules, with desk sessions for each kind.
+- [Parties and company events](parties.md): host the people you know at home or in the city, hold a lunch, an evening out or a team day for a business's staff, and be asked to a friend's party, with gains capped by the week and the month, and rival shops holding theirs by the same rule.
+- [Delivery trips and food spoilage](delivery-trips.md): logistics routes run as delivery trips with departure times, vehicles, drivers, drive time and fuel, and fresh food spoils by its kind, longer in a fridge or a freezer.
+- [Suppliers and contracts](suppliers.md): a choice of suppliers that are firms of the city, fixed price contracts under take or pay, late or short deliveries with a remedy, and the rivals buying by the same rules.
 - [The staff rota planner](economy-rota.md).
 - [Managers for your empire](economy-managers.md).
 - [The company's hierarchy](economy-hierarchy.md): one policy over the managers, escalations up to you, regional managers and executives.
@@ -70,6 +87,8 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [New kinds of shop](shops.md): an ice cream parlour, a tea bar and a tobacconist to start in BizMan.
 - [Districts](districts.md): the district view on the city map.
 - [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
+- [Parking spaces](parking-spaces.md): a single space bought or rented in a building's car park, the hourly charge paid back, the tycoons' and the city's spaces.
+- [Loyalty cards](loyalty.md): a loyalty scheme for each of the player's shops from a Loyalty tab in BizMan, members who come back more often, the rewards given back, and the other owners' cards in the district.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
 
@@ -81,6 +100,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, the Banks app, and the groups of the Contacts app.
 - [Floors](floors.md): the mod's places on floors of the buildings it holds: the university's classrooms, the tech companies' towers, places to come.
 - [The district save](district-save.md): the records of the mod's own places kept in the mod's part of the save, so a save loads without the mod.
+- [Cinematic shots](cinematic-shots.md): a developer's tool that takes the mod's own pictures: a list of composed shots in the loaded city, in four lights, saved at 3840 by 2160 with everything put back.
 
 ## Folders without a page
 

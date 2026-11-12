@@ -109,11 +109,11 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the professionals' files by id
 
-    // The people's read finds each employee's file from TalentFile.Index: at the cap of 600, with an id twice and files
-    // with no id, every id gives the file TalentFile.Of gives.
+    // The people's read finds each employee's file from TalentFile.Index: with six hundred files, an id twice and files
+    // with no id, every id gives the file TalentFile.Of gives (a pass over the files for each, which is why six hundred and not a save's thousands).
     private static void PaceTalentIndex()
     {
-        TalentFile file = PaceTalent(TalentStore.PeopleMost);
+        TalentFile file = PaceTalent(600);
         file.People[17].Id = file.People[400].Id;   // (an id twice: the first is the one)
         file.People[30].Id = string.Empty;
         file.People[31].Id = string.Empty;
@@ -406,18 +406,20 @@ internal static partial class Program
         }
         Check(refused, "work pace: a line once written takes nothing more (its builder is the next line's)");
 
-        // The professionals' line at the cap, and back.
-        TalentFile file = PaceTalent(TalentStore.PeopleMost);
+        // The professionals' line of a large save (there is no bound on the files, so ten thousand stands for any), and back.
+        TalentFile file = PaceTalent(PaceFiles);
         string first = TalentStore.Write(file);
         string again = TalentStore.Write(file);
         TalentFile back = TalentStore.Read(first, out int version);
-        Check(first == again && back.People.Count == TalentStore.PeopleMost && TalentStore.Write(back) == first && version == TalentStore.Version,
-            "work pace: the professionals' line at the cap (" + first.Length + " characters) is the same every time and reads back to itself");
+        Check(first == again && back.People.Count == PaceFiles && TalentStore.Write(back) == first && version == TalentStore.Version,
+            "work pace: the professionals' line of " + PaceFiles + " files (" + first.Length + " characters) is the same every time and reads back to itself");
     }
+
+    private const int PaceFiles = 10000;   // the professionals on file in the pace checks of the line
 
     private static void PaceTechWriterCost()
     {
-        TalentFile file = PaceTalent(TalentStore.PeopleMost);
+        TalentFile file = PaceTalent(PaceFiles);
         TalentStore.Write(file);   // (the kept builder grown once)
         long bytes = long.MaxValue;
         int length = 0;
@@ -425,8 +427,8 @@ internal static partial class Program
         {
             bytes = Math.Min(bytes, PaceWriteBytes(file, out length));
         }
-        Console.WriteLine("  work pace: the professionals' line at the cap, " + length + " characters, allocates " + bytes + " bytes to write");
-        Check(bytes < length * 2L + 64 * 1024, "work pace: writing the professionals' line at the cap allocates little beyond the line itself (" + bytes + " bytes for " + length + " characters)");
+        Console.WriteLine("  work pace: the professionals' line of " + PaceFiles + " files, " + length + " characters, allocates " + bytes + " bytes to write");
+        Check(bytes < length * 2L + 64 * 1024, "work pace: writing the professionals' line of " + PaceFiles + " files allocates little beyond the line itself (" + bytes + " bytes for " + length + " characters)");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]

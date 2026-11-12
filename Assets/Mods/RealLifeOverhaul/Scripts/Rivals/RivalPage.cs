@@ -198,6 +198,46 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Row("reallife_rival_label_week", change, t.Worth >= t.WeekAgo ? CellTone.Red : CellTone.Green);
             }
+            string giving = RivalBridges.GivingLine != null ? RivalBridges.GivingLine(who) : null;
+            if (!string.IsNullOrEmpty(giving))
+            {
+                box.Line(giving);
+            }
+            string unwell = RivalBridges.HealthLine != null ? RivalBridges.HealthLine(who) : null;
+            if (!string.IsNullOrEmpty(unwell))
+            {
+                box.Line(unwell);
+            }
+            string cover = RivalBridges.CoverLine != null ? RivalBridges.CoverLine(who) : null;
+            if (!string.IsNullOrEmpty(cover))
+            {
+                box.Line(cover);
+            }
+            string space = RivalBridges.SpaceLine != null ? RivalBridges.SpaceLine(who) : null;
+            if (!string.IsNullOrEmpty(space))
+            {
+                box.Line(space);
+            }
+            string supply = RivalBridges.SupplyLine != null ? RivalBridges.SupplyLine(who) : null;
+            if (!string.IsNullOrEmpty(supply))
+            {
+                box.Line(supply);
+            }
+            string market = RivalBridges.MarketLine != null ? RivalBridges.MarketLine(who) : null;
+            if (!string.IsNullOrEmpty(market))
+            {
+                box.Line(market);
+            }
+            string seen = RivalBridges.SeenLine != null ? RivalBridges.SeenLine(who) : null;
+            if (!string.IsNullOrEmpty(seen))
+            {
+                box.Line(seen);
+            }
+            string family = RivalBridges.DynastyLine != null ? RivalBridges.DynastyLine(who) : null;
+            if (!string.IsNullOrEmpty(family))
+            {
+                box.Line(family);
+            }
             if (director.HoldingShares(who, out long held, out long most, out long _, out int mid))
             {
                 box.Row("reallife_rival_label_holding", RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));
@@ -353,6 +393,36 @@ namespace RealLifeOverhaul.Rivals
                 {
                     rivals.Add(RivalText.Fill("reallife_rival_list_rival", "rival", t.Def.Name, "holding", t.Def.Holding, "change",
                         RivalText.Change(t.Worth, t.WeekAgo).Length > 0 ? RivalText.Change(t.Worth, t.WeekAgo) : RivalText.Money(0)));
+                    string gave = RivalBridges.GivingLine != null ? RivalBridges.GivingLine(i) : null;
+                    if (!string.IsNullOrEmpty(gave))
+                    {
+                        rivals.Add(gave);
+                    }
+                    string off = RivalBridges.HealthLine != null ? RivalBridges.HealthLine(i) : null;
+                    if (!string.IsNullOrEmpty(off))
+                    {
+                        rivals.Add(off);
+                    }
+                    string parks = RivalBridges.SpaceLine != null ? RivalBridges.SpaceLine(i) : null;
+                    if (!string.IsNullOrEmpty(parks))
+                    {
+                        rivals.Add(parks);
+                    }
+                    string supplied = RivalBridges.SupplyLine != null ? RivalBridges.SupplyLine(i) : null;
+                    if (!string.IsNullOrEmpty(supplied))
+                    {
+                        rivals.Add(supplied);
+                    }
+                    string onMarket = RivalBridges.MarketLine != null ? RivalBridges.MarketLine(i) : null;
+                    if (!string.IsNullOrEmpty(onMarket))
+                    {
+                        rivals.Add(onMarket);
+                    }
+                    string line = RivalBridges.DynastyLine != null ? RivalBridges.DynastyLine(i) : null;
+                    if (!string.IsNullOrEmpty(line))
+                    {
+                        rivals.Add(line);
+                    }
                 }
                 else if (t.DefeatedDay >= 0)
                 {

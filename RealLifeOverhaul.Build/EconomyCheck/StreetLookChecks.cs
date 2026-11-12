@@ -265,7 +265,7 @@ internal static partial class Program
             "street look: a yes on Flare keeps the city person's face's seed in its message (a yes saved before has none, and keeps the seat's)");
         string links = File.ReadAllText(System.IO.Path.Combine(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts")), "Wiring", "FlareInviteLinks.cs"));
         string invites = File.ReadAllText(System.IO.Path.Combine(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts")), "Social", "Flare", "FlareDirector.Invites.cs"));
-        Check(links.Contains("p.Seed = b.Face;") && links.Contains("p.Age = Mathf.Clamp(b.Age, 18, 85);") && invites.Contains("a.Face = FlareAvatarRules.Citizen(citySeed, number).Seed;"),
-            "street look: somebody met on Flare takes that face and their own age (a retiree of 82 too)");
+        Check(links.Contains("p.Seed = b.Face;") && links.Contains("SocialRules.SetAge(p, Mathf.Clamp(b.Age, 18, 85), SocialLife.Day);") && invites.Contains("a.Face = FlareAvatarRules.Citizen(citySeed, number).Seed;"),
+            "street look: somebody met on Flare takes that face and their own age, true from that day (a retiree of 82 too)");
     }
 }

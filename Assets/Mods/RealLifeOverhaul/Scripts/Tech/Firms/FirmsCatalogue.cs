@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>The figures of tech firms: products, contracts, risks and the rivals. Game-free; cents at the start's prices.</summary>
     public static class FirmsCatalogue
     {
-        public const int MonthDays = 30;   // whatever the game's year: subscriptions run by the calendar, as wages and rents do
+        public const int MonthDays = CalendarRules.BillingMonthDays;   // whatever the game's year: subscriptions run by the calendar, as wages and rents do (the one month rule)
 
         /// <summary>The products each kind of firm can make, one bit per ProductKind.</summary>
         public static readonly int[] MakesProducts =
@@ -138,7 +138,9 @@ namespace RealLifeOverhaul.Tech
         public const int ProductsMost = 36;                    // products being built or on sale across the player's firms (it was 16 for all firms together)
         public const int ProductsPerFirm = 12;                 // ...and at any one firm, so a third firm is not locked out by the first two
         public const int WithdrawnKept = 12;                   // withdrawn products kept in the list; the oldest go when more are withdrawn
-        public const int ProductsStored = ProductsMost + WithdrawnKept;   // the most the save reads back, live and withdrawn together
+        // the most the save reads back, live and withdrawn together: Living population's higher limit, so switching it
+        // off loses none
+        public const int ProductsStored = SectorCatalogue.ProductsMost + WithdrawnKept;
 
         /// <summary>
         /// How hard each kind of firm leans on its office's connection (NetSpeedRules), by FirmKind: an AI lab moves training
@@ -223,17 +225,6 @@ namespace RealLifeOverhaul.Tech
         }
 
         public static readonly int[] RivalFeaturesAtStart = { 8, 10, 12 };   // by segment: the rival's product as it stands
-
-        // Names
-        public static readonly string[] NameFirst =
-        {
-            "Bright", "Quill", "Harbour", "Lantern", "Copper", "Tide", "Ember", "Cobalt", "Juniper", "Meadow", "Summit", "Willow", "Ridge", "Arbor", "Marble", "Orbit", "Pebble", "Kestrel"
-        };
-
-        public static readonly string[] NameSecond =
-        {
-            "desk", "ledger", "flow", "board", "stack", "notes", "pass", "track", "cast", "loop", "post", "mint", "wave", "base", "kit", "path", "bloom", "forge"
-        };
 
         public static readonly string[] Clients =
         {

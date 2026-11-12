@@ -20,6 +20,17 @@ namespace RealLifeOverhaul.Tech
 
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
+        /// <summary>
+        /// The line that says a role sits at a desk: that a free desk and shifts are found for the hire when the hour's seating gives a hire of this role at this place
+        /// a seat (the option on, a tech firm of the player's with shifts, a skill it hires under: TechDirector.SeatsHire, which the start note and the pass ask too);
+        /// otherwise that the player gives them the shifts in BizMan.
+        /// </summary>
+        public static string SeatDesk(BuildingRegistration place, RoleDef role)
+        {
+            TechDirector director = TechDirector.Instance;
+            return T(director != null && role != null && director.SeatsHire(place, role.GameSkill) ? "reallife_hire_seat_desk_auto" : "reallife_hire_seat_desk");
+        }
+
         /// <summary>Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line short enough for a notification.</summary>
         public static string IdleLine(Idle why, in FirmFacts f, bool yesterday)
         {
@@ -143,6 +154,19 @@ namespace RealLifeOverhaul.Tech
             }
             return b.Length > 0 ? b.ToString() : T("reallife_talent_none");
         }
+
+        /// <summary>A line of a screen written in the game's words (its key filled with its names and values); null for no line.</summary>
+        public static string Say(ViewLine line) => line == null ? null : Fill(line.Key, line.Pairs ?? System.Array.Empty<string>());
+
+        /// <summary>
+        /// The words about a product's next feature, for the old pages and the kit's alike (<see cref="ProductViews.NextFeature"/> chooses
+        /// the line): its points still to put in, or that a model's work is done and the training is what it waits for. Null for a
+        /// withdrawn product.
+        /// </summary>
+        public static string NextFeature(Product p, bool markets) => Say(ProductViews.NextFeature(p, markets));
+
+        /// <summary>The words about why a product not on sale yet has no customers (<see cref="ProductViews.OffSale"/>); null for any other.</summary>
+        public static string OffSale(Product p) => Say(ProductViews.OffSale(p));
 
         /// <summary>A game day as the Finance app writes one.</summary>
         public static string Day(int day) => FinanceText.Day(day);

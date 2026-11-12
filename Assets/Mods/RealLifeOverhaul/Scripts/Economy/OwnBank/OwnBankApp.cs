@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Economy
         {
             _director = director;
             _paySlid = i => _director.SetPayShare(i * BankTiers.PayStep);
+            _divSlid = i => _director.SetDividendShare(i * BankDividends.ShareStep);
         }
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected.</summary>

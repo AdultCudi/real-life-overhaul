@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Flare
                 r.Text = DealLines(file, h, day);
                 r.Number = h.Ended ? 0 : h.Id;
             }
+            WriteOffers();   // Flare in the city: the city's businesses' offers of paid posts (FlareApp.City)
             List<FlareCampaign> campaigns = _director.Campaigns();
             for (int i = 0; i < campaigns.Count; i++)
             {
@@ -54,7 +55,8 @@ namespace RealLifeOverhaul.Flare
                 r.Key = FlareText.Fill("reallife_flare_row_campaign", "business", c.Name, "campaign", c.Campaign);
                 r.Text = FlareText.Busy(c, day);
             }
-            Note(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
+            Note(CityShown ? FlareText.T("reallife_flare_city_business_note")
+                : FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
         }
 
         private static string DealLines(FlareFile file, FlareHire h, int day)
@@ -103,6 +105,10 @@ namespace RealLifeOverhaul.Flare
             if (file == null)
             {
                 return string.Empty;
+            }
+            if (CityShown)
+            {
+                return CityShopLines(file, row);   // Flare in the city: the business's page as the residents see it (FlareApp.City)
             }
             int day = _director.CurrentDay;
             int talk = file.BuzzAt(row.Key, day), own, last, reviews = 0, stars = 0;

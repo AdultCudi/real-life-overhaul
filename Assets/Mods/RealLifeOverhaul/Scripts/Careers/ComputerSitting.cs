@@ -7,13 +7,15 @@ using BigAmbitions.SoundSystem;
 using Helpers;
 using PlayerActivity;
 using UI.Elements;
+using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class, homework, a working day or a video interview at the computer at home, as the game's computer passes the time: one press
-    /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). Nothing per frame of its own.
+    /// An online class, homework, a working day, a video interview or a freelance contract at the computer at home, as the game's computer passes the time: one press
+    /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). A contract's stint waits on the panel first, with the hours slider
+    /// (<see cref="StintSlider"/>) and Start, and walks on Start. Nothing per frame of its own.
     /// </summary>
     internal sealed class ComputerSitting : IPlayerActivity
     {
@@ -22,27 +24,30 @@ namespace RealLifeOverhaul.Careers
         private readonly CareersDirector _director;
         private readonly ComputerController _computer;
         private readonly ItemController _chair;
-        private readonly ClassTally _tally;
+        private readonly StintSlider _slide;     // a contract's stint: the hours are the player's to pick on the panel's slider before it starts; null for the rest
+        private ClassTally _tally;                // a stint's is made again at Start, for the hours the slider stands at
         private readonly LabelInfo _title;
         private readonly string _typing;          // the computer's own using animation, as the game's computer has its user type
         private readonly bool _work;              // a working day, overtime or a video interview (else a class or homework)
         private Sitting _sitting;
         private LabelInfo[] _labels;
-        private ButtonInfo[] _stop;
+        private ButtonInfo[] _stop, _offer;
+        private bool _pressed;                    // a stint's Start pressed: on its way
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
         private string _why;                     // who or what ended it, said by the way out taken (Sitting.Why, for the log line of an early end)
         private int _orderFrame = -1;             // the frame the walk order to the computer was given in (DeskGame.SetOffSeen)
 
-        public ComputerSitting(CareersDirector director, ComputerController computer, Sitting sitting)
+        public ComputerSitting(CareersDirector director, ComputerController computer, Sitting sitting, StintSlider slide = null)
         {
             _director = director;
             _computer = computer;
             _sitting = sitting;
-            _tally = new ClassTally(sitting.SkipMinutes);
+            _slide = slide;
+            _tally = new ClassTally(slide != null ? slide.Minutes : sitting.SkipMinutes);
             _title = DeskGame.Label(sitting.SkipTitle, 0);
-            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime || sitting.Kind == SittingKind.Interview;
+            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime || sitting.Kind == SittingKind.Interview || sitting.Kind == SittingKind.Contract;
             _chair = computer.FindChair();
             AnimationType typing = AnimationType.UsingDesktopComputer;
             try
@@ -70,6 +75,36 @@ namespace RealLifeOverhaul.Careers
         public void Go()
         {
             _director.StartCoroutine(Guard.Routine(Walk()));
+        }
+
+        // A contract's stint waits on the panel for Start (its slider and labels shown), until it is pressed or cancelled.
+        private bool Offered => _slide != null && _state == PlayerActivityState.NotStarted && !_pressed;
+
+        // Start: the hours the slider stands at are the stint's length, and the walk to the computer begins as any press at it does.
+        private void Pressed()
+        {
+            if (!Offered)
+            {
+                return;
+            }
+            if (SaveGameManager.Current == null || SaveGameManager.Current.Energy <= 1f)
+            {
+                Notifications.ShowInsufficientEnergy();
+                return;
+            }
+            _pressed = true;
+            _tally = new ClassTally(_slide.Minutes);
+            Go();
+        }
+
+        // Cancel: it never began, so nothing is counted and the sitting is let go.
+        private void Cancelled()
+        {
+            if (Offered)
+            {
+                _why = "the player pressing Cancel";
+                End(true, false);
+            }
         }
 
         private IEnumerator Walk()
@@ -345,7 +380,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                if (_state != PlayerActivityState.Running)
+                if (_state != PlayerActivityState.Running && !Offered)
                 {
                     return null;
                 }
@@ -369,6 +404,15 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
+                if (Offered)
+                {
+                    // named Start and Cancel: in a Going Public session the panel is hidden and only a button so named is pressed (ClassPlayRules.SessionPick)
+                    return _offer ?? (_offer = new[]
+                    {
+                        new ButtonInfo("CancelRealLifeContract", "common_cancel", "gray", Guard.Way(Cancelled), PlayerAction.Cancel),
+                        new ButtonInfo("StartRealLifeContract", "reallife_job_skip_start", "blue", Guard.Wrap(Pressed), PlayerAction.Confirm)
+                    });
+                }
                 return _state == PlayerActivityState.Running
                     ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Stopped), PlayerAction.Cancel) })
                     : null;
@@ -450,18 +494,88 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        public bool HasSlider() => false;
+        // The hours of a contract's stint, picked before it starts (StintSlider); the rest have none, though the panel sets a slider up for every activity.
+        public bool HasSlider()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return Offered && _slide.Slides;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public int GetMinSliderValue() => 0;
+        public int GetMinSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.Least : 0;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
-        public int GetMaxSliderValue() => 0;
+        public int GetMaxSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.Most : 0;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0);
+            }
+        }
 
-        public float GetCurrentSliderValue() => 0f;
+        public float GetCurrentSliderValue()
+        {
+            try
+            {
+                return _slide != null ? _slide.Now : 0f;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 0f);
+            }
+        }
 
         public void OnSliderValueChanged(int value)
         {
+            try
+            {
+                if (Offered)   // the panel sets its slider up for every activity, with or without one: StintSlider keeps only the player's moves
+                {
+                    _slide.Slide(value);
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
-        public (string key, object arguments) GetSliderInfo() => (null, null);
+        public (string key, object arguments) GetSliderInfo()
+        {
+            if (FrameGuard.Off)
+            {
+                return (null, null);
+            }
+            try
+            {
+                return HasSlider() ? ("common_hours", new { hours = _slide.Now }) : (null, null);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
     }
 }

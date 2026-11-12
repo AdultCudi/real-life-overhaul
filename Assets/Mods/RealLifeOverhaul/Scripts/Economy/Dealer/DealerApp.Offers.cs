@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Money(row, 3, s.Price);
                 Money(row, 4, s.Cost);
                 row.Set(5, (s.Financed ? DealerText.T("reallife_dealer_extra_finance") + " " : string.Empty) + (s.Tier >= 0 ? DealerText.Tier(s.Tier) : string.Empty)
-                           + (s.Extras != 0 ? (s.Financed || s.Tier >= 0 ? ", " : string.Empty) + DealerText.Extras(s.Extras) : string.Empty));
+                           + (s.Extras != 0 ? (s.Financed || s.Tier >= 0 ? EstateText.Pair(string.Empty, DealerText.Extras(s.Extras)) : DealerText.Extras(s.Extras)) : string.Empty));
                 row.Set(6, FinanceText.Day(s.Day), s.Day);
                 row.Set(7, DealerText.T("reallife_dealer_state_sold", "margin", DealerText.Money(s.Price - s.Cost)), s.Price < s.Cost ? TableRow.Red : TableRow.Green);
             }
@@ -90,19 +90,19 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (d.WantsFinance)
             {
-                t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.T("reallife_dealer_extra_finance"));
+                EstateText.Add(t, DealerText.T("reallife_dealer_extra_finance"));
             }
             if (d.TradeType != null)
             {
-                t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.T("reallife_dealer_extra_trade"));
+                EstateText.Add(t, DealerText.T("reallife_dealer_extra_trade"));
             }
             if (d.Tier >= 0)
             {
-                t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.Tier(d.Tier));
+                EstateText.Add(t, DealerText.Tier(d.Tier));
             }
             if (d.Extras != 0)
             {
-                t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.Extras(d.Extras));
+                EstateText.Add(t, DealerText.Extras(d.Extras));
             }
             return t.ToString();
         }

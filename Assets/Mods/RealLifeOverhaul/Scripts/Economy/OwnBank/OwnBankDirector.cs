@@ -227,14 +227,18 @@ namespace RealLifeOverhaul.Economy
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new OwnBankApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_ob_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(214, 182, 96, 255), new Color32(128, 92, 30, 255), 0.42f, "AppIcon-OwnBank"),
                 Build = view.Build,
-                Opened = view.Opened
-            }, out bool tryAgain);
+                Opened = view.Opened,
+                Kit = () => new RealLifeOverhaul.Ui.OwnBankScreen(RealLifeOverhaul.Ui.OwnBankLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.OwnBankScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.PiggyBank
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -246,6 +250,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()
@@ -303,12 +308,17 @@ namespace RealLifeOverhaul.Economy
             OwnBankRules.Day(_bank, city, day, market ? _quotes : null, _day);
             BuildingRegistration hq = OwnBankGame.Headquarters();
             OwnBankGame.BookDay(_day, hq, _bank.Name, dated ? day : Save.Day);
+            if (dated && !_bank.Test)
+            {
+                OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit, _bank.Capital);   // the bank's own books, for a listing of its own (Markets/Extras)
+            }
             if (hq == null && _warnedDay != Save.Day && (_day.Income > 0 || _day.Costs > 0))
             {
                 _warnedDay = Save.Day;
                 Tell(NotificationType.Warning, "reallife_ob_toast_no_hq", TabBank);
             }
             Happened(day, city, hq);
+            TellDividend(day);
             if (_bank.Running && _bank.Month != month)
             {
                 Tell(NotificationType.Info, "reallife_ob_toast_month", TabBank, "deposits", OwnBankText.Money(_bank.Savings), "loans", OwnBankText.Money(_bank.Lent),
@@ -518,6 +528,33 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Own bank: " + cents / 100 + " of capital put in on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
             Changed();
             return true;
+        }
+
+        /// <summary>
+        /// The money an offer of the bank's shares raised on the stock market (Markets/Extras), in cents: into its capital and its cash as capital put in is, but the
+        /// public's, so nothing leaves the player's cash, and it stays in the bank while the stock trades: no pay, dividend or sale takes it (<see cref="OwnBank.Public"/>,
+        /// kept by <see cref="OwnBankRules.Keep"/>). False if no bank runs.
+        /// </summary>
+        public bool PublicCapital(long cents)
+        {
+            if (!Running || !OwnBankRules.PublicIn(_bank, cents))
+            {
+                return false;
+            }
+            Logger?.Info("Own bank: " + cents / 100 + " of capital raised from the public on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
+            Changed();
+            return true;
+        }
+
+        /// <summary>The bank's stock has left the market: the offer's money it kept for the public is free to be paid out like the rest of the capital.</summary>
+        public void PublicRelease()
+        {
+            if (_bank != null && _bank.Public != 0)
+            {
+                _bank.Public = 0;
+                Logger?.Info("Own bank: the capital kept for the public's shares is free on day " + Save.Day + "; the stock has left the market.");
+                Changed();
+            }
         }
 
         /// <summary>A dividend from the bank's capital into the player's cash, to the step. False with a reason key if it cannot be.</summary>

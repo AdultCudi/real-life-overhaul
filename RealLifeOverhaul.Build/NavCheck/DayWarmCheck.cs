@@ -31,6 +31,7 @@ internal static partial class Program
         WarmAgain();
         WarmSameDay();
         WarmSources();
+        LoadWarms();   // a job's code compiled behind the loading screen (LoadWarmCheck.cs)
     }
 
     private const double WarmSliceMs = 1.0;   // Core/DayWarm.SliceMs, which the sources check below holds to this

@@ -55,6 +55,10 @@
         public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
         public const string MealsTakeoutId = "meals_takeout";
         public const string HouseholdStaffId = "home_household";
+        public const string GivingId = "giving";
+        public const string InsuranceId = "insurance";
+        public const string HealthId = "health";
+        public const string DynastyId = "dynasty";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -70,6 +74,7 @@
         public const string SirenId = "siren";
         public const string PoliceId = "police";
         public const string PolicePursuitId = "police_pursuit";
+        public const string PoliceCapsId = "police_caps";
         public const string PeopleId = "people";
         public const string OfficersOnPatrolId = "patrol_officers";
         public const string PatrolFrequencyId = "patrol_frequency";
@@ -87,12 +92,22 @@
         public const string PhoneSkinId = "phone_skin";
         public const string PhoneFoldersId = "phone_folders";
         public const string NoticeLookId = "notice_look";
+        public const string NoticeShowRoadId = "notice_show_road";
+        public const string NoticeShowMoneyId = "notice_show_money";
+        public const string NoticeShowPropertyId = "notice_show_property";
+        public const string NoticeShowWorkId = "notice_show_work";
+        public const string NoticeShowBusinessId = "notice_show_business";
+        public const string NoticeShowTechId = "notice_show_tech";
+        public const string NoticeShowNewsId = "notice_show_news";
+        public const string NoticeShowPeopleId = "notice_show_people";
+        public const string NoticeShowOtherId = "notice_show_other";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
         public const string CarTuningId = "car_tuning";
         public const string CarTopSpeedId = "car_top_speed";
         public const string CarAccelerationId = "car_acceleration";
         public const string SmoothThrottleId = "smooth_throttle";
         public const string SpeedometerId = "speedometer";
+        public const string AutoSignalsId = "auto_signals";
         public const string HandlingId = "car_handling";
         public const string HandlingSoftnessId = "car_handling_softness";
         public const string HandlingBounceId = "car_handling_bounce";
@@ -100,6 +115,7 @@
         public const string HandlingGripId = "car_handling_grip";
         public const string HandlingSteeringId = "car_handling_steering";
         public const string HandlingBrakesId = "car_handling_brakes";
+        public const string HandlingOtherModsId = "car_handling_modded";
         public const string VisualsEnabledId = "visuals_enabled";
         public const string SaturationId = "visuals_saturation";
         public const string ContrastId = "visuals_contrast";
@@ -108,13 +124,32 @@
         public const string ShadowReachId = "render_shadow_reach";
         public const string ShadowCascadesId = "render_shadow_cascades";
         public const string LodReachId = "render_lod_reach";
+        public const string GraphicsLookId = "graphics_look";   // realistic graphics: the look of the whole picture
+        public const string GraphicsCostId = "graphics_cost";   // ...and what it may cost the graphics card
         public const string CharacterHighDetailId = "character_high_detail";
         public const string CharacterHairId = "character_hair";
         public const string CharacterLightingId = "character_lighting";
         public const string CharacterNewLooksId = "character_new_looks";
         public const string CharacterSkinId = "character_skin";
         public const string CrimeAgainstPlayerId = "crime_against_player";
-        public const string PlayerOffencesId = "player_offences";
+        public const string OffenceRedLightId = "offence_red_light";
+        public const string OffenceSpeedingId = "offence_speeding";
+        public const string OffencePavementId = "offence_pavement";
+        public const string OffenceWrongWayId = "offence_wrong_way";
+        public const string OffenceDrinkId = "offence_drink";
+        public const string OffenceJaywalkId = "offence_jaywalk";
+        public const string OffenceCrossRedId = "offence_cross_red";
+        public const string OffenceHornId = "offence_horn";
+        internal const string OffencesOlderSwitch = "player_offences";   // the one switch an older version had for all of these: each takes its value (MoveOffences) and it is deleted
+
+        /// <summary>
+        /// The ids of the eight traffic offence options, the horn last: what the older switch's value is handed to (MoveOffences),
+        /// and what an older settings file's line for it stands for (Presets.Import).
+        /// </summary>
+        internal static readonly string[] OffenceIds =
+        {
+            OffenceRedLightId, OffenceSpeedingId, OffencePavementId, OffenceWrongWayId, OffenceDrinkId, OffenceJaywalkId, OffenceCrossRedId, OffenceHornId
+        };
         public const string PolicePresenceId = "police_presence";
         public const string CityLifeId = "city_life";
         public const string CityDensityId = "city_density";
@@ -136,7 +171,7 @@
         public const string FamilyWorkId = "family_work";
         public const string FamilyWealthMoodId = "family_wealth_mood";
         public const string FamilyExpectId = "family_expect";
-        public const string FamilyInterestId = "family_interest";
+        public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
         public const string FamilyYearWeeksId = "family_year_weeks";
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
@@ -154,10 +189,13 @@
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyDayResultId = "economy_day_result";   // the day-end panel and the top bar show the game's figure with the mod's money
+        public const string EconomyGoalRewardsId = "economy_goal_rewards";   // a personal goal reached pays a reward sized by its tier
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
         public const string EconomyLevelId = "economy_level";
+        public const string StartDebtId = "start_debt";                     // a new game begins owing a student loan (Economy/Banking/Terms/StartDebtRules)
+        public const string StartDebtDegreeId = "start_debt_degree";        // ...and what the loan paid for
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
         public const string EconomyAppId = "economy_app";                   // the Economy app on the phone (Scripts/Outlook)
@@ -176,10 +214,12 @@
         public const string MarketsDerivativesId = "markets_derivatives";
         public const string MarketsBuildersId = "markets_builders";              // the city's builders on the market, building materials and a project's hedge
         public const string MarketsHoldingId = "markets_holding";
+        public const string MarketsExtrasId = "markets_extras";                  // splits by a board's own level, the index fund, block trades, a bank on the market
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
         public const string EconomyCompanyStaffId = "economy_company_staff";
+        public const string EconomyCompanyAgreeUpToId = "economy_company_agree_up_to";   // ...a request for a raise of this share of the pay or less is agreed by itself
         public const string EconomyCompanyCoverId = "economy_company_cover";
         public const string EconomyCompanyMarketingId = "economy_company_marketing";
         public const string EconomyCompanyTaxId = "economy_company_tax";
@@ -197,6 +237,8 @@
         public const string EconomyOnlineWaitNotesId = "economy_online_wait_notes";
         public const string TechPeopleId = "tech_people";
         public const string TechJobsId = "tech_jobs";
+        public const string TechSearchRushId = "tech_search_rush";
+        public const string TechSeatHiresId = "tech_seat_hires";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
         public const string TechInfraOfferId = "tech_infra_offer";
@@ -207,12 +249,27 @@
         public const string TechSiteOfficesId = "tech_site_offices";
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyDealerFloorId = "economy_dealer_floor";
+        public const string EconomyDealerSupplyId = "economy_dealer_supply";
+        public const string ParkingSpacesId = "parking_spaces";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
         public const string OfficeConversionId = "office_conversion";
         public const string EconomyBankId = "economy_bank";
         public const string EconomyBranchId = "economy_bank_branch";
         public const string EndScaleId = "economy_endscale";
+        public const string LivingPopulationId = "living_population";
+        public const string LivingDesksId = "living_desks";
+        public const string UiInterfaceId = "ui_interface";
+        public const string UiMotionId = "ui_motion";
+        public const string LivingStudioId = "living_studio";
+        public const string LivingFlareId = "living_flare";
+        public const string LivingFirmsId = "living_firms";
+        public const string LivingSchemesId = "living_schemes";
+        public const string LivingTripsId = "living_trips";
+        public const string LivingRivalsSeenId = "living_rivals_seen";   // ...rivals seen around the city (Scripts/RivalsSeen)
+        public const string LivingSpoilageId = "living_spoilage";
+        public const string LivingPartiesId = "living_parties";
+        public const string LivingSuppliersId = "living_suppliers";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -222,6 +279,7 @@
         public const string MinimapSizeId = "nav_size";
         public const string MinimapZoomId = "nav_zoom";
         public const string MinimapBaseId = "nav_base";
+        public const string Minimap25Id = "nav_minimap25";
         public const string RoadsideChecksId = "roadside_checks";
         public const string HeavyLicenceId = "heavy_licence";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
@@ -330,12 +388,15 @@
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
         public const string CareersId = "careers";
+        public const string SideJobsId = "side_jobs";
         public const string CareersStudyId = "careers_study";
         public const string CareersDegreesId = "careers_degrees";
         public const string CareersJobsId = "careers_jobs";
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
         public const string CareersOwnOfferNotesId = "careers_own_offer_notes";
+        public const string CareersOwnDeskId = "careers_own_desk";
+        public const string CareersOwnHoursId = "careers_own_hours";
         public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
@@ -370,9 +431,11 @@
         public const string InteriorsStaffId = "interiors_staff";
         public const string DesignsId = "designs";
         public const string NewShopsId = "new_shops";
+        public const string LoyaltyId = "loyalty";
         public const string PermadeathId = "permadeath";
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
         public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
+        public const string UptownSubwayId = "uptown_subway";   // ...its subway stations, joined to the game's network (Scripts/Subway)
         public const string LandmarksId = "uptown_landmarks";   // Uptown's landmarks: the tower, the mall and the stadium (Scripts/Landmarks)
         public const string SchoolsId = "uptown_campus";        // Birchwood School's campus on Uptown's west square and the city's schools (Scripts/Schools)
 
@@ -423,6 +486,10 @@
         public static bool ConstructionParking = true;     // car parks: the player's on their land in build mode, public pay parking and leases; the city's builders' too
         public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
         public static bool MealsTakeout = true;  // food carried in a bag is eaten from a plate once seated; a home dish can be packed to take
+        public static bool Health = true;   // illnesses and injuries that can turn serious, the doctor's appointment, hospital stays, health insurance, medical debt and sick leave
+        public static bool Giving = true;   // gifts to the city's charities and money for people: gifts, standing gifts, loans, asks and the deduction
+        public static bool Insurance = true;   // cover the player buys: a tier for each car's policy, a policy for each home, and one app for those, the health plan and business cover
+        public static bool Dynasty = true;  // a will, estate tax, retiring and an heir who carries on; off: the game's own end in old age, as before
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
@@ -436,6 +503,7 @@
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
         public static bool PolicePursuit = true;     // the player is chased after hitting a car and driving off
+        public static bool PoliceCaps = true;        // officers wear a cap; off, every officer goes bare headed (People/OfficerCapRules)
         public static bool People = true;            // drivers, paramedics and officers on foot at accidents and traffic stops
         public static bool OfficersOnPatrol = true;  // one or two officers walking a beat near the player now and then
         public static int PatrolFrequency = 3;       // 1 = rare, 10 = nearly always one about
@@ -455,6 +523,7 @@
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
+        public static bool AutoSignals = true;       // the car you drive switches its turn signals on and off by itself as it turns
         public static int Handling = 2;              // the driven car's weight, soft ride, roll and sliding: 0 off, 1 light, 2 full, 3 heavy
         public static int HandlingSoftness = 100;    // the test tools' tuning sliders, per cent of the design: the springs' softness...
         public static int HandlingBounce = 100;      // ...how lightly the bounce is damped
@@ -462,9 +531,19 @@
         public static int HandlingGrip = 100;        // ...the tyres' grip
         public static int HandlingSteering = 100;    // ...the steering's reach at speed
         public static int HandlingBrakes = 100;      // ...how quickly the brakes build
+        public static bool HandlingOtherMods = true; // a car of another mod that rides stiffer than the game's cars of its kind is given their soft ride
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
         public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock; off, the plain pages of before
         public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour
+        public static bool NoticeShowRoad = true;    // the mod's notifications about the road pop up; off, they go straight into the notification list (GameUi/NoticeMute)
+        public static bool NoticeShowMoney = true;   // ...about money, banks and markets (bills, debts and taxes always pop up)
+        public static bool NoticeShowProperty = true;   // ...about property, letting and the roommate
+        public static bool NoticeShowWork = true;    // ...about work, careers and study
+        public static bool NoticeShowBusiness = true;   // ...about running the player's businesses
+        public static bool NoticeShowTech = true;    // ...about the tech sector
+        public static bool NoticeShowNews = true;    // ...about the news, the city and the weather
+        public static bool NoticeShowPeople = true;  // ...about family and friends
+        public static bool NoticeShowOther = true;   // ...the mod's other notifications (the police's and health's have no switch: they always pop up)
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
         public static int CameraHeight = 15;     // look-at height above the player's feet, in tenths of a metre
@@ -476,14 +555,28 @@
         public static int ShadowReach = RenderLevelRules.Game;       // the sun's shadows, percent of the game's distance
         public static int ShadowCascades = RenderLevelRules.GameCascades;   // the sun's shadow cascades: 0 the game's own, else 1 to 4
         public static int LodReach = RenderLevelRules.Game;          // level-of-detail distances, percent of the game's
+        public static int GraphicsLook = 0;      // realistic graphics: 0 Off (the game's own picture), 1 Natural, 2 Filmic, 3 Vivid (Gfx.GraphicsRules.DefaultLook)
+        public static int GraphicsCost = 0;      // ...what it may cost: 0 Free (no pass added), 1 Balanced, 2 High (Gfx.GraphicsRules.DefaultCost)
         public static bool CharacterHighDetail = true;   // the player is drawn with the game's detailed character set in the city
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
         public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
-        public static bool PlayerOffences = true;        // red lights, speeding and reckless driving can get the player pulled over
+        public static bool OffenceRedLight = true;       // running a red light can get the player pulled over
+        public static bool OffenceSpeeding = true;       // so can speeding
+        public static bool OffencePavement = true;       // so can driving fast on the pavement
+        public static bool OffenceWrongWay = true;       // so can driving fast against the traffic
+        public static bool OffenceDrink = true;          // driving after drinks (Leisure reports it) can start a stop, and adds a fine to any stop
+        public static bool OffenceJaywalk = true;        // an officer shouts at the player walking in the road, and now and then fines them
+        public static bool OffenceCrossRed = true;       // and at the player crossing against the light
+        public static bool OffenceHorn = true;           // the horn at people with the right of way earns a warning, then a fine (People/HornReactions)
         public static int PolicePresence = 5;            // 0 = no police standing or walking about; 10 = somebody nearly always in sight
+
+        /// <summary>The traffic offences the police act on now, one switch each. Read from the fields: nothing is allocated.</summary>
+        internal static OffenceSwitches Offences =>
+            new OffenceSwitches(OffenceRedLight, OffenceSpeeding, OffencePavement, OffenceWrongWay, OffenceJaywalk, OffenceCrossRed, OffenceDrink);
+
         public static bool CityLife = true;              // people at work and going about their day on the pavements near the player
         public static int CityDensity = 5;               // 1 = one site now and then, 10 = three sites nearly always (never more than eight people)
         public static bool CityWorkers = true;           // sweepers, road crews, window cleaners, leaflets, the coffee cart
@@ -504,7 +597,7 @@
         public static bool FamilyWealthMood = true;      // the partner reacts to the player's wealth by how they lean, proud or envious
         public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
-        public static int FamilyInterest = 0;            // who the default "Someone special" introduces: 0 anyone, 1 women, 2 men
+        public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
         public static bool Civic = true;                 // civic life: a city government and a construction programme
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
@@ -522,10 +615,13 @@
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
         public static bool EconomyDayResult = true;      // ...the day's result with the mod's money on the day-end panel and the top bar
+        public static bool EconomyGoalRewards = true;    // ...a personal goal reached pays a reward (Economy/Finance/GoalRewardRules)
         public static bool EconomyProducts = true;       // more kinds of credit (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
+        public static bool StartDebt = false;            // a game begun from now on starts owing a student loan (off: it starts owing nothing, as before)
+        public static int StartDebtDegree = 1;           // ...what the loan paid for: 0 a diploma, 1 a bachelor's degree, 2 a master's degree, 3 a bachelor's degree and an MBA
         public static bool EconomyCity = true;           // the city's economy (off: every figure is the game's own and the model stands still)
         public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects
         public static bool EconomyApp = true;            // the Economy app: the city's economy, jobs, districts, markets and books as dashboards, with a daily history and advice
@@ -543,11 +639,13 @@
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
         public static bool MarketsBuilders = true;       // the rival builders listed and moved by the construction game's news; a project's materials hedged
+        public static bool MarketsExtras = true;         // the stock market's extras: seeded and reverse splits, the founder's split, the index fund, block trades, a bank of the player's listed
         public static int MarketsHolding = 0;            // the most of one company the player may hold: 0 a tenth (the old rule), 1 a quarter, 2 half, 3 all of it (MarketCatalogue.HoldingCapBp)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompanyStaff = true;   // ...the wage market, raises, rivals' offers, strikes, overtime and sick pay
+        public static int EconomyCompanyAgreeUpTo = 0;   // ...a request for a raise of this many per cent of the pay or less is agreed by itself each morning; 0 is off
         public static bool EconomyCompanyCover = true;   // ...business insurance: policies, premiums and claims
         public static bool EconomyCompanyMarketing = true;   // ...campaigns and their reports
         public static bool EconomyCompanyTax = true;     // ...the quarterly return and the accountant
@@ -563,6 +661,8 @@
         public static bool EstateDuties = true;          // a landlord's duties: satisfaction, repair calls, inspections, managers (off: letting as before)
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
+        public static bool TechSearchRush = true;        // ...a search firm's search can be rushed for a share of its fee for each day saved (off: it takes its days)
+        public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
         public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
@@ -575,12 +675,27 @@
         public static bool EconomyOnlineWaitNotes = true; // ...a notification after three opening hours of orders nobody is on shift to pick
         public static bool EconomyDealer = true;         // the car dealership (off: its dealerships do not trade; their cars stay on the lots)
         public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor
+        public static bool EconomyDealerSupply = true;   // a supplier for each kind of car at the Car Showroom (off: every new car from the wholesaler, as before)
+        public static bool ParkingSpaces = true;         // a parking space bought or rented in a building's car park (off: every car there pays by the hour, as before)
         public static bool EconomyCleaning = true;       // the cleaning service (off: no round, no contracts, nothing cleaned or charged by it)
         public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs
         public static bool EconomySale = true;           // selling a business (off: nothing is offered, paid or charged by it)
         public static bool EconomyBank = true;           // the player's own bank (off: it stands still, nothing is run, booked or charged)
         public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
+        public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
+        public static bool UiInterface = true;           // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off: the game's own screens)
+        public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
+        public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
+        public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
+        public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
+        public static bool LivingSchemes = true;         // ...schemes that pay until they are found out: invented claims and expenses, dressed books, a sham club, washed cash, bought favour (Schemes)
+        public static bool LivingFirms = true;           // ...the other tech firms rebuilt: shared markets from the city, rivals by the same rules, a desk session for each kind (Sector)
+        public static bool LivingTrips = true;           // ...logistics routes run as delivery trips: departure times, vehicles and drivers, drive time, fuel (Economy/Logistics)
+        public static bool LivingRivalsSeen = true;      // ...rivals seen around the city: at the places their week has them, their cars, the sightings (RivalsSeen)
+        public static bool LivingSpoilage = true;        // ...food spoils: shelf life by kind, longer in a fridge or freezer, oldest sold first (Economy/Logistics)
+        public static bool LivingParties = true;         // ...parties with friends and company events for a business's staff, the rivals' too (Parties)
+        public static bool LivingSuppliers = true;       // ...a choice of wholesalers, fixed price contracts under take or pay, late or short deliveries, the rivals by the same rules (Suppliers)
         public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
         public static bool EconomyBanks = true;          // the Banks app
         public static bool Minimap = true;               // the minimap on the HUD while out in the city
@@ -590,6 +705,7 @@
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
         public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before)
+        public static bool Minimap25 = true;             // the minimap as the same blocks, tilted (off: the flat picture of buildings and water)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool HeavyLicence = true;          // the heaviest trucks need a heavy goods licence, and it opens heavy loads (off: the commercial licence covers them, as before)
         public static bool ShowTestTools = false;        // the test buttons are on the options page
@@ -699,7 +815,7 @@
         public static int FlareFilter = 0;               // what other players type: 0 standard (Steam's filter, else the mod's list), 1 strict (both, and addresses starred)
         public static int FlareTheme = 0;                // Flare's look: 0 follows the phone (dark from 19:00 to 07:00), 1 light, 2 dark
         public static bool FlarePictures = true;         // every account shows its picture (off: the initials)
-        public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about three in ten), 3 many
+        public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about half of the posts that could show one), 3 many
         public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
@@ -712,11 +828,12 @@
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool LedgerOnline = true;          // Newsstand
         public static bool LedgerOnlineNotes = true;     // a notification each morning the online editions are in
-        public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones and the city's most valuable
+        public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones, the city's most valuable and a sector's leader
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks
+        public static bool SideJobs = true;              // taxi and delivery shifts in the player's own vehicle, signed on for at the cab office's and the depot's desks (off: no desk stands)
         public static bool CareersStudy = true;          // the city's courses (off: the game's own courses alone; records are kept)
         public static bool CareersDegrees = true;        // the university (off: those courses are not offered; results are kept)
         public static bool CareersJobs = true;           // professional jobs (off: no vacancies; a job held is kept)
@@ -727,6 +844,8 @@
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
+        public static bool CareersOwnDesk = true;        // ...a contract's work started at a free desk of an office business of the player's, not from the Career app (off: the app starts it)
+        public static bool CareersOwnHours = true;       // ...the hours of a contract's stint picked on the work panel's slider (off: three hours each)
         public static bool CareersLadder = true;         // the management ladder at a city company's stores (off: a job there is the profession's ranks alone; the record is kept)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
@@ -747,11 +866,13 @@
         public static bool InteriorsBasket = true;          // over the standard each customer takes more of the shop's stock (off with Meaningful Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way
         public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs
+        public static bool Loyalty = true;                  // loyalty cards for the player's shops (off: no scheme runs, none costs or brings anything, and the tab is gone)
         public static bool NewShops = true;                 // the ice cream parlour, tea bar and tobacconist are offered when a business is started
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
         public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
         public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
+        public static bool UptownSubway = true;          // three subway stations in Uptown and Cedar Heights among the game's own; acts at once
         public static bool Landmarks = true;             // Uptown's three landmarks: announced, tendered, built, opened, and what they do for the district
         public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
@@ -839,6 +960,10 @@
             ConstructionParking = Bool(modId, ConstructionParkingId, ConstructionParking);
             MealsTakeout = Bool(modId, MealsTakeoutId, MealsTakeout);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
+            Giving = Bool(modId, GivingId, Giving);
+            Insurance = Bool(modId, InsuranceId, Insurance);
+            Health = Bool(modId, HealthId, Health);
+            Dynasty = Bool(modId, DynastyId, Dynasty);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);
@@ -854,6 +979,7 @@
             Siren = Bool(modId, SirenId, Siren);
             Police = Bool(modId, PoliceId, Police);
             PolicePursuit = Bool(modId, PolicePursuitId, PolicePursuit);
+            PoliceCaps = Bool(modId, PoliceCapsId, PoliceCaps);
             People = Bool(modId, PeopleId, People);
             OfficersOnPatrol = Bool(modId, OfficersOnPatrolId, OfficersOnPatrol);
             PatrolFrequency = Int(modId, PatrolFrequencyId, PatrolFrequency);
@@ -871,6 +997,15 @@
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             PhoneFolders = Bool(modId, PhoneFoldersId, PhoneFolders);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
+            NoticeShowRoad = Bool(modId, NoticeShowRoadId, NoticeShowRoad);
+            NoticeShowMoney = Bool(modId, NoticeShowMoneyId, NoticeShowMoney);
+            NoticeShowProperty = Bool(modId, NoticeShowPropertyId, NoticeShowProperty);
+            NoticeShowWork = Bool(modId, NoticeShowWorkId, NoticeShowWork);
+            NoticeShowBusiness = Bool(modId, NoticeShowBusinessId, NoticeShowBusiness);
+            NoticeShowTech = Bool(modId, NoticeShowTechId, NoticeShowTech);
+            NoticeShowNews = Bool(modId, NoticeShowNewsId, NoticeShowNews);
+            NoticeShowPeople = Bool(modId, NoticeShowPeopleId, NoticeShowPeople);
+            NoticeShowOther = Bool(modId, NoticeShowOtherId, NoticeShowOther);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);
             CarAcceleration = Int(modId, CarAccelerationId, CarAcceleration);
@@ -879,6 +1014,7 @@
             UnityEngine.PlayerPrefs.DeleteKey(Key(modId, CarSpeedId));
             Keys.Load();
             Speedometer = Bool(modId, SpeedometerId, Speedometer);
+            AutoSignals = Bool(modId, AutoSignalsId, AutoSignals);
             Handling = Int(modId, HandlingId, Handling);
             HandlingSoftness = Int(modId, HandlingSoftnessId, HandlingSoftness);
             HandlingBounce = Int(modId, HandlingBounceId, HandlingBounce);
@@ -886,6 +1022,7 @@
             HandlingGrip = Int(modId, HandlingGripId, HandlingGrip);
             HandlingSteering = Int(modId, HandlingSteeringId, HandlingSteering);
             HandlingBrakes = Int(modId, HandlingBrakesId, HandlingBrakes);
+            HandlingOtherMods = Bool(modId, HandlingOtherModsId, HandlingOtherMods);
             VisualsEnabled = Bool(modId, VisualsEnabledId, VisualsEnabled);
             Saturation = Int(modId, SaturationId, Saturation);
             Contrast = Int(modId, ContrastId, Contrast);
@@ -894,6 +1031,8 @@
             ShadowReach = RenderLevelRules.Percent(Int(modId, ShadowReachId, ShadowReach));
             ShadowCascades = RenderLevelRules.Cascades(Int(modId, ShadowCascadesId, ShadowCascades));
             LodReach = RenderLevelRules.Percent(Int(modId, LodReachId, LodReach));
+            GraphicsLook = System.Math.Max(0, System.Math.Min(3, Int(modId, GraphicsLookId, GraphicsLook)));
+            GraphicsCost = System.Math.Max(0, System.Math.Min(2, Int(modId, GraphicsCostId, GraphicsCost)));
             CharacterHighDetail = Bool(modId, CharacterHighDetailId, CharacterHighDetail);
             CharacterHair = Bool(modId, CharacterHairId, CharacterHair);
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);
@@ -901,7 +1040,15 @@
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
-            PlayerOffences = Bool(modId, PlayerOffencesId, PlayerOffences);
+            MoveOffences(modId);   // before the eight are read: the older single switch becomes their own saved values
+            OffenceRedLight = Bool(modId, OffenceRedLightId, OffenceRedLight);
+            OffenceSpeeding = Bool(modId, OffenceSpeedingId, OffenceSpeeding);
+            OffencePavement = Bool(modId, OffencePavementId, OffencePavement);
+            OffenceWrongWay = Bool(modId, OffenceWrongWayId, OffenceWrongWay);
+            OffenceDrink = Bool(modId, OffenceDrinkId, OffenceDrink);
+            OffenceJaywalk = Bool(modId, OffenceJaywalkId, OffenceJaywalk);
+            OffenceCrossRed = Bool(modId, OffenceCrossRedId, OffenceCrossRed);
+            OffenceHorn = Bool(modId, OffenceHornId, OffenceHorn);
             PolicePresence = Int(modId, PolicePresenceId, PolicePresence);
             CityLife = Bool(modId, CityLifeId, CityLife);
             CityDensity = Int(modId, CityDensityId, CityDensity);
@@ -944,10 +1091,13 @@
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyDayResult = Bool(modId, EconomyDayResultId, EconomyDayResult);
+            EconomyGoalRewards = Bool(modId, EconomyGoalRewardsId, EconomyGoalRewards);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
+            StartDebt = Bool(modId, StartDebtId, StartDebt);
+            StartDebtDegree = Int(modId, StartDebtDegreeId, StartDebtDegree);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             EconomyApp = Bool(modId, EconomyAppId, EconomyApp);
@@ -966,10 +1116,12 @@
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
             MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);
             MarketsHolding = Int(modId, MarketsHoldingId, MarketsHolding);
+            MarketsExtras = Bool(modId, MarketsExtrasId, MarketsExtras);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
             EconomyCompanyStaff = Bool(modId, EconomyCompanyStaffId, EconomyCompanyStaff);
+            EconomyCompanyAgreeUpTo = Int(modId, EconomyCompanyAgreeUpToId, EconomyCompanyAgreeUpTo);
             EconomyCompanyCover = Bool(modId, EconomyCompanyCoverId, EconomyCompanyCover);
             EconomyCompanyMarketing = Bool(modId, EconomyCompanyMarketingId, EconomyCompanyMarketing);
             EconomyCompanyTax = Bool(modId, EconomyCompanyTaxId, EconomyCompanyTax);
@@ -987,6 +1139,8 @@
             EconomyOnlineWaitNotes = Bool(modId, EconomyOnlineWaitNotesId, EconomyOnlineWaitNotes);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
             TechJobs = Bool(modId, TechJobsId, TechJobs);
+            TechSearchRush = Bool(modId, TechSearchRushId, TechSearchRush);
+            TechSeatHires = Bool(modId, TechSeatHiresId, TechSeatHires);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
             TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);
@@ -997,12 +1151,28 @@
             TechSiteOffices = Bool(modId, TechSiteOfficesId, TechSiteOffices);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyDealerFloor = Bool(modId, EconomyDealerFloorId, EconomyDealerFloor);
+            EconomyDealerSupply = Bool(modId, EconomyDealerSupplyId, EconomyDealerSupply);
+            ParkingSpaces = Bool(modId, ParkingSpacesId, ParkingSpaces);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBranch = Bool(modId, EconomyBranchId, EconomyBranch);
             EndScale = Bool(modId, EndScaleId, EndScale);
+            LivingPopulation = Bool(modId, LivingPopulationId, LivingPopulation);
+            LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
+            UiInterface = Bool(modId, UiInterfaceId, UiInterface);
+            UiMotion = Int(modId, UiMotionId, UiMotion);
+            Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
+            LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
+            LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
+            LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);
+            LivingSchemes = Bool(modId, LivingSchemesId, LivingSchemes);
+            LivingTrips = Bool(modId, LivingTripsId, LivingTrips);
+            LivingRivalsSeen = Bool(modId, LivingRivalsSeenId, LivingRivalsSeen);
+            LivingSpoilage = Bool(modId, LivingSpoilageId, LivingSpoilage);
+            LivingParties = Bool(modId, LivingPartiesId, LivingParties);
+            LivingSuppliers = Bool(modId, LivingSuppliersId, LivingSuppliers);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);
@@ -1012,6 +1182,7 @@
             MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
             MinimapBase = Bool(modId, MinimapBaseId, MinimapBase);
+            Minimap25 = Bool(modId, Minimap25Id, Minimap25);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             HeavyLicence = Bool(modId, HeavyLicenceId, HeavyLicence);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
@@ -1121,12 +1292,15 @@
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
             Careers = Bool(modId, CareersId, Careers);
+            SideJobs = Bool(modId, SideJobsId, SideJobs);
             CareersStudy = Bool(modId, CareersStudyId, CareersStudy);
             CareersDegrees = Bool(modId, CareersDegreesId, CareersDegrees);
             CareersJobs = Bool(modId, CareersJobsId, CareersJobs);
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
             CareersOwnOfferNotes = Bool(modId, CareersOwnOfferNotesId, CareersOwnOfferNotes);
+            CareersOwnDesk = Bool(modId, CareersOwnDeskId, CareersOwnDesk);
+            CareersOwnHours = Bool(modId, CareersOwnHoursId, CareersOwnHours);
             CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
@@ -1156,9 +1330,11 @@
             Designs = Bool(modId, DesignsId, Designs);
             NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
             Uptown = Bool(modId, UptownId, Uptown);
+            UptownSubway = Bool(modId, UptownSubwayId, UptownSubway);
             Landmarks = Bool(modId, LandmarksId, Landmarks);
             Schools = Bool(modId, SchoolsId, Schools);
             NewShops = Bool(modId, NewShopsId, NewShops);
+            Loyalty = Bool(modId, LoyaltyId, Loyalty);
         }
 
         /// <summary>
@@ -1231,6 +1407,36 @@
                 return global::RealLifeOverhaul.Interiors.InteriorRules.Was(was, UnityEngine.PlayerPrefs.GetInt(old, 0));
             }
             return Bool(modId, switchWas, true) ? fallback : 0;
+        }
+
+        /// <summary>
+        /// Once: the one switch an older version kept for all the traffic offences is written as the saved value of each of the eight
+        /// that has none of its own, and deleted (OffenceRules.TakeOlderSwitch). Written, because the game's toggle on the options page
+        /// shows an option with no saved value as the shipped "on" and sets it so, and its reset deletes the eight but not a key that
+        /// is no option. Nothing is written for a new player, or at any start after the first.
+        /// </summary>
+        private static void MoveOffences(string modId)
+        {
+            OffenceRules.TakeOlderSwitch(new OffencePrefs(modId), OffencesOlderSwitch, OffenceIds);
+        }
+
+        // The offence options in PlayerPrefs, under the key the game's own controls use.
+        private readonly struct OffencePrefs : IOffenceStore
+        {
+            private readonly string _modId;
+
+            public OffencePrefs(string modId)
+            {
+                _modId = modId;
+            }
+
+            public bool Has(string id) => UnityEngine.PlayerPrefs.HasKey(Key(_modId, id));
+
+            public int Get(string id) => UnityEngine.PlayerPrefs.GetInt(Key(_modId, id), 0);
+
+            public void Set(string id, int value) => UnityEngine.PlayerPrefs.SetInt(Key(_modId, id), value);
+
+            public void Clear(string id) => UnityEngine.PlayerPrefs.DeleteKey(Key(_modId, id));
         }
 
         // The key format the game uses when it saves mod options.

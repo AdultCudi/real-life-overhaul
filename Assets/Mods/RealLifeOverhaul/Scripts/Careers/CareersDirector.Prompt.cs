@@ -467,6 +467,7 @@ namespace RealLifeOverhaul.Careers
                 case SittingKind.Homework: return "a piece of homework";
                 case SittingKind.Work: return "a working day";
                 case SittingKind.Overtime: return "overtime";
+                case SittingKind.Contract: return "a freelance contract";
                 default: return "a class";
             }
         }

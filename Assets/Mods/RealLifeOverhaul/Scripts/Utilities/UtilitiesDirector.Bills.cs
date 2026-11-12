@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Utilities
                 UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_toast_paid", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
                     "amount", UtilitiesText.Money(paid)), 8f);
             }
-            _view?.Changed();
+            Touch();
             return true;
         }
 
@@ -150,7 +150,7 @@ namespace RealLifeOverhaul.Utilities
             Logger?.Info("Utilities: " + a.Service + " applied for at " + a.Place + (byPhone ? " by phone" : string.Empty) + (reconnect ? " (reconnection)" : string.Empty)
                          + ": deposit " + deposit + ", fee " + fee
                          + "; connects on day " + a.ConnectDay + ".");
-            _view?.Changed();
+            Touch();
             return true;
         }
     }

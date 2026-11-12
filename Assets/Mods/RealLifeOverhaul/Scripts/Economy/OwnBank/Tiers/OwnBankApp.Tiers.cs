@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Economy
     {
         private const string LevelRow = "b|level", PayRow = "b|pay";
 
-        // The two rows under the books; true with one of them picked and its page written into the box.
+        // The three rows under the books (the dividends' in OwnBankApp.Dividends); true with one of them picked and its page written into the box.
         private bool WriteTierRows(InfoBox box, OwnBank b, BankCity c, ref string selected)
         {
             int tier = OwnBankRules.TierOf(b);
@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Economy
             pay.Set(0, OwnBankText.T("reallife_ob_row_pay"));
             pay.Set(1, OwnBankText.Money(b.PaidMonth), b.PaidMonth / 100.0, TableRow.Plain);
             pay.Set(2, PayNote(b));
+            DividendRow(b);
             if (_pick == LevelRow)
             {
                 selected = LevelRow;
@@ -42,6 +43,12 @@ namespace RealLifeOverhaul.Economy
             {
                 selected = PayRow;
                 WritePay(box, b);
+                return true;
+            }
+            if (_pick == DivRow)
+            {
+                selected = DivRow;
+                WriteDividends(box, b, c);
                 return true;
             }
             return false;

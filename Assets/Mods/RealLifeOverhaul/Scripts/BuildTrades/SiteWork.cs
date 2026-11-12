@@ -3,6 +3,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.BuildTrades
@@ -58,7 +59,11 @@ namespace RealLifeOverhaul.BuildTrades
                     {
                         return Closing("reallife_job_no_off");
                     }
-                    return director.Career.ClockOn(out string reason) ? Closing("reallife_trades_site_clocked") : Closing(reason ?? "reallife_job_no_now");
+                    if (director.Career.ClockOn(out string reason))
+                    {
+                        return Closing("reallife_trades_site_clocked");
+                    }
+                    return PhoneContacts.Closing(reason ?? "reallife_job_no_now", director.Career.OfficeData(CareerState.EmployerIndex));   // (a refusal that names a place fills its address)
                 },
                 SecondOptionTextOverride = "reallife_trades_site_other",
                 OnSecondOption = () => Offer(siteId, 0),
@@ -130,6 +135,7 @@ namespace RealLifeOverhaul.BuildTrades
             {
                 entry.ConfirmTextOverride = "reallife_jobline_take".Localize();
                 entry.OnConfirm = () => Take(def);
+                entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_shift", "amount", (def.UnitPay * def.ShiftUnits * rate).ToCurrencyFormat());
                 if (count > 1)
                 {
                     entry.SecondOptionTextOverride = "reallife_jobline_next";

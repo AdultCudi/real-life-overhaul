@@ -49,15 +49,19 @@ namespace RealLifeOverhaul.Construction
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new ConstructionApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_bld_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(246, 186, 90, 255), new Color32(196, 112, 28, 255), 0.42f, "AppIcon-Builders"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.ConstructionScreen(ConstructionLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.ConstructionScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Building
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -68,6 +72,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()
@@ -96,6 +101,7 @@ namespace RealLifeOverhaul.Construction
         private void AppChanged()
         {
             _view?.Changed();
+            ConstructionLive.Instance.Changed();
         }
 
         /// <summary>Opens the app on a tab with a row picked (0 for none).</summary>
@@ -104,6 +110,7 @@ namespace RealLifeOverhaul.Construction
             if (_app != null && _view != null && Running)
             {
                 _view.Want(tab, pick);
+                ConstructionLive.Instance.Want(tab, pick);
                 _app.Open();
             }
         }

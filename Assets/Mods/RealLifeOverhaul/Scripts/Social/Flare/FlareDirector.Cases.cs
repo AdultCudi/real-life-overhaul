@@ -258,6 +258,11 @@ namespace RealLifeOverhaul.Flare
             {
                 return;   // another player's: their own game applies it when the case comes to it
             }
+            if (CityTalk(c.Place, -1, ReporterAccount(c.Reporter), 1000000 + c.Id, FlareRules.Roll(_file.Seed, c.Id, 862)))
+            {
+                Logger?.Info("Flare: an inspector visits " + c.Name + " after a complaint: the residents who hear of it stay away until it fades.");
+                return;
+            }
             Buzz(c.Place, FlareLiveRules.ComplaintBuzz, FlareLiveRules.InspectionDays, day, reg);
             Logger?.Info("Flare: an inspector visits " + c.Name + " after a complaint: " + FlareLiveRules.ComplaintBuzz + "% customers for " + FlareLiveRules.InspectionDays + " days.");
         }
@@ -318,9 +323,14 @@ namespace RealLifeOverhaul.Flare
                 Logger?.Info("Flare: " + FlareLiveRules.KeyOf(p) + " posted about " + p.Name + " again today (" + p.Source + "): in the feed, its customers moved once today already.");
                 return;
             }
+            bool city = CityOn;
+            if (city)
+            {
+                CityReviewPost(p);   // heard by its author's followers and the district: the attention moves people, not a per cent
+            }
             if (p.Source == FlareSource.Review)
             {
-                int buzz = FlareLiveRules.ReviewBuzz(p.Arg, p.Reach);
+                int buzz = city ? 0 : FlareLiveRules.ReviewBuzz(p.Arg, p.Reach);
                 if (buzz != 0)
                 {
                     Buzz(p.Place, buzz, FlareLiveRules.ReviewDays, day, reg);
@@ -341,7 +351,10 @@ namespace RealLifeOverhaul.Flare
             {
                 int buzz = FlareLiveRules.AnnounceBuzz(p.Reach);
                 int days = p.Arg == (int)FlareAnnounce.Event && p.When > 0 ? Math.Max(1, p.When / 24 - day + 1) : FlareLiveRules.AnnounceDays;
-                Buzz(p.Place, buzz + (p.Arg == (int)FlareAnnounce.Event ? FlareLiveRules.EventCrowd - 1 : 0), days, day, reg);
+                if (!city)
+                {
+                    Buzz(p.Place, buzz + (p.Arg == (int)FlareAnnounce.Event ? FlareLiveRules.EventCrowd - 1 : 0), days, day, reg);
+                }
                 if (p.Arg == (int)FlareAnnounce.Hiring)
                 {
                     _hiringDay = day;
@@ -369,6 +382,10 @@ namespace RealLifeOverhaul.Flare
             };
             FlareLiveRules.SetAt(p, review.At + 40 + FlareRules.Roll(_file.Seed, id, 4) % 200);
             _file.Posts.Add(p);
+            if (review.Arg <= 2)
+            {
+                SoftenPlace(review.Place);
+            }
         }
 
         private void MentionAnswer(FlarePost p)

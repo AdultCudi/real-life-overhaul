@@ -344,6 +344,10 @@ namespace RealLifeOverhaul.Photos
                 Back();
                 return false;
             }
+            if (TypingNow.Now)
+            {
+                return true;   // the arrows are a field's own while it has the keyboard
+            }
             if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
                 Step(-1);

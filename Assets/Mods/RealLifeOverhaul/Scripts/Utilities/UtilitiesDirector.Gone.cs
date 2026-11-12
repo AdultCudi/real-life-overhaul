@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Utilities
             ReadPlaces();
             if (CloseGivenUp(UtilitiesGame.Today))
             {
-                _view?.Changed();
+                Touch();
             }
         }
 

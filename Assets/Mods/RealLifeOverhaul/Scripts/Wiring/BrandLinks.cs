@@ -45,9 +45,32 @@ namespace RealLifeOverhaul
             private static readonly BrandsSource Source = new BrandsSource();
             private static Func<BuildingRegistration, int> _ambientBefore;
 
+            // What Flare asks to hire a creator for the first of the player's brands' flagship shops: the quote a creators campaign is priced at. Nothing of Flare's is changed.
+            private static int CreatorsCost(int index)
+            {
+                try
+                {
+                    RealLifeOverhaul.Flare.FlareDirector flare = RealLifeOverhaul.Flare.FlareDirector.Instance;
+                    BrandsDirector brands = BrandsDirector.Instance;
+                    if (flare == null || brands == null || brands.State == null || brands.State.Brands.Count == 0)
+                    {
+                        return 0;
+                    }
+                    int cost, percent;
+                    string why;
+                    return flare.HireQuote(brands.State.Brands[0].Flagship, RealLifeOverhaul.Flare.FlareDeal.Series, 0, out cost, out percent, out why) ? cost : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.CreatorsCost", e);
+                    return 0;
+                }
+            }
+
             internal static void Connect()
             {
                 BrandsBridges.Footfall = Footfall;
+                BrandsBridges.CreatorsCost = CreatorsCost;
                 BrandsBridges.Promoted = BusinessGame.Promoted;
                 BrandsBridges.PriceLoss = PriceLoss;
                 BrandsBridges.StrikeStarts = StrikeStarts;

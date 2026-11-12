@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 
@@ -39,7 +40,7 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => FamilyState.Together && (!Partner.UsesSocial || InPerson) && s().LastChatDay != TimeHelper.CurrentDay,
                 () => FamilyText.Say("reallife_family_do_chat"), "reallife_family_do_chat_yes", Chat));
             list.Add(new Choice(() => HomeLife.CanPlanDate, () => FamilyText.Say("reallife_family_do_date", Args.Us.Cost(FamilyBalance.DinnerCost)), "reallife_family_do_date_yes",
-                HomeLife.PlanDate));
+                HomeLife.PlanDate) { Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", FamilyText.Money(FamilyBalance.DinnerCost)) });   // paid at the table
             _cookAt = list.Count;
             list.Add(new Choice(() => HomeLife.CanCook && InPerson, () => FamilyText.Say(HomeLife.CookAsk), "reallife_family_do_cook_yes", HomeLife.Cook));
             list.Add(new Choice(() => HomeLife.CanWatch && InPerson, () => FamilyText.Say("reallife_family_do_watch"), "reallife_family_do_watch_yes", HomeLife.Watch));
@@ -102,7 +103,10 @@ namespace RealLifeOverhaul.Family
                 {
                     FamilyDirector.Instance.WhenFree(WeddingDay.OfferHoneymoon);
                     return FamilyTalk.Close("reallife_family_honeymoon_asking");
-                }));
+                })
+            {
+                Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", FamilyText.Money(FamilyBalance.HoneymoonCost))   // paid when it is booked
+            });
 
             list.Add(new Choice(() => Children.CanTalk, () => FamilyText.Say("reallife_family_do_children"), "reallife_family_do_children_yes", Children.Talk));
             list.Add(new Choice(() => FamilyState.AnyUnder(FamilyBalance.SchoolFrom),
@@ -120,11 +124,18 @@ namespace RealLifeOverhaul.Family
                 list.Add(new Choice(() => Has(child) && s().Children[child].Age >= FamilyBalance.PocketFrom,
                     () => FamilyText.Say("reallife_family_do_pocket",
                         Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney(s().Children[child].Pocket))),
-                    "reallife_family_pocket_change", () => Children.PocketStep(child)));
+                    "reallife_family_pocket_change", () => Children.PocketStep(child))
+                {
+                    Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount",
+                        FamilyText.Money(FamilyBalance.PocketMoney((s().Children[child].Pocket + 1) % FamilyBalance.PocketLevels)))   // the next level's, a week
+                });
                 list.Add(new Choice(() => Has(child),
                     () => FamilyText.Say("reallife_family_do_fund",
                         Args.Us.Kid(s().Children[child].Name).Cost(s().Children[child].Fund).With(FamilyText.Money(FamilyBalance.FundStep))),
-                    "reallife_family_do_fund_yes", () => Children.FundStep(child)));
+                    "reallife_family_do_fund_yes", () => Children.FundStep(child))
+                {
+                    Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(FamilyBalance.FundStep))
+                });
             }
             list.Add(new Choice(() => ShoppingErrand() != null, () => FamilyText.Say("reallife_family_do_shopping"), "reallife_family_do_show_way", () =>
             {
@@ -148,6 +159,7 @@ namespace RealLifeOverhaul.Family
 
             list.Add(Call(new Choice(() => HardTimes.CanCounsel && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_counselling", Args.Us.Cost(FamilyBalance.CounsellingCost)),
                 "reallife_family_do_counselling_yes", HardTimes.Book)));
+            list[list.Count - 1].Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", FamilyText.Money(FamilyBalance.CounsellingCost));   // paid at the session
             list.Add(Call(new Choice(() => HardTimes.CanCallApart, () => FamilyText.Say("reallife_family_do_call_apart"), "reallife_family_do_chat_yes", HardTimes.CallApart)));
             list.Add(Call(new Choice(() => HardTimes.CanComeHome, () => FamilyText.Say("reallife_family_do_come_home"), "reallife_family_do_come_home_yes", HardTimes.ComeHome)));
             list.Add(new Choice(() => FamilyState.Together && s().Harmony < 50f && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_apart"), "reallife_family_do_apart_yes",
@@ -155,6 +167,9 @@ namespace RealLifeOverhaul.Family
             list.Add(Call(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"),
                 "reallife_family_do_end_yes", HardTimes.EndAsk)));
 
+            // The will and the heir (Scripts/Dynasty): who carries on today, and where it is changed.
+            list.Add(new Choice(() => FamilyBridges.WillLine != null && !string.IsNullOrEmpty(FamilyBridges.WillLine()), () => FamilyText.Built(FamilyBridges.WillLine()),
+                "reallife_family_do_will_yes", () => FamilyTalk.Close("reallife_family_do_will_where")));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_page"), "reallife_family_do_page_yes", () => FamilyPage.Page(0)));
             _choices = list;
             _callChoices = call;

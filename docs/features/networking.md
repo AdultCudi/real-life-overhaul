@@ -56,6 +56,7 @@ Everybody met before the feature existed, or while its option was off, is rolled
 | landlord | a property tip | an investor meeting |
 
 - One favour every 3 game days from anybody (`NetworkRules.GapDays`); never one twice (`NetContact.Given`, a bit each).
+- A favour that was bought (`NetworkBridges.Bought`, a gift taken: [Schemes and inquiries](schemes.md)) waits for neither the friendship nor the gap, once (`NetworkBridges.BoughtUsed`).
 - When one is ready, the day's round of the social life (`SocialLinks.DayDone`) has that person text to call (`reallife_social_net_ready_*`), once, under the social life's limits. On a call, Something else offers it first (`SocialPhone.NetworkLabel`, `NetworkAsk`).
 - A favour that cannot be done now (no profession to work in, no contracts with that wholesaler, nothing for sale) is said with its reason and can be asked again another day.
 

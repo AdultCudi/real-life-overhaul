@@ -41,6 +41,24 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.T(key);
         }
 
+        /// <summary>Two things in one line as the language writes a list: a comma and a space, or the full-width comma of Chinese.</summary>
+        public static string Pair(string first, string second)
+        {
+            return FinanceText.T("reallife_ui_estate_pair", "first", first, "second", second);
+        }
+
+        /// <summary>The next thing on the end of a line being built: after a separator when there is something before it.</summary>
+        public static void Add(System.Text.StringBuilder line, string next)
+        {
+            if (line.Length == 0)
+            {
+                line.Append(next);
+                return;
+            }
+            string joined = Pair(line.ToString(), next);
+            line.Clear().Append(joined);
+        }
+
         public static string T(string key, string name, string value)
         {
             return FinanceText.T(key, name, value);
@@ -54,6 +72,12 @@ namespace RealLifeOverhaul.Economy
         public static string T(string key, string name, string value, string name2, string value2, string name3, string value3)
         {
             return FinanceText.T(key, name, value, name2, value2, name3, value3);
+        }
+
+        /// <summary>The state of a unit that stands empty: "Empty 12 days", the key's "day(s)" resolved for the number, on the old page and the kit's alike.</summary>
+        public static string Empty(int days)
+        {
+            return RealLifeOverhaul.Ui.UiPlural.Fix(FinanceText.T("reallife_estate_state_empty", "days", days.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
@@ -154,6 +178,13 @@ namespace RealLifeOverhaul.Economy
             "reallife_estate_fault_0", "reallife_estate_fault_1", "reallife_estate_fault_2", "reallife_estate_fault_3", "reallife_estate_fault_4", "reallife_estate_fault_5",
             "reallife_estate_fault_6"
         };
+        // The fault as a bare noun, for a sentence that brings its own article or preposition ("Heating service"): FaultKeys carry their article ("the heating"), so a
+        // sentence that adds one again said "Cancel the the heating service".
+        private static readonly string[] FaultNounKeys =
+        {
+            "reallife_estate_fault_noun_0", "reallife_estate_fault_noun_1", "reallife_estate_fault_noun_2", "reallife_estate_fault_noun_3", "reallife_estate_fault_noun_4",
+            "reallife_estate_fault_noun_5", "reallife_estate_fault_noun_6"
+        };
         private static readonly string[] GrievanceKeys =
         {
             "reallife_estate_grievance_rent", "reallife_estate_grievance_building", "reallife_estate_grievance_repair", "reallife_estate_grievance_notice", "reallife_estate_grievance_order"
@@ -161,9 +192,26 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] ManagerKeys = { "reallife_estate_manager_self", "reallife_estate_manager_agent", "reallife_estate_manager_manager" };
 
         /// <summary>A repair call's fault, by its kind.</summary>
+        private static readonly string[] ImproveKeys =
+        {
+            "reallife_estate_improve_none", "reallife_estate_improve_boiler", "reallife_estate_improve_windows", "reallife_estate_improve_kitchen", "reallife_estate_improve_decorate"
+        };
+
+        /// <summary>What a tenant asked to have improved (<see cref="EstateImprove"/>).</summary>
+        public static string Improve(int kind)
+        {
+            return T(ImproveKeys[EstateCatalogue.Clamp(kind, 0, ImproveKeys.Length - 1)]);
+        }
+
         public static string Fault(int kind)
         {
             return T(FaultKeys[EstateCatalogue.Clamp(kind, 0, FaultKeys.Length - 1)]);
+        }
+
+        /// <summary>A repair call's fault as a bare noun ("heating", "lock"): for the sentences that give their own article, such as "{fault} service".</summary>
+        public static string FaultNoun(int kind)
+        {
+            return T(FaultNounKeys[EstateCatalogue.Clamp(kind, 0, FaultNounKeys.Length - 1)]);
         }
 
         /// <summary>What a tenant complains of (EstateRules.Grievance).</summary>

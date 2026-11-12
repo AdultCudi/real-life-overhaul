@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -226,6 +227,35 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Work points a feature costs when so many are built.</summary>
         public static int FeatureCost(int built) => FirmsCatalogue.FeatureBase + FirmsCatalogue.FeatureStep * Math.Max(0, built);
 
+        /// <summary>
+        /// What a product's next feature still waits for. A feature is done when its work is in and, for an AI model, when its
+        /// generation's training has come too (<see cref="Build"/>), and the work keeps building while a model waits: a lab making
+        /// 529 points a day on the default 50 units of training a day had its work 882 points past a feature's cost, which a page
+        /// that wrote the cost less the work read as a negative number of points to go. This gives the pages three figures, none
+        /// below zero: the work still to put in, the work past the cost, and the training still to come with its days. A withdrawn
+        /// product waits for nothing (the day and the cloud skip it). COST: a few sums when a page is written, never per frame.
+        /// </summary>
+        public static FeatureWait Wait(Product p)
+        {
+            if (p.Stage >= 2)
+            {
+                return new FeatureWait(0, 0, 0L, 0, 0, true);
+            }
+            int cost = FeatureCost(p.Features), work = Math.Max(0, p.Progress);
+            long need = 0, training = 0;
+            int days = 0;
+            if (p.K == ProductKind.Model)
+            {
+                need = InfraRules.TrainNeed(p.Features);
+                training = Math.Max(0L, need - Math.Max(0L, p.Compute));
+                int level = InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)];
+                days = training <= 0 ? 0 : level <= 0 ? -1 : (int)Math.Min(9999L, (training + level - 1) / level);
+            }
+            int worked = (int)Math.Min(1000L, (long)work * 1000 / cost);
+            int trained = need > 0 ? (int)Math.Min(1000L, Math.Max(0L, p.Compute) * 1000 / need) : 1000;
+            return new FeatureWait(Math.Max(0, cost - work), Math.Max(0, work - cost), training, days, Math.Min(worked, trained));
+        }
+
         /// <summary>How a product's bugs weigh on it, thousandths of a sound one: 1000 bug-free, 300 at the worst.</summary>
         public static int Quality(Product p)
         {
@@ -293,11 +323,15 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What product people add to a feature's points, thousandths: up to 400 with one for every few engineers.</summary>
         public static int ProductBoost(in Crew c) => Math.Min(FirmsCatalogue.ProductBoostMost, c.Product * FirmsCatalogue.ProductBoostGain / Math.Max(1, c.Engineering + c.Product));
 
-        /// <summary>A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features finished.</summary>
-        public static int Build(Firm firm, Product p, in Crew c, int points, int testing)
+        /// <summary>
+        /// A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features
+        /// finished. Under Living population the sector gives its own feature limit (none to speak of), product boost (its
+        /// curve) and a sprint's focus; left out, the firms' own.
+        /// </summary>
+        public static int Build(Firm firm, Product p, in Crew c, int points, int testing, int most = FirmsCatalogue.FeaturesMost, int boost = -1, int focus = -1)
         {
-            int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(firm.Focus, 0, (int)Focus.Count - 1)];
-            long feature = (long)points * split[0] / 1000 * (1000 + ProductBoost(c)) / 1000 * 1000 / (1000 + firm.Debt);
+            int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(focus >= 0 ? focus : firm.Focus, 0, (int)Focus.Count - 1)];
+            long feature = (long)points * split[0] / 1000 * (1000 + (boost >= 0 ? boost : ProductBoost(c))) / 1000 * 1000 / (1000 + firm.Debt);
             int fix = points * split[1] / 1000 / FirmsCatalogue.PointsPerFix + testing;   // a tester's point fixes a bug
             int debt = points * split[2] / 1000 * FirmsCatalogue.DebtPerPoint;
             int finished = 0;
@@ -305,7 +339,7 @@ namespace RealLifeOverhaul.Tech
             p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
             if (p.K != ProductKind.Game)
             {
-                while (p.Features < FirmsCatalogue.FeaturesMost && p.Progress >= FeatureCost(p.Features)
+                while (p.Features < most && p.Progress >= FeatureCost(p.Features)
                        && (p.K != ProductKind.Model || p.Compute >= InfraRules.TrainNeed(p.Features)))
                 {
                     if (p.K == ProductKind.Model)
@@ -317,7 +351,7 @@ namespace RealLifeOverhaul.Tech
                     finished++;
                     firm.Debt = Math.Min(1000, firm.Debt + FirmsCatalogue.DebtPerFeature * (1000 - c.SeniorShare) / 1000);
                 }
-                if (p.Features >= FirmsCatalogue.FeaturesMost)
+                if (p.Features >= most)
                 {
                     p.Progress = 0;
                 }
@@ -569,10 +603,65 @@ namespace RealLifeOverhaul.Tech
             firm.Reputation = TalentCatalogue.Clamp(firm.Reputation + (target - firm.Reputation) / 20, 0, 1000);
         }
 
-        public static string Name(int seed, int n)
+        /// <summary>True when another product of the file (not <paramref name="except"/>) bears the name, compared as <see cref="TitleRules.Key"/> compares.</summary>
+        public static bool Named(FirmsFile f, string name, int except)
         {
-            return FirmsCatalogue.NameFirst[TechRandom.Range(seed, n, 61, 0, 0, FirmsCatalogue.NameFirst.Length - 1)]
-                   + FirmsCatalogue.NameSecond[TechRandom.Range(seed, n, 62, 0, 0, FirmsCatalogue.NameSecond.Length - 1)];
+            string key = TitleRules.Key(name);
+            for (int i = 0; f != null && i < f.Products.Count; i++)
+            {
+                if (f.Products[i].Id != except && TitleRules.Key(f.Products[i].Name) == key)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A name for every product that lacks one or shares one (an older save's names were rolled with nothing to keep two apart):
+        /// in the list's order the first bearer keeps its name and each later one, like each nameless product, is given a made-up
+        /// name of its style that no product has and <paramref name="elsewhere"/> lacks. From the save's seed and the product's
+        /// id, so it is given once and is the same whenever it is asked. Returns how many were named.
+        /// </summary>
+        public static int NameAll(FirmsFile f, Func<Product, int> styleOf, Func<string, bool> elsewhere)
+        {
+            if (f == null)
+            {
+                return 0;
+            }
+            var all = new HashSet<string>(StringComparer.Ordinal);
+            var kept = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                string key = TitleRules.Key(TitleRules.Clean(f.Products[i].Name));
+                if (key.Length > 0)
+                {
+                    all.Add(key);
+                }
+            }
+            int named = 0;
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                Product p = f.Products[i];
+                string name = TitleRules.Clean(p.Name);
+                if (name.Length == 0 || !kept.Add(TitleRules.Key(name)))
+                {
+                    name = TitleRules.Suggest(f.Seed, p.Id, styleOf != null ? styleOf(p) : StyleOf(f, p), 0,
+                        n => all.Contains(TitleRules.Key(n)) || (elsewhere != null && elsewhere(n)));
+                    all.Add(TitleRules.Key(name));
+                    kept.Add(TitleRules.Key(name));
+                    named++;
+                }
+                p.Name = name;
+            }
+            return named;
+        }
+
+        /// <summary>The style a product's made-up name has by the firms' own record: a game's genre is the one an older save's game is given.</summary>
+        public static int StyleOf(FirmsFile f, Product p)
+        {
+            int genre = p.K == ProductKind.Game ? StudioRules.GenreOfName(p.Name, p.Id, f != null ? f.Seed : 1) : 0;
+            return TitleRules.StyleOf(p.K, p.Segment, genre);
         }
 
         /// <summary>Products being built or on sale: at one firm, or across all of them with no place.</summary>
@@ -588,14 +677,17 @@ namespace RealLifeOverhaul.Tech
 
         public const int RoomYes = 0, RoomFirmFull = 1, RoomAllFull = 2;
 
-        /// <summary>Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first).</summary>
-        public static int Room(FirmsFile f, string place)
+        /// <summary>
+        /// Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first); under
+        /// Living population (<paramref name="living"/>) the sector's higher limits.
+        /// </summary>
+        public static int Room(FirmsFile f, string place, bool living = false)
         {
-            if (LiveCount(f, place) >= FirmsCatalogue.ProductsPerFirm)
+            if (LiveCount(f, place) >= (living ? SectorCatalogue.ProductsPerFirm : FirmsCatalogue.ProductsPerFirm))
             {
                 return RoomFirmFull;
             }
-            return LiveCount(f, null) >= FirmsCatalogue.ProductsMost ? RoomAllFull : RoomYes;
+            return LiveCount(f, null) >= (living ? SectorCatalogue.ProductsMost : FirmsCatalogue.ProductsMost) ? RoomAllFull : RoomYes;
         }
 
         /// <summary>
@@ -633,8 +725,12 @@ namespace RealLifeOverhaul.Tech
             {
                 Id = f.Next(), Place = place, Kind = (int)kind,
                 Segment = kind == ProductKind.App || kind == ProductKind.Game ? (int)Segment.Consumer : kind == ProductKind.Licence ? (int)Segment.Enterprise : (int)segment,
-                Scope = TalentCatalogue.Clamp(scope, 0, 2), Name = string.IsNullOrEmpty(name) ? Name(f.Seed, f.NextId) : name
+                Scope = TalentCatalogue.Clamp(scope, 0, 2), Name = TitleRules.Clean(name)
             };
+            if (p.Name.Length == 0)
+            {
+                p.Name = TitleRules.Suggest(f.Seed, p.Id, StyleOf(f, p), 0, n => Named(f, n, p.Id));   // left empty: a made-up name of its kind that no product of the file has
+            }
             p.RivalFeatures = FirmsCatalogue.RivalFeaturesAtStart[p.Segment];
             p.RivalTier = 1;
             p.Train = kind == ProductKind.Model ? 2 : 0;
@@ -656,20 +752,48 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What a firm is worth, cents: a year's recurring revenue by a multiple for growth and debt, plus three months' other takings.</summary>
         public static long Value(Firm firm, long arr, int growthBp)
         {
+            return Value(firm, arr, growthBp, firm.Revenue30);
+        }
+
+        /// <summary>
+        /// A firm's worth as above on a month's takings given: the way to the market prices on <see cref="Steady"/>, so one launch or one big contract does not
+        /// stand for the firm.
+        /// </summary>
+        public static long Value(Firm firm, long arr, int growthBp, long monthCents)
+        {
             int multiple = TalentCatalogue.Clamp(4000 + growthBp * 2 - firm.Debt * 2, 2000, 12000);
-            long other = Math.Max(0, firm.Revenue30 - arr / 12) * 3;
+            long other = Math.Max(0, monthCents - arr / 12) * 3;
             return arr * multiple / 1000 + other;
+        }
+
+        /// <summary>
+        /// A firm's month of takings that a listing may rely on, cents: the lesser of its last month and the month before it, both without what the player's own
+        /// other businesses paid it. A launch's payout or a bid's upfront lifts one month and not the other, so it never stands for the firm; a firm with
+        /// less than two months of takings behind it has none (the month before is still gathering).
+        /// </summary>
+        public static long Steady(Firm firm)
+        {
+            if (firm == null || firm.PrevDays < TechStatusRules.ChangeFromDays)
+            {
+                return 0L;
+            }
+            return Math.Min(Math.Max(0L, firm.Revenue30 - firm.Self30), Math.Max(0L, firm.Prev30 - firm.SelfPrev30));
         }
 
         /// <summary>A quarter's research and development relief: the extra deduction given on its qualifying costs, cents.</summary>
         public static long Relief(long qualifying) => Math.Max(0, qualifying) * FirmsCatalogue.ReliefShare / 1000;
 
-        /// <summary>A day's takings rolled into the firm's last thirty days.</summary>
-        public static void Roll(Firm firm, int day, long takings)
+        /// <summary>A day's takings rolled into the firm's last thirty days; <paramref name="self"/> is the part of them its owner's other businesses paid.</summary>
+        public static void Roll(Firm firm, int day, long takings, long self = 0)
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            int days = firm.PrevDays;
+            TechStatusRules.Age(ref firm.SelfPrev30, ref days, firm.SelfDays[slot]);   // aged by the same days as the takings' month before
+            TechStatusRules.Age(ref firm.Prev30, ref firm.PrevDays, firm.Days[slot]);
             firm.Revenue30 += takings - firm.Days[slot];
             firm.Days[slot] = takings;
+            firm.Self30 += Math.Min(takings, Math.Max(0L, self)) - firm.SelfDays[slot];
+            firm.SelfDays[slot] = Math.Min(takings, Math.Max(0L, self));
         }
 
         /// <summary>

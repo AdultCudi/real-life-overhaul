@@ -75,12 +75,35 @@ internal static partial class Program
         Check(none == 0, "manager switches: with every switch off a manager does nothing at any hour");
     }
 
+    // A managers' line with the newer fields taken off the end of each record: five from a manager's (their speeds, the hand-down flag, the marketing and
+    // lease steps and the marketing spent), one from a decision's. What is left is what the version before wrote.
+    private static string ManagerLineWithoutNewer(string line)
+    {
+        string[] parts = line.Split('^');
+        for (int p = 0; p < parts.Length; p++)
+        {
+            int drop = parts[p].StartsWith("m:", StringComparison.Ordinal) ? 5 : parts[p].StartsWith("d:", StringComparison.Ordinal) ? 1 : 0;
+            if (drop == 0)
+            {
+                continue;
+            }
+            string[] records = parts[p].Substring(2).Split(';');
+            for (int r = 0; r < records.Length; r++)
+            {
+                string[] f = records[r].Split('|');
+                records[r] = string.Join("|", f, 0, Math.Max(0, f.Length - drop));
+            }
+            parts[p] = parts[p].Substring(0, 2) + string.Join(";", records);
+        }
+        return string.Join("^", parts);
+    }
+
     private static void ManagerTaskHours()
     {
         // Each task at its own hour only: the daily ones every day, the Sunday ones once a week.
-        int[] want = { 28, 28, 28, 28, 4, 28, 4, 28 };
+        int[] want = { 28, 28, 28, 28, 4, 28, 4, 28, 28, 28 };
         int[] at = { ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StockHour,
-                     ManagerCatalogue.PriceHour, ManagerCatalogue.RotaHour, ManagerCatalogue.HireHour };
+                     ManagerCatalogue.PriceHour, ManagerCatalogue.RotaHour, ManagerCatalogue.HireHour, ManagerCatalogue.MarketHour, ManagerCatalogue.StaffHour };
         bool right = true;
         var wrong = new List<string>();
         for (int t = 0; t < (int)ManagerTask.Count; t++)
@@ -192,7 +215,9 @@ internal static partial class Program
         string hour = MemberText(managers, "private void Hour(int day, int hour)");
         Check(hour.Contains("ManagerRules.Due(day, hour, (ManagerTask)t)") && !hour.Contains("ManagerCatalogue.RotaHour") && !hour.Contains("ManagerCatalogue.PriceHour"),
             "manager switches: the hour's decisions are made by ManagerRules.Due alone");
-        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("!ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task)"),
+        string daySource = ModSource(@"Economy\Company\CompanyDay.cs");
+        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("!CompanyDay.Deciding(this, mp.Place.Place, mp.Kind, mp.Own, task,")
+              && MemberText(daySource, "public static bool Deciding(").Contains("ManagerRules.Runs(own.Tasks, kind, task)"),
             "manager switches: every round of decisions, the test button's too, skips a place whose switch for it is off");
         Check(Occurs(decisions, "RotaAsk(") == 1 && MemberText(decisions, "private void DecideRota(").Contains("RotaAsk(mp.Place.Place, JobManager, false)")
               && Occurs(managers, "JobManager") == 0 && Occurs(jobs, "!ManagerRotaJudged(job.Place, sheet)") == 1
@@ -238,7 +263,7 @@ internal static partial class Program
             }
         }
         Check(every && version == 1, "manager switches: a save of 0.44.0 loads with every task its place has switched on, as it was");
-        Check(s != null && ManagerStore.Write(s) == line, "manager switches: that save writes back the very same line, so an older version reads it as before");
+        Check(s != null && ManagerLineWithoutNewer(ManagerStore.Write(s)) == line, "manager switches: that save writes back the very same line with only the newer fields added at the end of each record, so an older version reads it as before");
         Check(s != null && s.Decisions.Count == 1 && s.Decisions[0].Task == (int)ManagerTask.Rota && s.Decisions[0].A == 5,
             "manager switches: a rota decision of 0.44.0 reads back as it was");
     }

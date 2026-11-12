@@ -15,9 +15,10 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The City Ledger (LedgerBridges) with what it prints, read once a morning: the city's paper, the market's last
         /// close and news, the economy's figures, the street's events, the weather, the night life, the council and the
-        /// player's office, the listed companies' worth and the rivals taken over (the paper's milestone and rival stories),
-        /// the street's other fixtures, the City Ledger's contact, the internet at the player's homes for Newsstand, and the
-        /// Planner. In a Going Public session a guest's street news goes to the host's paper.
+        /// player's office, the listed companies' worth with their sectors and which are a rival tycoon's, and the rivals taken
+        /// over (the paper's milestone, sector lead and rival stories), the street's other fixtures, the City Ledger's contact,
+        /// the internet at the player's homes for Newsstand, and the Planner. In a Going Public session a guest's street news
+        /// goes to the host's paper.
         /// </summary>
         public static class LedgerLinks
         {
@@ -42,7 +43,9 @@ namespace RealLifeOverhaul
                 LedgerBridges.Filter = Flare.FlareDirector.Filter;
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
                 LedgerBridges.Companies = Companies;
+                LedgerBridges.SectorName = SectorName;
                 LedgerBridges.Beaten = Beaten;
+                LedgerBridges.Opened = Opened;
                 LedgerBridges.TestBeat = TestBeat;
             }
 
@@ -194,7 +197,8 @@ namespace RealLifeOverhaul
                 return LedgerStories.Bought(bidder.Name, k.Name, MarketText.Price(n.A), k.Own != null);
             }
 
-            // Every listed company at its last close, a player's own marked (in a session, any player's: the same on every machine).
+            // Every listed company at its last close with its sector, a player's own marked (in a session, any player's: the same on every
+            // machine) and a rival tycoon's holding marked.
             private static bool Companies(List<LedgerCompany> into)
             {
                 try
@@ -212,7 +216,11 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        into.Add(new LedgerCompany { Id = k.Id, Name = k.Name, Value = k.Shares * (double)k.Daily[k.Daily.Count - 1].C / 100.0, Player = k.Own != null });
+                        into.Add(new LedgerCompany
+                        {
+                            Id = k.Id, Name = k.Name, Value = k.Shares * (double)k.Daily[k.Daily.Count - 1].C / 100.0, Player = k.Own != null,
+                            Rival = IsRivalHolding(k), Sector = (int)k.Sector
+                        });
                     }
                     return into.Count > 0;
                 }
@@ -220,6 +228,27 @@ namespace RealLifeOverhaul
                 {
                     Fault("LedgerLinks.Companies", ex);
                     return false;
+                }
+            }
+
+            // A rival tycoon's holding company: one of the mod's tycoons' (a catalogue holding, listed when its tycoon comes forward) or one of the
+            // game's own rivals', which the market lists under the rival's name.
+            private static bool IsRivalHolding(Stock k)
+            {
+                return k.Own == null && ((k.Def != null && k.Def.Holding) || !string.IsNullOrEmpty(k.RivalId) || MarketCatalogue.IsRival(k.Id));
+            }
+
+            // A part of the market as the markets pages name it, for the stories of a sector's lead; empty for a number the market does not have.
+            private static string SectorName(int sector)
+            {
+                try
+                {
+                    return sector >= 0 && sector < (int)MarketSector.Count ? MarketText.Sector((MarketSector)sector) : string.Empty;
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.SectorName", ex);
+                    return string.Empty;
                 }
             }
 
@@ -254,6 +283,30 @@ namespace RealLifeOverhaul
                 catch (Exception ex)
                 {
                     Fault("LedgerLinks.Beaten", ex);
+                }
+            }
+
+            // The businesses the population recorded as opened on the days from 'since' up to 'day': the city's firms and the rivals', each with its name and its day.
+            private static readonly List<Population.FirmEvent> OpenedNow = new List<Population.FirmEvent>(4);
+
+            private static void Opened(int since, int day, List<LedgerOpening> into)
+            {
+                try
+                {
+                    Population.PopulationState pop = Population.PopulationDirector.Instance != null ? Population.PopulationDirector.Instance.State : null;
+                    if (pop == null)
+                    {
+                        return;
+                    }
+                    pop.Events.Between(Population.FirmEventKind.Opened, since, day, OpenedNow);
+                    for (int i = 0; i < OpenedNow.Count; i++)
+                    {
+                        into.Add(new LedgerOpening { Firm = OpenedNow[i].Name, Day = OpenedNow[i].Day, Rival = OpenedNow[i].Owner == Population.Owner.Rival });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Opened", ex);
                 }
             }
 

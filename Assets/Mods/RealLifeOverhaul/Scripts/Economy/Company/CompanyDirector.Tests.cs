@@ -109,6 +109,57 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
+        /// <summary>
+        /// The option that agrees a request by itself, without waiting for the morning: the first employee with nothing waiting whom nobody else answers raises for
+        /// asks for the option's share of their pay, and it is agreed at once as the day's pass agrees it. Refused while the option is at 0.
+        /// </summary>
+        public void TestAgree()
+        {
+            if (!TestReady("Company agreement", CompanyPart.Staff))
+            {
+                return;
+            }
+            TestGuard("agreement", () =>
+            {
+                int limit = AgreeLimit(), gone;
+                if (limit <= 0)
+                {
+                    TestRefusals.TellKey(Logger, "Company agreement", "reallife_co_test_agree_off");
+                    return;
+                }
+                ReadPeople(out gone);
+                StaffFile f = null;
+                for (int i = 0; i < _state.Staff.Count && f == null; i++)
+                {
+                    StaffFile x = _state.Staff[i];
+                    f = x.AskDay == 0 && x.PoachDay == 0 && x.LeaveDay == 0 && !CompanyDay.RaiseWithOthers(this, x) ? x : null;
+                }
+                int paid = f != null ? f.Paid : 0, standing = f != null ? f.Standing : 0, raise = 0;
+                if (f != null)
+                {
+                    BeforeTest();
+                    f.AskDay = Save.Day;
+                    f.AskTo = paid + System.Math.Max(1, paid * limit / 100);   // the limit's share of the pay, or a hundredth more on a wage too small for one
+                }
+                if (f == null || !CompanyDay.AgreeByItself(this, f, limit, Save.Day, out raise))
+                {
+                    if (f != null)
+                    {
+                        f.AskDay = f.AskTo = 0;
+                    }
+                    TestRefusals.TellKey(Logger, "Company agreement", "reallife_co_test_agree_none");
+                    return;
+                }
+                if (Verbose)
+                {
+                    AgreedLine(f, limit, raise, standing);
+                }
+                Recount();
+                TestDone(f.Name + " asked for " + raise + " an hour more (hundredths) on " + paid + ", inside the limit of " + limit + "%, and it was agreed by itself",
+                    TabStaff, "emp:" + f.Id);
+            });
+        }
+
         /// <summary>A rival's offer to the first employee with nothing waiting and no other rival's offer open, at least a little over their pay.</summary>
         public void TestOffer()
         {

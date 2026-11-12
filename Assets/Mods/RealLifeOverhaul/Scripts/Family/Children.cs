@@ -1,6 +1,7 @@
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -21,8 +22,8 @@ namespace RealLifeOverhaul.Family
 
         private static int _lastExpecting = -1, _lastWaiting = -1, _lastNight = -1, _lastGrown = -1;
 
-        /// <summary>In-game days to a year of a child's age (the options page's weeks per year).</summary>
-        public static int DaysPerYear => Mathf.Clamp(Settings.FamilyYearWeeks, 1, 12) * 7;
+        /// <summary>In-game days to a year of a child's age: the options page's weeks per year (1 to 52, ChildYearRules) of seven days.</summary>
+        public static int DaysPerYear => ChildYearRules.Days(Settings.FamilyYearWeeks);
 
         private static float Share => FamilyState.Bond == Bond.Divorced ? 1f - FamilyBalance.SupportShare : 1f;
 
@@ -69,7 +70,8 @@ namespace RealLifeOverhaul.Family
             int pick = (index % 3 + 3) % 3;
             string key = pick == 0 ? "reallife_family_adopt_age_baby" : pick == 1 ? "reallife_family_adopt_age_toddler" : "reallife_family_adopt_age_child";
             return FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(FamilyBalance.AdoptionFee)), "reallife_family_plan_choose", () => StartAdoption(pick),
-                "reallife_family_plan_other", () => AdoptAge(pick + 1));
+                "reallife_family_plan_other", () => AdoptAge(pick + 1))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", FamilyText.Money(FamilyBalance.AdoptionFee));   // the filing fee, paid at the office
         }
 
         private static DialogEntry StartPregnancy(int carrier)
@@ -84,7 +86,7 @@ namespace RealLifeOverhaul.Family
             int day = TimeHelper.CurrentDay;
             s.PKind = (int)ProcessKind.Pregnancy;
             s.PStartDay = day;
-            s.PDueDay = day + Mathf.Max(6, Mathf.RoundToInt(FamilyBalance.PregnancyYears * DaysPerYear));
+            s.PDueDay = day + ChildYearRules.Span(FamilyBalance.PregnancyYears, DaysPerYear);
             s.PStep = 0;
             s.PCarrier = carrier;
             s.BirthHour = Random.Range(7, 18);
@@ -215,7 +217,7 @@ namespace RealLifeOverhaul.Family
                 if (s.PStep == 0 && done >= 0.2f) { s.PStep = 1; Errands.Add(Errands.Scan, day, 9, 18).Number = 1; }
                 else if (s.PStep == 1 && done >= 0.5f && FamilyState.FindErrand(Errands.Scan) == null) { s.PStep = 2; Errands.Add(Errands.Scan, day, 9, 18).Number = 2; }
                 else if (s.PStep == 2 && done >= 0.75f && FamilyState.FindErrand(Errands.Scan) == null) { s.PStep = 3; Errands.Add(Errands.BirthClass, day, 9, 20); }
-                if (day - s.LastFlavourDay >= 4 && day < s.PDueDay)
+                if (day - s.LastFlavourDay >= ChildYearRules.TextGap(ChildYearRules.PregnancyTextDays, DaysPerYear) && day < s.PDueDay)
                 {
                     s.LastFlavourDay = day;
                     string line = FamilyText.Pick(Expecting, ref _lastExpecting);
@@ -238,7 +240,7 @@ namespace RealLifeOverhaul.Family
                 Errands.Add(Errands.AdoptMeet, meet, 9, 18);
                 FamilyText.Message(FamilyPhone.FamilyContact, "reallife_family_adopt_matched", Args.Us.On(FamilyText.When(meet)));
             }
-            else if (s.PStep >= 1 && s.PStep < 3 && day - s.LastFlavourDay >= 5)
+            else if (s.PStep >= 1 && s.PStep < 3 && day - s.LastFlavourDay >= ChildYearRules.TextGap(ChildYearRules.AdoptionTextDays, DaysPerYear))
             {
                 s.LastFlavourDay = day;
                 FamilyText.Message(FamilyPhone.FamilyContact, FamilyText.Pick(Waiting, ref _lastWaiting), Args.Us);
@@ -475,11 +477,12 @@ namespace RealLifeOverhaul.Family
             string key = care == Care.You ? "reallife_family_care_offer_you" : care == Care.Partner ? "reallife_family_care_offer_partner"
                 : care == Care.Nursery ? "reallife_family_care_offer_nursery" : "reallife_family_care_offer_nanny";
             int cost = care == Care.Nursery ? FamilyBalance.NurseryPerMonth : care == Care.Nanny ? FamilyBalance.NannyPerMonth : 0;
-            return FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(cost)), "reallife_family_plan_choose", () =>
+            DialogEntry offer = FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(cost)), "reallife_family_plan_choose", () =>
             {
                 FamilyState.S.CareChoice = (int)care;
                 return FamilyTalk.Close("reallife_family_care_set", Args.Us.With(FamilyText.T(CareName(care))));
             }, "reallife_family_plan_other", () => CareStep(index + 1));
+            return cost > 0 ? offer.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_month", "amount", FamilyText.Money(cost)) : offer;   // the nursery or the nanny, a month
         }
 
         public static DialogEntry PocketStep(int child)
@@ -488,7 +491,9 @@ namespace RealLifeOverhaul.Family
             ChildRecord c = s.Children[child];
             c.Pocket = (c.Pocket + 1) % FamilyBalance.PocketLevels;
             return FamilyTalk.Either(FamilyText.Say("reallife_family_pocket_set", Args.Us.Kid(c.Name).Cost(FamilyBalance.PocketMoney(c.Pocket))),
-                "reallife_family_pocket_change", () => PocketStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
+                "reallife_family_pocket_change", () => PocketStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", FamilyText.Money(FamilyBalance.PocketMoney((c.Pocket +
+                    1) % FamilyBalance.PocketLevels)));   // the next level's, a week
         }
 
         public static DialogEntry FundStep(int child)
@@ -502,7 +507,8 @@ namespace RealLifeOverhaul.Family
             c.Fund += FamilyBalance.FundStep;
             FamilyState.MoneyOut(FamilyBalance.FundStep, 3);
             return FamilyTalk.Either(FamilyText.Say("reallife_family_fund_added", Args.Us.Kid(c.Name).Cost(c.Fund)),
-                "reallife_family_fund_more", () => FundStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
+                "reallife_family_fund_more", () => FundStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(FamilyBalance.FundStep));
         }
 
     }

@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Flare
         public const int PileOnFrom = 150;             // a post that went badly and was seen by this many: a pile-on
         public const int PileOnLeast = 4, PileOnMost = 10;   // replies
 
-        public const int DmGapDays = 2;
+        public const int DmGapDays = 1;
         public const int DmChance = 450;               // per mille a day after the gap
         public const int ChatPostMinutes = 3 * 24 * 60;   // game minutes: a post of the player's this recent is what "saw your post earlier" means
 
@@ -349,8 +349,18 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static bool CityDm(FlareFile f, int day, bool hiring, out string with, out string what, out long at)
         {
+            return CityDm(f, day, hiring, null, out with, out what, out at, out _);
+        }
+
+        /// <summary>
+        /// As above; with the player's businesses, a customer who reviewed one of them since yesterday may write about it instead:
+        /// praise after a good review, a complaint after a poor one, a question after a middling one (<paramref name="about"/> its name).
+        /// </summary>
+        public static bool CityDm(FlareFile f, int day, bool hiring, List<string> myPlaces, out string with, out string what, out long at, out string about)
+        {
             with = null;
             what = null;
+            about = null;
             at = Now(day, 10 + FlareRules.Roll(f.Seed, day, 842) % 10, FlareRules.Roll(f.Seed, day, 843) % 60);
             if (day - f.Net.DmDay < DmGapDays || FlareRules.Roll(f.Seed, day, 840) >= DmChance)
             {
@@ -358,10 +368,17 @@ namespace RealLifeOverhaul.Flare
             }
             int roll = FlareRules.Roll(f.Seed, day, 841);
             int who = PickCitizen(f.Seed, day, 845);
+            FlarePost review = myPlaces != null && myPlaces.Count > 0 ? CustomerReview(f, day, myPlaces) : null;
             if (day - f.LastViralDay <= 2)
             {
                 with = "c" + who;
                 what = "fan";
+            }
+            else if (review != null && roll < CustomerDmShare)
+            {
+                with = "c" + review.Who;
+                what = review.Arg >= 4 ? "praise" : review.Arg <= 2 ? "complaint" : "question";
+                about = review.Name;
             }
             else if (hiring && roll < 500)
             {
@@ -385,7 +402,7 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 with = "c" + who;
-                what = PostedBefore(f, at) ? "chat" : null;
+                what = PostedBefore(f, at) ? "chat" : roll % 3 == 0 ? "hello" : roll % 3 == 1 ? "hello_2" : "hello_3";   // a neighbour who has seen the player around, before any post
             }
             if (with == null || what == null)
             {
@@ -393,6 +410,23 @@ namespace RealLifeOverhaul.Flare
             }
             f.Net.DmDay = day;
             return true;
+        }
+
+        public const int CustomerDmShare = 600;   // per mille of the days a resident writes that one who reviewed the player's business is the writer
+
+        // The newest review by one of the city's people of a business of the player's, from yesterday or today, or null.
+        private static FlarePost CustomerReview(FlareFile f, int day, List<string> myPlaces)
+        {
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Source == FlareSource.Review && p.Author == FlareAuthor.Citizen && p.Who >= 0 && p.Day >= day - 1 && p.Day <= day && p.Place != null
+                    && myPlaces.Contains(p.Place))
+                {
+                    return p;
+                }
+            }
+            return null;
         }
 
         /// <summary>

@@ -1,17 +1,18 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The phone's home screen as a real phone has it: the mod's apps in five folders, a dock of two on the HUD phone, the
-    /// game's and other mods' apps where they always stood; every button in exactly one place, one the layout puts nowhere
-    /// this version has on the home screen. Game-free; checked offline (ContractCheck PhoneLayoutChecks).
+    /// The phone's home screen as a real phone has it: the mod's apps in five folders, two the player keeps first on the
+    /// home screen (the Planner and Flare until moved; the place is still saved as "dock"), the game's and other mods' apps
+    /// where they always stood; every button in exactly one place, one the layout puts nowhere this version has on the home
+    /// screen. Game-free; checked offline (ContractCheck PhoneLayoutChecks).
     /// </summary>
     public static class PhoneLayoutRules
     {
         public const int Money = 0, Work = 1, Life = 2, Business = 3, Setup = 4;   // the folders, in the order they stand
         public const int FolderCount = 5;
         public const int Home = -1;      // a place: on the home screen by itself
-        public const int Dock = -2;      // a place: in the dock
-        public const int DockMost = 2;   // apps in the dock: the HUD grid is two wide, and the dock is its last row
+        public const int Dock = -2;      // a place: first on the home screen (saved as "dock", the name it had as a row of its own)
+        public const int DockMost = 2;   // apps kept first: the HUD grid's first row
         public const int MiniMost = 9;   // small pictures on a folder's tile: three rows of three
         public const int MiniRow = 3;    // ...a row of them
         public const int LeastStrip = 3; // tiles a folder's page needs on the full menu's row: Back, an app and More apps
@@ -27,16 +28,17 @@ namespace RealLifeOverhaul.GameUi
             "reallife_phone_folder_money", "reallife_phone_folder_work", "reallife_phone_folder_life", "reallife_phone_folder_business", "reallife_phone_folder_setup"
         };
 
-        /// <summary>Where each app of <see cref="PagerRules.ModOrder"/> stands until moved: the Planner and Flare in the dock, the rest in their group's folder.</summary>
+        /// <summary>Where each app of <see cref="PagerRules.ModOrder"/> stands until moved: the Planner and Flare first on the home screen, the rest in their group's folder.</summary>
         public static readonly int[] Defaults =
         {
-            Dock, Dock, Life, Life, Life, Money, Money,
+            Dock, Dock, Life, Life, Life, Life, Life, Money, Money,
             Work, Work, Work, Work,
-            Money, Money, Money, Money, Money,
+            Money, Money, Money, Money, Money, Money,
             Business, Business, Business, Business, Business, Business, Business,
             Business,
-            Business, Money,
-            Setup, Setup, Setup
+            Business, Business, Money, Money,
+            Setup, Setup, Setup,
+            Life
         };
 
         /// <summary>Where a mod app stands while the player has not moved it; the home screen for a name not in the table.</summary>
@@ -46,7 +48,7 @@ namespace RealLifeOverhaul.GameUi
             return at >= 0 && at < Defaults.Length ? Defaults[at] : Home;
         }
 
-        /// <summary>A place this version has: a folder, the home screen or the dock.</summary>
+        /// <summary>A place this version has: a folder, the home screen or first on it.</summary>
         public static bool Known(int place)
         {
             return place == Home || place == Dock || place >= 0 && place < FolderCount;
@@ -88,35 +90,44 @@ namespace RealLifeOverhaul.GameUi
             return !strip || tiles >= LeastStrip;
         }
 
-        /// <summary>The tiles of a page for the view's items: less the Back tile on a folder's page, and on the HUD phone's home screen less the dock row.</summary>
-        public static int ItemTiles(bool strip, int tiles, bool folderOpen, bool dockRow)
+        /// <summary>The tiles of a page for the view's items: all but the Back tile on a folder's page.</summary>
+        public static int ItemTiles(bool strip, int tiles, bool folderOpen)
         {
             int all = strip ? tiles : PagerRules.PhoneTiles;
-            int held = all - (folderOpen ? 1 : 0) - (!strip && !folderOpen && dockRow ? DockMost : 0);
+            int held = all - (folderOpen ? 1 : 0);
             return held < PagerRules.LeastTiles ? PagerRules.LeastTiles : held;
         }
 
-        /// <summary>The tile of the whole page (from 0) the More apps button stands on: the last item tile, after the Back tile on a folder's page.</summary>
-        public static int MoreTile(bool strip, int tiles, bool folderOpen, bool dockRow)
+        /// <summary>
+        /// The tile of the whole page (from 0) the More apps button stands on: the page's last, on the home screen and in
+        /// every folder alike, so it never moves (the owner, 1 Nov 2026: "The next button must be at the bottom").
+        /// </summary>
+        public static int MoreTile(bool strip, int tiles)
         {
-            return (folderOpen ? 1 : 0) + PagerRules.ButtonTile(ItemTiles(strip, tiles, folderOpen, dockRow));
+            return (strip ? (tiles < PagerRules.LeastTiles ? PagerRules.LeastTiles : tiles) : PagerRules.PhoneTiles) - 1;
         }
 
-        /// <summary>The empty tiles before the HUD phone's dock row, so the dock stands on the last row; none without a dock row.</summary>
-        public static int Gaps(int onPage, int itemTiles, bool dockRow)
+        /// <summary>
+        /// The empty tiles after a short page's items, so its More apps button still stands on the last tile; none on a
+        /// view of one page, which has no button.
+        /// </summary>
+        public static int Gaps(int onPage, int itemTiles, int pages)
         {
-            if (!dockRow)
+            if (pages <= 1)
             {
                 return 0;
             }
-            int gaps = itemTiles - (onPage < 0 ? 0 : onPage);
+            int gaps = itemTiles - 1 - (onPage < 0 ? 0 : onPage);
             return gaps < 0 ? 0 : gaps;
         }
 
-        /// <summary>A grid's view (a button's index, or -1 - folder for a folder's tile), its dock and each folder's count; returns the view's length.</summary>
-        public static int View(int[] kind, int[] place, int count, int folder, bool dockRow, int[] view, int[] dock, out int docked, int[] members)
+        /// <summary>
+        /// A grid's view (a button's index, or -1 - folder for a folder's tile) and each folder's count; returns the view's
+        /// length. On the home screen the apps the player keeps first (the old dock's two) lead on the HUD phone
+        /// (<paramref name="keptFirst"/>) and follow the game's own on the full menu's row, whose first apps are the game's.
+        /// </summary>
+        public static int View(int[] kind, int[] place, int count, int folder, bool keptFirst, int[] view, int[] members)
         {
-            docked = 0;
             if (members != null)
             {
                 for (int f = 0; f < members.Length; f++)
@@ -152,6 +163,10 @@ namespace RealLifeOverhaul.GameUi
                 }
                 return at;
             }
+            if (keptFirst)
+            {
+                at = First(kind, place, count, view, at);
+            }
             for (int i = 0; i < count && at < view.Length; i++)
             {
                 if (kind[i] == GameItem)
@@ -159,26 +174,9 @@ namespace RealLifeOverhaul.GameUi
                     view[at++] = i;
                 }
             }
-            // The dock's first two in the mod's order; on the full menu's row after the game's own.
-            int inDock = 0;
-            for (int i = 0; i < count; i++)
+            if (!keptFirst)
             {
-                if (kind[i] != ModItem || place[i] != Dock || inDock >= DockMost)
-                {
-                    continue;
-                }
-                inDock++;
-                if (dockRow)
-                {
-                    if (dock != null && docked < dock.Length)
-                    {
-                        dock[docked++] = i;
-                    }
-                }
-                else if (at < view.Length)
-                {
-                    view[at++] = i;
-                }
+                at = First(kind, place, count, view, at);
             }
             for (int f = 0; f < FolderCount && at < view.Length; f++)
             {
@@ -187,8 +185,8 @@ namespace RealLifeOverhaul.GameUi
                     view[at++] = -1 - f;
                 }
             }
-            // The home screen's own: those put there, and any the layout puts nowhere this version has (a third in the dock).
-            inDock = 0;
+            // The home screen's own: those put there, and any the layout puts nowhere this version has (a third kept first).
+            int kept = 0;
             for (int i = 0; i < count && at < view.Length; i++)
             {
                 if (kind[i] != ModItem)
@@ -198,7 +196,7 @@ namespace RealLifeOverhaul.GameUi
                 int p = place[i];
                 if (p == Dock)
                 {
-                    if (inDock++ < DockMost)
+                    if (kept++ < DockMost)
                     {
                         continue;
                     }
@@ -219,13 +217,28 @@ namespace RealLifeOverhaul.GameUi
             return at;
         }
 
+        // The apps kept first, at most two, in the mod's order.
+        private static int First(int[] kind, int[] place, int count, int[] view, int at)
+        {
+            int kept = 0;
+            for (int i = 0; i < count && at < view.Length && kept < DockMost; i++)
+            {
+                if (kind[i] == ModItem && place[i] == Dock)
+                {
+                    view[at++] = i;
+                    kept++;
+                }
+            }
+            return at;
+        }
+
         /// <summary>The folder a button stands in: a mod app in a folder this version has; -1 for the rest.</summary>
         public static int FolderOf(int kind, int place)
         {
             return kind == ModItem && place >= 0 && place < FolderCount ? place : -1;
         }
 
-        /// <summary>An app may move: to another place this version has, and into the dock only while it has room.</summary>
+        /// <summary>An app may move: to another place this version has, and first on the home screen only while two are not there already.</summary>
         public static bool CanMove(int from, int to, int docked)
         {
             return Known(to) && to != from && (to != Dock || docked < DockMost);

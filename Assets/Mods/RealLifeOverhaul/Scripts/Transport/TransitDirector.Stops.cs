@@ -65,7 +65,9 @@ namespace RealLifeOverhaul
             Measure(standing);            // the figure the window is about to show
             _panelKey = int.MinValue;     // and the panel is written again when it is next up
             _hasPicked = false;
+            long filling = System.Diagnostics.Stopwatch.GetTimestamp();
             int direct = FillMap(standing);
+            double fillMs = (System.Diagnostics.Stopwatch.GetTimestamp() - filling) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             if (!_picker.Open(_served.Sign, _onMapPick, _onMapClosed))
             {
                 Logger?.Info("Transit check (stop map): the game would not open its map at " + StopLabel(_served) + " now; the list is used instead.");
@@ -75,11 +77,51 @@ namespace RealLifeOverhaul
             _chooseUntil = Time.time + ChooseFor;
             _listClosing = null;
             HidePanel();
+            // Where the opening's time went: the window and its markers filled (the mod's), and the game's own opening of its map
+            // (its buildings, trees, lights and markers switched for the map), with the mod's handlers of its map event apart.
             Logger?.Info("Transit check (stop map): the city map is open at " + StopLabel(_served) + " with the game's window for its stations beside it: " + _trips.Count
                          + " stops, " + direct + " further along this line and " + (_trips.Count - direct) + " with a change of bus, each a marker on the map; the day pass "
                          + (TransitState.HasPass ? "is held" : "is its first entry") + "; " + _picker.Made + " entries and " + _picker.Marked + " markers made so far; bus: "
-                         + PanelWords() + "; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: "
+                         + PanelWords() + "; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms, of it the window filled "
+                         + fillMs.ToString("F1", CultureInfo.InvariantCulture) + " ms and the game's own opening of its map "
+                         + (_picker.MapMs - _picker.MapModMs).ToString("F1", CultureInfo.InvariantCulture) + " ms (the mod's handlers of its map event "
+                         + _picker.MapModMs.ToString("F1", CultureInfo.InvariantCulture) + " ms more, counted with the session record on): "
                          + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)") + ".");
+            return true;
+        }
+
+        // Behind the loading screen, once the routes are laid: the map's window for the stops copied from the game's, with an entry
+        // and a marker for every stop made asleep, so the first stop map of a load makes none of them in play (RLO-PERF-024).
+        private bool PrewarmPicker()
+        {
+            if (!Settings.Buses)
+            {
+                return true;   // switched on later, from the options: made when the stop map is first wanted
+            }
+            if (!TransitMap.RoutesLaid)
+            {
+                return false;
+            }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            if ((_picker == null || !_picker.Alive) && !_pickerFailed)
+            {
+                _picker = GameUi.MapPicker.Make("RealLifeOverhaul Bus Stops Map");
+                _pickerFailed = _picker == null;
+            }
+            if (_picker == null || !_picker.Alive)
+            {
+                return true;   // the game's window could not be copied (said once): the list is used
+            }
+            int stops = Math.Max(TransitMap.Places.Count, TransitMap.PlacesLikely());
+            // Entries: the note, the day pass and every other stop; markers: every other stop and the one the player is at.
+            bool all = _picker.Prepare(stops + 2, stops + 1, MapPlaces.Glyph(MapIcon.Bus), StopColour);
+            if (Meta.Dev.Verbose)
+            {
+                double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                Logger?.Info("Transit check (stop map made ahead): the window copied and " + _picker.Made + " entries and " + _picker.Marked + " markers made for "
+                             + stops + " stops behind the loading screen in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none made in play): "
+                             + (all ? "PASS" : "FAIL (the game's map would not take a marker; they are made when first wanted)") + ".");
+            }
             return true;
         }
 

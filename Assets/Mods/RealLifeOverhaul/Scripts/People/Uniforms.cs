@@ -94,8 +94,9 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Puts the uniform on a character whose look was rolled, recording what it recolours and keeping the shirt for
-        /// <see cref="HiVis"/>; bare-headed when the officer wears the modelled cap. The caller rebuilds the visuals. A garment
-        /// the game no longer ships is logged once, and that slot keeps its roll.
+        /// <see cref="HiVis"/>; bare-headed (nothing in the game's hat slot) when the officer wears the modelled cap or,
+        /// with the caps option off, no cap at all (<see cref="OfficerCapRules"/>). The caller rebuilds the visuals. A
+        /// garment the game no longer ships is logged once, and that slot keeps its roll.
         /// </summary>
         internal static void Wear(AppearanceSetter appearance, ActorLook look, List<Dye> dyes, bool bareHeaded, ref Shirt shirt)
         {
@@ -191,6 +192,39 @@ namespace RealLifeOverhaul
                 }
             }
             dyes.Clear();
+        }
+
+        /// <summary>
+        /// True when the head accessory slot holds anything but the empty choice. <paramref name="name"/> is what it holds:
+        /// "None" for nothing, "?" for a choice the game does not list. One read for the officers' self-check.
+        /// </summary>
+        internal static bool HatOn(AppearanceSetter appearance, out string name)
+        {
+            const AppearanceElementType slot = AppearanceElementType.HeadAccessory;
+            name = Nothing;
+            List<AppearanceElementData> elements = appearance.data.elements;
+            for (int i = 0; i < elements.Count; i++)
+            {
+                if (elements[i].type != slot)
+                {
+                    continue;
+                }
+                if (!string.IsNullOrEmpty(elements[i].variantId))
+                {
+                    name = "?";
+                    List<AppearanceElementVariant> variants = appearance.GetElementVariants(slot);
+                    for (int v = 0; variants != null && v < variants.Count; v++)
+                    {
+                        if (variants[v].id == elements[i].variantId)
+                        {
+                            name = variants[v].name;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+            return name != Nothing;
         }
 
         private static AppearanceElementColor Put(AppearanceSetter appearance, Garment garment, List<Dye> dyes, out AppearanceElementVariant variant)

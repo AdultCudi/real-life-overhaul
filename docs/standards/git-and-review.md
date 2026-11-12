@@ -4,7 +4,7 @@ These rules cover how a change gets from a branch into `main`: its branch, its c
 
 ### RLO-GIT-001: Branch names
 
-**MUST.** Name a branch `fix/<name>` for a fix or `feature/<name>` for a feature, with lower-case words and hyphens. The maintainer also uses `perf/`, `release/`, `integrate/`, `test/` and `build/`.
+**MUST.** Name a branch `fix/<name>` for a fix or `feature/<name>` for a feature, with lower-case words and hyphens. The maintainer also uses `perf/`, `release/`, `integrate/`, `test/` and `build/`, and `living/` for the parts of the living economy overhaul, merged into its integration branch.
 
 Why: the merge commit names the branch, so the history says what each change was. 231 branches are `feature/`, 74 `fix/`.
 
@@ -104,13 +104,13 @@ Checked by: review.
 
 | Part | Raised by | Example |
 | --- | --- | --- |
-| MAJOR | The maintainer's decision; 0 until then | `0` |
-| MINOR | A release with a new feature; PATCH goes back to 0 | `0.29.0` |
+| MAJOR | The maintainer's decision, for a release large enough to be named one; MINOR and PATCH go back to 0 | `1.0.0`, the living economy |
+| MINOR | A release with a new feature, up to 99; PATCH goes back to 0 | `0.29.0` |
 | PATCH | A release of fixes only, up to 99 | `0.29.3` |
 
-Why: the version is written in seven places (`RealLifeOverhaul.csproj`, `ModManifest.asset`, `Meta/Changelog.cs`, `README.md`, `INSTALL.md`, the installer script and the Workshop description) by one script, and the build stops if the first three disagree. Each release is tagged `v<version>`.
+Why: the version is written in seven places (`RealLifeOverhaul.csproj`, `ModManifest.asset`, `Meta/Changelog.cs`, `README.md`, `INSTALL.md`, the installer script and the Workshop description) by one script, and the build stops if the first three disagree. Each release is tagged `v<version>`. A version's row in What's new has the order (MAJOR x 100 + MINOR) x 1000 + PATCH x 10 and the key `reallife_changes_` with MAJOR and two digits of MINOR, then PATCH (`Meta/VersionRules.cs`): 0.63.11 is order 63110 and key `063_11`, 1.0.0 is order 100000 and key `100_0`, so 1.0.0 stands above every 0.x row as long as MINOR and PATCH stay under 100.
 
-Checked by: the build, review.
+Checked by: the build, EconomyCheck's `VersionChecks.cs` (the compare, every row's order and key, all seven places), review.
 
 ### RLO-GIT-010: The maintainer merges
 

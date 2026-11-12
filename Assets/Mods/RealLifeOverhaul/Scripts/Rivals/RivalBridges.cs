@@ -29,12 +29,44 @@ namespace RealLifeOverhaul.Rivals
     public static class RivalBridges
     {
         // ---- what the city is
+        /// <summary>A line on what a tycoon (by index) has given to the city's charities this year; empty for nothing (Giving). Default: none.</summary>
+        public static Func<int, string> GivingLine;
+        /// <summary>A line on a tycoon (by index) who is off sick or in hospital; empty while they are well (Health). Default: none.</summary>
+        public static Func<int, string> HealthLine;
+        /// <summary>A line on the health plan a tycoon (by index) holds and what it has paid of their hospital bills this year; empty for none (Insurance). Default: none.</summary>
+        public static Func<int, string> CoverLine;
+        /// <summary>A line on the parking space a tycoon (by index) holds in a building's car park; empty for none (ParkSpaces). Default: none.</summary>
+        public static Func<int, string> SpaceLine;
+        /// <summary>A line on what supply has done to a tycoon's (by index) outlets this month; empty for nothing (Suppliers). Default: none.</summary>
+        public static Func<int, string> SupplyLine;
+        /// <summary>What a tycoon (by index) holds on the stock market beside their holding: units of the fund, blocks, an arm they listed (Markets/Extras). Default: none.</summary>
+        public static Func<int, string> MarketLine;
+        /// <summary>
+        /// A tycoon's (by index) announced purchase of shares comes: a block of a listed company for the sum, bought through the market. True if one was
+        /// bought. Default: nothing is.
+        /// </summary>
+        public static Func<int, long, bool> Shares;
+        /// <summary>A line on the car a tycoon (by index) drives and where they tend to be found; empty for nothing (RivalsSeen). Default: none.</summary>
+        public static Func<int, string> SeenLine;
+        /// <summary>A line on who leads a tycoon's holding (by index), their age and what the last handover cost; empty for nothing (Dynasty). Default: none.</summary>
+        public static Func<int, string> DynastyLine;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
         public static Func<int> Cycle;
         /// <summary>The playthrough's id the stock market keeps, for a new file's seed. Default: none (the money is used).</summary>
         public static Func<ulong> Playthrough;
+
+        // ---- the rivals' own businesses (RivalFirms): what the city's landlords have been asking, and a rival's renewal told to the company that sets that trend
+        /// <summary>What the city's landlords have been asking at a renewal, per mille. Default: nothing known (the landlord's own draw alone).</summary>
+        public static Func<int> LeaseTrend;
+        /// <summary>A rival's lease renewed in a district with this rise, per mille over its rent. Default: nobody is told.</summary>
+        public static Action<string, int> LeaseRenewed;
+        /// <summary>Parties: the outlets' staff events of a day, by the rule the player's are held by: the file, the day and the price level in, what was paid (already off the fortunes)
+        /// out.</summary>
+        public static Func<RivalFile, int, int, long> StaffEvents;
+        /// <summary>Parties: the paper's pieces about the outlets' staff events for a morning, added to the list, so many at most; how many were added.</summary>
+        public static Func<int, List<NewsItem>, int, int> StaffEventsPaper;
 
         // ---- the stock market (Markets)
         /// <summary>The market runs on this machine on its own (not following another player's). Default: no.</summary>
@@ -71,6 +103,8 @@ namespace RealLifeOverhaul.Rivals
         // ---- the company (Economy/Company)
         public static Func<bool> StaffOn;
         public static RivalOffer Offer;
+        /// <summary>The player has a campaign running today at a business, hired on Flare or booked from the company. Default: no.</summary>
+        public static Func<bool> CampaignOn;
 
         // ---- the courts (Justice)
         public static Func<bool> CourtOn;
@@ -96,8 +130,23 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>Opens the Finance app on the rivals' page.</summary>
         public static Action Open;
 
+        // ---- the game's rival businesses (RivalSeatsGame): the crew and rent an outlet stands on
+        public static IRivalSeats Seats;
+
         public static void Reset()
         {
+            Seats = null;
+            GivingLine = null;
+            HealthLine = null;
+            CoverLine = null;
+            SpaceLine = null;
+            SupplyLine = null;
+            MarketLine = null;
+            Shares = null;
+            SeenLine = null;
+            DynastyLine = null;
+            LeaseTrend = null;
+            LeaseRenewed = null;
             Worth = null;
             Cycle = null;
             Playthrough = null;
@@ -120,6 +169,7 @@ namespace RealLifeOverhaul.Rivals
             Footfall = null;
             StaffOn = null;
             Offer = null;
+            CampaignOn = null;
             CourtOn = null;
             Sue = null;
             Customers = null;

@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -14,6 +15,13 @@ namespace RealLifeOverhaul
     {
         /// <summary>Set by the test button: nothing is charged.</summary>
         public static bool Free;
+
+        /// <summary>Set by Wiring/Wiring.HealthLinks while Health runs: the doctor's first words for a case that needs the hospital (null for any other), a fee paid at the
+        /// desk (a plan may pay part of it back), a case treated, and the minutes in the waiting room (an appointment kept is seen at once). Default: none.</summary>
+        public static Func<DialogEntry> Admission;
+        public static Action<int> Paid;
+        public static Action Treated;
+        public static Func<int, int> Wait;
 
         public static CallDialogType DialogType => (CallDialogType)ModEnumHash.GetSafeHash("reallife_clinic_calldialogtype");
 
@@ -47,6 +55,16 @@ namespace RealLifeOverhaul
                 DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_doctor_no_money")));
                 return;
             }
+            if (!DoctorVisit.Free)
+            {
+                DoctorVisit.Paid?.Invoke(HomeBalance.ConsultationFee);
+            }
+            DialogEntry admit = DoctorVisit.Admission != null ? DoctorVisit.Admission() : null;
+            if (admit != null)
+            {
+                DialogController.current.ShowEntry(Guard.Entry(admit));   // Health: what has turned serious is admitted, never prescribed for
+                return;
+            }
             bool hurt = Hurt();
             if (!HomeHealth.Ill && !hurt)
             {
@@ -70,7 +88,7 @@ namespace RealLifeOverhaul
                     ConfirmTextOverride = "reallife_doctor_note_only".Localize(new { amount = JobText.Money(HomeBalance.SickNoteFee) }),
                     OnConfirm = () => Prescribe(false, true),
                     OnCancel = PhoneContacts.HangUp
-                }));
+                }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.SickNoteFee))));
                 return;
             }
             string key = HomeHealth.Ill ? "reallife_doctor_diagnosis" : "reallife_doctor_diagnosis_hurt";
@@ -89,7 +107,8 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_doctor_prescription_note",
                 OnSecondOption = () => Prescribe(true, true),
                 OnCancel = PhoneContacts.HangUp
-            }));
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.PrescriptionFee))
+             .Pays(DialogButton.Second, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.PrescriptionFee + HomeBalance.SickNoteFee))));
         }
 
         private static bool Hurt()
@@ -117,6 +136,11 @@ namespace RealLifeOverhaul
             {
                 HomeHealth.Treat();
                 ModState.RemoveModifier(ModState.Injured);
+                DoctorVisit.Treated?.Invoke();
+                if (!DoctorVisit.Free)
+                {
+                    DoctorVisit.Paid?.Invoke(HomeBalance.PrescriptionFee);
+                }
             }
             if (note)
             {

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Nav
         // On the slow tick: begun once the roads are there, let go when its option or the minimap is switched off.
         private void BaseWanted(bool wantMap)
         {
-            if (!wantMap || !Settings.MinimapBase)
+            if ((!wantMap || !Settings.MinimapBase) && !SceneWantsBase)
             {
                 if (!_base.Idle)
                 {
@@ -56,14 +56,19 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        // On the slow tick with a save loaded: the picture given and the checks written once, and a test's doings taken back.
-        private void BaseShown(float now)
+        // On the slow tick whatever is on: the mod's own buildings changed (Scripts/NewBuildings), so the same city is drawn again with them, for the 2.5D map as for the flat picture.
+        private void BaseRedraw()
         {
             if (_base.Stale && !_base.Busy)
             {
-                _base.Redraw();   // the mod's own buildings changed (Scripts/NewBuildings): the same city drawn again with them
+                _base.Redraw();
             }
-            if (_base.Picture != null)
+        }
+
+        // On the slow tick with a save loaded: the picture given and the checks written once, and a test's doings taken back.
+        private void BaseShown(float now)
+        {
+            if (_base.Picture != null && Settings.MinimapBase)
             {
                 if (_hud != null && (!_baseGiven || _baseShown != _base.Picture))
                 {

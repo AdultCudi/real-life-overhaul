@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.Characters.Skills;
+using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
 using Localizor;
@@ -39,6 +40,36 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True while the tech sector has its own rival's offer or a departure in hand for an employee (the game's id): the company makes no offer then.</summary>
         public static Func<string, bool> Held;
 
+        /// <summary>Units a supply contract is due to bring a business of a product from a day to another, both counted (Suppliers). Null: none.</summary>
+        public static Func<BuildingRegistration, string, int, int, int> SupplyComing;
+
+        /// <summary>Units the supply contracts brought a business of a product since a day and hour (Suppliers). Null: none.</summary>
+        public static Func<BuildingRegistration, string, int, int, int> SupplyBrought;
+
+        internal static int SupplyComingAt(BuildingRegistration reg, string item, int fromDay, int toDay)
+        {
+            try
+            {
+                return SupplyComing != null && reg != null ? Math.Max(0, SupplyComing(reg, item, fromDay, toDay)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        internal static int SupplyBroughtAt(BuildingRegistration reg, string item, int day, int hour)
+        {
+            try
+            {
+                return SupplyBrought != null && reg != null ? Math.Max(0, SupplyBrought(reg, item, day, hour)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         internal static bool HeldAt(string id)
         {
             try
@@ -54,11 +85,56 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Files a criminal case for tax kept back; the court's number, or 0 with no court.</summary>
         public static Func<int, int> TaxCase;
 
+        /// <summary>
+        /// Another feature's quiet second choice on a page of the company's: the words of its button for a matter (a policy 0, the return 1, a business's
+        /// books 2, a campaign 3), a place and a figure, or null for no button; and its press. Default: no button anywhere.
+        /// </summary>
+        public static Func<int, string, int, string> QuietLabel;
+
+        public static Action<int, string, int> Quiet;
+
+        public const int QuietPolicy = 0, QuietReturn = 1, QuietBooks = 2, QuietCampaign = 3;
+
+        /// <summary>The quiet button's words, or null: a bridge that throws has no button.</summary>
+        public static string QuietWords(int matter, string place, int figure)
+        {
+            try
+            {
+                return QuietLabel != null && Quiet != null ? QuietLabel(matter, place, figure) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The quiet button was pressed.</summary>
+        public static void QuietPress(int matter, string place, int figure)
+        {
+            try
+            {
+                Quiet?.Invoke(matter, place, figure);
+            }
+            catch (Exception)
+            {
+                // a bridge that throws does nothing
+            }
+        }
+
         /// <summary>Per cent of footfall one of business pressure's issues changes at a business on a day; 0 with none.</summary>
         public static Func<BuildingRegistration, int, int> IssueFootfall;
 
         /// <summary>Income of the days from one to another, both counted, that no statement holds: the gain on a business sold.</summary>
         public static Func<int, int, int> OtherIncome;
+
+        /// <summary>The gain on a startup stake sold, between two days, both counted. Apart from <see cref="OtherIncome"/> so neither overwrites the other.</summary>
+        public static Func<int, int, int> StartupGains;
+
+        /// <summary>Every income that no statement holds, between two days: a business sold and a startup stake sold, each once.</summary>
+        public static int Other(int fromDay, int toDay)
+        {
+            return TaxRules.OtherIncome(OtherIncome, StartupGains, fromDay, toDay);
+        }
 
         /// <summary>True where the cleaning service cleans a business, so the rota planner wants no cleaning shift there.</summary>
         public static Func<Address, bool> Cleaned;
@@ -130,8 +206,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>For a test: a professional of a role and level joins the professions' own payroll at a place; false if they could not.</summary>
         public static Func<string, int, int, bool> HireProfessional;
 
+        /// <summary>What a rival buying up a district adds to the rises landlords ask at a lease's renewal there, per mille; 0 where none does.</summary>
+        public static Func<string, int> Pressure;
+
+        /// <summary>
+        /// The one function the property feature feeds: the market rent a day for a lease's premises (the district, the place and the game's rent a day now), whole
+        /// money; 0 or null where it knows none. A landlord's offer moves toward it (LeaseRules.Offer); the city's rise ring stays the lease rules'.
+        /// </summary>
+        public static Func<string, string, int, int> MarketRent;
+
         public static void Reset()
         {
+            Pressure = null;
+            MarketRent = null;
             Professionals = null;
             HireProfessional = null;
             Comfort = null;
@@ -147,6 +234,7 @@ namespace RealLifeOverhaul.Economy
             TaxCase = null;
             IssueFootfall = null;
             OtherIncome = null;
+            StartupGains = null;
             Cleaned = null;
             Outside = null;
             Booked = null;
@@ -168,11 +256,13 @@ namespace RealLifeOverhaul.Economy
         public string District;
         public int Income = CompanyCatalogue.IncomeMiddle;
         public int Needs;               // the licences it needs, a bit each
+        public int Drivers;             // delivery drivers on its staff, as last read: a delivery vehicle permit
         public int Taste;               // +1 sells to the well-off, -1 sells on price, 0 neither
         public int Average;             // an average day's takings over the statements of the last seven days
         public int Statements;          // of those days, the statements the game has
         public int Takings, Profit;     // yesterday's, by the game's statement
         public bool HasBooks;           // the game has a statement for yesterday
+        public int Rent;                // the game's rent a day at the premises, whole money; 0 where the player owns the building
         public int Staff, Low, Standing, Sick;   // staff, those standing low, their standing summed, those off sick
         public int Asked;               // per cent of customers the company asks for here now
         public bool Applied;            // something of the company's is in the game's figure
@@ -185,6 +275,10 @@ namespace RealLifeOverhaul.Economy
     internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
+        public const string ReserveKey = "reallife_transaction_co_reserve";       // money set aside for the year's tax bill: out of the cash, no cost, no deduction
+        public const string ReserveBackKey = "reallife_transaction_co_reserve_back";   // the reserve back in the cash
+        public const string LeaseKey = "reallife_transaction_co_lease";   // the rise a lease's renewal added to the game's rent: a business cost, deductible
+        public const string BonusKey = "reallife_transaction_co_bonus";   // a one-off bonus in place of a raise: a wage cost, deductible
         public const string SickKey = "reallife_transaction_co_sick";
         public const string OvertimeKey = "reallife_transaction_co_overtime";
         public const string StrikeKey = "reallife_transaction_co_strike";
@@ -206,6 +300,10 @@ namespace RealLifeOverhaul.Economy
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
+        private static readonly string[] CrowdTypes = { "nightclub", "cinema", "theater", "casino" };                                  // many people in one room: a fire safety certificate
+        // tables: an outdoor seating permit and a fire safety certificate; the last two: Scripts/Shops
+        private static readonly string[] SeatingTypes = { "coffeeshop", "fastfoodrestaurant", "teabar", "icecreamparlour" };
+        private static readonly string[] CellarTypes = { "warehouse" };                                                                // goods held in bulk: bonded storage
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
         private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
@@ -287,8 +385,14 @@ namespace RealLifeOverhaul.Economy
                 shop.Name = string.IsNullOrEmpty(reg.BusinessName) ? "?" : reg.BusinessName;
                 shop.Address = reg.Address;
                 shop.District = GameRegistrations.District(reg);
+                shop.Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay));
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
-                shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
+                shop.Drivers = 0;   // counted again when the staff are read, which follows
+                shop.Needs = LicenceRules.Needs(new LicenceSite
+                {
+                    Food = Is(type, FoodTypes), Alcohol = Is(type, AlcoholTypes), Late = OpensLate(reg), Crowd = Is(type, CrowdTypes), Seating = Is(type, SeatingTypes),
+                    Cellar = Is(type, CellarTypes)
+                });
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;
                 shop.Staff = shop.Low = shop.Standing = shop.Sick = 0;
                 shop.Asked = 0;
@@ -519,6 +623,11 @@ namespace RealLifeOverhaul.Economy
             List<EmployeeInstance> all = Save != null ? Save.EmployeeInstances : null;
             EmployeeInstance self = Self();
             IndexShops(shops);
+            for (int i = 0; i < shops.Count; i++)
+            {
+                shops[i].Drivers = 0;
+                shops[i].Needs &= ~(1 << (int)LicenceKind.DeliveryVehicle);   // asked of a business with a delivery driver on its staff, read again here
+            }
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
@@ -531,6 +640,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;   // a headquarters or a warehouse takes no money: outside the wage market
                 }
+                if (e.HasSkill(DeliveryDriver))
+                {
+                    shop.Drivers++;
+                }
                 StaffFile f;
                 if (!ById.TryGetValue(e.id, out f))
                 {
@@ -538,7 +651,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    f = new StaffFile { Id = e.id, Standing = CompanyCatalogue.Clamp(CompanyCatalogue.StandingStart + CompanyBridges.EsteemNow(), 0, CompanyCatalogue.StandingMost) };
+                    f = StaffRules.Hire(e.id, CompanyBridges.EsteemNow());
                     staff.Add(f);
                     ById[e.id] = f;
                 }
@@ -566,33 +679,124 @@ namespace RealLifeOverhaul.Economy
                     dropped++;
                 }
             }
+            for (int i = 0; i < shops.Count; i++)
+            {
+                if (shops[i].Drivers > 0 && shops[i].File != null)
+                {
+                    shops[i].Needs |= 1 << (int)LicenceKind.DeliveryVehicle;
+                    LicenceRules.Newly(shops[i].File, shops[i].Needs, Save != null ? Save.Day : 0);   // a first term free where it is new to the business
+                }
+            }
             ById.Clear();
         }
 
-        /// <summary>The hours each employee with an agreed raise worked on the ending day, before the game's run clears them.</summary>
-        public static void NoteHours(CompanyState state)
+        /// <summary>The game's yearly tax bill has come and waits to be paid.</summary>
+        public static bool BillWaiting()
+        {
+            try
+            {
+                return Save != null && Save.currentUnpaidTaxes != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The bill waiting, whole money; 0 with none.</summary>
+        public static int BillAmount()
+        {
+            try
+            {
+                return Save != null && Save.currentUnpaidTaxes != null ? Mathf.RoundToInt(Mathf.Min(Save.currentUnpaidTaxes.totalToPay, int.MaxValue / 4)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>One building the player owns, with the property tax the game charges on it (TaxHelper's sum): so far this tax year, and for the whole year.</summary>
+        public struct PropertyTaxLine
+        {
+            public string Name;
+            public int ToDate, Year;
+        }
+
+        /// <summary>
+        /// The property tax of each building the player owns, from the game's own sum (TaxCalculationHelper.GetRealEstateTaxes for the tax year to yesterday, and
+        /// each building's yearly figure). A rented building has none: the tax is inside its rent. Read when the day turns and when the app opens, never per frame.
+        /// </summary>
+        public static void PropertyTaxes(int today, List<PropertyTaxLine> into)
+        {
+            into.Clear();
+            try
+            {
+                GameInstance save = Save;
+                if (save == null || save.realEstate == null)
+                {
+                    return;
+                }
+                int days = DaysPerYear, from = TaxRules.YearStart(today, days);
+                List<(string, float)> sofar = TaxCalculationHelper.GetRealEstateTaxes(from, Mathf.Max(from, today - 1), days);
+                for (int i = 0; i < sofar.Count && i < save.realEstate.Count && into.Count < CompanyCatalogue.PropertyLinesMost; i++)
+                {
+                    into.Add(new PropertyTaxLine
+                    {
+                        Name = sofar[i].Item1 ?? string.Empty, ToDate = Mathf.RoundToInt(Mathf.Min(sofar[i].Item2, int.MaxValue / 4)),
+                        Year = Mathf.RoundToInt(Mathf.Min(save.realEstate[i].TaxesAmount, int.MaxValue / 4))
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                into.Clear();
+            }
+        }
+
+        /// <summary>
+        /// The hours each employee with an agreed raise worked on the ending day, before the game's run clears them, and, for everybody, whether the day
+        /// was worked short of the day planned (<see cref="StaffRules.LateDay"/>): one pass a day over the staff, a look-up each.
+        /// </summary>
+        public static void NoteHours(CompanyState state, int endedDay)
         {
             List<StaffFile> staff = state.Staff;
-            bool any = false;
-            for (int i = 0; i < staff.Count; i++)
-            {
-                staff[i].Hours = 0;
-                any |= staff[i].Raise > 0;
-            }
-            if (!any)
-            {
-                return;
-            }
+            DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(endedDay);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
-                EmployeeInstance e = f.Raise > 0 ? Employee(f.Id) : null;
-                if (e != null)
+                f.Hours = 0;
+                EmployeeInstance e = Employee(f.Id);
+                if (e == null)
+                {
+                    continue;
+                }
+                bool driver = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver);
+                if (f.Raise > 0)
                 {
                     // The game pays a delivery driver a fixed day whatever the count says, and so does the raise.
-                    f.Hours = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver) ? DriverHours : Mathf.Max(0, e.workedHoursToday) * 100;
+                    f.Hours = driver ? DriverHours : Mathf.Max(0, e.workedHoursToday) * 100;
+                }
+                if (!driver)
+                {
+                    StaffRules.LateDay(f, PlannedHours(e, weekday), e.workedHoursToday, e.isAbsent || e.isTrainingDay);
                 }
             }
+        }
+
+        // The hours the business's schedule has an employee work on a day of the week; 0 for a day off or an employee with no business.
+        private static int PlannedHours(EmployeeInstance e, DayOfWeekOrdered weekday)
+        {
+            BuildingRegistration reg = e.assignedAddress != null && !e.assignedAddress.IsUndefined() ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
+            List<ScheduleDay> week = reg != null ? reg.scheduleDays : null;
+            for (int d = 0; week != null && d < week.Count; d++)
+            {
+                if (week[d] != null && week[d].day == weekday)
+                {
+                    return e.GetWorkingHoursOnDay(week[d]);
+                }
+            }
+            return 0;
         }
 
         public static EmployeeInstance Employee(string id)

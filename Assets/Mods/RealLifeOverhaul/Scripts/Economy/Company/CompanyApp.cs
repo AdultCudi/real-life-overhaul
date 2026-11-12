@@ -308,6 +308,16 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
+        // Another feature's quiet second choice on this page (CompanyBridges.QuietLabel), where it has one: a plain button in the page's own row.
+        private static void QuietButton(UnityEngine.Transform buttons, int matter, string place, int figure)
+        {
+            string words = CompanyBridges.QuietWords(matter, place, figure);
+            if (words != null)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, words, () => CompanyBridges.QuietPress(matter, place, figure));
+            }
+        }
+
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);

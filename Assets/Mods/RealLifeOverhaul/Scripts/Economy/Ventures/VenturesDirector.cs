@@ -204,6 +204,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _file = file;
             _running = true;
+            ExtraStart(today);
             if (fresh)
             {
                 Logger?.Info("Ventures: a file is opened for this save on day " + today + " (seed " + file.Seed + "): " + file.Investors.Count + " investors, "
@@ -258,6 +259,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 FinishDay();   // the day's look is made before the file is kept
                 VenturesStore.Save(Save.modData, _file);
+                ExtraSave();
             }
             DaySpread.Shared.Drop(this);
             _running = false;
@@ -303,15 +305,19 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             var view = new VenturesApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_ven_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(120, 148, 235, 255), new Color32(62, 78, 176, 255), 0.42f, "AppIcon-Ventures"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.VentScreen(RealLifeOverhaul.Ui.VenturesLive.Instance, RealLifeOverhaul.Ui.VenturesLive.ScreenId),
+                KitScreen = RealLifeOverhaul.Ui.VenturesLive.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Coin
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -323,6 +329,8 @@ namespace RealLifeOverhaul.Economy.Ventures
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.VenturesLive.WantFrom;   // a calendar entry opens the app on its tab and row
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 
@@ -357,6 +365,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
+            Revision++;
             Notifications.Show(type, key, data, 10f, null, Guard.Wrap(click), true, false);
         }
 
@@ -370,6 +379,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         private void Badge()
         {
+            Revision++;
             if (_app != null && _file != null)
             {
                 _app.SetBadge(_app.Showing ? 0 : _file.Unseen);
@@ -384,6 +394,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 {
                     FinishDay();
                     VenturesStore.Save(Save.modData, _file);
+                    ExtraSave();
                 }
             }
             catch (Exception e)

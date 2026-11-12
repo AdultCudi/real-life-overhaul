@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (shown == 0)
             {
-                Note(FlareText.T(following ? "reallife_flare_empty_following" : "reallife_flare_empty_feed"));
+                Note(FlareText.T(FlareFeedRules.EmptyTitleKey(following ? FlareFeedTab.Following : FlareFeedTab.ForYou, file.Follows.Count)));
             }
             _director.CommentsAhead(null);   // RLO Texts: a few of the comments under the feed's posts asked; once a game minute at most
         }
@@ -76,6 +76,10 @@ namespace RealLifeOverhaul.Flare
         {
             if (_at.Tab == 0)
             {
+                if (WriteCityTrends())   // Flare in the city: what is trending among the residents (FlareApp.City)
+                {
+                    Section(FlareText.T("reallife_flare_city_trend_tags"));
+                }
                 FlareLiveRules.Trending(file.Posts, now, 12, _tags, _tagCounts);
                 for (int i = 0; i < _tags.Count; i++)
                 {

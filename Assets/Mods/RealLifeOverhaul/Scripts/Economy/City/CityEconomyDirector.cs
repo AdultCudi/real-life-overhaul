@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy
         private bool _holding;         // the footfall figures are the game's own for a save, until the next game hour
         private int _level;
         private int _monthDays = MacroCatalogue.MonthDaysLeast;
+        private bool _rateKept;           // the credit side has been given a rate once since the director began: a first reading is not a rise
         private Action _second, _onSave, _onHour, _onDay;
         private int _followedDay;      // a guest: the last day its own part of the day was done
         private bool _heardHost;       // a guest: the host's state has been applied since it began to follow
@@ -356,6 +357,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     CityGame.Districts(_state);   // the game's neighbourhoods were not there at the start
                 }
+                _state.DistrictsFed = FeedDistricts();
                 var all = new CityTick { ShockAnnounced = -1 };
                 int from = Math.Max(_state.LastDay + 1, day - _monthDays + 1);   // a jump of many days counts a month of them at most
                 for (int d = from; d <= day; d++)
@@ -396,6 +398,28 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
+        }
+
+        // The districts' incomes from the living population, where it has a figure (CityBridges.DistrictIncome): true when any came.
+        private bool FeedDistricts()
+        {
+            Func<string, int, int> fed = CityBridges.DistrictIncome;
+            if (fed == null)
+            {
+                return false;
+            }
+            bool any = false;
+            for (int i = 0; i < _state.Districts.Count; i++)
+            {
+                CityDistrict d = _state.Districts[i];
+                int income = fed(d.Name, d.Start);
+                if (income > 0)
+                {
+                    d.Income = MacroCatalogue.Clamp(income, MacroCatalogue.IncomeLeast, MacroCatalogue.IncomeMost);
+                    any = true;
+                }
+            }
+            return any;
         }
 
         private static CityDay DayOf(int day)
@@ -582,15 +606,22 @@ namespace RealLifeOverhaul.Economy
             float points = CityModel.BasePoints(_state);
             float multiplier = GameLoans.Multiplier;
             int bp = ProductTerms.BaseBp(points, multiplier);
+            bool seen = _rateKept;
+            _rateKept = true;
             if (LendingTerms.BasePoints == points && AccountRules.BaseBp == bp && AccountRules.BaseMultiplier == multiplier)
             {
                 return false;
             }
+            int before = AccountRules.BaseBp;
             LendingTerms.BasePoints = points;
             AccountRules.BaseBp = bp;
             AccountRules.BaseMultiplier = multiplier;
             if (EconomyDirector.Instance != null)
             {
+                if (bp > before && seen)
+                {
+                    EconomyDirector.Instance.RateRose(bp - before);   // the Finance Overview says what the last rise cost
+                }
                 EconomyDirector.Instance.TermsChanged("the bank rate");   // the banks' settings carry it from now on
             }
             return true;

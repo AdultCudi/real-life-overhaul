@@ -12,11 +12,13 @@ namespace RealLifeOverhaul.Economy
     public sealed partial class ServicesApp
     {
         private readonly List<BuildingRegistration> _sellable = new List<BuildingRegistration>(16);
+        private readonly List<SaleRaise> _raises = new List<SaleRaise>(4);
         private int _step = -1;   // the asking price on the selector; -1: the listing's own, or the value
 
         private void WriteSale(InfoBox box, ServicesState state, int day, ref string selected)
         {
             SaleOffer bid = null;
+            RivalSale rsale = null;
             bool isPicked;
             _spec = ServicesTables.Sale;
             for (int i = 0; i < state.SaleOffers.Count; i++)
@@ -31,6 +33,18 @@ namespace RealLifeOverhaul.Economy
                 row.Set(6, ServicesText.T("reallife_svc_row_answer_by", "day", o.Deadline.ToString()), TableRow.Yellow);
                 row.NoTotal = true;   // the total is what the businesses are worth
                 bid = isPicked ? o : bid;
+            }
+            for (int i = 0; i < state.RivalSales.Count; i++)
+            {
+                RivalSale v = state.RivalSales[i];
+                TableRow row = Pick("rsale:" + v.Id, ServicesTables.RivalSale, ref selected, out isPicked);
+                row.Set(0, v.Business);
+                row.Set(1, v.SellerName);
+                row.Set(3, ServicesText.Money(v.Price), v.Price);
+                row.Set(5, ServicesText.T("reallife_econ_day", "day", v.Deadline.ToString()), v.Deadline);
+                row.Set(6, ServicesText.T("reallife_svc_row_rival_sale"), TableRow.Yellow);
+                row.NoTotal = true;
+                rsale = isPicked ? v : rsale;
             }
             BuildingRegistration picked = null;
             ServicesGame.Sellable(_sellable);
@@ -72,6 +86,10 @@ namespace RealLifeOverhaul.Economy
             {
                 WriteBid(box, state, bid);
             }
+            else if (rsale != null)
+            {
+                WriteRivalSale(box, rsale);
+            }
             else if (picked != null)
             {
                 WriteBusiness(box, state, picked);
@@ -100,6 +118,11 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString()));
             box.Note(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct),
                 "economy", ServicesText.Percent(b.ClimatePct), "books", ServicesText.Percent(b.HistoryPct), "amount", ServicesText.Money(b.Goodwill)));
+            if (b.QualityPct != 100 || b.InteriorPts != 0 || b.RatingPts != 0 || b.SkillPts != 0)
+            {
+                box.Note(ServicesText.Fill("reallife_svc_value_quality", "share", ServicesText.Percent(b.QualityPct), "interior", Points(b.InteriorPts), "rating", Points(b.RatingPts),
+                    "staff", Points(b.SkillPts)));
+            }
             box.Row("reallife_svc_value_fixtures", ServicesText.Money(b.Fixtures));
             box.Row("reallife_svc_value_worth", ServicesText.Money(b.Value));
             if (b.Investors + b.Loans > 0)
@@ -107,6 +130,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_value_owed", "investors", ServicesText.Money(b.Investors), "loans", ServicesText.Money(b.Loans), "left", ServicesText.Signed(b.Net)));
             }
             box.Line(ServicesText.T("reallife_svc_value_deposit", "amount", ServicesText.Money(b.Deposit), "quick", ServicesText.Money(SaleRules.Quick(b.Value))));
+            WriteRaises(box, reg);
             if (!box.HasSelector || !box.Selector(ServicesCatalogue.AskingPct.Length, step, i => ServicesText.Fill("reallife_svc_asking", "share", ServicesText.Percent(ServicesCatalogue.AskingPct[i]),
                     "amount", ServicesText.Money(SaleRules.Asking(value, i)), "days", ServicesCatalogue.AskingGapDays[i].ToString(), "most", ServicesCatalogue.AskingOffersMost[i].ToString()), i =>
                 {
@@ -144,6 +168,10 @@ namespace RealLifeOverhaul.Economy
             int share = b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0;
             box.Title(ServicesText.T("reallife_svc_bid_title", "business", l != null ? l.Name : "?"));
             box.Subtitle(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
+            if (o.Named)
+            {
+                box.Line(ServicesText.Who(o));   // an offer made before named buyers has its kind in the line above already
+            }
             if (o.Countered)
             {
                 box.Chip(ServicesText.T("reallife_ibox_chip_final"), CellTone.Yellow);
@@ -156,7 +184,7 @@ namespace RealLifeOverhaul.Economy
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));
             box.Section("reallife_ibox_sec_terms");
-            box.Line(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
+            box.Line(ServicesText.StaffLine(o.KeepsStaff), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
             box.Line(o.ClauseDays > 0
                 ? ServicesText.T("reallife_svc_bid_clause", "days", o.ClauseDays.ToString(), "share", ServicesCatalogue.ClausePenaltyPct.ToString())
                 : ServicesText.T("reallife_svc_bid_no_clause"));
@@ -176,6 +204,42 @@ namespace RealLifeOverhaul.Economy
                 _pick = null;
                 _director.Refuse(id);
             });
+            BackButton(box);
+        }
+
+        // What would raise the price before it is sold: each line where it stands, and about how much it adds.
+        private void WriteRaises(InfoBox box, BuildingRegistration reg)
+        {
+            SaleRules.Raises(ServicesGame.Inputs(reg), _raises);
+            box.Section("reallife_svc_raise_head");
+            if (_raises.Count == 0)
+            {
+                box.Note(ServicesText.T("reallife_svc_raise_none"));
+            }
+            for (int i = 0; i < _raises.Count; i++)
+            {
+                SaleRaise r = _raises[i];
+                box.RowWords(ServicesText.RaiseLabel(r), ServicesText.RaiseValue(r), r.Met ? CellTone.Green : CellTone.Plain);
+            }
+            _raises.Clear();
+        }
+
+        private static string Points(int points) => points > 0 ? "+" + points : points.ToString();
+
+        // A rival's business up for sale: who sells it, for how much, what it takes, and who has it if the player does not.
+        private void WriteRivalSale(InfoBox box, RivalSale v)
+        {
+            int id = v.Id;
+            box.Title(ServicesText.T("reallife_svc_rsale_title", "business", v.Business));
+            box.Subtitle(ServicesText.T("reallife_svc_rsale_from", "seller", v.SellerName, "amount", ServicesText.Money(v.Price)));
+            box.Line(ServicesText.T(v.Buyer.Length > 0 ? "reallife_svc_rsale_then" : "reallife_svc_rsale_keeps", "day", v.Deadline.ToString(), "buyer", v.BuyerName, "seller", v.SellerName),
+                CellTone.Yellow);
+            box.Section("reallife_ibox_sec_offer");
+            box.Row("reallife_svc_bid_price", ServicesText.Money(v.Price));
+            box.Line(ServicesText.T("reallife_svc_rsale_takings", "amount", ServicesText.Money(v.Weekly)));
+            box.Note(ServicesText.T("reallife_svc_rsale_how"));
+            Transform buttons = box.ButtonRow();
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_rsale_buy", () => _director.BuyRival(id));
             BackButton(box);
         }
     }

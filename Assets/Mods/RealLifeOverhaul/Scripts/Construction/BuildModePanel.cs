@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Construction
     /// UI scale and stands clear of the toolbar. Closed, the map is all there is. Built at its first opening; written when a
     /// filter or a card is picked; nothing runs a frame of its own.
     /// </summary>
-    internal sealed class BuildModePanel
+    internal sealed class BuildModePanel : IBuildCatalogue
     {
         public static IModLogger Logger;
 
@@ -210,6 +210,13 @@ namespace RealLifeOverhaul.Construction
         // ------------------------------------------------------------------ showing and writing
 
         public void Show(bool shown) => Show(shown, float.NaN);
+
+        void IBuildCatalogue.Add(ref CatalogueCard c) => Add(c.Index, c.Picture, c.Name, c.Kind, c.Size, c.Cost, c.Usable, c.Chosen);
+
+        // The old window sorts by filter, not by use: the kit's tabs are the kit's.
+        void IBuildCatalogue.Uses(int[] counts, int use)
+        {
+        }
 
         /// <summary>
         /// Shows or hides the window. Shown, it is drawn at the scale that fits the screen now (the canvas's size follows the game's UI

@@ -31,13 +31,13 @@ internal static partial class Program
 
         string venture = ModSource(@"Tech\TechDirector.Venture.cs");
         string replace = MemberText(venture, "private void ReplaceChief(Cap c, FirmPlace firm, int day)");
-        int room = replace.IndexOf("_talent.People.Count >= TalentStore.PeopleMost", StringComparison.Ordinal);
+        int room = replace.IndexOf("_talent.PayrollCount() >= TalentStore.PayrollMost", StringComparison.Ordinal);
         int kept = replace.IndexOf("VentureRules.ChiefKept(c);", StringComparison.Ordinal);
         int back = replace.IndexOf("return;", StringComparison.Ordinal);
         int letGo = replace.IndexOf("LetGo(was, false)", StringComparison.Ordinal), made = replace.IndexOf("_talent.NextPro++", StringComparison.Ordinal);
         int added = replace.IndexOf("_talent.People.Add(chief);", StringComparison.Ordinal), told = replace.IndexOf("reallife_vc_note_chief_replaced", StringComparison.Ordinal);
         Check(replace.Length > 0 && room >= 0 && kept > room && back > kept && letGo > back && made > back && added > made && told > added
-              && Occurs(replace, "TalentStore.PeopleMost") == 1 && replace.IndexOf("c.Ceo = chief.Id;", StringComparison.Ordinal) > added,
+              && Occurs(replace, "TalentStore.PayrollMost") == 1 && replace.IndexOf("c.Ceo = chief.Id;", StringComparison.Ordinal) > added,
             "tech, the board: the room on the payroll is asked before anyone is laid off or made, and a new chief is announced only once added");
     }
 

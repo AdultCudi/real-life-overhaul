@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Economy
     {
         Agree = 0,
         Less = 1,
-        Refuse = 2
+        Refuse = 2,
+        Bonus = 3       // a one-off sum in place of a raise: the request closes and the rest begins (StaffRules.BonusFor)
     }
 
     /// <summary>How a strike ends.</summary>
@@ -42,6 +43,15 @@ namespace RealLifeOverhaul.Economy
         public long DayBefore, DayAfter;    // ...and for a working day of each
 
         public int Left => Rested + Waiting + AtRate + Unknown;
+    }
+
+    /// <summary>One picked employee's part of a raise (<see cref="StaffRules.Plan(IList{StaffFile}, int, int, List{PickedLine})"/>): what they are paid now, the raise and who is left out.</summary>
+    public struct PickedLine
+    {
+        public int Now;             // what they are paid an hour, hundredths; 0 for somebody the company does not know
+        public int Raise;           // the raise an hour, hundredths; 0 when they are left out
+        public int Hours;           // their working day in hundredths of an hour
+        public BatchState State;    // Ready when raised, else why they are left out
     }
 
     /// <summary>
@@ -134,10 +144,41 @@ namespace RealLifeOverhaul.Economy
             return StaffNote.None;
         }
 
+        /// <summary>
+        /// One working day's lateness. A day worked short of the day planned by <see cref="CompanyCatalogue.LateShort"/> hours or more is a late day and is
+        /// counted running; a full day clears the count. A day off, a day sick or a day of training (<paramref name="away"/>), or no day planned, changes nothing.
+        /// </summary>
+        public static void LateDay(StaffFile f, int planned, int worked, bool away)
+        {
+            if (planned <= 0 || away)
+            {
+                return;
+            }
+            f.LateDays = planned - Math.Max(0, worked) >= CompanyCatalogue.LateShort ? Math.Min(CompanyCatalogue.LateMost, f.LateDays + 1) : 0;
+        }
+
         /// <summary>Whether a raise to the going rate may be given unasked: as often as they would ask.</summary>
         public static bool CanGive(StaffFile f, int day)
         {
             return f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.Going > f.Paid && day >= f.AskRest;
+        }
+
+        /// <summary>
+        /// A new member of staff's file: the standing a hire starts at (the company's esteem lifts it), nothing asked, nothing offered, nobody late. The player's company
+        /// makes one when a hire turns up in the game, a rival's firm when it hires, by this alone.
+        /// </summary>
+        public static StaffFile Hire(string id, int esteem)
+        {
+            return new StaffFile { Id = id, Standing = CompanyCatalogue.Clamp(CompanyCatalogue.StandingStart + esteem, 0, CompanyCatalogue.StandingMost) };
+        }
+
+        /// <summary>Somebody let go: they leave with nothing asked, nothing offered, and no lateness counted against them.</summary>
+        public static void LetGo(StaffFile f)
+        {
+            f.AskDay = f.AskTo = 0;
+            f.PoachDay = f.PoachOffer = 0;
+            f.LateDays = 0;
+            f.UnderDays = 0;
         }
 
         /// <summary>The raise an answer gives, hundredths an hour.</summary>
@@ -145,6 +186,55 @@ namespace RealLifeOverhaul.Economy
         {
             int asked = Math.Max(0, f.AskTo - f.Paid);
             return answer == RaiseAnswer.Agree ? asked : answer == RaiseAnswer.Less ? asked * CompanyCatalogue.RaiseLessShare / 100 : 0;
+        }
+
+        /// <summary>
+        /// Whether a waiting request asks no more than <paramref name="percent"/> per cent of what they are paid now (the agreed raise included): the limit under which
+        /// the company agrees it by itself. 0 is off, a limit past <see cref="CompanyCatalogue.AgreeUpToMost"/> is held to it, and a request for nothing is none.
+        /// </summary>
+        public static bool WithinLimit(StaffFile f, int percent)
+        {
+            int asked = RaiseFor(f, RaiseAnswer.Agree);
+            percent = Math.Min(percent, CompanyCatalogue.AgreeUpToMost);
+            return f.AskDay > 0 && percent > 0 && asked > 0 && (long)asked * 100 <= (long)Math.Max(1, f.Paid) * percent;
+        }
+
+        /// <summary>
+        /// The least limit, whole per cent of the pay, that can agree any request at this strictness. Somebody asks once they are
+        /// <see cref="CompanyCatalogue.RaiseGap"/> thousandths under the going rate, and <see cref="Day"/> drops the request when they no longer are, so the smallest
+        /// request that can wait asks g / (1000 - g) of the pay: a limit under that share agrees nothing.
+        /// </summary>
+        public static int LimitLeast(int level)
+        {
+            int gap = CompanyCatalogue.RaiseGap[CompanyCatalogue.Level(level)];
+            return (100 * gap + (1000 - gap) - 1) / (1000 - gap);
+        }
+
+        /// <summary>Whether a limit that is on (above 0) agrees no request at all at this strictness, being under <see cref="LimitLeast"/>.</summary>
+        public static bool AgreesNothing(int limit, int level)
+        {
+            return limit > 0 && limit < LimitLeast(level);
+        }
+
+        /// <summary>
+        /// Every request for a raise waiting answered at once, as each one's own answer is (<see cref="Answer"/>). Returns how many were answered, and in
+        /// <paramref name="raise"/> what they add an hour in all, hundredths. A bonus is paid one by one, so it is not an answer for all: nothing is answered.
+        /// </summary>
+        public static int AnswerAll(IList<StaffFile> staff, RaiseAnswer answer, int day, out int raise)
+        {
+            raise = 0;
+            int count = 0;
+            for (int i = 0; answer != RaiseAnswer.Bonus && staff != null && i < staff.Count; i++)
+            {
+                StaffFile f = staff[i];
+                if (f.AskDay > 0)
+                {
+                    raise += RaiseFor(f, answer);
+                    Answer(f, answer, day);
+                    count++;
+                }
+            }
+            return count;
         }
 
         public static void Answer(StaffFile f, RaiseAnswer answer, int day)
@@ -155,10 +245,29 @@ namespace RealLifeOverhaul.Economy
             }
             f.Raise += RaiseFor(f, answer);
             MoveStanding(f, answer == RaiseAnswer.Agree ? CompanyCatalogue.StandAgree
-                : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : CompanyCatalogue.StandRefuse);
+                : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : answer == RaiseAnswer.Bonus ? CompanyCatalogue.StandBonus : CompanyCatalogue.StandRefuse);
             f.AskDay = f.AskTo = 0;
             f.UnderDays = 0;
             f.AskRest = day + CompanyCatalogue.RaiseRestDays;
+        }
+
+        /// <summary>
+        /// A one-off bonus given in place of a raise, whole money at today's prices: <see cref="CompanyCatalogue.BonusBase"/> at the starting wage
+        /// band, more under a wider band and less under a tighter one (the band is the share of the going rate the place's pay may reach).
+        /// </summary>
+        public static int BonusFor(int bandStep, int index)
+        {
+            int band = ManagerCatalogue.Step(ManagerCatalogue.WageBands, bandStep), middle = ManagerCatalogue.Step(ManagerCatalogue.WageBands, ManagerCatalogue.WageBandDefault);
+            return CompanyCatalogue.AtPrices((int)((long)CompanyCatalogue.BonusBase * band / middle), index);
+        }
+
+        /// <summary>
+        /// What a raise adds to the wages over a year of the game, for a card's consequence line: its hundredths an hour over a working day's
+        /// hours (hundredths) for each working day of the year (<paramref name="daysPerYear"/>), in whole money.
+        /// </summary>
+        public static int YearOf(int raise, int dayHours, int daysPerYear)
+        {
+            return (int)Math.Min(int.MaxValue / 4, (long)Math.Max(0, raise) * Math.Max(0, dayHours) * Math.Max(1, daysPerYear) / 10000);
         }
 
         /// <summary>The choices of a raise for several picked employees: up to the going rate, then the shares, then the amounts.</summary>
@@ -229,9 +338,16 @@ namespace RealLifeOverhaul.Economy
         /// their pay an hour and a working day in all, before and after, hundredths. A null file is somebody the company does
         /// not know (not at one of the player's businesses).
         /// </summary>
-        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day)
+        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day) => Plan(picked, choice, day, null);
+
+        /// <summary>
+        /// The same plan, with a line for each picked employee in the order given (cleared first) when <paramref name="lines"/> is
+        /// not null: the review shows these lines and the totals are summed from the very same pass, so they cannot differ.
+        /// </summary>
+        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day, List<PickedLine> lines)
         {
             var plan = new PickedPlan();
+            lines?.Clear();
             for (int i = 0; picked != null && i < picked.Count; i++)
             {
                 StaffFile f = picked[i];
@@ -239,26 +355,32 @@ namespace RealLifeOverhaul.Economy
                 if (f == null)
                 {
                     plan.Unknown++;
+                    lines?.Add(new PickedLine { State = BatchState.Unknown });
                     continue;
                 }
                 int raise = CanPick(f, day) ? PickedRaise(f, choice) : 0;
+                BatchState state = BatchState.Ready;
                 if (f.PoachDay > 0 || f.LeaveDay > 0)
                 {
                     plan.Waiting++;
+                    state = BatchState.Waiting;
                 }
                 else if (!CanPick(f, day))
                 {
                     plan.Rested++;
+                    state = BatchState.Rested;
                 }
                 else if (raise <= 0)
                 {
                     plan.AtRate++;
+                    state = BatchState.AtRate;
                 }
                 else
                 {
                     plan.Raised++;
                     plan.Raise += raise;
                 }
+                lines?.Add(new PickedLine { Now = f.Paid, Raise = Math.Max(0, raise), Hours = Math.Max(0, f.DayHours), State = state });
                 long hours = Math.Max(0, f.DayHours);
                 plan.Before += f.Paid;
                 plan.After += f.Paid + Math.Max(0, raise);

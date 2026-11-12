@@ -136,7 +136,7 @@ namespace RealLifeOverhaul.Markets
                 return ActivistDemand.None;
             }
             HolderMood m = Read(s, indexNow);
-            double sale = Math.Min(1.0, m.Cheap), payout = m.Hoard, pay = Math.Min(1.0, m.PayOver);
+            double sale = o.Firm ? 0.0 : Math.Min(1.0, m.Cheap), payout = m.Hoard, pay = Math.Min(1.0, m.PayOver);   // a firm is sold through the tech sector's offers, not by a vote here
             double board = MarketValuation.Clamp((m.Lag - ListingCatalogue.LagIndex) / ListingCatalogue.LagIndex, 0.0, 1.0);
             ActivistDemand demand = ActivistDemand.None;
             if (sale > strength)

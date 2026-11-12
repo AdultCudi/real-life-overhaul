@@ -14,6 +14,17 @@ namespace RealLifeOverhaul.Photos
         public int Day;         // the game's day it was taken on (0: not known)
         public int Hour;        // the game's hour it was taken at
         public bool Selfie;
+        public int Minute = -1;           // the game's minute it was taken at; -1 for a photo that has none (taken before the camera stored it)
+        public PhotoSidecar Side;         // what the camera knew, read from the sidecar once when the folder is listed (empty if there is none)
+        public bool HasSide;
+
+        /// <summary>Takes in what a sidecar holds: the minute and the facts the Gallery searches and shows.</summary>
+        public void Take(PhotoSidecar side)
+        {
+            Side = side;
+            HasSide = true;
+            Minute = side.HasMinute ? side.Minute : -1;
+        }
     }
 
     /// <summary>

@@ -118,17 +118,29 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(OwnBankCatalogue.AnswerMost, share * OwnBankCatalogue.AnswerPer / 1000);
         }
 
-        /// <summary>The city's savings of a kind at today's prices.</summary>
+        /// <summary>
+        /// The city's savings of a kind at today's prices: the catalogue's figure, moved by what the city's people save now against their first day (the
+        /// households' savings for people's, the firms' takings and wage bills for firms'), so the bank and the rival banks share the people's own money.
+        /// </summary>
         public static long SavingsPool(BankCity c, int kind)
         {
-            return At(OwnBankCatalogue.SavingsCents[kind] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level);
+            return At(OwnBankCatalogue.SavingsCents[kind] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level) * PeopleOf(c, kind) / 1000;
         }
 
-        /// <summary>What a kind of borrower would owe the city's lenders at today's prices in this cycle.</summary>
+        /// <summary>
+        /// What a kind of borrower would owe the city's lenders at today's prices in this cycle, moved by the people's borrowing against their first day (the
+        /// households in that credit band, or the shops' takings and the companies' wage bills).
+        /// </summary>
         public static long DemandPool(BankCity c, int segment)
         {
             return At(OwnBankCatalogue.DemandCents[segment] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level)
-                   * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000;
+                   * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000 * PeopleOf(c, OwnBankCatalogue.Savers + segment) / 1000;
+        }
+
+        /// <summary>Thousandths of a pool's first-day figure the city's people now bring it (the savers, then the segments); a thousand with no living population.</summary>
+        public static long PeopleOf(BankCity c, int pool)
+        {
+            return c.People != null && pool >= 0 && pool < c.People.Length ? Math.Max(0, c.People[pool]) : 1000;
         }
 
         /// <summary>The savings of a kind the bank would hold, as the city's savers would share them out now.</summary>
@@ -297,6 +309,12 @@ namespace RealLifeOverhaul.Economy
             b.PaidMonth = b.PaidLast = b.PaidAll = 0;
             b.PayWanted = b.PayGiven = 0;
             b.PayHeld = BankTiers.PayHeldNone;
+            b.DivEvery = BankDividends.Off;
+            b.DivShare = 0;
+            b.DivFrom = day;
+            b.DivKept = b.DivWanted = b.DivPaid = b.DivAll = 0;
+            b.DivDay = 0;
+            b.DivWhy = BankDividends.Paid;
             b.State = OwnBankState.Running;
             b.Name = name ?? string.Empty;
             b.Seed = seed;
@@ -328,6 +346,7 @@ namespace RealLifeOverhaul.Economy
             b.Holdings.Clear();
             Array.Clear(b.Crew, 0, b.Crew.Length);
             b.CounterFees = 0;
+            b.Public = 0;
             b.Scare = 0;
             b.Run = false;
             b.RunFrom = 0;
@@ -349,6 +368,30 @@ namespace RealLifeOverhaul.Economy
                 b.Capital += cents;
                 b.Reserves += cents;
             }
+        }
+
+        /// <summary>
+        /// The money an offer of the bank's shares raised from the public, into its capital and its cash as capital put in is, but kept there while the stock trades: no
+        /// pay, dividend or sale takes it (<see cref="OwnBank.Public"/>, <see cref="Keep"/>). Nothing is asked of anyone's cash. False if no bank runs.
+        /// </summary>
+        public static bool PublicIn(OwnBank b, long cents)
+        {
+            if (b == null || !b.Running || b.Test || cents <= 0)
+            {
+                return false;
+            }
+            PutIn(b, cents);
+            b.Public += cents;
+            return true;
+        }
+
+        /// <summary>
+        /// Of a sum the bank pays out of its capital (pay, a dividend, a sale, what a winding up left), what its owner has: all of it for a bank that is theirs alone,
+        /// the part <paramref name="part"/> gives once the bank trades on the stock market, never more than the sum and never under nothing.
+        /// </summary>
+        public static long OwnerShare(long cents, Func<long, long> part)
+        {
+            return part != null && cents > 0 ? Math.Max(0L, Math.Min(cents, part(cents))) : cents;
         }
 
         /// <summary>
@@ -433,6 +476,7 @@ namespace RealLifeOverhaul.Economy
             b.EndCents = cents;
             b.Why = why;
             b.Capital = b.Reserves = 0;
+            b.Public = 0;
             Array.Clear(b.Deposits, 0, b.Deposits.Length);
             Array.Clear(b.Loans, 0, b.Loans.Length);
             Array.Clear(b.Arrears, 0, b.Arrears.Length);

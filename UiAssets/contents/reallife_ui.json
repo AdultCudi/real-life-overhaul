@@ -1,0 +1,34 @@
+{
+    "version": 1,
+    "samplingSize": 48,
+    "faces": [
+        {
+            "asset": "Overpass-Regular SDF",
+            "family": "Overpass",
+            "weight": 400,
+            "characters": 816,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        },
+        {
+            "asset": "Overpass-SemiBold SDF",
+            "family": "Overpass",
+            "weight": 600,
+            "characters": 816,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        },
+        {
+            "asset": "Overpass-Bold SDF",
+            "family": "Overpass",
+            "weight": 700,
+            "characters": 816,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        }
+    ],
+    "totalBytes": 6293496
+}

@@ -258,6 +258,7 @@ namespace RealLifeOverhaul.Economy
             WebLine line = place != null ? place.Shop.Line(item) : null;
             if (line != null && cents >= 0 && cents != line.Price)
             {
+                PriceNoted(placeKey, item, line.Price > 0 ? line.Price : ShopPrice(place, item), cents > 0 ? cents : ShopPrice(place, item));
                 line.Price = cents;
                 Replan(place);
                 Changed();

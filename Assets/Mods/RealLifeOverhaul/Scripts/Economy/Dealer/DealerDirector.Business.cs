@@ -219,26 +219,40 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         // The cars due by this hour arrive: on the lot they were held for, or another with room. One with nowhere to go
-        // waits and is said once; one with no showroom of the player's left at all is sold to the trade.
+        // waits and is said once; one with no showroom of the player's left at all is sold to the trade. One the game cannot
+        // stand as it was paid for (the model gone, another model stood, the game would not make it) is paid back in full and said.
         private void Arrivals(int now)
         {
             DealerRules.Due(_state, now, _due);
             for (int i = 0; i < _due.Count; i++)
             {
                 DealerDelivery q = _due[i];
+                if (_models.Count > 0 && !DealerGame.Knows(q.Type))
+                {
+                    Unstood(q, CarMaking.UnknownModel);   // the game's cars were read (_models) and this model is none of them: no room on any lot helps it
+                    continue;
+                }
                 DealerYard y = _state.Yard(q.Place);
                 if (y == null || RegOf(y) == null || y.FreeSpot() < 0)
                 {
                     y = Room(null, out DealerRefusal _);
                 }
-                StockCar car = y != null ? Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, CarSource.Auction, true) : null;
+                CarMaking making = CarMaking.NoPlace;
+                StockCar car = y != null ? Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, DeliverySource(q), out making, true) : null;
                 if (car != null)
                 {
                     _state.Deliveries.Remove(q);
                     DealerRules.Count(y, DealerCatalogue.TallyDelivered, 1);
-                    Logger?.Info("Dealership: the " + q.Type + " won at auction has arrived at '" + y.Name + "'.");
-                    Tell(NotificationType.Info, "reallife_dealer_note_arrived", new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "name", y.Name } }, TabStock, CarRow(car));
+                    Logger?.Info("Dealership: the " + q.Type + " on its way (" + DeliverySource(q) + ") has arrived at '" + y.Name + "'.");
+                    Tell(NotificationType.Info, DeliveryNote(q, "reallife_dealer_note_arrived", "reallife_carsup_note_arrived"),
+                        new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "name", y.Name } }, TabStock, CarRow(car));
+                    _supply.Arrived(q.Id);
                     Advance(y);
+                    continue;
+                }
+                if (CarStandRules.ModelFault(making))
+                {
+                    Unstood(q, making);
                     continue;
                 }
                 if (!AnyShowroom())
@@ -250,7 +264,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     q.Told = true;
                     DealerYard to = _state.Yard(q.Place);
-                    Tell(NotificationType.Warning, "reallife_dealer_note_no_place", new Dictionary<string, string>(2)
+                    Tell(NotificationType.Warning, DeliveryNote(q, "reallife_dealer_note_no_place", "reallife_carsup_note_no_place"), new Dictionary<string, string>(2)
                         { { "car", DealerGame.CarName(q.Type) }, { "name", to != null ? to.Name : string.Empty } }, TabStock, DeliveryRow(q));
                 }
             }

@@ -27,6 +27,7 @@ Economy/
       ProductCatalogue  EVERY NUMBER of this part: limits, rates, fees, the steps' counts by level, the private lender, the ways out
       ProductTerms      the terms by rating (limits, rates, deposits, quotes), and consolidation's before and after
       GameLoanMath      the game's loan interest formula, for a business loan and the penalty rate
+      StartDebtRules    the student loan a new game may start with: the amount for each study, its payment and interest, and which game is new
     Accounts/
       CreditAccount     ONE model for every account of the mod's (ProductKind)
       AccountRules      the accounts' arithmetic and daily run; IWallet and the transaction keys (Money)
@@ -37,7 +38,8 @@ Economy/
       CreditDesk        THE GAME SIDE: starting, stopping, what is held on the game's loans, the hour and the save; one part a concern:
                         .Day (each day's payments, the steps, claims), .Offers (opening, drawing, paying), .Loans (the business
                         loan, consolidation), .Finance (car finance and mortgages, repossession), .Collections, .Shark, .Relief
-                        (advice, arrangement, bankruptcy), .Banks (by bank, for the bank apps), .Tests (leaving a save, the test tools)
+                        (advice, arrangement, bankruptcy), .Banks (by bank, for the bank apps), .StartDebt (a new game's student loan),
+                        .Tests (leaving a save, the test tools)
     Debt/
       LadderRules       LadderState and what a lender does as payments go on being missed, for accounts and the game's loans alike
       SharkRules        the private lender's one debt and its terms (SharkDebt, SharkRules)
@@ -65,6 +67,7 @@ Interest is whole money, worked out in hundredths of a per cent over the game's 
 | Car finance (`CarFinance`) | See  [A purchase on finance](#a-purchase-on-finance-where-the-game-forced-a-change). Deposit 10% to 50%, 60 to 240 days, the bank's rate plus 2 points, up to what the bank lends unsecured at the rating. The vehicle (`VehicleInstance.id`) is the security. | A daily instalment (the amount over the term, rounded up) and the day's interest, taken together on the game's day event, after the game's own loans. If the cash is not there nothing is taken, the interest is added to the balance, and it is a miss. |
 | Mortgage (`Mortgage`) | The same for a building bought in BizMan: deposit 20% to 50%, 360 to 1,440 days, the bank's rate less 1 point, up to 5 times what the bank lends unsecured. The building (its address) is the security. | As car finance. |
 | Late fees (`Arrears`) | Late fees on a game loan that were not in cash on their day. No interest. | Taken in full as soon as the cash is there. |
+| Student loan (a game `Loan`, `LoanMark.Purpose = Student`) | Only at the start of a new game, by the option "New games start with a student loan": 2,500 to 27,000 by the study it paid for, at 4.5% a year, with no money paid out. See [A new game that starts in debt](#a-new-game-that-starts-in-debt). | By the game, like any loan. |
 
 An overdraft and a card use `ProductTerms.IncomeLimit` after `BankRules.Limit` applies the bank's profile, so a bank offering 125% cannot exceed affordability.
 The income is `PlayerHelper.CalculateDailyIncome`, the game's average daily income used by the credit rating and the game's loan means test, with negative income treated as zero.
@@ -92,6 +95,48 @@ So the mortgage exists.
 
 A building is never taken for one: the game has no safe way to take a building back (`RealEstateHelper.SellBuildingForCompat` removes the entry without restoring the owner or the rent), and the player may live or trade in it.
 At the fifth step the lender takes the building's rents instead.
+
+## A new game that starts in debt
+
+For a player who wants a hard start. Under Money, Debt: "New games start with a student loan" (`start_debt`, off) and "What the student loan paid for" (`start_debt_degree`).
+No preset sets either: they are the player's choice for the next game begun.
+
+**What it makes** (`Desk/CreditDesk.StartDebt.cs`; the rules are `Terms/StartDebtRules.cs`): one of the game's own loans at the house bank, put in `GameInstance.Loans` with no money paid out and no `ba:gameevent_newloan` (the game's tutorial checks its objectives whenever the game raises an event, and a loan nobody asked a bank for must not complete one), and its mark on the credit file at once with `LoanMark.Purpose = Student`.
+So the hour does not take it for a loan made at a bank, and no application or new credit is written: the save begins with it, as a save found with loans does.
+The apps name it from the purpose: "Student loan" in the Finance app's debts and in the bank apps' Loans tab (`FinanceTables.Student`; the kit draws a cap for it).
+The player is told once, in a notification that opens the Finance app's Accounts tab: the sum, the bank, the daily payment and the interest.
+
+**When.** `EconomyDirector.StartUp` tells the desk when the file was opened just now (a save the credit side has never seen), and `StartDebtRules.Decide` answers in this order:
+
+1. the option is off: nothing;
+2. the game is past its first day, or already owes something (`Save.Loans.Count`): nothing, so a game loaded again on its first day is never given a second loan;
+3. a Going Public session is on: nothing, as nothing of the mod's changes a world other players share;
+4. the game's tutorial is on: nothing, and the player is told why. The tutorial lends the first business its loan against a cap that every loan owed lowers, and some of its objectives read the whole list of loans;
+5. the city has no bank yet: the desk asks again each second for 30 seconds, as the director looks for the banks;
+6. otherwise the loan is made, in the first second of the game.
+
+**How much.** The study chosen sets the sum, whole money at the city's prices (the start's, on day 1), from the fees of the courses (`Careers/Study/StudyCatalogue`; `EconomyCheck` holds each amount to them):
+
+| Choice | Sum | From |
+| --- | --- | --- |
+| A diploma | 2,500 | between the cheapest and the dearest diploma at the school |
+| A bachelor's degree (where the choice starts) | 9,000 | between the cheapest and the dearest degree at the university |
+| A master's degree | 21,000 | a degree and a master's course |
+| A bachelor's degree and an MBA | 27,000 | a degree and the MBA's own fee |
+
+The rate is the university's student loan's, 4.5% a year, under the game's interest multiplier, worked out as every game loan's is (`GameLoanMath.DailyInterest`, whole money a day).
+The daily payment is the sum over 360 game days, rounded down, and never under the least the game lets that loan carry: half the bank's own payment (`StartDebtRules.MinimumPayment`, term for term `LoanHelper.CalculateMinimumDailyPayment`), because the game's loans page raises a payment under it the first time the page is opened.
+So a bachelor's degree is 9,000 at 37 a day with 6 interest at a bank that pays loans over two years (244 days), and 25 a day over 360 days at a bank that lets them run three years or more.
+
+**After that** nothing of it is the mod's own.
+The game takes the interest and the payment each night; a night without the cash takes only the interest and is a missed payment (`LoanBook.Settle`), and the rating and the steps of [When payments are missed](#when-payments-are-missed) follow as for any loan, at the level and with the consequences the player chose.
+The loan counts against the rating from the first day: a start of 640 with no debt is about 611 to 612 with one, so the banks still lend, and a single missed payment takes it under the lending threshold of 580.
+Payments on time raise it again.
+It also lowers what the game's banks will lend, because their means test is wealth less every loan owed (`GameLoans.MeansLimit`), which is much of what makes the start hard.
+It can be paid early in EconoView or a bank app, consolidated, or written off in a bankruptcy, like any game loan.
+The Careers student loan for courses (`CareersModel.LoanCents`) is a separate debt, repaid from pay; this one is a bank's.
+Nothing is added to the save: the loan is the game's own and its purpose is the number the credit file already keeps for each loan (`CreditStore` reads up to `LoanPurpose.Student`).
+Rivals and the city's people take no part: they do not borrow from these banks.
 
 ## A purchase on finance (where the game forced a change)
 
@@ -307,6 +352,7 @@ A fault in the first part still switches the whole economy off, and that stops t
 - "send the private lender's first text".
 - "work out a debt arrangement and a bankruptcy in the log": on the test accounts and on the real figures; nothing is changed.
 - "put everything back": test accounts and the test car removed; what is held on the game's loans checked.
+- "show the student loan a new game would start with": the sum, payment and interest for the study chosen at the house bank, logged and told in a notification; nothing is made.
 
 Lines the tests put on the credit file are test entries: "clear test entries" takes them out.
 
@@ -324,6 +370,8 @@ Lines the tests put on the credit file are test entries: "clear test entries" ta
 - `Economy check (private lender, day n): 60 added, 2600 owed of at most 6000, due day 20, 3 day(s) past: Assault: PASS`
 - `Economy check (debt advice, day n)`, `(debt arrangement, day n): 80 paid, 4920 left of 5000: PASS`, `(bankruptcy, day n): before ... after ...: PASS`
 - `Economy: leaving this save. ...` (always written)
+- `Economy: this game starts owing a student loan of 9000 from <bank> (choice 1): 37 a day and 6 interest, paid off in 244 days at that; the bank's least payment is 37.` (always written), and `Economy: the student loan this game was to start with was not made: <why>.`
+- `Economy check (start debt): 9000 from <bank>, 37 a day (least 37) and 6 interest, 1 loan(s) in the game: PASS`
 
 ## Checks
 
@@ -338,6 +386,15 @@ Lines the tests put on the credit file are test entries: "clear test entries" ta
 - the save's version 2 round trip, a version 1 file, damage in the new parts;
 - the penalty rate written and put back on a model of the game's loan formula.
 
+`StartDebtChecks.cs` (`--start-debt`) covers the student loan a new game starts with:
+
+- the four amounts against the courses' fees, the rate against the university's student loan, an unknown choice read as the nearest;
+- the payment never under what the game's loans page would raise it to, at every bank's years, year length and price level, and the daily interest against the game's formula;
+- which game is given the loan and in what order the reasons not to are told (option, new, session, tutorial, bank);
+- the rating with the loan (it still lends), after a missed payment (it lowers, under the threshold) and after payments on time (it rises), and a student loan's day read by `LoanBook` exactly as a plain loan's;
+- the mark's purpose through the save and a purpose past the known read as the nearest;
+- the sources: the desk is told the file is new, the loan is put in the game's list and on the file with no payout, event, application or new save key, the apps' kinds, the option, its place on the page and its texts.
+
 ## Not verified (the game could not be run)
 
 Everything on screen: that five tabs fit the bar (it sizes each tab to its label; five short labels are expected to fit); that the product pages with three selectors and a row of buttons fit the white box, which does not scroll; that a second row of buttons draws under the first.
@@ -349,3 +406,6 @@ That a vehicle deleted while its scene is not loaded leaves nothing behind.
 The three contacts' pictures and their place in the phone's list.
 
 That a conversation opened from a notification (`dialogUI.ShowDialog`) behaves as one opened from a call.
+
+That the student loan a new game starts with is made in the first second of a game that has just left its loading screen, with the house bank found by then, and that its notification shows over the opening of a game.
+That the game's loans page and the Persona app show the loan as any other, and what the tutorial's text says when it is on.

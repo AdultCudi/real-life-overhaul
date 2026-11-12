@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -151,7 +152,14 @@ namespace RealLifeOverhaul
 
         private DialogEntry Reply(SocialTopic topic, bool warm, Dictionary<string, string> data)
         {
+            Chose(topic, warm, data);
             return Onward(Line(Answered(topic, warm), data));
+        }
+
+        // The answer the player pressed, kept in the contact's talk history as the player's line, before their reaction is.
+        private static void Chose(SocialTopic topic, bool warm, Dictionary<string, string> data)
+        {
+            TalkLogGame.Said(SocialLife.T(warm ? topic.ReplyA : topic.ReplyB, data));
         }
 
         // What an answer is worth, a choice's or typed words' alike, settled now; the key of their written reaction.
@@ -196,6 +204,11 @@ namespace RealLifeOverhaul
                 _actions.Add("network");   // they texted to say they could help
             }
             _actions.Add("plans");
+            string quiet = SocialPhone.QuietLabel != null && SocialPhone.QuietAsk != null ? SocialPhone.QuietLabel(_p) : null;
+            if (quiet != null)
+            {
+                _actions.Add("quiet");   // after the plans: a quiet second choice, never the first thing said
+            }
             if (SocialTalk.BirthdayIn(_p) == 0 && _p.BirthdayYear != Year(day))
             {
                 _actions.Add("birthday");
@@ -204,9 +217,9 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("repay");
             }
-            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null)
+            if (!_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && SocialLife.Romantic(_p))
             {
-                _actions.Add("askout");
+                _actions.Add("askout");   // only somebody the player could fall for: of the sex they are interested in, near their age
             }
             if (_p.Stage == SocialStage.Dating)
             {
@@ -219,6 +232,11 @@ namespace RealLifeOverhaul
             if (SocialPhone.FamilyMatters != null && SocialPhone.HasFamilyMatters != null && SocialPhone.HasFamilyMatters(_p))
             {
                 _actions.Add("family");
+            }
+            if (Giver != null && Giving.GivingDirector.CauseWhy == 0)
+            {
+                _actions.Add("give");   // Giving: money for them, given or lent; offered only where the city's people are there to receive it (not in a session, not with them off)
+                _actions.Add("lend");
             }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)
             {
@@ -241,6 +259,7 @@ namespace RealLifeOverhaul
                 case "repay":
                     entry.ConfirmTextOverride = "reallife_social_btn_repay".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(_p.Debt)));
                     entry.OnConfirm = Repay;
+                    entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", SocialLife.Money(_p.Debt));
                     break;
                 case "askout":
                     entry.ConfirmTextOverride = "reallife_social_btn_askout".Localize();
@@ -257,6 +276,15 @@ namespace RealLifeOverhaul
                 case "borrow":
                     entry.ConfirmTextOverride = "reallife_social_btn_borrow".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(BorrowAmount())));
                     entry.OnConfirm = Borrow;
+                    entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_ask_in", "amount", SocialLife.Money(BorrowAmount()));
+                    break;
+                case "give":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_give".Localize();
+                    entry.OnConfirm = () => GiveFlow(false, 0);
+                    break;
+                case "lend":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_lend".Localize();
+                    entry.OnConfirm = () => GiveFlow(true, 0);
                     break;
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
@@ -265,6 +293,10 @@ namespace RealLifeOverhaul
                 case "network":
                     entry.ConfirmTextOverride = favour.Localize();
                     entry.OnConfirm = () => SocialPhone.NetworkAsk(_p);
+                    break;
+                case "quiet":
+                    entry.ConfirmTextOverride = quiet.Localize();
+                    entry.OnConfirm = () => SocialPhone.QuietAsk(_p);
                     break;
                 case "family":
                     entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();
@@ -356,7 +388,8 @@ namespace RealLifeOverhaul
             entry.OnConfirm = () => When(kind, venue, first, false);
             entry.SecondOptionTextOverride = "reallife_social_btn_other_idea";
             entry.OnSecondOption = () => Plans(at + 1, 0);
-            return entry;
+            entry.Says(DialogButton.Confirm, "reallife_social_says_minutes", "minutes", def.Minutes.ToString());
+            return def.Cost > 0 ? entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", SocialLife.Money(def.Cost)) : entry;   // each pays their share at the outing
         }
 
         // Every place of the kind nearby is shut at every free hour of theirs looked at: a walk instead, said as such, with
@@ -436,6 +469,10 @@ namespace RealLifeOverhaul
             SocialOffer offer = SocialState.Offer;
             int kindId = offer.Kind;
             int amount = offer.Amount;
+            if (kindId == SocialOffer.Help)
+            {
+                return Plea();   // a plea for money (Giving): PersonDialog.Giving
+            }
             if (kindId == SocialOffer.Loan)
             {
                 DialogEntry loan = Line(SocialLines.Pick(SocialCatalogue.LoanAsk), SocialLife.Data(_p, "amount", SocialLife.Money(amount)));
@@ -553,7 +590,8 @@ namespace RealLifeOverhaul
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_not_this_time";
             entry.OnSecondOption = Declined;
-            return entry;
+            entry.Says(DialogButton.Confirm, "reallife_social_says_minutes", "minutes", def.Minutes.ToString());
+            return def.Cost > 0 ? entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", SocialLife.Money(def.Cost)) : entry;
         }
 
         // Their invitation turned down, the outing they asked for or the walk they put forward in its place: the same small
@@ -582,6 +620,7 @@ namespace RealLifeOverhaul
             SocialLife.Change(_p, 1f, SocialRules.BirthdayAffection, SocialRules.BirthdayTrust);
             DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.BirthdayThanks));
             entry.ConfirmTextOverride = "reallife_social_btn_gift".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(GiftPrice)));
+            entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", SocialLife.Money(GiftPrice));
             entry.OnConfirm = () =>
             {
                 if (!SocialLife.Pay(GiftPrice, "reallife_transaction_social_gift"))
@@ -669,7 +708,7 @@ namespace RealLifeOverhaul
                 return Wait("reallife_social_askout_wait", wait);
             }
             SocialLife.Remember(_p, MemoryCode.AskedOut);
-            if (SocialRules.WouldDate(_p) && SocialState.Partner == null)
+            if (SocialRules.WouldDate(_p, SocialLife.Romantic(_p)) && SocialState.Partner == null)
             {
                 SocialLife.SetStage(_p, SocialStage.Dating);
                 return Close(SocialLines.Pick(SocialCatalogue.AskOutYes));

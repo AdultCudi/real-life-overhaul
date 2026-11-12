@@ -258,7 +258,8 @@ internal static partial class Program
         foreach (string path in System.IO.Directory.GetFiles(scripts, "*.cs", System.IO.SearchOption.AllDirectories))
         {
             string text = System.IO.File.ReadAllText(path), name = System.IO.Path.GetFileName(path);
-            if (text.Contains("bankInterestMultiplier"))
+            // the value itself; the game's slider control for it (bankInterestMultiplierSlider) is a different member
+            if (System.Text.RegularExpressions.Regex.IsMatch(text, @"bankInterestMultiplier\b"))
             {
                 multiplier.Add(name);
             }

@@ -209,10 +209,17 @@ namespace RealLifeOverhaul
             return spare;
         }
 
-        // A look for someone on the shelf, awake only while it is put on.
+        // A look for someone on the shelf, awake only while it is put on, their agent off meanwhile: woken where the shelf
+        // left them (made under the city, off the navigation mesh), it made the engine log a warning.
         private void Redress(CityPerson person, CityLook look)
         {
             GameObject body = person.Character.gameObject;
+            UnityEngine.AI.NavMeshAgent agent = person.Character.navmeshAgent;
+            bool agentOn = agent != null && agent.enabled;
+            if (agentOn)
+            {
+                agent.enabled = false;   // asleep, nothing is made by this: only the flag
+            }
             body.SetActive(true);
             try
             {
@@ -222,6 +229,10 @@ namespace RealLifeOverhaul
             finally
             {
                 body.SetActive(false);
+                if (agentOn)
+                {
+                    agent.enabled = true;   // asleep again: made when they are next woken, at their spot (Take)
+                }
             }
         }
 

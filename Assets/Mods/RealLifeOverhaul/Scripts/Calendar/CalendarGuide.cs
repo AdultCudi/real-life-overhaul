@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Calendar
                 .AddToggle(Settings.CalendarId, "reallife_calendar_enabled", Settings.Calendar,
                     v => { Settings.Calendar = v; if (!v) { CalendarDirector.Instance?.StopAll(); } })
                 .AddButton("reallife_calendar_test_month", () => CalendarDirector.Instance?.TestMonth())
+                .AddButton("reallife_ui_life_test_calendar", () => RealLifeOverhaul.Ui.LifeUiTests.OpenCalendar())
                 .AddSplitter();
         }
     }

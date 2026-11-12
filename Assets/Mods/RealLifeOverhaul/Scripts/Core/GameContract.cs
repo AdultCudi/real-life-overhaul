@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
     /// ContractBook.TypeText writes it. Optional: the code has another way without it. Read it as GameContract.X.Field
     /// (or .Property, .Setter, .Method, .Type), null when missing. No Unity or game types in this file.
     /// </summary>
-    public static class GameContract
+    public static partial class GameContract
     {
         private const string Game = "BigAmbitions";
         private const string Plugins = "ExternalPlugins";
@@ -19,6 +19,8 @@ namespace RealLifeOverhaul
         private const string Steam = "Facepunch.Steamworks.Win64";
         private const string Navigation = "Unity.AI.Navigation";
         private const string Hg = "HGPlugins";
+        private const string Shade = "HBAO.HighDefinition.Runtime";   // the corner shading the game draws with (another maker's plug-in; the mod's build does not carry it)
+        private const string Factory = "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory";   // the customer calculators' factory (Population/PopulationGame.Calculators)
 
         static GameContract()
         {
@@ -42,8 +44,10 @@ namespace RealLifeOverhaul
         public static readonly GamePart AppButtons = ContractBook.Part("app_buttons", "phone", "the buttons of the mod's phone apps");
         public static readonly GamePart ContactPictures = ContractBook.Part("contact_pictures", "phone", "the pictures of the mod's contacts");
         public static readonly GamePart ContactSearch = ContractBook.Part("contact_search", "phone", "the search box of the Contacts app");
+        public static readonly GamePart ContactsKit = ContractBook.Part("contacts_kit", "ui", "the Contacts app drawn on the RLO interface");
         public static readonly GamePart ContactGroupsPart = ContractBook.Part("contact_groups", "phone", "the mod's groups among the Contacts app's category buttons");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
+        public static readonly GamePart PhoneKitPart = ContractBook.Part("phone_kit", "ui", "the phone drawn on the RLO interface");
         public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
         public static readonly GamePart MapPlaces = ContractBook.Part("map_places", "navigation", "the mod's places in the city map's filters");
         public static readonly GamePart NavMarks = ContractBook.Part("nav_marks", "navigation", "the game's look for the markers on the minimap");
@@ -59,6 +63,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClickDesk = ContractBook.Part("click_desk", "careers_study", "clicking your desk at work");
         public static readonly GamePart ClickBuilderDesk = ContractBook.Part("click_builder_desk", "construction", "talking to the person at a builder's front desk");
         public static readonly GamePart ClickCarPark = ContractBook.Part("click_car_park", "construction", "using a car park's pay machine");
+        public static readonly GamePart ClickSession = ContractBook.Part("click_session", "living", "clicking your own desk at your firm's office for a session");
         public static readonly GamePart CarParks = ContractBook.Part("car_parks", "construction", "the game's parking lanes copied for a car park's bays");
         public static readonly GamePart Mop = ContractBook.Part("mop", "jobs", "the cleaner's mop");
         public static readonly GamePart SchoolCar = ContractBook.Part("school_car", "licences", "the driving school's car");
@@ -68,6 +73,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart LampsOut = ContractBook.Part("street_lamps_out", "faults", "street lights gone dark among the city's faults");
         public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the far districts trial of the performance benchmark");
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
+        public static readonly GamePart HudKit = ContractBook.Part("hud_kit", "ui", "the RLO interface's status bar and the pieces over the running game");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
         public static readonly GamePart SchoolDeskPart = ContractBook.Part("school_desk", "careers_study", "attending a class at a desk of the school");
@@ -80,7 +86,9 @@ namespace RealLifeOverhaul
         public static readonly GamePart TakeoutPlates = ContractBook.Part("takeout_plates", "meals", "Eat in the game's rest panel at a seat");
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
+        public static readonly GamePart PopulationCount = ContractBook.Part("population_customers", "population", "the population's count in the game's customer calculators");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
+        public static readonly GamePart LoyaltyTabPart = ContractBook.Part("loyalty_tab", "loyalty", "the Loyalty tab in BizMan");
         public static readonly GamePart BizPacePart = ContractBook.Part("bizman_pace", "performance", "the timing of what the mod adds to BizMan's open, switch and tab change");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
         public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
@@ -103,6 +111,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart SnowWalkers = ContractBook.Part("snow_walkers", "seasons", "people in the street walking more slowly on snow");
         public static readonly GamePart SeasonSky = ContractBook.Part("season_sky", "seasons", "a greyer sky and softer light on snow days, and summer's warmer sun");
         public static readonly GamePart SeasonRain = ContractBook.Part("season_rain", "seasons", "the seasons' own rain: spring showers, autumn rain and summer storms");
+        public static readonly GamePart GraphicsShade = ContractBook.Part("graphics_shade", "graphics", "wider corner shading in the Balanced and High choices of Realistic graphics");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
@@ -201,6 +210,22 @@ namespace RealLifeOverhaul
 
         // Core/ModState, Family, Travel, Meta/SaveTools: the game's register of mood types, the mod's own added to it
         public static readonly GameMember HappinessRegistry = StaticField(Moods, Game, "Helpers.HappinessHelper", "Modifiers", "Dictionary<String,HappinessModifier>");
+        // The status bar's pills as the HUD mirrors them, and the game's own methods its pills press (Ui/Hud: HudStatusGame, HudScreen, HudHost).
+        public static readonly GameMember HudPaused = Prop(HudKit, Game, "GameSpeedController", "Paused", "Boolean", false);
+        public static readonly GameMember HudFast = Field(HudKit, Game, "GameSpeedController", "isFastForwarding", "Boolean");
+        public static readonly GameMember HudPause = Method(HudKit, Game, "GameSpeedController", "TogglePause", "Void");
+        public static readonly GameMember HudTimeLock = Field(HudKit, Game, "GameSpeedController", "isTimeControlDisabled", "Boolean");
+        public static readonly GameMember HudMoney = Method(HudKit, Game, "UI.Topbar.Topbar", "ClickMoney", "Void");
+        public static readonly GameMember HudPersona = Method(HudKit, Game, "UI.Topbar.Topbar", "ClickPersona", "Void");
+        public static readonly GameMember HudNearest = Field(HudKit, Game, "UI.PlayerHUD.PlayerHUD", "nearestBuildingText", "TextLocalizationComponent");
+        public static readonly GameMember HudDistrict = Field(HudKit, Game, "UI.PlayerHUD.PlayerHUD", "currentNeighborhoodText", "TMP_Text");
+        public static readonly GameMember HudHappiness = Prop(HudKit, Game, "Helpers.HappinessHelper", "Happiness", "Single", true);
+        public static readonly GameMember HudRain = StaticField(HudKit, Sky, "BigAmbitions.DayNightCycle.RainHelper", "isRaining", "Boolean");
+        public static readonly GameMember HudCamera = StaticMethod(HudKit, Game, "GameManager", "GetMainCamera", "Camera");
+        public static readonly GameMember HudNotices = Method(HudKit, Game, "UI.Notification.NotificationsListUI", "Toggle", "Void", "Boolean");
+        public static readonly GameMember HudMenu = Method(HudKit, Game, "UI.Topbar.Topbar", "OpenMiniMenu", "Void");
+        public static readonly GameMember HudMiniMenu = Field(HudKit, Game, "UI.UIs", "miniMenuUI", "MiniMenu");
+        public static readonly GameMember HudMoneyDay = Field(HudKit, Game, "UI.Topbar.Topbar", "moneyChange", "TextMeshProUGUI");
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");
@@ -215,8 +240,13 @@ namespace RealLifeOverhaul
         public static readonly GameMember RainEnd = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainEndTime", "Timestamp");
         public static readonly GameMember RainFade = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainPostRainPeriodStartTime", "Timestamp");
 
-        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
-        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
+        // Graphics/GraphicsGame: the game's corner shading, a volume setting of its own kind, and its two sliders; without them the rest of a look is the same
+        public static readonly GameMember OcclusionKind = TypeOf(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO");
+        public static readonly GameMember OcclusionRadius = Field(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO", "radius", "ClampedFloatParameter");
+        public static readonly GameMember OcclusionStrength = Field(GraphicsShade, Shade, "HorizonBasedAmbientOcclusion.HighDefinition.HBAO", "intensity", "ClampedFloatParameter");
+
+        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame, Sessions/SessionGame: the game's list of what a click does
+        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickSession, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // else the cell under the player
@@ -277,13 +307,38 @@ namespace RealLifeOverhaul
         public static readonly GameMember ContactCategories = Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategorySelection", "categories", "List<ContactCategory>");
         // Optional: else the mod's buttons keep the colour of their pictures
         public static readonly GameMember ContactButtonIcon = Optional(Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategoryButton", "iconImage", "Image"));
-        public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
+        public static readonly GameMember ContactsMarkAll = Field(On(ContactSearch, ContactsKit), Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
+        // The Contacts app's own buttons and header, read and pressed by the RLO interface's Contacts (Ui/Contacts): the game's logic stays the game's.
+        public static readonly GameMember KitDeleteAll = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "deleteAllButton", "Button");
+        public static readonly GameMember KitCall = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "callButton", "Button");
+        public static readonly GameMember KitMap = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "viewOnMapButton", "Button");
+        public static readonly GameMember KitEmployee = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageEmployeeButton", "Button");
+        public static readonly GameMember KitSchedule = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageScheduleButton", "Button");
+        public static readonly GameMember KitDelivery = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageDeliveryButton", "Button");
+        public static readonly GameMember KitCandidates = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "candidatesButton", "GameObject");
+        public static readonly GameMember KitClearChat = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "clearChatButton", "Button");
+        public static readonly GameMember KitRival = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "rivalButton", "Button");
+        public static readonly GameMember KitTaxes = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "taxesButton", "Button");
+        public static readonly GameMember KitAddress = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "addressGameObject", "GameObject");
+        public static readonly GameMember KitHours = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "openingHoursGameObject", "GameObject");
+        public static readonly GameMember KitDemands = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "scheduleDemandsGameObject", "GameObject");
+        public static readonly GameMember KitWage = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "wageGameObject", "GameObject");
+        public static readonly GameMember KitSkill = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "skillLevelGameObject", "GameObject");
+        public static readonly GameMember KitEmployeeInfo = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "employeeInfo", "GameObject");
+        public static readonly GameMember KitContactInfo = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "contactInfo", "GameObject");
         public static readonly GameMember TextInputField = Field(On(ContactSearch, KeyHidden), Game, "TextInputUI", "inputField", "TMP_InputField");   // also Texts/TextsGame.AskSecret
 
         // Phone/PhoneSkin
         public static readonly GameMember FrameData = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "frameData", "List<SmartPhoneFrame.FrameData>");
         public static readonly GameMember FrameImage = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "frameImage", "Image");
         public static readonly GameMember FrameMask = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "maskImage", "Image");
+        // The phone's own controls, read and pressed by the RLO interface's phone (Ui/Phone/PhoneKit): the game's logic stays the game's.
+        public static readonly GameMember PhoneCollapse = Field(PhoneKitPart, Game, "UI.CollapsibleWindow", "collapseButton", "GameObject");
+        public static readonly GameMember PhoneTitle = Field(PhoneKitPart, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "titleText", "TextLocalizationComponent");
+        public static readonly GameMember PhoneDriver = Field(PhoneKitPart, Game, "SmartphoneUI", "privateDriverButton", "Button");
+        public static readonly GameMember PhoneRadioSkip = Field(PhoneKitPart, Game, "RadioControls", "skipButton", "Button");
+        public static readonly GameMember PhoneRadioVolume = Field(PhoneKitPart, Game, "RadioControls", "volumeSlider", "Slider");
+        public static readonly GameMember PhoneRadioSong = Field(PhoneKitPart, Game, "RadioControls", "currentSongLabel", "TextMeshProUGUI");
 
         // Ragdoll/Ragdoll
         public static readonly GameMember NearItemToHide = Method(BodyFade, Game, "HumanHider", "SetIsNearItemToHide", "Void", "Boolean");
@@ -369,15 +424,27 @@ namespace RealLifeOverhaul
         // Meals/TakeoutButton: the activity panel's button template, copied once per city for Eat at a seat
         public static readonly GameMember ActivityButtons = Field(TakeoutPlates, Game, "PlayerActivity.PlayerActivityUI", "buttonTemplate", "Button");
 
+        // Population/PopulationGame.Calculators: the five calculators of the factory, each given the mod's copy with the population's count at start (the game's own without)
+        public static readonly GameMember CalculatorPlain = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculator", "CustomerEntriesCalculator"));
+        public static readonly GameMember CalculatorRetail = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorRetail", "CustomerEntriesCalculatorRetail"));
+        public static readonly GameMember CalculatorOffice = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorOffice", "CustomerEntriesCalculatorOffice"));
+        public static readonly GameMember CalculatorCasino = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorCasino", "CustomerEntriesCalculatorCasino"));
+        public static readonly GameMember CalculatorCinema = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorCinemaTheater", "CustomerEntriesCalculatorCinemaTheater"));
+
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");
 
-        // Interiors/InteriorTab: BizMan's business page, its tabs and their containers (without the details, no scroll of them)
-        public static readonly GameMember BizManMenu = Field(InteriorTabPart, Game, "BizManBusiness", "menu", "Transform");
-        public static readonly GameMember BizManContainers = Field(InteriorTabPart, Game, "BizManBusiness", "containers", "Transform");
-        public static readonly GameMember BizManTabs = Field(InteriorTabPart, Game, "BizManBusiness", "_tabs", "List<String>");
-        public static readonly GameMember BizManSetTab = Method(InteriorTabPart, Game, "BizManBusiness", "SetTab", "Void", "String");
-        public static readonly GameMember BizManDetails = Optional(Field(InteriorTabPart, Game, "BizManBusiness", "businessInfo", "Transform"));
+        // Interiors/InteriorTab and Loyalty/LoyaltyTab: BizMan's business page, its tabs and their containers (without the details, no scroll of them)
+        public static readonly GameMember BizManMenu = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "menu", "Transform");
+        public static readonly GameMember BizManContainers = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "containers", "Transform");
+        public static readonly GameMember BizManTabs = Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "_tabs", "List<String>");
+        public static readonly GameMember BizManSetTab = Method(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "SetTab", "Void", "String");
+        public static readonly GameMember BizManDetails = Optional(Field(On(InteriorTabPart, LoyaltyTabPart), Game, "BizManBusiness", "businessInfo", "Transform"));
 
         // BizPace/BizPaceGame: the same page's tabs and their pages, for the marks that begin a step and for the test that clicks each tab
         public static readonly GameMember BizPaceMenu = Field(BizPacePart, Game, "BizManBusiness", "menu", "Transform");
@@ -591,6 +658,11 @@ namespace RealLifeOverhaul
         private static GameMember Method(GamePart part, string assembly, string type, string name, string returns, params string[] parameters)
         {
             return new GameMember(GameMemberKind.Method, assembly, type, name, false, returns, parameters, false, One(part));
+        }
+
+        private static GameMember Method(GamePart[] parts, string assembly, string type, string name, string returns, params string[] parameters)
+        {
+            return new GameMember(GameMemberKind.Method, assembly, type, name, false, returns, parameters, false, parts);
         }
 
         private static GameMember StaticMethod(GamePart part, string assembly, string type, string name, string returns, params string[] parameters)

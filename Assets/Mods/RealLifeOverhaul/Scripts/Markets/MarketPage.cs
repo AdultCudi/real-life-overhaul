@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Markets
             UiClone.Words(_title, k.Name + "  <size=70%>" + k.Ticker + "</size>   " + MarketText.Price(k.Last) + "   " + Coloured(today));
             UiClone.Words(_sub, MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size)
                                 + (k.BidCents > 0 ? "   " + MarketText.Fill("reallife_mkt_status_bid", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString()) : string.Empty)
-                                + (k.SplitDay > 0 ? "   " + MarketText.Fill("reallife_mkt_status_split", "ratio", k.SplitRatio.ToString(), "day", k.SplitDay.ToString()) : string.Empty));
+                                + (k.SplitDay > 0 ? "   " + ExtrasText.Status(k) : string.Empty));
             Controls(s, k);
             if (_viewMode == ViewFigures)
             {
