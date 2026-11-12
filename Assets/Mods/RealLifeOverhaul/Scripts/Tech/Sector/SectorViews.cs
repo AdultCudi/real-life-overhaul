@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Tech
                 int theirs = lead != null && md.Buyers > 0 ? (int)Math.Min(1000L, lead.Customers * 1000 / md.Buyers) : 0;
                 Line(sec, lead != null ? P + "market_line" : P + "market_line_alone", mine > theirs && mine > 0 ? ViewTone.Good : ViewTone.Plain,
                     "market", fmt.Text(MarketKey(m)), "buyers", fmt.Whole(md.Buyers), "who", fmt.Text(BuyersKey(md.Who)), "mine", fmt.Mille(mine),
-                    "leader", lead != null ? lead.Name : string.Empty, "theirs", fmt.Mille(theirs));
+                    "leader", lead != null ? lead.Called : string.Empty, "theirs", fmt.Mille(theirs));
                 shown++;
             }
             if (shown == 0)
@@ -370,7 +370,7 @@ namespace RealLifeOverhaul.Tech
                     break;
                 }
                 below = best.Customers;
-                Line(sec, best.Startups ? P + "rival_startup" : P + "rival_company", ViewTone.Plain, "name", best.Name, "features", fmt.Whole(best.Features),
+                Line(sec, best.Startups ? P + "rival_startup" : P + "rival_company", ViewTone.Plain, "name", best.Called, "features", fmt.Whole(best.Features),
                     "share", fmt.Mille(md.Buyers > 0 ? (int)Math.Min(1000L, best.Customers * 1000 / md.Buyers) : 0), "price", fmt.Mille(FirmsCatalogue.PriceTiers[SectorRules.Clamp(best.Tier, 0, 2)]));
                 shown++;
             }

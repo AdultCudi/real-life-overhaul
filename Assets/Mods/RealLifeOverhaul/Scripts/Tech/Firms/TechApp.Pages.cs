@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Tech
         private static readonly int[] Bids = { 800, 900, 1000, 1100, 1200 };
 
         private int _newKind = -1, _newSegment = 1, _newScope, _bid = 2, _bidFirm;
+        private string _newName;   // the name typed for the product about to be started; none: the one the page offers
+        private int _newTurn;      // which of the offered names the page shows: "suggest" moves to the next
         private readonly List<FirmPlace> _takers = new List<FirmPlace>(8), _makers = new List<FirmPlace>(8);
 
         private static long Level(long cents) => cents * Prices.Level / 1000;
@@ -393,18 +395,40 @@ namespace RealLifeOverhaul.Tech
                     box.Selector(3, _newScope, TechText.Scope, i => Set(() => _newScope = i));
                 }
             }
+            // what it will be called: the name typed, else one made up for its kind, which "suggest" changes for the next
+            int turn = _newTurn;
+            string typed = _newName, called = string.IsNullOrEmpty(typed) ? _director.SuggestTitle(kind, _newSegment, turn) : typed;
+            box.Row("reallife_tech_label_name", called);
+            box.Note(TechText.T(string.IsNullOrEmpty(typed) ? "reallife_tech_name_suggested" : "reallife_tech_name_typed"));
             Transform buttons = box.ButtonRow();
             int segment = _newSegment, scope = _newScope;
             if (room == FirmsRules.RoomYes)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_start", () => Do(() =>
                 {
-                    Product made = _director.NewProduct(place, kind, (Segment)segment, scope);
+                    Product made = _director.NewProduct(place, kind, (Segment)segment, scope, typed, turn);
                     if (made != null)
                     {
                         _tab = TechDirector.TabProducts;
                         _picked = ProductRow + made.Id;
+                        _newName = null;
+                        _newTurn = 0;
                     }
+                }));
+                if (GameUi.TextBox.CanType)
+                {
+                    InfoBox.Button(buttons, InfoBox.Additional, "reallife_tech_button_name", () => AskName(called, true, text =>
+                    {
+                        if (_director.TypedTitle(text, out string name) == TitleRules.Ok)
+                        {
+                            _newName = name;   // empty: back to the offered name
+                        }
+                    }));
+                }
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_tech_button_suggest", () => Set(() =>
+                {
+                    _newName = null;
+                    _newTurn++;
                 }));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
@@ -450,6 +474,8 @@ namespace RealLifeOverhaul.Tech
             else
             {
                 _picked = null;
+                _newName = null;   // the list again: a name typed for a product that was not started is let go
+                _newTurn = 0;
                 box.Title(TechText.T("reallife_tech_products_title"));
                 Makers(_makers);
                 if (_makers.Count > 0)
@@ -601,11 +627,24 @@ namespace RealLifeOverhaul.Tech
             }
             if (p.Stage < 2)
             {
+                if (GameUi.TextBox.CanType)
+                {
+                    string now = p.Name;
+                    InfoBox.Button(buttons, InfoBox.Additional, "reallife_tech_button_rename", () => AskName(now, false, text => _director.RenameProduct(id, text)));
+                }
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_withdraw", () => GameConfirm.Show("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body",
                     () => UiClone.Safe(() => Do(() => _director.Withdraw(id))), null, null, null, true, true));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, SectorGuide);
+        }
+
+        // A name asked for in the game's own text box, as the cloud's is (GameUi.TextBox; the RLO interface draws it on its own card where that
+        // option is on). The director cleans what is typed and nothing ever reads it but to show it. The page is written again once it is answered.
+        private void AskName(string initial, bool allowEmpty, System.Action<string> typed)
+        {
+            GameUi.TextBox.Ask("reallife_tech_name_placeholder", "common_confirm", text => UiClone.Safe(() => Do(() => typed(text))), null, initial ?? string.Empty, allowEmpty,
+                TitleCatalogue.Most);
         }
 
         // A line of the product's page that some products have none of (a withdrawn one's next feature, an on-sale one's reason for no customers).

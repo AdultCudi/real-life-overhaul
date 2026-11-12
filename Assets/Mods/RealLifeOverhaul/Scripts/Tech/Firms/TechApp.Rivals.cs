@@ -102,6 +102,11 @@ namespace RealLifeOverhaul.Tech
             box.Subtitle(RivalKindWords(c));
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_tech_col_meet", MeetWords(m.Kind, c));
+            string titles = _director.RivalTitles(c);   // what it sells, by name
+            if (titles.Length > 0)
+            {
+                box.Line(TechText.T("reallife_tech_rival_titles", "names", titles));
+            }
             Transform buttons;
             switch ((RivalKind)c.Kind)
             {

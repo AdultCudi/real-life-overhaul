@@ -121,7 +121,11 @@ namespace RealLifeOverhaul.Tech
 
         private void DrawChoice(InfoBox box, ViewChoice c, string place, int id)
         {
-            if (box.HasSelector && c.Options.Count > 0)
+            if (c.Options.Count == 1)
+            {
+                box.Row(c.LabelKey, c.Options[0]);   // nothing to choose between: a fact with its button (the game's name)
+            }
+            else if (box.HasSelector && c.Options.Count > 0)
             {
                 string label = TechText.T(c.LabelKey);
                 int count = c.Options.Count, act = c.Act;
@@ -171,6 +175,17 @@ namespace RealLifeOverhaul.Tech
                     return;
                 case StudioAct.Withdraw:
                     Do(() => _director.Withdraw(id));
+                    return;
+                case StudioAct.Name:
+                    // a game's own name on its page, or the concept's: an empty box hands the concept's name back to the studio
+                    if (id > 0)
+                    {
+                        AskName(_director.TitleOf(id), false, text => _director.RenameProduct(id, text));
+                    }
+                    else
+                    {
+                        AskName(_director.DraftTyped(place), true, text => _director.NameDraft(place, text));
+                    }
                     return;
                 default:
                     Do(() => _director.StudioDo(act, place, id, value));

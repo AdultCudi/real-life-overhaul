@@ -726,7 +726,8 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// A game's quality as the critics score it against its genre's bar, before its bugs, DRM, backlash, fit, name and spread:
+        /// A game's quality as the critics score it against its genre's bar, before its bugs, DRM, backlash, fit, the studio's standing
+        /// and spread (what the game is called counts for nothing, here or anywhere):
         /// at the bar <see cref="StudioCatalogue.ReviewBase"/>; under it a point and a fifth off for each point short
         /// (<see cref="StudioCatalogue.ReviewPerQuality"/>), so a weak game is punished; over it the scale's room above the base shared
         /// over the quality left above the bar, so a perfect game reviews 100 and one half way there three quarters. Nothing stretches

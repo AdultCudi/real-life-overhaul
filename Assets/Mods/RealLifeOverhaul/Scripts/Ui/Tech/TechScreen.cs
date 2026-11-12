@@ -111,6 +111,27 @@ namespace RealLifeOverhaul.Ui
                     return _m.Shape == TechShape.Game && _m.Track != null && arg >= 0 && arg < _m.Track.Steps.Length;   // a point of the making is read where it stands
                 case UiChart.First + UiChart.Point:
                     return _m.Chart != null && arg >= 0;   // a day of the chart is read in its card
+                case TechFace.TableBase + UiDataTable.Head:
+                    // a head that sorts (the products' names): pressed again it turns the order round, a third time the page's own order is back
+                    if (_m.Table == null || arg < 0 || arg >= _m.Table.Columns.Length || !_m.Table.Columns[arg].Sortable)
+                    {
+                        return false;
+                    }
+                    if (_view.Sort != arg)
+                    {
+                        _view.Sort = arg;
+                        _view.SortDown = false;
+                    }
+                    else if (!_view.SortDown)
+                    {
+                        _view.SortDown = true;
+                    }
+                    else
+                    {
+                        _view.Sort = -1;
+                        _view.SortDown = false;
+                    }
+                    return true;
                 case TechFace.TableBase + UiDataTable.Row:
                     if (_m.Table == null || arg < 0 || arg >= _m.RowKeys.Length || string.IsNullOrEmpty(_m.RowKeys[arg]))
                     {

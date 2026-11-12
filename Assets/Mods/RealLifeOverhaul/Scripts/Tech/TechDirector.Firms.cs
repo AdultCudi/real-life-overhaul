@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Tech
                 file = new FirmsFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = save.Day, LastTender = save.Day };
             }
             _firmsFile = file;
+            NameOldProducts();
             _ownHours = OwnDeskRules.HoursFrom(save.modData != null && save.modData.TryGetValue(OwnDeskRules.HoursKey, out string hours) ? hours : null);   // a save without the line: a working day
             _firmsOn = true;
             CatchUpMoves(MoveRules.PartFirms);

@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Ui
             Row("Tech", "Ventures tab, a firm of the player's: Pitch to a venture firm", "the player's pitch meeting", AuditWindow.Scene, Scenes, "Tech/Venture/"),
             Row("Tech", "Ventures, Infra, Studio tabs: invest, sign, cancel, release", "a yes or no box", AuditWindow.Question, Question, "Tech/"),
             Row("Tech", "Infra tab, name a cloud", "the typed name", AuditWindow.TextInput, Text, "Tech/Infra/"),
+            Row("Tech", "Products and Studio: name or rename a product, a game or its concept", "the typed name", AuditWindow.TextInput, Text, "Tech/Firms/"),
             Row("Tech", "Studio tab", "the studio page (an app window, as the Tech app's firm pages stand)", AuditWindow.AppFace, "studio", "Tech/Studio/"),
             Row("Tech", "Studio, own desk and sector desk: a work session", "the desk session's card", AuditWindow.Session, Session, "Tech/Studio/"),
             Row("Open Roles", "Roles, Team and Crew tabs", "the app's window", AuditWindow.AppFace, "open_roles", "Tech/People/"),

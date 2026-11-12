@@ -187,6 +187,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         actions.Add(Button(TechText.T(a.Key), UiButtonKind.Destructive, UiAction.Count, ActRun(a, place, id)));
                     }
+                    else if (a.Act == StudioAct.Name && GameUi.TextBox.CanType)
+                    {
+                        actions.Add(Button(TechText.T(a.Key), UiButtonKind.Secondary, UiAction.Option, ActRun(a, place, id)));   // the game renamed, in the typed answer's box
+                    }
                 }
                 _m.HeadActions = actions.ToArray();
                 _m.Left = left.ToArray();

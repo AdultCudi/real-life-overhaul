@@ -359,6 +359,11 @@ namespace RealLifeOverhaul.Ui
                     Icon = c.Kind == (int)RivalKind.Company ? UiIcon.Building : c.Kind == (int)RivalKind.Startup ? TechGlyphs.Startup : UiIcon.Store, Role = RivalKindWords(c) };
                 var now = new TechCard(_runs, TechText.T("reallife_ibox_sec_now"));
                 now.Row(TechText.T("reallife_tech_col_meet"), MeetWords(m.Kind, c));
+                string titles = _d.RivalTitles(c);   // what it sells, by name
+                if (titles.Length > 0)
+                {
+                    now.Say(TechText.T("reallife_tech_rival_titles", "names", titles));
+                }
                 switch ((RivalKind)c.Kind)
                 {
                     case RivalKind.Company:

@@ -407,7 +407,7 @@ namespace RealLifeOverhaul.Tech
                     RivalProduct beaten = r.Rival >= 0 && r.Rival < _sector.Rivals.Count ? _sector.Rivals[r.Rival] : null;
                     if (beaten != null)
                     {
-                        Story("reallife_tech_mkt_news_benchmark", "product", subject, "rival", beaten.Name);
+                        Story("reallife_tech_mkt_news_benchmark", "product", subject, "rival", beaten.Called);   // the model it beat, with the lab that makes it
                         int stock = beaten.Startups ? 0 : CompetitorRules.CompanyStock[TalentCatalogue.Clamp(beaten.Company, 0, CompetitorRules.CompanyStock.Length - 1)];
                         if (stock > 0)
                         {

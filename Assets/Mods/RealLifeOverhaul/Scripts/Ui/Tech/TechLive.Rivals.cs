@@ -27,8 +27,8 @@ namespace RealLifeOverhaul.Ui
                     RivalryLine r = RivalRows[i];
                     string line = TechText.Fill("reallife_rival_row", "price", Cents(r.Price), "share", TechText.Mille(r.Share), "customers", TechText.Whole(r.Customers));
                     string money = r.Cash >= 0 ? Cents(r.Cash) : TechText.T("reallife_rival_listed");
-                    card.Who(r.Name, !string.IsNullOrEmpty(r.Company) && r.Listed == false ? TechText.Fill("reallife_rival_backed_by", "company", r.Company) + ". " + line : line, money,
-                        r.Funded ? UiRole.WarnText : UiRole.None);
+                    string backed = !string.IsNullOrEmpty(r.Company) && r.Listed == false ? TechText.Fill("reallife_rival_backed_by", "company", r.Company) + ". " + line : line;
+                    card.Who(TitleRules.By(r.Title, r.Name), backed, money, r.Funded ? UiRole.WarnText : UiRole.None);   // the product first, then who makes it
                 }
                 if (n == 0)
                 {

@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Tech
             GameDraft d = _studio.DraftAt(place);
             FirmsRules.TrimWithdrawn(_firmsFile);
             long budget = StudioRules.BudgetAt(d.Budget);
-            string name = string.IsNullOrEmpty(d.Name) ? FirmsRules.Name(_firmsFile.Seed, _firmsFile.NextId) : d.Name;
+            string name = DraftTitle(d, out _);   // typed, a sequel's by rule, or a suggestion of its genre: what its concept's page showed
             Product p = FirmsRules.NewProduct(_firmsFile, place, ProductKind.Game, Segment.Consumer, StudioRules.ScopeOf(budget), name);
             p.Launched = day;
             _firmsFile.Products.Add(p);
@@ -266,6 +266,7 @@ namespace RealLifeOverhaul.Tech
                     ToDesk(place);
                     break;
                 case StudioAct.Greenlight: GreenlightHere(place); break;
+                case StudioAct.Suggest: SuggestDraft(place); break;
                 case StudioAct.Beat: Beat(g, value, day); break;
                 case StudioAct.Campaign:
                     if (g != null)
@@ -423,6 +424,7 @@ namespace RealLifeOverhaul.Tech
             s.Desks = TechBridges.DesksNow();
             s.Tickets = StudioTicketsAt(s.Place);
             s.Answered = (long)firm.Crew.Support * FirmsCatalogue.TicketsPerPerson;
+            s.GameName = NameOf;
             return s;
         }
 
@@ -433,7 +435,10 @@ namespace RealLifeOverhaul.Tech
                 return null;
             }
             GameDraft d = _studio.DraftAt(firm.File.Place) ?? new GameDraft { Place = firm.File.Place };   // only shown: kept once a choice is made or it goes to the desk
-            return StudioViews.Concept(_studio, d, StudioPlaceOf(firm), Save.Day, fmt);
+            StudioPlace place = StudioPlaceOf(firm);
+            place.Title = DraftTitle(d, out int from);
+            place.TitleFrom = from;
+            return StudioViews.Concept(_studio, d, place, Save.Day, fmt);
         }
 
         // With desk sessions off, the concept is greenlit on its page as a pitch would make it: as planned, self-published, with no DRM.

@@ -34,6 +34,28 @@ namespace RealLifeOverhaul.Tech
         public int PushPoints;
 
         public bool Startups => Company < 0;
+
+        // its product's name, made from its id and market when first asked for and never saved or sent (TitleRules.Rival): the same on every machine
+        private string _title;
+        private int _titledId = -1, _titledMarket = -1;
+
+        /// <summary>What its product is called: <see cref="Name"/> is the company or startup that makes it.</summary>
+        public string Title
+        {
+            get
+            {
+                if (_title == null || _titledId != Id || _titledMarket != Market)
+                {
+                    _title = TitleRules.Rival(Id, Market);
+                    _titledId = Id;
+                    _titledMarket = Market;
+                }
+                return _title;
+            }
+        }
+
+        /// <summary>The product with its maker, for a line that names a rival once: "Brightsheet (Codeharbour Software)".</summary>
+        public string Called => TitleRules.By(Title, Name);
     }
 
     /// <summary>

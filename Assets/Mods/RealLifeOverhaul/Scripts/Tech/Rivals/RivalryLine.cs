@@ -5,6 +5,7 @@ namespace RealLifeOverhaul.Tech
     {
         public int Id;
         public string Name;
+        public string Title;          // what its product is called (RivalProduct.Title)
         public string Company;        // the listed company behind it (that bought it, or that it is); empty for a startup on its own
         public bool Listed;           // a listed company's product that came into the niche
         public int Tier;              // its price tier

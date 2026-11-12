@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < list.Count; i++)
             {
                 RivalProduct rp = list[i];
-                table.Rows.Add(new[] { rp.Name, fmt.Text(MarketKey(rp.Market)), fmt.Whole(rp.Customers), fmt.Whole(rp.Features) });
+                table.Rows.Add(new[] { rp.Called, fmt.Text(MarketKey(rp.Market)), fmt.Whole(rp.Customers), fmt.Whole(rp.Features) });   // the product first: the table sorts by it
             }
         }
 

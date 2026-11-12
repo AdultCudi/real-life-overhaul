@@ -92,6 +92,12 @@ namespace RealLifeOverhaul.Tech
         public const int Genre = 1, Setting = 2, Platform = 3, Model = 4, Engine = 5, Sequel = 6, Budget = 7, Price = 8, Desk = 9, Beat = 10, BeatPick = 11, Campaign = 12,
             Release = 13, Bonus = 14, Leads = 15, Share = 16, LaunchNow = 17, OpenEarly = 18, Project = 19, ProjectPick = 20, Withdraw = 21, BuildEngine = 22, Concept = 23, Close = 24,
             Pitch = 25, Greenlight = 26;
+
+        /// <summary>
+        /// A name to be typed (the concept's, or a game's on its page), which the page that shows it asks for in the game's
+        /// text box and then hands to the director, and another suggestion for a concept, which the director gives itself.
+        /// </summary>
+        public const int Name = 27, Suggest = 28;
     }
 
     /// <summary>What the screens know of a studio from the game, filled by the director when a page is drawn.</summary>
@@ -105,12 +111,16 @@ namespace RealLifeOverhaul.Tech
         public int Reputation = 500;
         public bool Desks = true;        // desk sessions run: the pitch is held at the desk; off, the concept is greenlit on its page
         public long Tickets, Answered;   // support tickets a day from its games' players, and those its support people answer
+        public string Title = string.Empty;   // what the concept's game will be called; empty where no page asks (the firm's page)
+        public int TitleFrom;            // how that name came: StudioViews.TitleSuggested, TitleTyped or TitleSequel
+        public Func<int, string> GameName;   // a game's name by its product's id (the firms' list keeps it); null: its genre and score stand for it
     }
 
     /// <summary>The game studio's screens built from its state: the concept, a game's page, and the studio's own part of its firm's page. Game-free.</summary>
     public static partial class StudioViews
     {
         public const int ScreenConcept = 0, ScreenGame = 1, ScreenStudio = 2;
+        public const int TitleSuggested = 0, TitleTyped = 1, TitleSequel = 2;   // how a concept's name came (StudioPlace.TitleFrom)
         public static readonly int[] ReleaseSteps = { 15, 30, 45, 60 };   // days from today a release date can be set to, beside as soon as ready
         private const int CrowdDays = 60;   // days either side of a day the release page counts rival games of the genre in
         private const string Mod = "reallife", P = Mod + "_studio_";   // the keys' start, written so the source holds no key prefix as a literal
@@ -210,6 +220,7 @@ namespace RealLifeOverhaul.Tech
                 : Words(P + "engine_licensed_trade", ViewTone.Plain, "fee", fmt.Money(StudioCatalogue.EngineFee[scope]), "royalty", fmt.Mille(ScaleCatalogue.EngineRoyalty),
                     "free", fmt.Money(ScaleCatalogue.EngineRoyaltyFree));
             SequelChoice(game, f, d, s, fmt);
+            NameChoice(v, game, s);
             ViewSection money = v.Section(P + "sec_budget");
             c = Choice(money, P + "label_budget", StudioAct.Budget, StudioRules.Clamp(d.Budget, 0, StudioCatalogue.Budgets.Length - 1), true);
             for (int b = 0; b < StudioCatalogue.Budgets.Length; b++)
@@ -304,7 +315,8 @@ namespace RealLifeOverhaul.Tech
                     c.Options.Add(fmt.Text(P + "sequel_none"));
                 }
                 n++;
-                c.Options.Add(fmt.Text(GenreKey(g.Genre)) + " " + fmt.Whole(g.Score));
+                string called = place.GameName != null ? place.GameName(g.Id) : null;
+                c.Options.Add((string.IsNullOrEmpty(called) ? string.Empty : called + ", ") + fmt.Text(GenreKey(g.Genre)) + " " + fmt.Whole(g.Score));
                 picked = g.Id == d.Sequel ? n : picked;
                 if (g.Id == d.Sequel)
                 {
@@ -317,6 +329,21 @@ namespace RealLifeOverhaul.Tech
                 c.Picked = picked;
                 c.Trade = c.Trade ?? Words(P + "sequel_trade_none", ViewTone.Plain);
             }
+        }
+
+        // What the game will be called and how the name came (typed, the game it follows with the next number, or a suggestion of
+        // its genre's words), with the button that asks for a typed one; another suggestion is one of the screen's other buttons.
+        private static void NameChoice(StudioScreen v, ViewSection s, StudioPlace place)
+        {
+            if (string.IsNullOrEmpty(place.Title))
+            {
+                return;
+            }
+            ViewChoice c = Choice(s, P + "label_name", StudioAct.Name, 0, false);
+            c.Options.Add(place.Title);
+            c.Trade = Words(place.TitleFrom == TitleTyped ? P + "name_typed" : place.TitleFrom == TitleSequel ? P + "name_sequel" : P + "name_suggested", ViewTone.Plain);
+            c.Go = new ViewAction { Key = P + "button_name", Act = StudioAct.Name };
+            v.Others.Add(new ViewAction { Key = P + "button_suggest", Act = StudioAct.Suggest });
         }
 
         /// <summary>The ids of a studio's released games in the order the concept's sequel choice lists them, after "a new name".</summary>
@@ -363,11 +390,12 @@ namespace RealLifeOverhaul.Tech
             }
             if (g.Live)
             {
-                After(v, g, projectPick, fmt);
+                After(v, g, name, projectPick, fmt);
             }
             Team(v, g, ownShare, fmt);
             if (g.Phase < (int)GamePhase.Ended)
             {
+                v.Others.Add(new ViewAction { Key = Mod + "_tech_button_rename", Act = StudioAct.Name });   // free at any time before it is withdrawn: nothing reads a name
                 v.Others.Add(new ViewAction { Key = "reallife_tech_button_withdraw", Act = StudioAct.Withdraw, Danger = true });
             }
             v.Others.Add(new ViewAction { Key = "common_close", Act = StudioAct.Close });
@@ -531,7 +559,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        private static void After(StudioScreen v, GameDev g, int projectPick, IStudioFormat fmt)
+        private static void After(StudioScreen v, GameDev g, string name, int projectPick, IStudioFormat fmt)
         {
             ViewSection a = v.Section(P + "sec_after");
             string asks = string.Empty;
@@ -547,6 +575,11 @@ namespace RealLifeOverhaul.Tech
             {
                 Line(a, P + "after_project_" + g.Project, ViewTone.Plain, "done", fmt.Mille((int)Math.Min(1000L, g.ProjectDone * 1000 / Math.Max(1L, g.ProjectWork))),
                     "platform", fmt.Text(PlatformKey(g.ProjectArg)), "ask", fmt.Text(AskKey(g.ProjectArg)));
+                string called = ProjectTitle(g, name, g.Project, 1);
+                if (called.Length > 0)
+                {
+                    Line(a, P + "after_named", ViewTone.Plain, "name", called);
+                }
                 return;
             }
             // the projects a page starts (updates and add-ons come from the post-launch review at the desk)
@@ -563,6 +596,17 @@ namespace RealLifeOverhaul.Tech
             c.Trade = why != null ? Words(why, ViewTone.Warn) : Words(project == StudioRules.ProjectPort ? P + "project_port_trade" : P + "project_localise_trade", ViewTone.Plain,
                 "points", fmt.Whole(work), "lift", fmt.Mille(StudioCatalogue.LocaliseLift));
             c.Go = new ViewAction { Key = P + "button_project", Act = StudioAct.Project, Arg = pick, Enabled = why == null, WhyKey = why };
+        }
+
+        /// <summary>
+        /// What a free update or an add-on of a game is called, by rule from the game's name: its version ("Ember Crown 1.2") or the
+        /// game's name with the add-on's own ("Ember Crown: Aftermath"). <paramref name="ahead"/> is 1 for the one being built and 0
+        /// for the one just released. Empty for a port, localisation or a game with no name.
+        /// </summary>
+        public static string ProjectTitle(GameDev g, string name, int project, int ahead)
+        {
+            return project == StudioRules.ProjectUpdate ? TitleRules.Update(name, g.Updates + ahead)
+                : project == StudioRules.ProjectAddOn ? TitleRules.AddOn(name, g.Id, g.AddOns + ahead) : string.Empty;
         }
 
         private static void Team(StudioScreen v, GameDev g, int ownShare, IStudioFormat fmt)
