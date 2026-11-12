@@ -210,7 +210,7 @@ internal static partial class Program
             }
         }
         string note = System.IO.Path.Combine(root, @"RealLifeOverhaul.Build\Workshop\changenote.txt");
-        if (!System.IO.File.Exists(note) || System.IO.File.ReadAllText(note).TrimStart('﻿').Replace("\r\n", "\n").Split('\n')[0].Trim() != latest)
+        if (!System.IO.File.Exists(note) || System.IO.File.ReadAllText(note).Replace("\r\n", "\n").Split('\n')[0].Trim() != latest)
         {
             apart.Add(@"RealLifeOverhaul.Build\Workshop\changenote.txt");
         }

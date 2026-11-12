@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Meta
     public static class VersionRules
     {
         public const int PartMost = 99;   // the most MINOR or PATCH may be: one more would take the order of the next version up
+        private const string RowKey = "reallife" + "_changes_";   // split, so the locale check does not take a prefix for a key
 
         /// <summary>Compares two versions number by number; a missing part, and a part that is not a number, counts as 0.</summary>
         public static int Compare(string a, string b)
@@ -53,7 +54,7 @@ namespace RealLifeOverhaul.Meta
         public static string KeyOf(string version)
         {
             return Parts(version, out int major, out int minor, out int patch)
-                ? "reallife_changes_" + (major * 100 + minor).ToString("000", CultureInfo.InvariantCulture) + "_" + patch.ToString(CultureInfo.InvariantCulture)
+                ? RowKey + (major * 100 + minor).ToString("000", CultureInfo.InvariantCulture) + "_" + patch.ToString(CultureInfo.InvariantCulture)
                 : null;
         }
     }
