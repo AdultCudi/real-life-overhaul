@@ -1,4 +1,4 @@
-1.0.1
+1.0.2
 
 Fixed
-- On a Mac, the RLO interface's text was drawn as pink blocks. Its fonts were drawn in a way made for Windows alone. They are now drawn the way the game draws its own text, on every system.
+- On the new BizMan page the Start business button only played the error sound and started nothing, for every type of business. It starts the business again.
