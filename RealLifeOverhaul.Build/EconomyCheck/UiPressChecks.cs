@@ -76,15 +76,18 @@ internal static partial class Program
             }
         }
         Check(senders >= 5 && silent == "none", "ui press: every piece that sends a target's press to a screen writes a refused one to Player.log (" + senders + " senders; silent: " + silent + ")");
-        string host = File.ReadAllText(System.IO.Path.Combine(folder, "UiHost.cs"));
+        string host = PressSource(System.IO.Path.Combine(folder, "UiHost.cs"));
         Check(host.Contains("UiRefusals.Begin();") && Regex.IsMatch(host, @"target disabled"";\s*UiRefusalLog\.Say\("),
             "ui press: the host starts each press with no reason held over and writes a press on a disabled target too");
-        string widgets = File.ReadAllText(System.IO.Path.Combine(folder, "Host", "UiWidgets.cs"));
+        string widgets = PressSource(System.IO.Path.Combine(folder, "Host", "UiWidgets.cs"));
         Check(Regex.IsMatch(widgets, @"if \(!Shows\(b\)\)\s*\{\s*UiRefusals\.Because\(") && widgets.Contains("public static bool PressUnder(Button b, Component row)"),
             "ui press: a game button that takes no press says why (not there, switched off, held), and a button under a hover outline has its own way");
-        string log = File.ReadAllText(System.IO.Path.Combine(folder, "Host", "UiRefusalLog.cs"));
+        string log = PressSource(System.IO.Path.Combine(folder, "Host", "UiRefusalLog.cs"));
         Check(log.Contains("Logger?.Warn(line)") && !log.Contains("Dev.Verbose"), "ui press: the line is written with or without Developer diagnostics");
     }
+
+    // A source as text; nothing for one that is not there, so that a check fails for it instead of stopping the run.
+    private static string PressSource(string path) => File.Exists(path) ? File.ReadAllText(path) : string.Empty;
 
     private static string UiSourceFolder() =>
         System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
@@ -95,7 +98,7 @@ internal static partial class Program
     {
         string folder = UiSourceFolder();
         // The checkout: the game's rows are copies beside their templates, never children of the list's scroll view.
-        string checkout = File.ReadAllText(System.IO.Path.Combine(folder, "Buy", "CheckoutScreen.cs"));
+        string checkout = PressSource(System.IO.Path.Combine(folder, "Buy", "CheckoutScreen.cs"));
         Check(checkout.Contains("BuyKits.Copies(_ui." + CheckoutRules.RowsBeside + ", _copies)") && checkout.Contains("BuyKits.Copies(_ui." + CheckoutRules.TaxesBeside + ", _copies)")
               && !checkout.Contains("container.GetChild("),
             "checkout: the goods and the tax rows are read beside the game's own templates (PurchaseUI.itemTemplate.parent), not among the children of the list's scroll view");
@@ -116,13 +119,13 @@ internal static partial class Program
         Check(steppers && s.FindNode(UiCheckout.OrderCommand, 0) >= 0 && s.FindNode(UiCheckout.CancelCommand, 0) >= 0,
             "checkout: at a counter every row of goods has its plus (and its minus once something is taken) as targets, with Place order and Cancel");
         // The items list: the add is pressed and read past the game's hover outline.
-        string list = File.ReadAllText(System.IO.Path.Combine(folder, "World", "ItemsListKit.cs"));
+        string list = PressSource(System.IO.Path.Combine(folder, "World", "ItemsListKit.cs"));
         Check(list.Contains("UiWidgets.PressUnder(AddButton(d), d)") && list.Contains("UiWidgets.ShowsUnder(AddButton(d), d)") && !list.Contains("UiWidgets.Press(GameContract.ItemsAdd")
               && !list.Contains("Interactable(GameContract.ItemsAdd"),
             "items list: an order's add button is pressed and read through the row (the game switches the button's own outline on only under the mouse), by one test for the drawing and the press");
         Check(list.Contains("\"reallife_ui_world_items_full\""), "items list: an order that holds all it may says so in words when the greyed plus is pressed");
         // The item panel: a stack's own action is an action of the panel, and its sell and discard are reached.
-        string panel = File.ReadAllText(System.IO.Path.Combine(folder, "Buy", "ItemPanelKit.cs"));
+        string panel = PressSource(System.IO.Path.Combine(folder, "Buy", "ItemPanelKit.cs"));
         Check(panel.Contains("GameContract.SlotAction, slot") && panel.Contains("GameContract.SlotActionLabel, slot") && panel.Contains("SlotActions();")
               && panel.IndexOf("SlotActions();", StringComparison.Ordinal) < panel.IndexOf("ManageCargo();", StringComparison.Ordinal),
             "item panel: each stack's own action on its slot (Eat, Drink, Equip, Read, Place) is an action of the panel, before the panel's own");
@@ -136,7 +139,7 @@ internal static partial class Program
         int eat = s.FindNode(UiItemPanel.ActionCommand, 0), more = s.FindNode(UiItemPanel.MoreCommand, 0);
         Check(eat >= 0 && !s.Nodes[eat].Disabled && UiRefusals.Label(s, eat) == "Eat Croissant" && more >= 0 && s.FindNode(UiItemPanel.CargoCommand, 1) >= 0,
             "item panel: food in a bag lays out Eat as the first action, a tile a stack and the way to the game's view");
-        string contract = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(folder, "..", "Core", "GameContract.Buy.cs")));
+        string contract = PressSource(System.IO.Path.GetFullPath(System.IO.Path.Combine(folder, "..", "Core", "GameContract.Buy.cs")));
         Check(Regex.IsMatch(contract, @"SlotAction = Field\(new\[\] \{ UiItemPanel, UiManageCargo \}") && Regex.IsMatch(contract, @"SlotActionLabel = Field\(new\[\] \{ UiItemPanel, UiManageCargo \}"),
             "item panel: the game contract names the item panel as a reader of the slot's action and its words");
         // The words.

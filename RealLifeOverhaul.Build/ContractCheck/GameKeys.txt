@@ -1,6 +1,8 @@
 # Keys of the game's own texts and data (its en.json) that the mod's code names: business types, items, skills,
 # districts, transactions, vehicles and a few texts. ContractCheck checks each against the game's en.json, and that
 # this list holds every one the code names and no other. One key a line, sorted.
+action_consumedrink
+action_consumefood
 action_take
 amountoption_all
 amountoption_negative
