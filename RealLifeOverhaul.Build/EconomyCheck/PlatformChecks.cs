@@ -233,12 +233,15 @@ internal static partial class Program
         {
             Check(en.TryGetValue(key, out string text) && text.Length > 20 && text.Length <= 240, "platform texts: " + key + " is there, a notice's length");
         }
-        Check(en["reallife_textsai_key_session"].Contains("{service}") && en["reallife_texts_status_windows"].Contains("Windows only"), "platform texts: the session key's notice names the service, the packs' says Windows only");
+        // A key that is not there reads as an empty text, so its check fails and the others still run.
+        Func<string, string> word = key => en.TryGetValue(key, out string text) ? text : string.Empty;
+        Check(word("reallife_textsai_key_session").Contains("{service}") && word("reallife_texts_status_windows").Contains("Windows only"),
+            "platform texts: the session key's notice names the service, the packs' says Windows only");
         Check(WhatsNewHas(en, "Fixed: on a Mac, a bug report left out the game's log") && WhatsNewHas(en, "RLO Texts tried to run its packs, which only Windows can"),
             "platform texts: What's new tells of the fixes in some row");
-        Check(en["reallife_guide_trouble"].Contains("A Mac keeps the log apart") && en["reallife_guide_limits"].Contains("It also runs on a Mac")
-              && en["reallife_guide_textsai"].Contains("On a Mac nothing protects it that way") && en["reallife_guide_texts"].Contains("The packs run on Windows only")
-              && en["reallife_guide_trouble_report"].Contains("Your user name on this computer"),
+        Check(word("reallife_guide_trouble").Contains("A Mac keeps the log apart") && word("reallife_guide_limits").Contains("It also runs on a Mac")
+              && word("reallife_guide_textsai").Contains("On a Mac nothing protects it that way") && word("reallife_guide_texts").Contains("The packs run on Windows only")
+              && word("reallife_guide_trouble_report").Contains("Your user name on this computer"),
             "platform texts: the Guide says where a Mac keeps the log and what the mod does without there");
     }
 }
