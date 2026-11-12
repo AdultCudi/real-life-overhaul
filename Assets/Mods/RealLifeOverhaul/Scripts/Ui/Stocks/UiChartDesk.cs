@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
             Count = shown;
             _source = src;
             int start = first, end = Math.Min(src.Length, first + shown);
-            while (start < end && float.IsNaN(src[start]))
+            while (start < end && !UiChart.Real(src[start]))
             {
                 start++;
             }
@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < len; i++)
             {
                 float v = src[start + i];
-                Points[i] = float.IsNaN(v) ? Points[Math.Max(0, i - 1)] : v;
+                Points[i] = UiChart.Real(v) ? v : Points[Math.Max(0, i - 1)];
                 Lo = Math.Min(Lo, Points[i]);
                 Hi = Math.Max(Hi, Points[i]);
             }
@@ -155,6 +155,7 @@ namespace RealLifeOverhaul.Ui
         public const int Rail = 21;             // a tool of the rail; the argument UiChartTools.Count is the delete
         public const float RailWidth = UiTokens.ControlSmall;
         public const int LeastShown = 12;       // candles the window may be zoomed in to
+        private const int MostTicks = 12;       // round prices on the axis at the most: a step too small to move a large price would otherwise never reach the top
         private const float VolumeShare = 0.11f, PaneShare = 0.13f;
         private const float LeastPrice = 168f;  // px: the price plot's least height, or a pane gives way
 
@@ -243,15 +244,19 @@ namespace RealLifeOverhaul.Ui
             return firstNode;
         }
 
-        // The price range of the window, the lines over it counted, padded; never flat.
+        // The price range of the window, the lines over it counted, padded; never flat. A price that is no number is left out.
         private static void Range(UiChartDeskModel m, int first, int shown, out float lo, out float hi)
         {
             lo = float.MaxValue;
             hi = float.MinValue;
             for (int i = first; i < first + shown; i++)
             {
-                float low = m.Low != null && m.Kind == 0 ? m.Low[i] : m.Close[i];
-                float high = m.High != null && m.Kind == 0 ? m.High[i] : m.Close[i];
+                if (!UiChart.Real(m.Close[i]))
+                {
+                    continue;
+                }
+                float low = m.Low != null && m.Kind == 0 && UiChart.Real(m.Low[i]) ? m.Low[i] : m.Close[i];
+                float high = m.High != null && m.Kind == 0 && UiChart.Real(m.High[i]) ? m.High[i] : m.Close[i];
                 lo = Math.Min(lo, low);
                 hi = Math.Max(hi, high);
             }
@@ -260,13 +265,20 @@ namespace RealLifeOverhaul.Ui
                 Widen(m.Lines[k].Values, first, shown, ref lo, ref hi);
                 Widen(m.Lines[k].Under, first, shown, ref lo, ref hi);
             }
+            if (lo > hi)
+            {
+                lo = 0f;   // no price in the window is a number: a plain axis, and nothing drawn on it
+                hi = 1f;
+            }
+            bool priced = lo >= 0f;   // a price never goes under nothing, so its axis does not either. Values under nothing keep their own foot.
             if (hi - lo < 0.02f)
             {
-                hi += 0.5f;
-                lo = Math.Max(0f, lo - 0.5f);
+                float room = Math.Max(0.5f, Math.Abs(hi) * 1e-5f);   // half a dollar, or more where a float's price is too large for half a dollar to move it
+                hi += room;
+                lo = priced ? Math.Max(0f, lo - room) : lo - room;
             }
             float pad = (hi - lo) * 0.06f;
-            lo = Math.Max(0f, lo - pad);
+            lo = priced ? Math.Max(0f, lo - pad) : lo - pad;
             hi += pad;
         }
 
@@ -274,7 +286,7 @@ namespace RealLifeOverhaul.Ui
         {
             for (int i = first; v != null && i < first + shown && i < v.Length; i++)
             {
-                if (float.IsNaN(v[i]))
+                if (!UiChart.Real(v[i]))
                 {
                     continue;
                 }
@@ -298,11 +310,19 @@ namespace RealLifeOverhaul.Ui
             firstTick = (float)Math.Ceiling(lo / step - 1e-4) * step;
         }
 
+        // The tick after so many steps, or false past the top. Counted, never summed: a float sum of small steps stands
+        // still at a large price, and a loop that waits for it to pass the top would hold the game.
+        private static bool TickAt(float firstTick, float step, float hi, int k, out float v)
+        {
+            v = firstTick + k * step;
+            return k < MostTicks && step > 0f && v <= hi;
+        }
+
         private static float AxisWidth(UiChartDeskModel m, float lo, float hi)
         {
             Ticks(lo, hi, out float step, out float tick);
             float most = m.LastTag != null ? UiTextRules.Width(m.LastTag, UiStyle.SmallStrong) + UiTokens.S3 : 0f;
-            for (float v = tick; v <= hi && step > 0f; v += step)
+            for (int k = 0; TickAt(tick, step, hi, k, out float v); k++)
             {
                 most = Math.Max(most, UiTextRules.Width(Money(m, v), UiStyle.Small));
             }

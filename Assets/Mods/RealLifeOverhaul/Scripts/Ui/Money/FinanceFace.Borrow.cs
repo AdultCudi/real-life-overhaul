@@ -103,6 +103,18 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- Cash flow
 
+        /// <summary>
+        /// The days the player folded (FinanceView.Folded, by each band's words) set on the statement before it is laid: the
+        /// statement is written afresh with every read of the facts, so what is folded is the view's to keep, not the facts'.
+        /// </summary>
+        public static void Folds(UiStatementModel statement, FinanceView v)
+        {
+            for (int g = 0; g < statement.Groups.Length; g++)
+            {
+                statement.Groups[g].Folded = v.Folded.Contains(statement.Groups[g].Label ?? string.Empty);
+            }
+        }
+
         // The statement for the period chosen, with the running balance; the cash over the days that exist, where it went, what is coming up.
         private static void CashPage(UiScene s, UiAt at, FinanceFacts f, FinanceView v, UtilitiesWords w, FinanceLayout lay, float x, float y, float cw, float bottom, IUiKeys keys)
         {
@@ -120,6 +132,7 @@ namespace RealLifeOverhaul.Ui
             UiAt lon = at.InRegion(2);
             if (c.Statement != null)
             {
+                Folds(c.Statement, v);
                 c.Statement.Offset = lay.Offset[3];
                 c.Statement.Reveal = lay.Reveal[3];
                 lay.Reveal[3] = -1;

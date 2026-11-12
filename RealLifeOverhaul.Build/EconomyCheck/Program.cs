@@ -88,9 +88,21 @@ internal static partial class Program
             Console.WriteLine("OthersHash " + OthersFaces() + "UL");
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--platform")
+        {
+            HostPlatform();   // the mod on a Mac: the log's place, the report's paths, the packs aside, a session's key, the bundles' check, the sources (PlatformChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-shaders")
         {
             UiShaders();   // the shader the interface's text is drawn with on every system, and its check's line (UiShaderChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--fonts")
+        {
+            FontFallbacks();   // the fonts that draw what the interface's face lacks: the census of the game's fonts, the rules, every language's characters, the sources (FontFallbackChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -124,15 +136,33 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--vehicle-panel")
+        {
+            ItemPanelKeysChecks(UiWords("en"));   // the driving card and where it stands, a hand truck's tiles, Take in manage cargo and a refused press's reason (UiChecks.World.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-cleanup")
         {
             UiCleanupChecks();   // the dead dashboard page kind gone, every decision card's choices lifting (UiChecks.Lift.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--charts")
+        {
+            ChartPlotChecks(false);   // every kind of chart with every hard case of values, and the report's EconoView page (UiChecks.ChartPlot.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-screens")
         {
             UiScreenChecks();   // the kit screens' layout checks alone: RLO_UI_ONLY=<screen id> keeps one screen
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-press")
+        {
+            UiPressAll();   // every command a kit screen lays out is answered by its Press, no range takes another's number, a refused press is written and said (UiPressChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -222,6 +252,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--start-biz")
         {
             StartBizAll();   // BizMan's Start a business page on the kit: the list and detail reachable, the game's facts, sharp pictures (StartBizChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--found-biz")
+        {
+            FoundBizAll();   // starting a business on the kit's page for every kind, the dispatch that hands it to the game, the open switch, a refused press said (FoundBizChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1561,6 +1597,7 @@ internal static partial class Program
         TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiCleanupChecks(); // the dead dashboard page kind gone, every decision card's choices lifting (UiChecks.Lift.cs)
+        ChartPlotChecks(true); // every kind of chart with every hard case of values: nothing drawn outside a plot, bars from nothing, few ticks that read apart, the report's EconoView page (UiChecks.ChartPlot.cs)
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
         MinimapChecks(); // the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows (UiMinimapChecks.cs)
@@ -1592,6 +1629,8 @@ internal static partial class Program
         Beta();         // the beta channel: the tag a beta build carries in its version, none in a public build (BetaChecks.cs)
         Versions();     // versions across 1.0.0: the compare, the order and key of a version, and every row of What's new's table held to them (VersionChecks.cs)
         UiShaders();    // the pink text on a Mac: the faces given a text shader of the running game's on every system, a face without one left out, the check's line (UiShaderChecks.cs)
+        HostPlatform(); // the mod on a Mac: the log's place, the report's paths, the packs aside, a session's key, the bundles' check and its line, the sources (PlatformChecks.cs)
+        FontFallbacks(); // the Korean and Chinese text that was not drawn: the game's fallback fonts copied with the face's line and ordered by language, room in every text's box, every character of every language against the census of the game's fonts (FontFallbackChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
@@ -1622,6 +1661,7 @@ internal static partial class Program
         TestShopsAll();   // the test tool that takes businesses over: the pick, the notice, the refusals, the texts (TestShopsChecks.cs)
         BizFactsAll();  // a business and a building on every card of the kit with the valuation and the market value (BizFactsChecks.cs)
         StartBizAll();  // BizMan's Start a business page: the list and its detail reachable, the game's facts, the sharp pictures (StartBizChecks.cs)
+        FoundBizAll();  // a business started from an empty rented place for every kind, each page action in its own case, the open switch, a refused press said (FoundBizChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)

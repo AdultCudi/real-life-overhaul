@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
                 _shown = gameTab;
                 if (fresh)
                 {
+                    _refused = null;   // what a press was told at another place is not this place's
                     CloseLists();
                     if (_openedByKit && !BizManRules.Drawn(gameTab, Ops) && PressTab(b, BizManRules.Presentation))
                     {
@@ -187,10 +188,14 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Another mod's own pieces on the business view outside its tab bar (a button beside the page): told by the code that
-        // runs them, which is neither the game's, Unity's nor the mod's. Only those the kit's window would hide count; one with
-        // a canvas of its own stands over the kit as it stood over the game.
+        // Another mod's own pieces on the business view outside its tab bar: a piece beside the page, told by the code that
+        // runs it (neither the game's, Unity's nor the mod's) or by a button of its mod's making under it, and a button a mod
+        // put inside the page the game shows (the way into its own window, beside the game's buttons), which the kit's page
+        // does not draw. Only those the kit's window would hide count; one with a canvas of its own stands over the kit as it
+        // stood over the game.
         private static readonly List<MonoBehaviour> Behaviours = new List<MonoBehaviour>(32);
+        private static readonly List<Button> PageButtons = new List<Button>(64);
+        private readonly Dictionary<int, bool> _judged = new Dictionary<int, bool>(64);   // each button of the pages told once: another mod's or not
 
         private void Extras(BizManBusiness b)
         {
@@ -205,6 +210,32 @@ namespace RealLifeOverhaul.Ui
                     _extras.Add(c);
                 }
             }
+            Transform layout = root.Find("Layout 30-70"), menu = Menu(b);
+            if (layout == null)
+            {
+                return;
+            }
+            PageButtons.Clear();
+            layout.GetComponentsInChildren(false, PageButtons);   // the page the game shows now: a button on another tab's page is met on that tab
+            for (int i = 0; i < PageButtons.Count; i++)
+            {
+                Button button = PageButtons[i];
+                if (menu != null && button.transform.IsChildOf(menu))
+                {
+                    continue;   // the tab bar's are sections of the sidebar already
+                }
+                int id = button.GetInstanceID();
+                if (!_judged.TryGetValue(id, out bool others))
+                {
+                    others = UiForeignGame.ButtonOwner(button) != null;
+                    _judged[id] = others;
+                }
+                if (others)
+                {
+                    _extras.Add(button.transform);
+                }
+            }
+            PageButtons.Clear();
         }
 
         private static bool Foreign(Transform t)
@@ -223,6 +254,18 @@ namespace RealLifeOverhaul.Ui
                           && assembly != "Assembly-CSharp" && assembly != "ExternalPlugins" && assembly != "HGPlugins" && assembly != typeof(BizManScreen).Assembly.GetName().Name;
             }
             Behaviours.Clear();
+            if (foreign)
+            {
+                return true;
+            }
+            // A plain copy of a game button with the mod's own listener carries no script of its mod's: told by who listens to it.
+            PageButtons.Clear();
+            t.GetComponentsInChildren(true, PageButtons);
+            for (int i = 0; i < PageButtons.Count && !foreign; i++)
+            {
+                foreign = UiForeignGame.ButtonOwner(PageButtons[i]) != null;
+            }
+            PageButtons.Clear();
             return foreign;
         }
 
@@ -255,8 +298,10 @@ namespace RealLifeOverhaul.Ui
             h.Chosen = names != null ? names.SelectedOptionIndex : -1;
             h.ListOpen = _listOpen && h.Others.Length > 1;
             Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
-            h.HasSwitch = own && closed != null && closed.transform.parent != null && closed.transform.parent.gameObject.activeSelf;
-            h.On = closed != null && !closed.isOn;
+            // The switch stands wherever the game gives the business one, also on the tabs whose header the game switches off; it shows
+            // what the business is, which the game's toggle only says once the game has filled its page again.
+            h.HasSwitch = own && SwitchOf(b, closed) != BizManSwitchWay.None;
+            h.On = !reg.temporarilyClosed;
             h.SwitchWord = UiText.T(h.On ? "common_open" : "bizman_temporarily_closed");
             h.SwitchDisabled = closed != null && !closed.interactable;
             Chips(b, h);
@@ -299,7 +344,16 @@ namespace RealLifeOverhaul.Ui
                 words.Add(UiText.T("reallife_ui_bizman_rival"));
                 tones.Add(UiRole.Muted);
             }
-            if (reg.AvailableForRent && !reg.RentedByPlayer)
+            // A building a feature of the mod's holds is off the market here: the game's offers on its page are kept hidden
+            // (ClaimedOffers), so the page has no lease and no offer to show. The head says whose it is, in the words the game's own
+            // page gives it, and never "For rent" or "For sale" over a page that offers neither.
+            string taken = SpecialBuildings.TakenBy(reg);
+            if (taken != null)
+            {
+                words.Add(TakenPageRules.Line(SpecialBuildings.PageOf(reg, out _), UiText.T("reallife_claimed_taken").Replace("{name}", taken)));
+                tones.Add(UiRole.Muted);
+            }
+            else if (reg.AvailableForRent && !reg.RentedByPlayer)
             {
                 words.Add(UiText.T("reallife_ui_bizman_for_rent"));
                 tones.Add(UiRole.Accent);
@@ -309,7 +363,7 @@ namespace RealLifeOverhaul.Ui
                 words.Add(UiText.T("reallife_ui_bizman_rented"));
                 tones.Add(UiRole.Accent);
             }
-            if (!reg.BuildingOwnedByPlayer && SaveGameManager.Current != null && SaveGameManager.Current.buildingsForSale.Exists(x => x.address == reg.Address))
+            if (taken == null && !reg.BuildingOwnedByPlayer && SaveGameManager.Current != null && SaveGameManager.Current.buildingsForSale.Exists(x => x.address == reg.Address))
             {
                 words.Add(UiText.T("reallife_ui_bizman_for_sale"));
                 tones.Add(UiRole.Accent);
@@ -374,7 +428,8 @@ namespace RealLifeOverhaul.Ui
             Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
             Transform need = Get<Transform>(GameContract.BizNeed, b), alert = Get<Transform>(GameContract.BizAlert, b);
             sig = sig * 31 + (names != null ? names.SelectedOptionIndex : -1);
-            sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3);
+            sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3)
+                  + (b.buildingRegistration != null && b.buildingRegistration.temporarilyClosed ? 4 : 0);   // closed or opened by no click on the toggle (the utilities, another player)
             sig = sig * 31 + EntryCount(need) * 7 + EntryCount(alert);
             sig = sig * 31 + _m.Ops.ListOpen + _opsHeld * 7 + (Ops ? 1 : 0);
             switch (_shown)

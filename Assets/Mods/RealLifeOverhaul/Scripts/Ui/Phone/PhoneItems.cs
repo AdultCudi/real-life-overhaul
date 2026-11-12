@@ -11,6 +11,14 @@ namespace RealLifeOverhaul.Ui
         Other = 2    // another mod's button
     }
 
+    /// <summary>Where an app's own button stands in the game: the phone's grid, or a place only another mod uses.</summary>
+    public enum PhoneItemFrom : byte
+    {
+        Grid = 0,    // the HUD phone's grid, where the game's, the mod's and most other mods' buttons stand
+        Row = 1,     // the full menu's own row of app buttons alone: a mod that put its app beside the game's there
+        Frame = 2    // the HUD phone itself, outside its grid: a button a mod hung on the phone, which the kit phone covers
+    }
+
     /// <summary>One app the phone lists: its button's name, its words, its look, its badge and where it stands.</summary>
     public struct PhoneItem
     {
@@ -23,11 +31,13 @@ namespace RealLifeOverhaul.Ui
         public int Badge;           // the number on its badge; 0 for none
         public int Folder;          // the folder it stands in (PhoneLayoutRules.Money .. Setup); -1 on the home screen
         public bool First;          // the player keeps it first on the home screen (the old dock)
+        public PhoneItemFrom From;  // where its button stands; appended (13 Nov 2026), the grid for every app read before
     }
 
     /// <summary>
     /// Every app the phone lists, in the phone's one order (the game's, the mod's in PagerRules.ModOrder, other mods' as
-    /// they joined), read by the kit phone, the classic pager's checks, and the status bar's app row and All apps. The
+    /// they joined: those of the grid, then those a mod put on the full menu's row or on the phone itself, which have no
+    /// button of the grid), read by the kit phone, the classic pager's checks, and the status bar's app row and All apps. The
     /// home screen and each folder are the layout rules' views (PhoneLayoutRules.View), so every phone shows the same
     /// order: the two kept first, the game's eight, the folders, the apps put on the home screen, other mods' buttons.
     /// <see cref="Version"/> goes up on any change, so a reader lays out again only when it moved. Game-free: the game file

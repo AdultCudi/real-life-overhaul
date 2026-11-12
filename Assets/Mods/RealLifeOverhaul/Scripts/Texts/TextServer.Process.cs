@@ -10,7 +10,11 @@ using System.Threading;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>The runner's process and its socket: the requests over HTTP, the server killed, its environment, and the Windows job object and power settings.</summary>
+    /// <summary>
+    /// The runner's process and its socket: the requests over HTTP, the server killed, its environment, and the Windows job
+    /// object and power settings (kernel32, called on Windows alone: the server is llama.cpp's Windows program and is
+    /// started nowhere else).
+    /// </summary>
     public sealed partial class TextServer
     {
         private string Get(string path, int timeoutMs) => Http("GET", path, null, timeoutMs);
@@ -139,7 +143,7 @@ namespace RealLifeOverhaul.Texts
                 p.Dispose();
             }
             IntPtr job = Interlocked.Exchange(ref _job, IntPtr.Zero);
-            if (job != IntPtr.Zero)
+            if (HostSystem.Windows && job != IntPtr.Zero)
             {
                 CloseHandle(job);   // kill on close: anything still in the job ends now
             }
@@ -278,6 +282,10 @@ namespace RealLifeOverhaul.Texts
 
         private void TieToGame(Process p)
         {
+            if (!HostSystem.Windows)
+            {
+                return;   // a job object is Windows' own (and no server is started anywhere else)
+            }
             try
             {
                 _job = CreateJobObject(IntPtr.Zero, null);
@@ -319,6 +327,10 @@ namespace RealLifeOverhaul.Texts
         // nothing changes.
         private void FullSpeed(Process p)
         {
+            if (!HostSystem.Windows)
+            {
+                return;   // power throttling is Windows' own setting
+            }
             try
             {
                 var state = new PowerThrottling { Version = 1, ControlMask = ThrottleExecutionSpeed, StateMask = 0 };

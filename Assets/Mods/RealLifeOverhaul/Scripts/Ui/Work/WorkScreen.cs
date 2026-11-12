@@ -285,6 +285,17 @@ namespace RealLifeOverhaul.Ui
                 case WorkCmd.PageTab:
                     _view.PageTab = Math.Max(0, arg);
                     return true;
+                case WorkCmd.Sort:
+                    // The sort choice changes the cards' order (the Marketplace's listings: newest first, or by price). It was
+                    // drawn as a choice and no case answered it: the error sound alone.
+                    if (_page.Cards == null || !_page.Cards.Sorts)
+                    {
+                        return false;
+                    }
+                    _view.Sort = _view.Sort == 0 ? 1 : 0;
+                    _view.Row = -1;   // the card at a place is another thing now: the detail starts at the first
+                    _view.Offset = 0f;
+                    return true;
                 case WorkCmd.Search:
                     _typeCommand = WorkCmd.Search;
                     _typeArg = 0;

@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Ui
         public string Label;       // "Fuel"
         public float Share;        // 0 to 1; below 0 for a reading with no meter (the speed, the parking)
         public UiRole Tone;        // the meter's and the figure's tone: None for the words' own
-        public string Value;       // "64%", "57 km/h"
+        public string Value;       // "64%", "57 km/h"; on the driving card what the car needs ("SERVICE DUE") in the condition's place
+        public string Note;        // the driving card only: quiet words before the figure, how far the tank goes ("310 km"); null for none
     }
 
     /// <summary>An action of the item panel: the game's button, its words, the game's key for it, and how it stands.</summary>
@@ -46,7 +47,7 @@ namespace RealLifeOverhaul.Ui
         public float KeysX, KeysY, KeysW, KeysH;               // px of the layout: the HUD's key chips over the bar (the game's control hints), kept clear of; 0 wide for none
         public float PhoneX, PhoneY, PhoneW, PhoneH;           // px of the layout: the kit's phone card (its part on the screen), which the panel stands over; 0 wide for none
         public float NoticesX, NoticesY, NoticesW, NoticesH;   // px of the layout: the notice cards' stack at the top right; 0 wide for none
-        public bool Compact;                                   // the player drives it: the small card (its name, the speed, the parking, the keys as chips)
+        public bool Compact;                                   // the player drives a car: the small card (its name with its cargo's count, its readings, the parking, the keys as chips)
     }
 
     /// <summary>
@@ -56,10 +57,30 @@ namespace RealLifeOverhaul.Ui
     /// car needs) as meters with their glyphs, its cargo as a tile a stack under how many of its slots are used, and the
     /// game's actions with the game's own key caps. It is as wide as what it holds needs (narrower with no readings) and
     /// keeps clear of the HUD's key chips. The HUD takes no key: the game answers its keys, the pointer presses the rest.
-    /// Commands from <see cref="ActionCommand"/>. Game-free. Cost: a layout a change.
+    /// Driving a car it is the small card (<see cref="DrivingCard"/>): the game gives a car's panel no cargo tiles, so
+    /// nothing to press is left off it. Commands from <see cref="ActionCommand"/>. Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiItemPanel
     {
+        /// <summary>
+        /// px: the driving card's most height with every reading the game and the mod give a car, its keys on one row of
+        /// chips (the owner, 12 Nov 2026: "I don't want such a big box"). A language whose Park and Sell need a second row
+        /// adds that row (<see cref="CompactKeyRow"/>).
+        /// </summary>
+        public const float CompactMost = 180f;
+
+        /// <summary>px: what a further row of key chips adds to the driving card.</summary>
+        public const float CompactKeyRow = UiTokens.KeyCap + UiTokens.S2;
+
+        /// <summary>
+        /// Whether the vehicle's panel is the small driving card: only while the player drives a vehicle they sit in, and only
+        /// one whose panel the game gives no cargo tiles. A hand truck, a flatbed cart and a scooter are used like a vehicle
+        /// too, but their tiles are the game's one way to take a box off them (CargoItemUi.PickCargoInstance), so they keep
+        /// the full panel, as does any vehicle whose tiles show.
+        /// </summary>
+        public static bool DrivingCard(bool vehicle, bool controlled, bool inUse, bool pushedByHand, bool givesTiles, int tilesShown) =>
+            vehicle && controlled && inUse && !pushedByHand && !givesTiles && tilesShown == 0;
+
         public const int ActionCommand = 620, CargoCommand = 621, MoreCommand = 622;
         public static readonly int[] Commands = { ActionCommand, CargoCommand, MoreCommand };
         public const float Width = UiInfoPanel.Width;   // px: with a vehicle's readings
@@ -260,8 +281,10 @@ namespace RealLifeOverhaul.Ui
             return rows;
         }
 
-        // The driving card: the car's name with whose it is, its readings and facts a line each, and the game's keys as
-        // small chips in the HUD's key chips' style, wrapping when they need the room. Commands as the full panel's.
+        // The driving card: the car's name with what it carries and whose it is, its readings (the speed, the fuel with how
+        // far it goes, the condition or what the car needs) and facts a line each, and the game's keys as small chips in the
+        // HUD's key chips' style, wrapping when they need the room. No cargo tiles: a car's panel has none in the game, and a
+        // vehicle that has them is never drawn as this card (DrivingCard). Commands as the full panel's.
         private static float DrawCompact(UiScene s, UiItemPanelModel m, float x, float y)
         {
             float h = CompactHeight(m), w = CompactWidth;
@@ -272,6 +295,14 @@ namespace RealLifeOverhaul.Ui
             {
                 float cw = Math.Min(UiDraw.ChipWidth(m.Owner), UiDraw.SnapDown(iw / 2f));
                 UiDraw.Chip(s, on, right - cw, cy, m.Owner, m.OwnerTone, cw);   // its height is the head line's
+                right -= cw + UiTokens.S2;
+            }
+            if (!string.IsNullOrEmpty(m.CargoValue))
+            {
+                // What the car carries, as the game's own cargo row says it ("3 of 10"), on the head line: a line less on the card.
+                float tw = UiDraw.Snap(UiTextRules.Width(m.CargoValue, UiStyle.Small) + UiTokens.S1), cw = UiTokens.Icon + UiTokens.S1 + tw;
+                UiDraw.Icon(s, on, right - cw, cy + (CompactHead - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Package, UiRole.Text2, UiFlags.Middle);
+                UiDraw.TextMiddle(s, on, right - tw, cy, CompactHead, tw, UiStyle.Small, UiRole.Text, m.CargoValue, UiFlags.Right);
                 right -= cw + UiTokens.S2;
             }
             UiDraw.TextMiddle(s, on, ix, cy, CompactHead, right - ix, UiStyle.BodyStrong, UiRole.Text, m.Name, UiFlags.Truncate);
@@ -302,16 +333,27 @@ namespace RealLifeOverhaul.Ui
             return y + h;
         }
 
-        // A reading on one line: its glyph, its name as wide as its words, its meter and its figure at the right.
+        // A reading on one line: its glyph, its name as wide as its words, its meter and its figure at the right. The figures
+        // share a column, so the meters end in line; what needs more (what the car needs in words, a full tank's figure with
+        // a long range) takes it from its meter. A note (how far the tank goes) stands before its figure, and is left off
+        // where the line cannot hold both, never cut.
         private static void CompactReading(UiScene s, UiAt at, ref UiReading r, float x, float y, float w)
         {
             float h = UiTokens.PairRow;
             UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tone == UiRole.None ? UiRole.Text2 : r.Tone, UiFlags.Middle);
             float lx = x + UiTokens.Icon + UiTokens.S2, lw = Math.Min(CompactLabelMost, UiDraw.Snap(UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S1));
             UiDraw.TextMiddle(s, at, lx, y, h, lw, UiStyle.Body, UiRole.Text2, r.Label, UiFlags.Truncate | UiFlags.Label);
-            float vx = x + w - CompactValueW;
+            float own = UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
+            float nw = string.IsNullOrEmpty(r.Note) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Note, UiStyle.Small) + UiTokens.S1);
+            float need = own + (nw > 0f ? UiTokens.S2 + nw : 0f);
+            float column = need <= CompactValueW ? CompactValueW : Math.Min(need, UiDraw.SnapDown(x + w - (lx + lw + UiTokens.S2)));
+            float vx = x + w - column, fw = Math.Min(own, column);
             UiRole ink = r.Tone == UiRole.Danger ? UiRole.DangerText : r.Tone == UiRole.Warn ? UiRole.WarnText : UiRole.Text;
-            UiDraw.TextMiddle(s, at, vx, y, h, CompactValueW, UiStyle.BodyStrong, ink, r.Value, UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + w - fw, y, h, fw, UiStyle.BodyStrong, ink, r.Value, UiFlags.Right | UiFlags.Truncate);
+            if (nw > 0f && fw + UiTokens.S2 + nw <= column)
+            {
+                UiDraw.TextMiddle(s, at, x + w - fw - UiTokens.S2 - nw, y, h, nw, UiStyle.Small, UiRole.Text2, r.Note, UiFlags.Right);
+            }
             float mx = lx + lw + UiTokens.S2, mw = vx - UiTokens.S2 - mx, mh = UiTokens.S2;
             if (r.Share >= 0f && mw >= UiTokens.S4)
             {

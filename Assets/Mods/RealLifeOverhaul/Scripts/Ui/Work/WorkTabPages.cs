@@ -241,13 +241,36 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the catalogue
 
+        // The rows by their own figure, the lowest first, each in its place among those before it: two rows of one figure keep
+        // the order they came in, which List.Sort does not promise. A catalogue holds a few dozen rows, sorted on a press.
+        private static void ByOrder(List<WorkRow> rows)
+        {
+            for (int i = 1; i < rows.Count; i++)
+            {
+                WorkRow row = rows[i];
+                int j = i - 1;
+                while (j >= 0 && rows[j].Order > row.Order)
+                {
+                    rows[j + 1] = rows[j];
+                    j--;
+                }
+                rows[j + 1] = row;
+            }
+        }
+
         private static WorkPage Cards(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
         {
             List<WorkRow> shown = Shown(t, v, out int _);
+            // The sort choice's other order: by each row's own figure (a listing's asking price), the lowest first, the tab's own order between two alike.
+            bool byOrder = v.Sort == 1 && t.SortByOrder != null;
+            if (byOrder)
+            {
+                ByOrder(shown);
+            }
             int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
             WorkRow chosen = at >= 0 ? shown[at] : null;
             var m = new WorkCardsModel { SearchHint = t.Search, Query = v.Query, Cards = shown.ToArray(), Chosen = at, Offset = v.Offset, Reveal = v.Reveal, EmptyTitle = t.EmptyTitle,
-                EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = t.SortWord };
+                EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = byOrder ? t.SortByOrder : t.SortWord, Sorts = t.SortByOrder != null };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
             m.Below = BelowOf(t, shown);
             var panelActs = new List<UiActionModel>(4);

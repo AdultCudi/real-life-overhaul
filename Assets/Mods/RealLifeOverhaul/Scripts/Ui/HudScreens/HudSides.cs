@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Ui
     /// walls). At most two stand open, the shift first, then the job, then the building; the rest show their strip, and a
     /// panel the player folds or opens stays so for the session. The game's panels stay up, hidden by leaf, so whatever
     /// reads them (Going Public's owner actions, VoogleRoute) reads them as before; every button presses the game's own.
+    /// A button another mod put on the building's panel (the way into a business of its own) would be hidden with the
+    /// panel, so it is an action of the kit's panel under the game's, pressed through itself.
     /// Cost: four reads a second of a few dozen fields while the HUD shows.
     /// </summary>
     internal static class HudSides
@@ -36,6 +38,10 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<int, bool> Folded = new Dictionary<int, bool>();   // the player's own fold per kind, this session
         private static readonly UiInfoRow[] Rows = new UiInfoRow[UiSidePanelModel.MostRows];
         private static readonly UiActionModel[] Acts = new UiActionModel[UiSidePanelModel.MostActions];
+        private static readonly List<Button> Others = new List<Button>(UiSidePanelModel.MostActions);   // other mods' buttons on the building's panel
+        private static readonly List<Button> Scan = new List<Button>(16);
+        private static readonly List<Button> Order = new List<Button>(UiSidePanelModel.MostActions);
+        private static int _othersShape;   // the building panel's objects when its buttons were last told apart
 
         private static UI.CurrentJob.CurrentJob _job;
         private static CurrentBuildingUI _building;
@@ -105,6 +111,8 @@ namespace RealLifeOverhaul.Ui
             _buildingPanel = null;
             _destination = _quit = _bizman = _walls = _designer = null;
             _closed = null;
+            Others.Clear();
+            _othersShape = 0;
             Folded.Clear();
         }
 
@@ -359,6 +367,15 @@ namespace RealLifeOverhaul.Ui
             {
                 Acts[actions++] = new UiActionModel { Label = UiWidgets.Label(_designer), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Disabled = !_designer.interactable };
             }
+            OthersLook();
+            for (int o = 0; o < Others.Count && actions < UiSidePanelModel.MostActions; o++)
+            {
+                Button other = Others[o];
+                if (other != null && other.gameObject.activeInHierarchy)
+                {
+                    Acts[actions++] = new UiActionModel { Label = UiWidgets.Label(other) ?? other.name, Kind = UiButtonKind.Secondary, Key = UiAction.Count, Disabled = !other.interactable };
+                }
+            }
             SetActions(m, actions);
             for (int a = 0; a < actions; a++)
             {
@@ -406,6 +423,50 @@ namespace RealLifeOverhaul.Ui
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool Parked() => Parking.UndergroundParking.UndergroundParkingManager.IsInsideParking;
+
+        // Another mod's buttons on the building's panel, which the kit hides whole: told from the game's own again only when the
+        // panel's objects are not those of the last look (a walk of their ids, nothing read or made), each said once in Player.log.
+        private static void OthersLook()
+        {
+            int shape = Shape(_buildingPanel, 0, 17);
+            if (shape == _othersShape)
+            {
+                return;
+            }
+            _othersShape = shape;
+            Others.Clear();
+            Scan.Clear();
+            _buildingPanel.GetComponentsInChildren(true, Scan);
+            for (int i = 0; i < Scan.Count && Others.Count < UiSidePanelModel.MostActions - UiSidePanelModel.OwnActions; i++)
+            {
+                Button button = Scan[i];
+                if (button == _bizman || button == _walls || button == _designer)
+                {
+                    continue;
+                }
+                string owner = UiForeignGame.ButtonOwner(button);
+                if (owner != null)
+                {
+                    Others.Add(button);
+                    UiForeign.Note("hud", UiPieceKind.Button, owner, "the building's panel: " + button.name, "an action of the kit's panel, pressed through itself");
+                }
+            }
+            Scan.Clear();
+        }
+
+        private static int Shape(Transform under, int depth, int hash)
+        {
+            for (int i = 0; i < under.childCount; i++)
+            {
+                Transform child = under.GetChild(i);
+                hash = unchecked(hash * 31 + child.GetInstanceID());
+                if (depth < 4)
+                {
+                    hash = Shape(child, depth + 1, hash);
+                }
+            }
+            return hash;
+        }
 
         // Today's opening hours as the game's own contact card writes them; null for none kept.
         private static string Hours(BuildingRegistration reg)
@@ -486,12 +547,19 @@ namespace RealLifeOverhaul.Ui
             }
             if (kind == Building)
             {
-                Button[] order =
+                // The buttons in the order the panel drew them: the game's two, then another mod's.
+                Order.Clear();
+                Order.Add(_bizman);
+                Order.Add(_designer);
+                Order.AddRange(Others);
+                int seen = 0;
+                for (int i = 0; i < Order.Count; i++)
                 {
-                    _bizman != null && _bizman.gameObject.activeInHierarchy ? _bizman : null,
-                    _designer != null && _designer.gameObject.activeInHierarchy ? _designer : null
-                };
-                return UiWidgets.Press(Nth(order, index));
+                    if (Order[i] != null && Order[i].gameObject.activeInHierarchy && seen++ == index)
+                    {
+                        return UiWidgets.Press(Order[i]);
+                    }
+                }
             }
             return false;
         }

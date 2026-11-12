@@ -416,6 +416,7 @@ namespace RealLifeOverhaul
             try
             {
                 Bundle into = _bundles[index];
+                BundleShaders.Check(Logger, into.Name, null, reading.allAssets, LitShader);   // before anything of the bundle is used
                 var meshes = new Dictionary<string, Mesh>(48);
                 TextAsset catalogueText = null;
                 foreach (UnityEngine.Object asset in reading.allAssets)

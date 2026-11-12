@@ -442,7 +442,10 @@ namespace RealLifeOverhaul.Meta
             return null;
         }
 
-        /// <summary>The game's log of this session, when it is in the game's own data folder (a log written elsewhere is not read).</summary>
+        /// <summary>
+        /// The game's log of this session, where the system keeps it: in the game's own data folder on Windows, under the
+        /// user's Library/Logs on a Mac (BugReportRules.OwnLog). A log written elsewhere is not read.
+        /// </summary>
         public static string GameLog()
         {
             string log = Application.consoleLogPath;
@@ -450,8 +453,8 @@ namespace RealLifeOverhaul.Meta
             {
                 return null;
             }
-            string folder = Path.GetDirectoryName(Path.GetFullPath(log));
-            return string.Equals(folder, Path.GetFullPath(Application.persistentDataPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ? log : null;
+            string full = Path.GetFullPath(log);
+            return BugReportRules.OwnLog(full, Path.GetFullPath(Application.persistentDataPath), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) ? full : null;
         }
 
         /// <summary>On the worker: a copy of one of the game's logs, its tail when large and the user folder taken out, read with sharing so it is never locked. False with no such file.</summary>

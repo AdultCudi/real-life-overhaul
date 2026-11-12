@@ -87,6 +87,20 @@ namespace RealLifeOverhaul.Ui
 
         internal static bool CargoShowing => Cargo.Showing;
 
+        /// <summary>
+        /// The order of manage cargo's canvas while the kit draws it, int.MinValue otherwise: the item panel stands one over
+        /// it (ItemPanelKit.Lift). Asked with the panel's readings, four times a second.
+        /// </summary>
+        internal static int CargoOrder
+        {
+            get
+            {
+                RectTransform root = Cargo.Showing ? Cargo.Root : null;
+                Canvas canvas = root != null ? root.GetComponent<Canvas>() : null;
+                return canvas != null ? canvas.sortingOrder : int.MinValue;
+            }
+        }
+
         internal static bool WardrobeShowing => Wardrobes[0].Showing || Wardrobes[1].Showing || Wardrobes[2].Showing;
 
         private static void Switch(UiGameHost host)

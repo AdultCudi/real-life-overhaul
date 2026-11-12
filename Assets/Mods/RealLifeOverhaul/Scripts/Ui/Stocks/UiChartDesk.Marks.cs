@@ -308,7 +308,7 @@ namespace RealLifeOverhaul.Ui
         {
             Ticks(lo, hi, out float step, out float tick);
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            for (float v = tick; v <= hi && step > 0f; v += step)
+            for (int k = 0; TickAt(tick, step, hi, k, out float v); k++)
             {
                 float y = top + PriceY(v, lo, hi, h);
                 UiDraw.Text(s, at, px + pw + UiTokens.S1, y - lh / 2f, axisW - UiTokens.S1, UiStyle.Small, UiRole.Muted, Money(m, v), UiFlags.Middle | UiFlags.Label);
@@ -377,11 +377,11 @@ namespace RealLifeOverhaul.Ui
         // The last price on the axis, on a tag of the day's colour.
         private static void LastTag(UiScene s, UiAt at, UiChartDeskModel m, float x, float top, float w, float h, float lo, float hi)
         {
-            if (string.IsNullOrEmpty(m.LastTag))
-            {
-                return;
-            }
             int last = m.Close.Length - 1;
+            if (string.IsNullOrEmpty(m.LastTag) || !UiChart.Real(m.Close[last]))
+            {
+                return;   // no tag without a price to stand at: Math.Min passes NaN on, and the tag would have no place
+            }
             float y = top + PriceY(Math.Max(lo, Math.Min(hi, m.Close[last])), lo, hi, h);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong) + UiTokens.S1);
             int tag = UiDraw.Box(s, at, x, y - th / 2f, w, th, m.LastUp ? UiRole.Ok : UiRole.Danger, UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor | UiFlags.Middle);

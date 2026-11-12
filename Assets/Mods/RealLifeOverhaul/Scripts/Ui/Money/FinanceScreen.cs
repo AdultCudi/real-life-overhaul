@@ -105,6 +105,10 @@ namespace RealLifeOverhaul.Ui
                     return arg >= 0 && arg < _facts.Cash.Periods.Length && SetPeriod(arg);
                 case UiStatement.First + UiStatement.Period:
                     return SetPeriod((_view.Period + 1) % Math.Max(1, _facts.Cash.Periods.Length));
+                case UiStatement.First + UiStatement.Group:
+                    return Fold(arg);
+                case UiStatement.First + UiStatement.Line:
+                    return true;   // a line of the statement is read, a stop for the keys and the pad on the way down the list: a press asks nothing of the game
                 case FinanceFace.Answer:
                     return Answer(arg);
                 default:
@@ -126,6 +130,24 @@ namespace RealLifeOverhaul.Ui
         private bool SetPeriod(int period)
         {
             _view.Period = period;
+            return true;
+        }
+
+        // A day's band on Cash flow folds its lines away and brings them back, as its mark shows (the band was drawn with the
+        // mark and no press answered it: the error sound alone). The player's own choice, kept by the band's words, which the
+        // page applies when it lays the statement (FinanceFace.Folds): the facts are written afresh whenever the game's move.
+        private bool Fold(int group)
+        {
+            UiStatementModel statement = _facts.Cash.Statement;
+            if (statement == null || group < 0 || group >= statement.Groups.Length)
+            {
+                return false;
+            }
+            string day = statement.Groups[group].Label ?? string.Empty;
+            if (!_view.Folded.Remove(day))
+            {
+                _view.Folded.Add(day);
+            }
             return true;
         }
 

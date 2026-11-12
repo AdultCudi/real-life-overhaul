@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -43,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         public int Amount;                // the amount stepped to on Borrow, 0 for the most on offer
         public int Deposit, Term, Pick;   // a finance's deposit and term, and the shop or bank a business loan or a consolidation is with
         public int Period = 1;            // Cash flow: yesterday, 7 days, 30 days
+        public readonly HashSet<string> Folded = new HashSet<string>(StringComparer.Ordinal);   // Cash flow: the days whose band the player folded, by the band's words
         public string Account;            // Accounts: the row chosen, by its id
         public int Pay;                   // Accounts: the amount to pay or draw, 0 for what is due
         public int Rival = -1;            // Rivals: the row of the rich list chosen

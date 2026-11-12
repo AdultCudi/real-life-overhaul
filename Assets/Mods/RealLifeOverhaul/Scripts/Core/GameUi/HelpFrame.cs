@@ -157,6 +157,7 @@ namespace RealLifeOverhaul.GameUi
             Status.fontSize = 30f;
             Status.textWrappingMode = TextWrappingModes.NoWrap;
             Status.overflowMode = TextOverflowModes.Ellipsis;
+            TextRoom.On(Status);
             var headlineRect = (RectTransform)headline;
             headlineRect.sizeDelta = new Vector2(-1500f, headlineRect.sizeDelta.y);   // leaves the right of the bar to the status
 
@@ -199,6 +200,7 @@ namespace RealLifeOverhaul.GameUi
                 ((RectTransform)name).sizeDelta = new Vector2(860f, ((RectTransform)name).sizeDelta.y);
                 TopicName.textWrappingMode = TextWrappingModes.NoWrap;
                 TopicName.overflowMode = TextOverflowModes.Ellipsis;
+                TextRoom.On(TopicName);
                 TopicName.color = DarkLook.Text;
             }
             if (TopicCategory != null)

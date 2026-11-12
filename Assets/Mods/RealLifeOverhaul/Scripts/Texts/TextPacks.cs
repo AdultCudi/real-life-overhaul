@@ -274,20 +274,50 @@ namespace RealLifeOverhaul.Texts
             return string.IsNullOrEmpty(announced) ? Array.Empty<string>() : announced.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        /// <summary>The game's Workshop content folder from its data folder (…/steamapps/common/Big Ambitions/Big Ambitions_Data); null if not under Steam.</summary>
+        /// <summary>
+        /// The game's Workshop content folder from its data folder; null if not under Steam. The data folder lies at
+        /// another depth on each system (…/steamapps/common/Big Ambitions/Big Ambitions_Data on Windows,
+        /// …/steamapps/common/Big Ambitions/Big Ambitions.app/Contents on a Mac), so the folder named steamapps above it
+        /// is looked for, never a number of steps up.
+        /// </summary>
         public static string WorkshopOf(string dataPath, string appId)
         {
             try
             {
-                DirectoryInfo game = Directory.GetParent(dataPath);              // …/common/Big Ambitions
-                DirectoryInfo common = game != null ? game.Parent : null;          // …/common
-                DirectoryInfo apps = common != null ? common.Parent : null;        // …/steamapps
-                return apps != null ? Path.Combine(apps.FullName, "workshop", "content", appId) : null;
+                for (DirectoryInfo at = Directory.GetParent(dataPath); at != null; at = at.Parent)
+                {
+                    if (string.Equals(at.Name, "steamapps", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Path.Combine(at.FullName, "workshop", "content", appId);
+                    }
+                }
+                return null;
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        private static readonly string[] HomeAnchors = { "LocalLow", "Application Support", ".config" };   // where each system keeps a game's data: Windows, macOS, Linux
+
+        /// <summary>
+        /// The fixed folder as a status line names it, short enough for a notice: the system's folder for games' data,
+        /// then the folder itself ("LocalLow/…/RLO Texts" on Windows, "Application Support/…/RLO Texts" on a Mac); the
+        /// folder alone where no such folder is above it.
+        /// </summary>
+        public static string ShortHome(string home)
+        {
+            string[] parts = (home ?? string.Empty).Split(new[] { '/', Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            string leaf = parts.Length > 0 ? parts[parts.Length - 1] : Fixed;
+            for (int i = parts.Length - 2; i >= 0; i--)
+            {
+                if (Array.IndexOf(HomeAnchors, parts[i]) >= 0)
+                {
+                    return parts[i] + "/…/" + leaf;
+                }
+            }
+            return leaf;
         }
 
         /// <summary>The devices in llama.cpp's --list-devices output ("  Vulkan0: NAME (16000 MiB, 15000 MiB free)").</summary>
@@ -420,9 +450,16 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>Asks llama.cpp for its devices: a few seconds at most, once a session, off the game's thread.</summary>
+        /// <summary>
+        /// Asks llama.cpp for its devices: a few seconds at most, once a session, off the game's thread. It is llama.cpp's
+        /// Windows program, so on another system nothing is started and there are no devices.
+        /// </summary>
         public static string ListDevices(string exe, int timeoutMs)
         {
+            if (!HostSystem.Windows)
+            {
+                return null;
+            }
             try
             {
                 var info = new ProcessStartInfo(exe, "--list-devices")

@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Ui
         public WorkAmount[] Amounts = new WorkAmount[0];
         public string EmptyTitle, EmptyBody;
         public UiIcon EmptyIcon = UiIcon.Search;
-        public string SortLabel;                       // "Newest first", at the right of the tool row
+        public string SortLabel;                       // "Newest first", at the right of the tool row: the order the cards stand in
+        public bool Sorts;                             // the choice has another order to change to (a press of it changes the order)
         public string Why;
         public float CardHeightNow;                    // written by the layout: the height the cards stand at
         public int DescLines = 2;                      // written by the layout: the lines a course card's description takes (the most any card needs, so the cards are one height)

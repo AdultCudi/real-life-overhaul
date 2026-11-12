@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Planner
                 chip.Words.textWrappingMode = TextWrappingModes.Normal;
                 chip.Words.overflowMode = TextOverflowModes.Ellipsis;
                 chip.Words.alignment = TextAlignmentOptions.MidlineLeft;
+                TextRoom.On(chip.Words);
                 AppShell.Width(words, 100f, true);
             }
             var layout = copy.GetComponent<HorizontalLayoutGroup>();

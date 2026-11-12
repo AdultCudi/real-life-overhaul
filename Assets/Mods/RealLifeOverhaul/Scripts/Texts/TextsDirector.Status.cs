@@ -127,6 +127,11 @@ namespace RealLifeOverhaul.Texts
                 key = "reallife_texts_status_looking";
                 return data;
             }
+            if (_aside)
+            {
+                key = "reallife_texts_status_windows";   // the packs do not run on this system: said plainly, never "no pack found"
+                return data;
+            }
             if (_pack == null && _refused != null)
             {
                 key = "reallife_texts_status_failed";
@@ -144,7 +149,7 @@ namespace RealLifeOverhaul.Texts
             if (_pack == null)
             {
                 key = "reallife_texts_status_none";
-                data["folder"] = "LocalLow/\u2026/" + TextPacks.Fixed;
+                data["folder"] = TextPacks.ShortHome(TextsGame.Home);
                 return data;
             }
             data["pack"] = _pack.Name;

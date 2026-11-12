@@ -333,6 +333,7 @@ namespace RealLifeOverhaul.Outlook
             Style(t, size, colour, align, bold, wrap, caps, spacing);
             OutlookKit.Set(t, text);
             OutlookKit.Place(t.rectTransform, x, y, w, h);
+            TextRoom.On(t);
             return t;
         }
 

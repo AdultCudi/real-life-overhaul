@@ -93,10 +93,46 @@ namespace RealLifeOverhaul.Ui
         {
             if (!Shows(b))
             {
+                UiRefusals.Because(Refusal(b, true));
                 return false;
             }
             Hand(b);
             return true;
+        }
+
+        /// <summary>
+        /// A button pressed as a click presses it, where the game keeps the button's own object switched off until the mouse
+        /// is over its row (UI.HoverEffect switches a row's outline, which holds the row's button, on under the pointer and
+        /// off again: an order's goods in the items list). The kit hides the game's rows from the pointer, so that object
+        /// never comes on, and asking whether it shows would refuse every press. The row itself must show and the button
+        /// must not be held; false otherwise.
+        /// </summary>
+        public static bool PressUnder(Button b, Component row)
+        {
+            if (!ShowsUnder(b, row))
+            {
+                UiRefusals.Because(b != null && row != null && !row.gameObject.activeInHierarchy ? "the game's row '" + row.name + "' does not show" : Refusal(b, false));
+                return false;
+            }
+            Hand(b);
+            return true;
+        }
+
+        /// <summary>Whether a button the game switches on only under the pointer could be pressed now: its row shows and it is not held.</summary>
+        public static bool ShowsUnder(Button b, Component row) => b != null && row != null && row.gameObject.activeInHierarchy && b.interactable;
+
+        // Why a button takes no press, in words for the refusal's line: made only when one is refused.
+        private static string Refusal(Button b, bool mustShow)
+        {
+            if (b == null)
+            {
+                return "the game's button is not there";
+            }
+            if (mustShow && !b.gameObject.activeInHierarchy)
+            {
+                return "the game's button '" + b.name + "' is switched off (its own object or one above it)";
+            }
+            return "the game's button '" + b.name + "' is held by the game (not interactable)";
         }
 
         /// <summary>
@@ -115,6 +151,25 @@ namespace RealLifeOverhaul.Ui
         public static bool Set(Toggle t, bool on)
         {
             if (t == null || !t.gameObject.activeInHierarchy || !t.interactable)
+            {
+                return false;
+            }
+            using (HotSpots.Game())
+            {
+                t.isOn = on;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// A toggle set through itself while the game keeps the view it stands in switched off for the page shown (BizMan's header,
+        /// with its open switch, on the building's and the real estate's tabs): the caller has seen that the toggle and its own row
+        /// are on, so only that view hides it, and its listeners hear the change as they would a click. False when it is not there,
+        /// switched off itself or held.
+        /// </summary>
+        public static bool SetUnder(Toggle t, bool on)
+        {
+            if (t == null || !t.gameObject.activeSelf || !t.interactable)
             {
                 return false;
             }

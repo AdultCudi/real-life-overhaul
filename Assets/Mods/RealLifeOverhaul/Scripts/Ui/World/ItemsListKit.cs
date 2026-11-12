@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UI;
 using UI.Dialog;
+using UI.Notification;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -57,8 +58,10 @@ namespace RealLifeOverhaul.Ui
     /// name and price, and in an order its add button, or its amount between the game's minus and plus. Every press goes
     /// through the game's own row (its add button, its amount's buttons and field, its search), so an order's rules (the
     /// most it holds, a row taken out at nought) stay the order's. The list the game filters is the list shown. NPCs order
-    /// no goods through this window, so there is no other side. Cost: a layout as something changes; four times a second a
-    /// walk of the rows' switches and amounts.
+    /// no goods through this window, so there is no other side. The game keeps a row's add button on an outline it
+    /// switches on only under the mouse (UI.HoverEffect), which never happens under the kit, so the add is pressed and
+    /// read through UiWidgets.PressUnder and ShowsUnder: asking whether that button shows refused every add (1.0.0 to
+    /// 1.0.2). Cost: a layout as something changes; four times a second a walk of the rows' switches and amounts.
     /// </summary>
     public sealed class ItemsListScreen : IUiScreen, IUiTyping
     {
@@ -184,12 +187,35 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                row.Add = Interactable(GameContract.ItemsAdd, d) ? UiGoodsAdd.Add : UiGoodsAdd.Full;
+                row.Add = CanAdd(d) ? UiGoodsAdd.Add : UiGoodsAdd.Full;
             }
             return row;
         }
 
         private static bool Interactable(GameMember member, object owner) => member.Field != null && member.Field.GetValue(owner) is Button b && b.interactable;
+
+        // The row's add button as the game's own row would take a click: by the same test the press uses, so the plus is
+        // never drawn ready and then refused.
+        private static Button AddButton(DeliveryItemEntry d) => d != null && GameContract.ItemsAdd.Field != null ? GameContract.ItemsAdd.Field.GetValue(d) as Button : null;
+
+        private static bool CanAdd(DeliveryItemEntry d) => UiWidgets.ShowsUnder(AddButton(d), d);
+
+        // The add pressed on the game's own row. An order that holds all it may says so in words: the greyed plus alone
+        // gave only the error sound.
+        private static bool Add(DeliveryItemEntry d)
+        {
+            if (UiWidgets.PressUnder(AddButton(d), d))
+            {
+                return true;
+            }
+            Button b = AddButton(d);
+            if (d != null && d.gameObject.activeInHierarchy && b != null && !b.interactable)
+            {
+                UiRefusals.Because("the order holds all it may (the game holds the row's add button)");
+                Notifications.Show(NotificationType.Warning, "reallife_ui_world_items_full", null, 8f);
+            }
+            return false;
+        }
 
         private string Title()
         {
@@ -224,7 +250,7 @@ namespace RealLifeOverhaul.Ui
                 AmountSelector a = _order[i].AmountSelector;
                 bool on = a != null && a.gameObject.activeSelf;
                 seen = unchecked(seen * 31 + (on ? a.Amount + 1 : 0));
-                seen = unchecked(seen * 31 + (on ? (Interactable(GameContract.ItemsMore, a) ? 2 : 1) : Interactable(GameContract.ItemsAdd, _order[i]) ? 4 : 3));
+                seen = unchecked(seen * 31 + (on ? (Interactable(GameContract.ItemsMore, a) ? 2 : 1) : CanAdd(_order[i]) ? 4 : 3));
             }
             string title = Title(), search = Search();
             seen = unchecked(seen * 31 + (title != null ? title.GetHashCode() : 0));
@@ -238,7 +264,7 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiItemsList.AddCommand:
-                    return d != null && UiWidgets.Press(GameContract.ItemsAdd.Field?.GetValue(d) as Button);
+                    return Add(d);
                 case UiItemsList.LessCommand:
                     return d != null && d.AmountSelector != null && UiWidgets.Press(GameContract.ItemsLess.Field?.GetValue(d.AmountSelector) as Button);
                 case UiItemsList.MoreCommand:

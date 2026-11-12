@@ -141,6 +141,9 @@ namespace RealLifeOverhaul.Utilities
             return false;
         }
 
+        /// <summary>A business stands closed by the game's own switch now (BuildingRegistration.temporarilyClosed), whoever set it.</summary>
+        public static bool Closed(BuildingRegistration reg) => reg != null && reg.temporarilyClosed;
+
         /// <summary>The people at a home: the player and whoever lives there with them; a business has none.</summary>
         public static int People(PlaceInfo place)
         {

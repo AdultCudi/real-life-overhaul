@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
             }
         }
         public int Filter;        // a filter chip chosen
-        public int Sub;           // a sub page (a person's page in Open Roles, a haggle); 0 for none
+        public int Sort;          // a catalogue's order chosen: 0 the tab's own, 1 by each row's Order figure
+        public int Sub;          // a sub page (a person's page in Open Roles, a haggle); 0 for none
         public int Pick;          // an id the page carries from one tab to another (a post, a course) or into a sub page
         public int Aside;         // the role chosen in a squad page's list
         public int PageTab;       // a person page's tab: File, Career, Contract
@@ -56,6 +57,7 @@ namespace RealLifeOverhaul.Ui
         {
             Row = -1;
             Filter = 0;
+            Sort = 0;
             Sub = 0;
             Aside = 0;
             PageTab = 0;

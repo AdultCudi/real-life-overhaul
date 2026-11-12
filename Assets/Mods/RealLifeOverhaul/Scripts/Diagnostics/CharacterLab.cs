@@ -83,7 +83,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                string root = Application.persistentDataPath;
+                string root = LogPlaceRules.Folder(Application.consoleLogPath, Application.persistentDataPath);   // next to Player.log, wherever the system keeps it
                 string folder = Path.Combine(root, "RealLifeOverhaul_shots");
                 Directory.CreateDirectory(folder);
                 string stamp = DateTime.Now.ToString("HHmmss");

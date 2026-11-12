@@ -25,12 +25,17 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
    - `Make(found)`: the kit screen (`IUiScreen`) that mirrors it.
 2. **Mirror, never compute.** In the screen, read the game's widgets through `UiWidgets` (`Shows`, `There`, `Label`,
    `Text`, `Tint`, `On`, `Options`, `Field`) and press them through it (`Press`, `Set`, `Pick`, `Type`, `Slide`, `Hand`
-   for a button already checked, or `Calling(root, "MethodName")` for a button the game wired in the Inspector), never
+   for a button already checked, `SetUnder` for a toggle whose own view the game switches off on the page shown while the
+   kit still shows its switch, or `Calling(root, "MethodName")` for a button the game wired in the Inspector), never
    `onClick.Invoke()` itself: what the game's listeners do (View on map opens the city map) is then the game's own work
    in the session record, not the mod's (RLO-PERF-025). Going Public hides tabs, disables buttons
    and tints cells: what the vanilla object says is the truth. Look at a signature of the game's state a few times a
    second (`Every = 0.25f`), never every frame, and lay out only when it changed. A mod's addition inside the screen is
-   offered as an entry that calls `host.Classic()`: the game's own view until the screen closes.
+   offered as an entry that calls `host.Classic()`: the game's own view until the screen closes. A press that answers
+   false gets the host's error cue and one line of Player.log (below, "Every press reaches the game, or is said"), and
+   nothing the player can read, so a screen whose press can come to nothing says why on its own page (BizMan's
+   `Answered`, a line at the page's foot): each action a page offers has its own case, and no range of numbers is ever
+   asked before the cases.
 3. **Make one host** for the screen, once: `new UiGameHost(new MyGameScreen())`, kept in a static field. Call its
    `Install()` from `UiDirector.Slow` while `UiScreenSwitches.On(id)`, `Remove(why)` when the switch is off, and
    `Rearm()` with the others when the city goes. A call or anything the game must run in its own view:
@@ -72,6 +77,31 @@ so not a leaf of them may be given a group of the kit's. Such a panel goes onto 
 (`UiOverCanvas.Make`), and `UiHeldGroup` holds the one fade group the game already gives the panel at nothing while the
 kit draws it, remembering what the game writes there and giving it back the moment the kit stops. The item panel
 (`Scripts/Ui/Buy/ItemPanelKit.cs`) is the example.
+
+## Every press reaches the game, or is said
+
+A press that answers false gets the error sound and nothing else. Five rules keep that from hiding a fault:
+
+- **Rows are where the game makes them.** The game copies a row template beside the template (`template.parent`,
+  `BuyKits.Copies`). An object the game switches on and off for a whole list may be a scroll view two levels above its
+  rows (the purchase panel's `itemsContainer`): never look for rows among its children.
+- **Draw and press by one test.** What draws a control ready must be the test its press applies. `UiWidgets.Press`
+  wants the button's object switched on; a button on an outline the game switches on only under the mouse
+  (`UI.HoverEffect`: an order's add button) is read with `UiWidgets.ShowsUnder` and pressed with `PressUnder`.
+- **Every button of the game's has its place.** A row of the game's with several buttons (a cargo slot: the slot, its
+  action, its sell, its discard) gets each of them on the kit, or the way to the game's own view (`Classic`).
+- **A refusal is written and, where it is the player's doing, said.** The piece that sends a press calls
+  `UiRefusals.Begin()` before it and `UiRefusalLog.Say(...)` when it is refused: one line of Player.log with the screen,
+  the control and the reason, with or without Developer diagnostics. `UiWidgets` gives the reason for a game button; a
+  screen that refuses for a rule of its own says `UiRefusals.Because(...)` and shows the player a notice in words.
+- **One refusal, one line.** A screen that writes its own line for a refused press, with what only it knows (BizMan's
+  `Answered`: the page, the place, what the page's foot says, a run of the same press counted, with the widget's
+  reason from `UiRefusals.Why`; a stack's tile, `CargoTake`: what the holder held), calls `UiRefusals.Told()`; the host
+  then writes none.
+
+EconomyCheck (`UiPressChecks.cs`, `--ui-press`) reads every screen's sources: each command its samples lay out as a
+target is named by its `Press`, and no range of numbers is asked before the case of a number inside it. The game's files
+are read by `RealLifeOverhaul.Build/Census/game_ui_census.py` after a game update.
 
 ## Checked offline
 

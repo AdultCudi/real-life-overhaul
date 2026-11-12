@@ -73,18 +73,32 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool Drawn(float[] trend)
         {
-            if (trend == null || trend.Length < 2)
-            {
-                return false;
-            }
-            float low = trend[0], high = trend[0];
-            for (int i = 1; i < trend.Length; i++)
-            {
-                low = Math.Min(low, trend[i]);
-                high = Math.Max(high, trend[i]);
-            }
-            return high - low > 1e-6f;
+            return SparkSpan(trend, out float low, out float high) && high - low > 1e-6f;
         }
+
+        /// <summary>
+        /// The lowest and highest of a sparkline's values that can be drawn (UiChart.Real). False when fewer than two can:
+        /// there is then no line. The renderer (UiSpark) draws by this, so one NaN in a trend never puts every point at NaN.
+        /// </summary>
+        public static bool SparkSpan(float[] values, out float lo, out float hi)
+        {
+            lo = float.MaxValue;
+            hi = float.MinValue;
+            int real = 0;
+            for (int i = 0; values != null && i < values.Length; i++)
+            {
+                if (UiChart.Real(values[i]))
+                {
+                    lo = Math.Min(lo, values[i]);
+                    hi = Math.Max(hi, values[i]);
+                    real++;
+                }
+            }
+            return real >= 2;
+        }
+
+        /// <summary>A value's share of a sparkline's height, from its foot (0) to its top (1). A flat line stands on its foot.</summary>
+        public static float SparkShare(float value, float lo, float hi) => Unit((value - lo) / Math.Max(1e-6f, hi - lo));
 
         /// <summary>A sparkline of values, oldest first, drawn as one line in a role's colour.</summary>
         public static int Spark(UiScene s, UiAt at, float x, float y, float w, float h, float[] values, UiRole tint)

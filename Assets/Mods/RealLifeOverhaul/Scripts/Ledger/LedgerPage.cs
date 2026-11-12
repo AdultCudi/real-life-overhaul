@@ -425,6 +425,7 @@ namespace RealLifeOverhaul.Ledger
             t.paragraphSpacing = 0f;
             t.wordWrappingRatios = Spread;
             Put(t.rectTransform, 0f, 0f, 10f, 10f);
+            TextRoom.On(t);
             return t;
         }
 

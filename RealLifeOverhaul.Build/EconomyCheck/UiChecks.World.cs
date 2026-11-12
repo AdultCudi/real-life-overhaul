@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -328,7 +329,8 @@ internal static partial class Program
     // The owner's choice: driving, a small card (its name, the speed, the parking zone, Park and Sell as key chips) at the
     // bottom right over the phone's card, right edges lined up and a grid step between, its foot over the chips, as low as
     // that allows; the notice cards at the top right are read and, where they reach down to it, only their lower part is
-    // under it. The full panel (a parked car walked up to or clicked) stays as it was.
+    // under it. The card is for a car the player drives; what else the game counts a vehicle in use (a hand truck, a cart,
+    // a scooter) keeps the full panel with its cargo tiles (VehiclePanelChecks).
     private static void ItemPanelKeysChecks(UiWords en)
     {
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "HUD");
@@ -383,9 +385,10 @@ internal static partial class Program
               && box.W == w && box.X == x1 && box.Y == y1,
             "item panel: driving, the card stands at the bottom right over the phone's card (right edges lined up, a grid step between), clear of the map's card, the key chips and the notices (x "
             + x1 + " to " + (x1 + w) + ", y " + y1 + " to " + (y1 + h) + ")");
-        Check(w <= car.PhoneW && h <= 130f && panels == 1 && chips == 2 && s.FindNode(UiItemPanel.CargoCommand, 0) < 0,
-            "item panel: driving, the card is no wider than the phone's card and at most 130 px high at 1920 x 1080, one line each for the name, the speed and the parking, Park and Sell as two key chips ("
-            + w + " x " + h + ", chips" + chipWidths + ")");
+        UiItemPanelModel plain = UiSamples.ItemPanel(en, "vehicle_driving_plain");
+        Check(w <= car.PhoneW && h <= UiItemPanel.CompactMost && UiItemPanel.Height(plain) <= 130f && panels == 1 && chips == 2,
+            "item panel: driving, the card is no wider than the phone's card and at most " + UiItemPanel.CompactMost + " px high at 1920 x 1080 with the fuel, the condition and the cargo's count on it"
+            + " (130 px with the game's fuel and damage off), Park and Sell as two key chips (" + w + " x " + h + ", plain " + UiItemPanel.Height(plain) + ", chips" + chipWidths + ")");
         car.NoticesH = 800f - car.NoticesY;   // a long stack of notices reaching down past the phone's top: the card keeps its place, over the stack's lower part only
         UiItemPanel.Place(car, frame, out float x2, out float y2);
         Check(x2 == x1 && y2 == y1 && UiItemPanel.OverNotices(car, frame),
@@ -399,7 +402,7 @@ internal static partial class Program
         Check(x3 + w <= frame.Width - UiTokens.S4 && x3 + w > frame.Width - UiTokens.S4 - UiTokens.Grid && y3 + h <= chipsY - UiTokens.S2 && y3 + h > chipsY - UiTokens.S2 - UiTokens.Grid
               && x4 == x3 && y4 == UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h),
             "item panel: with no phone it stands at the bottom right above the bar, its foot over the key chips where they run under it");
-        // The full panel, for a parked car walked up to or clicked: as it was, its strip, readings, cargo tiles and buttons.
+        // The full panel, for whatever is not a car being driven: as it was, its strip, readings, cargo tiles and buttons.
         UiItemPanelModel parked = UiSamples.ItemPanel(en, "vehicle");
         var full = new UiScene();
         UiItemPanel.Lay(full, parked, frame, true, UiDefaultKeys.Keyboard);
@@ -410,7 +413,7 @@ internal static partial class Program
             tiles += full.Nodes[i].Command == UiItemPanel.CargoCommand ? 1 : 0;
         }
         Check(!parked.Compact && UiItemPanel.WidthOf(parked) == UiItemPanel.Width && UiItemPanel.Height(parked) > 130f && buttons == parked.Actions.Length && tiles == parked.Cargo.Length,
-            "item panel: a parked car's full panel is unchanged, as wide as the info panel with its readings, cargo tiles and full buttons");
+            "item panel: the full panel is unchanged, as wide as the info panel with its readings, cargo tiles and full buttons");
         string scripts = ModScripts();
         string kit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "ItemPanelKit.cs"));
         string hud = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Hud", "HudHost.cs"));
@@ -421,8 +424,182 @@ internal static partial class Program
               && kit.Contains("ShellNotices.StackBox(_frameW, _frameH, out _m.NoticesX, out _m.NoticesY, out _m.NoticesW, out _m.NoticesH);") && kit.Contains("RectTransform phone = PhoneKit.Rect;")
               && kit.Contains("Math.Max(_order, UiHostRules.MinimapOrder(hud.CanvasOrder))") && !keepCode.Contains("Lift()") && !keepCode.Contains("HudHost") && !keepCode.Contains("PhoneKit")
               && !keepCode.Contains("ShellNotices") && hud.Contains("_keysW = shares ? kw / frame.Width : 0f;") && notices.Contains("UiNotices.StackBox(_m, frame, out float bx")
-              && hud.Contains("!HudStatusGame.Shows") && kit.Contains("_m.Compact = car != null && car.controlledByPlayer && PlayerHelper.IsUsingVehicle;"),
-            "item panel: the small card only while the player drives the car; the key chips, the phone's card and the notices' stack read four times a second with the panel's other readings, nothing a frame");
+              && hud.Contains("!HudStatusGame.Shows") && kit.Contains("_m.Compact = UiItemPanel.DrivingCard(car != null, car != null && car.controlledByPlayer, PlayerHelper.IsUsingVehicle,"),
+            "item panel: the small card only while the player drives a car; the key chips, the phone's card and the notices' stack read four times a second with the panel's other readings, nothing a frame");
+        VehiclePanelChecks();
+    }
+
+    // A player's report after 1.0 (13 Nov): no box could be taken off a hand truck or out of a vehicle, the fuel gauge was
+    // gone and so was the vehicle's status. The small card stood for everything the game counts a vehicle in use, hand
+    // trucks, carts and scooters too, and read no cargo, no fuel and no condition; and manage cargo never pressed the game's
+    // tile, its one way to take a stack out. Held here: which vehicle gets the card, what the card shows in every
+    // language and how high it stands, the full panel's tiles, Take in manage cargo, and the reason a refused press logs.
+    private static void VehiclePanelChecks()
+    {
+        Check(UiItemPanel.DrivingCard(true, true, true, false, false, 0), "vehicle panel: a car the player drives is the small card");
+        Check(!UiItemPanel.DrivingCard(true, true, true, true, true, 3) && !UiItemPanel.DrivingCard(true, true, true, true, true, 0)
+              && !UiItemPanel.DrivingCard(true, true, true, true, false, 0),
+            "vehicle panel: a hand truck or a cart the player pushes keeps the full panel, loaded or empty");
+        Check(!UiItemPanel.DrivingCard(true, true, true, false, true, 2) && !UiItemPanel.DrivingCard(true, true, true, false, true, 0),
+            "vehicle panel: a scooter, whose panel the game gives cargo tiles, keeps the full panel, loaded or empty");
+        Check(!UiItemPanel.DrivingCard(true, true, true, false, false, 1), "vehicle panel: any vehicle whose tiles show keeps the full panel, so no tile is ever left off the card");
+        Check(!UiItemPanel.DrivingCard(false, false, true, false, false, 0) && !UiItemPanel.DrivingCard(true, false, true, false, false, 0)
+              && !UiItemPanel.DrivingCard(true, true, false, false, false, 0),
+            "vehicle panel: a thing in the hands, or a vehicle the player does not drive now, is never the card");
+
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "HUD");
+        string[] needs = { "reallife_car_note_service", "reallife_car_note_tyres", "reallife_car_note_brakes", "reallife_car_note_breakdown" };
+        var s = new UiScene();
+        foreach (string lang in ModLanguages.All)
+        {
+            UiWords t = UiWords(lang);
+            foreach (string state in new[] { "vehicle_driving", "vehicle_driving_needs" })
+            {
+                UiItemPanelModel car = UiSamples.ItemPanel(t, state);
+                UiItemPanel.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
+                UiReading fuel = car.Readings[1], condition = car.Readings[2];
+                UiItem label = TextOf(s, fuel.Label), figure = TextOf(s, fuel.Value), range = TextOf(s, fuel.Note), cargo = TextOf(s, car.CargoValue), name = TextOf(s, car.Name);
+                float h = UiItemPanel.Height(car), gauge = GaugeOn(s, label.Y);
+                string where = state + " in " + lang;
+                int keyRows = KeyRows(s);
+                Check(car.Compact && keyRows >= 1 && keyRows <= 2 && (lang != "en" || keyRows == 1) && h <= UiItemPanel.CompactMost + (keyRows - 1) * UiItemPanel.CompactKeyRow
+                      && UiItemPanel.WidthOf(car) == UiItemPanel.CompactWidth,
+                    "vehicle panel: the driving card with the fuel, the condition and the cargo's count stays at most " + UiItemPanel.CompactMost
+                    + " px high with its keys on one row of chips (always in English), a row of chips more where a language's keys need two: " + where + " (" + h + ", " + keyRows + ")");
+                Check(label.Text != null && figure.Text != null && range.Text != null && SameLine(label, figure) && SameLine(figure, range) && gauge >= UiTokens.S8
+                      && UiTextRules.Fits(figure.Text, figure.Style, figure.W) && UiTextRules.Fits(range.Text, range.Style, range.W) && range.X + range.W <= figure.X,
+                    "vehicle panel: the driving card's fuel line has its name, a gauge, how far the tank goes and its figure, each whole: " + where + " (gauge " + gauge + " px)");
+                Check(cargo.Text != null && name.Text != null && SameLine(cargo, name) && name.W >= 96f && name.X + name.W <= cargo.X && s.FindNode(UiItemPanel.CargoCommand, 0) < 0,
+                    "vehicle panel: the driving card says how much the car carries on its head line, the name keeping room, and has no tile (the game gives a car none): " + where
+                    + " (name " + name.W + " px)");
+                foreach (string need in state == "vehicle_driving_needs" ? needs : new string[0])
+                {
+                    car.Readings[2].Value = t(need, need);
+                    UiItemPanel.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
+                    UiItem needWords = TextOf(s, car.Readings[2].Value), conditionLabel = TextOf(s, condition.Label);
+                    Check(needWords.Text != null && conditionLabel.Text != null && SameLine(needWords, conditionLabel) && UiTextRules.Fits(needWords.Text, needWords.Style, needWords.W)
+                          && needWords.X >= conditionLabel.X + conditionLabel.W && UiItemPanel.Height(car) == h,
+                        "vehicle panel: what the car needs stands whole on the condition's line, no line added: " + where + " (" + need + ")");
+                }
+            }
+            foreach (string state in new[] { "hand_truck_used", "hand_truck_foreign" })
+            {
+                UiItemPanelModel cart = UiSamples.ItemPanel(t, state);
+                UiItemPanel.Lay(s, cart, frame, true, UiDefaultKeys.Keyboard);
+                int tiles = 0, held = 0, park = 0;
+                for (int i = 0; i < s.NodeCount; i++)
+                {
+                    bool tile = s.Nodes[i].Command == UiItemPanel.CargoCommand;
+                    tiles += tile && s.Nodes[i].W >= UiTokens.S8 && s.Nodes[i].H >= UiTokens.S8 ? 1 : 0;
+                    held += tile && s.Nodes[i].Disabled ? 1 : 0;
+                    park += s.Nodes[i].Command == UiItemPanel.ActionCommand && !s.Nodes[i].Disabled ? 1 : 0;
+                }
+                bool foreign = state == "hand_truck_foreign";
+                Check(!cart.Compact && tiles == cart.Cargo.Length && tiles == 3 && held == (foreign ? 3 : 0) && park == 1 && TextOf(s, cart.CargoValue).Text != null,
+                    "vehicle panel: a hand truck in use has the full panel, a tile each stack to press (held on another player's), its count and Park: " + state + " in " + lang);
+            }
+            UiCargoModel truck = UiSamples.Cargo(t, "truck");
+            UiCargo.Lay(s, truck, frame, true, UiDefaultKeys.Keyboard);
+            int take = s.FindNode(UiCargo.CatalogueCommand + UiCatalogue.Action, 0);
+            Check(truck.Catalogue.Actions.Length > 0 && truck.Catalogue.Actions[0].Label == t("action_take", "Take") && take >= 0 && !s.Nodes[take].Disabled,
+                "vehicle panel: manage cargo offers Take first among the chosen stack's buttons: " + lang);
+        }
+
+        // The press itself: whether the game's click took anything, and why not.
+        Check(CargoTakeRules.Took(3, 40, 2, 30, false, false) && CargoTakeRules.Took(3, 40, 3, 38, false, false) && CargoTakeRules.Took(3, 40, 3, 40, true, false)
+              && CargoTakeRules.Took(3, 40, 3, 40, false, true) && !CargoTakeRules.Took(3, 40, 3, 40, false, false),
+            "cargo take: a stack gone, pieces merged away, the hands changed or a cart taken out all count as taken; nothing changed does not");
+        Check(CargoTakeRules.Why(false, true, true, true, false, false, false, false, false) == CargoTakeRefusal.NotThere
+              && CargoTakeRules.Why(true, false, true, true, false, false, false, false, false) == CargoTakeRefusal.Held
+              && CargoTakeRules.Why(true, true, false, true, false, false, false, false, false) == CargoTakeRefusal.NotYours
+              && CargoTakeRules.Before(CargoTakeRefusal.NotThere) && CargoTakeRules.Before(CargoTakeRefusal.Held) && CargoTakeRules.Before(CargoTakeRefusal.NotYours)
+              && !CargoTakeRules.Before(CargoTakeRefusal.NoRoom) && !CargoTakeRules.Before(CargoTakeRefusal.Unknown) && !CargoTakeRules.Before(CargoTakeRefusal.SameHolder),
+            "cargo take: a tile that is gone or held, and another player's vehicle, are refused before the game's button is pressed");
+        Check(CargoTakeRules.Why(true, true, true, true, false, false, true, false, true) == CargoTakeRefusal.DriverGarage
+              && CargoTakeRules.Why(true, true, true, true, false, false, true, true, true) == CargoTakeRefusal.NoRoom
+              && CargoTakeRules.Why(true, true, true, true, false, false, true, false, false) == CargoTakeRefusal.Unknown,
+            "cargo take: off the vehicle in use, the private driver's garage refuses, an open storage with no room refuses, anything else is not known");
+        Check(CargoTakeRules.Why(true, true, true, false, true, false, true, true, false) == CargoTakeRefusal.SameHolder
+              && CargoTakeRules.Why(true, true, true, false, false, true, true, true, false) == CargoTakeRefusal.CartNeedsFreeHands
+              && CargoTakeRules.Why(true, true, true, false, false, false, true, true, false) == CargoTakeRefusal.NoRoom
+              && CargoTakeRules.Why(true, true, true, false, false, false, false, true, false) == CargoTakeRefusal.Unknown,
+            "cargo take: out of manage cargo, the same holder moves nothing, a cart wants free hands, a full box or hand truck has no room");
+        var words = new HashSet<string>(StringComparer.Ordinal);
+        bool said = true;
+        foreach (CargoTakeRefusal why in Enum.GetValues(typeof(CargoTakeRefusal)))
+        {
+            string line = CargoTakeRules.Words(why);
+            said &= why == CargoTakeRefusal.None || (!string.IsNullOrEmpty(line) && line.Length > 20 && !line.EndsWith(".") && words.Add(line));
+        }
+        Check(said, "cargo take: every refusal has its own reason in plain words for the log's line");
+
+        // In the sources: the card's rule, the tiles and readings no longer left out, the press through the game's own tile.
+        string scripts = ModScripts();
+        string kit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "ItemPanelKit.cs"));
+        string cargoScreen = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "CargoScreen.cs"));
+        string takeCode = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Buy", "CargoTake.cs"));
+        string contract = File.ReadAllText(System.IO.Path.Combine(scripts, "Core", "GameContract.Buy.cs"));
+        Check(kit.Contains("car != null && car.vehicleType != null && car.vehicleType.spawnInPlayerObject, car != null && car.showCargoInItemPanel, tiles);")
+              && kit.Contains("int tiles = Stacks();") && !kit.Contains("&& !_m.Compact)") && !kit.Contains("_m.Compact && row != parking"),
+            "vehicle panel: the card is decided by the game's own facts (a hand vehicle, a panel with tiles, the tiles that show), and neither the tiles nor a reading is left out for it");
+        Check(kit.Contains("reading.Note = range != null ? _rangeShort : null;") && kit.Contains("reading.Value = CarDash.Shown;") && kit.Contains("if (shown || (_m.Compact && _cargoRow))")
+              && kit.Contains("_readings.Insert(0, speed);"),
+            "vehicle panel: the driving card's fuel line carries the range, its condition line what the car needs, its head the game's cargo count, the speed first");
+        Check(kit.Contains("CargoTake.Press(_slots[arg] != null ? _slots[arg].GetComponent<CargoItemUi>() : null, Holder(), _mine, _car != null, \"the item panel\");")
+              && kit.Contains("GameContract.PanelStacks") && kit.Contains("Disabled = car != null && !_mine")
+              && contract.Contains("PanelStacks = Field(UiItemPanel, Game, \"UI.ItemPanel.ItemPanelUI\", \"_cargoItems\", \"List<CargoItem>\");"),
+            "vehicle panel: a tile's press is the game's own click on its tile, on the tiles the game holds now, never on another player's vehicle");
+        Check(cargoScreen.Contains("return Take();   // the chosen stack pressed is a click on the game's tile: it takes the stack") && cargoScreen.Contains("if (arg == _take && arg >= 0)")
+              && cargoScreen.Contains("CargoTake.Press(_stacks[at] != null ? _stacks[at].GetComponent<CargoItemUi>() : null, _ui.currentCargoHolder, _mine, false, \"manage cargo\");")
+              && cargoScreen.Contains("Button tile = BuyKits.Get<Button>(GameContract.SlotButton, stack);") && cargoScreen.Contains("_mine = CargoTake.Mine(holder);"),
+            "vehicle panel: manage cargo's Take and a press on the chosen stack are the game's own click on its tile");
+        Check(takeCode.Contains("UiWidgets.Hand(tile);") && takeCode.Contains("Meta.Dev.Always(UiDirector.Logger, \"UI check (cargo tile): '\"") && takeCode.Contains("CargoTakeRules.Words(why)")
+              && takeCode.Contains("return GoingPublic.MineVehicle(all[i]);") && !takeCode.Contains("Update()"),
+            "cargo take: the game's tile is pressed as a click presses it, a press that takes nothing writes one line with its reason whatever the diagnostics switch, nothing a frame");
+        Check(WhatsNewHas(LocaleFile("en"), "a box could not be taken off a hand truck or out of a vehicle"), "vehicle panel: What's new tells of the fix in English");
+    }
+
+    // The first text of a scene that says these words; an empty item when none does.
+    private static UiItem TextOf(UiScene s, string text)
+    {
+        for (int i = 0; text != null && i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Text && s.Items[i].Text == text)
+            {
+                return s.Items[i];
+            }
+        }
+        return default(UiItem);
+    }
+
+    // How many rows the driving card's key chips stand in.
+    private static int KeyRows(UiScene s)
+    {
+        var rows = new HashSet<float>();
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            if (s.Nodes[i].Command == UiItemPanel.ActionCommand && s.Nodes[i].H == UiTokens.KeyCap)
+            {
+                rows.Add(s.Nodes[i].Y);
+            }
+        }
+        return rows.Count;
+    }
+
+    // Two texts on one line of a card, whatever their sizes: their middles at one height.
+    private static bool SameLine(UiItem a, UiItem b) => Math.Abs(a.Y + a.H / 2f - (b.Y + b.H / 2f)) <= UiTokens.S1;
+
+    // The width of the meter's track on the line at this height; 0 when the line has none.
+    private static float GaugeOn(UiScene s, float y)
+    {
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Box && s.Items[i].Fill == UiRole.Track && s.Items[i].Y >= y && s.Items[i].Y < y + UiTokens.PairRow)
+            {
+                return s.Items[i].W;
+            }
+        }
+        return 0f;
     }
 
     // The wave 2 critic's findings on the buying and world screens (3 Nov), each held by its sample.

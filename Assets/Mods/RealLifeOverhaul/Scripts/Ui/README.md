@@ -167,7 +167,11 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   end), bars by category (each its category's colour and value, every category named) and a market's candles over their
   volume, on a band with a round-stepped value axis and hairline rules. Each point is a target read in a slate card by
   focus or by the mouse resting on it (`IUiPointing`). Use it where a trend or a comparison is the point; not for a
-  single figure (`Figures` with its spark) or a share of a whole (`Donut`).
+  single figure (`Figures` with its spark) or a share of a whole (`Donut`). Whatever the values, nothing is drawn
+  outside the plot. A bar is a length from nothing, so a bar chart's axis always holds nothing and a loss hangs down
+  from its line. A line's axis may fit its values. A value that is no number (`UiChart.Real`) is left out, and ticks
+  that would read alike take a wider step. The sparkline, the donut, the ring and the gauge hold the same
+  (EconomyCheck `--charts`, UiChecks.ChartPlot.cs).
 - **Catalogue** (`UiCatalogue`): cards of goods or choices in a grid that scrolls inside its frame, each its picture on
   a slate tile (the game's own, through `UiPictures`, laid in its own shape and never stretched, or a glyph in its
   colour), its name, its price and a state chip, the chosen card's foot cyan, and its detail beside the grid with the
@@ -285,6 +289,11 @@ EconomyCheck's `UiHudChecks.cs` holds what a machine can check.
 game's own street screenshots in that folder, which stay local and are never committed, at 1080 and 720, with a mouse
 hover shot and a keys shot. `-Out` chooses where the shots go: the prototype's are in `not-in-repo/previews/ui/cs2/`.
 
+`-Method UiPreviewRunner.FontsCheck` draws no picture: it asks the text engine what it laid out of Korean and Chinese
+lines and pages, and prints one `[UiPreview] fonts check:` line for each answer. It uses the game's own fallback fonts
+where `python -I RealLifeOverhaul.Build/Census/game_fonts.py --extract UiAssets/build/gamefonts` put them (local only,
+the game's files are never committed), else two of Windows' fonts, whose widths are not the game's.
+
 ## Review checklist
 
 Before a screen is done, check each line in the previews at play distance: over the game's streets, at 1080 and 720,
@@ -343,6 +352,12 @@ rest is the review.
   `UiShaderRules` says which text shader of the running game the faces are given as the font bundle is read: the one a
   bundle brings is built for Windows alone, so no face keeps it on any system, and one line of Player.log
   ("Shaders check (reallife_ui)") says what was found.
+  `UiFonts.Fallbacks` puts the mod's own copies of the game's fallback fonts, their line cut to the face's, on every
+  face in the language's order (`UiFallbackRules`), so Korean, Chinese, Japanese and Greek are drawn at the face's
+  line height. `UiView` places every text's box with room no line needs (`UiTextRules.Room`): never make a text
+  outside the view. One line of Player.log ("Fonts check (ko)") says whether every character of the language's texts
+  has a font, and `UiFontProbe` draws the line it checks
+  ([the fonts of other scripts](../../../../../docs/features/rlo-interface.md#the-fonts-of-other-scripts)).
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
   directors, and `SessionKit` over the game's own desk panel.
 - **The game**: `UiGame`, `UiText`, `UiDirector`, `UiGuide`, `Contacts/`.

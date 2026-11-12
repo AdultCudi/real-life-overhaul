@@ -127,11 +127,11 @@ namespace RealLifeOverhaul.Ui
                 return 0;
             }
             UiChart.Scale(m, out float lo, out float hi, out float step);
-            double power = Math.Pow(10, Math.Floor(Math.Log10(step)));
+            double power = Math.Pow(10, Math.Floor(Math.Log10(step) + 1e-6));   // a float's 0.01 is a hair under it, and its power of ten is still a hundredth
             double unit = Math.Round(step / power, 3);
             bool round = unit == 1.0 || unit == 2.0 || unit == 2.5 || unit == 5.0;
             int count = (int)Math.Round((hi - lo) / step);
-            bool whole = UiChart.OnStep(lo, step) && UiChart.OnStep(hi, step) && count >= 1 && count <= 8;
+            bool whole = UiChart.OnStep(lo, step) && UiChart.OnStep(hi, step) && count >= 1 && count <= UiChart.MostSteps;
             if (round && whole)
             {
                 return 0;

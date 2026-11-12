@@ -151,7 +151,7 @@ namespace RealLifeOverhaul
             PerfWindow window = _sampler.Close();
             try
             {
-                string root = Application.persistentDataPath;
+                string root = LogPlaceRules.Folder(Application.consoleLogPath, Application.persistentDataPath);   // next to Player.log, wherever the system keeps it
                 string stamp = DateTime.Now.ToString("HHmmss");
                 string shots = Path.Combine(root, "RealLifeOverhaul_shots");
                 Directory.CreateDirectory(shots);

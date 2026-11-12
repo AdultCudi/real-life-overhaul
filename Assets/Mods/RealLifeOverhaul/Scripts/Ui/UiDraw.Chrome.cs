@@ -234,14 +234,15 @@ namespace RealLifeOverhaul.Ui
         /// A donut of shares, slice by slice from the top clockwise in the chart hues, the largest cumulative first so each
         /// later slice lays over the rest of the turn. Shares need not sum to one: they are taken as parts of their sum, with
         /// <paramref name="rest"/> (what the legend does not name, such as the goods past a list's best sellers) as the
-        /// track's own grey after the last slice.
+        /// track's own grey after the last slice. A share under nothing, or one that is no number, takes no part of the turn.
         /// </summary>
         public static void Donut(UiScene s, UiAt at, float x, float y, float size, float[] shares, int count, float rest = 0f)
         {
-            float sum = Math.Max(0f, rest);
+            rest = Part(rest);
+            float sum = rest;
             for (int i = 0; i < count; i++)
             {
-                sum += Math.Max(0f, shares[i]);
+                sum += Part(shares[i]);
             }
 
             if (sum <= 0f)
@@ -255,7 +256,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < count; i++)
             {
                 float start = run;
-                run += Math.Max(0f, shares[i]) / sum;
+                run += Part(shares[i]) / sum;
                 float end = i == count - 1 && rest <= 0f ? 1f : run;
                 float gap = count > 1 && end - start > SliceGap * 3f ? SliceGap : 0f;
                 var item = new UiItem
@@ -277,6 +278,9 @@ namespace RealLifeOverhaul.Ui
                 s.Add(ref item);
             }
         }
+
+        // A share's part of a donut's turn: one NaN among the shares would otherwise make every slice's angle NaN.
+        private static float Part(float share) => share > 0f && UiChart.Real(share) ? share : 0f;
 
         /// <summary>A chart's legend: a swatch in each slice's hue, its name and its share. Returns the height.</summary>
         public static float Legend(UiScene s, UiAt at, float x, float y, float w, string[] labels, string[] values, int count)

@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // A button of the tab's page, its own click as the game's box would run it.
+        // A button of the tab's page (BizManPages.LineAction, its place among them), its own click as the game's box would run it.
         private bool InteriorDo(int index)
         {
             if (index < 0 || index >= _lineActs.Count)
@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Ui
                 Actions.Add(new UiActionModel
                 {
                     Label = UiText.T(key), Kind = kind == InfoBox.Negative ? UiButtonKind.Destructive : UiButtonKind.Secondary, Key = UiAction.Count,
-                    Icon = kind == InfoBox.Negative ? UiIcon.Hammer : UiIcon.Wrench, Command = BizManPages.Action, Arg = BizManPages.DoLine + _acts.Count
+                    Icon = kind == InfoBox.Negative ? UiIcon.Hammer : UiIcon.Wrench, Command = BizManPages.LineAction, Arg = _acts.Count
                 });
                 _acts.Add(click);
             }
@@ -167,8 +167,8 @@ namespace RealLifeOverhaul.Ui
                 string target = "s:" + sectionId;
                 Actions.Add(new UiActionModel
                 {
-                    Label = UiText.T("reallife_set_link"), Kind = UiButtonKind.Quiet, Key = UiAction.Count, Icon = UiIcon.Gear, Command = BizManPages.Action,
-                    Arg = BizManPages.DoLine + _acts.Count
+                    Label = UiText.T("reallife_set_link"), Kind = UiButtonKind.Quiet, Key = UiAction.Count, Icon = UiIcon.Gear, Command = BizManPages.LineAction,
+                    Arg = _acts.Count
                 });
                 _acts.Add(() => Meta.SettingsApp.Open(target));
             }

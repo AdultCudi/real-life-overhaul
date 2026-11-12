@@ -89,18 +89,13 @@ public static partial class UiPreviewRunner
             {
                 PlayerSettings.colorSpace = ColorSpace.Linear;   // the game's own: its interface colours read as they do there
             }
+            GameFallbacks();
             UiFonts.LoadNow(bundle);
             if (!UiFonts.Own)
             {
                 throw new InvalidOperationException("the font bundle did not load from " + bundle);
             }
-            // The game's own font (with its Noto fallbacks) is the faces' last fallback in play; here a system font with
-            // Chinese and Korean stands in for it, so a name in those scripts draws as it will in the game.
-            TMP_FontAsset cjk = CjkFallback();
-            if (cjk != null)
-            {
-                UiFonts.SetFallback(cjk);
-            }
+            UiFonts.FallbacksStep(int.MaxValue);
             UiChrome.Status = () => UiSamples.Status;
             var shots = new List<Shot>();
             bool prototype = set == "cs2";
@@ -295,6 +290,22 @@ public static partial class UiPreviewRunner
         return (key, english) => english;
     }
 
+    // The language a shot is written in, by the game's code for it: what its name ends in, or English.
+    private static string LanguageOf(string name)
+    {
+        string[] parts = name.Split('_');
+        string tail = parts[parts.Length - 1];
+        string head = parts.Length > 1 && parts[0] == "company" ? parts[1] : tail;
+        foreach (string code in BarLanguages)
+        {
+            if (tail == code || head == code)
+            {
+                return code == "zh" ? "zh-cn" : code;
+            }
+        }
+        return "en";
+    }
+
     private static void RenderShot(Shot shot, string outFolder)
     {
         float canvasW = Mathf.Max(3840f, CanvasH * shot.Width / shot.Height);
@@ -327,6 +338,8 @@ public static partial class UiPreviewRunner
             UiView.Stretch(host);
 
             Backdrop(cr, shot.Screen.Backdrop);
+            UiFonts.Language(LanguageOf(shot.Screen.Name));   // the fallbacks in the shot's language's order, as the game's language orders them
+            UiFonts.FallbacksStep(int.MaxValue);
             UiSamples.SampleWords = BarLanguageOf(shot.Screen.Name);
             UiChrome.Bar = shot.Screen.Bar ?? (() => UiSamples.Bar(shot.Screen.App));
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
@@ -550,38 +563,46 @@ public static partial class UiPreviewRunner
 
     private static string English(string key, string english) => english;
 
-    // A Windows font with Chinese and Korean, copied into the project by preview.ps1 (Assets/Preview/Fonts) and made a
-    // dynamic font asset whose one atlas holds every glyph the shots draw (a second atlas page does not render offline); the system font by name where the copy is not there.
-    private static TMP_FontAsset CjkFallback()
+    // The font files preview.ps1 copied into the project (Assets/Preview/Fonts) to stand in for the game's fallback fonts,
+    // in the game's own order: the game's own files where they were extracted beside the project, else two of Windows' with
+    // Chinese and Korean. A Windows font takes the family's name of the font it stands in for, which is what orders a
+    // fallback and sizes its atlas (Ui/UiFallbackRules).
+    private static readonly string[] FallbackFiles = { "NotoSansJP.otf", "NotoSansKR.otf", "NotoSansSC.otf", "LiberationSans.ttf", "msyh.ttc", "malgun.ttf" };
+    private static readonly string[] StandsInFor = { null, null, null, null, "Noto Sans SC", "Noto Sans KR" };
+
+    // The stand-ins handed to TextMeshPro's settings as its general fallbacks, which is where the game has its own, in
+    // memory only. Nothing of their line is touched here: the kit makes its own copies of them and cuts their line to the
+    // faces', as it does in play (UiFonts.FallbacksStep), so a shot is drawn by the code that ships.
+    private static int GameFallbacks()
     {
-        foreach (string path in new[] { "Assets/Preview/Fonts/msyh.ttc", "Assets/Preview/Fonts/malgun.ttf" })
+        var found = new List<TMP_FontAsset>();
+        for (int i = 0; i < FallbackFiles.Length; i++)
         {
-            Font font = AssetDatabase.LoadAssetAtPath<Font>(path);
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Preview/Fonts/" + FallbackFiles[i]);
             TMP_FontAsset asset = font != null
-                ? TMP_FontAsset.CreateFontAsset(font, 36, 4, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true)
+                ? TMP_FontAsset.CreateFontAsset(font, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true)
                 : null;
-            if (asset != null)
+            if (asset == null)
             {
-                // Its line box cut to the interface face's: YaHei's tall ascent and descent overflow a one-line box at the
-                // kit's leading, and a truncated line then drew as nothing.
-                TMP_FontAsset own = UiFonts.For(UiStyle.Small);
-                if (own != null && own.faceInfo.pointSize > 0f)
-                {
-                    var face = asset.faceInfo;
-                    float scale = (float)face.pointSize / own.faceInfo.pointSize;
-                    face.ascentLine = own.faceInfo.ascentLine * scale;
-                    face.descentLine = own.faceInfo.descentLine * scale;
-                    face.lineHeight = own.faceInfo.lineHeight * scale;
-                    Debug.Log("[UiPreview] face metrics: own point " + own.faceInfo.pointSize + " ascent " + own.faceInfo.ascentLine + " descent " + own.faceInfo.descentLine + " line " + own.faceInfo.lineHeight + " scale " + own.faceInfo.scale
-                        + " | fallback point " + face.pointSize + " ascent " + face.ascentLine + " descent " + face.descentLine + " line " + face.lineHeight + " scale " + face.scale + " (was ascent " + asset.faceInfo.ascentLine + " line " + asset.faceInfo.lineHeight + ")");
-                    asset.faceInfo = face;
-                }
-                Debug.Log("[UiPreview] Chinese and Korean fall back to " + path);
-                return asset;
+                continue;
             }
+            asset.name = Path.GetFileNameWithoutExtension(FallbackFiles[i]) + " SDF";
+            UnityEngine.TextCore.FaceInfo face = asset.faceInfo;
+            if (StandsInFor[i] != null)
+            {
+                face.familyName = StandsInFor[i];
+                asset.faceInfo = face;
+            }
+            found.Add(asset);
+            Debug.Log(Tag + "fallback " + FallbackFiles[i] + ": " + face.familyName + ", its line "
+                      + ((face.ascentLine - face.descentLine) / face.pointSize).ToString("0.000", CultureInfo.InvariantCulture) + " em");
         }
-        Debug.Log("[UiPreview] no Windows CJK font copied: falling back to the system font by name");
-        return TMP_FontAsset.CreateFontAsset("Microsoft YaHei", "Regular") ?? TMP_FontAsset.CreateFontAsset("Malgun Gothic", "Regular");
+        TMP_Settings.fallbackFontAssets = found;
+        if (found.Count == 0)
+        {
+            Debug.Log(Tag + "no font file stands in for the game's fallbacks: Chinese and Korean are not drawn");
+        }
+        return found.Count;
     }
 
     private static string Argument(string name, string fallback)

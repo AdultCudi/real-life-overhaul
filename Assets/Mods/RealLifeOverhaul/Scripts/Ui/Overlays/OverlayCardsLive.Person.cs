@@ -309,10 +309,15 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             ref UiNode n = ref _personScene.Nodes[node];
+            UiRefusals.Begin();
             bool done = !n.Disabled && PersonPress(n.Command, n.Arg);
             if (done)
             {
                 _personView.Press(Time.unscaledTime);
+            }
+            else
+            {
+                UiRefusalLog.Say("a person's card", _personScene, node, n.Disabled);
             }
             UiGame.Instance.Play(done ? UiCue.Confirm : UiCue.Error);
         }

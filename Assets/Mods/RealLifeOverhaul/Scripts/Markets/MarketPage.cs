@@ -150,6 +150,7 @@ namespace RealLifeOverhaul.Markets
             rect.sizeDelta = size;
             text.textWrappingMode = TextWrappingModes.NoWrap;
             text.overflowMode = TextOverflowModes.Ellipsis;
+            TextRoom.On(text);
             return text;
         }
 
@@ -178,6 +179,7 @@ namespace RealLifeOverhaul.Markets
             text.overflowMode = TextOverflowModes.Truncate;
             text.fontSize = Math.Min(text.fontSize, 24f);
             text.enableAutoSizing = false;
+            TextRoom.On(text);
             return text;
         }
 

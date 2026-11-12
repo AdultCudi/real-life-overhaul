@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 by = y + UiTokens.PairRow + UiTokens.S1;
             }
-            float share = Math.Max(0f, Math.Min(1f, m.Share));
+            float share = Unit(m.Share);
             int track = Box(s, at, x, by, w, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1, UiFlags.Middle);
             if (share > 0f)
             {
@@ -159,10 +159,11 @@ namespace RealLifeOverhaul.Ui
             float inner = UiTokens.S1;   // the marker's room above and below the track's fill
             int track = Box(s, at, x, ty, w, GaugeTrack, UiRole.Track, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
             UiAt on = at.In(track);
-            float from = Math.Max(0f, Math.Min(1f, m.ZoneFrom)), to = Math.Max(from, Math.Min(1f, m.ZoneTo));
-            Box(s, on, x + w * from, ty + inner, Math.Max(UiTokens.S1, w * (to - from)), GaugeTrack - inner * 2f, UiRole.Ok, UiRole.None, UiTokens.RadiusSmall,
+            float from = Unit(m.ZoneFrom), to = Math.Max(from, Unit(m.ZoneTo));
+            float zw = Math.Max(UiTokens.S1, w * (to - from));
+            Box(s, on, Math.Min(x + w * from, x + w - zw), ty + inner, zw, GaugeTrack - inner * 2f, UiRole.Ok, UiRole.None, UiTokens.RadiusSmall,   // a zone at the track's end stays on the track
                 UiFlags.Middle | UiFlags.Share);
-            float mx = x + w * Math.Max(0f, Math.Min(1f, m.Marker)) - UiTokens.S1 / 2f;
+            float mx = x + w * Unit(m.Marker) - UiTokens.S1 / 2f;
             mx = Math.Max(x, Math.Min(mx, x + w - UiTokens.S1));
             Box(s, on, mx, ty, UiTokens.S1, GaugeTrack, UiRole.Text, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
             return TimingHeight;

@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Ui
         private static void Grid(UiScene s, UiAt at, UiChartDeskModel m, float pw, float h, float lo, float hi)
         {
             Ticks(lo, hi, out float step, out float tick);
-            for (float v = tick; v <= hi && step > 0f; v += step)
+            for (int k = 0; TickAt(tick, step, hi, k, out float v); k++)
             {
                 var rule = new UiItem
                 {
@@ -80,6 +80,10 @@ namespace RealLifeOverhaul.Ui
                     var loose = new UiAt { Parent = -1, Clip = at.Clip, Layer = at.Layer, Order = -1, Region = at.Region };
                     for (int i = first; i < first + shown; i++)
                     {
+                        if (!UiChart.Real(m.Close[i]))
+                        {
+                            continue;
+                        }
                         float y = PriceY(m.Close[i], lo, hi, h);
                         Fill(s, loose, slot * (i - first), y, slot, h - y, UiRole.Accent, 0.16f);
                     }
@@ -89,10 +93,16 @@ namespace RealLifeOverhaul.Ui
             float body = Math.Max(1f, slot * 0.6f);
             for (int i = first; i < first + shown; i++)
             {
-                float open = m.Open != null ? m.Open[i] : m.Close[i], close = m.Close[i];
+                float close = m.Close[i];
+                if (!UiChart.Real(close))
+                {
+                    continue;   // a day whose close is no number has no candle
+                }
+                float open = m.Open != null && UiChart.Real(m.Open[i]) ? m.Open[i] : close;
                 UiRole tone = close >= open ? UiRole.Ok : UiRole.Danger;
                 float cx = slot * (i - first) + slot * 0.5f;
-                float yH = PriceY(m.High != null ? m.High[i] : Math.Max(open, close), lo, hi, h), yL = PriceY(m.Low != null ? m.Low[i] : Math.Min(open, close), lo, hi, h);
+                float yH = PriceY(m.High != null && UiChart.Real(m.High[i]) ? m.High[i] : Math.Max(open, close), lo, hi, h);
+                float yL = PriceY(m.Low != null && UiChart.Real(m.Low[i]) ? m.Low[i] : Math.Min(open, close), lo, hi, h);
                 Fill(s, at, cx - UiTokens.Hairline / 2f, yH, UiTokens.Hairline, Math.Max(UiTokens.Hairline, yL - yH), tone, 1f);
                 float yO = PriceY(open, lo, hi, h), yC = PriceY(close, lo, hi, h);
                 Fill(s, at, cx - body / 2f, Math.Min(yO, yC), body, Math.Max(UiTokens.Hairline, Math.Abs(yC - yO)), tone, 1f);
@@ -114,14 +124,18 @@ namespace RealLifeOverhaul.Ui
             float most = 1f;
             for (int i = first; i < first + shown && i < m.Volume.Length; i++)
             {
-                most = Math.Max(most, m.Volume[i]);
+                most = UiChart.Real(m.Volume[i]) ? Math.Max(most, m.Volume[i]) : most;
             }
             float body = Math.Max(1f, slot * 0.6f);
             for (int i = first; i < first + shown && i < m.Volume.Length; i++)
             {
+                if (!UiChart.Real(m.Volume[i]))
+                {
+                    continue;
+                }
                 float open = m.Open != null ? m.Open[i] : m.Close[i];
                 bool up = m.Kind == 0 ? m.Close[i] >= open : i == 0 || m.Close[i] >= m.Close[i - 1];
-                float vh = Math.Max(UiTokens.Hairline, m.Volume[i] / most * (h - UiTokens.S4));
+                float vh = Math.Max(UiTokens.Hairline, Math.Max(0f, m.Volume[i]) / most * (h - UiTokens.S4));
                 Fill(s, at, slot * (i - first) + (slot - body) / 2f, top + h - vh, body, vh, up ? UiRole.Ok : UiRole.Danger, 0.55f);
             }
         }
@@ -135,7 +149,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     for (int i = first; i < first + shown && i < line.Values.Length && i < line.Under.Length; i++)
                     {
-                        if (float.IsNaN(line.Values[i]) || float.IsNaN(line.Under[i]))
+                        if (!UiChart.Real(line.Values[i]) || !UiChart.Real(line.Under[i]))
                         {
                             continue;
                         }
@@ -239,7 +253,7 @@ namespace RealLifeOverhaul.Ui
         private static void LastLine(UiScene s, UiAt at, UiChartDeskModel m, int first, int shown, float slot, float pw, float h, float lo, float hi)
         {
             int last = m.Close.Length - 1;
-            if (last < first || last >= first + shown || m.LastTag == null)
+            if (last < first || last >= first + shown || m.LastTag == null || !UiChart.Real(m.Close[last]))
             {
                 return;
             }
@@ -256,6 +270,10 @@ namespace RealLifeOverhaul.Ui
             }
             float cx = slot * (f - first) + slot * 0.5f;
             Fill(s, at, cx - UiTokens.Hairline / 2f, 0f, UiTokens.Hairline, stack, UiRole.Text2, 0.55f);
+            if (!UiChart.Real(m.Close[f]))
+            {
+                return;   // the rule down the plot still says which day, and there is no price to cross it at
+            }
             float y = PriceY(m.Close[f], lo, hi, h);
             Fill(s, at, 0f, y, slot * shown, UiTokens.Hairline, UiRole.Text2, 0.45f);
             var dot = new UiItem

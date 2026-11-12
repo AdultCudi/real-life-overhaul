@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Ui
                     w.T("reallife_work_cat_stock_word", "Stock") },
                 EmptyTitle = w.T("reallife_work_no_listings_title", "Nothing is listed today"), EmptyBody = w.T("reallife_work_no_listings",
                     "New things arrive each morning. Check Yours for what you can list."),
-                SortWord = w.T("reallife_work_sort_newest", "Newest first") };
+                SortWord = w.T("reallife_work_sort_newest", "Newest first"), SortByOrder = w.T("reallife_ui_dealer_sort_price", "By price") };
             var book = d.Sellers;
             var more = new List<Listing>(6);
             int level = HustleGame.Level;
@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Ui
                 bool rival = seller != null && !string.IsNullOrEmpty(seller.Rival);
                 bool discount = seller != null && seller.Tag == (int)SellerTag.Discount;
                 var r = new WorkRow { Id = l.Id, Icon = WorkGlyphs.Thing(l.Thing, l.Car), Name = name, Price = HustleText.Money(l.Asking), Under = worth > 0 ? WorkBuilder.Percent(versus) : null,
-                    UnderValue = versus, Seller = sellerName, Group = category, Tone = UiRole.Muted,
+                    UnderValue = versus, Order = l.Asking, Seller = sellerName, Group = category, Tone = UiRole.Muted,
                     Status = rival ? w.T("reallife_work_tag_rival", "Rival") : discount ? w.T("reallife_work_tag_discount_short", "Discount") : null, Title = name,
                     Sub = HustleText.Kind(l.Thing, l.Car) + ", " + HustleText.Condition(l.Shown) };
                 int deliver = HustleRules.DeliveryFee(l.Asking, level);

@@ -181,12 +181,49 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The mod a button's runtime listener belongs to (read from Unity's call list, which is private: null when it cannot be read).</summary>
-        public static string ListenerOwner(Button button)
+        public static string ListenerOwner(Button button) => Listeners(button, out bool _);
+
+        /// <summary>
+        /// The mod that made a button: a script of another mod's on the button itself, else a runtime listener of another
+        /// mod's with none of the game's or this mod's beside it (a mod's copy of a game button takes the game's listeners
+        /// off and puts its own on; a game button a mod only listens to keeps the game's and stays the game's). Null for the
+        /// game's and the mod's own buttons, and when the listeners cannot be read. Asked when a panel's objects changed.
+        /// </summary>
+        public static string ButtonOwner(Button button)
         {
+            if (button == null)
+            {
+                return null;
+            }
+            Scripts.Clear();
+            button.GetComponents(Scripts);
+            string owner = null;
+            for (int i = 0; i < Scripts.Count && owner == null; i++)
+            {
+                Assembly assembly = Scripts[i] != null ? Scripts[i].GetType().Assembly : null;
+                if (assembly != null && Origin(assembly) == UiOrigin.Other)
+                {
+                    owner = Friendly(assembly.GetName().Name);
+                }
+            }
+            Scripts.Clear();
+            if (owner != null)
+            {
+                return owner;
+            }
+            owner = Listeners(button, out bool ownToo);
+            return ownToo ? null : owner;
+        }
+
+        // The first mod among a button's runtime listeners, and whether code of the game's or this mod's listens too.
+        private static string Listeners(Button button, out bool ownToo)
+        {
+            ownToo = false;
             if (button == null || !FindCalls())
             {
                 return null;
             }
+            string other = null;
             try
             {
                 object calls = _calls.GetValue(button.onClick);
@@ -195,9 +232,18 @@ namespace RealLifeOverhaul.Ui
                 {
                     object call = list[i];
                     Delegate d = call != null && _delegate != null && _delegate.DeclaringType.IsInstanceOfType(call) ? _delegate.GetValue(call) as Delegate : null;
-                    if (d != null && d.Method != null && Origin(d.Method.DeclaringType != null ? d.Method.DeclaringType.Assembly : null) == UiOrigin.Other)
+                    if (d == null || d.Method == null || d.Method.DeclaringType == null)
                     {
-                        return Friendly(d.Method.DeclaringType.Assembly.GetName().Name);
+                        continue;
+                    }
+                    UiOrigin from = Origin(d.Method.DeclaringType.Assembly);
+                    if (from == UiOrigin.Other)
+                    {
+                        other = other ?? Friendly(d.Method.DeclaringType.Assembly.GetName().Name);
+                    }
+                    else if (from == UiOrigin.Game || from == UiOrigin.Ours)
+                    {
+                        ownToo = true;
                     }
                 }
             }
@@ -205,8 +251,9 @@ namespace RealLifeOverhaul.Ui
             {
                 _calls = null;   // not as this Unity has it: the listeners are not read again
                 _callsTried = true;
+                return null;
             }
-            return null;
+            return other;
         }
 
         private static bool FindCalls()

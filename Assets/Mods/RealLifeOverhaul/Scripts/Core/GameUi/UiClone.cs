@@ -266,6 +266,7 @@ namespace RealLifeOverhaul.GameUi
                 text.fontStyle &= ~FontStyles.UpperCase;   // the name gets the game's capitals by its own tag; the line under it reads as a sentence
                 text.textWrappingMode = TextWrappingModes.NoWrap;
                 text.overflowMode = TextOverflowModes.Ellipsis;
+                TextRoom.On(text);
             }
             entry.gameObject.SetActive(false);
         }
