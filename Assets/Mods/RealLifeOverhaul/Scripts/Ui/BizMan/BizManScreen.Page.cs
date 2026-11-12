@@ -187,10 +187,14 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Another mod's own pieces on the business view outside its tab bar (a button beside the page): told by the code that
-        // runs them, which is neither the game's, Unity's nor the mod's. Only those the kit's window would hide count; one with
-        // a canvas of its own stands over the kit as it stood over the game.
+        // Another mod's own pieces on the business view outside its tab bar: a piece beside the page, told by the code that
+        // runs it (neither the game's, Unity's nor the mod's) or by a button of its mod's making under it, and a button a mod
+        // put inside the page the game shows (the way into its own window, beside the game's buttons), which the kit's page
+        // does not draw. Only those the kit's window would hide count; one with a canvas of its own stands over the kit as it
+        // stood over the game.
         private static readonly List<MonoBehaviour> Behaviours = new List<MonoBehaviour>(32);
+        private static readonly List<Button> PageButtons = new List<Button>(64);
+        private readonly Dictionary<int, bool> _judged = new Dictionary<int, bool>(64);   // each button of the pages told once: another mod's or not
 
         private void Extras(BizManBusiness b)
         {
@@ -205,6 +209,32 @@ namespace RealLifeOverhaul.Ui
                     _extras.Add(c);
                 }
             }
+            Transform layout = root.Find("Layout 30-70"), menu = Menu(b);
+            if (layout == null)
+            {
+                return;
+            }
+            PageButtons.Clear();
+            layout.GetComponentsInChildren(false, PageButtons);   // the page the game shows now: a button on another tab's page is met on that tab
+            for (int i = 0; i < PageButtons.Count; i++)
+            {
+                Button button = PageButtons[i];
+                if (menu != null && button.transform.IsChildOf(menu))
+                {
+                    continue;   // the tab bar's are sections of the sidebar already
+                }
+                int id = button.GetInstanceID();
+                if (!_judged.TryGetValue(id, out bool others))
+                {
+                    others = UiForeignGame.ButtonOwner(button) != null;
+                    _judged[id] = others;
+                }
+                if (others)
+                {
+                    _extras.Add(button.transform);
+                }
+            }
+            PageButtons.Clear();
         }
 
         private static bool Foreign(Transform t)
@@ -223,6 +253,18 @@ namespace RealLifeOverhaul.Ui
                           && assembly != "Assembly-CSharp" && assembly != "ExternalPlugins" && assembly != "HGPlugins" && assembly != typeof(BizManScreen).Assembly.GetName().Name;
             }
             Behaviours.Clear();
+            if (foreign)
+            {
+                return true;
+            }
+            // A plain copy of a game button with the mod's own listener carries no script of its mod's: told by who listens to it.
+            PageButtons.Clear();
+            t.GetComponentsInChildren(true, PageButtons);
+            for (int i = 0; i < PageButtons.Count && !foreign; i++)
+            {
+                foreign = UiForeignGame.ButtonOwner(PageButtons[i]) != null;
+            }
+            PageButtons.Clear();
             return foreign;
         }
 

@@ -9,12 +9,13 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The one file that fills PhoneItems from the game: every button of the HUD phone's grid in the classic pager's order
-    /// (the game's, the mod's, other mods'), each one's words and badge as its button shows them after the game's and
-    /// other mods' code ran, another mod's own picture, and each mod app's folder or place first on the home screen. It
-    /// presses a button through its own onClick, so the game's OpenApp, PhoneApp.Open and other mods' handlers run as a
-    /// click would. Read when the pager lays the grid out; looked at a few times a second by the kit phone for badges and
-    /// words another mod changes without telling (a signature of references, nothing allocated). Cost: a read on a
-    /// change, a few field reads a look.
+    /// (the game's, the mod's, other mods'), then other mods' buttons that stand on the full menu's own row or on the
+    /// phone itself and nowhere on the grid (PhoneExtras), each one's words and badge as its button shows them after the
+    /// game's and other mods' code ran, another mod's own picture, and each mod app's folder or place first on the home
+    /// screen. It presses a button through its own onClick, so the game's OpenApp, PhoneApp.Open and other mods' handlers
+    /// run as a click would. Read when the pager lays the grid out or a button comes to the row or the phone; looked at a
+    /// few times a second by the kit phone for badges and words another mod changes without telling (a signature of
+    /// references, nothing allocated). Cost: a read on a change, a few field reads a look.
     /// </summary>
     internal static class PhoneItemsGame
     {
@@ -23,6 +24,8 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Transform> Buttons = new List<Transform>(48);
         private static readonly List<int> Kinds = new List<int>(48);
         private static readonly List<int> Places = new List<int>(48);
+        private static readonly List<string> Ids = new List<string>(48);   // each app's name among the phone's: its button's own, numbered for a second button of one name
+        private static readonly List<PhoneItemFrom> Froms = new List<PhoneItemFrom>(48);
         private static readonly List<GameObject> BadgeObjects = new List<GameObject>(48);
         private static readonly List<TMP_Text> BadgeLabels = new List<TMP_Text>(48);
         private static readonly List<TMP_Text> TitleLabels = new List<TMP_Text>(48);
@@ -33,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Sprite> SeenPicture = new List<Sprite>(48);
         private static readonly List<Sprite> Pictures = new List<Sprite>(8);   // other mods' pictures by handle less one
         private static int _passesSeen = -1;
+        private static int _extrasSeen;   // the full menu's row and the phone as last read (PhoneExtras.Signature)
         private static readonly HashSet<int> Spoilt = new HashSet<int>();   // the places whose button threw when read: shown plainly, said once, not read again
         private static bool _foldersSeen;
 
@@ -49,6 +53,27 @@ namespace RealLifeOverhaul.Ui
             Spoilt.Clear();   // read afresh: the places may be other buttons now
             _foldersSeen = PhoneLayoutPrefs.On;
             pager.Arranged(Buttons, Kinds, Places);
+            Ids.Clear();
+            Froms.Clear();
+            for (int i = 0; i < Buttons.Count; i++)
+            {
+                Ids.Add(Buttons[i].name);
+                Froms.Add(PhoneItemFrom.Grid);
+            }
+            int grid = Buttons.Count;
+            try
+            {
+                PhoneExtras.Add(Buttons, Kinds, Places, Ids, Froms);
+            }
+            catch (Exception e)
+            {
+                // A button outside the grid threw as it was looked at (another mod's object, gone or half made): the phone
+                // goes on with the grid's apps, said once, rather than fall back to the classic phone for a button it never had.
+                Trim(grid);
+                UiForeign.Note("phone", UiPieceKind.Fault, UiForeignGame.Blame(e) ?? "another mod's button", e.GetType().Name + " reading a button outside the phone's grid",
+                    "the phone goes on with the grid's apps");
+            }
+            _extrasSeen = PhoneExtras.Signature();   // after the reading: it counts the buttons the reading found on the phone
             bool changed = Items.Count != Buttons.Count;
             PhoneItem[] before = changed ? null : Items.Items;
             int count = Buttons.Count;
@@ -58,7 +83,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Transform button = Buttons[i];
                 ref PhoneItem it = ref fresh[i];
-                it.Id = button.name;
+                it.Id = Ids[i];
+                it.From = Froms[i];
                 it.Kind = Kinds[i] == PhoneLayoutRules.GameItem ? PhoneItemKind.Game : Kinds[i] == PhoneLayoutRules.ModItem ? PhoneItemKind.Mod : PhoneItemKind.Other;
                 it.Folder = -1;
                 try
@@ -93,6 +119,31 @@ namespace RealLifeOverhaul.Ui
             }
             Items.End(changed);
             return changed;
+        }
+
+        // The lists cut back to the grid's own apps, each to the same length.
+        private static void Trim(int count)
+        {
+            while (Buttons.Count > count)
+            {
+                Buttons.RemoveAt(Buttons.Count - 1);
+            }
+            while (Kinds.Count > count)
+            {
+                Kinds.RemoveAt(Kinds.Count - 1);
+            }
+            while (Places.Count > count)
+            {
+                Places.RemoveAt(Places.Count - 1);
+            }
+            while (Ids.Count > count)
+            {
+                Ids.RemoveAt(Ids.Count - 1);
+            }
+            while (Froms.Count > count)
+            {
+                Froms.RemoveAt(Froms.Count - 1);
+            }
         }
 
         /// <summary>
@@ -151,7 +202,18 @@ namespace RealLifeOverhaul.Ui
             return changed;
         }
 
-        /// <summary>Presses the app's own button on the HUD phone, as a click would.</summary>
+        /// <summary>
+        /// A look at where other mods put buttons outside the grid (the full menu's row, the phone itself): when a button
+        /// came, went or was switched there since the last reading, the phone's apps are read again. True when they changed.
+        /// Asked when the phone or the full menu opens and about once a second while the kit shows, so an app a mod adds
+        /// late, whenever that is, is found without a search a frame.
+        /// </summary>
+        internal static bool Fresh(PhoneGridPager pager)
+        {
+            return pager != null && PhoneExtras.Signature() != _extrasSeen && Read(pager);
+        }
+
+        /// <summary>Presses the app's own button, as a click would: on the HUD phone, or where another mod put it.</summary>
         internal static bool Press(int index)
         {
             if (index < 0 || index >= Buttons.Count || Buttons[index] == null)
@@ -163,6 +225,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (index < Froms.Count && Froms[index] == PhoneItemFrom.Row && !ShellApps.MenuUp())
+            {
+                return false;   // its page stands in the full menu, which the game would not open now
+            }
             UiWidgets.Hand(button);   // the app's opening is the game's own work, and the kit's screen it shows is counted as its own
             return true;
         }
@@ -171,6 +237,8 @@ namespace RealLifeOverhaul.Ui
         internal static void Forget()
         {
             Buttons.Clear();
+            Ids.Clear();
+            Froms.Clear();
             Spoilt.Clear();
             Pictures.Clear();
             Items.Begin();
@@ -199,7 +267,8 @@ namespace RealLifeOverhaul.Ui
 
         private static bool Same(ref PhoneItem a, ref PhoneItem b)
         {
-            return a.Id == b.Id && a.Title == b.Title && a.Badge == b.Badge && a.Picture == b.Picture && a.Folder == b.Folder && a.First == b.First && a.Icon == b.Icon && a.Kind == b.Kind;
+            return a.Id == b.Id && a.Title == b.Title && a.Badge == b.Badge && a.Picture == b.Picture && a.Folder == b.Folder && a.First == b.First && a.Icon == b.Icon && a.Kind == b.Kind
+                   && a.From == b.From;
         }
 
         // A button another mod made threw as it was read (its words or its badge): said once with its mod's name, its tile left
@@ -216,13 +285,15 @@ namespace RealLifeOverhaul.Ui
                 "its tile is shown plainly and the rest of the phone goes on");
         }
 
-        // A handle for a picture, the same for the same picture; 0 for none.
-        private static int Handle(Sprite sprite)
+        // A handle for a picture, the same for the same picture; 0 for none. The full menu's row asks too while the classic
+        // phone stands (ShellApps), so the pictures' answer is put up by whoever asks first.
+        internal static int Handle(Sprite sprite)
         {
             if (sprite == null)
             {
                 return 0;
             }
+            PhoneKit.HookPictures();
             int at = Pictures.IndexOf(sprite);
             if (at < 0)
             {
@@ -245,7 +316,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The words under the button: its Title, else its first words that are not the badge's.
-        private static TMP_Text TitleLabel(Transform button)
+        internal static TMP_Text TitleLabel(Transform button)
         {
             Transform named = button.Find("Title");
             TMP_Text title = named != null ? named.GetComponent<TMP_Text>() : null;

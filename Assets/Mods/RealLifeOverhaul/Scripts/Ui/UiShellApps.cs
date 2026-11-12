@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         public int Folder;         // its All apps tab: UiShellApps.Money .. Setup, or Other for another mod's
         public bool InRow;         // on the phone's first home page: the app row shows it
         public int Picture;        // another mod's own app picture (UiDraw.PictureKey), shown instead of the glyph; 0 for none
+        public PhoneItemFrom From; // where its own button stands: the phone's grid, or the full menu's row or the phone itself for another mod's
     }
 
     /// <summary>Whose an app is.</summary>
@@ -29,7 +30,8 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// Every app the full menu can switch to, for the status bar's app row (the phone's first home page in the player's
-    /// order, then All apps) and the All apps panel (the phone's folders as tabs, every app in one), filled through one
+    /// order, then the first apps other mods put on the full menu's own row, then All apps) and the All apps panel (the
+    /// phone's folders as tabs, every app in one), filled through one
     /// delegate (<see cref="Source"/>) by the game side: the phone's own model while the kit phone stands (<see cref="FromPhone"/>),
     /// else the full menu's own row (Shell/ShellApps). Which tab an app stands in is <see cref="FolderOf"/>: the
     /// folder the player keeps it in, else its kind's. A small provider gives an app's one status line (<see cref="Status"/>).
@@ -83,7 +85,9 @@ namespace RealLifeOverhaul.Ui
         /// The phone's own model (PhoneItems) as the frame's list, so the app row, All apps and the phone show one order, one
         /// glyph and one colour an app: the home screen in the player's order, each folder's apps where its tile stands,
         /// other mods' buttons with their own pictures. The row is the home screen's first apps, as many as the phone's first
-        /// page holds (a folder's tile is no app: All apps holds its apps). Returns a version that moves with the phone's.
+        /// page holds (a folder's tile is no app: All apps holds its apps), then the first of the apps another mod put on
+        /// the full menu's own row (UiForeignApps.RowMost): the kit's row stands for that row, so what a mod put there is
+        /// not lost from it. Returns a version that moves with the phone's.
         /// </summary>
         public static int FromPhone(PhoneItems items, List<UiShellApp> into, int rowMost)
         {
@@ -92,13 +96,16 @@ namespace RealLifeOverhaul.Ui
                 _home = new int[(items.Count + PhoneLayoutRules.FolderCount) * 2];
                 _inFolder = new int[_home.Length];
             }
-            int n = items.Home(_home), inRow = 0;
+            int n = items.Home(_home), inRow = 0, carried = 0;
             for (int e = 0; e < n; e++)
             {
                 int entry = _home[e];
                 if (entry >= 0)
                 {
-                    FromItem(into, items, entry, inRow < rowMost);
+                    bool first = inRow < rowMost;
+                    bool kept = !first && UiForeignApps.OnRow(KindOf(items.Items[entry].Kind), items.Items[entry].From, carried);
+                    carried += kept ? 1 : 0;
+                    FromItem(into, items, entry, first || kept);
                     inRow++;
                     continue;
                 }
@@ -114,14 +121,16 @@ namespace RealLifeOverhaul.Ui
         private static void FromItem(List<UiShellApp> into, PhoneItems items, int index, bool inRow)
         {
             ref PhoneItem it = ref items.Items[index];
-            UiShellKind kind = it.Kind == PhoneItemKind.Game ? UiShellKind.Game : it.Kind == PhoneItemKind.Mod ? UiShellKind.Mod : UiShellKind.Other;
+            UiShellKind kind = KindOf(it.Kind);
             UiIcon icon = it.Icon != UiIcon.None ? it.Icon : PhoneLooks.OtherMods;
             into.Add(new UiShellApp
             {
                 Id = it.Id, Title = it.Title, Icon = icon, Tint = it.Tint != UiRole.None ? it.Tint : UiIconTints.Of(icon), Badge = it.Badge, Kind = kind, InRow = inRow,
-                Folder = FolderOf(it.Id, kind, it.Folder, PhoneLayoutRules.DefaultOf(it.Id)), Picture = it.Picture
+                Folder = FolderOf(it.Id, kind, it.Folder, PhoneLayoutRules.DefaultOf(it.Id)), Picture = it.Picture, From = it.From
             });
         }
+
+        private static UiShellKind KindOf(PhoneItemKind kind) => kind == PhoneItemKind.Game ? UiShellKind.Game : kind == PhoneItemKind.Mod ? UiShellKind.Mod : UiShellKind.Other;
 
         /// <summary>A folder's glyph on its tab: the phone's own folders' (PhoneLooks), Other mods' its tab's.</summary>
         public static UiIcon FolderIcon(int folder) => PhoneLooks.Folder(folder, out UiIcon icon, out UiRole _) ? icon : folder == Other ? PhoneLooks.OtherMods : UiIcon.Grid;

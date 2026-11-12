@@ -136,6 +136,10 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 StandDownIfTaken();
+                if (_root != null)
+                {
+                    PhoneItemsGame.Fresh(PhoneGridPager.Hud);   // once a second, shown or not: an app another mod adds late is found whenever it comes
+                }
                 return;
             }
             if (Time.unscaledTime < _nextLook)
@@ -201,6 +205,7 @@ namespace RealLifeOverhaul.Ui
             _canvas = _root.AddComponent<Canvas>();
             _root.AddComponent<GraphicRaycaster>();
             _clip = _root.AddComponent<RectMask2D>();
+            PhoneExtras.Phone(_container, _grid, _root.transform, _collapse, _driver, _skip);   // what another mod hung on the phone, which the kit covers, becomes an app of its own
             PhoneItemsGame.Read(pager);
             PhoneItems.Current = PhoneItemsGame.Items;
             HookPictures();
@@ -227,7 +232,7 @@ namespace RealLifeOverhaul.Ui
         // The phone answers its own pictures' keys (other mods' app icons, by their handles) among the kit's pictures, once a
         // session: the handles are this city's items (PhoneItemsGame), so a later city adds nothing. It once took the answer
         // before it again at each city's phone and read it from a field as it answered, which closed a ring in a second city.
-        private static void HookPictures()
+        internal static void HookPictures()
         {
             if (_picturesOn)
             {
@@ -368,6 +373,7 @@ namespace RealLifeOverhaul.Ui
             _minute = _day = -1;
             PhoneItems.Current = null;
             PhoneItemsGame.Forget();
+            PhoneExtras.Forget();
             if (UiDirector.Logger != null && why != null && Meta.Dev.Verbose)
             {
                 UiDirector.Logger.Info("UI: the phone is the game's own again (" + why + ").");
@@ -399,6 +405,7 @@ namespace RealLifeOverhaul.Ui
                 Buttons.Hide();
                 Sort();
                 Size();
+                PhoneItemsGame.Fresh(PhoneGridPager.Hud);   // the phone opens: an app another mod added since, on the full menu's row or on the phone, is on it
                 Readings(true);
                 Next();
                 _host.Show();
