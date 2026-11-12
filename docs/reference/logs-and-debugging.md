@@ -33,7 +33,7 @@ A self-check line says what was measured against what was wanted, then `PASS`, o
 
 - A self-check is written once per event (a scene starts, a bus arrives, a panel opens), never per frame.
 - A `FAIL` line names what did not hold. It is the first thing to read in a report.
-- A few lines are written whatever the switch says, because a player's log must show them: the settling of a shift saved mid-way (`Jobs check (saved shift): settled ...`) is one.
+- A few lines are written whatever the switch says, because a player's log must show them: the settling of a shift saved mid-way (`Jobs check (saved shift): settled ...`) is one. So is `Shaders check (bundle): ... PASS`, once for each of the mod's six asset bundles as it is read, with the graphics device, the system and the game's build: it is how a log from a Mac, which nobody here can run, says whether everything of the mod's is drawn ([Windows and macOS](../standards/platforms.md)).
 - Each feature page lists its own lines under a heading such as "Log lines" or "Checks"; see [log lines by feature](#log-lines-by-feature).
 
 ### Faults, and features that switch themselves off

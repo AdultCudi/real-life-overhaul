@@ -62,6 +62,7 @@ internal static partial class Program
         PerformanceChecks();
         AssetChecks();
         PropSetChecks();
+        PlatformChecks();
         MultiplayerChecks();
         TestingChecks();
         TextChecks();

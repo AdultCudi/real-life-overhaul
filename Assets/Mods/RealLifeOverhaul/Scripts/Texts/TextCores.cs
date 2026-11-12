@@ -3,7 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>The machine's real cores, or the logical processors halved from four where Windows cannot say. Asked once, off the game's thread.</summary>
+    /// <summary>
+    /// The machine's real cores, or the logical processors halved from four where Windows cannot say. Asked once, off the
+    /// game's thread. The question is Windows' own (kernel32): on another system it is not put and the rule answers.
+    /// </summary>
     public static class TextCores
     {
         private const int RelationProcessorCore = 0;
@@ -25,7 +28,10 @@ namespace RealLifeOverhaul.Texts
             try
             {
                 uint length = 0;
-                GetLogicalProcessorInformation(IntPtr.Zero, ref length);
+                if (HostSystem.Windows)
+                {
+                    GetLogicalProcessorInformation(IntPtr.Zero, ref length);
+                }
                 if (length > 0)
                 {
                     IntPtr buffer = Marshal.AllocHGlobal((int)length);

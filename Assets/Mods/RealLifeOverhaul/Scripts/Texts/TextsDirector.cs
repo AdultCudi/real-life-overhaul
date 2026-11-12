@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Texts
         // Written last by Find's worker, after the packs, cores, devices and verdicts it found; read first by the game's thread:
         // a volatile write and read, so whatever the worker wrote before is seen once this says it is done. A field read a frame.
         private static volatile bool _found;
-        private static bool _quitHooked, _speedTold, _refusedTold;
+        private static bool _quitHooked, _speedTold, _refusedTold, _asideTold;
+        private static volatile bool _aside;               // the packs do not run on this system (Find's worker says so before it says it is done)
         private static Action _onQuit;
         private static List<TextPack> _packs;
         private static TextPack _verified, _refused;       // the best pack whose runtime is llama.cpp's own; the first that was not
@@ -316,7 +317,10 @@ namespace RealLifeOverhaul.Texts
                     _cores = TextCores.Real();
                     _devices = new List<TextDevice>();
                     var verified = new List<TextPack>(4);
-                    for (int i = 0; i < _packs.Count; i++)
+                    // A pack's runtime is llama.cpp's Windows program: on another system the packs are only counted, and
+                    // nothing of one is checked, asked for its devices or started (Aside tells the player once).
+                    _aside = !HostSystem.Windows;
+                    for (int i = 0; i < _packs.Count && !_aside; i++)
                     {
                         string why = TextPacks.Verify(_packs[i], TextRuntime.Files);   // before anything of the pack is started
                         if (why == null)
@@ -352,9 +356,33 @@ namespace RealLifeOverhaul.Texts
             });
         }
 
+        // On a system the packs do not run on (anything but Windows): said once in the log, and once ever to a player who has
+        // a pack installed, so nobody waits for a model that cannot start. The written lines and Your own AI go on as before.
+        private static void Aside()
+        {
+            if (_asideTold)
+            {
+                return;
+            }
+            _asideTold = true;
+            int installed = _packs != null ? _packs.Count : 0;
+            Meta.Dev.Always(Logger, "RLO Texts: the packs run on Windows only (their runtime is llama.cpp's Windows program, which is not started on " + HostSystem.Name + "); "
+                                    + installed + " pack(s) found here and left alone; every message uses its written line unless Your own AI writes it.");
+            if (installed > 0 && !Told("windows"))
+            {
+                TextsGame.Notice("reallife_texts_status_windows", null, 16f);
+                Remember("windows");
+            }
+        }
+
         // The server for the options as they are: started, or started again when the device or threads change.
         private static void Run()
         {
+            if (_aside)
+            {
+                Aside();
+                return;
+            }
             if (_server != null && _runDevice == Settings.TextsDevice && _runThreads == Settings.TextsThreads)
             {
                 return;   // as it was started: the common case, two comparisons

@@ -236,6 +236,8 @@ namespace RealLifeOverhaul
                     Fail("the asset bundle could not be read (built for another Unity version?)");
                     return;
                 }
+                // Read piece by piece as looks are worn, so its list of names is asked, not its assets: no material or shader is in it.
+                BundleShaders.Check(Logger, Path.GetFileName(BundlePath), _bundle, null, null);
                 AssetBundleRequest reading = _bundle.LoadAssetAsync<TextAsset>(CatalogueName);
                 reading.completed += Guard.Way<AsyncOperation>(_ => Catalogued(reading));
             }

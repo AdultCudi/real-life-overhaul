@@ -10,7 +10,7 @@ There are two places to get the mod. Use one of them, not both.
 
 Both are the same mod, built from this repository. The game loads a mod from its own `ModsLocal` folder exactly as it loads one from the Workshop.
 
-You still need Big Ambitions itself, on Windows, kept up to date on Steam's public branch: the mod is made for the game's current build.
+You still need Big Ambitions itself, kept up to date on Steam's public branch: the mod is made for the game's current build. The setup program is for Windows. The game is also sold for macOS: see [On a Mac](#on-a-mac).
 
 ## Install with setup.exe (the easy way)
 
@@ -50,7 +50,8 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
        │   ├── reallife_character
        │   ├── reallife_props
        │   ├── reallife_props_2
-       │   └── reallife_props_site
+       │   ├── reallife_props_site
+       │   └── reallife_ui
        └── Locales
            ├── en.json
            ├── pt.json
@@ -62,6 +63,35 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
 6. **Start the game.** The mod's page is in **Options**, on the **Mods** tab. A notice appears once for each new version: click it to open the Guide.
 
 The first time you load a save that has never had mods, the game offers to keep a backup and plays a copy marked "(Modded)". That is the game's own safety step, not the mod's.
+
+## On a Mac
+
+The setup program is for Windows. On a Mac, subscribe on the [Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3816536560), which is the easy way, or install the zip by hand:
+
+1. **Close the game.**
+2. **Download** `RealLifeOverhaul-<version>.zip` from the [latest release](https://github.com/AdultCudi/real-life-overhaul/releases/latest).
+3. **Open the game's mod folder.** In Finder choose **Go**, **Go to Folder** and paste:
+
+   ```
+   ~/Library/Application Support/com.Hovgaard-Games.Big-Ambitions/ModsLocal
+   ```
+
+   The game makes the folder the first time it starts. It reads mods from `ModsLocal` in its own data folder on every system, and that is where a Mac keeps the game's data.
+4. **Delete the old copy first**, then **unzip** into `ModsLocal`, so that `RealLifeOverhaul.dll` is directly inside `ModsLocal/RealLifeOverhaul`, as in the picture above.
+
+Where things are on a Mac:
+
+- The game's log: `~/Library/Logs/Hovgaard Games/Big Ambitions/Player.log`, with `Player-prev.log` beside it for the session before. A Mac keeps logs apart from the game's data. The mod's Guide, under Troubleshooting, shows the folder your own game uses.
+- The Workshop copy: `~/Library/Application Support/Steam/steamapps/workshop/content/1331550/3816536560`.
+- The mod's options, reports and photos: the `RealLifeOverhaul` folder in the game's data folder, as on Windows.
+
+What is different on a Mac:
+
+- RLO Texts packs do not run: their runtime is a Windows program, so every message keeps its written line unless Your own AI writes it.
+- A key for Your own AI is kept only until you close the game, and Continue with ChatGPT is not offered: both need Windows' own protection of a user's data.
+- The frame clock of Developer diagnostics has no figures for the processor: they are Windows' own.
+
+The mod is made and tested on Windows. The data and Workshop folders above are as one player's Mac had them (Apple silicon, version 1.0.0), and the log's folder is where the engine keeps a Mac's logs; say so on the [Discord](https://discord.gg/tzCh2VXs9E) if yours differ.
 
 ## If you are also subscribed on the Workshop
 
@@ -94,4 +124,4 @@ The value must match the one on the release page. Only download the mod from the
 
 - The mod is not on the Mods tab: run the setup again, or, if you installed by hand, check the folder layout in step 5 and that the game was closed while you copied it.
 - The mod's apps do nothing, or the mod says the game needs updating: your game is an older build. In Steam, right-click Big Ambitions in the Library and choose **Properties**. Under **Betas**, set Beta Participation to **None**. Then, under **Installed Files**, choose **Verify integrity of game files**.
-- Something goes wrong in play: report it on the [Discord](https://discord.gg/tzCh2VXs9E) in #bug-reports, or open an issue here. Attach `Player.log` from `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions`, taken right after the problem and before the game starts again. The **Report a bug** button under **Start here** on the mod's options page gathers the log, your settings and a screenshot into one zip for you. [Logs and debugging](docs/reference/logs-and-debugging.md) says what the mod writes to the log.
+- Something goes wrong in play: report it on the [Discord](https://discord.gg/tzCh2VXs9E) in #bug-reports, or open an issue here. Attach `Player.log` from `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions` (on a Mac, `~/Library/Logs/Hovgaard Games/Big Ambitions`), taken right after the problem and before the game starts again. The **Report a bug** button under **Start here** on the mod's options page gathers the log, your settings and a screenshot into one zip for you. [Logs and debugging](docs/reference/logs-and-debugging.md) says what the mod writes to the log.

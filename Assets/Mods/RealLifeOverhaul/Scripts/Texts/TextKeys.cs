@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Texts
     /// <summary>
     /// Your own AI's keys and tokens: one file outside every save, sealed with DPAPI for this Windows user only; where it
     /// cannot be sealed nothing is kept. Never logged. Thread-safe; game-free. COST: a file read or write on a change.
+    /// DPAPI is Windows' own (crypt32). On another system no call is made and nothing is ever written: a key is held in
+    /// memory until the game closes (<see cref="SessionOnly"/>), which is as safe as a key can be kept without it.
     /// </summary>
     public sealed class TextKeys
     {
@@ -18,19 +20,33 @@ namespace RealLifeOverhaul.Texts
 
         private readonly object _lock = new object();
         private readonly string _path;
+        private readonly bool _session;
         private readonly Dictionary<string, string> _values = new Dictionary<string, string>(StringComparer.Ordinal);
         private bool _read;
 
-        public TextKeys(string folder)
+        public TextKeys(string folder) : this(folder, !HostSystem.Windows)
+        {
+        }
+
+        /// <summary>For a system told from outside (the offline checks): <paramref name="sessionOnly"/> as a system without Windows' protection.</summary>
+        public TextKeys(string folder, bool sessionOnly)
         {
             _path = Path.Combine(folder, FileName);
+            _session = sessionOnly;
         }
+
+        /// <summary>True where keys are held in memory until the game closes and never written: any system but Windows.</summary>
+        public bool SessionOnly => _session;
 
         /// <summary>Why the last read or write failed, for the log; null when it did not.</summary>
         public string Why { get; private set; }
 
         public static bool Sealable()
         {
+            if (!HostSystem.Windows)
+            {
+                return false;
+            }
             try
             {
                 byte[] sealedBytes = Seal(new byte[] { 1, 2, 3 });
@@ -96,9 +112,9 @@ namespace RealLifeOverhaul.Texts
             _values.Clear();
             try
             {
-                if (!File.Exists(_path))
+                if (_session || !File.Exists(_path))
                 {
-                    return;
+                    return;   // nothing was ever written here, or a file from a Windows PC that only that user can open
                 }
                 byte[] plain = Open(File.ReadAllBytes(_path));
                 if (plain == null)
@@ -117,6 +133,11 @@ namespace RealLifeOverhaul.Texts
 
         private bool Write()
         {
+            if (_session)
+            {
+                Why = null;
+                return true;   // held in memory until the game closes: without Windows' protection nothing goes to disk
+            }
             try
             {
                 byte[] plain = Encoding.UTF8.GetBytes(Text(_values));
@@ -191,6 +212,10 @@ namespace RealLifeOverhaul.Texts
 
         private static byte[] Crypt(byte[] data, bool seal)
         {
+            if (!HostSystem.Windows)
+            {
+                return null;   // crypt32 is Windows' own: not asked for anywhere else
+            }
             GCHandle dataPin = GCHandle.Alloc(data, GCHandleType.Pinned);
             GCHandle entropyPin = GCHandle.Alloc(Entropy, GCHandleType.Pinned);
             try

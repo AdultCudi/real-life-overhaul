@@ -220,7 +220,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                string path = Path.Combine(Application.persistentDataPath, "RealLifeOverhaul_bench_" + DateTime.Now.ToString("HHmmss") + ".txt");
+                string path = Path.Combine(LogPlaceRules.Folder(Application.consoleLogPath, Application.persistentDataPath), "RealLifeOverhaul_bench_" + DateTime.Now.ToString("HHmmss") + ".txt");
                 File.WriteAllText(path, report);
                 _logger?.Info("Performance test finished; everything is back as it was. Table written to " + path);
                 PerfDirector.Notify("reallife_perf_bench_done", 10f);
