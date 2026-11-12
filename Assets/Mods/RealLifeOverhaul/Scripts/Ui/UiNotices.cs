@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The game's notices in the kit's parts. The cards: slate cards where the game's stack sits at the top right, each
     /// with its kind's glyph on a tile in its own colour, the header in the title's style with its age at the right in the
-    /// quiet grey, the rest in at most three lines; three at once stand S2 apart. They take no key (a toast never steals
+    /// quiet grey, the rest whole in up to six lines; three at once stand S2 apart. They take no key (a toast never steals
     /// the player's walk): the pointer presses one, which runs the game's own entry. The list: a panel rising from the
     /// status bar's alerts pill at the bottom right, its title strip, the notices as rows of glyph, header, one line and
     /// age (the wheel and the tab keys move it, as the game's list takes no press), Clear all as its second action (P), and
@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Ui
         public const int MostCards = 3;           // cards at once: the game's stack shows a few, the rest wait their turn
         public const float CardWidth = 400f;      // px
         public const float ListWidth = 440f;      // px: as the info panel and All apps
-        private const int BodyLines = 3;
+        public const int BodyLines = 6;           // a notice of the mod's holds 240 characters at most (NoticeCheck): six lines of a card show it whole, where three cut it and the list shows one line
         private const float Glyph = 40f;          // px: a card's tile
         private const float RowTile = 32f;        // px: a row's tile
 
@@ -158,7 +158,8 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        // A card's body at most three lines, ending at a whole word: the rest is on the notice list. Once a layout.
+        // A card's body at most six lines, which hold a notice of 240 characters whole; a longer one (another mod's, a long
+        // translation) ends at a whole word. Once a layout.
         private static string Clip(string body, float width)
         {
             if (UiTextRules.Lines(body, UiStyle.Body, width, BodyLines + 1, out float _) <= BodyLines)

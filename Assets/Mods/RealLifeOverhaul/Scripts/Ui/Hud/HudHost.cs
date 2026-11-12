@@ -546,6 +546,7 @@ namespace RealLifeOverhaul.Ui
             if (n.Disabled || f.Pressed == null)
             {
                 UiGame.Instance.Play(UiCue.Error);
+                UiRefusalLog.Say("the HUD (a card over the world)", f.Scene, node, true);
                 return;
             }
             f.View.Press(Time.unscaledTime);
@@ -584,10 +585,16 @@ namespace RealLifeOverhaul.Ui
             if (n.Disabled)
             {
                 UiGame.Instance.Play(UiCue.Error);
+                UiRefusalLog.Say("the HUD", _scene, node, true);
                 return;
             }
             _view.Press(Time.unscaledTime);
+            UiRefusals.Begin();
             bool done = _screen.Press(n.Command, n.Arg);
+            if (!done)
+            {
+                UiRefusalLog.Say("the HUD", _scene, node, false);
+            }
             UiGame.Instance.Play(done ? UiCue.Confirm : UiCue.Error);
             if (_screen.Dirty)
             {

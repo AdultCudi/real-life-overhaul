@@ -284,10 +284,15 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             ref UiNode n = ref _scene.Nodes[node];
+            UiRefusals.Begin();
             bool done = !n.Disabled && Press(n.Command, n.Arg);
             if (done)
             {
                 _view.Press(Time.unscaledTime);
+            }
+            else
+            {
+                UiRefusalLog.Say("an item's card", _scene, node, n.Disabled);
             }
             UiGame.Instance.Play(done ? UiCue.Confirm : UiCue.Error);
         }

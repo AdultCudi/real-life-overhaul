@@ -570,6 +570,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _sound?.Play(UiCue.Error);
                 _pressNote = "target disabled";
+                UiRefusalLog.Say(_cost != null ? _cost.Name : ScreenId, _scene, node, true);
                 return;
             }
             _view.Press(now);
@@ -599,7 +600,13 @@ namespace RealLifeOverhaul.Ui
                 _sound?.Play(Chrome != null && Chrome(n.Command, n.Arg) ? UiCue.Confirm : UiCue.Error);
                 return;
             }
+            UiRefusals.Begin();
             bool done = _screen.Press(n.Command, n.Arg);
+            if (!done)
+            {
+                // The error sound alone says nothing: the screen, the control and the reason go to Player.log, once.
+                UiRefusalLog.Say(_cost != null ? _cost.Name : ScreenId, _scene, node, false);
+            }
             if (Meta.Dev.Verbose)
             {
                 // So a click drawn late reads from the press line alone: what kept it from being laid out, and what held the keys.
