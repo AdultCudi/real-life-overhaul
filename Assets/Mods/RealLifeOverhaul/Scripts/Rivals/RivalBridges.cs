@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int, string> GivingLine;
         /// <summary>A line on a tycoon (by index) who is off sick or in hospital; empty while they are well (Health). Default: none.</summary>
         public static Func<int, string> HealthLine;
+        /// <summary>A line on the health plan a tycoon (by index) holds and what it has paid of their hospital bills this year; empty for none (Insurance). Default: none.</summary>
+        public static Func<int, string> CoverLine;
         /// <summary>A line on the parking space a tycoon (by index) holds in a building's car park; empty for none (ParkSpaces). Default: none.</summary>
         public static Func<int, string> SpaceLine;
         /// <summary>A line on what supply has done to a tycoon's (by index) outlets this month; empty for nothing (Suppliers). Default: none.</summary>
@@ -136,6 +138,7 @@ namespace RealLifeOverhaul.Rivals
             Seats = null;
             GivingLine = null;
             HealthLine = null;
+            CoverLine = null;
             SpaceLine = null;
             SupplyLine = null;
             MarketLine = null;

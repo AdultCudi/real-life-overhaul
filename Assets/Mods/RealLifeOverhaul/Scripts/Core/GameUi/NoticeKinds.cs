@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.GameUi
             // health and the hospital
             "health_", "doctor_", "hc_", "pd_", "ragdolls_",
             // money and bills
-            "econ_", "bank_", "lender_", "mkt_", "lst_", "ven_", "vc_", "ob_", "util_", "net_", "advice_", "collect_",
+            "econ_", "bank_", "lender_", "mkt_", "lst_", "ven_", "vc_", "ob_", "util_", "net_", "advice_", "collect_", "ins_",
             // property and rent
             "estate_", "roommate_",
             // work and careers

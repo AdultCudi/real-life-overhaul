@@ -160,17 +160,57 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Takes the damages for hitting another car and tells the player, using the given message.</summary>
+        /// <summary>
+        /// What the driven car's policy pays of the damages to another car (Insurance, wired in Wiring/InsuranceLinks), asked before they are taken.
+        /// The player stopped at the scene: damages the police collect after a chase are never an insurer's. Null: nothing.
+        /// </summary>
+        public static System.Func<int, int> Cover;
+
+        /// <summary>Added to a message's key when a policy paid part of the damages: the message then says what it paid.</summary>
+        public const string CoveredSuffix = "_covered";
+
+        /// <summary>
+        /// Takes the damages for hitting another car and tells the player, using the given message. Where the car's policy pays a part, the damages
+        /// are taken less it and the message says so.
+        /// </summary>
         public static void ChargeLiability(int liability, string notificationKey)
         {
             if (liability <= 0)
             {
                 return;
             }
-            RealLifeOverhaul.Economy.BizBooks.Book(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+            int paid = Covered(liability);
+            if (liability - paid > 0)
+            {
+                RealLifeOverhaul.Economy.BizBooks.Book(-(liability - paid), new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+            }
             Justice.CrashVictim(liability, 0, 0);   // now and then the other driver sues (Scripts/Justice)
-            var data = new Dictionary<string, string> { { "amount", ((float)liability).ToCurrencyFormat() } };
-            Notifications.Show(NotificationType.Error, notificationKey, data, 8f);
+            var data = new Dictionary<string, string> { { "amount", ((float)(liability - paid)).ToCurrencyFormat() } };
+            if (paid > 0)
+            {
+                data["bill"] = ((float)liability).ToCurrencyFormat();
+                data["payout"] = ((float)paid).ToCurrencyFormat();
+            }
+            Notifications.Show(NotificationType.Error, paid > 0 ? notificationKey + CoveredSuffix : notificationKey, data, 8f);
+        }
+
+        // The policy's part of the damages: never under nothing, never over them, and nothing where no policy answers or it faults.
+        private static int Covered(int liability)
+        {
+            System.Func<int, int> cover = Cover;
+            if (cover == null)
+            {
+                return 0;
+            }
+            try
+            {
+                return Mathf.Clamp(cover(liability), 0, liability);
+            }
+            catch (System.Exception e)
+            {
+                Logger?.Error(e);
+                return 0;
+            }
         }
     }
 }

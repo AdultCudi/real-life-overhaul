@@ -50,6 +50,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Loyalty", "loyalty" },
             { "RealLifeOverhaul.Giving", "giving" },
+            { "RealLifeOverhaul.Insurance", "insurance" },
             { "RealLifeOverhaul.Health", "health" },
             { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
             { "RealLifeOverhaul.SideJobs", "side_jobs" },

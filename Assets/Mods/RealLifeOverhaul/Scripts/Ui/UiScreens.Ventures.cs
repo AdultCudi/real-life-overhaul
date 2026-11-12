@@ -242,6 +242,41 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_prompt_move", "reallife_ui_prompt_select"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("insurance", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_ins_app", "reallife_ins_b_excess_value", "reallife_ins_biz_foot", "reallife_ins_biz_refuses",
+                "reallife_ins_biz_sub", "reallife_ins_biz_sub_none", "reallife_ins_biz_title", "reallife_ins_btn_buy_cover",
+                "reallife_ins_btn_cancel", "reallife_ins_btn_cancel_plan", "reallife_ins_btn_change", "reallife_ins_btn_change_cost",
+                "reallife_ins_btn_file", "reallife_ins_btn_insure", "reallife_ins_btn_take_plan", "reallife_ins_business_none",
+                "reallife_ins_business_off", "reallife_ins_cap_value", "reallife_ins_car_foot", "reallife_ins_car_sub",
+                "reallife_ins_car_tier_0", "reallife_ins_car_tier_1", "reallife_ins_car_tier_2", "reallife_ins_car_unsound",
+                "reallife_ins_cars_none", "reallife_ins_cars_off", "reallife_ins_chip_filed", "reallife_ins_chip_grace",
+                "reallife_ins_chip_lapsed", "reallife_ins_chip_on", "reallife_ins_chip_paid", "reallife_ins_chip_put_in",
+                "reallife_ins_chip_wait", "reallife_ins_claim_belongings", "reallife_ins_claim_home", "reallife_ins_claim_liability",
+                "reallife_ins_claim_repair", "reallife_ins_claim_sub", "reallife_ins_claim_title", "reallife_ins_claim_tow",
+                "reallife_ins_claims_how", "reallife_ins_claims_none", "reallife_ins_day", "reallife_ins_day_value",
+                "reallife_ins_days_value", "reallife_ins_employer", "reallife_ins_fig_in_force", "reallife_ins_fig_paid",
+                "reallife_ins_fig_premiums", "reallife_ins_guide", "reallife_ins_health_foot", "reallife_ins_health_off",
+                "reallife_ins_home_foot", "reallife_ins_home_sub", "reallife_ins_home_tier_0", "reallife_ins_home_tier_1",
+                "reallife_ins_home_tier_2", "reallife_ins_homes_none", "reallife_ins_line_business", "reallife_ins_line_car",
+                "reallife_ins_line_health", "reallife_ins_line_home", "reallife_ins_month", "reallife_ins_not_covered",
+                "reallife_ins_off_body", "reallife_ins_off_title", "reallife_ins_plan_sub", "reallife_ins_plan_yours",
+                "reallife_ins_row_b_claims", "reallife_ins_row_b_excess", "reallife_ins_row_b_most", "reallife_ins_row_b_pays",
+                "reallife_ins_row_b_premium", "reallife_ins_row_b_term", "reallife_ins_row_belongings", "reallife_ins_row_c_loss",
+                "reallife_ins_row_c_part", "reallife_ins_row_c_pays", "reallife_ins_row_cap", "reallife_ins_row_crashes",
+                "reallife_ins_row_district", "reallife_ins_row_grade", "reallife_ins_row_h_doctor", "reallife_ins_row_h_excess",
+                "reallife_ins_row_h_hospital", "reallife_ins_row_h_premium", "reallife_ins_row_home_repair", "reallife_ins_row_insurer",
+                "reallife_ins_row_liability", "reallife_ins_row_loading", "reallife_ins_row_next", "reallife_ins_row_noclaim",
+                "reallife_ins_row_paid_year", "reallife_ins_row_points", "reallife_ins_row_premium", "reallife_ins_row_repair",
+                "reallife_ins_row_status", "reallife_ins_row_tier", "reallife_ins_row_tow", "reallife_ins_sec_business",
+                "reallife_ins_sec_cars", "reallife_ins_sec_claims", "reallife_ins_sec_homes", "reallife_ins_sec_how",
+                "reallife_ins_sec_plans", "reallife_ins_sec_record", "reallife_ins_status_grace", "reallife_ins_status_on",
+                "reallife_ins_status_wait", "reallife_ins_sub_none", "reallife_ins_tab_business", "reallife_ins_tab_cars",
+                "reallife_ins_tab_claims", "reallife_ins_tab_health", "reallife_ins_tab_homes", "reallife_ins_terms",
+                "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

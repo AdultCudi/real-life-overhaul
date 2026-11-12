@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Meta
             Roommates.RoommateGuide.Register();
             Household.HouseholdGuide.Register();
             Giving.GivingGuide.Register();
+            Insurance.InsuranceGuide.Register();
             Health.HealthGuide.Register();
             ParkSpaces.SpaceGuide.Register();
             SideJobs.SideJobGuide.Register();

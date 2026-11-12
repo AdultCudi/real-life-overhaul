@@ -65,6 +65,15 @@ public static partial class UiPreviewRunner
                 Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Giving(ModEnglish, st), f, d, k)
             });
         }
+        for (int i = 0; i < UiSamples.InsuranceStates.Length; i++)
+        {
+            string st = UiSamples.InsuranceStates[i];
+            screens.Add(new Screen
+            {
+                Name = "insurance_" + st, AppName = "Insurance", Icon = UiIcon.ShieldCheck, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Insurance(ModEnglish, st), f, d, k)
+            });
+        }
         for (int i = 0; i < UiSamples.HealthStates.Length; i++)
         {
             string st = UiSamples.HealthStates[i];

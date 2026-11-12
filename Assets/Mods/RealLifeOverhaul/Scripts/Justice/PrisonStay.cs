@@ -289,7 +289,7 @@ namespace RealLifeOverhaul
                     RealLifeOverhaul.Economy.BizBooks.Book(-storage, new TransactionInfo("reallife_transaction_impound"), null, null, force: true);
                     JusticeText.Toast(NotificationType.Info, "reallife_justice_release_impound", "amount", JusticeText.Money(storage), 10f);
                 }
-                VehicleTow.BringNear(car, near);
+                VehicleTow.BringNear(car, near, insured: false);   // (a tow after a stay in prison is nobody's insurer's to pay)
             }
             catch (Exception e)
             {

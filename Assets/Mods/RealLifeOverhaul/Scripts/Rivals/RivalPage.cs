@@ -208,6 +208,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(unwell);
             }
+            string cover = RivalBridges.CoverLine != null ? RivalBridges.CoverLine(who) : null;
+            if (!string.IsNullOrEmpty(cover))
+            {
+                box.Line(cover);
+            }
             string space = RivalBridges.SpaceLine != null ? RivalBridges.SpaceLine(who) : null;
             if (!string.IsNullOrEmpty(space))
             {
