@@ -686,7 +686,9 @@ internal static partial class Program
               && en["reallife_studio_note_named_2"].Contains("{copies}") && en["reallife_studio_after_named"].Contains("{name}") && en["reallife_tech_rival_titles"].Contains("{names}"),
             "titles texts: each text names what its line fills in");
         Check(keys.All(k => !en[k].Contains("!") && !en[k].Contains(((char)0x2014).ToString()) && !en[k].Contains(((char)0x2013).ToString()) && !en[k].Contains(" - ")), "titles texts: no dashes and no exclamation marks");
-        string next = en.TryGetValue("reallife_changes_next", out string n) ? n : string.Empty;
+        // the row that holds the line: the next row while it is unreleased, the version's own row afterwards
+        string next = en.Where(p => p.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && p.Value.Contains("Names for tech products and games:"))
+            .Select(p => p.Value).FirstOrDefault() ?? string.Empty;
         int at = next.IndexOf("Names for tech products and games:", StringComparison.Ordinal), fix = next.IndexOf("Fixed: ", StringComparison.Ordinal);
         Check(at > 0 && fix > at && next.IndexOf("Names for tech products and games:", at + 1, StringComparison.Ordinal) < 0,
             "titles texts: What's new says it once, among the features, before the first fix");
