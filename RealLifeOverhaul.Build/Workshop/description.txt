@@ -6,30 +6,33 @@
 [b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3824106911]Large[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820776564]Medium[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]Lite[/url]: a small model on your PC writes what people say, offline.[/b]
 
 [h1]Real Life Overhaul[/h1]
-Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to others and to you, and you can join in. Work your way up a career, stand for mayor, list your company, found a bank or a cloud, or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
+Real Life Overhaul adds everyday life to the city of Big Ambitions. Things happen in the street, to others and to you. Work up a career, raise a family, stand for mayor, list your company or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
 
-[h1]What it adds[/h1]
+[h1]Coming next: the living economy[/h1]
+The biggest update so far is in testing now. Try it early on the [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3828304001]beta item[/url], on a separate save.
 [list]
-[*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers.
-[*][b]Getting around.[/b] Buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
-[*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
-[*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
-[*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your words.
-[*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, children, friends, outings, leisure, a roommate and selfies.
-[*][b]Education and careers.[/b] Courses at the school, and degrees and certificates at the university, with fees, loans and exams. 25 professions at the city's businesses and your rivals' companies, with ranks up to the top seat, freelance work and a firm of your own. Street jobs and gigs too.
-[*][b]Standing.[/b] The city knows how rich, how known and how well thought of you are: reporters, a night show, promises remembered, invitations, lobbying, and bribes that can come out.
-[*][b]Money and credit.[/b] A credit rating from 300 to 850, and a Finance app with loans, an overdraft, a card, car finance and a mortgage, with real consequences for not paying.
-[*][b]The city's economy.[/b] A bank rate, prices that rise and fall, booms and recessions, districts with their own income and a district view on the map. The game's statements and taxes count what the mod charges and pays.
-[*][b]Bills and the internet.[/b] Power and water from a utilities office, auto debit, rival internet providers, and a broadband company of your own.
-[*][b]Markets and news.[/b] A stock market of some 136 companies with charts and orders, and your own company listed on it: results, dividends, a shareholders' meeting and takeover bids. The City Ledger and online papers. Flare, a social network with influencers.
-[*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing, a quarterly tax return, licences and a rota planner. Professional staff with skills, and a jobs board your rivals hire from too.
-[*][b]Growing a business.[/b] Brands and franchises that keep their prices, online shops, investors, selling a business, your own bank and your own car dealership.
-[*][b]Interiors and decor.[/b] Walls, floors and decor bring customers and let you charge a little more, each district expects its own standard, finishes wear, and an Interior tab in BizMan shows what to add next.
-[*][b]The tech sector.[/b] Software and game studios, IT consultancies, security firms and AI labs, startups and venture capital, data centres, a cloud and in time a hyperscaler.
-[*][b]Uptown and construction.[/b] A new district with a school, parks and landmarks. Build mode shows the whole city: buy land, zone it and place buildings, or run a construction company.
-[*][b]Property.[/b] Buy, let and sell buildings with a tenant in each unit, set your rental income, run an estate agency or a hotel, and hire out cars.
-[*][b]Permadeath, if you want it.[/b] Off unless you switch it on: rare deaths after warnings, hunger among them, and an obituary in the City Ledger.
-[*][b]Tools.[/b] A Planner and a Guide on your phone, presets, tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
+[*][b]A city of real people.[/b] Every home holds a household that works, pays rent and tax and shops at the businesses within reach. Your customers are those people. Births, deaths and moves change the city over the years, and developers build new homes when flats run short.
+[*][b]Flare with real followers.[/b] Your followers are the city's residents. A good post brings real customers, every business has a rating and reviews from people who shopped there, and trends move what the city wants.
+[*][b]Tech firms rebuilt.[/b] Game studios, software, AI labs, consultancies and data centres sell into markets sized from the city, against rivals who play by the same rules. You run them from your own desk.
+[*][b]Supply and stock.[/b] Suppliers with contracts, delivery trips that drive the streets, and fresh food that spoils.
+[*][b]Life events.[/b] Illness and hospital with a health plan, parties and company events, giving to charity, and a will with an heir to carry on as.
+[*][b]Rivals you can meet.[/b] Rival owners are seen around the city, bid for your businesses by name and sell to each other.
+[*][b]Schemes and inquiries.[/b] Dressed books, false claims and money to people with power, each with a real chance of being found out.
+[*][b]Next in the beta.[/b] An Insurance app for car, health, home and business cover, taxi and delivery shifts in your own car, and loyalty cards for your shops.
+[*][b]A new interface.[/b] The HUD, BizMan, conversations, the interior designer and the phone's apps in the mod's own design, each with its own switch.
+[/list]
+
+[h1]What it adds today[/h1]
+[list]
+[*][b]A living street.[/b] People chat, eat, queue and busk. Accidents, fires, crimes, street events and weather, with ambulances and police.
+[*][b]Getting around.[/b] Buses, the subway, taxis, bicycles, a minimap with a GPS route, cars that handle by their kind, a garage and a driving school.
+[*][b]Law and politics.[/b] Fines, arrests, courts and prison. A council and a mayor you vote for, or stand yourself.
+[*][b]Home and family.[/b] Cooking, a partner, a wedding, children, friends and outings. Talk to anybody on the pavement.
+[*][b]Education and careers.[/b] Courses, degrees and 25 professions with ranks up to the top seat, street jobs and gigs.
+[*][b]Money.[/b] A credit rating, loans, a mortgage, a bank rate, booms and recessions, bills, and a stock market of some 136 companies you can list your own on.
+[*][b]Business.[/b] Staff who ask for raises, brands and franchises, interiors that bring customers, a tech sector, property, your own bank, dealership and broadband company.
+[*][b]A bigger city.[/b] Uptown, a new district, and a build mode to buy land and place buildings.
+[*][b]Tools.[/b] A Planner and a Guide on your phone, presets, every key rebindable, permadeath if you want it, and a tool that takes the mod out of a save.
 [/list]
 
 [h1]How to start[/h1]
