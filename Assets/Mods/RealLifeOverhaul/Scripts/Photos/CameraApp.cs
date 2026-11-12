@@ -47,15 +47,19 @@ namespace RealLifeOverhaul.Photos
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_phonecam_app",
                 Icon = like => AppIconPainter.Paint(like, FlareIcons.Get(FlareGlyph.Camera), new Color32(92, 98, 112, 255), new Color32(28, 30, 36, 255), 0.46f, "AppIcon-Camera"),
                 Build = Build,
                 Opened = () => UiClone.Safe(Opened),
-                Closed = Closed
-            }, out bool tryAgain);
+                Closed = Closed,
+                Kit = () => new RealLifeOverhaul.Ui.CameraScreen(_director) { Close = () => RealLifeOverhaul.Ui.UiShell.CloseMenu() },
+                KitScreen = "camera",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Camera,
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -63,6 +67,10 @@ namespace RealLifeOverhaul.Photos
                 {
                     Logger?.Warn("Camera: the game's phone is not built as this version expects, so the Camera app is left off. Flare's camera button still opens the camera.");
                 }
+            }
+            else
+            {
+                RealLifeOverhaul.Ui.UiShell.Face(_app, def);
             }
         }
 
@@ -108,7 +116,7 @@ namespace RealLifeOverhaul.Photos
                 return;
             }
             _refused = CameraRules.Refuse(PhotosGame.Situation(false));
-            Write();
+            UiClone.Safe(Write);   // a fault writing the old page never stops the camera opening below
             if (_refused == CameraRefusal.None)
             {
                 Ask(false);

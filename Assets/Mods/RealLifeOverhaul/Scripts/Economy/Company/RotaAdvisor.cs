@@ -346,6 +346,10 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
             }
+            if (shop.HasFloor)
+            {
+                RotaPlanRules.Lift(shop.Floor, open, stations, into.Value, shop.Taken, shop.GroupKind, shop.Group, RotaCatalogue.ValueFloor);   // the plan's crew, under the need
+            }
         }
 
         // In whole money, never under the floor, so the smallest crew is always wanted.

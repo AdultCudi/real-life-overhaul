@@ -72,6 +72,14 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Where an employer's work is done and its people are met.</summary>
+    public enum EmployerPlace
+    {
+        Board,      // its help-wanted board on the pavement outside a shop or service building (<see cref="Employer.Premises"/>)
+        Sites,      // the city's works sites, the nearest to the player (the builder's, the city's building control)
+        Practice    // one place on a floor of one of the mod's buildings (the architects')
+    }
+
     /// <summary>An employer: its name, the kind of building its office is taken to be in, its boss, the gig it grows out of, and its ladder.</summary>
     public sealed class Employer
     {
@@ -92,6 +100,9 @@ namespace RealLifeOverhaul
         public readonly string[] Colleagues;     // names of the two people seen on shifts
         public readonly string[] Premises;       // business types its office may be, best first, matched within the game's type name
         public readonly CareerRank[] Ranks;
+
+        /// <summary>Where its work is done: at its board, at the city's works sites, or at its practice's floor. Every employer has a place to be found.</summary>
+        public EmployerPlace Place => Premises.Length > 0 ? EmployerPlace.Board : Id == CareerCatalogue.Architects ? EmployerPlace.Practice : EmployerPlace.Sites;
 
         /// <param name="keys">Locale keys: name, boss, the two colleagues, then the boss's five lines.</param>
         public Employer(string id, string[] keys, string job, string related, int references, int seed, bool bossFemale, string leadSkill,

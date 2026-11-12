@@ -32,6 +32,12 @@ namespace RealLifeOverhaul
         public static bool SickNoteActive => HomeState.Loaded && HomeState.SickNoteUntil > 0f && TimeHelper.NowInMinutes() < HomeState.SickNoteUntil;
         private static float Easy => Settings.HomeEasy ? HomeBalance.Easy : 1f;
 
+        /// <summary>
+        /// A chance's draw: the game's own random number, or with Health on a draw from the save's seed for the day and the slot (1 rain, 2 strain, 3 the flu, 4 run down,
+        /// 5 unwashed, 6 a night in the car, 7 how long it lasts, 8 a meal), so loading the day again changes nothing.
+        /// </summary>
+        internal static float Draw(int slot) => HomeBridges.Roll != null ? HomeBridges.Roll(slot) : Random.value;
+
         /// <summary>Takes every energy drain of ours off: a load, or the city going.</summary>
         public static void Reset()
         {
@@ -127,7 +133,7 @@ namespace RealLifeOverhaul
                 }
                 // What wears a need down is halved on easy; what restores it is not.
                 HomeState.Hygiene = HomeState.Clamp(HomeState.Hygiene + hygiene * hours * (hygiene < 0f ? Easy : 1f), 0f, 100f);
-                HomeState.Stress = HomeState.Clamp(HomeState.Stress + stress * hours * (stress > 0f ? Easy : 1f), 0f, 100f);
+                HomeState.Stress = HomeState.Clamp(HomeState.Stress + HomeBalance.Added(stress, hours, Settings.HomeEasy, stress > 0f), 0f, 100f);
                 if (!asleep && HomeTidy.HasHome)
                 {
                     HomeTidy.Change((atHome ? HomeBalance.TidyAtHome : HomeBalance.TidyAway) * hours * Easy);
@@ -136,7 +142,7 @@ namespace RealLifeOverhaul
                 {
                     float before = HomeState.WetMinutes;
                     HomeState.WetMinutes += minutes;
-                    if (before < HomeBalance.WetLimit && HomeState.WetMinutes >= HomeBalance.WetLimit && Random.value < HomeBalance.ColdFromRain * Easy)
+                    if (before < HomeBalance.WetLimit && HomeState.WetMinutes >= HomeBalance.WetLimit && Draw(1) < HomeBalance.ColdFromRain * Easy)
                     {
                         Catch(Illness.Cold, "reallife_health_cause_rain", false);
                     }
@@ -186,7 +192,7 @@ namespace RealLifeOverhaul
             }
             HomeState.FatDue += HomeBalance.FatPerActiveHour * hours;
             if (Settings.HomeIllness && before < 60f && HomeState.ExerciseToday >= 60f && HomeState.Fitness < HomeBalance.FitLow
-                && Random.value < HomeBalance.BackFromStrain * Easy)
+                && Draw(2) < HomeBalance.BackFromStrain * Easy)
             {
                 Catch(Illness.BackPain, "reallife_health_cause_strain", false);
             }
@@ -209,6 +215,11 @@ namespace RealLifeOverhaul
                 bool flu = HomeState.Ill == Illness.Flu && ModState.IsSick;
                 if (Permadeath.Mortality.FluHour(flu, HomeState.IllSince, HomeState.IllTreated) && flu
                     && HomeState.IllUntil < now + Permadeath.PermadeathRules.IllHoldMinutes)
+                {
+                    SetUntil(now + Permadeath.PermadeathRules.IllHoldMinutes);
+                }
+                // With Health on, an illness that has turned serious waits for the hospital: it is held on in the same way.
+                if (Ill && HomeBridges.Held != null && HomeBridges.Held() && HomeState.IllUntil < now + Permadeath.PermadeathRules.IllHoldMinutes)
                 {
                     SetUntil(now + Permadeath.PermadeathRules.IllHoldMinutes);
                 }
@@ -362,15 +373,15 @@ namespace RealLifeOverhaul
                 return;
             }
             float flu = HomeBalance.FluADay * (HomeState.DietScore <= HomeBalance.DietPoor ? 2f : 1f) * (HomeState.SleepDebt > HomeBalance.DebtHigh ? 2f : 1f);
-            if (Random.value < flu * Easy)
+            if (Draw(3) < flu * Easy)
             {
                 Catch(Illness.Flu, HomeState.DietScore <= HomeBalance.DietPoor ? "reallife_health_cause_diet" : "reallife_health_cause_going_round", false);
             }
-            else if (HomeState.SleepDebt > HomeBalance.DebtHigh && Random.value < HomeBalance.ColdWhenRunDown * Easy)
+            else if (HomeState.SleepDebt > HomeBalance.DebtHigh && Draw(4) < HomeBalance.ColdWhenRunDown * Easy)
             {
                 Catch(Illness.Cold, "reallife_health_cause_no_sleep", false);
             }
-            else if (HomeState.Hygiene < HomeBalance.HygieneNotice && Random.value < HomeBalance.ColdWhenUnwashed * Easy)
+            else if (HomeState.Hygiene < HomeBalance.HygieneNotice && Draw(5) < HomeBalance.ColdWhenUnwashed * Easy)
             {
                 Catch(Illness.Cold, "reallife_health_cause_unwashed", false);
             }
@@ -430,7 +441,7 @@ namespace RealLifeOverhaul
             {
                 Shorten(HomeBalance.RestCure * 60f);
             }
-            if (Settings.HomeIllness && inCar && Random.value < HomeBalance.BackFromCar * Easy)
+            if (Settings.HomeIllness && inCar && Draw(6) < HomeBalance.BackFromCar * Easy)
             {
                 Catch(Illness.BackPain, "reallife_health_cause_car", false);
             }
@@ -501,7 +512,7 @@ namespace RealLifeOverhaul
                 Over(false);
             }
             float now = TimeHelper.NowInMinutes();
-            int hours = HomeBalance.Hours(ill, Random.value);
+            int hours = HomeBalance.Hours(ill, Draw(7));
             HomeState.Ill = ill;
             HomeState.IllSince = now;
             HomeState.IllUntil = now + hours * 60f;
@@ -621,7 +632,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>True if the player is in no state for hard exercise; stretching is always allowed.</summary>
-        public static bool TooIllToTrain => HomeState.Ill == Illness.Flu || HomeState.Ill == Illness.BackPain || HomeState.Ill == Illness.FoodPoisoning;
+        public static bool TooIllToTrain => HomeState.Ill == Illness.Flu || HomeState.Ill == Illness.BackPain || HomeState.Ill == Illness.FoodPoisoning
+                                            || (HomeBridges.TooIll != null && HomeBridges.TooIll());
 
         public static string Days(float minutes)
         {

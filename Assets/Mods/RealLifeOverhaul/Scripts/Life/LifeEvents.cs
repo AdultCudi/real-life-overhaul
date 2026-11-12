@@ -260,6 +260,7 @@ namespace RealLifeOverhaul
         /// <param name="notificationKey">Null when the caller says it itself (Home/HomeHealth names the illness).</param>
         public void MakeSick(int hours, string notificationKey = "reallife_event_sick")
         {
+            ModState.SickSince = ModState.IsSick && ModState.SickSince > 0f ? ModState.SickSince : TimeHelper.NowInMinutes();   // (a sickness that goes on keeps the day it began)
             ModState.SickUntil = TimeHelper.NowInMinutes() + hours * 60f;
             ModState.AddModifier(ModState.Sick, hours);
             SetSickDrain(true);
@@ -269,9 +270,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Set by Wiring/Wiring.HealthLinks while Health runs: an injury of so many hours, which Health gives a name and a course. Default: none.</summary>
+        public static Action<int> Hurt;
+
+        /// <summary>
+        /// Set by Wiring/Wiring.InsuranceLinks: what a home's policy pays of a repair bill an event is about to charge (the bill, whether it is a repair at home).
+        /// The bill is then taken less it. Default: nothing.
+        /// </summary>
+        public static Func<int, bool, int> RepairCover;
+
+        /// <summary>The transaction of an event's repair bill (LifeEventCatalogue's "repair"): the bills a home's policy may pay a part of.</summary>
+        internal const string RepairTxn = "repair";
+
+        // The policy's part of a repair bill: never under nothing, never over the bill, and nothing where no policy answers or it faults.
+        internal static int Covered(int bill, bool atHome)
+        {
+            Func<int, bool, int> cover = RepairCover;
+            if (cover == null || bill <= 0)
+            {
+                return 0;
+            }
+            try
+            {
+                return Mathf.Clamp(cover(bill, atHome), 0, bill);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return 0;
+            }
+        }
+
         public void Injure(int hours, float energyLoss, string notificationKey)
         {
             ModState.AddModifier(ModState.Injured, hours);
+            Hurt?.Invoke(hours);
             EnergyHelper.SpentEnergyOnce(energyLoss);
             Notify(NotificationType.Error, notificationKey);
         }
@@ -280,6 +313,7 @@ namespace RealLifeOverhaul
         {
             bool wasSick = ModState.SickUntil > 0f;
             ModState.SickUntil = 0f;
+            ModState.SickSince = 0f;
             ModState.RemoveModifier(ModState.Sick);
             SetSickDrain(false);
             if (wasSick && notificationKey != null)

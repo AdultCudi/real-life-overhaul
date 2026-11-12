@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             _company.Month(UtilitiesGame.Today, Prices.Level, GameCalendar.MonthDays, 0);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: every network being dug opens this morning.</summary>
@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Utilities
             }
             int opened = _company.TestBuilt(UtilitiesGame.Today);
             UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_test_network_built_done", "count", opened.ToString()), 8f);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: every connection in an outage from now for two hours.</summary>
@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Effects();
             UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_outage_done", "count", count.ToString()), 8f);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: the month billed now, as at its turn.</summary>
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Utilities
             _state.MonthStart = today;
             UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_toast_bills", "count", count.ToString(), "amount", UtilitiesText.Money(total),
                 "day", UtilitiesText.Day(today + UtilitiesRules.DueIn(GameCalendar.MonthDays))), 10f);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: the bills owed fall due today, so that tomorrow is a day late (and the cut follows).</summary>
@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Utilities
                 }
             }
             UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_test_due_done", "count", count.ToString()), 8f);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: the supply at the player's home cut now, as for an unpaid bill.</summary>
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Effects();
             UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_cut_done", "count", count.ToString()), 8f);
-            _view?.Changed();
+            Touch();
         }
 
         /// <summary>Test: every account supplied again with nothing owed, as if all had been paid and reconnected.</summary>
@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Utilities
                 a.TemporaryUntil = 0;
             }
             UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_test_restore_done"), 8f);
-            _view?.Changed();
+            Touch();
         }
 
         private const int HoldHours = 2;   // game hours a test holds the office away: long enough to look at the app, then the desk is back by itself
@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Utilities
             UtilitiesText.Toast(ok ? NotificationType.Success : NotificationType.Error, UtilitiesText.T(ok ? "reallife_util_test_phone_pass" : "reallife_util_test_phone_fail",
                 "service", UtilitiesText.Service(pick.Service), "place", NameOf(pick), "day", UtilitiesText.Day(pick.ConnectDay), "hours", HoldHours.ToString(),
                 "why", why != null ? UtilitiesText.T(why, "office", OfficeName()) : string.Empty), 12f);
-            _view?.Changed();
+            Touch();
         }
 
         private bool Ready()

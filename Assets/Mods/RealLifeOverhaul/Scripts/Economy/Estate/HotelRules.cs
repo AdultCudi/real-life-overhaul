@@ -51,6 +51,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The share of a type's rooms guests want on a night, thousandths, over 1000 when more want one than there are.</summary>
         public static int Demand(int tier, int season, int weekday, int evt, int cycle, int income, int rate, int rating, bool campaign, int noise)
         {
+            return Demand(tier, season, weekday, evt, cycle, income, rate, rating, campaign, noise, 1000);
+        }
+
+        /// <summary>The same with the city's guests against the anchor day's (the living population: business travel, the visitors it draws, residents' trips).</summary>
+        public static int Demand(int tier, int season, int weekday, int evt, int cycle, int income, int rate, int rating, bool campaign, int noise, int guests)
+        {
             int[] seasons = tier == EstateCatalogue.HotelTiers - 1 ? EstateCatalogue.SeasonCottage : EstateCatalogue.SeasonCity;
             long d = EstateCatalogue.Occupancy;
             d = d * seasons[EstateCatalogue.Clamp(season, 0, 3)] / 1000;
@@ -62,6 +68,7 @@ namespace RealLifeOverhaul.Economy
             d = d * RatingDemand(rating) / 1000;
             d = d * (campaign ? EstateCatalogue.CampaignDemand : 1000) / 1000;
             d = d * (1000 + EstateCatalogue.Clamp(noise, -EstateCatalogue.NightNoise, EstateCatalogue.NightNoise)) / 1000;
+            d = d * Math.Max(0, guests) / 1000;
             return (int)Math.Max(0, d);
         }
 
@@ -209,7 +216,7 @@ namespace RealLifeOverhaul.Economy
             for (int type = 0; type < EstateCatalogue.RoomTypes; type++)
             {
                 int rooms = Rooms(tier, type) - (type == 0 ? out0 + group : 0);
-                int sold = Sold(rooms, Demand(tier, c.Season, c.Weekday, c.Event, c.Cycle, f.Income, f.Rate[type], f.Rating, campaign, noise));
+                int sold = Sold(rooms, Demand(tier, c.Season, c.Weekday, c.Event, c.Cycle, f.Income, f.Rate[type], f.Rating, campaign, noise, EstateRules.People(c.Guests)));
                 n.Takings += sold * Rate(f.Going[type], f.Rate[type]);
                 sold += type == 0 ? group : 0;
                 f.Sold[type] = sold;

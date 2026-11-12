@@ -16,8 +16,11 @@ namespace RealLifeOverhaul.Markets
         public const double IpoPopMean = 0.06, IpoPopSpread = 0.12;
         public const double StartSpread = 0.04;          // prices against worth when a new market starts
 
-        /// <summary>A catalogue company as a listed stock, its shares as many as make a share worth its price, or <paramref name="startCents"/>.</summary>
-        public static Stock Make(CompanyDef d, string name, int day, in MarketEnv env, int year, ulong seed, int startCents)
+        /// <summary>
+        /// A catalogue company as a listed stock, its shares as many as make a share worth its price, or <paramref name="startCents"/>; with
+        /// <paramref name="shares"/> its shares are those (a startup's that listed) and the market makes of the business what it will for them.
+        /// </summary>
+        public static Stock Make(CompanyDef d, string name, int day, in MarketEnv env, int year, ulong seed, int startCents, long shares = 0)
         {
             var s = new Stock
             {
@@ -38,7 +41,7 @@ namespace RealLifeOverhaul.Markets
             s.Equity = Math.Max(s.Rev * 0.15, profit / MarketCatalogue.RoeLong);
             double price = startCents > 0 ? startCents / 100.0 : d.PriceCents / 100.0 * level;
             double fair = MarketValuation.Fair(s, env);
-            s.Shares = Math.Max(100000L, (long)Math.Round(fair * s.Shares / Math.Max(0.5, price)));
+            s.Shares = shares > 0 ? shares : Math.Max(100000L, (long)Math.Round(fair * s.Shares / Math.Max(0.5, price)));
             s.Adv = s.Shares * d.TurnoverBp / 10000.0;
             double eps = MarketValuation.Earnings(s, env);
             s.DpsCents = eps > 0.0 ? Math.Max(0, (int)Math.Round(eps * MarketValuation.PayoutOf(s, MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0)) : 0;
@@ -316,6 +319,7 @@ namespace RealLifeOverhaul.Markets
                 own.ProposedCents = (int)Math.Round(own.ProposedCents / (double)ratio);
                 own.ListedCents = Div(own.ListedCents, ratio);
                 own.YearCents = Div(own.YearCents, ratio);
+                own.YearDividendCents = (int)Math.Round(own.YearDividendCents / (double)ratio);   // declared since the last meeting, a share: read against its price
                 for (int i = 0; i < own.Deals.Count; i++)
                 {
                     OwnDeal d = own.Deals[i];

@@ -91,6 +91,73 @@ namespace RealLifeOverhaul.Floors
         }
 
         /// <summary>
+        /// As <see cref="Page(int, int, int, int[])"/>, with <paramref name="pin"/> (the player's own floor: their desk in a
+        /// tower, today's class) on the first button of every page, the lift's main one; the other floors page on the buttons
+        /// after it, "more floors" on the last when they do not fit. No pin (0, past the top, or the floor the player is on):
+        /// the floors as without one.
+        /// </summary>
+        public static int Page(int floors, int skip, int pin, int page, int[] into)
+        {
+            if (!Pinned(floors, skip, pin) || into.Length < 3)
+            {
+                return Page(floors, skip, page, into);
+            }
+            into[0] = pin;
+            int count = Offered(floors, skip) - 1;   // the others: neither the player's floor nor the pinned one
+            int room = into.Length - 1;
+            bool paged = count > room;
+            int per = paged ? room - 1 : room;
+            int start = paged && count > 0 ? (Math.Max(0, page) * per) % count : 0;
+            for (int slot = 1; slot < into.Length; slot++)
+            {
+                if (paged && slot == into.Length - 1)
+                {
+                    into[slot] = -1;   // "more floors"
+                    continue;
+                }
+                int i = start + slot - 1;
+                into[slot] = slot - 1 < per && i < count ? Nth(floors, i, skip, pin) : 0;
+            }
+            return count + 1;
+        }
+
+        /// <summary>How many pages the floors take with <paramref name="pin"/> first on each.</summary>
+        public static int Pages(int floors, int skip, int pin, int slots)
+        {
+            if (!Pinned(floors, skip, pin) || slots < 3)
+            {
+                return Pages(floors, skip, slots);
+            }
+            int count = Offered(floors, skip) - 1, room = slots - 1;
+            return count <= room ? 1 : (count + room - 2) / (room - 1);
+        }
+
+        /// <summary>The page after <paramref name="page"/> with <paramref name="pin"/> first on each, back to the first after the last.</summary>
+        public static int NextPage(int page, int floors, int skip, int pin, int slots)
+        {
+            int pages = Pages(floors, skip, pin, slots);
+            return pages <= 1 ? 0 : (Math.Max(0, page) + 1) % pages;
+        }
+
+        private static bool Pinned(int floors, int skip, int pin) => pin >= 1 && pin <= floors && pin != skip;
+
+        private static int Offered(int floors, int skip) => Math.Max(0, floors) - (skip >= 1 && skip <= floors ? 1 : 0);
+
+        // The i-th floor, from 0, of the building's floors less the two left out.
+        private static int Nth(int floors, int i, int a, int b)
+        {
+            int n = -1;
+            for (int floor = 1; floor <= floors; floor++)
+            {
+                if (floor != a && floor != b && ++n == i)
+                {
+                    return floor;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>
         /// Spare floors for the places asked for. The buildings in their holders' turn, then by address; the places by id; each place
         /// the first run of free floors that holds it, above its holder's own. hostOf[g] is the building's index in
         /// <paramref name="hosts"/> (-1: no room anywhere), firstFloor[g] its first floor (0 with none). The same answer for the same

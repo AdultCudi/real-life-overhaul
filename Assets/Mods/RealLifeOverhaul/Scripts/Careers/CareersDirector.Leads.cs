@@ -23,7 +23,10 @@ namespace RealLifeOverhaul.Careers
         /// notification that opens it there. Null, and why, when none can be made: the working life off, no profession the
         /// player is qualified for, or no employer of it in the city.
         /// </summary>
-        public Opening Lead(string from, int salt, out string why)
+        public Opening Lead(string from, int salt, out string why) => Lead(from, salt, null, "reallife_career_note_lead", out why);
+
+        // With a firm named, only a post at that firm's own office (a tech company's headquarters) in a tech profession is looked for; the note is the one told.
+        private Opening Lead(string from, int salt, string firm, string note, out string why)
         {
             why = "reallife_social_net_why_no_lead";
             WorkFile w = Work;
@@ -38,7 +41,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Profession p = ProCatalogue.All[i];
                 int r = ProRules.BestRank(_study, p, ProRules.Experience(w, p.Id, day, Year));
-                if (r >= 0 && (w.Job == null || w.Job.Post.Prof != p.Id || r > w.Job.Post.Rank))
+                if (r >= 0 && (firm == null || AtFirm(p)) && (w.Job == null || w.Job.Post.Prof != p.Id || r > w.Job.Post.Rank))
                 {
                     _leadProfs.Add(p.Id);
                     _leadRanks.Add(r);
@@ -54,7 +57,7 @@ namespace RealLifeOverhaul.Careers
             for (int n = 0; n < LeadTries && o == null; n++)
             {
                 int at = (pick + n) % _leadProfs.Count;   // the next profession when one has no employer here
-                o = NewVacancy(day, LeadDraws + salt * LeadTries + n, false, false, _leadProfs[at], _leadRanks[at]);
+                o = NewVacancy(day, LeadDraws + salt * LeadTries + n, false, false, _leadProfs[at], _leadRanks[at], firm);
             }
             if (o == null)
             {
@@ -67,7 +70,7 @@ namespace RealLifeOverhaul.Careers
             why = null;
             Changed();
             Logger?.Info("Careers: a job lead from " + from + ": " + CareersText.Title(o.Prof, o.Rank) + " at " + o.Employer + ", open to day " + o.To + ".");
-            Tell2(NotificationType.Success, "reallife_career_note_lead",
+            Tell2(NotificationType.Success, note,
                 Data("name", from, "title", CareersText.Title(o.Prof, o.Rank), "employer", CareersText.Employer(o.Employer)), TabJobs, CareerApp.OpeningRow + o.Id);
             return o;
         }

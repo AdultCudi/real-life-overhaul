@@ -152,7 +152,9 @@ namespace RealLifeOverhaul.Markets
         /// Builder is the construction game's news of a rival builder (A the builder, B BuilderMarket.Packed).
         /// </summary>
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
-            EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventBuilder = EventCompany + 1, EventCount = EventBuilder + 1;
+            EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventBuilder = EventCompany + 1,
+            EventSplit = EventBuilder + 1,   // a split by a board's own level, a consolidation or a founder's own (Extras): A the company, B the ratio, under nothing for old shares put together
+            EventCount = EventSplit + 1;
 
         public const int CompanyMicrosMost = 50000;   // millionths of the log price, either way
 

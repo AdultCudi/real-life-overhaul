@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -253,6 +254,69 @@ namespace RealLifeOverhaul.Construction
             {
                 into[c] = BuildModeRules.ValueStepOf(into[c], least == long.MaxValue ? 0L : least, most);
             }
+        }
+
+        private long _rentLeast = long.MaxValue, _rentMost;
+
+        /// <summary>
+        /// The Rents layer's steps into every column's facts: rent from what a square metre lets for in the column's own district for the
+        /// column's use (the estate's RentMapData, read a day; the same figure <see cref="RentPerSqm"/> shows), traffic from its lot's
+        /// traffic index. A column with no use, or no rent read yet, takes none (-1) and is not tinted. Worked when the facts are read.
+        /// </summary>
+        public void RentAndTraffic(BuildModeRules.ColumnFacts[] facts)
+        {
+            BeginRentSteps();
+            for (int c = 0; c < facts.Length && c < Cells.Columns.Count; c++)
+            {
+                BuildModeRules.ColumnFacts f = facts[c];
+                int use = f.Building ? f.Use : f.Mine && f.Paint > 0 ? f.Paint - 1 : f.MainUse >= 0 ? f.MainUse : f.CouncilUse;
+                bool lot = LotOfColumn(c, out LotView view);
+                f.RentStep = lot ? RentStepOf(DistrictIdOf(view), use) : -1;
+                f.TrafficStep = lot ? BuildModeRules.TrafficStepOf(view.Traffic) : -1;
+                facts[c] = f;
+            }
+        }
+
+        /// <summary>The ramp's ends over every district and use the rents are read for; call before <see cref="RentStepOf"/>.</summary>
+        public void BeginRentSteps()
+        {
+            _rentLeast = long.MaxValue;
+            _rentMost = 0L;
+            RentMapData rents = EstateDirector.Instance != null ? EstateDirector.Instance.Rents : null;
+            for (int d = 0; rents != null && d < rents.Districts.Count; d++)
+            {
+                for (int u = 0; u < RentMapData.Uses; u++)
+                {
+                    long cents = rents.PerSqm(d, u);
+                    if (cents > 0L)
+                    {
+                        _rentLeast = Math.Min(_rentLeast, cents);
+                        _rentMost = Math.Max(_rentMost, cents);
+                    }
+                }
+            }
+        }
+
+        /// <summary>The Rents layer's step for a use in a district (its id), -1 where none is read; after <see cref="BeginRentSteps"/>.</summary>
+        public int RentStepOf(string district, int use)
+        {
+            int cents = use >= 0 ? RentPerSqm(district, use) : -1;
+            return cents > 0 ? BuildModeRules.RampStepOf(cents, _rentLeast, _rentMost) : -1;
+        }
+
+        private static string DistrictIdOf(LotView lot) => string.IsNullOrEmpty(lot.DistrictKey) ? DistrictKeyOf(lot.District) : lot.DistrictKey;
+
+        /// <summary>What a use lets for a square metre in a month, cents, in a district (its id), from the district's rents; -1 where none is read.</summary>
+        public static int RentPerSqm(string district, int use)
+        {
+            RentMapData rents = EstateDirector.Instance != null ? EstateDirector.Instance.Rents : null;
+            return rents != null ? rents.PerSqmIn(district, use) : -1;
+        }
+
+        /// <summary>What a use lets for a square metre in a month where a column of cells is, cents; -1 where none is read.</summary>
+        public int RentPerSqm(BuildUse use, int column)
+        {
+            return LotOfColumn(column, out LotView lot) ? RentPerSqm(DistrictIdOf(lot), (int)use) : -1;
         }
 
         /// <summary>One cell in words for the pointer: its address and row, who holds it, its zoning, the height limit and a cell's price.</summary>

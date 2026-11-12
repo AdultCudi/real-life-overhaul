@@ -42,6 +42,7 @@ ShopsText           the locale keys
 - **Ready-made designs** (`Designs`, `DesignWay.Stock`): the game's own designs of the shops each is made like, without the shelves for goods it does not sell (and what stood on them), each with a point of sale and furniture that shows a primary good, at most six a size. A tea bar's coffee machines are set to pour tea. An ice cream parlour's are the game's coffee shop and fast food designs with an ice cream counter, of the four larger shop sizes (C1, C2, D2, M1); the game has none at A1 and A2.
 - **The option** (`new_shops`, on): off, the kinds are made again without the game's "the player may start it" tag, so BizMan does not offer them; shops already open keep trading.
 - **Removing the mod**: "Prepare this save for removing the mod" makes every such shop its template type.
+- **The Car Showroom's stock** is not bought as a shop's goods are: its new cars come from a supplier chosen for each kind of car ([Car suppliers](car-suppliers.md)).
 
 - **In Uptown, run by the city**: Uptown's mix pass ([Uptown](uptown.md#offices-to-work-at-and-a-district-lived-in-from-the-first-day)) opens ice cream parlours and tobacconists as businesses of the city's, with a layout of the game's shop each trades as that shows its primary goods. A tea bar cannot be run by the city: the game's coffee shop layouts pour coffee.
 

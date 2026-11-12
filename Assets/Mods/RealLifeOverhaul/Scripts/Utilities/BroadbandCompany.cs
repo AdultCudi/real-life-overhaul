@@ -68,6 +68,21 @@ namespace RealLifeOverhaul.Utilities
             BroadbandRules.Apply(n, today);
         }
 
+        /// <summary>Each district's homes and businesses against the anchor day's, read before the rules run (the living population; nothing with none).</summary>
+        public void Peopled()
+        {
+            Network n = Network;
+            if (n == null)
+            {
+                return;
+            }
+            Func<string, int> people = UtilitiesBridges.Connections;
+            for (int d = 0; d < Network.Districts; d++)
+            {
+                n.People[d] = people != null ? Math.Max(0, people(BroadbandCatalogue.Districts[d])) : 0;
+            }
+        }
+
         /// <summary>An ended day booked at the headquarters: bills (none on a day the network failed, nor without one), staff, network, marketing.</summary>
         public void Day(int day, int level, int monthDays)
         {
@@ -76,6 +91,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return;
             }
+            Peopled();
             BuildingRegistration hq = UtilitiesGame.Headquarters();
             int share = ScaleNow();
             BroadbandRules.Hire(n, day);
@@ -119,6 +135,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return;
             }
+            Peopled();
             int before = BroadbandRules.Connections(n);
             BroadbandRules.Month(n, State.Promo, day, monthDays);
             int after = BroadbandRules.Connections(n);

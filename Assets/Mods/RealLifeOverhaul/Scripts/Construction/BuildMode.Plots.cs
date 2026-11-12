@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             _d.CityWorks(_worksShare, _worksMine);
+            _d.BeginRentSteps();
             float least = float.MaxValue, most = 0f;
             for (int i = 0; i < _plots.Count; i++)
             {
@@ -93,6 +94,7 @@ namespace RealLifeOverhaul.Construction
             {
                 PlotFacts f = _plots.Facts[i];
                 f.ValueStep = BuildModeCityRules.ValueStep(_plots.PricePerSqm[i], least == float.MaxValue ? 0f : least, most);
+                f.RentStep = _d.RentStepOf(_plots.District[i], f.Use);
                 string key = _plots.Street[i] + "#" + _plots.Number[i].ToString(CultureInfo.InvariantCulture);
                 if (_worksShare.TryGetValue(key, out int share))
                 {
@@ -432,7 +434,7 @@ namespace RealLifeOverhaul.Construction
 
         // What can be done with the plot picked, each greyed with why when it cannot: the game's buy and rent on its BizMan page,
         // a refit by the city's best renovation contractor, a rebuild, and the demolition's own refusal of the city's buildings.
-        private void WritePlot(BuildModeSheet s)
+        private void WritePlot(IBuildSheet s)
         {
             PlotCard(_plot, out string head, out string kind, out string owner, out string price, out string state);
             s.Begin(head, null);
@@ -542,7 +544,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The panel with nothing picked over the rest of the city: what a click on a building gives.
-        private void WriteCityIdle(BuildModeSheet s)
+        private void WriteCityIdle(IBuildSheet s)
         {
             s.Begin(T(ToolKey(_state.Tool)), null);
             s.Line(T("reallife_bld_plot_idle"), BuildModeBar.Soft);

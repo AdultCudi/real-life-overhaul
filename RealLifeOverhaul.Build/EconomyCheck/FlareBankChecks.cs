@@ -30,6 +30,7 @@ internal static partial class Program
         BankFiles();
         BankSources();
         BankCost();
+        FlareFeedPhotoChecks();   // a feed of 60 posts and 18 photos loaded after a save, the nearest fit, a small bank, the pace (FlareFeedPhotoChecks.cs)
         Console.WriteLine("  flare photo bank: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -200,29 +201,30 @@ internal static partial class Program
         Check(BankFor(BankTalk(1, RealLifeOverhaul.Flare.FlareTalk.Weather, 10, Mid, "rain"), bank, false) == rainy
               && BankFor(BankTalk(2, RealLifeOverhaul.Flare.FlareTalk.Weather, 10, Mid, "sunshine"), bank, true) == sunny,
             "Flare photo bank: a weather post carries a street of its district in the weather it speaks of (never a sunny photo for a rainy post)");
+        FlareBankPhoto duskPost = BankFor(BankTalk(5, RealLifeOverhaul.Flare.FlareTalk.Commute, 18), bank, false);
         Check(BankFor(BankTalk(3, RealLifeOverhaul.Flare.FlareTalk.Commute, 9), bank, false) == sunny && BankFor(BankTalk(4, RealLifeOverhaul.Flare.FlareTalk.Commute, 23), bank, false) == night
-              && BankFor(BankTalk(5, RealLifeOverhaul.Flare.FlareTalk.Commute, 18), bank, false) == null,
-            "Flare photo bank: a morning post a day photo, a night post a night one, a dusk post none when the bank has no dusk photo");
-        Check(BankFor(BankTalk(6, RealLifeOverhaul.Flare.FlareTalk.Commute, 10, Gar), bank, false) == garment && BankFor(BankTalk(7, RealLifeOverhaul.Flare.FlareTalk.Commute, 10, "ba:neighborhood_hamptons"), bank, false) == null,
-            "Flare photo bank: a post carries a photo of its own district, or none");
-        Check(BankFor(BankTalk(8, RealLifeOverhaul.Flare.FlareTalk.Food, 11), bank, false) == cafe && BankFor(BankTalk(9, RealLifeOverhaul.Flare.FlareTalk.Food, 11), bank, true) == null,
-            "Flare photo bank: a food post a cafe's or a restaurant's front in the same light and weather, never a street or a shop");
+              && (duskPost == sunny || duskPost == night),
+            "Flare photo bank: a morning post a day photo, a night post a night one, a dusk post the nearest light when the bank has no dusk photo");
+        Check(BankFor(BankTalk(6, RealLifeOverhaul.Flare.FlareTalk.Commute, 10, Gar), bank, false) == garment && BankFor(BankTalk(7, RealLifeOverhaul.Flare.FlareTalk.Commute, 10, "ba:neighborhood_hamptons"), bank, false) is FlareBankPhoto elsewhere && elsewhere.Kind == FlarePhotoKind.Street && elsewhere.Light == FlarePhotoLight.Day,
+            "Flare photo bank: a post carries a photo of its own district, else the nearest street of another by day");
+        Check(BankFor(BankTalk(8, RealLifeOverhaul.Flare.FlareTalk.Food, 11), bank, false) == cafe && BankFor(BankTalk(9, RealLifeOverhaul.Flare.FlareTalk.Food, 11), bank, true) is FlareBankPhoto wetFood && (wetFood == cafe || wetFood == rainy),
+            "Flare photo bank: a food post a cafe's or a restaurant's front in the same light and weather; in the other weather the cafe still, or the street in the weather it is, never a shop");
         Check(BankFor(BankTalk(10, RealLifeOverhaul.Flare.FlareTalk.Night, 22), bank, false) == club && BankFor(BankTalk(11, RealLifeOverhaul.Flare.FlareTalk.Night, 11), bank, false) == null,
             "Flare photo bank: a night out a night spot's front at night; never the street by day");
         Check(BankFor(BankTalk(12, RealLifeOverhaul.Flare.FlareTalk.Sport, 10), bank, false) == park && BankFor(BankTalk(13, RealLifeOverhaul.Flare.FlareTalk.Event, 10, Mid), bank, false) == parade
-              && BankFor(BankTalk(14, RealLifeOverhaul.Flare.FlareTalk.Event, 10, Mid, null, 11), bank, false) == null,
-            "Flare photo bank: a sport post a park; an event post the day's event (wherever it was), and none on another day");
+              && BankFor(BankTalk(14, RealLifeOverhaul.Flare.FlareTalk.Event, 10, Mid, null, 11), bank, false) is FlareBankPhoto nextDay && nextDay.Kind == FlarePhotoKind.Street,
+            "Flare photo bank: a sport post a park; an event post the day's event (wherever it was), and on another day the street, never another day's event");
         var own = BankPost(15, FlareAuthor.Business, FlareSource.BusinessPost, 0, 10, Mid, "5th Avenue~5");
         var other = BankPost(16, FlareAuthor.Business, FlareSource.BusinessPost, 0, 10, Mid, "5th Avenue~99");
         Check(BankFor(own, bank, false) == shop && BankFor(other, bank, false) == sunny,
             "Flare photo bank: a business's own post its own front when banked, else a street of its district");
         var visit = BankPost(17, FlareAuthor.Influencer, FlareSource.Niche, 0, 11, null);
-        Check(BankFor(visit, bank, false, (int)FlareNiche.Food, Mid) == cafe && BankFor(visit, bank, false, (int)FlareNiche.Tech, Mid) == null,
-            "Flare photo bank: an influencer's niche post fits their niche in their home district (a food writer a cafe); a tech one carries none");
+        Check(BankFor(visit, bank, false, (int)FlareNiche.Food, Mid) == cafe && BankFor(visit, bank, false, (int)FlareNiche.Tech, Mid) is FlareBankPhoto tech && tech.Kind == FlarePhotoKind.Street,
+            "Flare photo bank: an influencer's niche post fits their niche in their home district (a food writer a cafe); a tech one a street");
         var rival = BankPost(18, FlareAuthor.Tycoon, FlareSource.BusinessPost, 0, 10, Mid, "Unknown~1");
-        Check(BankFor(rival, bank, false) == null && BankFor(BankTalk(19, RealLifeOverhaul.Flare.FlareTalk.Prices, 10), bank, false) == null
+        Check(BankFor(rival, bank, false) == sunny && BankFor(BankTalk(19, RealLifeOverhaul.Flare.FlareTalk.Prices, 10), bank, false) == null
               && BankFor(BankPost(20, FlareAuthor.Citizen, FlareSource.Review, 4, 10), bank, false) == null && BankFor(BankPost(21, FlareAuthor.Official, FlareSource.Official, 0, 10), bank, false) == null,
-            "Flare photo bank: a rival's building not in the bank, prices, a review and an official notice carry none");
+            "Flare photo bank: a rival's building not in the bank the street of its district, as for any business; prices, a review and an official notice carry none");
         var reply = BankTalk(22, RealLifeOverhaul.Flare.FlareTalk.Commute, 10);
         reply.ReplyTo = 3;
         var mine = BankTalk(23, RealLifeOverhaul.Flare.FlareTalk.Commute, 10);
@@ -277,11 +279,13 @@ internal static partial class Program
                 bool fits = false;
                 for (int way = 0; way < w.Ways; way++)
                 {
-                    fits |= FlareCityPhotoRules.Fits(photo, w, way);
+                    int penalty = FlareCityPhotoRules.Penalty(photo, w, way);
+                    fits |= penalty >= 0 && penalty <= FlareCityPhotoRules.PenaltyMost;
                 }
-                bool weather = p.Author == FlareAuthor.Citizen && (RealLifeOverhaul.Flare.FlareTalk)(p.Arg / 10) == RealLifeOverhaul.Flare.FlareTalk.Weather ? photo.Wet == (p.Topic == "rain") : photo.Wet == wet;
-                bool ok = fits && weather && photo.Light == FlareCityPhotoRules.LightAt(p.Hour) && (photo.Kind == FlarePhotoKind.Event ? photo.Day == p.Day : Math.Abs(photo.Day - p.Day) <= FlareCityPhotoRules.FreshDays)
-                          && (photo.Kind == FlarePhotoKind.Event || photo.District == (p.District ?? home)) && photo.Uses < FlareCityPhotoRules.UsesMost;
+                bool weather = p.Author == FlareAuthor.Citizen && (RealLifeOverhaul.Flare.FlareTalk)(p.Arg / 10) == RealLifeOverhaul.Flare.FlareTalk.Weather ? photo.Wet == (p.Topic == "rain") : true;
+                bool light = photo.Light == FlareCityPhotoRules.LightAt(p.Hour) || (photo.Light == FlarePhotoLight.Dusk) != (FlareCityPhotoRules.LightAt(p.Hour) == FlarePhotoLight.Dusk);   // never the day for the night
+                bool ok = fits && weather && light && (photo.Kind == FlarePhotoKind.Event ? photo.Day == p.Day : Math.Abs(photo.Day - p.Day) <= FlareCityPhotoRules.FreshDays)
+                          && photo.Uses < FlareCityPhotoRules.UsesAllowed(bank.Photos.Count);
                 if (!ok)
                 {
                     wrong++;
@@ -290,7 +294,7 @@ internal static partial class Program
                 FlareCityPhotoRules.Picked(bank, p.Id, photo);
             }
         }
-        Check(wrong == 0 && picked > 500, "Flare photo bank: in " + posts + " posts over 60 banks, every one of the " + picked + " photos picked fits its post: kind, district, light, weather, day"
+        Check(wrong == 0 && picked > 500, "Flare photo bank: in " + posts + " posts over 60 banks, every one of the " + picked + " photos picked fits its post: kind, light (never the day for the night), weather, day, uses"
                                           + (first != null ? " (wrong: " + first + ")" : ""));
     }
 
@@ -305,7 +309,7 @@ internal static partial class Program
         }
         int last = -1, repeats = 0, shown = 0;
         var used = new Dictionary<int, int>();
-        for (int k = 0; k < 40; k++)
+        for (int k = 0; k < 70; k++)
         {
             FlarePost p = BankTalk(500 + k, RealLifeOverhaul.Flare.FlareTalk.Commute, 10);
             FlareBankPhoto photo = BankFor(p, bank, false);
@@ -322,10 +326,11 @@ internal static partial class Program
         bool few = true;
         foreach (int n in used.Values)
         {
-            few &= n <= FlareCityPhotoRules.UsesMost;
+            few &= n <= FlareCityPhotoRules.UsesAllowed(6);
         }
-        Check(few && repeats == 0 && shown <= 6 * FlareCityPhotoRules.UsesMost && shown >= 6 * FlareCityPhotoRules.UsesMost - FlareCityPhotoRules.RecentMost, "Flare photo bank: a photo carries at most " + FlareCityPhotoRules.UsesMost + " posts and never two in a row ("
-                                                                            + shown + " posts carried one of six; then none, never a photo worn out)");
+        int most = FlareCityPhotoRules.UsesAllowed(6);
+        Check(few && repeats == 0 && most > FlareCityPhotoRules.UsesMost && shown <= 6 * most && shown >= 6 * most - FlareCityPhotoRules.RecentMost, "Flare photo bank: a photo carries at most " + FlareCityPhotoRules.UsesMost
+                                                                            + " posts at a full bank, " + most + " at a bank of six, and never two in a row (" + shown + " posts carried one of six; then none, never a photo worn out)");
     }
 
     // ---------------------------------------------------------------- the share, by kind and option
@@ -371,7 +376,7 @@ internal static partial class Program
             }
         }
         int share = city > 0 ? carry * 100 / city : 0, ofAble = able > 0 ? carry * 100 / able : 0;
-        Check(ofAble >= 45 && ofAble <= 75 && share >= 22 && share <= 40, "Flare photo bank: at \"some\" a realistic part of the city's posts asks for a photo: " + carry + " of " + city + " (" + share + "%), "
+        Check(ofAble >= 60 && ofAble <= 90 && share >= 30 && share <= 70, "Flare photo bank: at \"some\" a realistic part of the city's posts asks for a photo: " + carry + " of " + city + " (" + share + "%), "
                                                           + ofAble + "% of the " + able + " with something to see (a photo shows where the bank has one that fits)");
     }
 
@@ -430,15 +435,18 @@ internal static partial class Program
         FlareCityPhotoRules.Picked(bank, 31, bank.Photos[1]);
         FlareCityPhotoRules.Picked(bank, 32, null);
         FlareBank back = FlareCityPhotoRules.Read(FlareCityPhotoRules.Write(bank));
-        bool same = back.Photos.Count == 3 && back.Picks.Count == 2 && back.NextId == bank.NextId;
+        bool same = back.Photos.Count == 3 && back.Picks.Count == 1 && back.NextId == bank.NextId;
         for (int i = 0; same && i < 3; i++)
         {
             FlareBankPhoto a = bank.Photos[i], b = back.Photos[i];
             same &= a.Id == b.Id && a.District == b.District && a.Kind == b.Kind && (a.Place ?? string.Empty).Replace('|', '/') == (b.Place ?? string.Empty) && a.Niche == b.Niche && a.Light == b.Light
                     && a.Wet == b.Wet && a.Day == b.Day && a.Minute == b.Minute && a.Uses == b.Uses;
         }
-        Check(same && back.PickOf(31) == bank.Photos[1].Id && back.PickOf(32) == -1 && back.PickOf(33) == -2,
-            "Flare photo bank: its file gives back every photo's district, kind, place, light, weather, time and uses, and every post's pick");
+        Check(same && back.PickOf(31) == bank.Photos[1].Id && back.PickOf(32) == -2 && back.PickOf(33) == -2 && back.Picks.Count == 1,
+            "Flare photo bank: its file gives back every photo's district, kind, place, light, weather, time and uses, and every photo a post carries; a post that found none is tried again at the next load");
+        FlareBank oldFile = FlareCityPhotoRules.Read("v=1\nn=3\np|1|x|1||-1|0|0|1|1|0\nu|5|-1\nu|6|1\n");
+        Check(oldFile.PickOf(5) == -2 && oldFile.PickOf(6) == 1 && oldFile.Photos.Count == 1,
+            "Flare photo bank: an older file's \"none\" picks (all that a long game had settled as bare) are let go at the load, the picks that carry a photo kept");
         Check(FlareCityPhotoRules.Read("v=2\nn=9\np|1|x|1||-1|0|0|1|1|0").Photos.Count == 0 && FlareCityPhotoRules.Read("rubbish").Photos.Count == 0 && FlareCityPhotoRules.Read(null).NextId == 1
               && FlareCityPhotoRules.Read("v=1\np|0|x|1||-1|0|0|1|1|0\np|3|x|9||-1|0|0|1|1|0\np|4|x|1||-1|7|0|1|1|0\np|5|x\nu|x|y").Photos.Count == 0,
             "Flare photo bank: a later version, rubbish or a broken line gives nothing (the photos then go as files without a record), never a fault");
@@ -456,7 +464,7 @@ internal static partial class Program
         string second = FlareMethod(photos, "private void PhotosSecond()");
         int paced = second.IndexOf("t < _photoNext", StringComparison.Ordinal), planned = second.IndexOf("FlareCityPhotoRules.Plan(", StringComparison.Ordinal),
             started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
-        Check(director.Contains("PhotosSecond();") && paced >= 0 && planned > paced && started > planned && second.Contains("_photoBusy") && second.Contains("_photoToday >= FlareCityPhotoRules.DayMost"),
+        Check(director.Contains("PhotosSecond();") && paced >= 0 && planned > paced && started > planned && second.Contains("_photoBusy") && second.Contains("_photoToday >= FlareCityPhotoRules.DayLimit("),
             "Flare photo bank sources: the bank's pass runs on the director's one-second timer, plans only after the pace, one photo at a time under the day's most");
         int driving = second.IndexOf("FlarePictureGame.Driving()", StringComparison.Ordinal), spent = second.IndexOf("_photoNext = t + _photoPace", StringComparison.Ordinal);
         Check(driving > paced && spent > driving && FlareMethod(game, "public static bool Driving(").Contains("PlayerHelper.IsUsingVehicle"),

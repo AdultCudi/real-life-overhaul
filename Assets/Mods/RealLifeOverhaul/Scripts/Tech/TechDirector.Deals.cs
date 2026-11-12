@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = FirmOf(place);
             Cap c = firm != null ? CapFor(place, true) : null;
-            if (c == null || Save == null || c.RaiseUntil > 0)
+            if (c == null || Save == null || c.RaiseUntil > 0 || StockRaiseRefused(place, firm.File.Name))
             {
                 return false;
             }
@@ -227,13 +227,17 @@ namespace RealLifeOverhaul.Tech
                 return string.Empty;
             }
             long arr = FirmsRules.Arr(_firmsFile, place);
-            long value = Math.Max(VentureCatalogue.FloorValue[0], FirmsRules.Value(firm.File, arr, 500));
+            FoundedFirm founded = FoundingOf(place);   // fit and the articles price a raise; a firm not founded here is priced as it was
+            long value = Math.Max(VentureCatalogue.FloorValue[0] * FoundRules.FitFactor(founded) / 1000, FirmsRules.Value(firm.File, arr, 500 + FoundRules.GrowthBp(founded)));
+            value = value * FoundRules.ArticlesFactor(founded) / 1000;
             long amount = Math.Max(VentureCatalogue.TicketLeast * 4, value / 4);
             TermSheet t = VentureRules.Sheet(vc, value, amount, score, VentureRules.Mood(HiringGame.Cycle), Save.Day);
+            t.Board |= FoundRules.SeatAsked(founded);
             if (score < 350)
             {
                 return TechText.T("reallife_vc_meet_no_sheet", "firm", VentureCatalogue.Firms[vc].Name);
             }
+            t.T = TermsFor(c, firm, vc, Save.Day);
             c.Sheets.Add(t);
             TellTech(NotificationType.Success, "reallife_vc_note_sheet", Data("vc", VentureCatalogue.Firms[vc].Name, "amount", TechText.Cents(Level(t.Amount)), "pre", TechText.Cents(Level(t.Pre))),
                 TabFunding, TechApp.CapRow + place);
@@ -260,9 +264,18 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
+            if (HasStock(place))
+            {
+                c.Sheets.Clear();   // a firm whose shares trade closes no private round: the shares in issue are the stock's
+                return false;
+            }
             TermSheet t = c.Sheets[index];
             long money = VentureRules.Accept(c, t, FirmMrr(place) * 1000 / Math.Max(1, Prices.Level), Save.Day);
+            Grow(TalentCatalogue.Law, TermsCatalogue.GrowRead);
             VentureGame.Give(Level(money), VentureGame.RaiseKey, firm.File.Name, firm.Reg);
+            c.Acc.Name = firm.File.Name;
+            FoundingAccountOpened(c);
+            RefreshFloor(Save.Day);   // the round is the investors', held in the player's wallet from now
             Story("reallife_tech_news_raised", "name", firm.File.Name, "amount", TechText.Cents(Level(money)));
             string lead = VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name;
             TellTech(NotificationType.Success, "reallife_vc_note_closed", Data("firm", firm.File.Name, "amount", TechText.Cents(Level(money)), "vc", lead), TabFunding, TechApp.CapRow + place);
@@ -283,7 +296,9 @@ namespace RealLifeOverhaul.Tech
             long loan = Math.Max(VentureCatalogue.TicketLeast, VentureRules.BridgeFor(burn));
             c.Bridge = loan;
             c.BridgeDay = Save.Day;
+            StartupMoney.Inflow(c, loan, Save.Day);
             VentureGame.Give(Level(loan), VentureGame.BridgeKey, firm.File.Name, firm.Reg);
+            RefreshFloor(Save.Day);
             ChangedTech();
             return true;
         }
@@ -332,36 +347,17 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A tenth of the player's shares sold to the lead investor at a fifth off the last round's price.</summary>
-        internal bool SellShares(string place)
-        {
-            FirmPlace firm = FirmOf(place);
-            Cap c = CapFor(place, false);
-            if (firm == null || c == null || c.VcSeats == 0 || c.Post <= 0)
-            {
-                return false;
-            }
-            int lead = 0;
-            for (int i = c.Holders.Count - 1; i >= 0; i--)
-            {
-                if (c.Holders[i].Kind == (int)HolderKind.Vc)
-                {
-                    lead = c.Holders[i].Who;
-                    break;
-                }
-            }
-            long paid = VentureRules.SellShares(c, 100, lead);
-            VentureGame.Give(Level(paid), VentureGame.ShareSaleKey, firm.File.Name);
-            ChangedTech();
-            return paid > 0;
-        }
-
         /// <summary>A listing asked for: the share issue feature takes it, or the player is told it is not open yet.</summary>
         internal void PrepareListing(string place)
         {
             FirmPlace firm = FirmOf(place);
             if (firm == null)
             {
+                return;
+            }
+            if (_exits != null)
+            {
+                OpenExits(place);   // the way to the market has a page of its own (bankers, roadshow, pricing, lock-up)
                 return;
             }
             bool taken = TechBridges.Ipo != null && TechBridges.Ipo();

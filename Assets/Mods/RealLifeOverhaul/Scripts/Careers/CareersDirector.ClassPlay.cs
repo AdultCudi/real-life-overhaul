@@ -364,21 +364,28 @@ namespace RealLifeOverhaul.Careers
             return StartAtComputer(computer, kind == SittingKind.Class ? ClassSitting(e, minutes) : HomeworkSitting(e), e.Def.Key);
         }
 
-        // The game's panel opened with the sitting at the computer, and the walk there begun. Null, or the reason key.
-        private string StartAtComputer(ComputerController computer, Sitting sitting, string what)
+        // The game's panel opened with the sitting at the computer, and the walk there begun; a contract's stint (slide) waits on the panel for the hours and Start. Null, or the reason key.
+        private string StartAtComputer(ComputerController computer, Sitting sitting, string what, StintSlider slide = null)
         {
             CloseApps();
-            var activity = new ComputerSitting(this, computer, sitting);
+            var activity = new ComputerSitting(this, computer, sitting, slide);
             if (!DeskGame.Show(activity))
             {
                 return "reallife_study_why_game_busy";
             }
             _computer = activity;
             Hold(sitting, activity);
-            activity.Go();
+            if (slide != null)
+            {
+                slide.Offered();   // the panel's offer is done: what it tells the slider from here is the player's move
+            }
+            else
+            {
+                activity.Go();
+            }
             Logger?.Info("Careers: " + Words(sitting.Kind) + " of " + what + " at the computer at home ("
                          + computer.itemName + (computer.FindChair() != null ? ", with its chair" : ", no chair") + "), "
-                         + sitting.SkipMinutes + " minutes.");
+                         + (slide != null ? slide.Minutes : sitting.SkipMinutes) + " minutes" + (slide != null ? " as the slider stands." : "."));
             return null;
         }
     }

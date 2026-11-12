@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
             { "GarageDirector", "garage" }, { "JusticeDirector", "justice" }, { "LicenceDirector", "licences" }, { "SocialDirector", "social" },
             { "TravelDirector", "travel" }, { "TransitDirector", "transport" }, { "CarOwnership", "transport" }, { "TaxiDirector", "taxi" },
             { "LifeEvents", "life" }, { "MarketDirector", "markets" }, { "LedgerDirector", "ledger" }, { "CareersDirector", "careers_study" },
-            { "TechSites", "tech_sites" },
+            { "TechSites", "tech_sites" }, { "LogisticsDirector", "trips" },
         };
 
         // The rest by namespace: RealLifeOverhaul.X.
@@ -43,12 +43,27 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Construction", "construction" },
             { "RealLifeOverhaul.Landmarks", "landmarks" },
             { "RealLifeOverhaul.Schools", "schools" },
+            { "RealLifeOverhaul.Subway", "uptown_subway" },
             { "RealLifeOverhaul.Hustles", "hustles" },
             { "RealLifeOverhaul.Seasons", "seasons" },
+            { "RealLifeOverhaul.Gfx", "graphics" },
             { "RealLifeOverhaul.Networking", "networking" },
             { "RealLifeOverhaul.Household", "home_household" },
+            { "RealLifeOverhaul.Loyalty", "loyalty" },
+            { "RealLifeOverhaul.Giving", "giving" },
+            { "RealLifeOverhaul.Insurance", "insurance" },
+            { "RealLifeOverhaul.Health", "health" },
+            { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
+            { "RealLifeOverhaul.SideJobs", "side_jobs" },
+            { "RealLifeOverhaul.Suppliers", "suppliers" },
+            { "RealLifeOverhaul.RivalsSeen", "rivals_seen" },
+            { "RealLifeOverhaul.Dynasty", "dynasty" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
+            { "RealLifeOverhaul.Population", "population" },
+            { "RealLifeOverhaul.Sessions", "living" },
+            { "RealLifeOverhaul.Parties", "parties" },
+            { "RealLifeOverhaul.Ui", "ui" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

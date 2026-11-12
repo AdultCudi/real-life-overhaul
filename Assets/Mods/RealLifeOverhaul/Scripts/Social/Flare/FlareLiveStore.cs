@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Flare
     ///
     ///   reallife:flare_net
     ///     NT1|next case|next message|notifications read to|city day|picture day|pictures today|next picture|replies day|
-    ///         replies today|reports day|reports today|message day|city seed|moved day
+    ///         replies today|reports day|reports today|message day|city seed|moved day|people from
     ///     C|id|kind|district|place|name|x|z|filed|answer due|state|order|ref|until|post|answer|reporter|repeats|acted day|counted   a case
     ///     W|district|kind|until                                a watch on a district
     ///     K|kind|district|day|acted                            a complaint of the week
@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Flare
             b.Append(Version);
             Ints(b, n.NextCase, n.NextDm);
             b.Append('|').Append(n.NoticeSeen.ToString(Inv));
-            Ints(b, n.CityDay, n.PicDay, n.PicsToday, n.PicNext, n.RepliesDay, n.RepliesToday, n.ReportsDay, n.ReportsToday, n.DmDay, n.CitySeed, n.MovedDay);
+            Ints(b, n.CityDay, n.PicDay, n.PicsToday, n.PicNext, n.RepliesDay, n.RepliesToday, n.ReportsDay, n.ReportsToday, n.DmDay, n.CitySeed, n.MovedDay, n.PeopleFrom);
             for (int i = 0; i < n.Cases.Count; i++)
             {
                 FlareCase c = n.Cases[i];
@@ -127,6 +127,7 @@ namespace RealLifeOverhaul.Flare
             n.DmDay = I(h, 12, -1);
             n.CitySeed = I(h, 13);
             n.MovedDay = I(h, 14, -1);   // an older save has none
+            n.PeopleFrom = I(h, 15, -1);   // ...nor this: the people's posts of the days before are made once, a day at a time
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] c = lines[i].TrimEnd('\r').Split('|');
@@ -248,7 +249,7 @@ namespace RealLifeOverhaul.Flare
             n.Moved.Clear();
             n.NextCase = n.NextDm = n.PicNext = 1;
             n.NoticeSeen = 0;
-            n.CityDay = n.PicDay = n.RepliesDay = n.ReportsDay = n.DmDay = n.MovedDay = -1;
+            n.CityDay = n.PicDay = n.RepliesDay = n.ReportsDay = n.DmDay = n.MovedDay = n.PeopleFrom = -1;
             n.PicsToday = n.RepliesToday = n.ReportsToday = 0;
             n.CitySeed = 0;
             n.HostKey = null;

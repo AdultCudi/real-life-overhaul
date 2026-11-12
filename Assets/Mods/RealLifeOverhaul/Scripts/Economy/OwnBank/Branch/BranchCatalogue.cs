@@ -13,7 +13,13 @@ namespace RealLifeOverhaul.Economy
         // The business
         public const string TypeName = "reallife_bankbranch";   // its own business type (the name is also its text key; its designs' folder is "bankbranch")
         public const string BuildingType = "ba:buildingtype_retail";
-        public const int BranchesMost = 16;                      // branches whose figures a bank keeps
+
+        // The most branches a bank keeps the figures of, which is a National Bank's count (BankTiers.BranchesMost; the lower levels run fewer): PerDistrict for each district of
+        // the city. It was a flat sixteen, made before Uptown and Cedar Heights stood as two districts. EconomyCheck holds Districts to the districts the mod knows
+        // (CityDistricts.NewYork and DistrictSplit), so a district added later fails it until the limit is looked at again.
+        public const int Districts = 9;                          // districts of the city: the game's seven, and Uptown and Cedar Heights
+        public const int PerDistrict = 3;                        // branches a National Bank may run for each of them
+        public const int BranchesMost = Districts * PerDistrict; // branches whose figures a bank keeps: 27
 
         // Visitors
         public const int VisitorShare = 180;        // a branch's visitors an hour, of the customers a shop of its size would see
@@ -38,6 +44,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly long[] KindCents = { 40000L, 35000L, 30000L, 600000L, 0L };   // the usual sum: $400 to open, $350 in, $300 out, a $6,000 loan
         public const int SumLeast = 400, SumMost = 1800;     // each visit's sum: this spread of the usual, thousandths
         public static readonly int[] AskBy = { 150, 400, 450 };   // who asks for a loan at the counter: poorly, fairly and well rated (OwnBankCatalogue.Poor, Fair, Good)
+        public const int PeopleLeast = 500, PeopleMost = 2000;   // thousandths: how far the residents round a branch move what its visits are for and their sums
 
         // What the bank charges at the counter
         public const long OpenFeeCents = 2500L;     // an account opened: $25

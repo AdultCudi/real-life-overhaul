@@ -115,8 +115,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (!HierarchyOn)
             {
-                ManagerFile m = mp != null ? mp.Own : null;
-                return field == PolicyField.PayBand && m != null ? m.WageBand : field == PolicyField.Budget && m != null ? m.Budget : PolicyCatalogue.Def(field).Default;
+                return CompanyDay.RuleOff(mp != null ? mp.Own : null, field);
             }
             return PolicyRules.Effective(_hier.Company, mp != null ? _hier.Region(AreaOf(mp)) : null, mp != null ? _hier.Store(mp.Place.Place) : null, field);
         }

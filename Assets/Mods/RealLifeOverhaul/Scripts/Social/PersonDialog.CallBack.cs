@@ -79,6 +79,7 @@ namespace RealLifeOverhaul
         private DialogEntry Heard(SocialTopic topic, bool warm, Dictionary<string, string> data)
         {
             SocialLife.Contacted(_p);
+            Chose(topic, warm, data);
             return Onward(Line(warm ? topic.ReactA : topic.ReactB, data));
         }
     }

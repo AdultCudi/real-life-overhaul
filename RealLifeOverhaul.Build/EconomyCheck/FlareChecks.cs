@@ -29,11 +29,17 @@ internal static partial class Program
         FlareInfluencersChecks();
         FlareCityChecks();
         FlareBusyChecks();
+        FlareEmptyChecks();   // the empty home feed says what is true (FlareEmptyChecks.cs)
         BugsFlareChecks();   // the Guide audit's faults in Flare, RLO Texts, the Calendar and the Marketplace (BugsFlareChecks.cs)
         FlareReplyLikeChecks();
         FlareCommentLikeChecks();
         FlarePictureChecks();
         FlareBankChecks();   // the bank of city photos: what it takes and its caps, the clean-up, the fit of a post's photo, never a wrong one, the share, Going Public, the file, the sources, the cost (FlareBankChecks.cs)
+        FlareUseChecks();
+        FlareCompleteChecks();   // the kit's Flare whole: a post's words, the inbox, the notifications, a hire, answers to reviews, the rivals' parity, every handler, Home's cost (FlareCompleteChecks.cs)
+        FlarePlayChecks();
+        FlarePeopleChecks();   // Flare's people: a fresh city's first morning and day 5, Stories, Who to follow, Explore, the cost of a day, a save from before growing (FlarePeopleChecks.cs)
+        FlareAuditChecks();   // the audit fix: presses, notices, tiers, hires and the city, the day's work, the words and ages, the pad's order (FlareAuditChecks.cs, FlareRoundChecks.cs, FlareOrderChecks.cs)
     }
 
     private static List<FlarePerson> FlarePeople()

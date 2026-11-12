@@ -232,13 +232,23 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>The player bids. False if they already lead or the lot is knocked down.</summary>
         public static bool Bid(DealerListing l, int worth, int now)
         {
-            if (l.Gone || l.Leader == 0 || now >= l.Ends)
+            return BidAt(l, worth, now, NextBid(l, worth));
+        }
+
+        /// <summary>The most the player may bid over a lot's worth: a bid is a step over the current one, not a wild guess.</summary>
+        public static int BidMost(int worth) => Math.Max(DealerCatalogue.IncrementLeast, worth) * 2;
+
+        /// <summary>The player bids an amount at least the next bid and at most <see cref="BidMost"/>. False if they already lead, the lot is knocked down or the amount is out of range.</summary>
+        public static bool BidAt(DealerListing l, int worth, int now, int amount)
+        {
+            if (l.Gone || l.Leader == 0 || now >= l.Ends || amount < NextBid(l, worth) || amount > BidMost(worth))
             {
                 return false;
             }
-            l.Asking = NextBid(l, worth);
+            l.Asking = amount;
             l.Leader = 0;
             l.Bids++;
+            l.LogBid(0, now, amount);
             return true;
         }
 
@@ -269,6 +279,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 l.Asking = bid;
                 l.Leader = 1 + dice.Range(0, DealerCatalogue.RivalNames.Length - 1);
                 l.Bids++;
+                l.LogBid(l.Leader, now, bid);
             }
             return outbid;
         }

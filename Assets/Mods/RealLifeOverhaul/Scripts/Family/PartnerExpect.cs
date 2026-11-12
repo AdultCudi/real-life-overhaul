@@ -187,7 +187,8 @@ namespace RealLifeOverhaul.Family
                 return FamilyPhone.FamilyMenu(0);
             }
             return FamilyTalk.Either(FamilyText.Say("reallife_family_do_date", Args.Us.Cost(FamilyBalance.DinnerCost)), "reallife_family_do_date_yes", HomeLife.PlanDate,
-                "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
+                "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", FamilyText.Money(FamilyBalance.DinnerCost));   // paid at the table
         }
 
         /// <summary>Their ask for an allowance, talked over: what it is now, to change in the game's text box, or back to the rest.</summary>

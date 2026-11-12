@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
@@ -21,17 +22,12 @@ namespace RealLifeOverhaul.Nav
         public const int Pool = 32;
 
         // In the game HUD's units: it is laid out for 3840 x 2160 and scaled by its canvases.
-        private const float Column = 740f;        // the width of the game's left column (tasks above, control hints below)
-        private const float Head = 100f;          // the headline's height
-        private const float Side = 12f;           // the box's own edge
-        private const float ViewSide = 32f;       // the map's inset: the box is drawn 14 inside its rectangle, and 6 more frame the map
-        private const float Foot = 46f;           // the map's inset from the lower edge
-        private const float LineHeight = 58f;
-        private const float LinesPad = 14f;
-        private const float Gap = 16f;            // between this panel and the game's panels above and below it
-        private const float LeastMap = 240f;      // a map lower than this is not worth showing
-        private const float TasksTop = 320f;      // the task panel hangs this far below the screen's top edge
-        private const float ExpandButton = 100f;  // its button stays there when it is folded away
+        private const float Head = NavPlaceRules.Head;          // the headline's height
+        private const float Side = 12f;                         // the box's own edge
+        private const float ViewSide = NavPlaceRules.ViewSide;
+        private const float Foot = NavPlaceRules.Foot;
+        private const float LineHeight = NavPlaceRules.LineHeight;
+        private const float LinesPad = NavPlaceRules.LinesPad;
         private const float MarkerSize = 46f;
         private const float GoalSize = 58f;
         private const float RouteWidth = 7f;      // metres
@@ -41,6 +37,7 @@ namespace RealLifeOverhaul.Nav
         private readonly GameObject _dormant;
         private readonly GameObject _panel;
         private readonly RectTransform _rect;
+        private readonly Canvas _canvas;           // the panel's own, which the kit's HUD order is set on (Sort)
         private readonly RectTransform _head;
         private readonly RectTransform _view;
         private readonly RectTransform _roads;
@@ -88,6 +85,14 @@ namespace RealLifeOverhaul.Nav
 
         public bool Alive => _panel != null && _rect != null;
 
+        private static NavHud _live;   // the one built last; the game's HUD holds one
+
+        /// <summary>
+        /// The minimap's card on the screen while it shows (its map and its route lines), so a panel docked at the bottom left
+        /// (the kit's item panel) can stand clear of it; null while it is hidden or gone.
+        /// </summary>
+        public static RectTransform Card => _live != null && _live._panel != null && _live._panel.activeInHierarchy ? _live._rect : null;
+
         /// <summary>The view's width and height in the HUD's own units, as last laid out.</summary>
         public float ViewWidth => _width - ViewSide * 2f;
         public float ViewHeight => _mapHeight;
@@ -97,6 +102,11 @@ namespace RealLifeOverhaul.Nav
 
         public void Destroy()
         {
+            ReleaseScene();   // the 2.5D picture's texture is the mod's own: it goes with the panel
+            if (_live == this)
+            {
+                _live = null;
+            }
             if (_panel != null)
             {
                 UnityEngine.Object.Destroy(_panel);
@@ -119,7 +129,7 @@ namespace RealLifeOverhaul.Nav
         public void SetPicture(Texture picture)
         {
             _roadsImage.texture = picture;
-            _roadsImage.enabled = picture != null && !_alone;
+            _roadsImage.enabled = picture != null && !_alone && !_sceneOn;   // the 2.5D picture is the minimap's ground while it is on
             _px = float.MaxValue;
         }
 
@@ -135,7 +145,7 @@ namespace RealLifeOverhaul.Nav
             _baseWidth = worldWidth;
             _baseHeight = worldHeight;
             _baseImage.texture = picture;
-            _baseImage.enabled = picture != null && worldWidth > 0f && worldHeight > 0f;
+            _baseImage.enabled = picture != null && worldWidth > 0f && worldHeight > 0f && !_sceneOn;
             _px = float.MaxValue;
         }
 
@@ -147,46 +157,56 @@ namespace RealLifeOverhaul.Nav
                 return;
             }
             _alone = alone;
-            _roadsImage.enabled = !alone && _roadsImage.texture != null;
+            _roadsImage.enabled = !alone && _roadsImage.texture != null && !_sceneOn;
             _spin.gameObject.SetActive(!alone);
         }
 
-        /// <summary>Puts the panel where it covers nothing of the game's, in the left column or beside it; on the slow tick, writing only changes.</summary>
+        /// <summary>
+        /// Puts the panel where it covers nothing: clear of the game's panels, and of the kit's bottom bar and left column while
+        /// the kit's HUD is up (NavPlaceRules), in the left column or beside it. On the slow tick, writing only changes; it also
+        /// keeps the panel's canvas just over the kit HUD's (<see cref="Sort"/>).
+        /// </summary>
         public void Place(int sizePercent, bool map, bool lines)
         {
-            float width = Mathf.Round(Column * Mathf.Clamp(sizePercent, 50, 100) / 100f);
+            Func<NavKitSpace> kit = NavBridges.KitHud;
+            NavKitSpace up = kit != null ? kit() : default;
+            Sort(up);
+            float width = NavPlaceRules.Width(sizePercent);
             float linesHeight = lines ? LineHeight * 2f + LinesPad : 0f;
-            float wanted = map ? width - ViewSide * 2f : 0f;
-            float frame = Head + Foot + linesHeight;
-            float screenHeight = _screen.rect.height;
+            float wanted = NavPlaceRules.Wanted(width, map);
+            float frame = NavPlaceRules.Frame(lines);
 
-            float bottom = Showing(_hints) ? Edge(_hints.childCount > 0 ? _hints.GetChild(0) as RectTransform : _hints, true) + Gap : 0f;
-            float top = screenHeight - TasksTop - ExpandButton;
+            NavSpace space = NavSpace.Free(_screen.rect.height);
+            if (Showing(_hints))
+            {
+                space.HintsTop = Edge(_hints.childCount > 0 ? _hints.GetChild(0) as RectTransform : _hints, true);
+            }
             if (_tasksUi != null && !_tasksUi.IsCollapsed && Showing(_tasks))
             {
-                top = Mathf.Min(top, Edge(_tasks, false));
+                space.TasksBottom = Edge(_tasks, false);
             }
-            float room = top - Gap - bottom - frame;
-            float x = 0f;
-            bool column = room >= (map ? LeastMap + (_beside ? 60f : 0f) : 0f);
-            if (!column)
+            if (Showing(_labels))
             {
-                // Beside the column, at the bottom: as high as the screen under the top bar allows.
-                x = Column + Gap;
-                bottom = 0f;
-                if (Showing(_labels) && LeftOf(_labels) < x + width + Gap)
-                {
-                    bottom = Mathf.Max(bottom, Edge(_labels, true) + Gap);
-                }
-                if (Showing(_item) && LeftOf(_item) < x + width + Gap)
-                {
-                    bottom = Mathf.Max(bottom, Edge(_item, true) + Gap);
-                }
-                room = screenHeight - TasksTop - Gap - bottom - frame;
+                space.LabelsLeft = LeftOf(_labels);
+                space.LabelsTop = Edge(_labels, true);
             }
+            if (Showing(_item))
+            {
+                space.ItemLeft = LeftOf(_item);
+                space.ItemTop = Edge(_item, true);
+            }
+            if (up.Up)
+            {
+                space.BarTop = up.BarTop;
+                space.ColumnRight = up.ColumnRight;
+                space.HasColumn = up.HasColumn;
+                space.ColumnBottom = up.ColumnBottom;
+                space.ChipsLeft = up.ChipsLeft;
+                space.ChipsTop = up.ChipsTop;
+            }
+            bool fits = NavPlaceRules.Place(space, width, wanted, frame, _beside, out float x, out float bottom, out float mapHeight, out bool column);
             _beside = !column;
-            float mapHeight = map ? Mathf.Min(wanted, Mathf.Floor(room)) : 0f;
-            bool fits = map ? mapHeight >= LeastMap : room >= 0f;
+            float room = mapHeight;
             if (fits != HasRoom)
             {
                 HasRoom = fits;
@@ -195,7 +215,7 @@ namespace RealLifeOverhaul.Nav
                 {
                     _noRoomSaid = true;
                     Logger?.Info("Navigation: no room for the minimap beside the game's panels (" + Mathf.RoundToInt(room) + " of "
-                                 + Mathf.RoundToInt(LeastMap) + " units); it is hidden until there is.");
+                                 + Mathf.RoundToInt(NavPlaceRules.LeastMap) + " units); it is hidden until there is.");
                 }
             }
             if (!fits)
@@ -224,6 +244,26 @@ namespace RealLifeOverhaul.Nav
             PlaceLine(_line2, Foot + 4f, lines);
             _px = float.MaxValue;   // another size: everything in the view is written again
             _scale = 0f;
+            HeadLayout();   // the band's texts for the card's new width
+            StripFit();     // and the district strip for the view's
+        }
+
+        /// <summary>
+        /// The panel's own canvas, over the kit HUD's and under every window: the kit draws its HUD (the bottom bar, the pieces,
+        /// the prompts) on a canvas of its own over the game's, so the panel, a child of the game's HUD, was drawn under all of
+        /// it. While the kit's HUD is up the panel overrides its sorting at the order the kit names for it (one over the HUD's);
+        /// without it, the panel is sorted with the game's HUD as before. Two comparisons on the slow tick.
+        /// </summary>
+        private void Sort(NavKitSpace up)
+        {
+            if (_canvas.overrideSorting != up.Up)
+            {
+                _canvas.overrideSorting = up.Up;
+            }
+            if (up.Up && _canvas.sortingOrder != up.Order)
+            {
+                _canvas.sortingOrder = up.Order;
+            }
         }
 
         /// <summary>Where the panel stands, for the log.</summary>
@@ -457,6 +497,13 @@ namespace RealLifeOverhaul.Nav
                 {
                     gx /= over;
                     gy /= over;
+                }
+                if (_strip != null && _strip.gameObject.activeSelf)
+                {
+                    // and clear of the district strip and the compass and switch: it slides in along its line, so it still points the way
+                    float radius = GoalSize * 0.5f;
+                    NavHeadRules.KeepClear(ref gx, ref gy, ViewWidth * 0.5f, _mapHeight * 0.5f, StripPad + StripHeight + radius,
+                                           StripPad + CompassSize + radius, StripPad + CompassSize * 2f + SwitchGap + radius);
                 }
                 _goal.anchoredPosition = new Vector2(gx, gy);
             }

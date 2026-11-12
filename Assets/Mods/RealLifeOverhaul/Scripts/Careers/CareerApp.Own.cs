@@ -170,13 +170,25 @@ namespace RealLifeOverhaul.Careers
                     {
                         box.Meter("reallife_ibox_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f,
                             CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
+                        bool fromApp = _director.ContractFromApp(c);   // the work starts at a desk of an office business of the player's, or here only where no desk could be had
                         string why = _director.CanWorkContract(c);
-                        if (why != null)
+                        if (!fromApp)
+                        {
+                            box.Line(CareersText.T("reallife_own_where_desk"), CellTone.Green);
+                        }
+                        else if (why != null)
                         {
                             box.Line(CareersText.T(why), CellTone.Yellow);
                         }
                         Transform buttons = box.ButtonRow();
-                        InfoBox.Button(buttons, InfoBox.Positive, "reallife_own_button_work", () => Do(() => _director.WorkContract(id)));
+                        if (fromApp)
+                        {
+                            InfoBox.Button(buttons, InfoBox.Positive, "reallife_own_button_work", () => Do(() => _director.WorkContract(id)));
+                        }
+                        else
+                        {
+                            MapButton(buttons, () => _director.ShowContractPlace(id));
+                        }
                         InfoBox.Button(buttons, InfoBox.Negative, "reallife_own_button_drop", () => Do(() => _director.DropContract(id)));
                         break;
                     }

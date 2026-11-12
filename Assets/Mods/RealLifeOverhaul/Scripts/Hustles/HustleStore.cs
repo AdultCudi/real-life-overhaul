@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Hustles
                 Text(t, l.Thing, l.Colour);
                 Join(t, l.Km, l.Price, l.Condition, l.Shown, l.Asking, l.Floor, l.Haggles, l.Countered, l.Number, l.Gone ? 1 : 0);
                 Text(t, l.Seller, l.Street);
+                t.Append(Math.Max(0, l.SellerId).ToString(Inv));
             }
             t.Append("^o:");
             for (int i = 0; i < s.Items.Count && i < HustleCatalogue.OwnedMost; i++)
@@ -150,10 +151,13 @@ namespace RealLifeOverhaul.Hustles
                                 }
                                 s.Listings.Add(new Listing
                                 {
-                                    Id = I(c, 0), Car = I(c, 1) != 0, Thing = c[2], Colour = NullIfEmpty(c[3]), Km = Math.Max(0, I(c, 4)), Price = Math.Max(0, I(c, 5)),
-                                    Condition = HustleCatalogue.Clamp(I(c, 6, 50), 1, 100), Shown = HustleCatalogue.Clamp(I(c, 7, 50), 1, 100), Asking = Math.Max(1, I(c, 8, 1)),
-                                    Floor = Math.Max(1, I(c, 9, 1)), Haggles = Math.Max(0, I(c, 10)), Countered = Math.Max(0, I(c, 11)), Number = I(c, 12), Gone = I(c, 13) != 0,
-                                    Seller = c[14], Street = c[15]
+                                    Id = I(c, 0), Car = I(c, 1) != 0, Thing = c[2], Colour = NullIfEmpty(c[3]), Km = Math.Max(0, I(c, 4)),
+                                        Price = Math.Max(0, I(c, 5)),
+                                    Condition = HustleCatalogue.Clamp(I(c, 6, 50), 1, 100), Shown = HustleCatalogue.Clamp(I(c, 7, 50), 1, 100),
+                                        Asking = Math.Max(1, I(c, 8, 1)),
+                                    Floor = Math.Max(1, I(c, 9, 1)), Haggles = Math.Max(0, I(c, 10)), Countered = Math.Max(0, I(c, 11)),
+                                        Number = I(c, 12), Gone = I(c, 13) != 0,
+                                    Seller = c[14], Street = c[15], SellerId = Math.Max(0, I(c, 16))
                                 });
                             }
                             break;

@@ -59,6 +59,24 @@ namespace RealLifeOverhaul
         public float Steering;       // the steering's reach at speed, times it (the steering slider): 1 is the game's own curve
         public float BrakeFactor;    // the full pedal's deceleration against the game's own brakes on this car
         public float BrakeRise;      // s from nothing to the full pedal, held down
+        public float RideHz;         // the stiffest ride, in Hz, a car of another mod is left with: softer springs are put on a stiffer car as far as their travel carries it (0: it keeps its own)
+    }
+
+    /// <summary>What a frame of the driven car's tuning does (<see cref="HandlingRules.Frame"/>, asked by Driving/CarTuning each frame).</summary>
+    public enum TuningFrame
+    {
+        Rest,    // nothing: the same car or none, the same options, no parts laid on it since, no sums under way
+        Again,   // everything of the mod's taken off the car and its sums begun again: another car, or an option or slider changed
+        Carry,   // the car's sums under way carried on
+        Relay    // the custom shop's parts laid on the car or taken off: what they change worked out, everything of the mod's left on it
+    }
+
+    /// <summary>What the custom shop's parts, laid on the car the handling is on again or taken off it, call for (<see cref="HandlingRules.Relay"/>).</summary>
+    public enum PartsRelay
+    {
+        Nothing,   // the parts the handling was made and its brakes shared for: the road turning wet or dry under a build with no tyres part
+        Brakes,    // the parts the design was made for, the brakes shared for others: the brakes' shares and full pedal worked out again
+        Design     // other parts than the design was made for: it is made again beside the one on the car, which stays on until it is put on in one frame
     }
 
     /// <summary>
@@ -70,6 +88,8 @@ namespace RealLifeOverhaul
         public const float GameMass = 1400f;        // kg: what the game's own cars weigh (the Vord Pony 1200), for the Guide
         public const float BrakeFall = 0.12f;       // s for the brake pedal to come back up from full
         public const float PedalDeadZone = 0.06f;   // just over the 0.05 the game's gearbox reads as "no pedal"
+        public const float SportsRide = 1.7f;       // Hz: the softest ride the game gives a sports car (the Anselmo AF90's 1.71, the Mersaidi MGA GT's 1.74)
+        public const float SoftRide = 0.8f;         // Hz: and a car of any other kind (the Vord V150's 0.76, the limousine's 0.81, the Honza Mimic's 0.79)
 
         /// <summary>The level a choice of the option stands for; anything else is the default.</summary>
         public static HandlingLevel Level(int choice)
@@ -91,10 +111,40 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The figures one kind of car is given at one level, with the tuning sliders folded in. Untouched kinds get none.</summary>
-        public static HandlingTarget Target(CarKind kind, HandlingLevel level, in HandlingTuning tuning)
+        /// <summary>
+        /// The stiffest ride, in Hz, a car of another mod keeps at a level: the softest ride the game gives a car of its kind. A
+        /// stiffer one is given softer springs (<see cref="HandlingModel.Soften"/>) as far as the travel they have at rest carries them
+        /// (<see cref="HandlingModel.RideCarries"/>), so that it wobbles as the game's cars do. 0 for Light, which leaves a car's springs
+        /// as its mod made them, and for a kind the handling leaves alone.
+        /// </summary>
+        public static float RideCeiling(CarKind kind, HandlingLevel level)
+        {
+            if (level != HandlingLevel.Full && level != HandlingLevel.Heavy)
+            {
+                return 0f;
+            }
+            switch (kind)
+            {
+                case CarKind.Untouched: return 0f;
+                case CarKind.Sports: return SportsRide;
+                default: return SoftRide;
+            }
+        }
+
+        /// <summary>Whether a car is asked for the kind's ride (<see cref="RideCeiling"/>): its type is another mod's, not the game's own, and the option is on.</summary>
+        public static bool SoftensCar(string typeName, bool option)
+        {
+            return option && !CarCatalogue.IsGameCar(typeName);
+        }
+
+        /// <summary>
+        /// The figures one kind of car is given at one level, with the tuning sliders folded in. Untouched kinds get none.
+        /// <paramref name="softRide"/> is for a car of another mod: it is also given the kind's ride (<see cref="RideCeiling"/>).
+        /// </summary>
+        public static HandlingTarget Target(CarKind kind, HandlingLevel level, in HandlingTuning tuning, bool softRide = false)
         {
             var t = new HandlingTarget { Mass = KindMass(kind), DamperScale = 1f, RollScale = 1f, DiveScale = 1f, Softness = 1f, Grip = 1f, Steering = 1f, BrakeFactor = 1f };
+            t.RideHz = softRide ? RideCeiling(kind, level) : 0f;
             switch (level)
             {
                 case HandlingLevel.Light:
@@ -159,6 +209,46 @@ namespace RealLifeOverhaul
             }
             float back = current - dt / BrakeFall;
             return back < asked ? asked : back;
+        }
+
+        /// <summary>
+        /// What a frame of the driven car's tuning does: <paramref name="same"/> is the same car or none, with the same options and handling;
+        /// <paramref name="partsLaid"/> that the Garage laid its parts on it or took them off since (GarageBridges.PartsLaid);
+        /// <paramref name="sumsUnderWay"/> that its sums are not yet done.
+        /// </summary>
+        public static TuningFrame Frame(bool same, bool partsLaid, bool sumsUnderWay)
+        {
+            if (!same)
+            {
+                return TuningFrame.Again;
+            }
+            if (sumsUnderWay)
+            {
+                return TuningFrame.Carry;   // parts laid meanwhile wait for the sums to end: those read the car as it was
+            }
+            return partsLaid ? TuningFrame.Relay : TuningFrame.Rest;   // never an option changed: nothing is taken off for parts laid
+        }
+
+        /// <summary>
+        /// What parts laid on the car the handling is on call for: <paramref name="designed"/> holds the factors its design was made for
+        /// (<see cref="CarChassis.PartsBrakes"/> and the rest), the shared ones those its brakes were shared for, the last three those read off
+        /// the car now, each the value with the parts on over the value under them. The weather changes only the tyres' grip.
+        /// </summary>
+        public static PartsRelay Relay(CarChassis designed, float sharedBrakes, float sharedMass, float sharedGrip, float brakes, float mass, float grip)
+        {
+            if (!SameFactor(designed.PartsBrakes, brakes) || !SameFactor(designed.PartsMass, mass) || !SameFactor(designed.PartsGrip, grip))
+            {
+                return PartsRelay.Design;   // the nose dive, the front dampers and a softened car's ride are planned for the parts' full pedal and grip
+            }
+            return SameFactor(sharedBrakes, brakes) && SameFactor(sharedMass, mass) && SameFactor(sharedGrip, grip) ? PartsRelay.Nothing : PartsRelay.Brakes;
+        }
+
+        // A factor read twice off the same parts differs by a float's rounding at most (the design's are read off the game's car, the brakes' off the
+        // handling's); the shop's parts differ by 0.05 at least.
+        private static bool SameFactor(float a, float b)
+        {
+            float d = a - b;
+            return d < 1e-4f && d > -1e-4f;
         }
     }
 }

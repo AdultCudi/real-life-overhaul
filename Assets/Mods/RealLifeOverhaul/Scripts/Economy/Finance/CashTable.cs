@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Economy
         public Dictionary<string, string> Data;
         public float Amount;
         public int Day;
+        public int Hour;
         public int Category;
     }
 

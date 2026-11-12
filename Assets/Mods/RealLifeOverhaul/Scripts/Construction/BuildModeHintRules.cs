@@ -73,7 +73,8 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Each view's one line for its tooltip, by BuildView.</summary>
         public static readonly string[] ViewTips =
         {
-            "reallife_bld_tip_view_status", "reallife_bld_tip_view_zoning", "reallife_bld_tip_view_value", "reallife_bld_tip_view_occupancy", "reallife_bld_tip_view_underway"
+            "reallife_bld_tip_view_status", "reallife_bld_tip_view_zoning", "reallife_bld_tip_view_value", "reallife_bld_tip_view_occupancy", "reallife_bld_tip_view_underway",
+            "reallife_bld_tip_view_rents", "reallife_bld_tip_view_traffic"
         };
 
         /// <summary>What the player holds, from every column's facts (the first <paramref name="count"/>).</summary>

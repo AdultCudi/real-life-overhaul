@@ -319,7 +319,7 @@ internal static partial class Program
         Check(day.Contains("CityDay(day);") && day.Contains("LateClient(p, pay, ConstructionGame.Day)") && day.Contains("OweWages(c, day);") && day.Contains("PayArrears(c, day);")
               && day.Contains("HearZoning(l, false);") && day.Contains("LandRules.LandTax(l.Paid, day - l.TaxedTo, year, empty, Permits())") && !day.Contains("private void ZoneVote("),
             "civic build sources: the day's pass: the city's day, a client's bill, a crew's wages, the council's zoning and the code's land tax");
-        Check(projects.Contains("LateBuyers(p, day);") && projects.Contains("NoteFinished(AwardEntry.OfPlayer") && projects.Contains("int limit = HeightLimitOf(p);")
+        Check(projects.Contains("LateBuyers(p, day);") && projects.Contains("NoteFinished(AwardEntry.OfPlayer") && projects.Contains("int limit = LimitFor(p);")
               && projects.Contains("PlansRules.ParkingNeeded(p.Use, p.Area, code)") && projects.Contains("PlansRules.PlanningFee(Math.Max(0L, p.Estimate), ConstructionGame.Prices, Permits())"),
             "civic build sources: the plans and the decision under the code in force; late buyers and the year's buildings at the handover");
         Check(sites.Contains("OnAccount(p, m0, cost, ConstructionGame.Day)") && ModSource(@"Construction\ConstructionDirector.Actions.cs").Contains("l.ZoneDay = CouncilDay(ConstructionGame.Day);")

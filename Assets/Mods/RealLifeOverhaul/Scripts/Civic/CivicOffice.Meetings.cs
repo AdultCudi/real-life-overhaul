@@ -161,7 +161,7 @@ namespace RealLifeOverhaul
 
         private float BudgetDeficit(int[] levels)
         {
-            BudgetWeek week = OfficeRules.Week(_gov.Electorate(), Gov.Levers, levels);
+            BudgetWeek week = OfficeRules.Week(_gov.Payers(), Gov.Levers, levels);
             return week.Revenue > 0 ? Mathf.Clamp(-week.Balance / (float)week.Revenue, 0f, 1f) * 3f : 0f;
         }
 

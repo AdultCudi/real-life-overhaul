@@ -13,8 +13,9 @@ namespace RealLifeOverhaul
     /// From roots (the handlers on an event), each of the mod's methods is read for what it calls, makes or takes a delegate
     /// of, and the runtime is asked for its code (RuntimeMethodHandle.GetFunctionPointer compiles a method under Mono and
     /// runs nothing). The game's and the framework's methods met on the way are compiled but not read further. Nothing the
-    /// code does changes, only when it is compiled. Game-free (only the runtime's reflection), checked by NavCheck.
-    /// COST: what a slice is given, a method at a time (Core/WorkSlice); the methods seen are kept (some hundreds of
+    /// code does changes, only when it is compiled. Game-free (only the runtime's reflection), checked by NavCheck. The
+    /// same walk from whole types (<see cref="RootAll"/>) compiles the code of a few moments of play behind the loading
+    /// screen (Core/MomentWarm). COST: what a slice is given, a method at a time (Core/WorkSlice); the methods seen are kept (some hundreds of
     /// kilobytes) so a method is never taken twice. Nothing while it is not asked to run.
     /// </summary>
     public sealed class CodeWarm
@@ -106,6 +107,66 @@ namespace RealLifeOverhaul
         public void Root(MethodBase method)
         {
             Take(method, 0);
+        }
+
+        /// <summary>
+        /// Every method and constructor of one of the mod's types, and of the types nested in it (its closures and coroutines
+        /// too), each a root: the whole of a job's own code, its rare paths with it (a first hold line, a self-check's first
+        /// line), not only what one entry reaches on the day it is read. A type of another module, and a type's static
+        /// constructor (run by the runtime once, never asked for here), are left alone. Read once, when the walk is set up.
+        /// </summary>
+        public void RootAll(Type type)
+        {
+            if (type == null || type.Module != _own)
+            {
+                return;
+            }
+            const BindingFlags declared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            MethodInfo[] methods = type.GetMethods(declared | BindingFlags.Static);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                Take(methods[i], 0);
+            }
+            ConstructorInfo[] made = type.GetConstructors(declared);
+            for (int i = 0; i < made.Length; i++)
+            {
+                Take(made[i], 0);
+            }
+            Type[] nested = type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < nested.Length; i++)
+            {
+                RootAll(nested[i]);
+            }
+        }
+
+        /// <summary>
+        /// Every method and constructor <paramref name="type"/> declares, its property and event accessors with them, as
+        /// roots: not its static constructor (the runtime runs it once, when it must), not its base type's, not its nested
+        /// types' (its own code reaches those it uses). For the code of a moment whose callers are the game's (a frame, an
+        /// engine's callback). How many were taken in that had not been met before. Read once, never per frame.
+        /// </summary>
+        public int RootDeclared(Type type)
+        {
+            if (type == null)
+            {
+                return 0;
+            }
+            const BindingFlags declared = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            int before = _queue.Count;
+            MethodInfo[] methods = type.GetMethods(declared);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                Take(methods[i], 0);
+            }
+            ConstructorInfo[] makers = type.GetConstructors(declared);
+            for (int i = 0; i < makers.Length; i++)
+            {
+                if (!makers[i].IsStatic)
+                {
+                    Take(makers[i], 0);
+                }
+            }
+            return _queue.Count - before;
         }
 
         /// <summary>

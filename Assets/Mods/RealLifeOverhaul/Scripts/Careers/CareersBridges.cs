@@ -46,6 +46,12 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
         public static Func<int> Cycle;
 
+        /// <summary>Thousandths of the anchor day's residents who want a course (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Learners;
+
+        /// <summary>Thousandths of the anchor day's vacancies in the professions at the city's employers (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Openings;
+
         /// <summary>The family's children (Family): into the list given. Default: none.</summary>
         public static Action<List<ChildView>> Children;
 
@@ -61,6 +67,12 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Former colleagues join a firm of the player's: the place, the role, the level and how many; returns how many joined (Tech/People). Default: none.</summary>
         public static Func<string, int, int, int, int> JoinFirm;
 
+        /// <summary>
+        /// True while a click (or the desk sessions' Work button) in the tech firm the player stands in leads to work at a desk, which a contract of theirs rides on
+        /// (Tech/TechDirector.OwnDesk). Default: no.
+        /// </summary>
+        public static Func<bool> FirmDesk;
+
         /// <summary>True once the utilities office and the courthouse have chosen their buildings, so the university never takes one. Default: true.</summary>
         public static Func<bool> OthersPicked;
 
@@ -75,6 +87,18 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The tech company whose floor of a shared tower the player is on now (Tech/Sites), or null. Default: none.</summary>
         public static Func<string> FloorHere;
+
+        public static bool FirmDeskNow()
+        {
+            try
+            {
+                return FirmDesk != null && FirmDesk();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         public static long HeadquartersStampNow()
         {
@@ -191,14 +215,30 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The Campus app's Schools tab, written by the schools (Wiring.SchoolLinks). Default: the tab says the schools are away.</summary>
         public static SchoolsTabWriter SchoolsTab;
 
-        /// <summary>The employers that hire at a help-wanted board (the gig work's own, Scripts/Jobs), into the list given. Default: none.</summary>
+        /// <summary>
+        /// The employers of the gig work (a help-wanted board each) and of the building trades (the practice, the works sites) and where each
+        /// does its work (Scripts/Jobs), into the list given. Default: none.
+        /// </summary>
         public static Action<List<BoardEmployer>> Boards;
 
-        /// <summary>The destination marker put on an employer's board (an index of <see cref="Boards"/>): null if done, else a reason key. Default: not possible.</summary>
+        /// <summary>The destination marker put on an employer's place (an index of <see cref="Boards"/>): null if done, else a reason key. Default: not possible.</summary>
         public static Func<int, string> ShowBoard;
+
+        /// <summary>
+        /// A working day of the player's job went by unworked, which is to say under three quarters of it worked: the day, the whole shift's pay in cents, the day the job began,
+        /// the shift's minutes and the minutes of it worked (and paid already). Health settles its sick leave. Default: nothing.
+        /// </summary>
+        public static Action<int, int, int, int, int> DayMissed;
+
+        /// <summary>A working day was worked at a profession whose first skill is this one (Health draws an accident at a risky trade). Default: nothing.</summary>
+        public static Action<int> ShiftWorked;
 
         public static void Reset()
         {
+            DayMissed = null;
+            ShiftWorked = null;
+            Learners = null;
+            Openings = null;
             SchoolsTab = null;
             Boards = null;
             ShowBoard = null;
@@ -212,6 +252,7 @@ namespace RealLifeOverhaul.Careers
             Children = null;
             TechFirm = null;
             JoinFirm = null;
+            FirmDesk = null;
             TookAd = null;
             Shortage = null;
             Friends = null;
@@ -225,13 +266,15 @@ namespace RealLifeOverhaul.Careers
         }
     }
 
-    /// <summary>One employer that hires at a help-wanted board, as the Career app lists it.</summary>
+    /// <summary>One employer of the gig work or the building trades and where its work is done, as the Career app lists it.</summary>
     public struct BoardEmployer
     {
         public int Index;        // for <see cref="CareersBridges.ShowBoard"/>
         public string Name;      // the employer's name
-        public string Address;   // where its board stands, or null: this city has none for it and the phone is the only way
+        public string Address;   // where its board, its practice's floor or its nearest works site stands, or null: nothing stands for it and the phone is the only way
         public string Place;     // the shop or service the board stands outside (its door is not the office), or null with no board
+        public bool Works;       // a building trades' employer (no board): the practice's floor or the works sites, with a line of its own
+        public string Line;      // that line's text key: its practice, its works sites or that nothing stands (null for an employer with a board)
     }
 
     /// <summary>One rival's ad on the jobs board, as careers read it.</summary>

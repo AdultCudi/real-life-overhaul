@@ -60,6 +60,23 @@ namespace RealLifeOverhaul.Hustles
         /// </summary>
         public static void Morning(HustleState s, int day, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level)
         {
+            Morning(s, day, homes, cars, colours, level, 1000);
+        }
+
+        /// <summary>The same with the city's households that would sell things second hand against the anchor day's (the living population): as many more listings, or fewer.</summary>
+        public static void Morning(HustleState s, int day, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level, int sellers)
+        {
+            Morning(s, day, homes, cars, colours, level, sellers, null, null);
+        }
+
+        /// <summary>
+        /// The same with the Marketplace's sellers: each listing is a named seller of the pool (whose tag moves the asking price), and a rival that
+        /// owns a vehicle dealership or a workshop may list a used vehicle or machine of its own, a little under or over the going price.
+        /// </summary>
+        public static void Morning(HustleState s, int day, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level,
+            int sellers, SellerFile book,
+            IList<RivalDealer> dealers)
+        {
             s.Listings.Clear();
             for (int i = s.Gigs.Count - 1; i >= 0; i--)
             {
@@ -75,13 +92,31 @@ namespace RealLifeOverhaul.Hustles
                 return;
             }
             var dice = new DealerDice(s.Seed, day, SaltListings);
-            for (int n = 0; n < HustleCatalogue.GoodsADay; n++)
+            int goods = Listed(HustleCatalogue.GoodsADay, sellers, ref dice), listedCars = Listed(HustleCatalogue.CarsADay, sellers, ref dice);
+            for (int n = 0; n < goods; n++)
             {
-                s.Listings.Add(Goods(s.Next(), homes, level, ref dice));
+                s.Listings.Add(Goods(s.Next(), homes, level, ref dice, book != null ? SellerRules.Pick(book, dice.Range(0, 1 << 20)) : null));
             }
-            for (int n = 0; cars != null && cars.Count > 0 && n < HustleCatalogue.CarsADay; n++)
+            for (int n = 0; cars != null && cars.Count > 0 && n < listedCars; n++)
             {
-                s.Listings.Add(CarListing(s.Next(), homes, cars, colours, level, ref dice));
+                s.Listings.Add(CarListing(s.Next(), homes, cars, colours, level, ref dice, book != null ? SellerRules.Pick(book, dice.Range(0,
+                    1 << 20)) : null));
+            }
+            for (int d = 0; book != null && dealers != null && d < dealers.Count; d++)
+            {
+                Seller rival = SellerRules.ForRival(book, dealers[d].Name, s.Seed);
+                if (rival == null || !SellerRules.RivalListing(s.Seed, day, dealers[d].Name))
+                {
+                    continue;
+                }
+                if (dealers[d].Vehicles && cars != null && cars.Count > 0)
+                {
+                    s.Listings.Add(CarListing(s.Next(), homes, cars, colours, level, ref dice, rival));
+                }
+                else if (dealers[d].Machines)
+                {
+                    s.Listings.Add(Goods(s.Next(), homes, level, ref dice, rival, true));
+                }
             }
             var gigs = new DealerDice(s.Seed, day, SaltGigs);
             int count = GigsToday(s.Rating, s.Ratings.Count);
@@ -91,9 +126,36 @@ namespace RealLifeOverhaul.Hustles
             }
         }
 
-        private static Listing Goods(int id, IList<HustlePlace> homes, int level, ref DealerDice dice)
+        // A day's listings of a kind at the sellers' factor: the whole part, and one more by the chance of what is left; no draw at a thousand, so a day reads as before.
+        private static int Listed(int usual, int sellers, ref DealerDice dice)
         {
-            ThingDef def = HustleCatalogue.Things[dice.Range(0, HustleCatalogue.Things.Length - 1)];
+            long t = (long)usual * Math.Max(0, Math.Min(HustleCatalogue.ListingsPeopleMost, sellers));
+            int whole = (int)(t / 1000), left = (int)(t % 1000);
+            return whole + (left > 0 && dice.Chance(left) ? 1 : 0);
+        }
+
+        // A machine of the catalogue, for a rival that sells used equipment.
+        private static ThingDef Machine(ref DealerDice dice)
+        {
+            int machines = 0;
+            for (int i = 0; i < HustleCatalogue.Things.Length; i++)
+            {
+                machines += HustleCatalogue.Things[i].Kind == ThingKind.Machine ? 1 : 0;
+            }
+            int at = dice.Range(0, Math.Max(0, machines - 1));
+            for (int i = 0; i < HustleCatalogue.Things.Length; i++)
+            {
+                if (HustleCatalogue.Things[i].Kind == ThingKind.Machine && at-- == 0)
+                {
+                    return HustleCatalogue.Things[i];
+                }
+            }
+            return HustleCatalogue.Things[0];
+        }
+
+        private static Listing Goods(int id, IList<HustlePlace> homes, int level, ref DealerDice dice, Seller seller = null, bool machine = false)
+        {
+            ThingDef def = machine ? Machine(ref dice) : HustleCatalogue.Things[dice.Range(0, HustleCatalogue.Things.Length - 1)];
             int condition = dice.Range(HustleCatalogue.ListingConditionLeast, HustleCatalogue.ListingConditionMost);
             int shown = condition;
             if (def.Kind == ThingKind.Electronics && dice.Chance(HustleCatalogue.OverstateChance))
@@ -102,26 +164,37 @@ namespace RealLifeOverhaul.Hustles
             }
             int worth = GoodsWorth(def, condition, level);
             int asking = HustleCatalogue.Named(HustleCatalogue.Share(worth, dice.Range(HustleCatalogue.AskingLeast, HustleCatalogue.AskingMost)));
+            if (def.Kind == ThingKind.Stock)
+            {
+                asking = HustleCatalogue.Named((int)((long)asking * (10000 - HustleCatalogue.StockUnderBp) / 10000));   // a lot sells under what the wholesaler asks
+            }
+            asking = HustleCatalogue.Named(SellerRules.Asking(seller, asking, false, def.Kind == ThingKind.Machine));
             HustlePlace home = homes[dice.Range(0, homes.Count - 1)];
+            string name = DealerRules.CustomerName(ref dice);   // drawn either way, so a day's other draws stay where they were
             return new Listing
             {
                 Id = id, Thing = def.Id, Condition = condition, Shown = shown, Asking = asking,
                 Floor = HustleCatalogue.Named(HustleCatalogue.Share(asking, dice.Range(HustleCatalogue.FloorLeast, HustleCatalogue.FloorMost))),
-                Seller = DealerRules.CustomerName(ref dice), Street = home.Street, Number = home.Number
+                Seller = seller != null ? seller.Name : name, SellerId = seller != null ? seller.Id : 0, Street = home.Street, Number = home.Number
             };
         }
 
         // A car from its owner, drawn as the showroom's used cars are, at the door of a home of the city.
-        private static Listing CarListing(int id, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level, ref DealerDice dice)
+        private static Listing CarListing(int id, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level,
+            ref DealerDice dice, Seller seller = null)
         {
             MarketModel model = cars[dice.Range(0, cars.Count - 1)];
             DealerListing used = DealerRules.Used(id, model, colours, level, ref dice);
             HustlePlace home = homes[dice.Range(0, homes.Count - 1)];
+            string name = DealerRules.CustomerName(ref dice);
+            int asking = SellerRules.Asking(seller, used.Asking, true, false);
+            int floor = used.Asking > 0 ? (int)Math.Max(1, (long)used.Floor * asking / used.Asking) : used.Floor;
             return new Listing
             {
                 Id = id, Thing = model.Type, Car = true, Colour = used.Colour, Km = used.Km, Price = (int)Math.Round(model.Price),
                 Condition = HustleCatalogue.Clamp(used.Condition / 10, 1, 100), Shown = HustleCatalogue.Clamp(used.Shown / 10, 1, 100),
-                Asking = used.Asking, Floor = used.Floor, Seller = DealerRules.CustomerName(ref dice), Street = home.Street, Number = home.Number
+                Asking = asking, Floor = Math.Min(floor, asking), Seller = seller != null ? seller.Name : name, SellerId = seller != null ? seller.Id : 0,
+                Street = home.Street, Number = home.Number
             };
         }
 
@@ -196,6 +269,9 @@ namespace RealLifeOverhaul.Hustles
             return DealerRules.Line(at, value, x);
         }
 
+        /// <summary>The game's wholesale price of one of an item, whole money, read from the game; set by the director. Null offline: a lot then is worth its catalogue price.</summary>
+        public static Func<string, int> WholesaleOf;
+
         /// <summary>What goods of this kind are worth in this condition, at these prices.</summary>
         public static int GoodsWorth(ThingDef def, int condition, int level)
         {
@@ -204,7 +280,8 @@ namespace RealLifeOverhaul.Hustles
                 return 0;
             }
             int share = Line(HustleCatalogue.WorthAt, HustleCatalogue.WorthShare, HustleCatalogue.Clamp(condition, 0, 100));
-            return Math.Max(1, HustleCatalogue.Share(AtPrices(def.NewPrice, level), share));
+            int whole = def.Item != null && WholesaleOf != null ? WholesaleOf(def.Item) * def.Lot : 0;   // a lot of stock is worth what the game's wholesaler asks for it
+            return Math.Max(1, HustleCatalogue.Share(whole > 0 ? whole : AtPrices(def.NewPrice, level), share));
         }
 
         /// <summary>What a car is worth, as the showroom values one, less for dirt (percent, 0 clean).</summary>
@@ -405,13 +482,19 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>The chance a listed thing draws a buyer this hour (thousandths): by its price against its worth and its condition.</summary>
         public static int OfferChance(int asking, int worth, int condition, bool car, int hour)
         {
+            return OfferChance(asking, worth, condition, car, hour, 1000);
+        }
+
+        /// <summary>The same with the city's buyers of goods against the anchor day's (the living population).</summary>
+        public static int OfferChance(int asking, int worth, int condition, bool car, int hour, int buyers)
+        {
             if (hour < HustleCatalogue.BuyersFrom || hour >= HustleCatalogue.BuyersUntil || worth <= 0)
             {
                 return 0;
             }
             int price = Line(HustleCatalogue.PriceAt, HustleCatalogue.PriceDraw, (int)Math.Min(5000L, asking * 1000L / worth));
             int shape = Line(HustleCatalogue.ConditionAt, HustleCatalogue.ConditionDraw, HustleCatalogue.Clamp(condition, 0, 100));
-            long c = (long)(car ? HustleCatalogue.OfferChanceCar : HustleCatalogue.OfferChanceGoods) * price / 1000 * shape / 1000;
+            long c = (long)(car ? HustleCatalogue.OfferChanceCar : HustleCatalogue.OfferChanceGoods) * price / 1000 * shape / 1000 * Math.Max(0, buyers) / 1000;
             return (int)Math.Min(800, c);
         }
 
@@ -505,6 +588,12 @@ namespace RealLifeOverhaul.Hustles
         /// </summary>
         public static void Hour(HustleState s, int stamp, IList<int> worths, List<HustleEvent> events)
         {
+            Hour(s, stamp, worths, events, 1000);
+        }
+
+        /// <summary>The same with the city's buyers of goods against the anchor day's (the living population).</summary>
+        public static void Hour(HustleState s, int stamp, IList<int> worths, List<HustleEvent> events, int buyers)
+        {
             int day = stamp / 24, hour = stamp % 24;
             for (int i = 0; i < s.Items.Count; i++)
             {
@@ -536,7 +625,7 @@ namespace RealLifeOverhaul.Hustles
                     continue;
                 }
                 var dice = new DealerDice(s.Seed, stamp, o.Id, SaltBuyers);
-                if (!dice.Chance(OfferChance(o.Asking, worths[i], o.Condition, o.Car, hour)))
+                if (!dice.Chance(OfferChance(o.Asking, worths[i], o.Condition, o.Car, hour, buyers)))
                 {
                     continue;
                 }

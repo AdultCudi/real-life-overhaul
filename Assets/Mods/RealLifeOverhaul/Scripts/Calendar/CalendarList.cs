@@ -25,10 +25,15 @@ namespace RealLifeOverhaul.Calendar
         public string Title;
         public string Value;         // the words at its right: an hour, an amount, "By 17:00"; null for none
         public string App;           // the id of the mod's app that deals with it; null for none
+        public bool Done;            // dealt with already (a Planner note ticked off): the day's header counts it
+
+        /// <summary>A copy that stays what it was when the list is begun again and its objects are reused.</summary>
+        internal CalendarEntry Clone() => (CalendarEntry)MemberwiseClone();
 
         internal void Reset()
         {
             Source = Title = Value = App = null;
+            Done = false;
             A = B = Day = Sign = 0;
             Start = -1;
             Amount = 0f;
@@ -57,6 +62,15 @@ namespace RealLifeOverhaul.Calendar
         private readonly List<NightLine> _nightPool = new List<NightLine>(8);
 
         public int FromDay, ToDay;
+
+        /// <summary>Copies entries a screen will hold across the next look.</summary>
+        public static void Copy(List<CalendarEntry> from, List<CalendarEntry> into)
+        {
+            for (int i = 0; i < from.Count; i++)
+            {
+                into.Add(from[i].Clone());
+            }
+        }
 
         public void Begin(int fromDay, int toDay)
         {

@@ -18,6 +18,21 @@ namespace RealLifeOverhaul.Economy
 
         public static string T(string key) => FinanceText.T(key);
 
+        /// <summary>
+        /// What happens to the staff in a sale: a buyer that keeps them holds them to their jobs for 30 days where the living
+        /// population can; one that does not leaves them with the player.
+        /// </summary>
+        public static string StaffLine(bool keeps)
+        {
+            if (!keeps)
+            {
+                return FinanceText.T("reallife_svc_bid_staff_not");
+            }
+            return ServicesBridges.HoldsStaff != null && ServicesBridges.HoldsStaff()
+                ? FinanceText.T("reallife_svc_bid_staff_hold", "days", RealLifeOverhaul.Population.HoldRules.Days.ToString())
+                : FinanceText.T("reallife_svc_bid_staff_keep");
+        }
+
         public static string T(string key, string name, string value) => FinanceText.T(key, name, value);
 
         public static string T(string key, string name, string value, string name2, string value2) => FinanceText.T(key, name, value, name2, value2);
@@ -69,10 +84,63 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A kind of buyer: "a rival owner".</summary>
         public static string Kind(int buyer) => T(KindKeys[ServicesCatalogue.Clamp(buyer, 0, KindKeys.Length - 1)]);
 
-        /// <summary>Who makes an offer: one of three names of its kind, always the same for the same offer.</summary>
+        /// <summary>Who makes an offer: the buyer by name ("Anya Petrova and the staff" for a buy-out); an offer made before named buyers has one of three names of its kind.</summary>
         public static string Buyer(SaleOffer offer)
         {
+            if (offer.Named)
+            {
+                return offer.Buyer == (int)BuyerKind.Staff ? T("reallife_svc_who_staff", "name", offer.WhoName) : offer.WhoName;
+            }
             return T(KindKeys[ServicesCatalogue.Clamp(offer.Buyer, 0, KindKeys.Length - 1)] + "_" + ServicesCatalogue.Clamp(offer.Face, 0, 2).ToString(Inv));
+        }
+
+        /// <summary>What the buyer is: "Rival, 12 businesses", "Listed company, BLB", "Your staff, 9 of them", "Investor"; the kind alone before named buyers.</summary>
+        public static string Who(SaleOffer offer)
+        {
+            if (!offer.Named)
+            {
+                return Kind(offer.Buyer);
+            }
+            switch ((BuyerKind)offer.Buyer)
+            {
+                case BuyerKind.Rival:
+                    return T("reallife_svc_who_rival", "count", offer.WhoCount.ToString(Inv));
+                case BuyerKind.Chain:
+                    RealLifeOverhaul.Markets.CompanyDef d = RealLifeOverhaul.Markets.MarketCatalogue.Find(offer.WhoCount);
+                    return T("reallife_svc_who_chain", "ticker", d != null ? d.Ticker : "?");
+                case BuyerKind.Staff:
+                    return T("reallife_svc_who_staff_note", "count", offer.WhoCount.ToString(Inv));
+                default:
+                    return T("reallife_svc_who_investor");
+            }
+        }
+
+        /// <summary>A line of what would raise a business's price: what it is now, and what it takes.</summary>
+        public static string RaiseLabel(SaleRaise r)
+        {
+            switch (r.Kind)
+            {
+                case RaiseKind.Interior:
+                    return T("reallife_svc_raise_interior", "now", r.Now.ToString(Inv), "want", r.Want.ToString(Inv));
+                case RaiseKind.Rating:
+                    return T("reallife_svc_raise_rating", "now", r.Now.ToString(Inv));
+                case RaiseKind.Skill:
+                    return T("reallife_svc_raise_skill", "now", r.Now.ToString(Inv));
+                default:
+                    return T("reallife_svc_raise_books", "now", r.Now.ToString(Inv), "want", r.Want.ToString(Inv));
+            }
+        }
+
+        /// <summary>About how much a line adds: "At 80% adds about $48,000", or "In 3 days adds about ..." for the books; met with nothing more to gain.</summary>
+        public static string RaiseValue(SaleRaise r)
+        {
+            if (r.Gain <= 0)
+            {
+                return T("reallife_svc_raise_met");
+            }
+            return r.Kind == RaiseKind.Books
+                ? T("reallife_svc_raise_days", "count", Math.Max(1, r.To - r.Now).ToString(Inv), "amount", Money(r.Gain))
+                : T(r.Kind == RaiseKind.Skill ? "reallife_svc_raise_to_skill" : "reallife_svc_raise_to", "to", r.To.ToString(Inv), "amount", Money(r.Gain));
         }
 
         public static string District(string district) => CompanyText.District(district);

@@ -31,8 +31,11 @@ namespace RealLifeOverhaul
         private const float GlyphShare = 0.62f;     // of the square's height the shape takes, as the game's own logos leave a margin
         private const float WideShare = 0.8f;       // of its width, for a shape wider than it is high
 
+        private const float UrgentPaceSeconds = 0.35f;   // after a face the interface is showing a plain disc for: the screen is open and its player looking at it
+
         private static ContactPainter _instance;
         private static readonly Queue<ContactPictures.Picture> Wanted = new Queue<ContactPictures.Picture>(32);
+        private static readonly Queue<ContactPictures.Picture> Urgent = new Queue<ContactPictures.Picture>(16);   // faces on a screen now, drawn before the rest of the cast
 
         private static byte[] _logoBuffer;          // one for the session: every kept logo read passes through it, on the worker, while no other read is out
         private static byte[] _rgb, _rgba;          // the main thread's own: a kept face's decoded rows, and as the texture's
@@ -71,6 +74,23 @@ namespace RealLifeOverhaul
         internal static void Want(ContactPictures.Picture p)
         {
             Wanted.Enqueue(p);
+            Wake();
+        }
+
+        /// <summary>A face on a screen now that is not drawn yet: drawn next, ahead of the rest of the cast, and the camera rests less after it.</summary>
+        internal static void Hurry(ContactPictures.Picture p)
+        {
+            if (p.Drawn || p.Hurried)
+            {
+                return;
+            }
+            p.Hurried = true;
+            Urgent.Enqueue(p);
+            Wake();
+        }
+
+        private static void Wake()
+        {
             if (_instance == null)
             {
                 var host = new GameObject("RealLife ContactPainter");
@@ -173,7 +193,7 @@ namespace RealLifeOverhaul
                 }
                 return;   // one picture a frame: a kept one is a millisecond, one made from nothing has the frame to itself
             }
-            if (Wanted.Count == 0)
+            if (Wanted.Count == 0 && Urgent.Count == 0)
             {
                 enabled = false;   // nothing to paint: no cost until a picture is wanted
                 return;
@@ -183,10 +203,18 @@ namespace RealLifeOverhaul
                 return;
             }
             ContactPictures.Picture p = null;
-            while (p == null && Wanted.Count > 0)
+            while (p == null && (Urgent.Count > 0 || Wanted.Count > 0))
             {
-                p = Wanted.Dequeue();
-                p.Queued = false;
+                if (Urgent.Count > 0)
+                {
+                    p = Urgent.Dequeue();   // still in Wanted too (its Queued stays): drawn by then, it is passed over there
+                    p.Hurried = false;
+                }
+                else
+                {
+                    p = Wanted.Dequeue();
+                    p.Queued = false;
+                }
                 p = p.Drawn ? null : p;   // painted meanwhile: nothing to read
             }
             if (p != null)
@@ -579,8 +607,9 @@ namespace RealLifeOverhaul
             {
                 _drawing = null;
             }
-            _next = Time.realtimeSinceStartup + FacePaceSeconds;
-            PortraitTurn.Give(this, Time.realtimeSinceStartup, SceneFinds.Hidden);
+            bool shown = Urgent.Count > 0;   // a face a screen is waiting for: the camera rests the less
+            _next = Time.realtimeSinceStartup + (shown ? UrgentPaceSeconds : FacePaceSeconds);
+            PortraitTurn.Give(this, Time.realtimeSinceStartup, shown ? UrgentPaceSeconds : SceneFinds.Hidden ? PortraitTurn.HiddenPaceSeconds : PortraitTurn.PaceSeconds);
             Texture2D source = sprite != null ? sprite.texture : null;
             if (source == null || !source.isReadable)
             {
@@ -693,6 +722,11 @@ namespace RealLifeOverhaul
         {
             p.Drawn = true;
             p.Tries = 0;
+            if (p.Look.Kind == PictureKind.Person)
+            {
+                Ui.UiFaces.Drop(p.Sprite);   // a face drawn again under the same sprite: the interface copies it afresh
+                Ui.UiFaces.Arrived();
+            }
             if (Meta.Dev.Verbose)
             {
                 double ms = began >= 0 ? (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency : -1.0;

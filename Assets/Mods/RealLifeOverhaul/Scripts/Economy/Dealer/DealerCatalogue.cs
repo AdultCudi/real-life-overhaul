@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int BuyersFee = 50;            // the auction house's fee on a lot won, of the hammer price...
         public const int BuyersFeeLeast = 100;      // ...at least this at the start's prices
         public const int AuctionShownSpread = 60;   // the condition in the catalogue is the truth within this
+        public const int BidsKept = 8;              // the last bids of a lot that its page lists
         public const int AuctionInspection = 200;   // a look over a lot before bidding, at the start's prices
         public const int NoPayDays = 3;             // a lot won and not paid for: no bids for this many days
         public static readonly string[] RivalNames = { "Halden Motors", "Crossway Cars", "Pier Street Autos", "Northgate Trade", "Riverside Car Sales", "Brookfield Motor Group" };

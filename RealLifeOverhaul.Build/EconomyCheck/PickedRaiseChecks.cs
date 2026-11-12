@@ -13,6 +13,7 @@ internal static partial class Program
     private static void StaffCentres()
     {
         PickedRaises();
+        StaffBatches();
         CentreOffer();
         CrewSearch();
     }

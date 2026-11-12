@@ -16,6 +16,16 @@ namespace RealLifeOverhaul.Economy
                 {
                     Licence l = file.Permits[k];
                     LicenceNote note = LicenceRules.Day(l, day);
+                    if (note == LicenceNote.Granted)
+                    {
+                        LicenceRules.Grant(l, k, day);   // the city has decided: the permit runs from today
+                        Logger?.Info("Company: the city granted " + CompanyText.Licence(k) + " for " + shop.Name + " on day " + day + ": good to day " + l.Until + ".");
+                        Tell(NotificationType.Success, "reallife_co_note_licence_granted", new Dictionary<string, string>
+                        {
+                            { "licence", CompanyText.Licence(k) }, { "business", shop.Name }, { "day", l.Until.ToString() }
+                        }, TabTax, "lic:" + file.Place + ":" + k);
+                        continue;
+                    }
                     if (note == LicenceNote.None || !LicenceRules.Needed(shop.Needs, k))
                     {
                         continue;   // one the business no longer needs runs out without a word
@@ -105,6 +115,15 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            Licence permit = shop.File.Permits[kind];
+            if (!LicenceRules.CanApply(permit))
+            {
+                Notify(NotificationType.Info, "reallife_co_note_licence_waits", new Dictionary<string, string>
+                {
+                    { "licence", CompanyText.Licence(kind) }, { "business", shop.Name }, { "day", permit.Decide.ToString() }
+                }, 8f);
+                return;   // one application at a time: nothing is taken twice
+            }
             int fee = LicenceRules.Fee(kind, _index);
             if (!Cost(fee, CompanyGame.LicenceKey, shop, shop.Name, CostKind.Licences, null,
                     CompanyText.Licence(kind) + " for " + CompanyCatalogue.LicenceTerm[kind] + " days at today's prices (" + _index + ")"))
@@ -112,11 +131,20 @@ namespace RealLifeOverhaul.Economy
                 Notifications.ShowInsufficientMoney();
                 return;
             }
-            LicenceRules.Grant(shop.File.Permits[kind], kind, Save.Day);
-            Logger?.Info("Company: " + CompanyText.Licence(kind) + " bought for " + shop.Name + " for " + fee + ": good to day " + shop.File.Permits[kind].Until + ".");
+            if (LicenceRules.Apply(permit, kind, Save.Day))
+            {
+                Logger?.Info("Company: " + CompanyText.Licence(kind) + " applied for at " + shop.Name + " for " + fee + ": the city decides on day " + permit.Decide + ".");
+                Notify(NotificationType.Success, "reallife_co_note_licence_applied", new Dictionary<string, string>
+                {
+                    { "licence", CompanyText.Licence(kind) }, { "business", shop.Name }, { "day", permit.Decide.ToString() }
+                }, 8f);
+                Changed();
+                return;
+            }
+            Logger?.Info("Company: " + CompanyText.Licence(kind) + " bought for " + shop.Name + " for " + fee + ": good to day " + permit.Until + ".");
             Notify(NotificationType.Success, "reallife_co_note_licence_bought", new Dictionary<string, string>
             {
-                { "licence", CompanyText.Licence(kind) }, { "business", shop.Name }, { "day", shop.File.Permits[kind].Until.ToString() }
+                { "licence", CompanyText.Licence(kind) }, { "business", shop.Name }, { "day", permit.Until.ToString() }
             }, 8f);
             Changed();
         }
@@ -148,7 +176,7 @@ namespace RealLifeOverhaul.Economy
                     Licence l = file.Permits[k];
                     if (LicenceRules.Needed(_shops[i].Needs, k) && !l.Auto && l.Until >= day && l.Until - day < CompanyCatalogue.LicenceRemindDays)
                     {
-                        Alert(3, number % 100000000 * 4 + k, l.Until,
+                        Alert(3, number % 100000000 * CompanyCatalogue.LicenceKinds + k, l.Until,
                             CompanyText.T("reallife_co_plan_licence_title", "licence", CompanyText.Capital(CompanyText.Licence(k)), "business", _shops[i].Name),
                             CompanyText.T("reallife_co_plan_licence_what"), CompanyText.T("reallife_planner_costs", "amount", CompanyText.Money(LicenceRules.Fee(k, _index))),
                             CompanyText.T("reallife_co_plan_missing_missed"));

@@ -499,7 +499,7 @@ namespace RealLifeOverhaul
             Stations.Clear();
             for (int i = 0; i < city.subwayStations.Count; i++)
             {
-                if (city.subwayStations[i] != null)
+                if (city.subwayStations[i] != null && !OwnStations.Is(city.subwayStations[i]))   // the game's alone: the lines are the same with or without the mod's stations
                 {
                     Stations.Add(city.subwayStations[i]);
                 }

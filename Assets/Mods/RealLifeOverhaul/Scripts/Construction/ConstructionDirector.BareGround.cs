@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Construction
     /// Player.log, "Build mode check (bare ground)", once a load with Developer diagnostics on (a FAIL says which column or which spot),
     /// and one on how it was spread, "Build mode check (bare ground, spread over frames)". Done whole in one frame it was 143 and
     /// 181 ms (the own-spike scan, 28 Oct 2026), so it goes a slice of <see cref="BareSliceMs"/> a frame (BareAudit), the same report
-    /// to the last bit. COST: one test a frame while idle; while it runs, a slice a frame for a few seconds once a load, a second
+    /// to the last bit; its code is compiled behind the loading screen, so its first step does not pay Mono's compiler (3.4 ms
+    /// on 2 Nov 2026). COST: one test a frame while idle; while it runs, a slice a frame for a few seconds once a load, a second
     /// after the district stands.
     /// </summary>
     public sealed partial class ConstructionDirector
@@ -23,6 +24,14 @@ namespace RealLifeOverhaul.Construction
         private readonly BareAudit _bare = new BareAudit();
         private readonly SpreadWatch _bareSpread = new SpreadWatch();   // the frames the check took, for its self-check line
         private Func<int, BuildModeRules.ColumnFacts> _bareFacts;      // FactsOf, made once
+
+        // The check's code and a column's facts (the build mode view's too) compiled behind the loading screen (Core/LoadWarm): compiled
+        // in its first step they were its slowest, 3.4 ms (the owner's log of 2 Nov 2026).
+        private static void BareGroundWarm()
+        {
+            LoadWarm.Add("construction: the bare ground check and a column's facts compiled", new[] { typeof(BareAudit), typeof(BuildGroundRules) },
+                typeof(ConstructionDirector), nameof(BareGroundSecond), nameof(BareGroundBegin), nameof(BareGroundFrame), nameof(BareGroundSaid), nameof(FactsOf));
+        }
 
         // On the second's look: once a load, when the district stands and Developer diagnostics are on, the check begun.
         private void BareGroundSecond()

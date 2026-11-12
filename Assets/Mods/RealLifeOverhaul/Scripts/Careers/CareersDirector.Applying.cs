@@ -197,7 +197,9 @@ namespace RealLifeOverhaul.Careers
         private void Offer(Application a, int day)
         {
             a.Stage = (int)ApplyStep.Offered;
-            a.Offer = ProRules.OfferPay(a.Post.Pay, a.Score);
+            int pay = ProRules.OfferPay(a.Post.Pay, a.Score);
+            int extra = Flare.FlareBrand.JobExtra();
+            a.Offer = extra == 0 ? pay : (int)((long)pay * (1000 + extra) / 1000);
             a.Lapse = day + ProRules.OfferDays;
             Tell2(NotificationType.Success, "reallife_work_note_offer",
                 Data("employer", CareersText.Employer(a.Post.Employer), "title", CareersText.Title(a.Post.Prof, a.Post.Rank), "pay", CareersText.Rate(Prices.At(a.Offer))),
@@ -340,7 +342,14 @@ namespace RealLifeOverhaul.Careers
             }
             int day = Save.Day;
             StudyRules.Use(_study, TalentCatalogue.Relationships, day);
-            if (ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)))
+            string other = ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)) ? OtherGotIt(a) : null;   // the employer weighs every applicant
+            if (other != null)
+            {
+                a.Reject(day);
+                Tell2(NotificationType.Warning, "reallife_work_note_other_got_it", Data("name", other, "employer", CareersText.Employer(a.Post.Employer)), TabApplications,
+                    CareerApp.ApplicationRow + a.Post.Id);
+            }
+            else if (ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)))
             {
                 Offer(a, day);
             }

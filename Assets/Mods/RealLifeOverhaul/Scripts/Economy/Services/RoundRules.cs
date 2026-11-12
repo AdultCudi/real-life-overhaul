@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Economy
         public int FreeFrom;             // busy until this minute with a visit under way when the round is planned again
         public bool Out;                 // ...and then at AtX, AtZ rather than at base
         public int AtX, AtZ;
+        public int Group = -1;           // the named crew they stand in, or -1
 
         // What the plan gave them.
         public int Visits;
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul.Economy
         public int Need = -1;            // hundredths of dirt to take off; -1: not known
         public bool Taken;
         public int Why;                  // why nobody takes it: RoundRules.NoCleaner and its neighbours
+        public int Group = -1;           // the named crew that serves it, who go first; -1: whoever is free
     }
 
     /// <summary>A visit of the round: who, where and when.</summary>
@@ -72,7 +74,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (c.Now < c.Threshold && !c.Pending)
                     {
-                        into.Add(new RoundJob { Client = i, X = c.X, Z = c.Z, Force = c.Force, Earliest = now, Need = c.Load });
+                        into.Add(new RoundJob { Client = i, X = c.X, Z = c.Z, Force = c.Force, Earliest = now, Need = c.Load, Group = c.Crew });
                     }
                     continue;
                 }
@@ -88,7 +90,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     // The next visit finds what is on the floor now; later ones their share of a day's dirt.
                     int need = first ? (c.Load > 0 || share < 0 ? Math.Max(c.Load, share) : share) : share;
-                    into.Add(new RoundJob { Client = i, Slot = k, X = c.X, Z = c.Z, Force = c.Force, Earliest = Math.Max(minute, now), Need = need == 0 ? -1 : need });
+                    into.Add(new RoundJob { Client = i, Slot = k, X = c.X, Z = c.Z, Force = c.Force, Earliest = Math.Max(minute, now), Need = need == 0 ? -1 : need, Group = c.Crew });
                     first = false;
                 }
             }
@@ -111,6 +113,7 @@ namespace RealLifeOverhaul.Economy
             }
             while (visits.Count < ServicesCatalogue.VisitsDayMost)
             {
+                int bestRank = int.MaxValue;   // the start, with a handicap for a cleaner outside the contract's own crew
                 int bestJob = -1, bestCleaner = -1, bestStart = int.MaxValue, bestDue = int.MaxValue, bestWay = int.MaxValue, bestMinutes = 0, bestRate = 0, bestMetres = 0;
                 for (int j = 0; j < jobs.Count; j++)
                 {
@@ -140,8 +143,10 @@ namespace RealLifeOverhaul.Economy
                         {
                             continue;
                         }
-                        if (start < bestStart || (start == bestStart && (job.Earliest < bestDue || (job.Earliest == bestDue && way < bestWay))))
+                        int rank = start + (job.Group >= 0 && who.Group != job.Group ? ServicesCatalogue.OtherCrewMinutes : 0);   // the contract's own crew goes first unless it would be much later
+                        if (rank < bestRank || (rank == bestRank && (job.Earliest < bestDue || (job.Earliest == bestDue && way < bestWay))))
                         {
+                            bestRank = rank;
                             bestJob = j;
                             bestCleaner = c;
                             bestStart = start;

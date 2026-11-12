@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy
             TaxFile t = _state.Tax;
             int yesterday = day - 1, hidden = Hidden();
             bool hiding = hidden > 0;
+            ReserveYear(day);   // the game's tax year turning over or its bill coming: what was set aside goes back to the cash
 
             if (t.Accountant >= 0 && TaxRules.Resigns(t.Accountant, hiding))
             {
@@ -93,7 +94,7 @@ namespace RealLifeOverhaul.Economy
                              + (TaxRules.AuditChance(t.Risk, t.Accountant) / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "%; saved since the last audit "
                              + t.Saved + ": PASS");
             }
-            if (Settings.EconomyCompanyHide && TaxRules.Audited(t, _state.Seed, _state.Age))
+            if (Settings.EconomyCompanyHide && TaxRules.Audited(t, _state.Seed, _state.Age, day))
             {
                 Audit(day);
             }
@@ -104,16 +105,17 @@ namespace RealLifeOverhaul.Economy
 
             if (TaxRules.QuarterOver(t, day, QuarterDays))
             {
-                // The gain on a business sold in the quarter is in no business's statement: counted here once.
+                // The gain on a business sold, or a stake in a startup, in the quarter is in no business's statement: counted here once.
                 int from = t.QuarterFrom;
-                int takings = CompanyGame.Sales(from, yesterday) + (CompanyBridges.OtherIncome != null ? CompanyBridges.OtherIncome(from, yesterday) : 0);
-                TaxRules.Close(t, takings, day);
+                int takings = CompanyGame.Sales(from, yesterday) + CompanyBridges.Other(from, yesterday);
+                TaxRules.Close(t, takings, day, CompanyGame.TaxPercent);
                 if (Verbose)
                 {
                     Logger?.Info("Company check (tax, quarter " + t.ReturnQuarter + " closed): days " + from + " to " + yesterday + " (" + QuarterDays
                                  + " days, three months of " + MonthDays + "), takings " + takings + " by the game's own sum, the mod's deductible costs "
                                  + t.ReturnCosts + "; the return is due by day " + t.ReturnDue + ": PASS");
                 }
+                ReserveClose(day);   // the finance chief tops the reserve up to the year's tax so far, if asked to
                 if (TaxRules.Files(t.Accountant, hiding))
                 {
                     FileReturn(true);
@@ -154,6 +156,20 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Company: " + CompanyCatalogue.LateForAudit + " late returns running: business pressure's own tax audit "
                          + (started ? "has started at " + most.Name + "." : "was asked for and did not start (its own rules said no, or it is switched off).")
                          + " The count starts again.");
+        }
+
+        /// <summary>
+        /// A tax case the player settled with the city (Justice, through the wiring): the tax inspector comes to the
+        /// player's own businesses at half the chance for a year. Nobody else's businesses are touched.
+        /// </summary>
+        public void TaxSettled(int day)
+        {
+            if (_state == null || _state.Tax == null)
+            {
+                return;
+            }
+            TaxRules.Settled(_state.Tax, day, QuarterDays);
+            Logger?.Info("Company: a tax case settled with the city on day " + day + "; audits come at half the chance until day " + _state.Tax.QuietUntil + ".");
         }
 
         private void Audit(int day)

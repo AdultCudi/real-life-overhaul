@@ -224,6 +224,23 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
+        /// <summary>The game's Business manager app, for the Property page's button; nothing if the full menu is not there.</summary>
+        public static void OpenBizMan()
+        {
+            try
+            {
+                UIs ui = InstanceBehavior<UIs>.Instance;
+                if (ui != null && ui.fullMenu != null)
+                {
+                    ui.fullMenu.ShowApp(AppName.BizMan);
+                }
+            }
+            catch (Exception)
+            {
+                // the menu is not as expected: the page's button does nothing this time
+            }
+        }
+
         /// <summary>The game's named rivals, at most four; none while its rivals are off or not loaded.</summary>
         public static void RivalNames(List<string> into)
         {

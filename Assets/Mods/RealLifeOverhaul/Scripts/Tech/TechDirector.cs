@@ -40,11 +40,13 @@ namespace RealLifeOverhaul.Tech
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
             SeatGame.Logger = Logger;
+            SeatShifts.Logger = Logger;
             MovesGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
             _onRegChange = Guard.Wrap<Address>(OnRegistrationChange);
+            _places = new PlaceDays(TechBridges.ComfortAt, TechBridges.TeamWeekAt, PullOfPlace);
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -136,6 +138,24 @@ namespace RealLifeOverhaul.Tech
             {
                 StopFirms(true, false);
             }
+            bool studio = _firmsOn && StudioWanted;
+            if (studio && !_studioOn)
+            {
+                StartStudio();
+            }
+            else if (!studio && _studioOn)
+            {
+                StopStudio(true);
+            }
+            bool markets = _firmsOn && SectorWanted;
+            if (markets && !_sectorOn)
+            {
+                StartSector();
+            }
+            else if (!markets && _sectorOn)
+            {
+                StopSector(true);
+            }
             bool startups = Settings.TechStartups && _firmsOn;
             if (startups && !_ventureOn)
             {
@@ -147,6 +167,10 @@ namespace RealLifeOverhaul.Tech
             }
             _interview?.Watch();
             _pitch?.Watch();
+            if (_ventureOn)
+            {
+                KeepMoney();
+            }
             if (!_peopleOn)
             {
                 return;
@@ -275,6 +299,14 @@ namespace RealLifeOverhaul.Tech
                     WriteFirms(Save.modData);
                     WriteInfra(Save.modData);
                 }
+                if (_studioOn)
+                {
+                    WriteStudio(Save.modData);
+                }
+                if (_sectorOn)
+                {
+                    WriteSector(Save.modData);
+                }
                 if (_ventureOn)
                 {
                     WriteVenture(Save.modData);
@@ -380,6 +412,8 @@ namespace RealLifeOverhaul.Tech
             _talent = null;
             _hiring = null;
             _firmsFile = null;
+            _studio = null;
+            _sector = null;
             _venture = null;
             _infra = null;
             _news = new TechNews();

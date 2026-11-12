@@ -113,6 +113,10 @@ namespace RealLifeOverhaul.Construction
             }
             int count = Bids(p, _quotes);
             int r = BuildCatalogue.Clamp(rival, 0, count - 1);
+            if (!LevelRules.Allows(RivalLevel(r), p.Storeys))
+            {
+                return "reallife_ui_cons_answer_builder_floors";   // a builder bids only on buildings its licence covers
+            }
             TenderBid bid = _quotes[r];   // its days of works as it bid them; the price as its quote shows it
             long price = CommissionRules.Price(bid);
             long deposit = CommissionRules.Deposit(price);
@@ -136,6 +140,7 @@ namespace RealLifeOverhaul.Construction
             int usual = CommissionRules.UsualDays(p.Hours, permits), promised = CommissionRules.Promised(usual, bid.Days);
             long first = (long)day * 24 + ConstructionGame.Hour + 1;   // the programme works the site from the next hour
             p.Contractor = r;
+            _state.Rivals[r].Jobs++;   // a job for the player, which the quotes show
             p.ContractorPrice = price;
             p.HireDays = CommissionRules.Days(p.Model, p.Hours, promised, permits);   // the working days it quoted, to the handover
             p.HirePace = CommissionRules.Pace(_state.Seed, p.Id, r, bid.Days, usual, _state.Rivals[r].Reputation);
@@ -188,6 +193,7 @@ namespace RealLifeOverhaul.Construction
             if (_app != null && _view != null && Running)
             {
                 _view.WantQuotes(project);
+                ConstructionLive.Instance.WantPage(project, 3);
                 _app.Open();
             }
         }

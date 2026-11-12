@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -17,12 +18,14 @@ namespace RealLifeOverhaul
     internal sealed class DriverGame
     {
         private const string HaltTag = "AiVehicleHalt";   // the one tag a trigger must carry for a traffic car to stop for it (VehicleComponent.OnTriggerEnter)
-        private const int MeasuredAtOnce = 3;             // cars measured for the first time in one look: the rest wait for the next
         private const float LineDepth = 0.8f;             // metres a hold line's box runs along the lane
         private const float LineHeight = 1.4f;            // metres
         private const float ParkedAt = -500f;             // metres under the world: where a line is before its first use
 
         public static IModLogger Logger;
+
+        /// <summary>The look's clock stopped and started again around the lines this writes (CityDrivers' own), so a look costs what it costs without them.</summary>
+        public Action Quiet, Loud;
 
         // ---------------------------------------------------------------- the pool, measured once a car
 
@@ -34,7 +37,14 @@ namespace RealLifeOverhaul
         private float[] _nose = new float[0];         // metres from its origin to its nose
         private float[] _sensor = new float[0];       // metres its sensor reaches past its nose
         private bool[] _known = new bool[0];
-        private int _budget;
+        private bool[] _wanted = new bool[0];     // seen in a look before it was measured: measured in a frame of its own
+        private int _waiting;                     // how many are
+        private float _waitingSince;              // when the first of them was seen
+        private readonly Dictionary<int, int> _byKind = new Dictionary<int, int>(32);   // a car's kind (its prefab) and an upright car of it measured
+
+        /// <summary>The minute's figures for its line: cars measured outside the looks, cars that took their kind's figures, the slowest measure.</summary>
+        public int MeasuredOut, CopiedByKind;
+        public long MeasureWorst;
         private DrivingAI _driving;      // the traffic system's own drivers, for their indicators
 
         /// <summary>Makes room for the traffic system's cars, forgetting what was measured if it is another city's; true if it was.</summary>
@@ -52,30 +62,113 @@ namespace RealLifeOverhaul
             _nose = new float[cars];
             _sensor = new float[cars];
             _known = new bool[cars];
+            _wanted = new bool[cars];
+            _waiting = 0;
+            _byKind.Clear();
             _driving = traffic != null ? traffic.GetComponent<DrivingAI>() : null;   // (once a city: the component that drives every car)
             return true;
         }
 
-        /// <summary>A new look begins: a few more cars may be measured in it.</summary>
-        public void BeginLook()
-        {
-            _budget = MeasuredAtOnce;
-        }
-
-        /// <summary>The car's transform, measured the first time it is seen; null if not measured yet and this look's budget is spent.</summary>
+        /// <summary>
+        /// The car's transform once it is measured; null until then. An upright car of a kind already measured upright (the same
+        /// prefab, so the same shape in its own space) takes that one's figures at once; any other is measured in a frame of its
+        /// own (<see cref="MeasureWaiting"/>), never inside a look.
+        /// </summary>
         public Transform At(int index, VehicleComponent car)
         {
             if (_known[index])
             {
                 return _at[index];
             }
-            if (_budget <= 0)
+            int kind = Kind(car);
+            if (kind != 0 && _byKind.TryGetValue(kind, out int like) && like < _known.Length && _known[like])
             {
-                return null;
+                Transform own = car.transform;
+                if (Mathf.Abs(own.up.y) >= 0.5f)   // (one first seen on its side is measured as it lies, as ever)
+                {
+                    _at[index] = own;
+                    _middle[index] = _middle[like];
+                    _halfLength[index] = _halfLength[like];
+                    _halfWidth[index] = _halfWidth[like];
+                    _nose[index] = _nose[like];
+                    _sensor[index] = _sensor[like];
+                    _known[index] = true;
+                    CopiedByKind++;
+                    return own;
+                }
             }
-            _budget--;
+            if (!_wanted[index])
+            {
+                if (_waiting == 0)
+                {
+                    _waitingSince = Time.time;
+                }
+                _wanted[index] = true;
+                _waiting++;
+            }
+            return null;
+        }
+
+        /// <summary>True while a car seen in a look waits to be measured; and how long the first of them has waited.</summary>
+        public bool Waiting => _waiting > 0;
+        public float WaitedFor => _waiting > 0 ? Time.time - _waitingSince : 0f;
+
+        /// <summary>
+        /// One car seen in a look and not measured yet, measured now (outside any look; an upright one's figures kept for the
+        /// others of its kind, if its colliders hold them whichever way it is turned). One a call: the caller does it in a frame
+        /// with no look, or after a look if one waited too long.
+        /// </summary>
+        public void MeasureWaiting(List<VehicleComponent> pooled)
+        {
+            for (int i = 0; i < _wanted.Length; i++)
+            {
+                if (!_wanted[i])
+                {
+                    continue;
+                }
+                _wanted[i] = false;
+                _waiting--;
+                VehicleComponent car = i < pooled.Count ? pooled[i] : null;
+                if (car == null || _known[i] || !car.isActiveAndEnabled || car.rb == null || car.GetIndex() != i)
+                {
+                    continue;   // back in the pool, or measured already: measured when it is next seen
+                }
+                TrafficTools.Measured();
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
+                bool shared = Measure(i, car);
+                long took = System.Diagnostics.Stopwatch.GetTimestamp() - began;
+                MeasuredOut++;
+                if (took > MeasureWorst)
+                {
+                    MeasureWorst = took;
+                }
+                int kind = Kind(car);
+                if (shared && kind != 0 && !_byKind.ContainsKey(kind))
+                {
+                    _byKind[kind] = i;   // (one on its side measures its width as its height, one of odd colliders as it is turned: theirs are their own)
+                }
+                if (_waiting > 0)
+                {
+                    _waitingSince = Time.time;
+                }
+                return;
+            }
+            _waiting = 0;
+        }
+
+        // A car's kind: the prefab the traffic system made it of; 0 for none known (then each is measured).
+        private static int Kind(VehicleComponent car)
+        {
+            GameObject prefab = car.prefab;
+            return prefab != null ? prefab.GetInstanceID() : 0;
+        }
+
+        // The car's figures in its own space, once: its body's middle, length and width, its nose and its sensor's reach. True
+        // if they hold for every car of its kind standing upright: it stood upright, and its colliders were read in their own space.
+        private bool Measure(int index, VehicleComponent car)
+        {
             Transform body = car.transform;
-            TrafficTools.Footprint(car, out Vector3 centre, out _, out float halfLength, out float halfWidth);
+            TrafficTools.Footprint(car, out Vector3 centre, out _, out float halfLength, out float halfWidth, out bool exact);
             float middle = body.InverseTransformPoint(centre).z;
             _at[index] = body;
             _middle[index] = middle;
@@ -93,7 +186,7 @@ namespace RealLifeOverhaul
             }
             _sensor[index] = DriverRules.Sensor(float.IsNaN(reach) ? -1f : reach - _nose[index]);
             _known[index] = true;
-            return body;
+            return exact && Mathf.Abs(body.up.y) >= 0.5f;
         }
 
         public float Middle(int index) => _middle[index];
@@ -320,10 +413,12 @@ namespace RealLifeOverhaul
                 _line[i].layer = layer;
             }
             _linesLayered = true;
+            Quiet?.Invoke();
             Logger?.Info($"City drivers: {_line.Length} hold lines made on layer '{LayerMask.LayerToName(_lineLayer)}' (triggers tagged '{HaltTag}', as the game's own "
                          + "parking room is): made once, switched off until needed.");
             Logger?.Info(FormattableString.Invariant($"Traffic check (hold lines made out of play): made {(_linesHidden ? "behind the loading screen" : "in the look that first wanted one")} ")
                          + FormattableString.Invariant($"in {_linesMs:F2} ms (wanted: none made in play): ") + (_linesHidden ? "PASS" : "FAIL") + ".");
+            Loud?.Invoke();
             return true;
         }
 

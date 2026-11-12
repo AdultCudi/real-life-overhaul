@@ -11,10 +11,21 @@ namespace RealLifeOverhaul
         /// <summary>How strong such a case is: the books, or the record, are in front of the court.</summary>
         public const float Evidence = 0.8f;
 
-        /// <summary>Tax kept back and found by an audit.</summary>
+        /// <summary>Tax kept back and found by an audit: the sum is the case's, for the charge the court reads out.</summary>
         public static int File(int amount)
         {
-            return amount <= 0 ? 0 : Summons(JusticeLaw.TaxEvasion, " for tax kept back (" + amount + " found by an audit),");
+            return amount <= 0 ? 0 : Told(Open(JusticeLaw.TaxEvasion, " for tax kept back (" + amount + " found by an audit),"), amount);
+        }
+
+        // A case opened with the sum it is about, which the court reads out with the charge; its number, 0 for none.
+        private static int Told(JusticeCase opened, int amount)
+        {
+            if (opened == null)
+            {
+                return 0;
+            }
+            opened.Amount = System.Math.Max(0, amount);
+            return opened.Number;
         }
 
         /// <summary>Shares sold soon after a viral post talking the company up.</summary>
@@ -25,12 +36,12 @@ namespace RealLifeOverhaul
 
         public static int FileBribery(int amount)
         {
-            return amount <= 0 ? 0 : Summons(JusticeLaw.Bribery, " for bribery (" + amount + " paid to an inspector came out),");
+            return amount <= 0 ? 0 : Told(Open(JusticeLaw.Bribery, " for bribery (" + amount + " paid to an inspector came out),"), amount);
         }
 
         public static int FileCampaignFinance(int amount)
         {
-            return Summons(JusticeLaw.CampaignFinance, ": money taken for a campaign against the law (" + amount + ") came out;");
+            return Told(Open(JusticeLaw.CampaignFinance, ": money taken for a campaign against the law (" + amount + ") came out;"), amount);
         }
 
         /// <summary>An undeclared interest in a vote it decided came out.</summary>
@@ -42,7 +53,29 @@ namespace RealLifeOverhaul
         /// <summary>A ring of the city's builders on a tender the player's company covered for came out: the cut taken.</summary>
         public static int FileBidRigging(long cut)
         {
-            return Summons(JusticeLaw.BidRigging, " for bid rigging (a cover bid on a tender, " + cut + " taken from the ring, came out),");
+            return Told(Open(JusticeLaw.BidRigging, " for bid rigging (a cover bid on a tender, " + cut + " taken from the ring, came out),"),
+                (int)System.Math.Min(int.MaxValue, System.Math.Max(0L, cut)));
+        }
+
+        /// <summary>
+        /// A firm's investors' money taken for other uses and not paid back, found by an audit: the sum is the case's, and the audit's
+        /// evidence (0 to 1, from how much of it the books show) is the case's strength.
+        /// </summary>
+        public static int FileInvestorFraud(int amount, float evidence)
+        {
+            if (amount <= 0)
+            {
+                return 0;
+            }
+            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.InvestorFraud) { Complied = true, Evidence = new[] { System.Math.Max(0f, System.Math.Min(1f, evidence)) } });
+            if (opened == null)
+            {
+                return 0;
+            }
+            opened.Amount = amount;
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for investor fraud (" + amount + " taken from a firm's investors), to be heard on day "
+                                         + opened.CourtDay + ".");
+            return opened.Number;
         }
 
         /// <summary>
@@ -77,13 +110,19 @@ namespace RealLifeOverhaul
 
         private static int Summons(string charge, string what)
         {
+            JusticeCase opened = Open(charge, what);
+            return opened != null ? opened.Number : 0;
+        }
+
+        private static JusticeCase Open(string charge, string what)
+        {
             JusticeCase opened = Justice.Summon(new JusticeReport(charge) { Complied = true, Evidence = new[] { Evidence } });
             if (opened == null)
             {
-                return 0;
+                return null;
             }
             JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons" + what + " to be heard on day " + opened.CourtDay + ".");
-            return opened.Number;
+            return opened;
         }
 
         /// <summary>True while a case with this number is still before the court.</summary>

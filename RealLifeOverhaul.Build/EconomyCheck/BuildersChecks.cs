@@ -26,6 +26,7 @@ internal static partial class Program
         BuildFrameChecks();
         SiteFitChecks();
         BuildStoreChecks();
+        SpecialityChecks();   // the speciality's first choice, its wait, its list on both apps' pages and the founding that opens it (SpecialityChecks.cs)
         BuildSourceChecks();
         BuildTextChecks();
     }
@@ -672,7 +673,7 @@ internal static partial class Program
         Check(district >= 0 && ahead > district && nearestLot.Contains("!lot.Open") && nearestLot.Contains("_state.Lot(lot.Id) != null") && nearestLot.Contains("DeveloperOn(lot.Id)")
               && nearestLot.Contains("LotTaken(lot.Id)"), "builders sources: the lot test gives the district's nearest open lot nobody has first, the ground ahead only without one");
         // The app and the City Hall call: the game's own frame and conversation.
-        Check(code["ConstructionApp.cs"].Contains("AppShell.Make(menu, dormant, ConstructionDirector.AppId)") && code["ConstructionDirector.App.cs"].Contains("PhoneApp.Install(new PhoneAppDef"),
+        Check(code["ConstructionApp.cs"].Contains("AppShell.Make(menu, dormant, ConstructionDirector.AppId)") && code["ConstructionDirector.App.cs"].Contains("new PhoneAppDef") && code["ConstructionDirector.App.cs"].Contains("PhoneApp.Install(def, out"),
             "builders sources: the app is the game's own frame on the phone");
         Check(code["PlanningCall.cs"].Contains("CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new PlanningDialog()))")
               && ModSource(@"Civic\CityHallDialog.cs").Contains("SiteBuilders.Planning("), "builders sources: planning and building control is City Hall's sixth topic, and the app opens the same pages");

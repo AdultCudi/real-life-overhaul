@@ -28,6 +28,15 @@ namespace RealLifeOverhaul.Meals
         /// <summary>True once the button is in the game's panel for this city.</summary>
         public static bool Installed => _instance != null && _instance._button != null;
 
+        /// <summary>The button while the game's panel shows it, with its words, for the RLO interface's card to press as a click would.</summary>
+        public static bool Offered(out Button button, out string words)
+        {
+            bool shown = _instance != null && _instance._button != null && _instance._button.activeInHierarchy;
+            button = shown ? _instance._button.GetComponent<Button>() : null;
+            words = shown ? _instance._words : null;
+            return button != null && !string.IsNullOrEmpty(words);
+        }
+
         /// <summary>Puts the button in the game's activity panel, once per city. False if the panel is not built as expected (said once in Player.log).</summary>
         public static bool Install()
         {

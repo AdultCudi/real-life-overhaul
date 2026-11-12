@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (fresh)
             {
+                _hiring.People = HiringPeople();
                 HiringRules.Day(_hiring, save.Day, HiringGame.Cycle, HiringGame.Summer(save.Day), _rivals, _rate, _districts, null);
                 NameSeekers();
             }
@@ -99,6 +100,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        // The professions' jobseekers among the city's people against the anchor day's (the living population); 0 for none.
+        private static int HiringPeople()
+        {
+            return TechBridges.Seekers != null ? Math.Max(0, TechBridges.Seekers()) : 0;
+        }
+
         private void NameSeekers()
         {
             HashSet<string> names = null;
@@ -120,6 +127,7 @@ namespace RealLifeOverhaul.Tech
             float started = Time.realtimeSinceStartup;
             _notes.Clear();
             int esteem = TechBridges.HiringEsteem();   // as an employer, with their best office's
+            _hiring.People = HiringPeople();
             HiringRules.Day(_hiring, day, HiringGame.Cycle, HiringGame.Summer(day), _rivals, _rate, _districts, _notes);
             int delivered = 0;
             for (int i = 0; i < _hiring.Ads.Count; i++)
@@ -268,7 +276,7 @@ namespace RealLifeOverhaul.Tech
                     continue;
                 }
                 bool payroll = HiringRules.OnPayroll(s.P.Def, ad.Work, ad.CrewSearch, shifts);
-                bool ok;
+                bool ok, seating = false;
                 if (payroll)
                 {
                     ok = StartPayroll(s, ad, a, day);
@@ -283,8 +291,9 @@ namespace RealLifeOverhaul.Tech
                     }
                     if (ok)
                     {
-                        File(HiringGame.Id(candidate), s.P, day, ad.Work);
+                        File(HiringGame.Id(candidate), s.P, day, ad.Work, true);   // a hire's role is never dropped for want of room
                         HiringGame.Arrived(candidate, at, s.P.Name, day);
+                        seating = SeatsNew(candidate, at);   // the hour's pass gives them a desk and shifts; the note below says so
                     }
                 }
                 if (!ok)
@@ -311,7 +320,7 @@ namespace RealLifeOverhaul.Tech
                 a.Stage = (int)ApplyStage.Started;
                 s.Taken = true;
                 n++;
-                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : "reallife_hire_note_started",
+                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : seating ? "reallife_hire_note_started_seat" : "reallife_hire_note_started",
                     Data("name", s.P.Name, "business", TalentGame.NameOf(at), "role", TechText.Role(s.P.Role)), TabTeam, null);
             }
             return n;
@@ -319,9 +328,9 @@ namespace RealLifeOverhaul.Tech
 
         private bool StartPayroll(Seeker s, JobAd ad, Applicant a, int day)
         {
-            if (_talent == null || _talent.People.Count >= TalentStore.PeopleMost)
+            if (_talent == null || _talent.PayrollCount() >= TalentStore.PayrollMost)
             {
-                return false;
+                return false;   // the mod's own payroll is full: no other file counts, so the game's employees, however many, never fill it
             }
             Profile p = Copy(s.P);
             p.Id = "pro:" + _talent.NextPro++;
@@ -347,12 +356,25 @@ namespace RealLifeOverhaul.Tech
             };
         }
 
-        /// <summary>A file made ahead for a candidate of the game's: the people part takes it when they are hired.</summary>
-        private void File(string candidateId, Profile from, int day, int work)
+        /// <summary>
+        /// A file made ahead for a candidate of the game's: the people part takes it when they are hired. It is the only thing that carries the role a hire
+        /// was made for (a data engineer hired for an AI lab is a programmer to the game), so the file of a hire is always kept: where the files of the
+        /// office's waiting candidates fill the table the oldest of them is let go to make room (<paramref name="hire"/>), and those candidates, hired
+        /// later, are given a role as any employee of the game's is. A file for a candidate only waiting is not made over the bound.
+        /// </summary>
+        private void File(string candidateId, Profile from, int day, int work, bool hire = false)
         {
-            if (string.IsNullOrEmpty(candidateId) || _hiring.CandidateOf(candidateId) != null || _hiring.Candidates.Count >= 64)
+            if (string.IsNullOrEmpty(candidateId) || _hiring.CandidateOf(candidateId) != null)
             {
                 return;
+            }
+            if (_hiring.Candidates.Count >= HiringCatalogue.CandidatesMost)
+            {
+                if (!hire)
+                {
+                    return;
+                }
+                _hiring.Candidates.RemoveAt(0);   // the oldest: files are added in the order they are made
             }
             Profile p = Copy(from);
             p.Id = candidateId;
@@ -506,7 +528,7 @@ namespace RealLifeOverhaul.Tech
         internal bool CanSeat(string place, int role) => HiringRules.Seats(TalentGame.Shifts(TalentGame.Find(place)), TalentCatalogue.Role(role));
 
         /// <summary>An ad posted on the jobs board, paid now by the business. False if there is no room or the cash does not cover it.</summary>
-        internal bool PostAd(string place, int role, int level, int payLeast, int payMost, int minSkill, int work, int days, bool boost)
+        internal bool PostAd(string place, int role, int level, int payLeast, int payMost, int minSkill, int work, int days, bool boost, int posts = 1)
         {
             if (!_hiringOn || Save == null)
             {
@@ -541,7 +563,8 @@ namespace RealLifeOverhaul.Tech
             _hiring.Ads.Add(new JobAd
             {
                 Id = _hiring.Next(), Place = place, Role = r.Id, Level = TalentCatalogue.Clamp(level, r.LeastLevel, r.MostLevel), PayLeast = payLeast,
-                PayMost = Math.Max(payLeast, payMost), MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost
+                PayMost = Math.Max(payLeast, payMost), MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost,
+                Posts = TalentCatalogue.Clamp(posts, 1, HireOffers.PostsMost)
             });
             Changed();
             return true;
@@ -848,6 +871,74 @@ namespace RealLifeOverhaul.Tech
             BuildingRegistration hq = HiringGame.Headquarters() ?? centre;
             TalentGame.Cost(due, HiringGame.SearchKey, hq, TalentGame.NameOf(hq), false, true);
             ad.FeePaid += due;
+        }
+
+        /// <summary>
+        /// Why a search cannot be rushed now, a text's key, or null when it can: the option or the hiring switched off, its candidates already in,
+        /// or its candidates due tomorrow with no day left to save.
+        /// </summary>
+        internal string RushRefusal(JobAd ad)
+        {
+            if (!_hiringOn || Save == null || !Settings.TechSearchRush)
+            {
+                return "reallife_hire_rush_off";
+            }
+            switch (HiringRules.CanRush(ad, Save.Day))
+            {
+                case HiringRules.Rushable: return null;
+                case HiringRules.RushTooSoon: return "reallife_hire_rush_soon";
+                default: return "reallife_hire_rush_delivered";
+            }
+        }
+
+        /// <summary>
+        /// A search rushed: its candidates are brought forward to tomorrow, and the business it is for (headquarters, for a crew) pays the firm a share
+        /// of the fee for each day saved, refused whole if its cash does not cover it. The price is worked out again here, never taken from the page: a
+        /// day that passed while the question was open saves a day less and costs less, never more. False, with the reason told, when it cannot be done.
+        /// </summary>
+        internal bool RushSearch(int id)
+        {
+            JobAd ad = _hiringOn && _hiring != null ? _hiring.AdOf(id) : null;
+            string role = ad != null ? TechText.Role(ad.Role) : "-";
+            string refusal = RushRefusal(ad);
+            if (refusal != null)
+            {
+                Notifications.Show(NotificationType.Error, refusal, Data("role", role), 6f);
+                return false;
+            }
+            BuildingRegistration centre = TalentGame.Find(ad.Place);
+            BuildingRegistration at = ad.CrewSearch ? (HiringGame.Headquarters() ?? centre) : centre;
+            if (at == null)
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_rush_gone", Data("role", role), 6f);   // the business is no longer the player's
+                return false;
+            }
+            int day = Save.Day, was = ad.Due;
+            int price = HiringRules.RushQuote(ad, day);
+            if (!HiringGame.Pay(price, HiringGame.RushKey, at, role))
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_rush_short", Data("role", role, "amount", TechText.Cents(price), "business", TalentGame.NameOf(at)), 6f);
+                return false;
+            }
+            HiringRules.Rush(ad, day);
+            Tell(NotificationType.Success, "reallife_hire_note_rush", Data("role", role, "amount", TechText.Cents(price), "day", ad.Due.ToString()), TabSearch, null);
+            RushCheck(role, day, was, ad.Due, HiringRules.RushDelivery(day), price, ad.Fee);
+            Changed();
+            return true;
+        }
+
+        // One line a rush: the days the search was brought forward by, the price booked against the rule's price for those days at its fee, and the
+        // day its candidates now come against the day wanted.
+        private void RushCheck(string role, int day, int was, int now, int wanted, int price, int fee)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            int saved = HiringRules.RushDays(was, now), rule = HiringRules.RushPrice(fee, saved);
+            bool ok = saved > 0 && now == wanted && price == rule;
+            Logger?.Info("Tech check (search rush, " + role + ", day " + day + "): " + saved + " day(s) saved, day " + was + " to day " + now + " (" + wanted + " wanted), "
+                         + price + " cents booked against " + rule + " by the rule at a fee of " + fee + " cents: " + (ok ? "PASS" : "FAIL"));
         }
 
         internal int ShortageOf(Family family) => _hiringOn && Save != null ? HiringRules.Shortage(_hiring, family, Save.Day) : 1000;

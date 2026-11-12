@@ -230,7 +230,7 @@ internal static partial class Program
         string composer = ModSource(@"Social\PersonDialog.Composer.cs"), calls = ModSource(@"Wiring\Wiring.TextsCalls.cs");
         string typed = MemberText(composer, "private void Typed(string text)");
         int clean = typed.IndexOf("SocialLinks.CleanTyped(text)", StringComparison.Ordinal);
-        Check(clean >= 0 && typed.IndexOf("Show(Mine(words))", StringComparison.Ordinal) > clean && typed.IndexOf("SocialComposerRules.Keep(_lines, true, words)", StringComparison.Ordinal) > clean
+        Check(clean >= 0 && typed.IndexOf("Show(TalkLogGame.Own(Mine(words)))", StringComparison.Ordinal) > clean && typed.IndexOf("SocialComposerRules.Keep(_lines, true, words)", StringComparison.Ordinal) > clean
               && !typed.Contains("Mine(text)") && MemberText(composer, "private DialogEntry Type(").Contains("SocialComposerRules.TypedMost")
               && calls.Contains("TextCheck.Typed(text, SocialComposerRules.TypedMost)"),
             "composer: what was typed is cleaned by TextCheck within its length before it is shown or put on the card, and the game's box takes no more");

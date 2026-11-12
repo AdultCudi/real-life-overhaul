@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul
@@ -191,24 +192,24 @@ namespace RealLifeOverhaul
             }
             Dictionary<string, string> data = BusinessIssues.Data(issue, reg);
             int options = BusinessIssues.Options(issue, reg, Options);
+            // The matter in one short paragraph; its deadline under the answers that leave it open, not in the words.
             var entry = new DialogEntry
             {
-                messageData = "reallife_biz_desk_issue".Localize(new
+                messageData = "reallife_biz_desk_matter".Localize(new
                 {
                     name = issue.Def.NameKey.GetLocalization(),
                     business = BusinessGame.Name(reg),
-                    text = Fill(BusinessIssues.TextKey(issue), data),
-                    day = issue.DueDay.ToString(),
-                    time = issue.DueHour.GetFormattedTime(0f, true),
-                    today = TimeHelper.CurrentDay.ToString()
+                    text = Fill(BusinessIssues.TextKey(issue), data)
                 }),
                 OnCancel = PhoneContacts.HangUp
             };
+            string due = issue.DueDay.ToString(), dueTime = issue.DueHour.GetFormattedTime(0f, true), today = TimeHelper.CurrentDay.ToString();
             bool more = Count > 1;
             if (options > 0)
             {
                 entry.ConfirmTextOverride = "reallife_biz_desk_options".Localize();
                 entry.OnConfirm = G(() => OptionPage(issue, 0));
+                entry.Says(DialogButton.Confirm, "reallife_biz_desk_due", "day", due, "time", dueTime, "today", today);
                 if (more)
                 {
                     entry.SecondOptionTextOverride = "reallife_biz_desk_next";
@@ -261,6 +262,8 @@ namespace RealLifeOverhaul
                 CancelTextOverride = "reallife_biz_desk_later",
                 OnCancel = PhoneContacts.HangUp
             };
+            entry.Says(DialogButton.Cancel, "reallife_biz_desk_due", "day", issue.DueDay.ToString(), "time", issue.DueHour.GetFormattedTime(0f, true),
+                "today", TimeHelper.CurrentDay.ToString());   // deciding later: by when
             int next = option + 1;
             if (picked.Blocked)
             {
@@ -271,6 +274,17 @@ namespace RealLifeOverhaul
             {
                 entry.ConfirmTextOverride = picked.Label.Localize();
                 entry.OnConfirm = G(() => Choose(issue, option));
+                if (picked.Line != null && picked.Amount > 0)
+                {
+                    if (picked.Gets)
+                    {
+                        entry.Gets(DialogButton.Confirm, picked.Line, "amount", data["amount"]);
+                    }
+                    else
+                    {
+                        entry.Pays(DialogButton.Confirm, picked.Line, "amount", data["amount"]);
+                    }
+                }
                 if (count > 1)
                 {
                     entry.SecondOptionTextOverride = "reallife_biz_desk_another";

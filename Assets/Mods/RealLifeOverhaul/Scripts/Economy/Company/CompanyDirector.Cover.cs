@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Economy
                     if (CoverRules.TermOver(p, day))
                     {
                         int insurer = p.Insurer, claims = p.Claims, before = p.Premium;
-                        bool renewed = CoverRules.Renew(p, k, shop.Average, shop.Income, _index, day, term);
+                        bool renewed = CoverRules.Renew(p, k, shop.Average, shop.Income, _index, day, term, Certified(shop, day));
                         Tell(renewed ? NotificationType.Info : NotificationType.Warning, renewed ? "reallife_co_note_cover_renewed" : "reallife_co_note_cover_declined",
                             CoverData(shop, k, insurer, p.Premium), TabCover, "pol:" + shop.File.Place + ":" + k);
                         if (Verbose)
@@ -84,11 +84,14 @@ namespace RealLifeOverhaul.Economy
                     return;   // not a business that takes money: nothing to insure
                 }
                 Policy p = shop.File.Cover[(int)kind];
-                Claim claim = CoverRules.Open(_state, p, shop.File.Place, shop.Name, (int)kind, amount, Save.Day);
+                bool uncertified = kind == CoverKind.Fire && LicenceRules.Needed(shop.Needs, (int)LicenceKind.FireSafety) && On(CompanyPart.Licences)
+                                   && !LicenceRules.Valid(shop.File.Permits[(int)LicenceKind.FireSafety], Save.Day);
+                Claim claim = CoverRules.Open(_state, p, shop.File.Place, shop.Name, (int)kind, amount, Save.Day, uncertified);
                 if (Verbose)
                 {
                     Logger?.Info("Company check (cover, a loss at " + shop.Name + "): " + kind + ", " + amount + "; "
                                  + (claim != null ? "covered by insurer " + claim.Insurer + ", excess " + claim.Excess + ", pays " + claim.Payout
+                                                    + (uncertified ? " (half: the fire safety certificate the business needs had run out)" : string.Empty)
                                                     + " if it is put in by day " + (claim.Day + CompanyCatalogue.ClaimWindowDays)
                                      : p.Active ? "the policy pays nothing for a loss of that size" : "no policy: the loss is the player's in full") + ": PASS");
                 }
@@ -147,7 +150,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What an insurer would charge a day for a kind of cover today, the last term's claims here counted.</summary>
         public int Quote(CompanyShop shop, int kind, int insurer)
         {
-            return CoverRules.Premium(kind, insurer, shop.Average, shop.Income, CoverRules.Carried(shop.File.Cover[kind]), _index);
+            return CoverRules.Premium(kind, insurer, shop.Average, shop.Income, CoverRules.Carried(shop.File.Cover[kind]), _index, Certified(shop, Today));
+        }
+
+        /// <summary>Whether the business holds a fire safety certificate in force, which takes a share off its fire premium when a policy is bought or renewed.</summary>
+        internal bool Certified(CompanyShop shop, int day)
+        {
+            return On(CompanyPart.Licences) && shop != null && LicenceRules.Valid(shop.File.Permits[(int)LicenceKind.FireSafety], day);
         }
 
         public void BuyCover(string place, int kind, int insurer)

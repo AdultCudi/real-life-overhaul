@@ -27,15 +27,23 @@ namespace RealLifeOverhaul.Outlook
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new OutlookApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_econapp_app",
                 Icon = like => AppIconPainter.Paint(like, OutlookIcon.Glyph() ?? Glyph(), new Color32(84, 226, 204, 255), new Color32(10, 124, 114, 255), 0.46f, "AppIcon-Economy"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = () =>
+                {
+                    view.Closed();
+                    RealLifeOverhaul.Ui.NewsLive.Economy.Leave();   // a list or a page opened from a tab is put away: the app opens on its tab, never on that
+                },
+                Kit = () => new RealLifeOverhaul.Ui.EconomyScreen(RealLifeOverhaul.Ui.NewsLive.Economy),
+                KitScreen = RealLifeOverhaul.Ui.EconomyScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Chart
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -46,6 +54,7 @@ namespace RealLifeOverhaul.Outlook
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
         }
 
         private static Sprite Glyph()

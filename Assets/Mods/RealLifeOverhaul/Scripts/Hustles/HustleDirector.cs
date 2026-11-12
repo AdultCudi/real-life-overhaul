@@ -39,6 +39,8 @@ namespace RealLifeOverhaul.Hustles
 
         private HustleState _state;
         private bool _running, _broken, _gaveUp, _cityRead;
+        private SellerFile _sellers = new SellerFile();   // the Marketplace's sellers, in a line of their own (SellerStore)
+        private readonly List<RivalDealer> _dealers = new List<RivalDealer>(8);
         private float _next;
         private HustleApp _view;
         private PhoneApp _app;
@@ -49,7 +51,17 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>The state in use; null while the feature is not running.</summary>
         public HustleState State => _running ? _state : null;
 
+        /// <summary>The Marketplace's sellers, for the kit's listings.</summary>
+        public SellerFile Sellers => _sellers;
+
         private static bool Verbose => Meta.Dev.Verbose;
+
+        // What the city's people bring the Marketplace now, thousandths of the anchor day's: a thousand with no living population.
+        private static int People(Func<int> factor)
+        {
+            int f = factor != null ? factor() : 0;
+            return f > 0 ? f : 1000;
+        }
 
         private void Awake()
         {
@@ -157,6 +169,8 @@ namespace RealLifeOverhaul.Hustles
             HustleState state = HustleStore.Load(save.modData, out int version);
             bool fresh = state == null;
             _state = state ?? new HustleState { Seed = HustleRules.SeedOf(HustleGame.SeedText) };
+            _sellers = SellerStore.Load(save.modData, out int _) ?? new SellerFile();
+            HustleRules.WholesaleOf = HustleGame.Wholesale;
             _running = true;
             ReadCity();
             int lost = Reconcile();
@@ -229,15 +243,19 @@ namespace RealLifeOverhaul.Hustles
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new HustleApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_hustle_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(255, 178, 74, 255), new Color32(214, 104, 28, 255), 0.42f, "AppIcon-Marketplace"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.MarketLive.Instance),
+                KitScreen = "marketplace",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Store
+            };
+            _app = PhoneApp.Install(kitDef, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -247,6 +265,7 @@ namespace RealLifeOverhaul.Hustles
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_app, kitDef);   // the kit's face over the app, once its switch is on
             _view = view;
             Badge();
         }
@@ -327,7 +346,7 @@ namespace RealLifeOverhaul.Hustles
                 int day = _state.LastHour / 24;
                 if (_state.Day != day)
                 {
-                    HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level);
+                    MorningOf(day);
                     if (Verbose)
                     {
                         Logger?.Info("Hustles: the listings of day " + day + ": " + _state.Listings.Count + " thing(s), " + _state.Gigs.Count + " visit(s) asked for or booked (seed "
@@ -336,11 +355,11 @@ namespace RealLifeOverhaul.Hustles
                 }
                 Reconcile();
                 Worths();
-                HustleRules.Hour(_state, _state.LastHour, _worths, _events);
+                HustleRules.Hour(_state, _state.LastHour, _worths, _events, People(HustleBridges.Buyers));
             }
             if (_state.Day != stamp / 24)
             {
-                HustleRules.Morning(_state, stamp / 24, _homes, _cars, _colours, HustleGame.Level);
+                MorningOf(stamp / 24);
             }
             Tell(_events);
             Changed();
@@ -464,7 +483,14 @@ namespace RealLifeOverhaul.Hustles
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[HustleStore.Key] = HustleStore.Write(_state);
+            save.modData[SellerStore.Key] = SellerStore.Write(_sellers);
         }
+
+        // What the morning reads of the game (HustleDirector.Morning.cs is game-free and runs in EconomyCheck as it stands).
+        private RealLifeOverhaul.Careers.PoolPerson SellerPerson(int k) => HustleGame.Seller(_state.Seed, k);
+        private void ReadDealers() => HustleGame.Dealers(_dealers);
+        private static int ShopLevel => HustleGame.Level;
+        private static int MarketPeople => People(HustleBridges.Sellers);
 
         /// <summary>Everything put away (the save tools, the feature list's clean-up): the panel, the work on the clock and the app.</summary>
         public void StopAll()
@@ -483,6 +509,7 @@ namespace RealLifeOverhaul.Hustles
             _state = null;
             _broken = false;
             _gaveUp = false;
+            _waitSince = 0;   // a second save in the session waits for the population too
         }
     }
 }

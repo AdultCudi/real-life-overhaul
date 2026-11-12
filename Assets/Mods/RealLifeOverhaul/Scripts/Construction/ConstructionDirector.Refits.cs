@@ -460,7 +460,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _state.NextRefitDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Refit);
+            _state.NextRefitDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Refit, TenderPeople(TenderSource.Refit));
             BuildRandom random = BuildRandom.Of(_state.Seed, day, 239);
             if (!ConstructionGame.Client(random.Range(0, 100000), out BuildingView b) || BuildCatalogue.UseOf(b.Type) < 0)
             {

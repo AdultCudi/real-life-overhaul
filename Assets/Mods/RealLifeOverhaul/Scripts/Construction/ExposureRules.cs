@@ -46,7 +46,8 @@ namespace RealLifeOverhaul.Construction
         public static int StageNeed(ProjectFile p, WorkStage stage, Material material)
         {
             return p.Model == ProjectKind.Contract ? PlansRules.WorksLoads(p.CivicKind, p.Hours, stage, material)
-                : PlansRules.Loads(p.Use, p.Area, p.Storeys, p.Kind, stage, material) * p.CostPermille / 1000;   // a dearer design of the player's needs more
+                // a dearer design of the player's needs more, a premium finish more still
+                : PlansRules.Loads(p.Use, p.Area, p.Storeys, p.Kind, stage, material) * p.CostPermille / 1000 * FinishRules.CostOf(p.Finish) / 1000;
         }
 
         /// <summary>

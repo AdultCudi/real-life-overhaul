@@ -282,6 +282,7 @@ namespace RealLifeOverhaul.Tech
                     _all.Add(new Hq { Company = k, Name = Companies[k], Tower = tower, Floor = floorOf[k] });
                 }
             }
+            changed |= PlaceStartups(stood);   // the city's startups on the floors above the companies'
             if (!changed)
             {
                 return;
@@ -329,6 +330,55 @@ namespace RealLifeOverhaul.Tech
                 said.Append(" No office building was free for ").Append(Companies.Count - _all.Count).Append(" of them: they keep to the Tech app until one is.");
             }
             _logger?.Info(said.ToString());
+        }
+
+        // The city's startups rent the floors above the companies' in the towers (ExitPlaces.Floors): the same startups give the same floors on every machine. A startup that
+        // is gone, or whose tower or floor moved, is taken off its floor and put on the one it has now. True if any floor changed.
+        private bool PlaceStartups(Tower[] stood)
+        {
+            IReadOnlyList<StartupTenant> tenants = TechDirector.Instance != null ? TechDirector.Instance.StartupTenants : null;
+            int count = tenants != null ? tenants.Count : 0;
+            var rivals = new int[stood.Length];
+            for (int i = 0; i < _all.Count; i++)
+            {
+                if (_all[i].Company < Companies.Count && _all[i].Tower != null && _all[i].Tower.Index >= 0 && _all[i].Tower.Index < rivals.Length)
+                {
+                    rivals[_all[i].Tower.Index]++;
+                }
+            }
+            var floor = new int[count];
+            var list = new List<StartupTenant>(count);
+            for (int k = 0; k < count; k++)
+            {
+                list.Add(tenants[k]);
+            }
+            ExitPlaces.Floors(list, rivals, floor);
+            bool changed = false;
+            for (int i = _all.Count - 1; i >= 0; i--)
+            {
+                Hq hq = _all[i];
+                if (hq.Company < Companies.Count)
+                {
+                    continue;
+                }
+                int k = list.FindIndex(t => t.Company == hq.Company);
+                bool keep = k >= 0 && floor[k] > 0 && list[k].Tower < stood.Length && ReferenceEquals(hq.Tower, stood[list[k].Tower]) && hq.Floor == floor[k] && hq.Name == list[k].Name;
+                if (!keep)
+                {
+                    _all.RemoveAt(i);
+                    changed = true;
+                }
+            }
+            for (int k = 0; k < count; k++)
+            {
+                Tower tower = floor[k] > 0 && list[k].Tower < stood.Length ? stood[list[k].Tower] : null;
+                if (tower != null && Find(list[k].Company) == null)
+                {
+                    _all.Add(new Hq { Company = list[k].Company, Name = list[k].Name, Tower = tower, Floor = floor[k] });
+                    changed = true;
+                }
+            }
+            return changed;
         }
 
         private Hq Find(int company)

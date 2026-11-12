@@ -7,16 +7,19 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>One professional with what was read from the game for them today. Nothing of this is saved.</summary>
+    /// <summary>One professional with what was read from the game for them today, and what the hour's seating knows of them. Nothing of this is saved.</summary>
     public sealed class Person
     {
         public Profile File;
         public EmployeeInstance Game;   // null for a professional on the mod's own payroll
         public BuildingRegistration At;
+        public Address Assigned;        // the address the game had them assigned to when they were read (null: none, or on the mod's payroll)
         public string Name = string.Empty, Business = string.Empty, Skill = string.Empty;
         public int MainPoints;
         public int HoursYesterday;
         public bool Mentored;
+        public readonly SeatMemory Remembered = new SeatMemory();   // where the hour's seating found them with a shift, or left them to the player; kept between reads, for the business only
+        public int SeatNeed;            // the hours a week their demands leave, which seating plans their week for (0 until asked)
     }
 
     /// <summary>The people part: each professional's file, worked through each game day and counted on the hour; and the rises given.</summary>
@@ -34,6 +37,11 @@ namespace RealLifeOverhaul.Tech
         private readonly int[] _wanted = new int[8];
         private TalentFile _talent;
         private bool _peopleOn;
+        private readonly int[] _shortageRead = new int[(int)Family.Count];   // each family's shortage, worked out once for a whole read of the people
+        private PlaceDays _places;   // what the day asks of the rest of the mod about a place of work, once a place (made in Awake)
+        private readonly Dictionary<BuildingRegistration, HashSet<string>> _crewNow = new Dictionary<BuildingRegistration, HashSet<string>>(32);   // each business's people on a shift this hour
+        private readonly Stack<HashSet<string>> _crewSpare = new Stack<HashSet<string>>(8);
+        private int _hourWarned = -1;   // the day an hour over its time was last written in the log
 
         /// <summary>The people's files; null while the part is off.</summary>
         public TalentFile Talent => _peopleOn ? _talent : null;
@@ -92,6 +100,9 @@ namespace RealLifeOverhaul.Tech
             _fileOf.Clear();
             _personOf.Clear();
             _personNext.Clear();
+            _places.Clear();
+            ReleaseCrews();
+            ForgetSeating();
             if (!unloading && _rolesApp != null)
             {
                 _rolesApp.Remove();
@@ -128,6 +139,7 @@ namespace RealLifeOverhaul.Tech
                 _talent.People[i].Seen = _talent.People[i].Payroll;
             }
             _talent.Index(_fileOf);
+            ReadShortages();
             TalentGame.Employees(_employees);
             int made = 0;
             for (int i = 0; i < _employees.Count; i++)
@@ -137,11 +149,7 @@ namespace RealLifeOverhaul.Tech
                 Profile p = e.id != null && _fileOf.TryGetValue(e.id, out Profile known) ? known : null;
                 if (p == null)
                 {
-                    if (_talent.People.Count >= TalentStore.PeopleMost)
-                    {
-                        continue;
-                    }
-                    p = NewFile(e, day);
+                    p = NewFile(e, day);   // a file for every professional the game holds, however many: there is no bound to be met
                     if (p == null)
                     {
                         continue;
@@ -175,6 +183,16 @@ namespace RealLifeOverhaul.Tech
             return made;
         }
 
+        // Each family's shortage for the whole read: what every professional's going rate is worked from. Asked once for the read and not for each
+        // professional, since it passes over the whole market and a large save has thousands of them.
+        private void ReadShortages()
+        {
+            for (int f = 0; f < _shortageRead.Length; f++)
+            {
+                _shortageRead[f] = Shortage((Family)f);
+            }
+        }
+
         // The file's Person of the last read, filled again, so a read of 600 makes no objects.
         private Person Read(Profile p, EmployeeInstance e, int day)
         {
@@ -186,12 +204,14 @@ namespace RealLifeOverhaul.Tech
             person.File = p;
             person.Game = e;
             person.At = null;
+            person.Assigned = null;
             person.Name = person.Business = person.Skill = string.Empty;
             person.MainPoints = 0;
             person.HoursYesterday = 0;
             person.Mentored = false;
             if (e != null)
             {
+                person.Assigned = e.assignedAddress;
                 person.At = TalentGame.Business(e);
                 person.Name = TalentGame.NameOf(e);
                 person.Skill = TalentGame.Skill(e);
@@ -209,7 +229,7 @@ namespace RealLifeOverhaul.Tech
                 p.GameWage = p.Wage;
             }
             person.Business = person.At != null ? TalentGame.NameOf(person.At) : string.Empty;
-            p.Going = TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, person.MainPoints), p.Def, Shortage(p.Def.Family), TalentRules.CertPayBp(p));
+            p.Going = TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, person.MainPoints), p.Def, _shortageRead[(int)p.Def.Family], TalentRules.CertPayBp(p));
             person.HoursYesterday = HoursOf(person, day);   // the firms' crews are worked out from it
             return person;
         }
@@ -299,9 +319,9 @@ namespace RealLifeOverhaul.Tech
             {
                 return 0;
             }
-            int joined = 0;
+            int joined = 0, payroll = _talent.PayrollCount();
             HashSet<string> names = NameSet();
-            for (int i = 0; i < count && _talent.People.Count < TalentStore.PeopleMost; i++)
+            for (int i = 0; i < count && payroll + joined < TalentStore.PayrollMost; i++)
             {
                 Profile p = TalentRules.Make(Seed, day * 53 + i * 7 + 3, role, Math.Max(0, level - (i == 0 ? 0 : 1)), day);
                 p.Id = "pro:" + _talent.NextPro++;
@@ -334,6 +354,7 @@ namespace RealLifeOverhaul.Tech
         // planned moves come at any hour): the game is read only for the few with one in hand.
         private void PeopleHour()
         {
+            float started = Time.realtimeSinceStartup;
             int day = Save.Day;
             bool midnight = Save.Hour == 0;
             TalentGame.Employees(_employees);
@@ -345,24 +366,95 @@ namespace RealLifeOverhaul.Tech
                     break;
                 }
             }
-            for (int i = 0; i < _people.Count; i++)
+            try
             {
-                Person person = _people[i];
-                EmployeeInstance e = person.Game;
-                if (e == null)
+                for (int i = 0; i < _people.Count; i++)
                 {
-                    continue;
+                    Person person = _people[i];
+                    EmployeeInstance e = person.Game;
+                    if (e == null)
+                    {
+                        continue;
+                    }
+                    int game = TalentGame.WorkedToday(e);
+                    TalentRules.RollHours(person.File, day, midnight ? game : -1, midnight ? -1 : game);
+                    if (OnShiftNow(e) && !TalentGame.Shut(person.At))
+                    {
+                        person.File.WorkHours = Math.Min(24, person.File.WorkHours + 1);
+                    }
                 }
-                int game = TalentGame.WorkedToday(e);
-                TalentRules.RollHours(person.File, day, midnight ? game : -1, midnight ? -1 : game);
-                if (TalentGame.Working(e) && !TalentGame.Shut(person.At))
-                {
-                    person.File.WorkHours = Math.Min(24, person.File.WorkHours + 1);
-                }
+            }
+            finally
+            {
+                ReleaseCrews();
             }
             if (GiveWayAll(day))
             {
                 Changed();
+            }
+            HourTimed(day, started);
+            SeatHour(day);
+        }
+
+        // True if the employee is on a shift now at the business they are assigned to, as the game's IsWorking finds it. The business's people on a shift this hour
+        // are read once, in a pass over the day's shifts, and each professional of it is asked of that set: the game's own test scans the day's shifts for each,
+        // which for thousands of professionals in a few large firms is the square of the firm's staff.
+        private bool OnShiftNow(EmployeeInstance e)
+        {
+            try
+            {
+                if (!TalentGame.Available(e))
+                {
+                    return false;
+                }
+                BuildingRegistration reg = TalentGame.Business(e);
+                if (reg == null)
+                {
+                    return false;
+                }
+                if (!_crewNow.TryGetValue(reg, out HashSet<string> crew))
+                {
+                    crew = _crewSpare.Count > 0 ? _crewSpare.Pop() : new HashSet<string>();
+                    TalentGame.WorkingNow(reg, crew);
+                    _crewNow[reg] = crew;
+                }
+                return crew.Contains(e.id);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // The rivals' pull at a place: the studio's snub or the sector's rivals', whichever is harder (thousandths).
+        private int PullOfPlace(string place, int day) => Math.Max(StudioPull(place, day), SectorPull(place, day));
+
+        // The hour's sets are let go: the shifts are read again the next hour.
+        private void ReleaseCrews()
+        {
+            foreach (KeyValuePair<BuildingRegistration, HashSet<string>> held in _crewNow)
+            {
+                held.Value.Clear();
+                _crewSpare.Push(held.Value);
+            }
+            _crewNow.Clear();
+        }
+
+        // With Developer diagnostics on, an hour of the people part that took more than its share is said once a day: the time it is wanted under grows with
+        // the professionals it counts (TalentCatalogue.HourMs). It is the count of who is on a shift, with a read of the people when a hire came; seating is timed by its own lines.
+        private void HourTimed(int day, float started)
+        {
+            if (!Verbose || _hourWarned == day)
+            {
+                return;
+            }
+            double ms = (Time.realtimeSinceStartup - started) * 1000.0;
+            int wanted = TalentCatalogue.HourMs(_people.Count);
+            if (ms > wanted)
+            {
+                _hourWarned = day;
+                Logger?.Warn("Tech check (the hour, day " + day + "): " + _people.Count + " professional(s) counted in " + ms.ToString("0.0", CultureInfo.InvariantCulture)
+                             + " ms (wanted under " + wanted + " ms): FAIL");
             }
         }
 
@@ -460,16 +552,18 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             float started = Time.realtimeSinceStartup;
+            int asked = _places.Asked;
             int renamed = MendNames(day, true);
             int made = ReadPeople(day);
             Unseat(day, true);
             Mentors(day);
-            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0;
+            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0, reviewsMore = 0, offersMore = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
             for (int i = 0; i < _people.Count; i++)
             {
                 Person person = _people[i];
                 Profile p = person.File;
+                PlaceDays.Entry here = _places.Of(p.Place, day);   // the place's comfort and team week, asked once for the place and not for each of its people
                 int hours = HoursOf(person, day);
                 person.HoursYesterday = hours;
                 int mainGain = TalentRules.Learn(p, hours, person.Mentored);
@@ -484,9 +578,10 @@ namespace RealLifeOverhaul.Tech
                 var d = new WorkDay
                 {
                     Day = day, Year = year, Hours = hours, WeekHours = p.WeekHours, MainPoints = person.MainPoints, Mentored = person.Mentored, Paid = p.GameWage, Going = p.Going,
-                    Esteem = esteem, OnCall = false, Wanted = TalentRules.Content(p, Seed), Comfort = TechBridges.ComfortAt(p.Place)
+                    Esteem = esteem, OnCall = false, Wanted = TalentRules.Content(p, Seed), Comfort = here.Comfort
                 };
                 TalentRules.Mood(p, d);
+                p.Burnout = MeetingRules.Day(p.Burnout, hours, here.Pushed);   // a week its team meeting pushed: burnout a day worked
                 if (person.Game != null)
                 {
                     TalentGame.Mood(person.Game, TalentRules.GameMood(p, person.Game.satisfaction));
@@ -526,9 +621,16 @@ namespace RealLifeOverhaul.Tech
                     reviews++;
                     int rating = TalentRules.Review(p, Seed, day, year, person.MainPoints);
                     bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
-                    Tell(rating <= 2 ? NotificationType.Warning : NotificationType.Info,
-                        p.RaiseAsk > 0 ? "reallife_talent_note_review_ask" : promote ? "reallife_talent_note_review_promote" : "reallife_talent_note_review",
-                        Data("name", person.Name, "rating", rating.ToString(), "percent", (p.RaiseAsk / 100).ToString()), TabTeam, Row(p));
+                    if (reviews <= TalentCatalogue.NoticesMost)
+                    {
+                        Tell(rating <= 2 ? NotificationType.Warning : NotificationType.Info,
+                            p.RaiseAsk > 0 ? "reallife_talent_note_review_ask" : promote ? "reallife_talent_note_review_promote" : "reallife_talent_note_review",
+                            Data("name", person.Name, "rating", rating.ToString(), "percent", (p.RaiseAsk / 100).ToString()), TabTeam, Row(p));
+                    }
+                    else
+                    {
+                        reviewsMore++;   // told together after the day: a notice for each of dozens would make a panel and a sound for each
+                    }
                 }
                 bool gameOffer = person.Game != null && TalentGame.GameOffer(person.Game);
                 if (TalentRules.GivesWay(p, gameOffer))
@@ -545,14 +647,25 @@ namespace RealLifeOverhaul.Tech
                     TalentRules.Answer(p, false, day, year);   // not answered in time: they take it
                     Tell(NotificationType.Warning, "reallife_talent_note_poach_gone", Data("name", person.Name, "rival", p.PoachBy, "day", p.NoticeEnd.ToString()), TabTeam, Row(p));
                 }
-                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going) && !Held(p) && !gameOffer)
+                else if (TalentRules.Approachable(p, day)
+                    && TalentRules.Approached(Seed, p, day, _shortageRead[(int)p.Def.Family], esteem, p.GameWage, p.Going, _places.PullAt(here, p.Place, day))
+                    && !Held(p) && !gameOffer)
                 {
+                    // (the market's shortage was read with the people, and the rivals' pull at the place is asked once for it, and only when somebody there can be approached)
                     approached++;
-                    string rival = TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null;
+                    // a game studio's people are a rival studio's to court, a firm's the company that just beat it in its market or a tender
+                    string rival = StudioPoacher(p.Place, day) ?? SectorPoacher(p.Place, day) ?? (TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null);
                     TalentRules.Offer(p, string.IsNullOrEmpty(rival) ? TechText.T("reallife_talent_rival_default") : rival, day);
-                    Tell(NotificationType.Warning, "reallife_talent_note_poach",
-                        Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
-                        TabTeam, Row(p));
+                    if (approached <= TalentCatalogue.NoticesMost)
+                    {
+                        Tell(NotificationType.Warning, "reallife_talent_note_poach",
+                            Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
+                            TabTeam, Row(p));
+                    }
+                    else
+                    {
+                        offersMore++;
+                    }
                 }
                 if (_hiringOn && HiringRules.RivalBuysOut(Seed, p, day))
                 {
@@ -564,16 +677,39 @@ namespace RealLifeOverhaul.Tech
                     left++;
                 }
             }
+            if (reviewsMore > 0)
+            {
+                Tell(NotificationType.Info, "reallife_talent_note_reviews_many", Data("count", reviewsMore.ToString()), TabTeam, null);
+            }
+            if (offersMore > 0)
+            {
+                Tell(NotificationType.Warning, "reallife_talent_note_poach_many", Data("count", offersMore.ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()), TabTeam, null);
+            }
             _talent.LastDay = day;
             ReadPeople(day);
+            if (_studioOn && _studio != null)
+            {
+                StudioRules.Prune(_studio, _fileOf);   // the genre experience of professionals who have gone is let go with their file
+            }
             if (Verbose)
             {
-                Logger?.Info("Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty)
+                double ms = (Time.realtimeSinceStartup - started) * 1000.0;
+                int wanted = TalentCatalogue.DayMs(_people.Count);
+                string line = "Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty)
                     + ", " + reviews + " review(s), " + sick + " off sick, "
-                             + approached + " approached by a rival, " + boughtOut + " notice(s) bought out by one, " + courses + " course(s) or exam(s) ended, "
-                             + left + " gone, " + payroll + " paid by the mod; "
-                             + (renamed > 0 ? renamed + " name(s) shared and renamed, " : string.Empty)
-                             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
+                    + approached + " approached by a rival, " + boughtOut + " notice(s) bought out by one, " + courses + " course(s) or exam(s) ended, "
+                    + left + " gone, " + payroll + " paid by the mod; "
+                    + (renamed > 0 ? renamed + " name(s) shared and renamed, " : string.Empty)
+                    + ms.ToString("0.0", CultureInfo.InvariantCulture) + " ms (wanted under " + wanted + " ms; " + (_places.Asked - asked)
+                    + " ask(s) of the rest of the mod): " + (ms <= wanted ? "PASS" : "FAIL");
+                if (ms <= wanted)
+                {
+                    Logger?.Info(line);
+                }
+                else
+                {
+                    Logger?.Warn(line);
+                }
             }
         }
 

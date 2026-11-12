@@ -126,6 +126,7 @@ namespace RealLifeOverhaul.Economy
             var buttons = box.ButtonRow();
             int chosen = kind;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_push_book", () => _director.BookCampaign(place, chosen));
+            QuietButton(buttons, CompanyBridges.QuietCampaign, place, 0);
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
             Guide(box);
         }

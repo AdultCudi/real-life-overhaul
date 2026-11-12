@@ -150,6 +150,7 @@ namespace RealLifeOverhaul.Economy.Brands
             bool pushing = b.Push >= 0 && age >= b.PushFrom && age < b.PushEnd;
             int campaign = !pushing ? 0
                 : b.Push == BrandCatalogue.PushCity ? (shops > 0 ? BrandCatalogue.CampaignCityGain : 0)
+                : b.Push == BrandCatalogue.PushCreators ? (shops > 0 ? BrandCatalogue.CampaignCityGain * BrandCatalogue.CreatorsGainPct / 100 : 0)
                 : string.Equals(d.Name, b.PushDistrict, StringComparison.Ordinal) ? BrandCatalogue.CampaignLocalGain : 0;
             return Gain(shops, Customers(s, b, d.Name), b.Standards, campaign) + PullIn(s, b, shops);
         }
@@ -519,8 +520,12 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>What a brand campaign costs today: in one district, lots of the company's flyers for each shop there; city-wide, its radio spots.</summary>
-        public static int PushCost(int kind, int shops, int index)
+        public static int PushCost(int kind, int shops, int index, int creatorsQuote = 0)
         {
+            if (kind == BrandCatalogue.PushCreators)
+            {
+                return creatorsQuote > 0 ? creatorsQuote : CampaignRules.Cost((int)CampaignKind.Radio, index) * BrandCatalogue.PushCityTimes;
+            }
             return kind == BrandCatalogue.PushCity
                 ? CampaignRules.Cost((int)CampaignKind.Radio, index) * BrandCatalogue.PushCityTimes
                 : CampaignRules.Cost((int)CampaignKind.Flyers, index) * PushLocalTimes * Math.Max(1, shops);
@@ -529,16 +534,20 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>How long a brand campaign runs: as long as the company's own campaign of the same kind.</summary>
         public static int PushDays(int kind)
         {
+            if (kind == BrandCatalogue.PushCreators)
+            {
+                return BrandCatalogue.CreatorsDays;
+            }
             return CompanyCatalogue.CampaignDays[kind == BrandCatalogue.PushCity ? (int)CampaignKind.Radio : (int)CampaignKind.Flyers];
         }
 
         /// <summary>Booked today, it runs from the brand's next day.</summary>
         public static void BookPush(Brand b, int kind, string district)
         {
-            b.Push = kind == BrandCatalogue.PushCity ? BrandCatalogue.PushCity : BrandCatalogue.PushLocal;
+            b.Push = kind == BrandCatalogue.PushCity ? BrandCatalogue.PushCity : kind == BrandCatalogue.PushCreators ? BrandCatalogue.PushCreators : BrandCatalogue.PushLocal;
             b.PushFrom = b.Age + 1;
             b.PushEnd = b.PushFrom + PushDays(b.Push);
-            b.PushDistrict = b.Push == BrandCatalogue.PushCity ? string.Empty : district ?? string.Empty;
+            b.PushDistrict = b.Push == BrandCatalogue.PushLocal ? district ?? string.Empty : string.Empty;
         }
 
         /// <summary>The levy collected goes to a campaign first. Returns how much of the cost it covered.</summary>

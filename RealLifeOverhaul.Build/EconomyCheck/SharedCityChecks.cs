@@ -19,6 +19,7 @@ internal static partial class Program
         SharedGovernment();
         SharedSites();
         SharedMarket();
+        SharedLetters();   // every system's part a letter of its own (SharedCityLetterChecks.cs)
         Console.WriteLine("  Shared city: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 

@@ -20,15 +20,22 @@ namespace RealLifeOverhaul.Economy
         public bool PickedRaisesOn => On(CompanyPart.Staff);
 
         /// <summary>What a choice would come to for the picked employees (the game's ids), read afresh from the game first.</summary>
-        public PickedPlan PlanPicked(IList<string> ids, int choice)
+        public PickedPlan PlanPicked(IList<string> ids, int choice) => PlanPicked(ids, choice, null);
+
+        /// <summary>
+        /// The same, with a line for each picked employee in the order given when <paramref name="lines"/> is not null: the review
+        /// sheet shows these and sums its totals from the same pass as the plan's, so the sheet and the question box agree.
+        /// </summary>
+        public PickedPlan PlanPicked(IList<string> ids, int choice, List<PickedLine> lines)
         {
             if (!PickedRaisesOn || Save == null)
             {
+                lines?.Clear();
                 return new PickedPlan();
             }
             ReadPeople(out _);   // a wage the game changed since the morning is the one the raise is worked from
             Files(ids);
-            return StaffRules.Plan(_pickedFiles, choice, Save.Day);
+            return StaffRules.Plan(_pickedFiles, choice, Save.Day, lines);
         }
 
         /// <summary>

@@ -6,13 +6,13 @@ namespace RealLifeOverhaul.Economy
     internal static class FinanceTables
     {
         // The kinds of debt, the filter of the Overview and of Accounts.
-        public const int Loan = 0, Business = 1, Consolidated = 2, FirstProduct = 3, Private = 8, Other = 9, Approval = 10;
+        public const int Loan = 0, Business = 1, Consolidated = 2, FirstProduct = 3, Private = 8, Other = 9, Approval = 10, Student = 11;
 
         public static readonly string[] DebtKinds =
         {
             "reallife_econ_kind_loan", "reallife_econ_kind_business", "reallife_econ_kind_consolidated",
             "reallife_econ_kind_overdraft", "reallife_econ_kind_card", "reallife_econ_kind_car", "reallife_econ_kind_home", "reallife_econ_kind_arrears",
-            "reallife_econ_kind_private", "reallife_tab_kind_other_debt", "reallife_tab_kind_approval"
+            "reallife_econ_kind_private", "reallife_tab_kind_other_debt", "reallife_tab_kind_approval", "reallife_study_loan_account"
         };
 
         public static int Of(ProductKind kind)
@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Economy
 
         public static int OfLoan(int purpose)
         {
-            return purpose == LoanPurpose.Business ? Business : purpose == LoanPurpose.Consolidation ? Consolidated : Loan;
+            return purpose == LoanPurpose.Business ? Business : purpose == LoanPurpose.Consolidation ? Consolidated : purpose == LoanPurpose.Student ? Student : Loan;
         }
 
         // The kinds of offer in Borrow: a bank's loan, then the other kinds of credit in the app's own order.

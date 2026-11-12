@@ -12,6 +12,25 @@ namespace RealLifeOverhaul
     /// <summary>The bus director's part for the buses: the front one and the one behind it on their way, watched, and handed off.</summary>
     public sealed partial class TransitDirector
     {
+        /// <summary>
+        /// The front bus while it is on the street, for the cinematic shots: where it is, the way it faces and whether it
+        /// stands at its stop. False with no bus out. Asked on a press, never on a frame.
+        /// </summary>
+        public static bool BusOut(out Vector3 at, out Vector3 facing, out bool standing)
+        {
+            at = facing = default;
+            standing = false;
+            TransitBus bus = Instance != null ? Instance._bus : null;
+            if (bus == null || bus.State == TransitBus.Phase.Idle || bus.Vehicle == null || !bus.Vehicle.Out)
+            {
+                return false;
+            }
+            at = bus.Vehicle.transform.position;
+            facing = bus.Vehicle.transform.forward;
+            standing = bus.State == TransitBus.Phase.Standing;
+            return true;
+        }
+
         // A bus done with is let go: ticked among the buses driving away until nobody can see it, and another takes its place.
         private void HandOff(ref TransitBus bus)
         {

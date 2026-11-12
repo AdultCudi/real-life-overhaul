@@ -321,6 +321,15 @@ namespace RealLifeOverhaul.Flare
 
         public static string DmKey(FlareDm m) => "fd:" + m.With + ":" + m.At;
 
+        /// <summary>
+        /// A message's words as it shows in the inbox and in the thread: what was typed, else the model's words for it, else the city's line by its key.
+        /// <paramref name="kept"/> is the model's words (null when none), <paramref name="keyed"/> the city's line filled in (null when it has no key).
+        /// </summary>
+        public static string DmShown(FlareDm m, string kept, string keyed)
+        {
+            return m == null ? string.Empty : m.Text ?? kept ?? keyed ?? string.Empty;
+        }
+
         /// <summary>Whether an answer to the player's message may have its words asked now: the city's, still to come, with a card.</summary>
         public static bool DmWants(FlareDm m, long now, int data)
         {

@@ -90,6 +90,14 @@ namespace RealLifeOverhaul
             labelOf["perf_far_districts"] = "reallife_perf_far_districts2";
             ids.Add("perf_step_timing");
             var switches = new HashSet<string>(ids.Where(i => i.StartsWith("perf_")), StringComparer.Ordinal);   // the options that are on or off
+            // Each screen on the RLO interface asks for its own switch in its entry (Ui/UiScreenSwitches): its id and label follow from the screen's id.
+            foreach (RealLifeOverhaul.Ui.UiScreenDef def in RealLifeOverhaul.Ui.UiScreenSwitches.All)
+            {
+                string option = RealLifeOverhaul.Ui.UiScreenSwitches.OptionOf(def.Id);
+                ids.Add(option);
+                labelOf[option] = RealLifeOverhaul.Ui.UiScreenSwitches.LabelOf(def.Id);
+                switches.Add(option);
+            }
             var buttons = new HashSet<string>(StringComparer.Ordinal);    // label keys of buttons and keys the sources put on the page
             var keyRows = new HashSet<string>(StringComparer.Ordinal);    // label keys of the mod's keys: each a row that waits for a key
             var tests = new HashSet<string>(StringComparer.Ordinal);
@@ -376,7 +384,10 @@ namespace RealLifeOverhaul
             Check(rent.Any(r => r.Id == "home_roommates"), "'rent' does not find the roommate");
             Check(rent.Any(r => r.Id == "economy_products"), "'rent' does not find the mortgage");
             Check(rent.Any(r => r.Id == "economy_estate"), "'rent' does not find property");
-            Check(rent.Count <= 8, "'rent' finds " + rent.Count + " rows: it is found inside other words");
+            Check(rent.Any(r => r.Id == "parking_spaces"), "'rent' does not find the parking spaces, which are rented too");
+            var rentRows = new[] { "home_roommates", "utilities", "district_view", "economy_products", "economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent", "parking_spaces" };
+            Check(rent.Count == rentRows.Length && rentRows.All(id => rent.Any(r => r.Id == id)),
+                "'rent' finds exactly the nine rows that are about renting (" + string.Join(", ", rentRows) + "), not " + rent.Count + ": " + string.Join(", ", rent.Select(r => r.Id)));
             Check(rent.Select(r => OptionsTree.SectionOf(r.Id).Group.Id).Distinct().Count() >= 3, "'rent' is not found in three groups");
             Check(Find("fps").Count > 0 && Find("fps").All(r => OptionsTree.SectionOf(r.Id).Group.Id == "performance" || OptionsTree.SectionOf(r.Id).Group.Id == OptionsTree.TroubleId), "'fps' does not find the performance rows");
             Check(Find("police chase").Any(r => r.Id == "police_pursuit"), "'police chase' does not find the pursuit");

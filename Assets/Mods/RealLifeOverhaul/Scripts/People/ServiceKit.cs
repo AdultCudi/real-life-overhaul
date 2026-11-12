@@ -67,6 +67,9 @@ namespace RealLifeOverhaul
         /// <summary>True if the modelled cap was due but too much hair is in the way: dressed again in the game's hat.</summary>
         public bool CapRefused { get; private set; }
 
+        /// <summary>True if the modelled cap is on the head: asked for and fitted. Not for a bare head or a refused cap.</summary>
+        public bool CapFitted { get; private set; }
+
         /// <summary>Metres from the head joint to the top of the head, hair and all, at the last fitting; 0 if not measured.</summary>
         public float Crown { get; private set; }
 
@@ -182,6 +185,7 @@ namespace RealLifeOverhaul
                     origin + up * backHeight - forward * (backDepth + Clear), facing, layer);
 
                 CapRefused = cap && (head == null || !FitCap(animator, head, layer));
+                CapFitted = cap && !CapRefused;
                 FitBands(animator.GetBoneTransform(HumanBodyBones.Spine) ?? hips, chest, measured, origin, up, forward, facing, torso, layer);
             }
             else
@@ -345,6 +349,7 @@ namespace RealLifeOverhaul
             }
             _bands.Clear();
             _vest = false;
+            CapFitted = false;
             if (_bag != null)
             {
                 Object.Destroy(_bag);

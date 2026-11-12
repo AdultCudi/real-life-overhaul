@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Tech
         public int People;
         public int Hours;             // the hours its people worked yesterday
         public long Today;            // takings booked today, cents
+        public long TodaySelf;        // ...of which the player's own other businesses paid (a contract whose client is theirs): not counted for a listing
         public int Mbps = NetSpeedRules.Unknown;   // the office's plan speed read for the day's work (TechBridges.PlanMbps)
         public int Net = 1000;        // thousandths of the day's work points its connection gives (FirmsRules.Connection)
         public int OwnMinutes;        // the owner's minutes at a desk here yesterday (OwnDeskRules), as the day's crew read them
@@ -54,6 +55,7 @@ namespace RealLifeOverhaul.Tech
                 file = new FirmsFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = save.Day, LastTender = save.Day };
             }
             _firmsFile = file;
+            _ownHours = OwnDeskRules.HoursFrom(save.modData != null && save.modData.TryGetValue(OwnDeskRules.HoursKey, out string hours) ? hours : null);   // a save without the line: a working day
             _firmsOn = true;
             CatchUpMoves(MoveRules.PartFirms);
             ReadFirms(save.Day);
@@ -69,6 +71,8 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             DeskDown();
+            StopStudio(keep);   // first: it leaves the games as the firms' own rules carry on with
+            StopSector(keep);   // the products, contracts and racks are the firms' own records either way
             if (keep && Save != null && _firmsFile != null)
             {
                 WriteFirms(Save.modData);
@@ -89,6 +93,14 @@ namespace RealLifeOverhaul.Tech
             if (_firmsFile != null && data != null)
             {
                 data[FirmsStore.Key] = FirmsStore.Write(_firmsFile);
+                if (_ownHours != OwnDeskRules.DefaultHours)
+                {
+                    data[OwnDeskRules.HoursKey] = OwnDeskRules.HoursLine(_ownHours);   // the stint's hours last chosen; the default is no line at all, as in a save from before
+                }
+                else
+                {
+                    data.Remove(OwnDeskRules.HoursKey);
+                }
             }
         }
 
@@ -152,8 +164,9 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmPlace firm = _firms[f];
                 var c = new Crew();
+                TechBridges.TeamWeekAt(firm.File.Place, Save.Day, out int week, out _);   // the week its team meeting set, if any
                 int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
-                long faultWeighted = 0;
+                long faultWeighted = 0, securityBrought = 0, reliabilityBrought = 0;   // what the people bring before the old per person and firm tops (the sector's curve)
                 firm.People = 0;
                 for (int i = 0; i < _people.Count; i++)
                 {
@@ -167,7 +180,7 @@ namespace RealLifeOverhaul.Tech
                     c.Seats++;
                     int h = person.HoursYesterday;
                     hours += h;
-                    int points = TalentRules.Output(p, person.MainPoints, Save.Day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000;
+                    int points = MeetingRules.Points(TalentRules.Output(p, person.MainPoints, Save.Day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000, week);
                     RoleDef r = p.Def;
                     if (FirmsRules.Join(ref c, r, points, h, p.Level >= TalentCatalogue.Senior, TalentRules.Faults(p, person.MainPoints), ref seniors, ref faultWeighted))
                     {
@@ -175,19 +188,32 @@ namespace RealLifeOverhaul.Tech
                     }
                     if (r.Family == Family.Security && h > 0)
                     {
-                        security += r.Id == TalentCatalogue.DataProtection ? FirmsCatalogue.SecurityOfficer : Math.Min(FirmsCatalogue.SecurityEach, p.A / 1000 * FirmsCatalogue.SecurityPerPoint);
-                        security += p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
+                        int brought = r.Id == TalentCatalogue.DataProtection ? FirmsCatalogue.SecurityOfficer : p.A / 1000 * FirmsCatalogue.SecurityPerPoint;
+                        int cert = p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
+                        security += (r.Id == TalentCatalogue.DataProtection ? brought : Math.Min(FirmsCatalogue.SecurityEach, brought)) + cert;
+                        securityBrought += brought + cert;
                     }
                     if ((r.Id == TalentCatalogue.Sre || r.Id == TalentCatalogue.DevOps) && h > 0)
                     {
-                        reliability += Math.Min(FirmsCatalogue.ReliabilityEach, (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint);
+                        int brought = (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint;
+                        reliability += Math.Min(FirmsCatalogue.ReliabilityEach, brought);
+                        reliabilityBrought += brought;
                     }
                 }
                 var own = new Crew();
                 OwnShare(firm, ref own, ref seniors, ref faultWeighted);
                 int engineering = c.Engineering + own.Engineering;
-                c.Security = Math.Min(FirmsCatalogue.SecurityMost, security);
-                c.Reliability = Math.Min(FirmsCatalogue.ReliabilityMost, reliability);
+                if (_sectorOn)
+                {
+                    c.Security = SectorRules.Posture(FirmsCatalogue.SecurityBase, securityBrought, SectorCatalogue.SecurityHalf);   // each analyst adds less than the last, with no top of 950
+                    int reliable = SectorRules.Posture(FirmsCatalogue.ReliabilityBase, reliabilityBrought, SectorCatalogue.ReliabilityHalf);
+                    c.Reliability = SectorRules.Reliable(_sector.FirmAt(firm.File.Place), reliable, Save.Day);
+                }
+                else
+                {
+                    c.Security = Math.Min(FirmsCatalogue.SecurityMost, security);
+                    c.Reliability = Math.Min(FirmsCatalogue.ReliabilityMost, reliability);
+                }
                 c.SeniorShare = engineering > 0 ? seniors * 1000 / engineering : 0;
                 c.Faults = engineering > 0 ? (int)(faultWeighted / Math.Max(1, engineering)) : 150;
                 firm.Hours = hours;
@@ -229,7 +255,15 @@ namespace RealLifeOverhaul.Tech
             }
             FirmsGame.Clients(_clients);
             _work.Clear();
-            FirmsRules.Offers(_firmsFile, day, _crews, _clients, _work);
+            if (_sectorOn)
+            {
+                SectorRules.Offers(_firmsFile, _sector, day, cycle, _crews, _clients, _work);   // the city's IT work shared with the rival IT firms
+                SectorRules.Incidents(_firmsFile, day, _work);
+            }
+            else
+            {
+                FirmsRules.Offers(_firmsFile, day, _crews, _clients, _work);
+            }
             FirmsRules.Lapse(_firmsFile, day, _work);
             for (int i = 0; i < _firmsFile.Contracts.Count; i++)
             {
@@ -237,7 +271,11 @@ namespace RealLifeOverhaul.Tech
                 if (t.Stage == (int)WorkStage.Bid && day >= t.End)
                 {
                     FirmPlace bidder = FirmOf(t.Place);
-                    if (bidder != null && FirmsRules.Decide(_firmsFile, t, bidder.File, day, TechBridges.OfficeBidAt(t.Place)))
+                    int winner = -1;
+                    bool won = bidder != null && (_sectorOn
+                        ? SectorRules.Decide(_firmsFile, _sector, t, bidder.File, day, TechBridges.OfficeBidAt(t.Place), SectorRules.PitchOf(_sector.FirmAt(t.Place), t), out winner)
+                        : FirmsRules.Decide(_firmsFile, t, bidder.File, day, TechBridges.OfficeBidAt(t.Place)));
+                    if (won)
                     {
                         long upfront = FirmsRules.Take(t, t.Place, day);
                         bidder.Today += upfront * Prices.Level / 1000;
@@ -249,10 +287,22 @@ namespace RealLifeOverhaul.Tech
                     {
                         t.Stage = (int)WorkStage.Lost;
                         _work.Add(new WorkNote { Contract = t.Id, Kind = FirmsRules.NoteLostTender });
+                        if (_sectorOn)
+                        {
+                            TenderToRival(t, winner);
+                        }
                     }
                 }
             }
             int level = Prices.Level, outages = 0, breaches = 0;
+            if (_studioOn)
+            {
+                StudioMarketDay(day);   // the rival studios and the genres' markets, before the studios sell into them
+            }
+            if (_sectorOn)
+            {
+                SectorDayBegin(day, cycle);   // the shared markets, every product's pull and the rivals' day, before the firms sell into them
+            }
             for (int f = 0; f < _firms.Count; f++)
             {
                 FirmPlace firm = _firms[f];
@@ -293,14 +343,27 @@ namespace RealLifeOverhaul.Tech
                 for (int i = 0; i < _firmsFile.Products.Count; i++)
                 {
                     Product p = _firmsFile.Products[i];
-                    if (p.Place != file.Place || p.Stage >= 2)
+                    if (p.Place != file.Place || p.Stage >= 2 || StudioRuns(file.K) && p.K == ProductKind.Game)
                     {
-                        continue;
+                        continue;   // a studio's games are the studio part's (StudioFirm, below)
                     }
                     int points = shares > 0 ? (int)((long)engineering * Math.Max(0, p.Share) / shares) : 0;
                     int testing = shares > 0 ? (int)((long)c.Testing * Math.Max(0, p.Share) / shares) : 0;
                     rndPoints += points;
                     int before = p.Features;
+                    if (_sectorOn && SectorRules.MarketOf(p) >= 0)
+                    {
+                        ProductDay sold = SectorProductDay(firm, p, i, points, testing, day, HostingRate(), out _);
+                        if (p.Live && p.Features > before)
+                        {
+                            p.LastRelease = day;
+                        }
+                        if (p.Live)
+                        {
+                            SectorSold(firm, p, sold, level, ref hosting, ref marketing, ref quality, ref rated, ref outages, ref breaches);
+                        }
+                        continue;
+                    }
                     FirmsRules.Build(file, p, c, points, testing);
                     FirmsRules.Hype(p);
                     if (p.Live && p.Features > before)
@@ -348,9 +411,20 @@ namespace RealLifeOverhaul.Tech
                         }
                     }
                 }
+                if (StudioRuns(file.K))
+                {
+                    StudioFirm(firm, day, cycle, ref hosting, ref marketing, ref rndPoints, ref quality, ref rated);
+                }
                 if (rated > 0)
                 {
-                    FirmsRules.Reputation(file, quality / rated);
+                    if (_sectorOn && !StudioRuns(file.K))
+                    {
+                        SectorRules.Reputation(file, quality / rated);   // the products' soundness, with no top of 800
+                    }
+                    else
+                    {
+                        FirmsRules.Reputation(file, quality / rated);
+                    }
                 }
                 // the relief counts the share of the qualifying pay that went to products
                 if (c.Engineering > 0 && rndPoints > 0)
@@ -378,8 +452,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 FirmsGame.Cost((long)c.Seats * FirmsCatalogue.SoftwarePerSeat * level / 1000, FirmsGame.SoftwareKey, firm.Reg, file.Name, dated);
                 FirmsGame.Cost(marketing * level / 1000, FirmsGame.MarketingKey, firm.Reg, file.Name, dated);
-                FirmsRules.Roll(file, day, firm.Today);
-                firm.Today = 0;
+                FirmsRules.Roll(file, day, firm.Today, firm.TodaySelf);
+                firm.Today = firm.TodaySelf = 0;
             }
             for (int i = 0; i < _work.Count; i++)
             {
@@ -405,6 +479,36 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        // A product sold under the sector: its money into the firm's day and its risks told, as a product of the firms' own rules is.
+        private void SectorSold(FirmPlace firm, Product p, ProductDay r, int level, ref long hosting, ref long marketing, ref int quality, ref int rated, ref int outages, ref int breaches)
+        {
+            Firm file = firm.File;
+            firm.Today += r.Takings * level / 1000;
+            hosting += r.Hosting * level / 1000;
+            marketing += r.Marketing;
+            quality += SectorRules.Soundness(p.Bugs, FirmsRules.Allowance(p));
+            rated++;
+            if (r.Outage)
+            {
+                outages++;
+                TechBridges.Fame?.Invoke(0, -1);
+                TellTech(NotificationType.Warning, SessionsRun ? "reallife_tech_mkt_note_outage_desk" : "reallife_tech_note_outage", Data("product", p.Name, "lost", r.Lost.ToString()),
+                    TabProducts, TechApp.ProductRow + p.Id);
+                if (p.Users + p.Free >= 500)
+                {
+                    Story("reallife_tech_news_outage", "product", p.Name, "firm", file.Name);
+                }
+            }
+            if (r.Breach)
+            {
+                breaches++;
+                Breach(firm, p, r, Save.Day);
+            }
+        }
+
+        // True while desk sessions run: an outage's notice then points to its response at the desk.
+        private static bool SessionsRun => TechBridges.DesksNow();
+
         // Hosting, thousandths of the list price: the rival clouds' price until the player runs a cloud of their own.
         private int HostingRate()
         {
@@ -415,6 +519,7 @@ namespace RealLifeOverhaul.Tech
         private void Paid(FirmPlace firm, Contract w, long cents)
         {
             firm.Today += cents;
+            firm.TodaySelf += string.IsNullOrEmpty(w.OwnPlace) ? 0L : cents;
             ChargeClient(w, firm, cents, Save.Day - 1);
         }
 

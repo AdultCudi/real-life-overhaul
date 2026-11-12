@@ -109,10 +109,10 @@ internal static partial class Program
         CompanyState back = CompanyStore.Read(line, out int version);
         Check(back != null && back.Shops[0].PushGiven == 195 && back.Shops[0].PushCost == 695 && CompanyStore.Write(back) == line,
             "company report: what a campaign gave away so far comes back from the save, and the line is written the same again");
-        CompanyState older = CompanyStore.Read(line.Replace("|195^e:", "^e:"), out version);
+        CompanyState older = CompanyStore.Read(line.Replace("|195" + NoNewLicences + "^e:", "^e:"), out version);
         Check(older != null && older.Shops[0].PushGiven == 0 && older.Shops[0].PushCost == 695 && older.Shops[0].Push == (int)CampaignKind.Giveaway,
             "company report: a line from before it was kept reads as nothing given away");
-        CompanyState wrong = CompanyStore.Read(line.Replace("|195^e:", "|9999^e:"), out version);
+        CompanyState wrong = CompanyStore.Read(line.Replace("|195" + NoNewLicences + "^e:", "|9999" + NoNewLicences + "^e:"), out version);
         Check(wrong != null && wrong.Shops[0].PushGiven == 695, "company report: no more is ever taken as given away than the campaign cost");
     }
 

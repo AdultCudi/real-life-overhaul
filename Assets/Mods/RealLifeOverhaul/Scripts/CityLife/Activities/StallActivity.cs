@@ -53,7 +53,6 @@ namespace RealLifeOverhaul
         private float _vendorBusyUntil;
         private float _saleEnds;
         private float _nextSale;
-        private bool _prompted;
         private Transform _cup;         // the cup on the counter between the vendor's hand and the customer's
         private bool _buyerHasCup;
 
@@ -62,8 +61,22 @@ namespace RealLifeOverhaul
             _kind = kind;
         }
 
-        /// <summary>True while the player stands at the counter on foot and a coffee can be bought: the director then listens for the key.</summary>
+        /// <summary>True while the player stands at the counter on foot and a coffee can be bought: the director's box offers it.</summary>
         public bool PlayerAtCounter { get; private set; }
+
+        /// <summary>True while the player stands on foot at the counter's side, buying or not: the director's box is up (a chat with the vendor).</summary>
+        public bool AtCounter { get; private set; }
+
+        /// <summary>A coffee cart sells to the player; a hot-dog cart only to its own queue.</summary>
+        public bool Sells => _kind == StallKind.Coffee;
+
+        public StallKind Kind => _kind;
+
+        /// <summary>Where the box stands: the cart's middle.</summary>
+        public Vector3 Counter => _cart;
+
+        /// <summary>The vendor behind the cart while they are there and the street's to touch; else null.</summary>
+        public BaseHuman Vendor => Cast.Count > 0 && Cast[0] != null && !Cast[0].Lost && Cast[0].Valid ? Cast[0].Character : null;
 
         public override bool Find(CitySite site)
         {
@@ -142,14 +155,15 @@ namespace RealLifeOverhaul
             _nextWipe = In(6f, 10f);
             _nextArrival = In(5f, 11f);
             _nextSale = 0f;
-            _prompted = false;
             PlayerAtCounter = false;
+            AtCounter = false;
             return true;
         }
 
         public override bool Tick(float now)
         {
             PlayerAtCounter = false;
+            AtCounter = false;
             TickDepartures();
             if (Cast.Count == 0 || Cast[0].Lost)
             {
@@ -268,23 +282,15 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // At the counter's side on foot: the director's box offers a chat with the vendor, and a coffee while one can be bought.
             PlayerController player = PlayerHelper.PlayerController;
-            if (_kind == StallKind.Coffee && Settings.CityInteractions && player != null && !PlayerHelper.IsUsingVehicle && now >= _nextSale && !selling)
+            if (Settings.CityInteractions && player != null && !PlayerHelper.IsUsingVehicle)
             {
                 Vector3 offset = player.transform.position - _cart;
                 offset.y = 0f;
-                if (offset.sqrMagnitude < BuyWithin * BuyWithin && Vector3.Dot(offset, _counterSide) > 0.3f)
-                {
-                    PlayerAtCounter = true;
-                    if (!_prompted)
-                    {
-                        _prompted = true;
-                        // Once per stall; the text names the interaction key as it is bound now.
-                        Notifications.Show(NotificationType.Info, "reallife_city_coffee_prompt",
-                            new System.Collections.Generic.Dictionary<string, string>(2) { { "key", Keys.Label(KeyAction.Interact) }, { "price", ((float)Price).ToCurrencyFormat() } }, 6f);
-                    }
-                }
+                AtCounter = offset.sqrMagnitude < BuyWithin * BuyWithin && Vector3.Dot(offset, _counterSide) > 0.3f;
             }
+            PlayerAtCounter = AtCounter && _kind == StallKind.Coffee && now >= _nextSale && !selling;
             return true;
         }
 
@@ -398,6 +404,7 @@ namespace RealLifeOverhaul
         public override void End()
         {
             PlayerAtCounter = false;
+            AtCounter = false;
             _solid.Clear();   // nothing left cutting the mesh when the cart object is next put out
             _cup = null;   // on the counter it was dressing and goes back with it
             for (int i = 0; i < QueueMost; i++)

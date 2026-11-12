@@ -285,6 +285,13 @@ namespace RealLifeOverhaul.Markets
         public int OwnScandal;
         public long OwnDebt;
 
+        // The player's firms that listed on their own (ListingFirm): the days counted (FirmDays from FirmFrom) and, for each firm's stock, its takings, profit and
+        // debt over them, from the game's statements at the firm's address. Written after the columns above on the tape, so an older reader stops before them.
+        public const int FirmsMost = 8;
+        public int Firms, FirmFrom, FirmDays;
+        public int[] FirmStock;
+        public long[] FirmRev, FirmProfit, FirmDebt;
+
         public static MarketEnv Quiet()
         {
             return new MarketEnv
@@ -374,6 +381,9 @@ namespace RealLifeOverhaul.Markets
         Paid = 31,          // a dividend paid to them: Stock, A the money before tax, B the bot's firm (0 their own)
         Builder = 32,       // a builder's news (BuilderMarket): Stock, A the BuilderNewsKind, B the price's move in bp, C the weight
         OwnSector = 33,     // a player's company moved to the sector it earns most in now: Stock, A the sector it was in, B the new one
+        Reverse = 34,       // shares to be put together (Extras/SplitRules): Stock, A how many old shares make one new, B the day
+        Block = 35,         // a holding that passed a 5% step (Extras/BlockRules): Stock, A the holding in bp, B 1 bought or -1 sold,
+                            // C 0 the player or the holding (its stock id) of the tycoon who dealt
         Count
     }
 
@@ -445,6 +455,16 @@ namespace RealLifeOverhaul.Markets
         public readonly int[] SectorLast = new int[(int)MarketSector.Count];
         public readonly int[] SectorPrevClose = new int[(int)MarketSector.Count];
         public readonly List<int>[] SectorDaily = NewSectorLists();
+
+        // The named tape, the chart the player keeps, and rule bots. The tape has its own save line. The rest sit at the
+        // end of this market's line. None of them is in the line a host sends.
+        public readonly TradeLog Names = new TradeLog();
+        public readonly ChartBook Charts = new ChartBook();
+        public readonly List<RuleBot> Rules = new List<RuleBot>(4);
+
+        // The stock market's extras (Markets/Extras): the fund, splits for the charts, the player's push, the rivals' books, the bank's way to the market.
+        // A save line of their own; never in the line a host sends.
+        public readonly ExtrasState Extras = new ExtrasState();
 
         private static List<int>[] NewSectorLists()
         {

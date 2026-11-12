@@ -43,8 +43,13 @@ namespace RealLifeOverhaul.Tech
             }
             _venture = file;
             _ventureOn = true;
+            LoadTerms();
             CatchUpMoves(MoveRules.PartVenture);
             FollowMoves();
+            StartMoney();
+            StartFounding();
+            StartExitStock();
+            StartRivalry();
             if (_pitch == null)
             {
                 _pitch = new VentureMeeting(this);
@@ -60,6 +65,8 @@ namespace RealLifeOverhaul.Tech
                     file.Startups.Add(s);
                 }
             }
+            StartExits();
+            StartGains();
             Logger?.Info("Tech: startups " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _venture.Startups.Count + " startup(s), "
                          + _venture.Caps.Count + " firm(s) of the player's with investors.");
         }
@@ -75,6 +82,12 @@ namespace RealLifeOverhaul.Tech
                 WriteVenture(Save.modData);
             }
             _pitch?.End();
+            StopExitStock(keep);
+            StopRivalry();
+            StopFounding();
+            StopExits(keep);
+            StopGains(keep);
+            StopMoney();
             _ventureOn = false;
         }
 
@@ -83,6 +96,12 @@ namespace RealLifeOverhaul.Tech
             if (_venture != null && data != null)
             {
                 data[VentureStore.Key] = VentureStore.Write(_venture);
+                WriteTerms(data);
+                WriteFounding(data);
+                WriteExitStock(data);
+                WriteExits(data);
+                WriteGains(data);
+                WriteRivalry(data);
             }
         }
 
@@ -132,6 +151,10 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             CapsDay(day, mood);
+            ExitsDay(day);
+            ExitStockDay(day);   // after the day's listing, sale or wind down, so the stock and the cap table are brought together once
+            FoundingDay(day);
+            RivalryDay(day);
             _venture.LastDay = day;
             if (Verbose)
             {
@@ -180,6 +203,10 @@ namespace RealLifeOverhaul.Tech
                 case VentureRules.NoteAcquired:
                 case VentureRules.NoteAcquihire:
                     PayOut(s);
+                    if (n.Kind == VentureRules.NoteAcquihire)
+                    {
+                        FounderTaken(s, day);
+                    }
                     bool failed = n.Kind == VentureRules.NoteFailed;
                     Story(failed ? "reallife_tech_news_startup_failed" : "reallife_tech_news_startup_sold", "name", s.Name, "amount", TechText.Cents(Level(SalePrice(s))));
                     if (mine)
@@ -190,6 +217,7 @@ namespace RealLifeOverhaul.Tech
                     break;
                 case VentureRules.NoteListing:
                     PayOut(s);
+                    StockCity(s);
                     Story("reallife_tech_news_listing", "name", s.Name, "amount", TechText.Cents(Level(s.Post)));
                     if (mine)
                     {
@@ -234,6 +262,7 @@ namespace RealLifeOverhaul.Tech
                 if (h.Kind == (int)HolderKind.Angel)
                 {
                     VentureGame.Give(Level(h.Paid), VentureGame.ReturnKey, s.Name);
+                    GainNotice(s.Name, ExitGains.ForStake(_gains, s.Name, h.Paid, h.Invested, Save.Day, Prices.Level));
                 }
                 else if (h.Kind == (int)HolderKind.Fund)
                 {
@@ -252,14 +281,20 @@ namespace RealLifeOverhaul.Tech
 
         private void CapsDay(int day, int mood)
         {
+            _winding.Clear();
             for (int i = 0; i < _venture.Caps.Count; i++)
             {
                 Cap c = _venture.Caps[i];
                 FirmPlace firm = FirmOf(c.Place);
                 if (firm == null)
                 {
+                    if (StartupMoney.Has(c) && _firmsOn && _firmsFile.FirmAt(c.Place) == null && GoneFor(c, day))
+                    {
+                        _winding.Add(c);
+                    }
                     continue;
                 }
+                MoneyDay(c, firm, day);
                 OptionsDay(c);
                 for (int t = c.Sheets.Count - 1; t >= 0; t--)
                 {
@@ -300,6 +335,11 @@ namespace RealLifeOverhaul.Tech
                     ReplaceChief(c, firm, day);
                 }
             }
+            for (int i = 0; i < _winding.Count; i++)
+            {
+                WindDown(_winding[i], string.IsNullOrEmpty(_winding[i].Acc.Name) ? Where(_winding[i].Place) : _winding[i].Acc.Name, day);
+            }
+            RefreshFloor(day);
         }
 
         /// <summary>A venture firm that leads at the firm's next stage and would meet it now; -1 for none.</summary>
@@ -334,7 +374,7 @@ namespace RealLifeOverhaul.Tech
         // payroll full it can hire nobody: it keeps the one it has, warns, and replaces them at the next target missed.
         private void ReplaceChief(Cap c, FirmPlace firm, int day)
         {
-            if (_talent.People.Count >= TalentStore.PeopleMost)
+            if (_talent.PayrollCount() >= TalentStore.PayrollMost)
             {
                 VentureRules.ChiefKept(c);
                 TellTech(NotificationType.Warning, "reallife_vc_note_target_missed", Data("firm", firm.File.Name, "target", TechText.Cents(Level(c.TargetMrr))),

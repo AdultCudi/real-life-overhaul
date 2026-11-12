@@ -63,8 +63,17 @@ internal static partial class Program
         ("Social/Flare/FlareCityCamera.cs", "target", "RenderTexture.ReleaseTemporary(_pending)", "a city photo's render target, released when its pixels are back, or by Clear if the photo is stopped"),
         ("Social/Flare/FlareIcons.cs", "s", "Made[glyph] = s", "a Flare glyph, drawn once a session for each"),
         ("Social/Flare/FlareKit.cs", "return", "_round = Make(false)", "Flare's two rounded shapes, drawn once a session"),
+        ("Ui/UiIcons.cs", "s", "Made[(int)icon] = s", "a glyph of the interface's one icon family, drawn once a session for each"),
+        ("Ui/UiFonts.cs", "heavy", "Heavier[font] = heavy", "a face's material thickened for dark words on the cyan, one a face for the session"),
+        ("Ui/UiSprites.cs", "return", "Fills[r] = s", "the interface's rounded shapes, edges, rings, glow and wash, drawn once a session for each radius"),
+        ("Ui/UiSprites.cs", "_donut", "_donut = Sprite.Create", "a donut's ring, drawn once a session and filled into slices by Unity's radial fill"),
+        ("Ui/UiSprites.cs", "_ring", "_ring = Sprite.Create", "the time skip veil's thin ring, drawn once a session and filled into slices by Unity's radial fill"),
+        ("Ui/UiSprites.cs", "s", "UnityEngine.Object.Destroy(gone.texture)", "a person's painted face, kept by their name, the oldest destroyed past 160"),
+        ("Ui/UiFaces.cs", "made", "Let(gone)", "a person's round copy of the game's picture of them, kept by the picture for the session, the oldest destroyed past 160"),
+        ("Ui/Buy/BuyKits.cs", "sprite", "Squares[rgb] = sprite", "a colour's square for the buying screens' swatches, drawn once a session for each colour the game's cars and clothes offer"),
         ("Tech/Sites/SiteProps.cs", "made", "Tech/Sites/ServerRoomView.cs|UnityEngine.Object.Destroy(_setA)", "the server room's status lights, destroyed when the room's view ends"),
         ("Traffic/TrafficEffects.cs", "clip", "Object.Destroy(_wailClip)", "the sirens' two sounds, made once a session and destroyed in Dispose"),
+        ("Ui/BizMan/BizManScreen.Logo.cs", "sprite", "CodeAssets.DropSprite(_preview)", "the logo editor's picture of the logo, painted again at each pick with the old one dropped first"),
     };
 
     // Findings in folders whose clean-up another change owns: said in a note on every run until that change fixes them,

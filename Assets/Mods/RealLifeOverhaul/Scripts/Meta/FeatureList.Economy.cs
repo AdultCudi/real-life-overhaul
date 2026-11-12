@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_econ_header")
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
                 .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId,
-                    Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId)
+                    Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId, Settings.EconomyGoalRewardsId)
+                .Owns(Settings.StartDebtId, Settings.StartDebtDegreeId)   // a new game's student loan: no preset sets these, as they are the player's choice for the next game begun
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_card_min", () => Guide.Percent(Economy.ProductCatalogue.CardMinimumShare))
                 .Fact("econ_card_min_least", () => Guide.Money(Economy.ProductCatalogue.CardMinimumLeast))
                 .Fact("econ_biz_days", () => Whole(Economy.ProductCatalogue.BusinessDaysOnRecord))
+                .Fact("econ_biz_cover", () => Whole(Economy.ProductCatalogue.BusinessCoverTimes))
                 .Fact("econ_biz_multiple", () => Whole(Economy.ProductCatalogue.BusinessProfitMultiple))
                 .Fact("econ_biz_points", () => Whole(-Economy.ProductCatalogue.BusinessRatePoints))
                 .Fact("econ_car_dep_low", () => Whole(Economy.ProductCatalogue.CarDepositLeast) + "%")
@@ -228,8 +230,9 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_about").Help("reallife_guide_markets")
                 .Owns(Settings.MarketsId, Settings.MarketsMarginId, Settings.MarketsDividendNotesId, Settings.MarketsBondsId, Settings.MarketsBondSoFarId, Settings.MarketsHoldingId)
-                .Test("reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay", "reallife_mkt_test_holding")
-                .Data(Markets.MarketStore.Key)
+                .Test("reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay", "reallife_mkt_test_holding",
+                    "reallife_stk_test_open", "reallife_stk_test_company", "reallife_stk_test_order", "reallife_stk_test_switch")
+                .Data(Markets.MarketStore.Key, Markets.TradeLog.Key)
                 .Fact("mkt_companies", () => Whole(MarketsListed()))
                 .Fact("mkt_sectors", () => Whole((int)Markets.MarketSector.Count))
                 .Fact("mkt_open", () => MarketsTime(Markets.MarketCatalogue.OpenMinute))
@@ -282,6 +285,7 @@ namespace RealLifeOverhaul.Meta
             Markets.TradingGuide.Register();
             Markets.DerivGuide.Register();
             Markets.BuildersGuide.Register();
+            Markets.ExtrasGuide.Register();
 
             Features.Add("economy_banks", "reallife_meta_title_economy_banks")
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
@@ -298,10 +302,10 @@ namespace RealLifeOverhaul.Meta
             Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")
                 .Group("reallife_co_header")
                 .About("reallife_guide_economy_company_about").Help("reallife_guide_economy_company")
-                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
+                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyAgreeUpToId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
                     Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId, Settings.EconomyCompanyLicencesId)
                 .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)
-                .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey)
+                .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey, Economy.PricePlanStore.Key)
                 .Cleanup(() => Economy.CompanyDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.CompanyDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
 
@@ -355,16 +359,16 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
                 .Group("reallife_talent_header")
                 .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
-                .Owns(Settings.TechPeopleId)
-                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test")
+                .Owns(Settings.TechPeopleId, Settings.TechSeatHiresId)
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test", "reallife_hire_test_seat")
                 .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             Tech.TechGuide.AddHiringFacts(Features.Add("tech_jobs", "reallife_meta_title_tech_jobs")
                 .About("reallife_guide_tech_jobs_about").Help("reallife_guide_tech_jobs")
-                .Owns(Settings.TechJobsId)
+                .Owns(Settings.TechJobsId, Settings.TechSearchRushId)
                 .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search", "reallife_hire_test_buyout", "reallife_talent_test_buyout",
-                    "reallife_hire_test_orphan", "reallife_crew_test", "reallife_dataeng_test")
+                    "reallife_hire_test_rush", "reallife_hire_test_orphan", "reallife_crew_test", "reallife_dataeng_test")
                 .Data(Tech.HiringStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
@@ -416,7 +420,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
                 .Owns(Settings.EconomySaleId)
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EconomySaleId)   // who rents what is the host's record in a session
-                .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
+                .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part", "reallife_svc_test_rival_offer", "reallife_svc_test_rival_sale"));
             Features.Add("office_space", "reallife_meta_title_office_space")
                 .About("reallife_guide_office_space_about").Help("reallife_guide_office_space")
                 .Fact("offices_district", () => Guide.Number(Offices.ConversionRules.DistrictFloor))

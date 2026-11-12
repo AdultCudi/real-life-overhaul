@@ -80,6 +80,15 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Warning, "reallife_estate_note_complaint", Data("building", name, "about", EstateText.Complaint(EstateRules.Grievance(h, unit, day, _climate))), TabTenants,
                     UnitPick(h, unit));
             }
+            if (d.Asked)
+            {
+                Tell(NotificationType.Info, "reallife_estate_note_improve_asked", Data("building", name, "what", EstateText.Improve(u.Improve), "amount", EstateText.Money(u.ImproveCost)), TabTenants,
+                    UnitPick(h, unit));
+            }
+            if (d.AskLapsed)
+            {
+                Tell(NotificationType.Info, "reallife_estate_note_improve_lapsed", Data("building", name), TabTenants, UnitPick(h, unit));
+            }
             if (d.Quits)
             {
                 Tell(NotificationType.Warning, "reallife_estate_note_quits", Data("building", name, "day", u.QuitDay.ToString()), TabTenants, UnitPick(h, unit));
@@ -154,8 +163,7 @@ namespace RealLifeOverhaul.Economy
         // The city's inspection of a let building whose day has come; with 'now' (a test) whatever its day.
         private Inspection InspectNow(EstateHolding h, int day, bool now)
         {
-            EstateRules.Schedule(h, _state.Seed, day);
-            Inspection r = EstateRules.Inspect(h, day, _climate, now);
+            Inspection r = EstateDay.Inspect(_state, h, day, _climate, now);
             string pick = "own:" + h.Place;
             if (r.Done && r.Passed)
             {

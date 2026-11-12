@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -163,7 +164,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_travel_agent_other_way",
                 OnSecondOption = () => Options(trip, combination + 1),
                 OnCancel = Leave
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", TravelText.Money(price));
         }
 
         private static DialogEntry Book(Trip trip, bool first, TravelCompanion? companion, bool insured)

@@ -341,7 +341,7 @@ namespace RealLifeOverhaul.Planner
                 model.Set(r, 1, double.NaN, row.What);
                 model.Set(r, 2, double.NaN, row.Where);
                 model.Set(r, 3, double.NaN, row.Status);
-                model.Kind(r, 0, (int)PlannerRules.GroupOf(e.Category));
+                model.Kind(r, 0, (int)PlannerRules.GroupOf(e));
             }
             _view.Apply();
             if (_tab == WeekTab && _week != null)

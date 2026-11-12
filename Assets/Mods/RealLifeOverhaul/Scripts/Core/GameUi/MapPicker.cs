@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.GameUi
             public TMP_Text Text;
             public string ButtonKey;
             public string Name;       // what the search field looks for
+            public string Detail;     // the smaller line under it, or a note's words
             public int Id;
             public bool Note;
             public bool Enabled;
@@ -76,8 +77,21 @@ namespace RealLifeOverhaul.GameUi
         private float _glideAt;         // ...and when the map glides to its place
         private bool _glided;
         private int _plate = -1;        // the marker whose name is showing
+        private int _pickId;            // the entry a click picked, for the owner's pick
+        private Action<int> _pickWith;  // ...and the owner's pick as the click found it
+        private Action _pickNow;        // made once: the owner's pick of it, through UiClone.Safe
+        private string _titleText, _query = string.Empty;   // the headline and the words typed, for the kit's face of the window
+        private int _fills;             // counts every filling, so a face of the kit can tell the entries changed
 
         public bool IsOpen { get; private set; }
+
+        /// <summary>
+        /// Milliseconds the game's own opening or shutting of its map took the last time the picker asked for it, and of them
+        /// the mod's own handlers of its map event (the rest is the game's: its buildings, trees, lights and markers switched
+        /// for the map). The second is 0 while the session record is off.
+        /// </summary>
+        public double MapMs { get; private set; }
+        public double MapModMs { get; private set; }
 
         /// <summary>The map and the markers only, the window itself kept hidden: for an owner with a window of its own (build mode's).</summary>
         public bool Windowless { get; set; }
@@ -222,8 +236,10 @@ namespace RealLifeOverhaul.GameUi
         {
             _used = 0;
             _marksUsed = 0;
+            _fills++;
             _icon = icon;
             _colour = colour;
+            _titleText = title;
             UiClone.Words(_title, title);
         }
 
@@ -266,40 +282,71 @@ namespace RealLifeOverhaul.GameUi
             Marker(place, name, red, -1);
         }
 
+        /// <summary>
+        /// Entries and markers made ahead, asleep, while the loading screen is up: the first opening then makes none (an
+        /// Instantiate an entry and one of the game's markers a place were most of a first opening's cost). Up to the counts
+        /// given; what is made already counts. True when they are all there.
+        /// </summary>
+        public bool Prepare(int entries, int markers, Sprite icon, Color colour)
+        {
+            if (_root == null || _template == null)
+            {
+                return false;
+            }
+            while (_rows.Count < entries)
+            {
+                MakeRow();
+            }
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            while (_marks.Count < markers)
+            {
+                if (MakeMark(city, icon, colour) == null)
+                {
+                    return false;   // the map would not take one: made when first needed, as before
+                }
+            }
+            return true;
+        }
+
+        // A new entry, asleep, at the end of the list.
+        private Row MakeRow()
+        {
+            GameObject made = UnityEngine.Object.Instantiate(_template, _template.transform.parent, false);
+            made.name = "Entry " + (_rows.Count + 1);
+            var row = new Row { Object = made };
+            row.Label = _labelPath.Length == 0 ? made.transform : made.transform.Find(_labelPath);
+            row.Text = row.Label != null ? row.Label.GetComponent<TMP_Text>() : null;
+            row.Button = FindButton(made.transform, _buttonPath);
+            row.ButtonLabel = row.Button != null ? row.Button.GetComponentInChildren<TMP_Text>(true) : null;
+            Transform background = _backgroundPath == null ? null : _backgroundPath.Length == 0 ? made.transform : made.transform.Find(_backgroundPath);
+            row.Background = background != null ? background.GetComponent<Image>() : null;
+            int index = _rows.Count;
+            if (row.Button != null)
+            {
+                row.Button.onClick = new Button.ButtonClickedEvent();
+                row.Button.onClick.AddListener(Guard.Listener(() => Picked(index)));
+            }
+            var pointer = made.AddComponent<MapPickerEntry>();
+            pointer.Owner = this;
+            pointer.Index = index;
+            if (made.activeSelf)
+            {
+                made.SetActive(false);   // asleep until an entry is filled into it
+            }
+            _rows.Add(row);
+            return row;
+        }
+
         private Row Entry(int id, string name, string detail, string buttonKey, bool enabled, bool hasPlace, Vector3 place, bool note)
         {
-            Row row;
-            if (_used < _rows.Count)
-            {
-                row = _rows[_used];
-            }
-            else
-            {
-                GameObject made = UnityEngine.Object.Instantiate(_template, _template.transform.parent, false);
-                made.name = "Entry " + (_rows.Count + 1);
-                row = new Row { Object = made };
-                row.Label = _labelPath.Length == 0 ? made.transform : made.transform.Find(_labelPath);
-                row.Text = row.Label != null ? row.Label.GetComponent<TMP_Text>() : null;
-                row.Button = FindButton(made.transform, _buttonPath);
-                row.ButtonLabel = row.Button != null ? row.Button.GetComponentInChildren<TMP_Text>(true) : null;
-                Transform background = _backgroundPath == null ? null : _backgroundPath.Length == 0 ? made.transform : made.transform.Find(_backgroundPath);
-                row.Background = background != null ? background.GetComponent<Image>() : null;
-                int index = _rows.Count;
-                if (row.Button != null)
-                {
-                    row.Button.onClick = new Button.ButtonClickedEvent();
-                    row.Button.onClick.AddListener(Guard.Listener(() => Picked(index)));
-                }
-                var pointer = made.AddComponent<MapPickerEntry>();
-                pointer.Owner = this;
-                pointer.Index = index;
-                _rows.Add(row);
-            }
+            Row row = _used < _rows.Count ? _rows[_used] : MakeRow();
             _used++;
             row.Id = id;
             row.Note = note;
             row.Enabled = enabled && !note;
             row.Name = name ?? string.Empty;
+            row.Detail = detail ?? string.Empty;
+            _fills++;
             row.HasPlace = hasPlace && !note;
             row.Place = place;
             row.Mark = -1;
@@ -351,28 +398,10 @@ namespace RealLifeOverhaul.GameUi
             {
                 return -1;
             }
-            Mark mark;
-            if (_marksUsed < _marks.Count)
+            Mark mark = _marksUsed < _marks.Count ? _marks[_marksUsed] : MakeMark(city, _icon, colour);
+            if (mark == null)
             {
-                mark = _marks[_marksUsed];
-            }
-            else
-            {
-                if (city.cityMap.poiTemplate == null)
-                {
-                    return -1;
-                }
-                var anchor = new GameObject("Place " + (_marks.Count + 1));
-                anchor.transform.SetParent(_places, false);
-                PointOfInterest poi = city.cityMap.AddPoi(anchor.transform, _icon, colour, string.Empty);
-                if (poi == null)
-                {
-                    UnityEngine.Object.Destroy(anchor);
-                    return -1;
-                }
-                mark = new Mark { Poi = poi, Anchor = anchor.transform };
-                Clickable(mark, _marks.Count);
-                _marks.Add(mark);
+                return -1;
             }
             int index = _marksUsed++;
             mark.Row = row;
@@ -380,6 +409,27 @@ namespace RealLifeOverhaul.GameUi
             mark.Poi.SetIcon(_icon, colour);
             mark.Poi.SetText(name ?? string.Empty);
             return index;
+        }
+
+        // A new marker on the game's map, asleep (the game's AddPoi leaves it off), at the end of the list; null if the map would not take one.
+        private Mark MakeMark(CityManager city, Sprite icon, Color colour)
+        {
+            if (city == null || city.cityMap == null || city.cityMap.poiTemplate == null || _places == null)
+            {
+                return null;
+            }
+            var anchor = new GameObject("Place " + (_marks.Count + 1));
+            anchor.transform.SetParent(_places, false);
+            PointOfInterest poi = city.cityMap.AddPoi(anchor.transform, icon, colour, string.Empty);
+            if (poi == null)
+            {
+                UnityEngine.Object.Destroy(anchor);
+                return null;
+            }
+            var mark = new Mark { Poi = poi, Anchor = anchor.transform };
+            Clickable(mark, _marks.Count);
+            _marks.Add(mark);
+            return mark;
         }
 
         // The plate shows the name without the dismiss button of the game's directions; the blob takes the pointer.
@@ -443,9 +493,10 @@ namespace RealLifeOverhaul.GameUi
                     return false;   // the game's own choice of a station is up
                 }
                 MapPlaces.Quiet = true;   // before the map opens, so they never show for a moment
+                MapMs = MapModMs = 0.0;
                 if (!CityMap.IsOpen)
                 {
-                    city.cityMap.Toggle(centre);
+                    ToggleMap(city, centre, false);
                 }
                 if (!CityMap.IsOpen)
                 {
@@ -463,14 +514,17 @@ namespace RealLifeOverhaul.GameUi
                     _cancel.Suffix = PlayerAction.Cancel.AsSuffix();   // the player's own binding, as the game's windows write it
                 }
                 _search.SetTextWithoutNotify(string.Empty);
+                _query = string.Empty;
                 _root.SetActive(true);   // its watch runs on it, so the map shut by any means closes it
+                KitOn = !Windowless && KitShow != null && KitShow(this);   // the kit draws the choice: the game's copy of a window stays unseen, as a windowless choice's
                 CanvasGroup group = _root.GetComponent<CanvasGroup>() ?? _root.AddComponent<CanvasGroup>();
-                group.alpha = Windowless ? 0f : 1f;   // windowless: the map and the markers, nothing of the window seen or clicked
-                group.blocksRaycasts = !Windowless;
-                group.interactable = !Windowless;
+                bool hidden = Windowless || KitOn;
+                group.alpha = hidden ? 0f : 1f;   // windowless: the map and the markers, nothing of the window seen or clicked
+                group.blocksRaycasts = !hidden;
+                group.interactable = !hidden;
             }
             Unpoint();
-            Filter(_search.text);
+            Filter(KitOn ? _query : _search.text);
             for (int i = 0; i < _marks.Count; i++)
             {
                 GameObject marker = _marks[i].Poi != null ? _marks[i].Poi.gameObject : null;
@@ -499,11 +553,36 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             CityManager city = InstanceBehavior<CityManager>.Instance;
+            MapMs = MapModMs = 0.0;
             if (CityMap.IsOpen && city != null && city.cityMap != null)
             {
-                city.cityMap.Toggle(Vector3.zero, force: true);   // also stops the map's opening if it is still under way
+                ToggleMap(city, Vector3.zero, true);   // also stops the map's opening if it is still under way
             }
             Closed();
+        }
+
+        // The game's own opening or shutting of its map, asked for by the picker. It is the game's work, as when the player
+        // presses M (its buildings, trees, lights and markers switched for the map, every handler of its map event run): kept
+        // out of the mod's figures in the session record (HotSpots.Game, the mod's own handlers in it still the mod's) and
+        // measured for the owner's line.
+        private void ToggleMap(CityManager city, Vector3 centre, bool shut)
+        {
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            long inside = HotSpots.InsideGameTicks;
+            using (HotSpots.Game())
+            {
+                if (shut)
+                {
+                    city.cityMap.Toggle(Vector3.zero, force: true);
+                }
+                else
+                {
+                    city.cityMap.Toggle(centre);
+                }
+            }
+            double perMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            MapMs = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * perMs;
+            MapModMs = (HotSpots.InsideGameTicks - inside) * perMs;
         }
 
         public void Destroy()
@@ -547,6 +626,11 @@ namespace RealLifeOverhaul.GameUi
             {
                 _shown = null;
             }
+            if (KitOn)
+            {
+                KitOn = false;
+                KitHide?.Invoke(this);
+            }
             Unpoint();
             for (int i = 0; i < _marks.Count; i++)
             {
@@ -573,6 +657,7 @@ namespace RealLifeOverhaul.GameUi
         private void Filter(string query)
         {
             string value = (query ?? string.Empty).Trim();
+            _query = value;
             bool all = value.Length == 0;
             for (int i = 0; i < _used; i++)
             {
@@ -598,8 +683,10 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             UiClone.Deselect(_root.transform);
-            int id = row.Id;
-            UiClone.Safe(() => pick(id));
+            _pickWith = pick;
+            _pickId = row.Id;
+            UiClone.Safe(_pickNow ??= () => _pickWith?.Invoke(_pickId));   // made once: a pick allocates nothing
+            _pickWith = null;
         }
     }
 }

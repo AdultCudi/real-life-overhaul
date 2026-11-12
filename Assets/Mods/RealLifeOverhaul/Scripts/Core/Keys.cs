@@ -24,6 +24,7 @@ namespace RealLifeOverhaul
         CharacterReport,
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
         Walk,               // on foot: walk, and press again for the game's own pace (Walking/WalkDirector)
+        Phone,              // the keys and the pad to the phone on the RLO interface, and back (Ui/Phone/PhoneKit)
     }
 
     /// <summary>The modifier a key is bound with.</summary>
@@ -76,6 +77,7 @@ namespace RealLifeOverhaul
             new Binding("character_report", "reallife_keys_character_report", KeyCode.F9),
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
             new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // free of the game, the mod and the system (ContractCheck)
+            new Binding("phone", "reallife_keys_phone", KeyCode.F11),   // free of the game, the mod and the system too (ContractCheck)
         };
 
         private static readonly TextLocalizationComponent[] Rows = new TextLocalizationComponent[All.Length];
@@ -95,17 +97,17 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        /// <summary>True in the frame the action's key goes down, with its modifier if it has one.</summary>
+        /// <summary>True in the frame the action's key goes down, with its modifier if it has one; never while a text field has the keyboard (<see cref="TypingNow"/>).</summary>
         public static bool Down(KeyAction action)
         {
             Binding binding = All[(int)action];
-            return !_capturing && !Suspended && !Off[(int)action] && Input.GetKeyDown(binding.Key) && Modified(binding);
+            return !_capturing && !Suspended && !Off[(int)action] && Input.GetKeyDown(binding.Key) && Modified(binding) && !TypingNow.Now;
         }
 
         public static bool Held(KeyAction action)
         {
             Binding binding = All[(int)action];
-            return !_capturing && !Suspended && !Off[(int)action] && Input.GetKey(binding.Key) && Modified(binding);
+            return !_capturing && !Suspended && !Off[(int)action] && Input.GetKey(binding.Key) && Modified(binding) && !TypingNow.Now;
         }
 
         private static readonly bool[] Off = new bool[All.Length];
@@ -158,9 +160,9 @@ namespace RealLifeOverhaul
         /// <summary>Lines to scroll this frame: one for an arrow, thirty for a page, a thousand for Home or End.</summary>
         public static int PanelScroll()
         {
-            if (!Input.anyKey)
+            if (!Input.anyKey || TypingNow.Now)
             {
-                return 0;
+                return 0;   // the arrows, Home and End are a field's own while it has the keyboard
             }
             if (Input.GetKeyDown(KeyCode.Home))
             {
@@ -691,7 +693,8 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The fixed keys of photo mode, a tool with a layout of its own: only getting in and out is rebindable
     /// (<see cref="KeyAction.PhotoMode"/>). Kept here so no KeyCode lives outside this file; none acts in the game
-    /// while it is paused (not Space, Q, E or F). COST: one engine call each, nothing allocated.
+    /// while it is paused (not Space, Q, E or F). None acts while a text field has the keyboard (<see cref="TypingNow"/>).
+    /// COST: one engine call each, and the typing test one read a frame, shared; nothing allocated.
     /// </summary>
     public static class PhotoKeys
     {
@@ -704,16 +707,25 @@ namespace RealLifeOverhaul
         public static bool Fast => Input.GetKey(KeyCode.LeftShift);
         public static bool Slow => Input.GetKey(KeyCode.LeftControl);
         public static bool Shoot => Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
-        public static bool NextFilter => Input.GetKeyDown(KeyCode.K);
-        public static bool ToggleBlur => Input.GetKeyDown(KeyCode.G);
-        public static bool TogglePlayer => Input.GetKeyDown(KeyCode.Alpha1);
-        public static bool ToggleHelp => Input.GetKeyDown(KeyCode.Alpha2);
-        public static bool ResetView => Input.GetKeyDown(KeyCode.Alpha3);
-        public static bool Selfie => Input.GetKeyDown(KeyCode.Alpha4);
-        public static bool NextPose => Input.GetKeyDown(KeyCode.Alpha5);
+        public static bool NextFilter => Down(KeyCode.K);
+        public static bool ToggleBlur => Down(KeyCode.G);
+        public static bool TogglePlayer => Down(KeyCode.Alpha1);
+        public static bool ToggleHelp => Down(KeyCode.Alpha2);
+        public static bool ResetView => Down(KeyCode.Alpha3);
+        public static bool Selfie => Down(KeyCode.Alpha4);
+        public static bool NextPose => Down(KeyCode.Alpha5);
+
+        private static bool Down(KeyCode key)
+        {
+            return Input.GetKeyDown(key) && !TypingNow.Now;
+        }
 
         private static float Axis(KeyCode plus, KeyCode minus)
         {
+            if (TypingNow.Now)
+            {
+                return 0f;
+            }
             return (Input.GetKey(plus) ? 1f : 0f) - (Input.GetKey(minus) ? 1f : 0f);
         }
     }

@@ -21,6 +21,15 @@ namespace RealLifeOverhaul.Meta
             RegisterEconomy();
             Roommates.RoommateGuide.Register();
             Household.HouseholdGuide.Register();
+            Giving.GivingGuide.Register();
+            Insurance.InsuranceGuide.Register();
+            Health.HealthGuide.Register();
+            ParkSpaces.SpaceGuide.Register();
+            SideJobs.SideJobGuide.Register();
+            Economy.Dealership.CarSupplyGuide.Register();
+            Suppliers.SupplierGuide.Register();
+            RivalsSeen.SeenGuide.Register();
+            Dynasty.DynastyGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();
@@ -35,11 +44,23 @@ namespace RealLifeOverhaul.Meta
             Calendar.CalendarGuide.Register();
             Hustles.HustleGuide.Register();
             Seasons.SeasonGuide.Register();
+            Gfx.GraphicsGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
             Networking.NetworkGuide.Register();
             Shops.ShopsGuide.Register();
+            Loyalty.LoyaltyGuide.Register();
             Outlook.OutlookGuide.Register();
+            Population.PopulationGuide.Register();
+            Population.PopDemandGuide.Register();
+            Sessions.SessionGuide.Register();
+            Ui.UiGuide.Register();
+            Tech.StudioGuide.Register();
+            Flare.FlareCityGuide.Register();
+            Tech.SectorGuide.Register();
+            Economy.LogisticsGuide.Register();
+            Parties.PartyGuide.Register();
+            Schemes.SchemeGuide.Register();
         }
 
         private static void RegisterGameplay()
@@ -128,9 +149,17 @@ namespace RealLifeOverhaul.Meta
                 .Fact("car_repair_most", () => Guide.Money(Prices.At(OffscreenCrimes.CarRepairCap)))
                 .Fact("scam_most", () => Guide.Money(Prices.At(OffscreenCrimes.ScamLossMost)))
                 .Fact("fine_drunk", () => Guide.Money(CrimeLaw.DrunkDrivingFine))
+                .Fact("ride_speed", () => Guide.Number(OffenceRules.FootMost * 3.6f))   // km/h: the speed no walker reaches
                 .Owns(Settings.StreetCrimeId)
                 .Preset(Settings.CrimeAgainstPlayerId, 0, 1, 1)
-                .Preset(Settings.PlayerOffencesId, 0, 1, 1)
+                .Preset(Settings.OffenceRedLightId, 0, 1, 1)
+                .Preset(Settings.OffenceSpeedingId, 0, 1, 1)
+                .Preset(Settings.OffencePavementId, 0, 1, 1)
+                .Preset(Settings.OffenceWrongWayId, 0, 1, 1)
+                .Preset(Settings.OffenceDrinkId, 0, 1, 1)
+                .Preset(Settings.OffenceJaywalkId, 0, 1, 1)
+                .Preset(Settings.OffenceCrossRedId, 0, 1, 1)
+                .Preset(Settings.OffenceHornId, 0, 1, 1)
                 .Preset(Settings.CrimeFrequencyId, 1, 3, 5)
                 .Fact("crime_count", () => CrimeCatalogue.All.Length.ToString(CultureInfo.InvariantCulture))
                 .Fact("fine_redlight", () => Guide.Money(CrimeLaw.RedLightFine))
@@ -155,7 +184,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("driving", "reallife_meta_title_driving")
                 .About("reallife_guide_driving_about").Help("reallife_guide_driving")
                 .Fact("car_examples", () => CarExamples())
-                .Owns(Settings.CarTuningId, Settings.CarTopSpeedId, Settings.CarAccelerationId, Settings.SmoothThrottleId, Settings.SpeedometerId)
+                .Owns(Settings.CarTuningId, Settings.CarTopSpeedId, Settings.CarAccelerationId, Settings.SmoothThrottleId, Settings.SpeedometerId, Settings.AutoSignalsId, Settings.HandlingOtherModsId)
                 .Rows("reallife_car_measure")
                 .Fact("throttle_rise", () => Guide.Number(CarModel.ThrottleRise))
                 .Fact("throttle_fall", () => Guide.Number(CarModel.ThrottleFall))
@@ -268,7 +297,7 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("people", "reallife_meta_title_people")
                 .About("reallife_guide_people_about").Help("reallife_guide_people")
-                .Owns(Settings.PeopleId, Settings.OfficersOnPatrolId)
+                .Owns(Settings.PeopleId, Settings.OfficersOnPatrolId, Settings.PoliceCapsId)
                 .StandsAside(GoingPublic.TrafficSentence, Settings.OfficersOnPatrolId, Settings.PolicePresenceId, Settings.PatrolFrequencyId)   // their patrol cars are the traffic's
                 .Preset(Settings.PolicePresenceId, 4, 6, 8)
                 .Preset(Settings.PatrolFrequencyId, 2, 4, 6)
@@ -287,9 +316,12 @@ namespace RealLifeOverhaul.Meta
             Features.Add("phone", "reallife_meta_title_phone")
                 .About("reallife_guide_phone_about").Help("reallife_guide_phone")
                 .Owns(Settings.PhoneContactsId, Settings.PhoneContactGroupsId, Settings.PhoneSkinId, Settings.NoticeLookId)
+                .Owns(Settings.NoticeShowRoadId, Settings.NoticeShowMoneyId, Settings.NoticeShowPropertyId, Settings.NoticeShowWorkId, Settings.NoticeShowBusinessId,
+                    Settings.NoticeShowTechId, Settings.NoticeShowNewsId, Settings.NoticeShowPeopleId, Settings.NoticeShowOtherId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
-                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_contacts_test_groups", "reallife_test_notice_look")
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_contacts_test_groups", "reallife_test_notice_look",
+                    "reallife_test_notice_mute")
                 .Repair(() =>
                 {
                     PhoneContacts.Setup();
@@ -302,7 +334,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
                 .Fact("phone_folder_count", () => Whole(GameUi.PhoneLayoutRules.FolderCount))
                 .Fact("phone_banks_most", () => Whole(RealLifeOverhaul.Economy.BankRules.AppsMost))
-                .Rows("reallife_phone_layout_reset")   // every app back in its folder: the player's, not a test
+                .Rows("reallife_phone_layout_reset", "reallife_windows_reset")   // every app back in its folder, every moved window back: the player's, not a test
                 .Test("reallife_phone_test_check", "reallife_phone_test_folder", "reallife_leftpane_test");
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")

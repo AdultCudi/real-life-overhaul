@@ -12,15 +12,16 @@ namespace RealLifeOverhaul.Economy
             "reallife_estate_tab_hotel", "reallife_estate_tab_hire"
         };
 
-        // The Market tab's second filter: the four uses, then a hotel.
+        // The Market tab's second filter: the four uses, then a hotel, then a parking space (ParkSpaces).
         public const int IsHotel = EstateCatalogue.Uses;
+        public const int IsSpace = IsHotel + 1;
         private static readonly string[] MarketKinds =
         {
-            "reallife_estate_use_homes", "reallife_estate_use_shops", "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel"
+            "reallife_estate_use_homes", "reallife_estate_use_shops", "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind"
         };
 
-        public const int OwnBuilding = 0, OwnHotel = 1, OwnLot = 2;
-        private static readonly string[] OwnKinds = { "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot" };
+        public const int OwnBuilding = 0, OwnHotel = 1, OwnLot = 2, OwnSpace = 3;
+        private static readonly string[] OwnKinds = { "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind" };
 
         public const int TenantPaying = 0, TenantBehind = 1, TenantNotice = 2, TenantNone = 3, TenantApplies = 4;
         private static readonly string[] TenantStates =

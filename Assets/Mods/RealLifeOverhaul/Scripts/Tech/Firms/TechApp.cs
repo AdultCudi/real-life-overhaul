@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Tech
     {
         public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:", CentreRow = "dc:",
             CloudRow = "cloud", FitRow = "fit:";
-        private const string NewProductRow = "newprod:";
+        internal const string NewProductRow = "newprod:";
         private static readonly string[] TabKeys =
         {
             "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding",

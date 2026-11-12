@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.Hustles
                 HustleText.Note(NotificationType.Warning, "reallife_hustle_note_short", "amount", HustleText.Money(price + fee));
                 return false;
             }
+            SellerRules.NoteSale(_sellers, l);
             Owned o = HustleRules.Buy(_state, l, price, deliver && !l.Car, fee, HustleGame.Day);
             string thing = HustleText.Thing(o.Thing, o.Car);
             if (o.State == OwnedState.Delivering)

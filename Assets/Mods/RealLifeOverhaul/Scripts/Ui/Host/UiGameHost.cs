@@ -1,0 +1,678 @@
+using System;
+using System.Collections.Generic;
+using UI;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>
+    /// The one way the kit draws over a screen of the game's (ContactsKit was its first form). The game's object stays
+    /// alive and active underneath with only its own layout leaves unseen and untouchable (UiConceal, given back exactly
+    /// as found); the kit screen reads the game's state and presses the game's own buttons, so every rule of the game stays
+    /// the game's. The game keeps its full menu and apps switched off until they open, so the bind takes switched off
+    /// objects and walks the canvases as the engine nests them (UiBindRules); a screen not built yet is looked at again
+    /// later, and one that never looks as expected stays the game's own until the next city, with one Player.log line. A
+    /// small watcher on the game's object (UiGameWatch) shows the kit the moment the game opens it. The kit steps aside for
+    /// a call or anything only the game's view can show (the classic view, until the screen closes), holds its keys while
+    /// a box stands over it, and a fault of its own screen gives the game's screen back for the session. Its canvas stands
+    /// just above the screen it covers, below the game's boxes, notices and other mods' canvases. Cost: nothing while the
+    /// screen is closed; while it shows, the host's input reads and one box test a frame.
+    /// </summary>
+    public sealed class UiGameHost
+    {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiGameHost", typeof(UiGameHost));
+        private static readonly List<UiGameHost> Hosts = new List<UiGameHost>(8);
+
+        private const string NotLooked = "not looked at yet";
+        private const string NotBuilt = "waiting for the game to build it";
+        private const string Drawn = "drawn over the game's screen";
+
+        /// <summary>Told when a host over a full menu app starts or stops showing: the frame takes the menu's chrome or gives it back.</summary>
+        public static Action FacesChanged;
+
+        /// <summary>The frame's answer to the status bar's commands and to a window closed at its top level; null outside the full menu.</summary>
+        public static Func<int, int, bool> Chrome;
+
+        private readonly IUiGameScreen _screen;
+        private readonly UiConceal _conceal = new UiConceal();
+        private Component _found;
+        private GameObject _root;
+        private UiHost _host;
+        private Canvas _canvas;
+        private CanvasGroup _group;   // the kit's own fade, held to the full menu's
+        private UiGameWatch _watch;
+        private readonly UiForeignGame.Top _top = new UiForeignGame.Top();   // the screen's top level as it was bound: what another mod added since is told from it
+        private readonly List<UiGamePart> _parts = new List<UiGamePart>(2);
+        private int _order;
+        private bool _classic, _held, _shown;
+        private bool _underMenu;      // a panel of the HUD put away under the game's pause menu, brought back as it closes
+        private readonly UiReentry _opening = new UiReentry();   // an opening under way: one the game sets off from inside it is refused (Opened)
+        private Func<bool> _back;     // while the game runs something in its own view: true once it is over and the kit may come back
+        private bool _gaveUp, _stopped;
+        private int _misses;
+        private float _nextLook;
+        private string _state = NotLooked;
+
+        public UiGameHost(IUiGameScreen screen)
+        {
+            _screen = screen;
+            Hosts.Add(this);
+        }
+
+        /// <summary>Where it stands, for the interface's line at load: drawn, waiting, or the game's own and why.</summary>
+        public string State => _root != null ? Drawn : _state;
+
+        /// <summary>True once it has an answer for this city: over the screen, waiting to look again, or the game's own.</summary>
+        public bool Settled => _root != null || (_state != NotLooked && _state != NotBuilt);
+
+        /// <summary>True while the kit draws the screen.</summary>
+        public bool Showing => _root != null && _root.activeSelf && _found != null && _found.gameObject.activeInHierarchy && !_classic;
+
+        /// <summary>True from the bind until the screen is given back: the kit has the screen, shown or not, and the game's own face is not the one the player gets.</summary>
+        public bool Bound => _root != null && !_classic;
+
+        /// <summary>The kit screen it runs, or null before the bind.</summary>
+        public IUiScreen Screen => _host != null ? _host.Screen : null;
+
+        /// <summary>
+        /// The kit's own root over the game's canvas, or null before the bind: its rect is the kit's px times
+        /// UiTokens.CanvasPerPx, for a screen that places itself around a piece the game draws (the uniforms' preview).
+        /// </summary>
+        public RectTransform Root => _root != null ? (RectTransform)_root.transform : null;
+
+        /// <summary>The screen's id in UiScreens.</summary>
+        public string Id => _screen.Id;
+
+        /// <summary>True while any host draws an app of the full menu: the frame owns the menu's chrome then.</summary>
+        public static bool AnyInFullMenu
+        {
+            get
+            {
+                for (int i = 0; i < Hosts.Count; i++)
+                {
+                    if (Hosts[i]._screen.Kind == UiGameKind.App && Hosts[i].Showing)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        /// <summary>The frame round the full menu's apps changed (the app row's news): each app the kit shows is laid out again.</summary>
+        public static void AgainAll()
+        {
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                if (Hosts[i]._screen.Kind == UiGameKind.App && Hosts[i]._host != null)
+                {
+                    Hosts[i]._host.Again();
+                }
+            }
+        }
+
+        /// <summary>The sort order of the canvas the kit draws an app of the full menu on, so what stands over it (All apps) goes one above.</summary>
+        public static int AppOrder()
+        {
+            int order = 0;
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                if (Hosts[i]._screen.Kind == UiGameKind.App && Hosts[i]._root != null)
+                {
+                    order = Math.Max(order, Hosts[i]._order);
+                }
+            }
+            return order;
+        }
+
+        /// <summary>The highest sort order a kit canvas of a screen has now (All apps one above an app, a box one above its screen): another mod's window lifted over the kit goes above it.</summary>
+        public static int TopOrder()
+        {
+            int order = 0;
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                if (Hosts[i]._root != null)
+                {
+                    order = Math.Max(order, Hosts[i]._order);
+                }
+            }
+            return order + 1;
+        }
+
+        /// <summary>The self-check at load: every bound screen looked at for another mod's additions (said once each), none of them stepped aside for yet.</summary>
+        public static void Survey()
+        {
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                Hosts[i].OthersAdded();
+            }
+        }
+
+        /// <summary>Every host's line for Player.log at load.</summary>
+        public static string States()
+        {
+            var sb = new System.Text.StringBuilder(64);
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                sb.Append(i > 0 ? ", " : string.Empty).Append(Hosts[i]._screen.Name).Append(" (").Append(Hosts[i].State).Append(')');
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Puts the kit over the game's screen once a city; asked again once a second while its switches are on.</summary>
+        public void Install()
+        {
+            if (_gaveUp || _stopped || FrameGuard.Off)
+            {
+                return;
+            }
+            if (_root != null)
+            {
+                if (_found == null)
+                {
+                    Remove("the city was unloaded");
+                }
+                return;
+            }
+            if (Time.unscaledTime < _nextLook)
+            {
+                return;
+            }
+            Component found = _screen.Find();
+            if (found == null)
+            {
+                _state = NotBuilt;
+                return;   // the game builds it a little after the city: asked again next second
+            }
+            bool builtLate = _misses > 0 || _state == NotBuilt;   // the game made it after the host's first look: found already opened
+            string wrong = _screen.Check(found);
+            // The game keeps its screens switched off until opened, so the search for the canvases takes switched off ones.
+            Canvas[] above = found.GetComponentsInParent<Canvas>(true);
+            if (wrong != null || above.Length == 0)
+            {
+                Miss(wrong ?? "no canvas above it");
+                return;
+            }
+            var overrides = new bool[above.Length];
+            for (int i = 0; i < above.Length; i++)
+            {
+                overrides[i] = above[i].overrideSorting;
+            }
+            Canvas root = above[UiBindRules.Root(above.Length)];
+            // A box stands one more above, so it covers the frame the kit draws just over the full menu too.
+            _order = UiHostRules.Above(above[UiBindRules.Sorter(overrides, above.Length)].sortingOrder) + (_screen.Kind == UiGameKind.Box ? 1 : 0);
+            _found = found;
+            _screen.Conceal(found, _conceal);
+            _top.Take(found.transform);
+            _root = new GameObject("RealLife Interface " + _screen.Id, typeof(RectTransform));
+            var rect = (RectTransform)_root.transform;
+            rect.SetParent(root.transform, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            _canvas = _root.AddComponent<Canvas>();
+            _group = _root.AddComponent<CanvasGroup>();
+            Sort();
+            _root.AddComponent<GraphicRaycaster>();
+            if (_screen.Kind != UiGameKind.Overlay && _screen.Kind != UiGameKind.Panel)
+            {
+                // Takes the clicks no target of the kit's takes: the game's pieces it hides under it stay pressable by alpha alone.
+                // A panel of the HUD takes none: the rest of the HUD (the phone's button, the money) stays the player's beside it.
+                var blocker = _root.AddComponent<Image>();
+                blocker.color = new Color(0f, 0f, 0f, 0f);
+            }
+            _host = _root.AddComponent<UiHost>();
+            UiGame input = _screen.Kind == UiGameKind.Box ? UiGame.OverBoxes : UiGame.Instance;
+            _host.Bind(_screen.Make(found), input, input, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, _screen.Title, _screen.Icon);
+            _host.PointerOnly = _screen.Kind == UiGameKind.Overlay;
+            if (_screen is IUiGameWay way)
+            {
+                // A panel of the game's over the world with keys of its own: the kit reads them, and takes them from the game when it answers the same.
+                _host.PointerOnly = !way.Keys;
+                _host.Exclusive = way.Exclusive;
+                _host.TakesInteract = way.Keys && !way.Exclusive && _screen is IUiGameInteract;
+                if (way.Blocks && _root.GetComponent<Image>() == null)
+                {
+                    _root.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+                }
+            }
+            _host.View.Scale = UiTokens.CanvasPerPx;
+            _host.Failed = Fallback;
+            _host.ScreenId = _screen.Id;
+            if (_screen is IUiGameDraggable draggable && draggable.WindowId != null)
+            {
+                // The game keeps a window it names; one it does not name stays where it was put for the session.
+                _host.WindowId = string.IsNullOrEmpty(draggable.WindowId) ? _screen.Id : draggable.WindowId;
+                _host.WindowSaved = !string.IsNullOrEmpty(draggable.WindowId);
+                _host.WindowHeld = HoldGameWindow;
+            }
+            _host.Measure(_screen.Name, _screen.Kind == UiGameKind.Overlay);   // the notices over the world are the HUD's
+            _host.HeldBy = HeldBy;
+            if (_screen.Kind == UiGameKind.App)
+            {
+                _host.Chrome = Chrome;
+                _host.Leaving = Closing;   // the menu closing: no layout for a screen on its way out
+            }
+            _root.SetActive(false);
+            UiForeignWindows.Forget(root);   // the canvas the kit now stands on, if it was taken for another mod's window before
+            if (UiDirector.Logger != null && _misses > 0)
+            {
+                UiDirector.Logger.Info("UI: " + _screen.Name + " is drawn on the RLO interface now, after " + _misses + " look(s) that found it not ready.");
+            }
+            _misses = 0;
+            _state = Drawn;
+            _watch = found.gameObject.AddComponent<UiGameWatch>();   // on a screen the game opens later its OnEnable shows the kit at once
+            _watch.Host = this;
+            if (UiHostRules.ShowsAtBind(_screen is IUiGameStands, found.gameObject.activeInHierarchy)
+                || UiHostRules.ShowsLate(builtLate, found.gameObject.activeInHierarchy, _screen.Kind == UiGameKind.Overlay))
+            {
+                Opened();   // an object that is on already (the toast stack) never switches on again: its OnEnable ran before the host was set
+            }
+        }
+
+        /// <summary>The host gone for good (an app's face replaced by a new city's): the game's screen as it was, and no more looks at it.</summary>
+        internal void Retire()
+        {
+            Remove("replaced");
+            Hosts.Remove(this);
+        }
+
+        /// <summary>A new city: a screen that never looked as expected in the last one is looked at again.</summary>
+        public void Rearm()
+        {
+            _stopped = false;
+            _misses = 0;
+            _nextLook = 0f;
+            if (!_gaveUp)
+            {
+                _state = NotLooked;
+            }
+        }
+
+        /// <summary>The game's screen as it was: the kit gone, its leaves seen and touchable again.</summary>
+        public void Remove(string why)
+        {
+            if (_root == null && _found == null)
+            {
+                return;
+            }
+            try
+            {
+                _conceal.Clear();
+                if (_watch != null)
+                {
+                    UnityEngine.Object.Destroy(_watch);
+                }
+                if (_root != null)
+                {
+                    UnityEngine.Object.Destroy(_root);
+                }
+            }
+            catch (Exception e)
+            {
+                UiDirector.Logger?.Error(e);
+            }
+            _root = null;
+            _host = null;
+            _found = null;
+            _canvas = null;
+            _group = null;
+            _watch = null;
+            _classic = false;
+            _held = false;
+            _underMenu = false;
+            _back = null;
+            Shown(false);
+            if (UiDirector.Logger != null && why != null && Meta.Dev.Verbose)
+            {
+                UiDirector.Logger.Info("UI: " + _screen.Name + " is the game's own again (" + why + ").");
+            }
+        }
+
+        /// <summary>The game's own view until the screen closes: an offer with its buttons, a table only it can show, another mod's page.</summary>
+        public void Classic()
+        {
+            _classic = true;
+            _back = null;
+            _conceal.Show();
+            if (_root != null)
+            {
+                _host.Hide();
+                _root.SetActive(false);
+            }
+            Shown(false);
+        }
+
+        /// <summary>
+        /// Something the game runs in its own view (a call): the kit steps aside so it is seen and answered there, and comes
+        /// back the moment <paramref name="over"/> says it is over (the game freed its call button again).
+        /// </summary>
+        public void StepAside(Func<bool> over)
+        {
+            Classic();
+            _back = over;
+        }
+
+        /// <summary>The keys go to what stands over this screen (a box, All apps, another mod's window); the screen stays in front, drawn as it changes.</summary>
+        public void Hold(bool hold)
+        {
+            if (_held == hold)
+            {
+                return;
+            }
+            _held = hold;
+            if (_host != null)
+            {
+                _host.Hold(hold);   // a screen put away keeps it too (nothing is laid out for it then), so it shows again as it should
+            }
+        }
+
+        // For the press line of a held screen (Developer diagnostics): the first thing standing that holds kit screens' keys.
+        private static string HeldBy()
+        {
+            if (UiForeignWindows.Up)
+            {
+                return "another mod's window '" + UiForeignWindows.Named + "'";
+            }
+            if (UiBoxes.Up)
+            {
+                return UiBoxes.Drawn ? "a box of the kit's" : "a box of the game's";
+            }
+            if (UiBoxes.Over)
+            {
+                return "All apps";
+            }
+            if (global::UI.Smartphone.FullMenu.IsOpen)
+            {
+                return "the full menu";
+            }
+            return global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible || global::BlueprintsUI.BlueprintsPanel.IsOpen
+                ? "a menu of the game's" : "what stands over it";
+        }
+
+        // The game's map camera and mouse look hold still while one of its windows is dragged (DraggableWindows.isCurrentlyDragging, which its own
+        // LateUpdate clears each frame), so the kit's window held by its strip says the same each frame it is held.
+        private static void HoldGameWindow()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis != null && uis.draggableWindows != null)
+            {
+                uis.draggableWindows.isCurrentlyDragging = true;
+            }
+        }
+
+        /// <summary>A fault in the kit's screen (its host has counted it): the game's screen back for the rest of the session.</summary>
+        public void Fallback(Exception e)
+        {
+            string who = UiBreaker.Tripped(_screen.Id) ? null : UiForeignGame.Blame(e);   // another mod's code that threw while the kit read or pressed its piece
+            if (UiBreaker.Tripped(_screen.Id))
+            {
+                // its mod was named already, as the fault was caught
+            }
+            else if (who != null)
+            {
+                UiForeign.Note(_screen.Id, UiPieceKind.Fault, who, (e != null ? e.GetType().Name : "?") + " on " + _screen.Name, "the screen is the game's own for the session");
+            }
+            else
+            {
+                UiDirector.Logger?.Warn("UI: " + UiText.T("reallife_ui_note_fallback") + " (" + _screen.Name + ", " + (e != null ? e.GetType().Name : "?") + ")");
+            }
+            UiBreaker.Trip(_screen.Id);
+            Remove("a fault");
+            _gaveUp = true;
+            _state = "the game's own after a fault of the kit's screen";
+        }
+
+        // The game's screen came on (UiGameWatch.OnEnable, or the bind): the kit brought over it. An opening set off from inside one
+        // (the game's screen switched off and on again by something the bringing calls) is refused: the opening under way brings the
+        // kit, and the two can never go round until the stack runs out.
+        internal void Opened()
+        {
+            if (_root == null || _classic)
+            {
+                return;
+            }
+            if (!_opening.Enter())
+            {
+                UiReentry.Refused("UiGameHost.Opened", _screen.Name);
+                return;
+            }
+            try
+            {
+                if (!(_screen is IUiGameOffers) && OthersAdded())
+                {
+                    Classic();   // another mod put something on this screen that the kit does not draw: the game's own view, until it closes
+                    return;
+                }
+                Bring();
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, null);
+                Fallback(e);
+            }
+            finally
+            {
+                _opening.Leave();
+            }
+        }
+
+        internal void Closed()
+        {
+            _classic = false;   // the classic view lasts until the screen closes, and the next opening is the kit's again
+            _back = null;
+            _underMenu = false;
+            if (_root == null)
+            {
+                return;
+            }
+            _host.Hide();
+            _root.SetActive(false);
+            _conceal.Show();
+            Shown(false);
+        }
+
+        // A frame while the game's screen shows: a call handed back, the menu's fade followed, a box over it.
+        internal void Watch()
+        {
+            using var cost = _host != null && _host.Cost != null ? _host.Cost.Time(UiWork.Frame) : default;
+            if (_back != null && _back())
+            {
+                _back = null;
+                _classic = false;
+                if (_root != null)
+                {
+                    Bring();
+                    UiDirector.Logger?.Info(_screen.Name + " (kit): the game's own view is done, the kit is back");
+                }
+            }
+            UiForeignWindows.Poll();   // four times a second at most: another mod's window opened over the kit
+            if (_root == null || _classic)
+            {
+                return;
+            }
+            if (_screen.Kind == UiGameKind.Panel)
+            {
+                // The game's pause menu (and the options or blueprints opened from it) hides the HUD under it, the dialogue's
+                // panel with it, so the kit's panel leaves too and is back the moment the menu closes.
+                bool menu = global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible || global::BlueprintsUI.BlueprintsPanel.IsOpen;
+                if (menu && _root.activeSelf)
+                {
+                    _host.Hide();
+                    _root.SetActive(false);
+                    _underMenu = true;
+                }
+                else if (!menu && _underMenu)
+                {
+                    Bring();
+                }
+                // A box over a panel of the HUD (the bank's question over its loan form) stands above the kit's canvas, and the
+                // phone opened beside a conversation takes the keys: the panel stays drawn and only its keys wait, so one key is
+                // never the box's (or the phone's) and the panel's at once.
+                Hold(!UiForeignRules.KitHasKeys(UiForeignWindows.Up, UiBoxes.Up || UiBoxes.Over || global::UI.Smartphone.FullMenu.IsOpen, false));
+                return;
+            }
+            if (_screen.Kind != UiGameKind.App)
+            {
+                if (_screen.Kind == UiGameKind.Overlay && _screen is IUiGameWay keyed && keyed.Keys)
+                {
+                    // An overlay with keys of its own (Fred's card): the game's pause menu, options, blueprints, All apps, a box or another
+                    // mod's window over the world has the keys first, so Escape there is the game's, never this card's Skip. The pause
+                    // menu's own kit is that menu: its being open held its keys and left its clicks undrawn.
+                    bool pause = global::UI.MiniMenu.MiniMenu.IsOpen && _screen.Id != PauseKits.PauseId;
+                    // Options' own kit is that window: its being open holds the others' keys, not its own.
+                    bool options = global::Scenes.MainMenu.Options.IsVisible && _screen.Id != OptionsKits.CityId;
+                    Hold(!UiForeignRules.KitHasOverlayKeys(pause || options
+                        || global::BlueprintsUI.BlueprintsPanel.IsOpen, global::UI.Smartphone.FullMenu.IsOpen, UiBoxes.Up || UiBoxes.Over, UiForeignWindows.Up));
+                }
+                if (_screen.Kind == UiGameKind.Box)
+                {
+                    Hold(UiForeignWindows.Up);   // a window of another mod's over a question: its keys first
+                }
+                return;
+            }
+            if (Fade() && _host.enabled)
+            {
+                _host.Hide();   // the menu is closing (View on map does that on its way to the map): no key acts on a screen leaving
+            }
+            // A box of the game's own over the screen steps the kit aside so it is seen and answered; one the kit draws only holds the keys.
+            bool own = UiBoxes.Up && !UiBoxes.Drawn;
+            if (_root.activeSelf == own)
+            {
+                _root.SetActive(!own);
+                if (!own)
+                {
+                    _host.Show();
+                }
+            }
+            Hold(!UiForeignRules.KitHasKeys(UiForeignWindows.Up, UiBoxes.Up, UiBoxes.Over));
+        }
+
+        // Another mod's pieces on this screen: the parts the screen names, then its top level against the snapshot taken at the bind.
+        // Said once each in Player.log; true when any is shown now, and the screen is then the game's own view until it closes.
+        private bool OthersAdded()
+        {
+            if (_found == null)
+            {
+                return false;
+            }
+            string handled = _screen is IUiGameOffers ? "the screen offers it in its own way" : "the screen shows the game's own view until it closes";
+            int shown = _top.Added(_found.transform, _screen.Id, null, handled);
+            if (_screen is IUiGameParts parts)
+            {
+                _parts.Clear();
+                parts.Parts(_found, _parts);
+                for (int i = 0; i < _parts.Count; i++)
+                {
+                    shown += _top.Added(_parts[i].Container, _screen.Id, _parts[i].GameNames, handled);
+                }
+            }
+            return shown > 0;
+        }
+
+        // Shows the kit over the game's screen, its leaves hidden, arriving.
+        private void Bring()
+        {
+            _underMenu = false;
+            _conceal.Hide();
+            Sort();
+            if (_screen.Kind == UiGameKind.App)
+            {
+                Fade();
+            }
+            _root.SetActive(true);
+            _root.transform.SetAsLastSibling();
+            _host.Show();
+            if (_held)
+            {
+                _host.Hold(true);
+            }
+            Shown(true);
+        }
+
+        // A box the kit draws holds the keys of the screens under it (UiBoxes.Drawn); an app tells the frame to take the menu's chrome.
+        private void Shown(bool shown)
+        {
+            if (_shown == shown)
+            {
+                return;
+            }
+            _shown = shown;
+            UiForeignWindows.Shown(shown);
+            if (_screen.Kind == UiGameKind.Box)
+            {
+                bool any = false;
+                for (int i = 0; i < Hosts.Count; i++)
+                {
+                    any |= Hosts[i]._screen.Kind == UiGameKind.Box && Hosts[i]._shown;
+                }
+                UiBoxes.Drawn = any;
+            }
+            else if (_screen.Kind == UiGameKind.App)
+            {
+                FacesChanged?.Invoke();
+            }
+        }
+
+        // The game fades its full menu in and out, and View on map closes it on the way to the map. The kit stands on a
+        // canvas of its own, so it takes the menu's fade to come and go with it rather than hang on over the map. True
+        // while the menu is closing.
+        private bool Fade()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            CanvasGroup menu = uis != null && uis.fullMenu != null ? uis.fullMenu.canvasGroup : null;
+            if (_group != null && menu != null && !Mathf.Approximately(_group.alpha, menu.alpha))
+            {
+                _group.alpha = menu.alpha;
+            }
+            return Closing();
+        }
+
+        // True while the full menu is closing or closed: an app of it on the kit is on its way out.
+        private static bool Closing()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            return uis != null && uis.fullMenu != null && !global::UI.Smartphone.FullMenu.IsOpen;
+        }
+
+        // Set again each time the kit shows: a canvas made under a switched off parent is only nested once that parent comes on.
+        private void Sort()
+        {
+            if (_canvas != null)
+            {
+                _canvas.overrideSorting = true;
+                _canvas.sortingOrder = OrderNow();
+            }
+        }
+
+        // A window the game opens from inside an app of the full menu (a store's goods, a rival's staff from BizMan) has a canvas
+        // under the one the kit draws the app and its frame on, so it drew at its own order and the player saw nothing: while
+        // the menu is up it stands over the app and its frame (All apps one above the app), as the game's window stood over its app.
+        private int OrderNow()
+        {
+            return UiHostRules.OverMenu(_order, AppOrder(), _screen.Kind == UiGameKind.Box && global::UI.Smartphone.FullMenu.IsOpen);
+        }
+
+        // Often the screen is only not built yet, so it is looked at again a little later, a few times a city.
+        private void Miss(string why)
+        {
+            _misses++;
+            if (UiBindRules.Stops(_misses))
+            {
+                _stopped = true;
+                _state = "the game's own for this city (" + why + ")";
+                GameUi.UiClone.Fallback(_screen.Name + " is not built as this version expects (" + why + "), so it stays the game's own until the next city");
+                return;
+            }
+            float wait = UiBindRules.Wait(_misses);
+            _nextLook = Time.unscaledTime + wait;
+            _state = "waiting: " + why + ", looked at " + _misses + " time(s)";
+            if (_misses == 1)
+            {
+                UiDirector.Logger?.Info("UI: " + _screen.Name + " is not ready for the RLO interface yet (" + why + "); looked at again in "
+                    + wait.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " s.");
+            }
+        }
+    }
+}

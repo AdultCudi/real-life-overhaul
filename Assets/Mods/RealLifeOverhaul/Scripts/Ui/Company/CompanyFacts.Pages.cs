@@ -1,0 +1,292 @@
+using System;
+
+namespace RealLifeOverhaul.Ui
+{
+    // The tabs with a shape of their own (the mockups): the managers' tree and profile, the rota's week and day, tax and licences.
+
+    /// <summary>A switch of a manager's decisions: what they decide and who decides it now.</summary>
+    public struct CompanyTask
+    {
+        public string Id;
+        public UiIcon Icon;
+        public string Title, Line;
+        public bool On, Disabled;
+        public string Who;                      // the word at the switch's left: the manager's first name, or "You"
+        public string Why;
+        public CompanyAct Act;
+    }
+
+    /// <summary>A limit of a manager: its words, its value and the two steps.</summary>
+    public struct CompanyLimit
+    {
+        public string Title, Sub, Value;
+        public bool CanLess, CanMore, Disabled;
+        public string Why;
+        public CompanyAct Less, More;
+        public CompanyAct Typed;                // the act a figure typed into the field does: the director reads the typed figure from C
+    }
+
+    /// <summary>The page of the one chosen in the managers' tree: a manager, an executive, the owner, a crew member or an open post.</summary>
+    public sealed class CompanyProfile
+    {
+        public string Id;
+        public string Name, Role, Status;
+        public UiRole StatusTone = UiRole.Ok;
+        public float Hue;
+        public UiRole Ring = UiRole.Ok;
+        public UiIcon Glyph = UiIcon.None;      // a glyph on a tile in place of the face, for a post nobody holds (never a face for nobody)
+        public UiRole GlyphTint = UiRole.None;
+        public string[] FactLabels = new string[0];
+        public string[] FactValues = new string[0];
+        public string WaitingText;              // "1 question waiting for you" over its line; null for none
+        public string WaitingLine;
+        public CompanyButton Waiting;
+        public string TasksTitle, TasksHint;
+        public CompanyTask[] Tasks = new CompanyTask[0];
+        public string LimitsTitle;
+        public CompanyButton LimitsAll;         // the link to the page of every limit the manager keeps
+        public CompanyLimit[] Limits = new CompanyLimit[0];
+        public string RouteTitle, RouteSub;     // "Questions Ray cannot decide go to", "Meera Iyer picks up what you leave for a day"
+        public string[] RouteOptions = new string[0];
+        public int RouteChosen;
+        public CompanyAct[] RouteActs = new CompanyAct[0];
+        public string GradesTitle;
+        public string[] GradeLabels = new string[0];
+        public int[] GradeValues = new int[0];
+        public string LogTitle, LogAll;
+        public CompanyDone[] Log = new CompanyDone[0];
+        public CompanyAct LogOpen;
+        public string CrewTitle, CrewCount;
+        public int CrewTotal;                   // the crew there are, of which Crew holds the first rows: the rest are told as "and N more"
+        public CompanyItem[] Crew = new CompanyItem[0];
+        public CompanyButton[] Buttons = new CompanyButton[0];
+        public string Note;
+        public CompanyBlock[] More = new CompanyBlock[0];       // what a kind of node has besides (an executive's area figures, an open post's candidates)
+    }
+
+    /// <summary>The managers tab's facts: the tree of who decides what, and the page of the one chosen.</summary>
+    public sealed class CompanyManagersFacts
+    {
+        public bool PartOff;
+        public string OffTitle, OffBody;
+        public UiOrgNode[] Tree = new UiOrgNode[0];     // every row, in order, with the levels (the folds are the view's)
+        public string[] TreeIds = new string[0];        // each row's id
+        public string TreeTitle, TreeFoot;
+        public string[] Filters = new string[0];        // "All", "Needs you", "Open posts"
+        public string[] FilterIds = new string[0];      // on the policy centre: the node each scope chip picks
+        public string[] TreeDistricts = new string[0];  // each tree row's district, by its name; null for the owner and the executives (the district filter reads it)
+        public bool[] TreeNeeds = new bool[0];          // each tree row: something at its place waits for the owner (the state filter reads it)
+        public string[] Districts = new string[0];      // the districts the places stand in, in order of first appearance: the district filter turns through them
+        public string Chosen;                           // the id of the row the page shows
+        public CompanyProfile Profile;                  // null while nothing is chosen
+        public CompanyPage Sub = new CompanyPage();     // the page of a sub page (the inbox, the policy centre, the dashboards, the seats...): a list and a card
+        public string Empty;
+        public bool Deep;
+    }
+
+    /// <summary>A person of the rota: their name and role and their shift on each day.</summary>
+    public struct CompanyRotaPerson
+    {
+        public string Name, Role, Hours;
+        public float Hue;
+        public UiRole Ring, HoursTone;
+        public string[] Shifts;                 // seven: "07-15", or null for a day off
+        public UiRole[] Tones;                  // seven: None, Warn for a shift that breaks a demand
+        public bool ToHire;                     // a person the plan would take on: a glyph tile in place of a portrait
+    }
+
+    /// <summary>A rung of the planner's ladder: what the plan comes to, and the button that uses it.</summary>
+    public struct CompanyRung
+    {
+        public string Name, Line, Hours, Net, Gain;
+        public bool Advised;
+        public CompanyButton Use;
+        public CompanyButton Look;              // opens the rung's week to read, applying nothing
+        public string Chip;                     // a short word shown in place of Use where the plan cannot be used (yet): "Hire first", "In use"
+        public UiRole ChipTone;
+    }
+
+    /// <summary>A person on the advice page: what they ask for as a range of hours a week, and what the advised plan gives them.</summary>
+    public struct CompanyRotaFolk
+    {
+        public string Name, Role, Asks, Figure, Note;   // Asks: "20 to 32 hours a week"; Figure: the plan's hours; Note: "4 h over", or null
+        public float Hue;
+        public UiRole Ring, Tone;
+        public int Least, Most, Plan;           // the range asked (Most 0: no ceiling) and the hours the plan gives, for the bar; Least and Most both 0: no range
+    }
+
+    /// <summary>A run of hours a rung opens or closes against the hours kept now: when, what, what it is worth and why.</summary>
+    public struct CompanyRotaChange
+    {
+        public string Title, Sub, Figure;       // "Tuesday, 06:00 to 08:00 opens"; why; the money it comes to
+        public bool Opens;
+    }
+
+    /// <summary>One rung of the planner's ladder read as a week, without applying it: who works when, what it comes to, and what it changes.</summary>
+    public sealed class CompanyRotaLook
+    {
+        public string Name, Line, Why;
+        public bool Advised;
+        public string[] FigureLabels = new string[0];
+        public string[] FigureValues = new string[0];
+        public CompanyRotaPerson[] People = new CompanyRotaPerson[0];
+        public string[] DayTotals = new string[7];
+        public string TotalHours;
+        public string ChangesTitle, ChangesNone;
+        public CompanyRotaChange[] Changes = new CompanyRotaChange[0];
+        public CompanyButton Use, Back;
+        public string Chip;                     // in place of Use where the plan takes people who are not hired yet
+    }
+
+    /// <summary>The floor of crew a plan asks for hour by hour, drawn under its edit page.</summary>
+    public sealed class CompanyFloor
+    {
+        public string Title;
+        public string[] Hours = new string[0];
+        public int[] Crew = new int[0];
+    }
+
+    /// <summary>A place's rota: the plan form, the week by person and day, the day hour by hour, the needs, and the planner's advice.</summary>
+    public sealed class CompanyRotaPlace
+    {
+        public string Id, Name, Sub;
+        public string Refused;                              // why there is no rota to show (a warehouse, no stations, unread)
+        public string Weekly;                               // "Week 31, open 07:00 to 23:00"
+        // The plan form.
+        public string[] PlanNames = new string[0];
+        public int PlanChosen;
+        public string[] RepeatOptions = new string[0];
+        public int Repeat;
+        public CompanyAct[] RepeatActs = new CompanyAct[0];
+        public string HoursValue;
+        public bool HoursLess, HoursMore;
+        public CompanyAct HoursLessAct, HoursMoreAct, HoursTypeAct;
+        public bool Overtime;
+        public CompanyAct OvertimeAct;
+        public CompanyButton Copy, Fill, Back, Edit;
+        public string ModeTitle, ModePicked;                // "Planner mode"; what Auto picked, when Auto is chosen
+        public string[] ModeOptions = new string[0];
+        public int Mode;
+        public CompanyAct[] ModeActs = new CompanyAct[0];
+        // The week.
+        public string[] DayNames = new string[7];
+        public int Day;                                     // the day in view
+        public CompanyRotaPerson[] People = new CompanyRotaPerson[0];
+        public string[] DayTotals = new string[7];
+        public string TotalHours;
+        public string SummaryTitle;
+        public string[] SummaryLabels = new string[0];
+        public string[] SummaryValues = new string[0];
+        public UiRole[] SummaryTones = new UiRole[0];
+        public string Ahead;                                    // the dated plan that holds next, against the one in view: its days, its hours cap and its floor of crew; null for none
+        // The day, hour by hour.
+        public string DayTitle, DayNote, DayShort;           // "Tuesday, hour by hour", its note, and the day's name alone for a room too narrow for the whole
+        public string[] HourLabels = new string[0];
+        public int[] OnShift = new int[0];
+        public int[] Needed = new int[0];
+        public string[] Legend = new string[0];
+        public UiBoardModel Board;                          // the day as lanes of people on an hour ruler
+        public string[] DayFigureLabels = new string[0];    // the day's own figures under its board: served, lost, takings, wages
+        public string[] DayFigureValues = new string[0];
+        // The needs by time block.
+        public string NeedsTitle;
+        public string[] NeedWhen = new string[0];
+        public string[] NeedWho = new string[0];
+        // The planner's ladder.
+        public string AdviceTitle, AdviceNote;
+        public CompanyRung[] Rungs = new CompanyRung[0];
+        public string FolkTitle;
+        public CompanyRotaFolk[] Folk = new CompanyRotaFolk[0]; // your people against the advised plan
+        public CompanyBlock[] Beside = new CompanyBlock[0];     // stations that would pay, stations out of order, goods that run out
+        public CompanyRotaLook Look;                            // the rung in view (read only), or null for the ladder
+        public CompanyCard RefusedCard;                         // what a place with no rota has instead, with the way on to Staff
+    }
+
+    /// <summary>The rota tab's facts: places with their plans, and the chosen place's page.</summary>
+    public sealed class CompanyRotaFacts
+    {
+        public bool PartOff;
+        public string OffTitle, OffBody;
+        public CompanyList Places = new CompanyList();     // a place's row, then its plans as dim rows: ids "p:<place>" and "pl:<place>:<plan>"
+        public CompanyRotaPlace Place;
+        public CompanyCard Edit;                            // the plan being edited (SubEdit), a generic card
+        public CompanyFloor Floor;                          // the edit page's floor of crew by hour
+    }
+
+    /// <summary>A licence or permit as a row of the tax tab's table: what, where, who handles it, how it stands and what to do.</summary>
+    public struct CompanyLicence
+    {
+        public string Id;
+        public UiIcon Icon;
+        public string Name, Place, Manager;
+        public float ManagerHue;
+        public string State;
+        public UiRole StateTone;
+        public string Day;
+        public CompanyButton Action;
+        public bool HasAction;
+        public CompanyAct Open;
+    }
+
+    /// <summary>A line of the tax statement: a label and its figure, bold for a subtotal.</summary>
+    public struct CompanyStatementLine
+    {
+        public string Label, Value;
+        public bool Strong;
+        public UiRole Tone;
+    }
+
+    /// <summary>The tax and licences tab's facts: what needs the owner, the licences, what is coming up, the quarter so far, the returns paid and the property tax.</summary>
+    public sealed class CompanyTaxFacts
+    {
+        public bool PartOff;
+        public string OffTitle, OffBody;
+        // The lead: a manager or the finance chief's question about the reserve.
+        public bool HasLead;
+        public string LeadKicker, LeadTitle, LeadBody;
+        public string LeadAsker;
+        public float LeadHue;
+        public CompanyButton[] LeadButtons = new CompanyButton[0];
+        // The licences.
+        public string LicencesTitle, LicencesCount;
+        public CompanyLicence[] Licences = new CompanyLicence[0];
+        public string LicencesEmpty;
+        // Coming up.
+        public CompanyDone[] ComingUp = new CompanyDone[0];
+        // The quarter so far; where it has begun, how far through it the day is (the bar under the figures)
+        public string QuarterTitle, QuarterRange;
+        public int QuarterDay, QuarterLen;
+        public string QuarterDayText;
+        // The permits the businesses do not need, with their fee and term (under what is coming up), and the accountants' terms (under the tools): what the tax page can do, said whole.
+        public string ExtraTitle, TermsTitle;
+        public CompanyItem[] Extra = new CompanyItem[0], Terms = new CompanyItem[0];
+        public CompanyStatementLine[] Quarter = new CompanyStatementLine[0];
+        public CompanyBlock[] ReserveControls = new CompanyBlock[0];    // what the owner does with the reserve: the figure to set aside, the finance chief's top-up switch
+        // Paid this year.
+        public string PaidTitle;
+        public CompanyItem[] Paid = new CompanyItem[0];
+        public string PaidEmpty;
+        // The tools: the return, the accountant, the cash off the books.
+        public string ToolsTitle;
+        public CompanyItem[] Tools = new CompanyItem[0];
+        // Property tax.
+        public string PropertyTitle, PropertyNote;
+        public CompanyStatementLine[] Property = new CompanyStatementLine[0];
+        public CompanyCard Card;                                        // a sub page's card (the return, the accountant, a business's cash, a licence)
+    }
+
+    /// <summary>Everything the Company app can show, as plain data. Only the tab in view is filled; the rest stay as reset.</summary>
+    public sealed partial class CompanyFacts
+    {
+        public CompanyOverviewFacts Overview = new CompanyOverviewFacts();
+        public CompanyPage Staff = new CompanyPage();
+        public CompanyManagersFacts Managers = new CompanyManagersFacts();
+        public CompanyRotaFacts Rota = new CompanyRotaFacts();
+        public CompanyPage Marketing = new CompanyPage();
+        public CompanyPage Cover = new CompanyPage();
+        public CompanyTaxFacts Tax = new CompanyTaxFacts();
+        public CompanyCard Business;            // a business's page (Overview, SubBusiness)
+        public CompanyQuestion Question;        // the escalation open as a card, when one is
+        public bool Deep;                       // Deep Mode: the policy centre and the levels are in play
+    }
+}

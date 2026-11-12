@@ -54,13 +54,14 @@ namespace RealLifeOverhaul.Economy
                 }
                 Forgotten();
                 RegionRound(day, Save.Hour);   // the regional managers appoint and replace before the escalations are handled
-                int settled = Handle(day, Save.Hour, false);
+                int handed = CompanyDay.HandDownRound(this, CompanyText.T("reallife_hier_you"), day, Save.Hour);
+                int settled = CompanyDay.HandleRound(this, day, Save.Hour, false);
                 Week(day);
                 TellOwner();
                 if (Verbose)
                 {
                     Logger?.Info("Company check (hierarchy, day " + day + "): " + _managed.Count + " place(s) looked at, " + (_hier.NextId - raised) + " new escalation(s) or entries, "
-                                 + settled + " settled by a regional manager or an executive, " + _hier.OpenAt(EscalationRules.LevelOwner) + " waiting for you; "
+                                 + handed + " passed down, " + settled + " settled by a regional manager or an executive, " + _hier.OpenAt(EscalationRules.LevelOwner) + " waiting for you; "
                                  + ((UnityEngine.Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
@@ -81,7 +82,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 _ownerNew = 0;
-                Handle(day, hour, true);
+                CompanyDay.HandleRound(this, day, hour, true);
                 TellOwner();
             }
             catch (Exception e)
@@ -121,6 +122,18 @@ namespace RealLifeOverhaul.Economy
                 int first = asked > 0 && offered > 0 ? Math.Min(asked, offered) : Math.Max(asked, offered);
                 t.Oldest = first > 0 && (t.Oldest == 0 || first < t.Oldest) ? first : t.Oldest;
             }
+        }
+
+        /// <summary>A manager's switch: a question they cannot decide, left with the owner a day, passes to the area's executive (the policy decides what they may settle).</summary>
+        public void ManagerHandDown(string place, bool on)
+        {
+            ManagerFile m = ManagersOn ? OwnOf(place) : null;
+            if (m == null || m.HandDown == on)
+            {
+                return;
+            }
+            m.HandDown = on;
+            Changed();
         }
 
         private StaffTally TallyOf(string place, bool make)
@@ -288,37 +301,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A new escalation, handed to the first holder in post who may settle it under the policy; null if one is open already.</summary>
+        /// <summary>A new escalation, handed to the first holder in post who may settle it under the policy (CompanyDay.Escalate).</summary>
         private Escalation Raise(EscalationKind kind, ManagedPlace mp, int a, int b, int c, string subject, string detail, int day)
         {
-            int level = Holder(kind, mp, (int)Rung.StoreManager);
-            Escalation e = _hier.Add(kind, mp.Place.Place, level, day);
-            e.A = a;
-            e.B = b;
-            e.C = c;
-            e.Subject = HierarchyStore.Clean(subject);
-            e.Detail = HierarchyStore.Clean(detail);
-            e.By = mp.Own != null ? HierarchyStore.Clean(mp.Own.Name) : string.Empty;
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Raised, (int)Rung.StoreManager, e.By, e.Place, day, Save.Hour);
-            entry.A = e.Id;
-            entry.B = e.Kind;
-            entry.C = level;
-            _ownerNew += level == EscalationRules.LevelOwner ? 1 : 0;
-            Logger?.Info("Company: " + e.By + " (manager of " + mp.Place.Name + ") escalated " + kind + " (" + a + ", " + b + ", " + c + ") to " + HolderWords(level, kind, mp) + ".");
-            return e;
+            return CompanyDay.Escalate(this, kind, mp.Place.Place, mp.Own, a, b, c, subject, detail, day, Save.Hour);
         }
 
         // The first holder above a level who is in post and may settle this kind under the policy; the owner if nobody is.
         private int Holder(EscalationKind kind, ManagedPlace mp, int from)
         {
-            int approver = Rule(mp, PolicyField.Approver), sources = Rule(mp, PolicyField.Sources);
-            bool region = RegionAtWork(AreaOf(mp)) != null, executive = ExecutiveAtWork(EscalationRules.AreaOf(kind)) != null;
-            int level = EscalationRules.Next(from, region, executive);
-            while (level < EscalationRules.LevelOwner && !EscalationRules.Tries(kind, level, approver, sources))
-            {
-                level = EscalationRules.Next(level, region, executive);
-            }
-            return level;
+            return CompanyDay.Holder(this, kind, mp.Place.Place, from);
         }
 
         /// <summary>The regional manager of a region who is at work today; null for none.</summary>
@@ -348,56 +340,6 @@ namespace RealLifeOverhaul.Economy
                 return "the " + EscalationRules.AreaOf(kind) + " executive" + (x != null ? " (" + x.Name + ")" : string.Empty);
             }
             return "you";
-        }
-
-        /// <summary>
-        /// Every open escalation held below the owner tried once by its holder; settled, or passed to the next holder who may
-        /// settle it. With <paramref name="exceptionsOnly"/> only the exceptions to the pay band, at the staff hour. Returns
-        /// how many were settled.
-        /// </summary>
-        private int Handle(int day, int hour, bool exceptionsOnly)
-        {
-            int settled = 0;
-            for (int i = 0; i < _hier.Escalations.Count; i++)
-            {
-                Escalation e = _hier.Escalations[i];
-                if (!e.Open || e.Level >= EscalationRules.LevelOwner || (exceptionsOnly && e.Kind != (int)EscalationKind.Exception))
-                {
-                    continue;
-                }
-                settled += TryOne(e, day, hour) ? 1 : 0;
-            }
-            return settled;
-        }
-
-        // One escalation tried by its holder: settled (or found lapsed), or passed up. True when settled.
-        private bool TryOne(Escalation e, int day, int hour)
-        {
-            ManagedPlace mp = ManagedAt(e.Place);
-            if (mp == null)
-            {
-                Close(e, EscalationState.Cleared, string.Empty, day);
-                return false;
-            }
-            var kind = (EscalationKind)e.Kind;
-            string who;
-            bool can = HolderName(e, mp, out who) && EscalationRules.Tries(kind, e.Level, Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.Sources));
-            bool done = false;
-            if (can)
-            {
-                done = Settle(e, mp, e.Level, who, day, hour);
-            }
-            if (!e.Open)
-            {
-                return done;   // settled, or what it asked about lapsed meanwhile
-            }
-            if (done)
-            {
-                Settled(e, mp, who, day, hour);
-                return true;
-            }
-            PassUp(e, mp, who, day, hour);
-            return false;
         }
 
         private bool HolderName(Escalation e, ManagedPlace mp, out string who)
@@ -444,31 +386,10 @@ namespace RealLifeOverhaul.Economy
             return mp.Own == null || mp.Own.Keep <= 0 || mp.Place.Staff >= mp.Own.Keep;
         }
 
-        private void Settled(Escalation e, ManagedPlace mp, string who, int day, int hour)
-        {
-            int level = e.Level;
-            Close(e, EscalationState.Resolved, who, day);
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Settled, level, who, e.Place, day, hour);
-            entry.A = e.Id;
-            entry.B = e.Kind;
-            ExecutiveFile x = level == EscalationRules.LevelExecutive ? ExecutiveAtWork(EscalationRules.AreaOf((EscalationKind)e.Kind)) : null;
-            if (x != null)
-            {
-                x.Decided++;
-            }
-            Logger?.Info("Company: " + who + " settled the " + (EscalationKind)e.Kind + " escalation of " + mp.Place.Name + ".");
-        }
-
         private void PassUp(Escalation e, ManagedPlace mp, string who, int day, int hour)
         {
             int next = Holder((EscalationKind)e.Kind, mp, e.Level);
-            e.Level = next;
-            e.Moved = day;
-            e.By = HierarchyStore.Clean(who);
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Passed, LevelOfHolder(e.Level), who, e.Place, day, hour);
-            entry.A = e.Id;
-            entry.B = next;
-            entry.C = e.Kind;
+            CompanyDay.PassedUp(_hier, e, next, who, day, hour);
             _ownerNew += next == EscalationRules.LevelOwner ? 1 : 0;
             Logger?.Info("Company: the " + (EscalationKind)e.Kind + " escalation of " + mp.Place.Name + " passed up to " + HolderWords(next, (EscalationKind)e.Kind, mp)
                          + (who.Length > 0 ? " by " + who + ", who could not settle it under the policy" : string.Empty) + ".");
@@ -481,13 +402,7 @@ namespace RealLifeOverhaul.Economy
 
         private void Close(Escalation e, EscalationState state, string who, int day)
         {
-            e.State = (int)state;
-            e.Moved = day;
-            if (!string.IsNullOrEmpty(who))
-            {
-                e.By = HierarchyStore.Clean(who);
-            }
-            _hier.Settled += state == EscalationState.Resolved ? 1 : 0;
+            _hier.Close(e, state, who, day);
         }
 
         // The escalations newly handed to the owner this round, in one notice that opens them.
@@ -731,36 +646,14 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         private bool Approve(Escalation e, ManagedPlace mp, int level, string who, int day, int hour, bool owner)
         {
-            StaffFile f = _state.Employee(e.Subject);
-            bool offer = e.C == 1;
-            if (f == null || (offer ? f.PoachDay == 0 : f.AskDay == 0) || !On(CompanyPart.Staff))
-            {
-                Close(e, EscalationState.Lapsed, string.Empty, day);
-                return false;
-            }
-            int ceiling = PolicyRules.ExceptionCeiling(f.Going, Rule(mp, PolicyField.PayBand), Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.ExceptionMargin));
-            int asked = offer ? f.PoachOffer : f.AskTo;
-            if (!owner && asked > ceiling)
+            int agreed;
+            if (!CompanyDay.Approve(this, e, mp.Place.Place, level, who, owner, day, hour, out agreed))
             {
                 return false;
-            }
-            int raise = f.Raise;
-            if (offer)
-            {
-                StaffRules.OfferAnswer(f, true, day);
-            }
-            else
-            {
-                StaffRules.Answer(f, RaiseAnswer.Agree, day);
             }
             Recount();
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Approved, LevelOfHolder(level), who, mp.Place.Place, day, hour);
-            entry.A = f.Raise - raise;
-            entry.B = asked;
-            entry.C = ceiling;
-            entry.Detail = HierarchyStore.Clean(f.Name);
-            Logger?.Info("Company: " + who + " agreed " + f.Name + "'s " + (offer ? "match of a rival's offer" : "raise") + " to " + asked + " an hour (hundredths), past the band"
-                         + (owner ? "" : ", inside the approver's ceiling of " + ceiling) + ".");
+            Logger?.Info("Company: " + who + " agreed the " + (e.C == 1 ? "match of a rival's offer" : "raise") + " of " + e.Detail + " past the band" + (owner ? string.Empty
+                : ", inside the approver's ceiling") + ".");
             return true;
         }
 
@@ -884,25 +777,6 @@ namespace RealLifeOverhaul.Economy
 
         // --- The managers' decisions that go to an approver ---
 
-        /// <summary>
-        /// A request for a raise, or a rival's offer, that the band and the policy keep the manager from agreeing: with
-        /// somebody named to approve exceptions it is left open for them, an exception escalated at once, and the manager
-        /// does not answer it. False where nobody is named, and the manager answers as before.
-        /// </summary>
-        private bool ToApprover(ManagedPlace mp, StaffFile f, bool offer, int ceiling, int day)
-        {
-            if (!HierarchyOn || PolicyCatalogue.Value(PolicyField.Approver, Rule(mp, PolicyField.Approver)) == PolicyCatalogue.ApproveNobody)
-            {
-                return false;
-            }
-            if (OpenExceptionFor(f.Id))
-            {
-                return true;   // still with its approver
-            }
-            Escalation e = Raise(EscalationKind.Exception, mp, offer ? f.PoachOffer : f.AskTo, ceiling, offer ? 1 : 0, f.Id, f.Name, day);
-            return e != null;
-        }
-
         // --- The owner's answers, from the exceptions page and the dashboards ---
 
         /// <summary>
@@ -948,14 +822,10 @@ namespace RealLifeOverhaul.Economy
                         break;
                     }
                     case EscalationKind.Exception:
-                        if (how == 0)
-                        {
-                            done = Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true);
-                        }
-                        else
-                        {
-                            done = Refuse(e);
-                        }
+                        done = how == AnswerAgree ? Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true)
+                            : how == AnswerBonus ? GiveBonus(e, who, day, hour)
+                            : how == AnswerLimit ? RaiseLimit(e, mp, who, day, hour)
+                            : Refuse(e);
                         break;
                     case EscalationKind.Mood:
                     case EscalationKind.Wave:
@@ -967,6 +837,16 @@ namespace RealLifeOverhaul.Economy
                         break;
                     case EscalationKind.Proposal:
                         done = Decide(e, how == 0, day, hour);
+                        break;
+                    case EscalationKind.Lease:
+                        if (how == AnswerHaggle)
+                        {
+                            LeaseHaggle(e.Place);   // asked once: the question stays open with the new figure
+                        }
+                        else
+                        {
+                            LeaseAnswer(e.Place, how == AnswerAgree);   // closes it itself
+                        }
                         break;
                 }
             }
@@ -983,6 +863,81 @@ namespace RealLifeOverhaul.Economy
                 entry.B = e.Kind;
             }
             Changed();
+        }
+
+        /// <summary>The owner's answers to an exception: the kind's own (agree), the other (refuse), a one-off bonus, and a raise of the manager's limit that stands.</summary>
+        public const int AnswerAgree = 0, AnswerRefuse = 1, AnswerBonus = 2, AnswerLimit = 3, AnswerHaggle = 4;
+
+        /// <summary>Whether the owner's bonus answer is open for an exception: only for a request for a raise, which a bonus answers; a rival's offer it does not.</summary>
+        internal bool CanBonus(Escalation e)
+        {
+            StaffFile f = e != null && e.Kind == (int)EscalationKind.Exception && e.C != 1 ? _state.Employee(e.Subject) : null;
+            return f != null && f.AskDay > 0;
+        }
+
+        /// <summary>
+        /// The pay band and largest raise (steps) that would let the place's manager agree an exception's raise by themselves; false when even the widest
+        /// does not reach it, or the exception is a rival's offer, which a limit does not answer.
+        /// </summary>
+        internal bool LimitSteps(Escalation e, out int band, out int most)
+        {
+            band = most = 0;
+            ManagedPlace mp = e != null && e.Kind == (int)EscalationKind.Exception && e.C != 1 ? ManagedAt(e.Place) : null;
+            StaffFile f = mp != null ? _state.Employee(e.Subject) : null;
+            if (f == null || f.AskDay == 0)
+            {
+                return false;
+            }
+            // The scope above the store holds it: the company's and the region's rules are the most the store may be set to.
+            PolicySet region = _hier.Region(AreaOf(mp));
+            int bandMost = PolicyRules.Effective(_hier.Company, region, null, PolicyField.PayBand), raiseMost = PolicyRules.Effective(_hier.Company, region, null, PolicyField.RaiseMost);
+            return PolicyRules.LimitFor(f.Paid, f.Going, f.AskTo, Rule(mp, PolicyField.PayBand), Rule(mp, PolicyField.RaiseMost), bandMost, raiseMost, out band, out most);
+        }
+
+        // An exception answered with the one-off bonus in place of the raise: the request closes, the person may ask again after the rest.
+        private bool GiveBonus(Escalation e, string who, int day, int hour)
+        {
+            StaffFile f = _state.Employee(e.Subject);
+            if (f == null || e.C == 1 || f.AskDay == 0)
+            {
+                if (f == null || (e.C == 1 ? f.PoachDay == 0 : f.AskDay == 0))
+                {
+                    Close(e, EscalationState.Lapsed, string.Empty, day);
+                }
+                return false;
+            }
+            int amount = BonusOf(e.Place);
+            AnswerRaise(f.Id, RaiseAnswer.Bonus);
+            if (f.AskDay != 0)
+            {
+                return false;   // the cash did not cover it: the question stays with the owner
+            }
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Bonus, (int)Rung.Owner, who, e.Place, day, hour);
+            entry.A = amount;
+            entry.Detail = HierarchyStore.Clean(f.Name);
+            return true;
+        }
+
+        // An exception answered by raising the manager's limit: the pay band and the largest raise of the place are written (as the store's own rules, which
+        // the manager's panel mirrors) so that their decisions reach the pay asked for, and the request is agreed. The limit stands for the next ones.
+        private bool RaiseLimit(Escalation e, ManagedPlace mp, string who, int day, int hour)
+        {
+            int band, most;
+            if (!LimitSteps(e, out band, out most))
+            {
+                Notify(NotificationType.Warning, "reallife_hier_note_limit_short", null, 8f);
+                return false;
+            }
+            PolicySetRule(ScopeStore, mp.Place.Place, PolicyField.PayBand, band);
+            if (most != Rule(mp, PolicyField.RaiseMost))
+            {
+                PolicySetRule(ScopeStore, mp.Place.Place, PolicyField.RaiseMost, most);
+            }
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Limit, (int)Rung.Owner, who, mp.Place.Place, day, hour);
+            entry.A = band;
+            entry.B = most;
+            entry.Detail = HierarchyStore.Clean(mp.Own != null ? mp.Own.Name : string.Empty);
+            return Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true);
         }
 
         // An exception refused by the owner: the request answered no, or the offer let go, as the Staff tab would.
@@ -1058,7 +1013,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _ownerNew = 0;
-            TryOne(e, Save.Day, Save.Hour);
+            CompanyDay.TryOne(this, e, Save.Day, Save.Hour);
             TellOwner();
             Changed();
         }

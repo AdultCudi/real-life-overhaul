@@ -326,7 +326,7 @@ internal static partial class Program
                 for (int r = 0; r < 5; r++)
                 {
                     BuildModeRules.Look(f, r, 5, (BuildView)v, out fill, out line);
-                    inPalette &= fill >= 0 && fill < BuildModeRules.LinePlain && line >= BuildModeRules.LinePlain && line < BuildModeRules.PaletteSize;
+                    inPalette &= fill >= 0 && (fill < BuildModeRules.LinePlain || fill >= BuildModeRules.Rival) && fill < BuildModeRules.PaletteSize && line >= BuildModeRules.LinePlain && line < BuildModeRules.PaletteSize;
                 }
             }
         }

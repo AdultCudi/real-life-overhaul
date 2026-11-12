@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Adds the fines and court debts the mod keeps to the list. Default: none.</summary>
         public static Action<List<DebtLine>> OtherDebts;
 
+        /// <summary>The estate tax the player's estate would bear if it passed today (Dynasty), whole money. Default: none (null, or under nothing).</summary>
+        public static Func<long> EstateTax;
+
         /// <summary>Adds the credit accounts other features keep (the student loan) to the list: registered on the rating each time the credit side starts. Default: none.</summary>
         public static Action<List<ICreditAccount>> OtherAccounts;
 
@@ -89,6 +92,7 @@ namespace RealLifeOverhaul.Economy
             CostRow = null;
             LegalReady = null;
             OtherDebts = null;
+            EstateTax = null;
             OtherAccounts = null;
             FileClaim = null;
             ClaimOpen = null;

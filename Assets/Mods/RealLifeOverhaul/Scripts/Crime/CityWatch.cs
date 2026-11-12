@@ -18,6 +18,26 @@ namespace RealLifeOverhaul
         /// <summary>What the chance of an offence being seen is scaled by here and now: 1 without patrols.</summary>
         public static float SeenScale { get; private set; } = 1f;
 
+        /// <summary>The district the player stands in against the city's crime, from its residents (the living population: income, unemployment, the young); set by Wiring, null for none.</summary>
+        public static System.Func<float> Residents;
+
+        /// <summary>What street crime is scaled by for the residents where the player stands: 1 with none. Asked at each look for a scene, a few times a minute.</summary>
+        public static float ResidentsScale
+        {
+            get
+            {
+                try
+                {
+                    float scale = Residents != null ? Residents() : 1f;
+                    return scale > 0f && !float.IsNaN(scale) && !float.IsInfinity(scale) ? scale : 1f;
+                }
+                catch (System.Exception)
+                {
+                    return 1f;   // the street's own crime stands
+                }
+            }
+        }
+
         /// <summary>Whether the police patrol the district the player stands in, as of this hour.</summary>
         public static void Set(bool patrol)
         {

@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>Who holds a line of a cap table: the saved number of <see cref="Holder.Kind"/>.</summary>
     public enum HolderKind
     {
-        Founders = 0, Pool = 1, Vc = 2, Angel = 3, Fund = 4, Player = 5
+        Founders = 0, Pool = 1, Vc = 2, Angel = 3, Fund = 4, Player = 5, Public = 6   // the public a listing sold shares to
     }
 
     /// <summary>A line of a cap table: who, how many shares, what they put in, the preference that comes back first on a sale. Game-free.</summary>
@@ -20,8 +20,10 @@ namespace RealLifeOverhaul.Tech
         public bool ProRata;      // may keep their share in later rounds
         public bool Board;        // holds a board seat
         public long Paid;         // what a sale paid this line, cents (the day of the sale; not saved)
+        public Terms T;           // the terms the round came with (TermsStore keeps them in a line of its own); null: the plain ones
 
         public HolderKind K => (HolderKind)Kind;
+        public bool Participating => T != null && T.Participating;
         public bool Players => Kind == (int)HolderKind.Angel || Kind == (int)HolderKind.Fund || Kind == (int)HolderKind.Player;
     }
 
@@ -33,6 +35,8 @@ namespace RealLifeOverhaul.Tech
         public bool Board, ProRata;
         public int Lapse;         // the last day it can be taken
         public int Score;         // how the meeting went, 0 to 1000 (for the player's own raise)
+        public Terms T;           // the terms asked (TermsStore keeps them); null: the plain ones
+        public bool Pushed;       // the player has pushed on a term of this offer already
 
         public long Post => Pre + Amount;
         public int EquityMille => Post > 0 ? (int)(Amount * 1000 / Post) : 0;
@@ -102,6 +106,8 @@ namespace RealLifeOverhaul.Tech
         public long LastMrr;             // the recurring revenue a month when the target was set
         public long Unassigned;          // staff option shares nobody has been given yet, handed out when the firm has people
         public int OptionsChecked;       // 1 once the cap's options have been looked over for shares nobody holds
+        public readonly FirmAccount Acc = new FirmAccount();   // the firm account over the player's wallet; open once the firm has investors
+        public readonly CapRights Rt = new CapRights();        // the board's say over big spends and the salary (TermsStore keeps it)
 
         public long Total
         {

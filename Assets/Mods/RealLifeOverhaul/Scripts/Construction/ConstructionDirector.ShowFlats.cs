@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Construction
         {
             ViewingHost host = HostOf(p, key);
             int quality = ShowQuality(p);
-            int chance = ShowFlatRules.BuyerChance(quality, p.ShowStandard, _state.Firm.Reputation, host);
+            int chance = ShowFlatRules.BuyerChance(quality, p.ShowStandard, _state.Firm.Reputation, host, People(BuildDemand.Buyers));
             bool bought = forced || BuildRandom.Of(_state.Seed, p.Id, key * 7 + 5).Chance(chance);
             p.ShowViewings++;
             int price = 0;

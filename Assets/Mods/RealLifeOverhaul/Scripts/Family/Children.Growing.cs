@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Family
         {
             FamilySave s = FamilyState.S;
             int day = TimeHelper.CurrentDay;
+            int yearDays = DaysPerYear;
             for (int i = 0; i < s.Children.Count; i++)
             {
                 ChildRecord c = s.Children[i];
@@ -53,7 +54,7 @@ namespace RealLifeOverhaul.Family
                     continue;
                 }
                 float before = c.Age;
-                c.Age += years;
+                c.Age = ChildYearRules.Aged(c.Age, years, yearDays);   // counted in whole days of the child's year, so a birthday falls on its exact day
                 Args fill = Args.Us.Kid(c.Name);
                 for (int m = 0; m < Milestones.Length; m++)
                 {

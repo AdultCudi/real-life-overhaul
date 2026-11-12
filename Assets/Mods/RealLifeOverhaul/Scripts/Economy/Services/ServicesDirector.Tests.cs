@@ -228,7 +228,8 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 string place = ServicesGame.Place(reg);
-                SaleListing l = _state.Listing(place) ?? SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, ServicesCatalogue.AskingDefault, Save.Day);
+                SaleListing l = _state.Listing(place)
+                                ?? SaleRules.List(_state, place, ServicesStore.Clean(ServicesGame.Name(reg)), b.Value, ServicesCatalogue.AskingDefault, Save.Day, BooksLift(place));
                 if (l == null || _state.SaleOffers.Count >= ServicesCatalogue.OffersKept)
                 {
                     TestRefusals.TellKey(Logger, "Sale offer", "reallife_svc_refuse_listings_full");

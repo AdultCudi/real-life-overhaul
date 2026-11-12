@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The credit desk: the game side of the mod's own accounts, missed payments, the private lender and the ways out of debt,
     /// whose rules are game-free classes. <see cref="EconomyDirector"/> owns it and calls it on the game's hour, day and save
-    /// and when an app asks; once a second only while a purchase or a repossession waits. Cost: nothing per frame.
+    /// and when an app asks; once a second only while a purchase, a repossession or a new game's first loan waits. Cost: nothing per frame.
     /// </summary>
     public sealed partial class CreditDesk
     {
@@ -127,8 +127,11 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The file is open and the loans have their marks: the accounts join the rating, and what is held on a loan is written.</summary>
-        public void Start(CreditFile file, int today)
+        /// <summary>
+        /// The file is open and the loans have their marks: the accounts join the rating, and what is held on a loan is written.
+        /// <paramref name="opened"/> is true when the file was opened for this save just now, which is when a new game is given its student loan.
+        /// </summary>
+        public void Start(CreditFile file, int today, bool opened = false)
         {
             _file = file;
             AccountRules.DaysPerYear = GameCalendar.DaysPerYear;
@@ -140,6 +143,7 @@ namespace RealLifeOverhaul.Economy
                     CreditLedger.Register(file.Accounts[i]);   // a test account is never part of the rating
                 }
             }
+            StartDebtBegin(opened);   // before the loans are looked over: the one it makes is among them
             SelfCheck(today);
             ApplyHolds("the start");
             RememberOwned();
@@ -162,6 +166,7 @@ namespace RealLifeOverhaul.Economy
                 _file = null;
                 _afterSave = false;
                 _repoWaiting = false;
+                _startDebtWaiting = false;
                 BankTerms.Secured = null;
                 DebtPhone.Forget();
             }
@@ -434,6 +439,10 @@ namespace RealLifeOverhaul.Economy
             if (_repoWaiting)
             {
                 TakeVehicles(Today);
+            }
+            if (_startDebtWaiting)
+            {
+                StartDebtSecond();
             }
         }
 

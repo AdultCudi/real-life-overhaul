@@ -16,6 +16,8 @@ The district view on the city map: ten layers in its filter list tint each distr
 | `DistrictGame` | everything it touches of the game: the map's district zones and their colour, the figures from the buildings, the mouse on the map |
 | `DistrictPanel` | its window, a copy of the map's filter window beside it: the key, the card, the districts |
 | `DistrictView` | the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons |
+| `DistrictMonths` | the month's snapshot of every layer's figure, kept in the save once a calendar month, 12 at most, for "change this month" (game-free: EconomyCheck runs it) |
+| `DistrictView.Kit` | the page on the map's dock (`Ui/MapDock`) and the names with their figures over the districts, in place of the old window while its switch is on |
 | `DistrictGuide` | its options block and its feature entry (Guide figures from the rules) |
 
 ## How it talks to other features

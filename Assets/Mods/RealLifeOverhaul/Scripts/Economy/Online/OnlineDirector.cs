@@ -177,6 +177,7 @@ namespace RealLifeOverhaul.Economy
             _beforeTests = save.modData.TryGetValue(OnlineStore.TestKey, out before) && !string.IsNullOrEmpty(before) ? before : null;
             _state = state;
             _running = true;
+            ExtraStart();
             _dayOpen = false;
             _netNone.Clear();
             _index = Prices.Level;
@@ -329,15 +330,19 @@ namespace RealLifeOverhaul.Economy
             }
             var view = new OnlineApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_online_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(236, 150, 84, 255), new Color32(192, 84, 48, 255), 0.42f, "AppIcon-Online"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.VentScreen(RealLifeOverhaul.Ui.ShopLive.Instance, RealLifeOverhaul.Ui.ShopLive.ScreenId),
+                KitScreen = RealLifeOverhaul.Ui.ShopLive.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.ShoppingCart
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -349,6 +354,8 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.ShopLive.WantFrom;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on
             Badge();
         }
 
@@ -434,6 +441,7 @@ namespace RealLifeOverhaul.Economy
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[OnlineStore.Key] = OnlineStore.Write(_state);
+            ExtraSave();
             if (_beforeTests != null)
             {
                 save.modData[OnlineStore.TestKey] = _beforeTests;
@@ -452,6 +460,7 @@ namespace RealLifeOverhaul.Economy
 
         public void Open(int tab, string pick)
         {
+            RealLifeOverhaul.Ui.ShopLive.Want(tab, pick);
             if (_app != null && _running)
             {
                 _view.Want(tab, pick);
@@ -490,6 +499,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             BuildAlerts(Save.Day);
+            Revision++;
             Badge();
             _view?.Changed();
         }

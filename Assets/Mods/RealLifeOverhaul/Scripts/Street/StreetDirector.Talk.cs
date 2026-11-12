@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using Streets.Pedestrians;
 using UnityEngine;
 
@@ -38,6 +39,21 @@ namespace RealLifeOverhaul.Street
         private StreetLine _aheadLine;
         private bool _aheadNow;                // the click is the blue button asked ahead (its words may be ready)
         private bool _testAge;                 // the age test's talk: the age question is the first blue button until asked, and its checks are written
+
+        /// <summary>
+        /// A chat with somebody at work whom the street talk does not offer by itself (the vendor behind a cart, Scripts/CityLife),
+        /// begun as with anybody posed by another's hand: nothing on their body changes. False while a talk is on, the game's
+        /// dialogue is open, street talk is off or not ready, or they cannot be talked to.
+        /// </summary>
+        public static bool TalkTo(BaseHuman body)
+        {
+            StreetDirector d = Instance;
+            if (d == null || d._failed || d._chat != null || d._save == null || !Settings.StreetTalk || body == null || StreetGame.DialogOpen || !StreetGame.Usable(body))
+            {
+                return false;
+            }
+            return d.Begin(body, null, StreetFigure.Seated, Time.unscaledTime);
+        }
 
         private void TalkPressed()
         {
@@ -306,6 +322,12 @@ namespace RealLifeOverhaul.Street
             if (_chat.Menu == 0)
             {
                 AskAhead(ask, data);
+            }
+            int left = Math.Max(0, StreetRules.Turns(_chat) - _chat.Turns);   // their time: each answer of yours uses one of the turns they have for you
+            entry.Says(DialogButton.Confirm, "reallife_street_says_turn", "left", left.ToString());
+            if (ask == StreetAsk.Invite)
+            {
+                entry.Says(DialogButton.Confirm, "reallife_street_says_invite");
             }
             return entry;
         }

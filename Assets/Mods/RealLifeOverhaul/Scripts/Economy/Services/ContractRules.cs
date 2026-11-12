@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy
     /// Cleaning for other businesses, game-free and seeded. The game keeps no dirt for a business that is not the player's,
     /// so a client's floor is one figure of the mod's: it gains a day's dirt each morning and loses what visits take off.
     /// </summary>
-    public static class ContractRules
+    public static partial class ContractRules
     {
         private const int PurposeStart = 11, PurposeStandard = 12;
 

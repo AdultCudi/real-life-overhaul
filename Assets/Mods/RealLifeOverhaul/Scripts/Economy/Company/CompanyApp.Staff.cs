@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Economy
                     box.Line(CompanyText.T("reallife_co_staff_asks", "count", asks.ToString(), "amount", CompanyText.Wage(perHour)), CellTone.Yellow);
                     var buttons = box.ButtonRow();
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_staff_agree_all", () => _director.AnswerAllRaises(RaiseAnswer.Agree));
+                    InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_staff_less_all", () => _director.AnswerAllRaises(RaiseAnswer.Less));
                     InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_staff_refuse_all", () => _director.AnswerAllRaises(RaiseAnswer.Refuse));
                 }
                 box.Section("reallife_ibox_sec_now");

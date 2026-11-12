@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Careers
         public const int CountedShare = 750;      // thousandths of the day worked for it to count
         public const int OpeningsBase = 14;       // vacancies the city has open at once
         public const int OpeningsAgency = 5;      // ...more with the recruitment office
+        public const int OpeningsMost = 60;       // vacancies open at once at the most, however many the city's employers lack (the list the Careers app pages through)
         public const int OpeningsWithinReach = 3; // first posts kept open, while the player has no job, in professions they could be offered one in now
         public static readonly int[] OpeningsByCycle = { 4, 0, -3, -6 };
         public const int OpeningDaysLeast = 7, OpeningDaysMost = 14;
@@ -499,7 +500,14 @@ namespace RealLifeOverhaul.Careers
         /// <summary>How many vacancies the city has open at once.</summary>
         public static int OpeningsWanted(int cycle, bool agency)
         {
-            return Math.Max(4, OpeningsBase + OpeningsByCycle[TalentCatalogue.Clamp(cycle, 0, 3)] + (agency ? OpeningsAgency : 0));
+            return OpeningsWanted(cycle, agency, 1000);
+        }
+
+        /// <summary>The same with the city's employers' real gaps in the professions against the anchor day's (the living population): its vacancies, not a table by the cycle alone.</summary>
+        public static int OpeningsWanted(int cycle, bool agency, int people)
+        {
+            long city = (long)(OpeningsBase + OpeningsByCycle[TalentCatalogue.Clamp(cycle, 0, 3)]) * (people > 0 ? people : 1000) / 1000;
+            return (int)Math.Max(4, Math.Min(OpeningsMost, city + (agency ? OpeningsAgency : 0)));
         }
 
         /// <summary>The rung of a new vacancy from a roll of 0 to 999: mostly the first ones; never the top of a ladder.</summary>

@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Economy
         public long Stamp;                  // what it was worked out from (RotaGame.Stamp): a change means working it out again
         public readonly RotaShop Shop = new RotaShop();
         public readonly RotaProblem Problem = new RotaProblem();
+        public RotaPlanFile Plan;           // the plan in use when it was read; null for none
         public readonly RotaOutlook Outlook = new RotaOutlook();
         public readonly RotaPlan Now = new RotaPlan();          // the rota it has, rated
         public readonly RotaLadderResult Ladder = new RotaLadderResult();

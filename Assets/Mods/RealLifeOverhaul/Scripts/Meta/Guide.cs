@@ -146,6 +146,9 @@ namespace RealLifeOverhaul.Meta
             return at < 0 ? groups.Count : at;
         }
 
+        /// <summary>A line a page ends with for another feature (the living population's pointer on a business's page), by the page's feature id; null for none. Set by Wiring.</summary>
+        public static Func<string, string> PageExtra;
+
         private static string FeaturePage(Feature feature)
         {
             var text = new StringBuilder();
@@ -160,6 +163,19 @@ namespace RealLifeOverhaul.Meta
             if (StaffGuide.Points(feature.Id))
             {
                 text.Append(StaffGuide.Pointer()).Append("\n\n");
+            }
+            string extra = null;
+            try
+            {
+                extra = PageExtra != null ? PageExtra(feature.Id) : null;
+            }
+            catch (Exception)
+            {
+                extra = null;   // the page as it stands without it
+            }
+            if (!string.IsNullOrEmpty(extra))
+            {
+                text.Append(extra).Append("\n\n");
             }
 
             bool any = false;

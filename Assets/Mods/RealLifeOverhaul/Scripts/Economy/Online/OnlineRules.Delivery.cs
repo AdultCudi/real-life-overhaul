@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < shop.Orders.Count; i++)
             {
                 WebOrder o = shop.Orders[i];
-                if (o.Stage != OrderStage.Waiting)
+                if (o.Stage != OrderStage.Waiting || hour < o.PickAt)
                 {
                     continue;
                 }
@@ -124,6 +124,44 @@ namespace RealLifeOverhaul.Economy
                 o.Stage = OrderStage.Picked;
             }
             return true;
+        }
+
+        /// <summary>The owner refunds an order now: what the customer paid is given back (nothing for one not yet picked), the order is over and the rating takes it as a lost order.</summary>
+        public static bool Refund(WebShop shop, int orderId)
+        {
+            for (int i = 0; i < shop.Orders.Count; i++)
+            {
+                WebOrder o = shop.Orders[i];
+                if (o.Id != orderId)
+                {
+                    continue;
+                }
+                shop.Today.Refunds += o.Total;
+                shop.BookRefunds += o.Total;
+                shop.Today.Cancelled++;
+                Rate(shop, OnlineCatalogue.ScoreLost, o.Tilt);
+                Drop(shop, i);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>The owner sends the courier for a packed order now, without waiting for a van: it is on its way and the courier's fee is paid.</summary>
+        public static bool SendNow(WebShop shop, Site site, int hour, int orderId)
+        {
+            for (int i = 0; i < shop.Orders.Count; i++)
+            {
+                WebOrder o = shop.Orders[i];
+                if (o.Id == orderId && o.Stage == OrderStage.Picked)
+                {
+                    int metres = Metres(site, o.District);
+                    o.Stage = OrderStage.Out;
+                    o.Arrive = hour + CourierTime(metres);
+                    shop.Today.Delivery += CourierFee(metres);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void Drop(WebShop shop, int index)
@@ -249,6 +287,10 @@ namespace RealLifeOverhaul.Economy
                         book.OnTime++;
                     }
                     count.Arrived++;
+                    if (ArrivedHook != null)
+                    {
+                        book.Delivery = Math.Max(0, book.Delivery - ArrivedHook(shop, o, late));   // the customer's delivery fee comes off the courier's
+                    }
                     Rate(shop, late ? OnlineCatalogue.ScoreLate : o.Short ? OnlineCatalogue.ScoreShort : OnlineCatalogue.ScoreGood, o.Tilt);
                     ComesBack(s, shop, site, o, hour / 24, late);
                     Drop(shop, i--);

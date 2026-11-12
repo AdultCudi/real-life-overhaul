@@ -27,15 +27,19 @@ namespace RealLifeOverhaul.Markets
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new MarketApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_mkt_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(92, 196, 132, 255), new Color32(32, 120, 78, 255), 0.42f, "AppIcon-Stocks"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.StocksScreen(this),
+                KitScreen = "stocks",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.ChartLineUp
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -47,6 +51,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
         }
 
         partial void RemoveApp()

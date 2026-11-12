@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using RealLifeOverhaul.Ui;
 
 namespace RealLifeOverhaul.Districts
 {
@@ -181,34 +182,19 @@ namespace RealLifeOverhaul.Districts
             to = edges == null || band >= edges.Length ? (int?)null : edges[Math.Max(band, 0)] - 1;
         }
 
-        // Low to high. The good-bad ramp runs red, orange, yellow, light green, green; the neutral one light blue to deep blue.
-        private static readonly Tint[] GoodRamp =
-        {
-            new Tint(214, 64, 58, ZoneAlpha), new Tint(232, 140, 48, ZoneAlpha), new Tint(236, 204, 64, ZoneAlpha),
-            new Tint(150, 204, 82, ZoneAlpha), new Tint(52, 168, 83, ZoneAlpha)
-        };
-
-        private static readonly Tint[] NeutralRamp =
-        {
-            new Tint(198, 226, 246, ZoneAlpha), new Tint(142, 196, 236, ZoneAlpha), new Tint(84, 156, 220, ZoneAlpha),
-            new Tint(40, 110, 196, ZoneAlpha), new Tint(18, 64, 150, ZoneAlpha)
-        };
-
+        // The ramp is the kit's (UiTokens.Ramp), low to high, so the map's tint, the key in the panel and the ranked table's swatches are one set of colours; a violet that
+        // strengthens upward and never runs to white. Whether a higher figure is better is said in words and by the month's arrow, never by the hue.
         public static readonly Tint NoFigure = new Tint(150, 156, 162, ZoneAlpha);
 
-        /// <summary>A band's colour on a layer (grey for <see cref="None"/>).</summary>
-        public static Tint Colour(LayerSense sense, int band)
+        /// <summary>A band's colour on the ramp (grey for <see cref="None"/> or a band out of range), at the game's own zone strength.</summary>
+        public static Tint Colour(int band)
         {
             if (band < 0 || band >= Bands)
             {
                 return NoFigure;
             }
-            switch (sense)
-            {
-                case LayerSense.HighGood: return GoodRamp[band];
-                case LayerSense.LowGood: return GoodRamp[Bands - 1 - band];
-                default: return NeutralRamp[band];
-            }
+            uint rgba = UiTokens.Colour(UiTokens.Ramp(band));
+            return new Tint((byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8), ZoneAlpha);
         }
     }
 

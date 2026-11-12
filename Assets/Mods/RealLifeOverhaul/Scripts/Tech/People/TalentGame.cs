@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.Items;
 using Entities;
 using Helpers;
@@ -90,18 +91,6 @@ namespace RealLifeOverhaul.Tech
         public static string NameOf(EmployeeInstance e)
         {
             return e != null && e.characterData != null && !string.IsNullOrEmpty(e.characterData.name) ? e.characterData.name : "?";
-        }
-
-        public static bool Working(EmployeeInstance e)
-        {
-            try
-            {
-                return e.IsWorking();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         /// <summary>The game's count of hours worked today; at midnight it still holds the day before.</summary>
@@ -204,7 +193,7 @@ namespace RealLifeOverhaul.Tech
                     for (int s = 0; shifts != null && s < shifts.Count; s++)
                     {
                         WorkShift w = shifts[s];
-                        if (w != null && w.employeeId == e.id && w.type != WorkShiftType.Cleaning && !string.IsNullOrEmpty(w.itemInstanceId) && placed.ContainsKey(w.itemInstanceId))
+                        if (w != null && w.employeeId == e.id && AtStation(w, placed))
                         {
                             return true;
                         }
@@ -216,6 +205,78 @@ namespace RealLifeOverhaul.Tech
             }
             return false;
         }
+
+        /// <summary>
+        /// Everyone who has a shift at a placed station (not cleaning) in the business's schedule, as <see cref="StationShift"/> finds one, in one pass over
+        /// its shifts: a set to ask for each of thousands of professionals instead of a pass over the schedule for each. <paramref name="into"/> is cleared first.
+        /// </summary>
+        public static void StationHolders(BuildingRegistration reg, HashSet<string> into)
+        {
+            into.Clear();
+            try
+            {
+                List<ScheduleDay> days = reg != null ? reg.scheduleDays : null;
+                Dictionary<string, ItemInstance> placed = reg != null ? reg.itemInstances : null;
+                for (int d = 0; days != null && placed != null && d < days.Count; d++)
+                {
+                    List<WorkShift> shifts = days[d] != null ? days[d].workShifts : null;
+                    for (int s = 0; shifts != null && s < shifts.Count; s++)
+                    {
+                        WorkShift w = shifts[s];
+                        if (w != null && !string.IsNullOrEmpty(w.employeeId) && AtStation(w, placed))
+                        {
+                            into.Add(w.employeeId);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        // A shift at an item that stands in the business, and that is no cleaning round: the shift a desk and its work need.
+        private static bool AtStation(WorkShift w, Dictionary<string, ItemInstance> placed)
+        {
+            return w.type != WorkShiftType.Cleaning && !string.IsNullOrEmpty(w.itemInstanceId) && placed.ContainsKey(w.itemInstanceId);
+        }
+
+        /// <summary>
+        /// Everyone on a shift of the business's this game hour while it is open, as the game's own IsWorking finds one (the day's shifts of the day of the week
+        /// that cover the hour, the day open), in one pass over the day's shifts: a set to ask for each professional of the business instead of a pass over the
+        /// day's shifts for each. The employee being available (not being replaced, not absent unless covered) is asked of the employee. <paramref name="into"/> is cleared first.
+        /// </summary>
+        public static void WorkingNow(BuildingRegistration reg, HashSet<string> into)
+        {
+            into.Clear();
+            GameInstance save = Save;
+            List<ScheduleDay> days = reg != null && save != null ? reg.scheduleDays : null;
+            if (days == null)
+            {
+                return;
+            }
+            DayOfWeekOrdered today = TimeHelper.GetDayOfWeek(save.Day);
+            int hour = save.Hour;
+            for (int d = 0; d < days.Count; d++)
+            {
+                ScheduleDay day = days[d];
+                if (day == null || day.day != today || !day.isOpen || day.workShifts == null)
+                {
+                    continue;
+                }
+                for (int s = 0; s < day.workShifts.Count; s++)
+                {
+                    WorkShift w = day.workShifts[s];
+                    if (w != null && w.startingHour <= hour && w.endingHour > hour && !string.IsNullOrEmpty(w.employeeId))
+                    {
+                        into.Add(w.employeeId);
+                    }
+                }
+            }
+        }
+
+        /// <summary>True if the employee can work now: not being replaced, and not absent unless somebody covers them (the game's own test before any shift).</summary>
+        public static bool Available(EmployeeInstance e) => e != null && e.IsEmployeeAvailable();
 
         /// <summary>
         /// A professional the game's own hiring left at a business with no shifts is taken off it the game's own way (its unassigning: off

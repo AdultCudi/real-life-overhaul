@@ -447,5 +447,37 @@ namespace RealLifeOverhaul.Flare
                 Tell(NotificationType.Info, "reallife_flare_test_back_done", null);
             });
         }
+
+        /// <summary>Test: Flare on the kit, on the page asked for.</summary>
+        public void TestKit(int page)
+        {
+            if (!TestReady("Flare on the kit"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                KitPage = page;
+                if (_app == null)
+                {
+                    Tell(NotificationType.Warning, "reallife_ui_test_phone", null);
+                    return;
+                }
+                _app.Open();
+                Tell(NotificationType.Info, "reallife_flare_test_open_done", null);
+            });
+        }
+
+        /// <summary>Test: the kit switch off, then on, so the classic face and the new face both show.</summary>
+        public void TestKitSwitch()
+        {
+            if (!TestReady("Flare switch"))
+            {
+                return;
+            }
+            bool on = RealLifeOverhaul.Ui.UiScreenSwitches.On("flare");
+            RealLifeOverhaul.Ui.UiScreenSwitches.Set("ui_screen_flare", !on);
+            Tell(NotificationType.Info, on ? "reallife_flare_test_switch_off" : "reallife_flare_test_switch_on", null);
+        }
     }
 }

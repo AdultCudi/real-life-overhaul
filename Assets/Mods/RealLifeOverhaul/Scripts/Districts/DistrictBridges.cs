@@ -34,13 +34,21 @@ namespace RealLifeOverhaul.Districts
         /// <summary>What a district's customers bear against the game's price, thousandths; null while the city's economy is off.</summary>
         public static Func<string, int?> Bears;
 
+        /// <summary>The people who live in a district, by its id; -1 where the living population does not run. Default: none.</summary>
+        public static Func<string, int> Residents;
+
         public static StandingReader Standing;
         public static SupplyReader Supply;
         public static InternetReader Internet;
         public static CouncilReader Council;
 
+        /// <summary>Crimes the residents of a district would report over the crime layer's days, by its id (the living population); 0 for none. Default: none.</summary>
+        public static Func<string, int> Crime;
+
         public static void Reset()
         {
+            Crime = null;
+            Residents = null;
             Income = null;
             Footfall = null;
             Bears = null;

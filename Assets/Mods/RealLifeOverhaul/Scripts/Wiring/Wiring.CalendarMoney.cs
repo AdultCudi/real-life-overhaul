@@ -146,7 +146,7 @@ namespace RealLifeOverhaul
                         string name = car.vehicleTypeName.GetLocalization();
                         if (record.InsuredUntil > 0 && policy > 0)
                         {
-                            float premium = Mathf.Round(CarRules.Premium(car.VehicleType.price, record.Claims) * (1f + GarageBridges.InsuranceOf(car.id)));
+                            float premium = CarPhone.PremiumOf(car, record);   // as the Garage's page shows it and the renewal charges it, the car's tier counted (CarCover)
                             for (int day = MonthViewRules.FirstFrom(Math.Max(today, record.InsuredUntil + 1), policy, fromDay); day <= toDay; day += policy)
                             {
                                 CalendarEntry e = into.Add(Id, 1, i, CalendarGroup.Money, day);
@@ -197,7 +197,7 @@ namespace RealLifeOverhaul
                                 e.Sign = -1;
                                 e.Amount = cost;
                                 e.Title = CalendarText.T("reallife_calendar_hosting_title", "shop", shop.Name);
-                                e.App = OnlineDirector.AppId;
+                                e.App = OnlineDirector.AppId + GameUi.PhoneApp.WantMark + OnlineDirector.TabShops + ":shop:" + shop.Place;   // opens the site whose hosting it is
                             }
                         }
                     }

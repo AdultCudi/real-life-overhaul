@@ -30,6 +30,7 @@ internal static partial class Program
         LedgerStoriesSources();
         LedgerStoriesTexts();
         Console.WriteLine("  the City Ledger's milestone and rival stories: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
+        LedgerLeadsChecks();   // a sector's lead changing hands, and a rival tycoon's holding told as a player's company is (LedgerLeadsChecks.cs)
     }
 
     private static void LedgerStoriesKinds()
@@ -373,7 +374,7 @@ internal static partial class Program
               && links.Contains("LedgerBridges.Beaten = Beaten;") && links.Contains("LedgerBridges.TestBeat = TestBeat;"),
             "milestones' sources: the wiring hands the paper the companies, the rivals taken over, the test's takeover and the bidder's name, only with the option on");
         string market = string.Join("\n", System.IO.Directory.GetFiles(System.IO.Path.GetDirectoryName(ModSourcePath(@"Markets\MarketModel.cs")), "*.cs").Select(System.IO.File.ReadAllText));
-        Check(!market.Contains("LedgerStories") && !market.Contains("reallife_ledger_mile") && (int)MarketNewsKind.Count == 34,
+        Check(!market.Contains("LedgerStories") && !market.Contains("reallife_ledger_mile") && (int)MarketNewsKind.Count == 36 && MarketNewsKind.Reverse == (MarketNewsKind)34 && MarketNewsKind.Block == (MarketNewsKind)35,   // (the two after 33 are the stock market extras' own)
             "milestones' sources: the market is untouched: no new kind of news on its tape or in its session's lines, the stories read on each machine from what it has");
         Check(MemberText(stories, "private void StoriesCheck(LedgerEdition e, int found)").Contains("Meta.Dev.Verbose") && stories.Contains("City Ledger check (milestones and rivals)"),
             "milestones' sources: the self-check is one line an edition, with Developer diagnostics on");
@@ -413,12 +414,13 @@ internal static partial class Program
                 keys.Add(k.Head);
             }
         }
-        Check(keys.Count == 6 + 2 * 13, "milestones' texts: every story kind has its text and its headline (" + keys.Count + " keys)");
+        Check(keys.Count == 6 + 2 * 19, "milestones' texts: every story kind has its text and its headline (" + keys.Count + " keys)");
         // Each text names what its piece carries, and nothing it does not.
         var carries = new Dictionary<string, string[]>
         {
             { "beaten", new[] { "rival", "holding", "buyer", "owner", "cost", "back", "days", "quip" } }, { "bought", new[] { "bidder", "name", "price" } },
-            { "mile", new[] { "name", "mark", "value" } }, { "top", new[] { "name", "value", "other", "other_value" } }
+            { "mile", new[] { "name", "mark", "value" } }, { "top", new[] { "name", "value", "other", "other_value" } },
+            { "lead", new[] { "name", "value", "other", "other_value", "sector" } }
         };
         for (int l = 0; l < 3; l++)
         {

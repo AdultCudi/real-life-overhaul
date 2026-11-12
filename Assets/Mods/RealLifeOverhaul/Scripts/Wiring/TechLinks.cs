@@ -27,8 +27,13 @@ namespace RealLifeOverhaul
                 TechBridges.Held = CompanyLinks.Holds;
                 TechBridges.Books = Books;
                 TechBridges.Stock = Stock;
+                TechBridges.OwnStock = OwnStock;
                 TechBridges.Prosecute = TaxCases.FileDataProtection;
                 TechBridges.Claim = Claim;
+                TechBridges.InvestorClaim = InvestorClaims.File;
+                TechBridges.InvestorFraud = TaxCases.FileInvestorFraud;
+                TechBridges.Skill = Skill;
+                TechBridges.Learn = Learn;
                 TechBridges.Fame = Fame;
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
@@ -45,10 +50,14 @@ namespace RealLifeOverhaul
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
+                FoundLinks.Connect();   // the go to market sessions, the population's people and niches, the study's route for skills
+                BakeLinks.Connect();   // the bake off's desk session
             }
 
             internal static void Disconnect()
             {
+                BakeLinks.Disconnect();
+                FoundLinks.Disconnect();
                 TechBridges.Reset();
                 News.Extra = _paperBefore;
                 _paperBefore = null;
@@ -283,6 +292,21 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The player's own company on the stock market while it trades: a studio's release moves it as the rivals' move theirs.
+            private static int OwnStock()
+            {
+                try
+                {
+                    Markets.ListingFile l = Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.Listing : null;
+                    return l != null && l.Stage == Markets.ListingStage.Listed ? l.StockId : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.OwnStock", e);
+                    return 0;
+                }
+            }
+
             private static void Claim(BuildingRegistration reg, int amount)
             {
                 try
@@ -292,6 +316,36 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("TechLinks.Claim", e);
+                }
+            }
+
+            private static int Skill(int skill)
+            {
+                try
+                {
+                    Careers.StudyFile f = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Study : null;
+                    return f != null ? Careers.StudyRules.Points(f, skill) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Skill", e);
+                    return 0;
+                }
+            }
+
+            private static void Learn(int skill, int thousandths)
+            {
+                try
+                {
+                    Careers.StudyFile f = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Study : null;
+                    if (f != null)
+                    {
+                        Careers.StudyRules.Learn(f, skill, thousandths, TimeHelper.CurrentDay);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Learn", e);
                 }
             }
 

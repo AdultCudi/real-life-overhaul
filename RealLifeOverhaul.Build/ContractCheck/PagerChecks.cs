@@ -567,13 +567,15 @@ internal static partial class Program
         string box = Body(pager, "private float DataLeft(RectTransform strip)");
         Check(box != null && box.Contains("_rightData.GetWorldCorners(Corners)") && !box.Contains("GetChild") && !box.Contains("InChildren") && !box.Contains("ForceRebuild"),
             "the money's box is read as the box itself, never the money's or the date's words");
-        Check(pager.Contains("public sealed class RowBarWatch") && Body(pager, "private void OnRectTransformDimensionsChange()") != null && pager.Contains("watch.Pager = pager;"),
-            "a change of the bar's width (resolution, shape, scale) has the row looked at again");
+        string settle = Body(pager, "private System.Collections.IEnumerator Settle()");
+        Check(pager.Contains("public sealed class RowBarWatch") && pager.Contains("Pager.BarChanged();") && pager.Contains("watch.Pager = pager;")
+              && Body(pager, "internal void BarChanged()")?.Contains("StartCoroutine(Guard.Routine(Settle()))") == true
+              && settle != null && settle.Contains("still < SettleFrames") && settle.Contains("Changed();"),
+            "a change of the bar's width (resolution, shape, scale) has the row looked at again once, after the width has held still, never a pass a frame");
         string first = Body(pager, "private void GameFirst()");
         Check(Body(pager, "private void Collect()")?.Contains("GameFirst();") == true && first != null && first.Contains("PagerRules.Arrange(_isGame, _rank, count, _order)")
-              && first.Contains("_apps[i].SetAsLastSibling()") && first.Contains("if (_gameApps < 0)") && first.Contains("PagerRules.ModRank(found.name)")
-              && first.Contains("(at < lastGame || at < before)"),
-            "the game's own apps are put first in their order, found once, the mod's in their fixed order, and buttons standing among the game's or out of that order are moved after them in it");
+              && first.Contains("if (_gameApps < 0)") && first.Contains("PagerRules.ModRank(found.name)") && !first.Contains("SetAsLastSibling"),
+            "the game's own apps are put first in their order, found once, the mod's in their fixed order; where each stands among the grid's children is Order's alone");
         // Every app of the mod's that puts buttons on the phones has its place in the fixed order.
         var ids = new List<string>();
         foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
@@ -595,8 +597,9 @@ internal static partial class Program
               && pager.Contains("SmartphoneUI.OnUpdatedBadgeCount.RemoveListener(_onBadge)") && Body(pager, "private void Paint()")?.Contains("BadgeUp(_items[i])") == true
               && Body(pager, "private void Paint()")?.Contains("waiting == _badgeShown") == true,
             "the button's badge counts every badge up on the pages not showing, the game's own too, hears the game's word once and is written only when it changes");
-        Check(Body(pager, "private bool MakeMore()")?.Contains("rect.anchorMin = row.anchorMin;") == true && Body(pager, "private void More()")?.Contains("SetSizeWithCurrentAnchors") == true,
-            "the button is anchored as the row or grid is, so it moves with them");
+        Check(Body(pager, "private bool MakeMore()")?.Contains("rect.SetParent(transform, false);") == true && Body(pager, "private bool MakeMore()")?.Contains("copy.AddComponent<PhoneTile>();") == true
+              && Body(pager, "private void More()")?.Contains("position") == false && !pager.Contains("private bool Tile(int tile"),
+            "the button is a tile of the grid or row itself, laid out by it with the apps, so it moves with them and is never placed by hand");
         Check(Body(pager, "private bool SomeoneElse()")?.Contains("GetName()") == false && pager.Contains("KnownScripts[type] = pager;"), "each kind of script on the grid is looked at once");
         string refresh = Body(pager, "public void Refresh()");
         Check(refresh != null && refresh.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") && Body(pager, "private int PageOf(int index)")?.Contains("PagerRules.PageOf(index, _items.Count, ItemTiles)") == true,
@@ -608,8 +611,9 @@ internal static partial class Program
 
         // The button: on the last tile, shown with pages, turning on and round, its words from the texts.
         string more = Body(pager, "private void More()");
-        Check(more != null && more.Contains("PagerRules.ButtonShown(Pages)") && more.Contains("Tile(MoreTile,") && pager.Contains(": PagerRules.ButtonTile(Tiles);"),
-            "the More apps button stands on the page's last tile (the last above the dock, on folders' pages the last after the Back tile) and only while there are pages");
+        Check(more != null && more.Contains("PagerRules.ButtonShown(Pages)") && Body(pager, "internal string MoreSays(out bool ok)")?.Contains("PhoneLayoutRules.MoreTile(_strip, Tiles)") == true
+              && Body(pager, "public string PageCheck()")?.Contains("MoreSays(out bool moreOk)") == true,
+            "the More apps button stands on the page's last tile in every view, home and folder alike, only while there are pages, and the page check says where it stands");
         Check(Body(pager, "private void NextPage()")?.Contains("PagerRules.Next(_page, Pages)") == true && pager.Contains("UiClone.Rewire(copy.transform, NextPage)"),
             "the button goes to the next page and round, through the mod's guarded click");
         string make = Body(pager, "private bool MakeMore()");
@@ -619,7 +623,8 @@ internal static partial class Program
             "its picture is the game's double chevron in dark ink on a light grey tile, or one drawn the same way");
         Check(!pager.Contains("PageDots") && !pager.Contains("DotSize") && !pager.Contains("_dotImages"), "the page dots are gone");
         Check(!Regex.IsMatch(pager, @"\bvoid (Update|LateUpdate|FixedUpdate)\("), "the pager has nothing that runs every frame");
-        Check(Regex.Matches(pager, @"catch \(Exception fault\)\s*\{\s*Guard\.Fail\(FrameGuard, fault\);").Count == 2, "the wheel over the row and over the button are behind the guard");
+        Check(Regex.Matches(pager, @"catch \(Exception fault\)\s*\{\s*Guard\.Fail\(FrameGuard, fault\);").Count == 1 && !pager.Contains("class MoreAppsWheel"),
+            "the wheel over the row is behind the guard, and over the button it is the row's own (the button is one of its tiles)");
 
         // The texts, in the three languages, and What's new.
         var keys = Regex.Matches(pager, @"""(reallife_apps_[a-z_]+)""").Select(m => m.Groups[1].Value).Distinct().ToList();

@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Outlook
         /// <summary>The history the app draws from: the save's own, or a sample year while the test shows one.</summary>
         internal OutlookBook Book => _sample ? _sampleBook : _book;
 
+        /// <summary>The history the Economy kit reads. The kit does not write it.</summary>
+        public OutlookBook History => Book;
+
         /// <summary>The save's own history, always (what the save writes).</summary>
         internal OutlookBook Kept => _book;
 
@@ -227,6 +230,10 @@ namespace RealLifeOverhaul.Outlook
                 {
                     OutlookDistrict d = r.Districts[i];
                     book.Set(OutlookCatalogue.OfDistrictIncome(d.Id), day, d.Income);
+                    if (d.Pull > 0)
+                    {
+                        book.Set(OutlookCatalogue.OfDistrictPull(d.Id), day, d.Pull);
+                    }
                     if (d.Level > 0)
                     {
                         book.Set(OutlookCatalogue.OfDistrictLevel(d.Id), day, d.Level);

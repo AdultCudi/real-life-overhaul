@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Districts;
+using RealLifeOverhaul.Ui;
 
 // The district view (Scripts/Districts): every layer has its scale and its words, a fixed scale's bands fall where their
 // edges say, the city's own range always runs from its lowest district in the bottom band to its highest in the top one
@@ -185,31 +186,27 @@ internal static partial class Program
 
     private static void DistrictColours()
     {
-        bool alpha = true, distinct = true;
-        foreach (LayerSense sense in new[] { LayerSense.Neutral, LayerSense.HighGood, LayerSense.LowGood })
+        bool alpha = true, distinct = true, onRamp = true;
+        var seen = new HashSet<string>();
+        for (int band = 0; band < DistrictRules.Bands; band++)
         {
-            var seen = new HashSet<string>();
-            for (int band = 0; band < DistrictRules.Bands; band++)
-            {
-                Tint tint = DistrictRules.Colour(sense, band);
-                alpha &= tint.A == DistrictRules.ZoneAlpha;
-                distinct &= seen.Add(tint.Hex) && tint.Hex != DistrictRules.NoFigure.Hex;
-            }
+            Tint tint = DistrictRules.Colour(band);
+            uint ramp = UiTokens.Colour(UiTokens.Ramp(band));
+            alpha &= tint.A == DistrictRules.ZoneAlpha;
+            distinct &= seen.Add(tint.Hex) && tint.Hex != DistrictRules.NoFigure.Hex;
+            onRamp &= tint.R == (byte)(ramp >> 24) && tint.G == (byte)(ramp >> 16) && tint.B == (byte)(ramp >> 8);
         }
         Check(alpha, "districts: every band is drawn at the game's own zone strength");
-        Check(distinct, "districts: five colours a layer, none of them the grey of no figure");
-        Tint goodTop = DistrictRules.Colour(LayerSense.HighGood, 4), goodBottom = DistrictRules.Colour(LayerSense.HighGood, 0);
-        Check(goodTop.G > goodTop.R && goodBottom.R > goodBottom.G, "districts: where more is better the top band is green and the bottom red");
-        Tint crimeNone = DistrictRules.Colour(LayerSense.LowGood, 0), crimeMany = DistrictRules.Colour(LayerSense.LowGood, 4);
-        Check(crimeNone.Hex == goodTop.Hex && crimeMany.Hex == goodBottom.Hex, "districts: where less is better the colours run the other way");
-        bool deepening = true;
+        Check(distinct, "districts: five colours, none of them the grey of no figure");
+        Check(onRamp, "districts: the map's bands are the kit's ramp step for step (UiTokens.Ramp), so the map, the key and the ranked table are one set of colours");
+        bool strengthening = true;
         for (int band = 1; band < DistrictRules.Bands; band++)
         {
-            Tint a = DistrictRules.Colour(LayerSense.Neutral, band - 1), b = DistrictRules.Colour(LayerSense.Neutral, band);
-            deepening &= b.R + b.G + b.B < a.R + a.G + a.B && b.B >= b.R;
+            Tint a = DistrictRules.Colour(band - 1), b = DistrictRules.Colour(band);
+            strengthening &= b.R + b.G + b.B < a.R + a.G + a.B;
         }
-        Check(deepening, "districts: a neutral layer runs from light blue to deep blue");
-        Check(DistrictRules.Colour(LayerSense.Neutral, DistrictRules.None).Hex == DistrictRules.NoFigure.Hex && DistrictRules.Colour(LayerSense.HighGood, 9).Hex == DistrictRules.NoFigure.Hex,
+        Check(strengthening, "districts: the ramp strengthens from the lowest band to the highest");
+        Check(DistrictRules.Colour(DistrictRules.None).Hex == DistrictRules.NoFigure.Hex && DistrictRules.Colour(9).Hex == DistrictRules.NoFigure.Hex,
             "districts: no figure (or a band out of range) is grey");
     }
 

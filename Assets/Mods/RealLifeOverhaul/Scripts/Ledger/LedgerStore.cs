@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Ledger
     ///   K|x|y|z|heading|building                     a kiosk near the home
     ///   V|policies                                    the council's policies at the last edition
     ///   M|top id|id:rung:topped,...                   the companies' milestones printed (LedgerStories); none in an older save
+    ///   L|sector:id,...                               the company that led each sector at the last edition (LedgerLeads); none in an older save
     ///   E|day|has market|market day|index|change|week|rate|inflation|cycle   the latest edition
     ///   P|section|weight|key|head|name|value...       a piece of it
     ///   S|key|level|change                            a sector
@@ -53,6 +54,7 @@ namespace RealLifeOverhaul.Ledger
                 b.Append("\nV|").Append(Clean(s.Council));
             }
             Marks(b, s);
+            Leads(b, s);
             Edition(b, s.Edition);
             return b.ToString();
         }
@@ -71,6 +73,55 @@ namespace RealLifeOverhaul.Ledger
                 LedgerMark m = s.Marks[i];
                 b.Append(i > 0 ? "," : string.Empty).Append(m.Id).Append(':').Append(m.Rung).Append(':').Append(Bit(m.Topped));
             }
+        }
+
+        // The sectors' leaders, only once the paper keeps them: a save without the line is one whose first morning sets every
+        // sector where it stands. Each is "sector:id".
+        private static void Leads(StringBuilder b, LedgerState s)
+        {
+            if (!s.LeadsKept)
+            {
+                return;
+            }
+            b.Append("\nL|");
+            for (int i = 0; i < s.Leads.Count; i++)
+            {
+                LedgerLead l = s.Leads[i];
+                b.Append(i > 0 ? "," : string.Empty).Append(l.Sector).Append(':').Append(l.Id);
+            }
+        }
+
+        private static void ReadLeads(string[] f, LedgerState s)
+        {
+            if (f.Length < 2)
+            {
+                return;
+            }
+            s.LeadsKept = true;
+            s.Leads.Clear();
+            string[] leads = f[1].Length > 0 ? f[1].Split(',') : new string[0];
+            for (int i = 0; i < leads.Length && s.Leads.Count < LedgerLeads.SectorsMost; i++)
+            {
+                string[] l = leads[i].Split(':');
+                int sector = l.Length >= 2 ? Int(l[0]) : -1;
+                int id = l.Length >= 2 ? Int(l[1]) : 0;
+                if (sector >= 0 && sector < LedgerLeads.SectorsMost && id > 0 && !HasSector(s.Leads, sector))
+                {
+                    s.Leads.Add(new LedgerLead { Sector = sector, Id = id });
+                }
+            }
+        }
+
+        private static bool HasSector(List<LedgerLead> leads, int sector)
+        {
+            for (int i = 0; i < leads.Count; i++)
+            {
+                if (leads[i].Sector == sector)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void ReadMarks(string[] f, LedgerState s)
@@ -211,6 +262,9 @@ namespace RealLifeOverhaul.Ledger
                             break;
                         case "M":
                             ReadMarks(f, s);
+                            break;
+                        case "L":
+                            ReadLeads(f, s);
                             break;
                         default:
                             EditionLine(f, ref e);

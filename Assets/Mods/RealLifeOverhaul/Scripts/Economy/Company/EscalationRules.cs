@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Economy
         Kpi = 5,            // a place's figures off its targets past the tolerance for days
         Exception = 6,      // a raise or an offer past the pay band, waiting for whoever may agree it
         Proposal = 7,       // an executive's change to a company rule, for the owner to approve
-        Count = 8
+        Lease = 8,          // a landlord's offer at a lease's renewal past what the manager may agree: always the owner's
+        Count = 9
     }
 
     /// <summary>Where an escalation stands. Saved as a number.</summary>
@@ -44,7 +45,8 @@ namespace RealLifeOverhaul.Economy
             {
                 case EscalationKind.Gap:
                 case EscalationKind.Kpi: return ExecSeat.Coo;
-                case EscalationKind.Budget: return ExecSeat.Cfo;
+                case EscalationKind.Budget:
+                case EscalationKind.Lease: return ExecSeat.Cfo;
                 default: return ExecSeat.Chro;
             }
         }
@@ -108,6 +110,19 @@ namespace RealLifeOverhaul.Economy
                 case EscalationKind.Budget: return true;
                 default: return false;   // a place off its targets is reported to the owner, not settled
             }
+        }
+
+        public const int HandDownDays = 1;      // days a question waits with the owner before it is passed down to the area's executive, where the manager gives it that way
+
+        /// <summary>
+        /// Whether a question the owner has left is passed down to the area's executive today: the manager's switch on, the executive in post, the question
+        /// still the owner's for a day, never passed down before, never a proposal (the owner's alone), and a kind the executive may settle under the
+        /// policy (<see cref="Tries"/>); a place off its targets is only ever reported to the owner.
+        /// </summary>
+        public static bool HandsDown(EscalationKind kind, int level, int moved, int day, bool down, bool optedIn, bool executiveInPost, int approverStep, int sourcesStep)
+        {
+            return optedIn && executiveInPost && !down && level >= LevelOwner && kind != EscalationKind.Proposal && day - moved >= HandDownDays
+                   && Tries(kind, LevelExecutive, approverStep, sourcesStep);
         }
 
         /// <summary>Whether a gap that began on a day has lasted past the policy's days (it began the day the staff fell short).</summary>

@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Tech
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
                 Owed(box, f);
+                DrawSection(box, _director.SectorInfraSection(_studioWords));   // under Living population: the racks, compute and power price of the city's firms
                 box.Note(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
                 Meta.Guide.Point(box, SectorGuide);
             }
@@ -222,6 +223,11 @@ namespace RealLifeOverhaul.Tech
                 "hyper", c.Hyper ? TechText.T("reallife_infra_state_hyper") : _director.Needs(_director.HyperNeeds(), false)));
             box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", c.Sold.ToString(), "own", c.Own.ToString(), "gpu", c.GpuSold.ToString(), "rival", TechText.Mille(c.RivalPrice),
                 "regions", InfraRules.Regions(f.Centres).ToString()));
+            ViewLine racks = _director.RacksLine();   // the AI racks train the player's own models first: the reason the cloud sells less of them
+            if (racks != null)
+            {
+                box.Line(Words(racks));
+            }
             if (share > 0)
             {
                 box.Line(TechText.Fill("reallife_endscale_cloud_ops", "ops", c.Ops.ToString(), "wages", TechText.Cents(_director.Level((long)c.Ops * InfraCatalogue.OpsWage)),

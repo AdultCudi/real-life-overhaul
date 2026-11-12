@@ -81,7 +81,8 @@ namespace RealLifeOverhaul.Economy
             t.Append("v=").Append(Version).Append("~h:");
             Join(t, f.StartDay, f.FirstCreditDay, f.OldOnTime, f.OldMissed, f.OldPart, f.TestOffset, f.LastScore, f.LastGrade, f.SettledDay,
                 f.UnseenMissed, f.UnseenGrade ? 1 : 0, f.LastMissedDay, f.LastMissedCount, f.LastMissedAmount, f.LastGradeDay, f.LastGradeWas,
-                f.LegalSeen.Convictions, f.LegalSeen.Judgments, f.LegalSeen.LateDays, f.LegalSeen.Outstanding, f.LegalSeen.RecentOffences, f.NextAccountId);
+                f.LegalSeen.Convictions, f.LegalSeen.Judgments, f.LegalSeen.LateDays, f.LegalSeen.Outstanding, f.LegalSeen.RecentOffences, f.NextAccountId,
+                f.RateAskedDay, f.RiseDay, f.RiseExtra);
             t.Append("~d:");
             for (int i = 0; i < f.Days.Count; i++)
             {
@@ -207,6 +208,9 @@ namespace RealLifeOverhaul.Economy
                 f.LastGrade = -1;
             }
             f.NextAccountId = Math.Max(1, I(c, 21, 1));
+            f.RateAskedDay = Math.Max(0, I(c, 22));   // a save from before the loan talk has none: never asked
+            f.RiseDay = Math.Max(0, I(c, 23));        // a save from before the rise was kept has none: no rise noted
+            f.RiseExtra = Math.Max(0, I(c, 24));
         }
 
         private static void ReadDays(CreditFile f, string body)
@@ -264,7 +268,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Street = c[0], Number = I(c, 1), Total = F(c, 2), FirstDay = I(c, 3), Remaining = F(c, 4), Payment = I(c, 5), Interest = I(c, 6),
                     Held = Count(c, 19) & (LoanHold.Penalty | LoanHold.Frozen), OwnInterest = Count(c, 20), OwnPayment = Count(c, 21),
-                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Consolidation), Security = c.Length > 23 ? c[23] : string.Empty
+                    Purpose = Math.Min(Count(c, 22), LoanPurpose.Student), Security = c.Length > 23 ? c[23] : string.Empty
                 };
                 Standing(mark.Ladder, c, 7);
                 f.Loans.Add(mark);

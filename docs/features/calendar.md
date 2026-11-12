@@ -31,6 +31,8 @@ The game has days and a year of so many of them (60 to 365, chosen when a game s
 
 These are the stock market's months: its trading bots' statements come at the end of them. Something paid "by the month" in the mod counts a month of `CalendarRules.MonthDays` (a twelfth of the year, rounded down) from its own first day, so a bill or a policy falls on its own day, which the calendar shows, whatever its month.
 
+The living economy keeps one clock (`CalendarRules.MoneyYearDays`'s note). Its years are the save's, as the game ages its own people by them (its staff retire at 67 years of the save's length, and the population's residents are those staff) and the mod's careers, banks, prices and stock market count theirs: residents age, are born and die, pair, move and come from the region by the save's year, the population's month is a twelfth of it, and the world beyond the city, the platforms' players and the game studio's critics' bar grow by it, filling towards a ceiling so a long game in a short year never runs away (`ScaleRules.Grown`). Money runs by the game day whatever the year: wages, prices and rents a day, subscriptions over 30 days (`BillingMonthDays`), a firm's IT budget and the residents' interest on their savings over 365 days (`MoneyYearDays`), paybacks in game days. Ten years of a check are ten of the save's years, so the city ages and its markets grow alike at any year length (EconomyCheck's living years hold years of 60 and 365 days).
+
 The headline says the day the month ends on ("March, year 1. This month ends on day 90."), in the game's own day numbers.
 
 ## What it shows, and where each date comes from
@@ -60,7 +62,7 @@ Every source reads and changes nothing. Asked only when the app is shown.
 | Court, custody, licences, family appointments, plans with friends, a checkout, sick notes | The Planner's sources |
 | City events, elections, the council | The Planner's event and civic sources |
 | Deliveries | The game's `FurnitureDeliveryContracts` (paid on delivery) and `vehicleDeliveryContracts` |
-| Birthdays | The player: `CharacterData.ageInDays` as `PlayerHelper.IncreasePlayerAge` counts it; people met: `SocialPerson.Birthday`; children: `ChildRecord.Age` as `Children.Grow` grows it |
+| Birthdays | The player: `CharacterData.ageInDays` as `PlayerHelper.IncreasePlayerAge` counts it; people met: `SocialPerson.Birthday`; children: `ChildYearRules.BirthdayIn`, the day count `Children.Grow` ages them by (the Family page names the same day), up to the birthday at which they grow up |
 | The children's week | `FamilySave.LastWeekDay` + 7, `Children.WeekCharges` |
 | The player's own entries | The Planner's notes |
 
@@ -90,4 +92,4 @@ Everything is read from the local save and the mod's own state: each player sees
 
 ## Offline checks
 
-`EconomyCheck/CalendarAppChecks.cs`: the months of every year length from 8 to 400 days (they make up the year, each a twelfth, the market's months every day); the day each month ends on; the grid (one to six weeks, each day in one cell of its weekday); each schedule's days against the feature's own daily rule run day by day (the tax year, the bills, the card's statements by `AccountRules.RunDay`, a managed service by `FirmsRules.Work`, the tax quarter by `TaxRules`, the central bank by the city's count, the player's, people's and children's birthdays, the profit share, the bots' statements); an empty month; the list's limit and order; no allocation on a look again; the sources' use of the rules; the texts in every language. `ContractCheck/PhoneLayoutChecks.cs`: the folder.
+`EconomyCheck/CalendarAppChecks.cs`: the months of every year length from 8 to 400 days (they make up the year, each a twelfth, the market's months every day); the day each month ends on; the grid (one to six weeks, each day in one cell of its weekday); each schedule's days against the feature's own daily rule run day by day (the tax year, the bills, the card's statements by `AccountRules.RunDay`, a managed service by `FirmsRules.Work`, the tax quarter by `TaxRules`, the central bank by the city's count, the player's, people's and children's birthdays (a child's at every length of year from 1 to 52 weeks), the profit share, the bots' statements); an empty month; the list's limit and order; no allocation on a look again; the sources' use of the rules; the texts in every language. `ContractCheck/PhoneLayoutChecks.cs`: the folder.

@@ -205,15 +205,19 @@ namespace RealLifeOverhaul.Planner
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new PlannerApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_planner_app",
                 Icon = like => AppIconPainter.Paint(like, PlannerText.First(PlannerText.AppGlyphs), new Color32(255, 122, 138, 255), new Color32(226, 61, 108, 255), 0.42f, "AppIcon-Planner"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.PlannerScreen(this),
+                KitScreen = "planner",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Clock,
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -224,6 +228,7 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
             if (!PlannerStore.Welcomed)
             {
                 PlannerStore.Welcomed = true;

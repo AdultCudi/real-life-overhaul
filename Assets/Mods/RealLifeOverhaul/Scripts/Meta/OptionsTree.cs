@@ -52,6 +52,16 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
+        /// <summary>More features this section stands for, after those of <see cref="For"/> (a page of the Guide with no options of its own); its "About this" is unchanged.</summary>
+        public TreeSection With(params string[] features)
+        {
+            var all = new string[Features.Length + features.Length];
+            Features.CopyTo(all, 0);
+            features.CopyTo(all, Features.Length);
+            Features = all;
+            return this;
+        }
+
         /// <summary>The feature whose Guide page explains this section, when the section is not a feature of its own.</summary>
         public TreeSection Guide(string feature)
         {
@@ -221,21 +231,29 @@ namespace RealLifeOverhaul.Meta
                     .Also("clothes wardrobe wear skirt"),
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
+                S("dynasty").For("dynasty").Opts("dynasty").Also("will heir inherit inheritance estate tax retire retirement legacy death old age family line"),
+                S("giving").For("giving").Opts("giving").Also("donate donation charity gift lend loan help money food bank training tax deduction"),
+                S("insurance").For("insurance").Opts("insurance").Also("insure cover policy premium claim excess tier car home health business third party comprehensive no claims"),
+                S("health").For("health").Opts("health").Also("ill illness injury doctor gp hospital insurance plan premium sick leave sick pay flu medical debt"),
                 S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
                     .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
-                    "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
+                    "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
-                    .Opt("texts_city", "texts", "texts_people").Also("friends dating date people calls typing staff gossip"),
+                    .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
+                    .Also("friends dating date people calls typing staff gossip")
+                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
                 S("networking").For("networking").Need("social").Opts("social_networking")
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media")
                     .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
+                S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population")
+                    .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite staff gossip memory language"),
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
@@ -251,9 +269,13 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_contact_groups", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
+                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_contact_groups", "phone_skin", "phone_folders", "notice_look")
+                    .Buttons("reallife_phone_layout_reset", "reallife_windows_reset")
                     .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange")
                     .Also("group groups category categories tabs family friends people services money city sort"),
+                S("notices").Guide("phone").Opts("notice_show_road", "notice_show_money", "notice_show_property", "notice_show_work", "notice_show_business",
+                        "notice_show_tech", "notice_show_news", "notice_show_people", "notice_show_other")
+                    .Also("notification notifications popup popups toast toasts mute muted silence silent quiet alert alerts stutter hitch busy filter kinds"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",
@@ -261,6 +283,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("pedestrians passers-by pavement crowd"),
                 S("newbuildings").For("newbuildings").Main("new_buildings").Also("building buildings new construction copy design district ground plot land street address"),
                 S("uptown").For("uptown").Main("uptown").Also("uptown district north manhattan new streets block lots avenue map expansion"),
+                S("uptown_subway").For("uptown_subway").Opts("uptown_subway").Also("subway metro underground station train line uptown cedar heights birchwood summit park"),
                 S("landmarks").For("landmarks").Main("uptown_landmarks").Also("landmark landmarks skyscraper tower mall galleria stadium football match megaproject uptown"),
                 S("schools").For("schools").Main("uptown_campus").Also("school schools campus birchwood education pupils teachers fees league table inspection results children uptown"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
@@ -275,7 +298,14 @@ namespace RealLifeOverhaul.Meta
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls")
                     .Also("crash collision ambulance paramedics fire service notification notifications sound waypoint marker pin"),
                 S("police").Guide("crime").Main("police").Opt("police_presence", "people").Opt("patrol_officers", "people").Opt("patrol_frequency", "patrol_officers")
-                    .Opts("police_pursuit", "player_offences").Also("cop cops officers chase fine fines speeding"),
+                    .Opts("police_pursuit").FreeOpts("police_caps").Also("cop cops officers chase")
+                    .Also("police_caps", "hat hats cap caps headwear bareheaded hide"),
+                S("offences").Guide("crime").Need("police")
+                    .Opts("offence_red_light", "offence_speeding", "offence_pavement", "offence_wrong_way", "offence_drink", "offence_jaywalk", "offence_cross_red", "offence_horn")
+                    .Also("ticket tickets fine fines pulled over stopped warning warnings officer patrol")
+                    .Also("offence_red_light", "traffic light lights signal").Also("offence_pavement", "sidewalk kerb curb")
+                    .Also("offence_drink", "drunk alcohol drinking beer wine pub bar").Also("offence_jaywalk", "walking road street kerb")
+                    .Also("offence_cross_red", "pedestrian crossing crosswalk light signal walk").Also("offence_horn", "honk beep"),
                 S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_station_furniture", "law_station").Opt("law_map_markers", "map_places_shown")
                     .Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
                     .Also("precinct cell custody arrest record"),
@@ -292,9 +322,10 @@ namespace RealLifeOverhaul.Meta
                 S("camera").For("camera").Main("camera_enabled").Opts("camera_indoors", "camera_pitch", "camera_distance", "camera_fov", "camera_height", "camera_follow")
                     .Opt("car_camera").Opt("car_camera_distance", "car_camera").Also("view third person zoom"),
                 S("carperf").For("driving").Main("car_tuning").Opts("car_top_speed", "car_acceleration").Buttons("reallife_car_measure").Also("speed fast engine"),
-                S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "radio_hud").Also("pedal dashboard speed music"),
-                S("handling").Guide("driving").Opts("car_handling")
-                    .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
+                S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "auto_signals", "radio_hud").Also("pedal dashboard speed music indicator blinker"),
+                S("handling").Guide("driving").Opts("car_handling", "car_handling_modded")
+                    .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering")
+                    .Also("car_handling_modded", "vehicle vehicles mod mods modded add-on stiff wobble wobbly"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
                 S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale")
                     .Buttons("reallife_garage_test_vehicles")
@@ -306,8 +337,10 @@ namespace RealLifeOverhaul.Meta
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
-                S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
-                    .FreeOpts("map_places_shown", "special_names").Also("map route satnav directions destination names building buildings"),
+                S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base", "nav_minimap25").FreeOpts("nav_gps")
+                    .Opt("nav_other_route", "nav_gps").Also("map route satnav directions destination names building buildings blocks tilt flat perspective"),
+                S("citymap").Guide("navigation").Opts("map_places_shown", "special_names")
+                    .Also("map city places filters route satnav directions destination names search building buildings blocks tilt flat perspective"),
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage "
                         + "internet competition council"),
@@ -319,6 +352,8 @@ namespace RealLifeOverhaul.Meta
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds")
                     .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("sidejobs").For("side_jobs").Opt("side_jobs", "jobs")
+                    .Also("taxi cab driver delivery parcel parcels courier food own car vehicle shift desk depot dispatch office fare fares meter tips"),
                 S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
                     .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
                     .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
@@ -335,7 +370,8 @@ namespace RealLifeOverhaul.Meta
                         + "retirement options shares conflict interest"),
                 S("ladder").For("careers_ladder").Opt("careers_ladder", "careers_life")
                     .Also("management ladder manager supervisor store regional executive coo chro cfo staff schedule rota gap hire raise escalation policy permissions performance"),
-                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
+                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own").Opt("careers_own_desk", "careers_own")
+                    .Opt("careers_own_hours", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
                 S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays"),
@@ -344,9 +380,14 @@ namespace RealLifeOverhaul.Meta
 
             G("money",
                 S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Opt("economy_day_result", "economy")
-                    .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income"),
-                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
-                    .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
+                    .Opt("economy_goal_rewards", "economy")
+                    .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income")
+                    .Also("economy_goal_rewards", "personal goal goals reward rewards prize persona achievement achievements"),
+                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level", "start_debt")
+                    .Opt("start_debt_degree", "start_debt")
+                    .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance")
+                    .Also("start_debt", "student loan debt degree university hard hardcore new game start owe owing repay")
+                    .Also("start_debt_degree", "student loan debt diploma bachelor master mba degree study course amount"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("econapp").For("economy_app").Need("economy").Main("economy_app").Opts("economy_app_look")
@@ -364,13 +405,18 @@ namespace RealLifeOverhaul.Meta
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
                     .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
                     .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("stockextras").For("markets_extras").Opt("markets_extras", "ventures_market")
+                    .Also("split reverse consolidation index fund tracker etf units block trade stake rival holding bank lab studio listing float ipo"),
                 S("buildersmarket").For("markets_builders").Opt("markets_builders", "ventures_market")
                     .Also("builder builders construction contractor tender shares stock cement steel bricks timber hedge hedging materials project exposure")),
 
             G("business",
-                S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
-                    "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
-                    .Also("shop wages insurance advertising accountant permits"),
+                S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff")
+                    .Opt("economy_company_agree_up_to", "economy_company_staff")
+                    .Opts("economy_company_cover", "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
+                    .Also("shop wages insurance advertising accountant permits")
+                    .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "
+                        + "manager executive hr staff"),
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
@@ -381,15 +427,39 @@ namespace RealLifeOverhaul.Meta
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
                     .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
+                S("ui").For("ui").Need("living_population").Main("ui_interface").Opt("ui_motion", "ui_interface")
+                    .Also("rlo interface design look ledger newspaper fonts serif motion calm animation contacts gallery dark light theme"),
+                S("living").For("living", "population").Main("living_population").Opt("living_desks", "living_population")
+                    .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
+                    .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
+                    .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes")
+                    .With("population_demand"),   // the Guide's page on where the businesses' customers come from
+                S("studio").For("studio").Opt("living_studio", "living_population")
+                    .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
+                S("firms").For("firms").Opt("living_firms", "living_population")
+                    .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
+                        + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
+                S("schemes").For("schemes").Opt("living_schemes", "living_population")
+                    .Also("fraud scam scheme schemes laundering launder bribe bribes bribery gift secret inquiry investigation trial insurance claim expense books club cash "
+                        + "favour judge investigator councillor rival fund"),
+                S("trips").For("trips").Opt("living_trips", "living_population").Opt("living_spoilage", "living_population")
+                    .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
+                S("parties").For("parties").Opt("living_parties", "living_population")
+                    .Also("party parties host guests friends invite invitation dinner drinks staff event lunch evening team day morale satisfaction standing company"),
+                S("suppliers").For("suppliers").Opt("living_suppliers", "living_population")
+                    .Also("supplier suppliers wholesaler wholesale contract contracts fixed price take or pay delivery deliveries late short shortage stock order goods buyer"),
+                S("rivalsseen").For("rivals_seen").Opt("living_rivals_seen", "living_population")
+                    .Also("rival rivals owner owners tycoon seen sighting sightings car cars luxury lunch dinner restaurant beach hamptons weekend society gossip flare paper greet hello"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
-                S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
-                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
-                    .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
+                S("people").For("tech_people").Opts("tech_people").Opt("tech_seat_hires", "tech_people")
+                    .Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach desk seat shift schedule hire"),
+                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Opt("tech_search_rush", "tech_jobs")
+                    .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates rush rushed faster sooner quicker expedite days saved"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
@@ -416,6 +486,9 @@ namespace RealLifeOverhaul.Meta
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
+                S("parkspaces").For("parking_spaces").Opt("parking_spaces", "economy_estate").Also("parking space spaces car park garage underground buy bay spot hourly charge"),
+                S("carsupply").For("economy_dealer_supply").Opt("economy_dealer_supply", "economy_dealer")
+                    .Also("supplier suppliers wholesaler importer car showroom dealership delivery order standing order manager stock"),
                 S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")
                     .Also("landlord tenants satisfaction repairs repair maintenance complaints inspection inspector fine arrears payment plan reminder eviction letting agent property manager flip"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
@@ -426,6 +499,8 @@ namespace RealLifeOverhaul.Meta
                 S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
                 S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
+                S("loyalty").For("loyalty").Opts("loyalty")
+                    .Also("loyalty card cards members points rewards scheme repeat customers regulars sign up members day bizman tab chain brand"),
                 S("designs").For("designs").Opts("designs")
                     .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop"),
                 S("newshops").For("newshops").Opts("new_shops")
@@ -434,7 +509,7 @@ namespace RealLifeOverhaul.Meta
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
                     "reallife_keys_free_cursor", "reallife_keys_look_behind", "reallife_keys_gentle_throttle", "reallife_keys_photo_mode",
-                    "reallife_keys_walk")
+                    "reallife_keys_walk", "reallife_keys_phone")
                     .Also("key bindings shortcuts hotkeys rebind keyboard"),
                 S("mouse").Guide("camera").Opt("camera_mouselook", "camera_enabled").Opt("camera_sensitivity", "camera_mouselook").Opts("enter_with_key")
                     .Also("input look cursor"),
@@ -445,6 +520,8 @@ namespace RealLifeOverhaul.Meta
                     "perf_far_props", "perf_textures_whole", "perf_mod_cull").Also("fps frame rate lag stutter slow faster"),
                 S("render").Guide("performance").Opts("render_shadow_reach", "render_shadow_cascades", "render_lod_reach")
                     .Also("graphics shadows shadow distance cascades level of detail lod models quality fps"),
+                S("graphics").For("graphics").Opts("graphics_look", "graphics_cost")
+                    .Also("realistic graphics look picture filmic natural vivid colour light sun night haze fog shadows contact glow bloom tone grading"),
                 S("picture").For("visuals").Main("visuals_enabled").Opts("visuals_saturation", "visuals_contrast", "visuals_bloom", "visuals_detail")
                     .Also("graphics colour visuals quality")),
 
@@ -462,6 +539,48 @@ namespace RealLifeOverhaul.Meta
                 S("tuning").Guide("driving").Opts("car_handling_softness", "car_handling_bounce", "car_handling_roll", "car_handling_grip", "car_handling_steering",
                     "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),
         };
+
+        // The RLO interface's switch for each screen (Ui/UiScreenSwitches): a section of them after the interface's own,
+        // built from the screens' entries, so a screen that asks for a switch needs no line here. After Groups, so it is there.
+        private static readonly bool ScreensPlaced = PlaceScreens();
+
+        private static bool PlaceScreens()
+        {
+            TreeGroup group = null;
+            int at = -1;
+            foreach (TreeGroup g in Groups)
+            {
+                for (int i = 0; i < g.Sections.Count; i++)
+                {
+                    if (g.Sections[i].Id == "ui")
+                    {
+                        group = g;
+                        at = i + 1;
+                    }
+                }
+            }
+            if (group == null)
+            {
+                return false;
+            }
+            foreach (string id in Ui.UiScreenSwitches.Sections)
+            {
+                string[] rows = Ui.UiScreenSwitches.OptionIds(id);
+                if (rows.Length == 0)
+                {
+                    continue;
+                }
+                TreeSection section = S(id).Guide("ui").Need("living_population", "ui_interface");
+                foreach (string row in rows)
+                {
+                    section.Opt(row, "ui_interface");
+                }
+                section.Also("rlo interface screen screens switch back game own classic broken old look");
+                section.Group = group;
+                group.Sections.Insert(at++, section);
+            }
+            return true;
+        }
 
         private static Dictionary<string, TreeSection> _byRow;
         private static Dictionary<string, TreeRow> _rows;
@@ -532,6 +651,44 @@ namespace RealLifeOverhaul.Meta
                 }
             }
             return null;
+        }
+
+        /// <summary>How many sections and rows a group declares. The settings sidebar uses these, not a picture's counts.</summary>
+        public static void Counts(TreeGroup group, out int sections, out int options)
+        {
+            sections = 0;
+            options = 0;
+            if (group == null)
+            {
+                return;
+            }
+            sections = group.Sections.Count;
+            for (int i = 0; i < group.Sections.Count; i++)
+            {
+                options += group.Sections[i].Rows.Count;
+            }
+        }
+
+        /// <summary>The Guide page that explains a section. Null when the section has nothing of its own to open.</summary>
+        public static string GuidePage(TreeSection section)
+        {
+            if (section == null)
+            {
+                return null;
+            }
+            if (section.Id == "guide")
+            {
+                return "start";
+            }
+            if (section.Id == "presets")
+            {
+                return "presets";
+            }
+            if (section.Id == "help")
+            {
+                return "trouble";
+            }
+            return section.GuideFeature != null ? "feature_" + section.GuideFeature : null;
         }
     }
 }

@@ -82,14 +82,26 @@ namespace RealLifeOverhaul.Flare
             {
                 Month(day);
             }
+            FlareGame.Districts(_districts);
+            int grown = FlareCast.TopUp(_file, day, _districts);
+            if (grown > 0)
+            {
+                Logger?.Info("Flare: the city's cast grows to its size: " + grown + " more influencer(s), " + _file.ActiveInfluencers + " in all.");
+            }
             FlareGame.Shops(_file, _shops);
             FlareGame.Rivals(_rivals);
             Names(FlareBridges.Candidates, _candidates);
             Names(FlareBridges.Brands, _brands);
             _visits.Clear();
             FlareCast.Day(_file, day, _shops, _rivals, _candidates, _brands, _visits);
+            CampaignDms(day, 0);
             for (int i = 0; i < _visits.Count; i++)
             {
+                if (CityTalk(_visits[i].Place, 1, "i:" + _visits[i].Who.ToString(System.Globalization.CultureInfo.InvariantCulture), 2000000 + day * 64 + i, FlareRules.Roll(_file.Seed, day, 863 + i)))
+                {
+                    Logger?.Info("Flare: " + HandleOf(_visits[i].Who) + " visited " + _visits[i].Name + " and posted about it: heard by their followers in the city.");
+                    continue;
+                }
                 int now = FlareRules.AddBuzz(_file, _visits[i].Place, FlareCast.TalkVisit, day, FlareRules.BuzzDays);
                 Logger?.Info("Flare: " + HandleOf(_visits[i].Who) + " visited " + _visits[i].Name + " and posted about it: " + now + "% more customers there.");
                 Rewrite(_visits[i].Place, true);
@@ -200,9 +212,11 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;
                 }
-                int now = FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
+                bool heard = CityTalk(h.Place, -1, "i:" + inf.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), 3000000 + h.Id, FlareRules.Roll(_file.Seed, h.Id, 864));
+                int now = heard ? 0 : FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
                 FlareBridges.BrandScandal?.Invoke(h.Place);
-                Logger?.Info("Flare: " + h.Name + " hired " + inf.Handle + ": the talk turns against it (" + now + "%), and its brand hears of it.");
+                Logger?.Info("Flare: " + h.Name + " hired " + inf.Handle + ": the talk turns against it (" + (heard ? "the influencer's followers in the city" : now + "%")
+                             + "), and its brand hears of it.");
                 Rewrite(h.Place, false);
                 if (FlareRules.MayNotify(_file, day, Settings.SocialMediaNotices))
                 {
@@ -221,7 +235,9 @@ namespace RealLifeOverhaul.Flare
             }
             if (h.Backfired)
             {
-                int now = FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
+                string who = h.Who.Count > 0 ? "i:" + h.Who[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+                bool heard = CityTalk(h.Place, -1, who, 4000000 + h.Id, FlareRules.Roll(_file.Seed, h.Id, 865));
+                int now = heard ? 0 : FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
                 FlareBridges.BrandScandal?.Invoke(h.Place);
                 Logger?.Info("Flare: the hire at " + h.Name + " backfires: the post goes down badly (" + now + "%), and its brand hears of it.");
             }
@@ -458,6 +474,7 @@ namespace RealLifeOverhaul.Flare
                     FlareCast.Outcome(h, lead, _file.CastSeed);
                 }
                 _file.Hires.Add(h);
+                HiredDm(h);
                 Logger?.Info("Flare: hired " + WhoLine(h) + " for " + h.Name + " (" + (FlareDeal)(kind - FlareCast.FirstDealKind) + ", days " + from + " to " + to + ", " + percent
                              + "% more customers" + (h.Late ? ", the first post a day late" : string.Empty) + (h.OffMessage ? ", off message" : string.Empty)
                              + (h.Backfired ? ", it will backfire" : string.Empty) + ").");

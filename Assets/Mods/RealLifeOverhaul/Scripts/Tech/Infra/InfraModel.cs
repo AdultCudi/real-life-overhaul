@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Tech
         public int Outages, DownUntil;
         public long Takings30;       // what it took over the last thirty days, cents (rolled)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];
+        public long Prev30;          // the month before the ring's (TechStatusRules.Age)
+        public int PrevDays;
+        public readonly int[] Outage90 = new int[InfraCatalogue.UptimeWords];   // a bit a day for the last 90 days: set when the centre was down that day (InfraRules.MarkDay)
         public int Dense, DenseGpu;  // of the racks, those of the new kind (bought at scale, Core/EndScale); the rest are the old kind
         public readonly int[] Crew = new int[InfraCatalogue.CrewKinds];   // its crews at scale: operators, engineers, security
         // read each day, never saved
@@ -53,6 +56,19 @@ namespace RealLifeOverhaul.Tech
         public bool Outage;
     }
 
+    /// <summary>What one of the player's AI models takes of a day's AI compute (InfraRules.ModelsDay), units a day. Game-free.</summary>
+    public struct ModelCompute
+    {
+        public int Level;                // the training level it was reckoned at
+        public long Kept;                // of its training past what it may rent, what the player's own AI racks kept for it
+        public long Own, Rented;         // its training: on the racks (Kept among it), and rented (never past InfraCatalogue.RentedMost)
+        public long RunOwn, RunRented;   // its customers' use: on the racks, and rented
+        public long Keep;                // the racks' compute less the other models' parts past what they may rent: the most its own part past that may be (InfraRules.TrainMost)
+
+        public long Trained => Own + Rented;
+        public long Bought => Rented + RunRented;   // what is paid to the rival clouds
+    }
+
     /// <summary>Everything the infrastructure part keeps in a save. Game-free.</summary>
     public sealed class InfraFile
     {
@@ -61,6 +77,8 @@ namespace RealLifeOverhaul.Tech
         public long Owed;                              // what the scale's costs came to that the cash could not meet, carried to the next day, cents at the prices of then
         public readonly List<DataCentre> Centres = new List<DataCentre>(4);
         public readonly Cloud Cloud = new Cloud();
+        public readonly List<ColoContract> Colo = new List<ColoContract>(16);   // the named contracts the racks let are shared out in (ColoRules)
+        public int NextColo = 1;
 
         public DataCentre CentreAt(string place)
         {

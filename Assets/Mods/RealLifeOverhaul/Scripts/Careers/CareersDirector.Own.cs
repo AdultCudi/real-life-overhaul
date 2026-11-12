@@ -419,14 +419,19 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < _mine.Count; i++)
             {
                 BuildingRegistration reg = _mine[i];
-                string type = reg.businessTypeName ?? string.Empty;
-                if ((ProCatalogue.EmploysKept(p, type) || type == "ba:businesstype_headquarters" || GameRegistrations.BuildingType(reg) == "ba:buildingtype_office")
-                    && (!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber)))
+                if (OfficeFits(p, reg) && (!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber)))
                 {
                     return reg;
                 }
             }
             return null;
+        }
+
+        /// <summary>True if a profession's desk work can be done in this business of the player's: a type it works in, the headquarters, or any business in an office building.</summary>
+        private static bool OfficeFits(Profession p, BuildingRegistration reg)
+        {
+            string type = reg.businessTypeName ?? string.Empty;
+            return ProCatalogue.EmploysKept(p, type) || type == "ba:businesstype_headquarters" || GameRegistrations.BuildingType(reg) == "ba:buildingtype_office";
         }
 
         public string TakeContract(int id)
@@ -479,7 +484,7 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_own_why_no_contract";
             }
             Profession p = c.Def;
-            bool trade = p.Place == Workplace.Business && (p.Id == ProCatalogue.Electrician || p.Id == ProCatalogue.Plumber || p.Id == ProCatalogue.Carpenter);
+            bool trade = OwnRules.IsTrade(p);
             if (trade)
             {
                 var post = new Opening { Prof = p.Id, Street = c.Street, Number = c.Number };
@@ -492,6 +497,7 @@ namespace RealLifeOverhaul.Careers
             return OwnOffice(p, true) != null ? null : "reallife_own_why_desk";
         }
 
+        /// <summary>The Career app's start of a contract's stint where no desk is clicked (<see cref="ContractFromApp"/>), at the player's place. Null if done, else a reason key.</summary>
         public string WorkContract(int id)
         {
             Contract c = ContractOf(id);
@@ -500,9 +506,14 @@ namespace RealLifeOverhaul.Careers
             {
                 return why;
             }
-            int minutes = Math.Min(OwnRules.SittingMinutes, OwnRules.Left(c));
-            return Offer(new Sitting(this, SittingKind.Contract, id, minutes, CareersText.T("reallife_own_skip_title", "client", c.Client), true,
-                CareersText.T("reallife_own_skip_left", "time", CareersText.Minutes(OwnRules.Left(c))), CareersText.T("reallife_own_skip_fee", "fee", CareersText.Money(Prices.At((int)c.Fee)))));
+            return OfferStint(c, null, null);
+        }
+
+        // A contract's sitting for the book: its title and the two lines its panel says before it starts, the time left and what it pays.
+        private Sitting ContractSitting(Contract c, int minutes)
+        {
+            return new Sitting(this, SittingKind.Contract, c.Id, minutes, CareersText.T("reallife_own_skip_title", "client", c.Client), true,
+                CareersText.T("reallife_own_skip_left", "time", CareersText.Minutes(OwnRules.Left(c))), CareersText.T("reallife_own_skip_fee", "fee", CareersText.Money(Prices.At((int)c.Fee))));
         }
 
         private void ContractEnded(Sitting s, int minutes)
@@ -516,11 +527,7 @@ namespace RealLifeOverhaul.Careers
             int day = Save.Day;
             c.Minutes += minutes;
             Profession p = c.Def;
-            int a, b;
-            p.SkillsOf(c.Rank, out a, out b);
-            int hours = Math.Max(1, minutes / 60);
-            LearnAtWork(a, hours, day);
-            LearnAtWork(b, hours, day);
+            OwnWorked(p, c.Rank, Math.Max(1, minutes / 60), day);
             // Side work under a contract that does not allow it may be noticed.
             Job j = w.Job;
             if (j != null && j.Exclusive && TechRandom.Mille(StudySeed, 8706, day, c.Id * 7 + c.Minutes) < OwnRules.SideWorkFound)

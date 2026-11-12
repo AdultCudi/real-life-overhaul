@@ -406,7 +406,7 @@ namespace RealLifeOverhaul
                 }
             }
             Offer(player, free && !_run.Active, atHome);
-            Strip(atHome);
+            Strip();
         }
 
         private Doing ReadDoing(PlayerController player)

@@ -57,6 +57,10 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
                 return DealerColumns.Market;
             }
+            if (WriteSupply(box, state))
+            {
+                return DealerColumns.Market;   // a kind's suppliers (DealerApp.Supply)
+            }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_market_title"));
             if (state.NoBidsUntil >= SaveGameManager.Current.Day)
@@ -67,6 +71,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Row("reallife_dealer_cash", DealerText.Money(DealerGame.Cash));
             box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
             box.Note(DealerText.T("reallife_dealer_market_about"));
+            WriteSupplySummary(box);
             Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Market;
         }
@@ -94,9 +99,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             string yard = ChooseYard(box, state);
             box.Section("reallife_ibox_sec_money");
             DealerYard to = yard != null ? state.Yard(yard) : null;
-            int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // a respected showroom's perk, as the director charges it
+            int price = _director.NewPrice(l, to);   // the kind's supplier and a respected showroom's perk, as the director charges it
             box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(price), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
-            if (price < l.Asking)
+            WriteNewSupply(box, l);
+            if (to != null && DealerRules.WholesalePrice(l.Asking, to.Rep) < l.Asking)
             {
                 box.Line(DealerText.T("reallife_dealer_new_perk", "price", DealerText.Money(l.Asking)), CellTone.Green);
             }
@@ -108,7 +114,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (yard != null)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_dealer_button_buy", () => Confirm("reallife_dealer_q_buy_title",
-                    DealerText.T("reallife_dealer_q_buy", "car", DealerGame.CarName(l.Type), "price", DealerText.Money(price)), () =>
+                    _director.NewQuestion(l, price), () =>
                     {
                         if (_director.Buy(l.Id, yard, price))
                         {

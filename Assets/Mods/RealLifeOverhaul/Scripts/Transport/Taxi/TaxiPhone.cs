@@ -3,6 +3,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
@@ -98,7 +99,7 @@ namespace RealLifeOverhaul
                 OnConfirm = Send,
                 CancelTextOverride = "reallife_taxi_no_thanks",
                 OnCancel = PhoneContacts.HangUp
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_get_in", "amount", TransitText.Money(fee));
         }
 
         private static DialogEntry Send()

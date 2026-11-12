@@ -220,6 +220,38 @@ namespace RealLifeOverhaul.Economy
             return onRecord > 0 ? sum / days : 0f;
         }
 
+        /// <summary>
+        /// What a business took in the last <paramref name="days"/> days before today, from the game's statements, and how many of those days have a
+        /// statement (<paramref name="onRecord"/>): the record a loan against the business is judged on.
+        /// </summary>
+        public static float TakingsOnRecord(Address address, int days, out int onRecord)
+        {
+            onRecord = 0;
+            GameInstance save = SaveGameManager.Current;
+            if (save == null || save.financialSummaries == null || address == null || days <= 0)
+            {
+                return 0f;
+            }
+            float sum = 0f;
+            int from = save.Day - days;
+            List<FinancialSummary> summaries = save.financialSummaries;
+            for (int i = summaries.Count - 1; i >= 0; i--)
+            {
+                FinancialSummary day = summaries[i];
+                if (day == null || day.dayNumber < from || day.dayNumber >= save.Day || day.businessIncomeStatements == null)
+                {
+                    continue;
+                }
+                FinancialSummary.BusinessIncomeStatement statement = StatementOf(day, address);
+                if (statement != null)
+                {
+                    sum += Mathf.Max(0f, statement.TotalSales);
+                    onRecord++;
+                }
+            }
+            return sum;
+        }
+
         /// <summary>What a business took yesterday, from the game's statement of that day; nothing if it has none.</summary>
         public static float SalesYesterday(Address address)
         {

@@ -8,8 +8,10 @@ using RealLifeOverhaul;
 
 // The driven car's handling (Driving/HandlingRules.cs, HandlingModel.cs, HandlingTurn.cs, CurveKeys.cs) on the game's
 // own eighteen cars, their figures read from the game's files (each prefab's springs, spring curves, dampers, bars,
-// tyres, slip stiffness, force points and steering curves, and each vehicle type's top speed), on Empire Motors' two cars
-// and on cars the catalogue places by its guess, whose figures the model cannot know (assumed, as said below): for every
+// tyres, slip stiffness, force points and steering curves, and each vehicle type's top speed), on Empire Motors' two cars,
+// on three cars of other mods as a player's Player.log reads them and on cars the catalogue places by its guess, whose figures
+// the model cannot know (assumed, as said below). A car of another mod is asked for its kind's ride as CarHandling.Begin asks it, so
+// the design softens it as far as its springs' travel carries, and everything below is asked of the car so softened: for every
 // kind and level, the side grip against the game's own curve, the anti-roll bars, rolling over against what the tyres
 // hold, the damping, every turn the game's car makes with the key held up to its own top speed, the roll, the dive, the
 // steering and the brakes; with every build of the Garage's springs, weight and tyres on top; the custom shop's stopping
@@ -35,7 +37,8 @@ internal static partial class Program
         "petrollsfanton Luxury", "limo Luxury", "vordpony Sports", "ferdinand112 Sports", "mersaidimgagt Sports", "anselmoaf90 Sports", "umcnunavut Utility",
         "vordv150 Utility", "umcdesert Van", "umcdesertdeliveryjob Van", "mersaididash Van", "deliverytruck Truck", "freighttruckt1 Truck",
         "empiremustanggt:vehicletype_mustanggt Sports", "empirebmwg82:vehicletype_empirebmwg82 Sports", "other:tall van Van", "other:low coupe Sports",
-        "other:heavy truck Truck", "other:city car Economy" };
+        "other:heavy truck Truck", "other:city car Economy", "ferrarisf90spider-vehicle:vehicletype_ferrarisf90spider Sports", "bmwm4g82-vehicle:vehicletype_bmwm4g82 Sports",
+        "audir8-vehicle:vehicletype_audir8 Sports", "other:stiff suv Utility", "other:stiff pickup Utility", "other:stiff saloon Saloon", "other:stiff hatch Economy" };
 
     // The game's own tyres on every one of its cars (ArcadeTireFrictionPreset: B 7.09, C 0.87, D 2, E 0.5), as its curve's keys
     // were saved: slip, value, slope. It never peaks: up to 1.84 sideways on.
@@ -89,7 +92,60 @@ internal static partial class Program
             Car("other:low coupe", 1300f, 0.22f, 0.05f, 8000f, 32f, 120f, SteerCars, Axle(1.30f, 1.60f, 0.45f, 0.33f, 15000f, 0.15f, 0.9f), Axle(-1.20f, 1.62f, 0.45f, 0.33f, 15000f, 0.15f, 0.9f)),
             Car("other:heavy truck", 4000f, 0.70f, 0.90f, 4000f, 45f, 50f, SteerVans, Axle(3.20f, 2.05f, 0.65f, 0.50f, 24000f, 0.40f, 0.3f), Axle(-1.80f, 1.95f, 0.65f, 0.50f, 24000f, 0.40f, 0.3f)),
             Car("other:city car", 900f, 0.28f, 0.10f, 2000f, 38f, 55f, SteerVans, Axle(1.20f, 1.42f, 0.42f, 0.29f, 3600f, 0.45f, 0.3f), Axle(-1.15f, 1.42f, 0.42f, 0.29f, 3600f, 0.45f, 0.3f)),
+            // Three cars of other mods as a player's Player.log (November 2026) reads them: a Ferrari SF90 Spider, a BMW M4 G82 and an Audi R8, on springs of 237 000 to 279 000 N/m
+            // (3.8 to 4.7 Hz) and about 6 cm of travel at rest (a 10 cm kerb leaves them -4 cm), their brake torque the one that gives the log's own full pedal (1.249, 1.35, 1.33 g).
+            Logged("ferrarisf90spider-vehicle:vehicletype_ferrarisf90spider", 1670f, 0.15f, 273333f, 273333f, 7200f, 0.05935f, 0.026f, 17000f, 2205.5f),
+            Logged("bmwm4g82-vehicle:vehicletype_bmwm4g82", 1775f, 0.114f, 278571f, 264286f, 8400f, 0.05848f, 0.025f, 28000f, 2539.5f),
+            Logged("audir8-vehicle:vehicletype_audir8", 1595f, 0.179f, 253333f, 237500f, 11000f, 0.05973f, 0.027f, 24000f, 2243.7f),
+            // And cars of the kinds the catalogue's guess places under tier 85, sprung as stiffly and standing on as little travel (assumed): they are given the ride of their
+            // kind (0.8 Hz) as far as the travel carries it.
+            Logged("other:stiff suv", 2200f, 0.55f, 330000f, 330000f, 9000f, 0.06f, 0.05f, 16000f, 9000f),
+            Logged("other:stiff pickup", 2300f, 0.60f, 200000f, 200000f, 6000f, 0.08f, 0.05f, 12000f, 9000f),
+            Logged("other:stiff saloon", 1700f, 0.50f, 180000f, 170000f, 6000f, 0.08f, 0.04f, 11000f, 8000f),
+            Logged("other:stiff hatch", 1300f, 0.42f, 140000f, 130000f, 5000f, 0.07f, 0.04f, 9000f, 7000f),
         };
+    }
+
+    // A car of another mod from the figures a Player.log gives: its weight, the height of its centre of mass above the road, the springs' rates, the bars, the travel left to
+    // compress at rest, the height of the force points, the dampers and the brake torque; the front axle 1.2 m and the rear 1.45 m from the centre of mass, the track 1.62 m
+    // (assumed), the brake shares 1 and 0.55 as the log has them, the springs straight.
+    private static (string, CarChassis) Logged(string type, float mass, float comHeight, float frontRate, float rearRate, float bar, float rest, float point, float damper, float brakeTorque)
+    {
+        const float frontZ = 1.2f, rearZ = -1.45f;
+        float weight = mass * HandlingModel.G;
+        float wheelbase = frontZ - rearZ;
+        float lengthFront = rest + weight * (0f - rearZ) / (2f * wheelbase) / frontRate;
+        float lengthRear = rest + weight * (frontZ - 0f) / (2f * wheelbase) / rearRate;
+        (string name, CarChassis car) = Car(type, mass, comHeight + (0.45f - rest - 0.34f), 0f, brakeTorque, 35f, 250f, SteerCars,
+            Axle(frontZ, 1.62f, 0.45f, 0.34f, frontRate * lengthFront, lengthFront, point / lengthFront),
+            Axle(rearZ, 1.62f, 0.45f, 0.34f, rearRate * lengthRear, lengthRear, point / lengthRear));
+        foreach (AxleData axle in new[] { car.Front, car.Rear })
+        {
+            axle.AntiRoll = bar;
+            axle.Bump = damper;
+            axle.Rebound = damper;
+        }
+        car.Rear.BrakeShare = 0.55f;
+        return (name, car);
+    }
+
+    // A car of another mod: the types of other mods have a colon in their names (the game's own cars have none here), and are asked for their kind's ride as CarHandling.Begin asks it.
+    private static bool IsOtherMod(string type)
+    {
+        return type.IndexOf(':') >= 0;
+    }
+
+    // A car of the list as its mod made it: a design with a ride asked softens the car's springs in place, so each level is begun on a car of its own.
+    private static CarChassis FreshCar(string type)
+    {
+        foreach ((string name, CarChassis car) in GameCars())
+        {
+            if (name == type)
+            {
+                return car;
+            }
+        }
+        return null;
     }
 
     private static (string, CarChassis) Car(string type, float mass, float comY, float comZ, float brakeTorque, float steerLock, float topKmh, float[] steer, AxleData front, AxleData rear)
@@ -228,18 +284,27 @@ internal static partial class Program
         {
             Console.WriteLine("handling: car, kind, level | kg | com h | front rate N/m, Hz, damping ratio | bars | roll deg/g (force points m) | dive | rolls over g | tyres hold g, give past deg (city turn g at km/h) | steer 5/50/100 | brakes g, shares, from 100 km/h m");
         }
-        foreach ((string type, CarChassis car) in cars)
+        foreach ((string type, CarChassis first) in cars)
         {
             CarKind kind = KindOf(type);
+            bool other = IsOtherMod(type);
             Check(kind != CarKind.Untouched, "handling: " + type + " is a car of a kind");
+            CarChassis car = first;
             HandlingModel.GameTurn(car, game);
             float gameHeight = HandlingModel.GameHeight(car);
             var levelMass = new float[4];
             var levelRoll = new float[4];
             var levelHeld = new bool[4];
+            var levelRide = new float[4];     // Hz: the ride of the springs the design was made on (a car of another mod softened as far as its travel carries)
+            var levelTravel = new bool[4];    // the springs' travel held that ride off the one asked
             foreach (HandlingLevel level in new[] { HandlingLevel.Light, HandlingLevel.Full, HandlingLevel.Heavy })
             {
-                HandlingTarget target = HandlingRules.Target(kind, level, neutral);
+                if (level == HandlingLevel.Light && type.Contains("-vehicle:"))
+                {
+                    continue;   // at Light a car of another mod keeps the springs its mod made (3.8 to 4.7 Hz on 6 cm of travel), which the game's envelope for the Garage's builds below is not made for; Full and Heavy soften it
+                }
+                car = other ? FreshCar(type) : first;
+                HandlingTarget target = HandlingRules.Target(kind, level, neutral, other);
                 watch.Restart();
                 string why = HandlingModel.Design(car, target, setup);
                 watch.Stop();
@@ -254,11 +319,19 @@ internal static partial class Program
                 {
                     continue;
                 }
-                string name = type + " (" + kind + ", " + level + ")";
+                string name = type + " (" + kind + ", " + level + (setup.Softened ? ", softened" + (setup.SoftHeld ? " as far as its travel carries" : string.Empty) : string.Empty) + ")";
                 float ratio = setup.Mass / car.Mass;
+                if (other)
+                {
+                    // The game's own car is now the car as softened, in a turn and at rest: everything the design is held to is held to that car.
+                    HandlingModel.GameTurn(car, game);
+                    gameHeight = HandlingModel.GameHeight(car);
+                }
                 levelMass[(int)level] = setup.Mass;
                 levelRoll[(int)level] = setup.RollPerG;
                 levelHeld[(int)level] = setup.TipHeld;
+                levelRide[(int)level] = setup.Front.GameFrequency;
+                levelTravel[(int)level] = setup.SoftHeld;
 
                 // ---- the weight, the centre of mass, the springs and bars: the game's own, carrying a little more weight.
                 float kindMass = HandlingRules.KindMass(kind);
@@ -291,7 +364,13 @@ internal static partial class Program
                     float kerb = HandlingModel.KerbLeft(data, axle.SpringForce, axle.SpringLength, axle.Bump, axle.Rebound, axle.Load / HandlingModel.G, HandlingModel.Kerb);
                     float gameKerb = HandlingModel.KerbLeft(data, data.SpringForce, data.SpringLength, data.Bump, data.Rebound, axle.Load / ratio / HandlingModel.G, HandlingModel.Kerb);
                     Check(kerb >= gameKerb - KerbSpare, "handling: " + name + " " + end + ": a " + F(HandlingModel.Kerb * 100f) + " cm kerb leaves " + F(kerb * 100f) + " cm of travel (the game's " + F(gameKerb * 100f) + ")");
-                    Check(axle.Rebound >= axle.Bump * 0.99f && Near(axle.Bump / data.Bump, axle.Rebound / data.Rebound, 1e-3f), "handling: " + name + " " + end + "'s dampers keep the game's own shape");
+                    // The rates keep the game's own shape; the front's compression alone is firmed beyond the rebound's, as far as the front springs' travel asks (HandlingModel.FirmFront), never past MostDamping times the game's own for the weight.
+                    float bumpScale = axle.Bump / data.Bump;
+                    float reboundScale = axle.Rebound / data.Rebound;
+                    bool firmed = end == "front" && setup.FrontFirm > 1.001f;
+                    Check(firmed ? bumpScale >= reboundScale - 1e-3f && bumpScale <= HandlingModel.MostDamping * ratio + 1e-3f && Near(bumpScale, reboundScale * setup.FrontFirm, 2e-3f * setup.FrontFirm)
+                                 : axle.Rebound >= axle.Bump * 0.99f && Near(bumpScale, reboundScale, 1e-3f),
+                        "handling: " + name + " " + end + "'s dampers keep the game's own shape" + (firmed ? ", the compression firmed " + F(setup.FrontFirm) + " times for the front springs' travel" : string.Empty));
                 }
 
                 // ---- the side grip: the game's own curve to the knee, which lies past the slip the game's own hardest turn
@@ -501,11 +580,18 @@ internal static partial class Program
             }
 
             // ---- the levels against each other: Light the lightest, Heavy the heaviest; each rolls at least as much as the one
-            // below it, except where rolling over holds the higher one's roll back.
-            Check(levelMass[1] <= levelMass[2] && levelMass[2] <= levelMass[3] && (levelHeld[2] || levelRoll[1] <= levelRoll[2] + 0.02f) && (levelHeld[3] || levelRoll[2] <= levelRoll[3] + 0.02f),
+            // below it, except where rolling over holds the higher one's roll back, or where the springs' travel holds a car of
+            // another mod at a stiffer ride at the higher level: its lighter dampers swing the body further in a sudden turn, so
+            // the same travel carries less lean per g (HandlingModel.RollCarries), its outer springs keeping the same third in the hardest turn.
+            bool fullTravel = levelTravel[2] && levelRide[1] > 0f && levelRide[2] > levelRide[1] + 1e-3f;
+            bool heavyTravel = levelTravel[3] && levelRide[3] > levelRide[2] + 1e-3f;
+            Check(levelMass[1] <= levelMass[2] && levelMass[2] <= levelMass[3] && (levelHeld[2] || fullTravel || levelRoll[1] <= levelRoll[2] + 0.02f)
+                  && (levelHeld[3] || heavyTravel || levelRoll[2] <= levelRoll[3] + 0.02f),
                 "handling: " + type + " at Light, Full and Heavy weighs " + F(levelMass[1]) + ", " + F(levelMass[2]) + ", " + F(levelMass[3]) + " kg and rolls " + F(levelRoll[1]) + ", "
                 + F(levelRoll[2]) + ", " + F(levelRoll[3]) + " degrees per g" + (levelHeld[2] || levelHeld[3] ? " (rolling over holds " + (levelHeld[2] ? "Full's" : "") + (levelHeld[2] && levelHeld[3] ? " and " : "")
-                + (levelHeld[3] ? "Heavy's" : "") + " back)" : ""));
+                + (levelHeld[3] ? "Heavy's" : "") + " back)" : "")
+                + (fullTravel ? " (the springs' travel holds Full at " + F(levelRide[2]) + " Hz, stiffer than Light's " + F(levelRide[1]) + ")" : "")
+                + (heavyTravel ? " (the springs' travel holds Heavy at " + F(levelRide[3]) + " Hz, stiffer than Full's " + F(levelRide[2]) + ")" : ""));
         }
         Check(builds > 1000, "handling: every car with every Garage build of springs, weight and tyres, wet and dry (" + builds + ")");
         Check(brakeBuilds > 5000, "handling: every car's stop with every Garage build of brakes, weight, tyres and springs, at both onsets (" + brakeBuilds + ")");

@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Tech
         public int Refs;             // what their references say, 1 to 5 (found out by asking)
         public int Notice;           // days of notice to their employer
         public bool Taken;           // hired: by the player or a rival
+        public string History = string.Empty;   // past jobs a CV lists, "level:years:firm" joined by ";", newest first (HiringOffers.PastJobs)
         public bool Passive;         // found by a search firm: not on the open market
 
         /// <summary>The main skill the CV claims, whole points.</summary>
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul.Tech
         public int Due;                        // the day a search delivers
         public int Crew;                       // a data centre's crew search: the technicians briefed for (0 for a senior search)
         public int Hired;                      // ...of whom started so far, each paying a share of the fee
+        public int Posts = 1;                  // posts the ad fills: it stops bringing applicants once as many have accepted
 
         public bool CrewSearch => Search && Crew > 0;
         public bool Open(int day) => day >= From && day < To;
@@ -73,6 +75,7 @@ namespace RealLifeOverhaul.Tech
         public int Counter;             // what they came back with, cents an hour
         public int RivalBid;            // another company's offer, cents an hour
         public string RivalBy = string.Empty;
+        public int RivalLapse;          // the last day the player may beat the rival's bid; after it the rival takes the applicant. 0: a bid with no deadline (an older save)
         public int Start;               // the day they start, once accepted
         public int Revealed;            // what the interview found out: 1 the true skill, 2 the experience, 4 the fit, 8 the ask
 
@@ -101,6 +104,7 @@ namespace RealLifeOverhaul.Tech
     public sealed class HiringFile
     {
         public int Seed, FirstDay, LastDay = -1, NextId = 1;
+        public int People;                      // not saved: thousandths of the anchor day's professions' jobseekers among the city's people (the living population); 0 is read as 1000
         public readonly List<Seeker> Seekers = new List<Seeker>(HiringCatalogue.SeekersMost);
         public readonly List<JobAd> Ads = new List<JobAd>(HiringCatalogue.AdsMost);
         public readonly List<RivalAd> RivalAds = new List<RivalAd>(HiringCatalogue.RivalAdsMost);

@@ -101,6 +101,10 @@ namespace RealLifeOverhaul.Ledger
             _payWeek = PayWeek;
             ShareRegister();
             StartCoroutine(Guard.Routine(Tick()));
+            // The paper's first load after the save compiled behind the loading screen: its first run paid Mono's compiler in
+            // its frame of the start line, the screen clear (11.4 ms of a frame of 99 ms, the owner's log of 2 Nov 2026).
+            MomentWarm.Add("the City Ledger's first load after the save", typeof(LedgerDirector), typeof(LedgerStore), typeof(LedgerState), typeof(LedgerKiosks),
+                typeof(LedgerHome));
         }
 
         private void OnDestroy()
@@ -320,6 +324,9 @@ namespace RealLifeOverhaul.Ledger
                 OnlineSave(Save.modData);
             }
         }
+
+        /// <summary>The front page of its own that is up now (the obituary, the rich list); null for the morning's paper.</summary>
+        public LedgerSpecial ActiveSpecial => (_page ?? _spare)?.CurrentSpecial;
 
         /// <summary>A front page of its own (Permadeath's obituary), paper running or not; false while the menu cannot take it yet.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)

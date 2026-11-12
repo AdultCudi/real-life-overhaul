@@ -7,7 +7,7 @@ using RealLifeOverhaul.Flare;
 // account's posts are read, not a day number that stood for "never posted" (-1) and so passed the three days' check on
 // a new game's first two days. A reply under another's post, a sponsored post, a business's, a friend's or another
 // player's post is no post of the player's; one made after the message's minute or more than three days before it is
-// not "earlier". With no such post the city writes no chat, and the tests' messages open with a hello that claims none.
+// not "earlier". With no such post the city writes no chat but a hello that claims none (three wordings), and so do the tests' messages.
 internal static partial class Program
 {
     private static void FlareSawPost()
@@ -183,14 +183,14 @@ internal static partial class Program
     private static void SawPostSources()
     {
         string feed = ModSource(@"Social\Flare\FlareLiveRules.Feed.cs");
-        Check(feed.Contains("what = PostedBefore(f, at) ? \"chat\" : null;") && !feed.Contains("LastPostDay >= day - 3"),
+        Check(feed.Contains("what = PostedBefore(f, at) ? \"chat\" : roll % 3 == 0 ? \"hello\"") && !feed.Contains("LastPostDay >= day - 3"),
             "flare saw your post: the city's chat is decided by the player's real posts, not by the last post's day");
         string text = ModSource(@"Social\Flare\FlareText.Live.cs");
         Check(text.Contains("case \"chat\": return \"reallife_flare_dm_chat\";") && text.Contains("default: return \"reallife_flare_dm_hello\";"),
             "flare saw your post: only a chat's key names a post; any other first message is the hello");
         string tests = ModSource(@"Social\Flare\FlareDirector.Tests.cs"), invites = ModSource(@"Social\Flare\FlareDirector.Invites.cs"), live = ModSource(@"Social\Flare\FlareDirector.Live.cs");
         Check(!tests.Contains("\"reallife_flare_dm_chat\"") && !invites.Contains("\"reallife_flare_dm_chat\"") && tests.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))")
-              && invites.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))") && live.Contains("FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at)"),
+              && invites.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))") && live.Contains("FlareLiveRules.CityDm(_file, day, hiring, _myPlaces, out with, out what, out at, out about)"),
             "flare saw your post: the tests' messages and the city's daily one take their opener from the rule");
     }
 

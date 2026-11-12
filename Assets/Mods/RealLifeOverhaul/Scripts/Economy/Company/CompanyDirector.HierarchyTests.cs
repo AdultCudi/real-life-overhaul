@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy
             Escalation e = _hier.OpenOf(kind, mp.Place.Place) ?? LastOf(kind, mp.Place.Place);
             if (e != null && e.Open && e.Level < EscalationRules.LevelOwner)
             {
-                TryOne(e, day, Save.Hour);
+                CompanyDay.TryOne(this, e, day, Save.Hour);
             }
             TellOwner();
             return e;
@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 _ownerNew = 0;
                 DecideRaises(mp, skill, review, who, day, ManagerCatalogue.StaffHour);   // this place's raises, as at its hour
-                Handle(day, ManagerCatalogue.StaffHour, true);
+                CompanyDay.HandleRound(this, day, ManagerCatalogue.StaffHour, true);
                 TellOwner();
                 Escalation e = null;
                 for (int i = _hier.Escalations.Count - 1; i >= 0 && e == null; i--)

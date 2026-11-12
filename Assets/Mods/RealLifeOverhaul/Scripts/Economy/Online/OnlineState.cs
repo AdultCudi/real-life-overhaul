@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Unit = new int[OnlineCatalogue.OrderLines];   // cents, the price when ordered
         public readonly int[] Paid = new int[OnlineCatalogue.OrderLines];   // cents the picked units cost the shop
         public int Total;               // cents paid for what was picked
+        public int PickAt;              // not saved: the hour it may be picked from (a night order is held until the morning)
         public int Tilt;                // its prices against the going price when ordered, thousandths
         public bool Short;              // something asked for was not there
 
@@ -296,6 +297,7 @@ namespace RealLifeOverhaul.Economy
         public bool[] Measured = new bool[16];  // measured along the roads, not a straight line's guess
         public int Need, Price, Stars, Ads, Campaign, Cycle, Season, Crowd;   // the parts of PerDay, for the page and the log
         public int Mbps = NetSpeedRules.Unknown;   // the building's plan speed, outages aside: it sets the day's bound (OnlineRules.Most)
+        public int People;              // thousandths of the anchor day's online spending of the shop's kind among the city's households (the living population); 0 is read as 1000
         public bool Down;               // the connection is down in an outage this hour: no orders come
 
         public void Size(int lines, int districts)

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Construction
                 BuildModeButton(box);
                 if (office)
                 {
-                    InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bld_button_found", () => Answer(_director.Found()));
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bld_button_found", Found);
                 }
                 Guide(box);
                 return;

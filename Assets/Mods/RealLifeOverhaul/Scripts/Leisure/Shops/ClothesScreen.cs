@@ -41,6 +41,15 @@ namespace RealLifeOverhaul.Leisure
 
         public static bool Ready => !_failed && _ui != null && _grid != null;
 
+        /// <summary>Counts each pricing of what is worn (a pick, the opening, a Reset): the RLO interface reads the basket again only then.</summary>
+        internal static int BasketStamp { get; private set; }
+
+        /// <summary>Whether the screen is open as the shop at the rack (its basket is worth reading).</summary>
+        internal static bool Shopping => _mode == GridMode.Shop;
+
+        /// <summary>Whether a Reset has anything to put back: something tried on, or changes the game would ask about.</summary>
+        internal static bool CanReset => _ui != null && ((_save != null && _save.interactable) || (_mode != GridMode.Off && CharacterCatalogue.Differs(_before)));
+
         /// <summary>Once a second while clothes shops are on; does its work once per city.</summary>
         public static void Install()
         {
@@ -196,6 +205,7 @@ namespace RealLifeOverhaul.Leisure
                 if (mode == GridMode.Shop)
                 {
                     ClothesShop.Trying = false;
+                    ClothesSeen.Commit();   // what the shop showed is seen: its New filter lists only what comes after
                 }
                 CharacterData player = Player();
                 bool saved = player != null && !ReferenceEquals(player.elements, _piecesBefore);
@@ -303,9 +313,70 @@ namespace RealLifeOverhaul.Leisure
             return null;
         }
 
+        /// <summary>
+        /// The shop's basket for the RLO interface: each piece worn and not yet owned, by its name and price, as a Save would
+        /// buy them (a dress once, its skirt with it). False outside the shop.
+        /// </summary>
+        internal static bool Basket(List<string> names, List<int> prices)
+        {
+            names.Clear();
+            prices.Clear();
+            if (_mode != GridMode.Shop)
+            {
+                return false;
+            }
+            LookSex sex = ClothesShop.PlayerSex();
+            foreach (CharacterCatalogue.Slot slot in CharacterCatalogue.Slots)
+            {
+                if (slot.Sex != sex || slot.Index <= 0 || ClothesShop.Has(slot.Ids[slot.Index]))
+                {
+                    continue;
+                }
+                names.Add(ClothesShop.NameOf(slot, slot.Index));
+                prices.Add(ClothesShop.Price(slot.Ids[slot.Index]));
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The RLO interface's Reset: everything tried on taken off again and the preview back to what the player wears, as
+        /// the screen opened (the game's own start: its preview from the saved character, nothing to save).
+        /// </summary>
+        internal static bool Reset()
+        {
+            if (_ui == null || _ui.appearanceSetter == null || !_ui.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+            try
+            {
+                if (_mode != GridMode.Off)
+                {
+                    Undo("Reset on the RLO interface");
+                }
+                CharacterData player = Player();
+                if (player != null)
+                {
+                    _ui.appearanceSetter.SetAppearance(player.Copy());
+                }
+                if (_save != null)
+                {
+                    _save.interactable = false;
+                }
+                Price();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
         // In the shop the Save button names what buying costs, greyed while the money is not there.
         private static void Price()
         {
+            BasketStamp++;
             if (_mode != GridMode.Shop || _save == null)
             {
                 return;

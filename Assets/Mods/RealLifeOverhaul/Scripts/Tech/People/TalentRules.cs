@@ -509,10 +509,22 @@ namespace RealLifeOverhaul.Tech
             return (int)Math.Max(TalentCatalogue.RateLeast, rate);
         }
 
-        /// <summary>Whether a rival comes for a senior or above today.</summary>
-        public static bool Approached(int seed, Profile p, int day, int shortage, int esteem, int paid, int going)
+        /// <summary>
+        /// True if a rival could come for them today: a senior or above, not working a notice, with no earlier approach resting. Asked before the market's
+        /// shortage and the rivals' pull at their workplace are looked up, which most professionals (juniors and mids) never need.
+        /// </summary>
+        public static bool Approachable(Profile p, int day)
         {
-            if (p.Level < TalentCatalogue.PoachLevel || p.NoticeEnd > 0 || p.PoachDay > day)
+            return p.Level >= TalentCatalogue.PoachLevel && p.NoticeEnd <= 0 && p.PoachDay <= day;
+        }
+
+        /// <summary>
+        /// Whether a rival comes for a senior or above today; <paramref name="pull"/>, thousandths, is how hard rivals pull at
+        /// their workplace (a game studio whose hit paid its team no bonus pulls hard: StudioRules.Pull).
+        /// </summary>
+        public static bool Approached(int seed, Profile p, int day, int shortage, int esteem, int paid, int going, int pull = 1000)
+        {
+            if (!Approachable(p, day))
             {
                 return false;
             }
@@ -532,6 +544,7 @@ namespace RealLifeOverhaul.Tech
                 chance = chance * VentureCatalogue.OptionPoach / 1000;   // unvested options keep people
             }
             chance = chance * (1000 - TalentCatalogue.Clamp(esteem, -10, 10) * 25) / 1000;
+            chance = chance * Math.Max(0, pull) / 1000;
             return TechRandom.Hash(seed, TechRandom.Of(p.Id), day, 61) % 1000000u < (uint)Math.Max(0, chance);
         }
 

@@ -508,7 +508,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (k.SplitDay > 0)
             {
-                return MarketText.Fill("reallife_mkt_status_split", "ratio", k.SplitRatio.ToString(), "day", k.SplitDay.ToString());
+                return ExtrasText.Status(k);   // a split, or shares put together
             }
             if (k.ResultsDay > 0)
             {

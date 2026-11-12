@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Calendar
         public readonly CalendarList List = new CalendarList();
 
         private CalendarApp _view;
+        private RealLifeOverhaul.Ui.CalendarScreen _kit;   // the kit's screen of the app, told each time the app opens
         private PhoneApp _app;
         private float _next;
         private bool _gaveUp;     // the game's phone is not built as expected: logged once, not tried again
@@ -148,15 +149,23 @@ namespace RealLifeOverhaul.Calendar
             }
             var view = new CalendarApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_calendar_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(108, 178, 255, 255), new Color32(36, 92, 196, 255), 0.42f, "AppIcon-Calendar"),
                 Build = view.Build,
-                Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Opened = () =>
+                {
+                    view.Opened();
+                    _kit?.Opened();
+                },
+                Closed = view.Closed,
+                Kit = () => _kit = new RealLifeOverhaul.Ui.CalendarScreen(this),
+                KitScreen = "calendar",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Calendar,
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -167,6 +176,7 @@ namespace RealLifeOverhaul.Calendar
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
         }
 
         private static Sprite Glyph()
@@ -188,6 +198,7 @@ namespace RealLifeOverhaul.Calendar
             if (_app != null && Settings.Calendar)
             {
                 _view?.Want(month);
+                _kit?.Wanted(month);
                 _app.Open();
             }
         }

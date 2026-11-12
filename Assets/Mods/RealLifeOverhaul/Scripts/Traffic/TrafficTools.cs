@@ -34,6 +34,20 @@ namespace RealLifeOverhaul
             TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
             && !TrafficManager.Instance.enabled && !GoingPublic.TrafficMirrored;
 
+        private static int _measuredIn = -1;
+
+        /// <summary>
+        /// False in a frame in which a car new to the traffic's looks has been measured already (SolidGame, DriverGame): they
+        /// measure such cars outside their looks, one a frame between them.
+        /// </summary>
+        public static bool MeasureFree => _measuredIn != Time.frameCount;
+
+        /// <summary>A car new to the looks has been measured in this frame (<see cref="MeasureFree"/>).</summary>
+        public static void Measured()
+        {
+            _measuredIn = Time.frameCount;
+        }
+
         /// <summary>Layers that hold vehicles of any kind; 0 if the game's layer names ever change.</summary>
         public static int VehicleMask
         {
@@ -93,6 +107,16 @@ namespace RealLifeOverhaul
         /// <summary>The ground a vehicle really covers, from its colliders: its body's middle, the way it points, half its length and width.</summary>
         public static void Footprint(VehicleComponent car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth)
         {
+            Footprint(car, out centre, out forward, out halfLength, out halfWidth, out _);
+        }
+
+        /// <summary>
+        /// As above; <paramref name="exact"/> is true if every collider was read in its own space (boxes and meshes), so the figures
+        /// in the car's space are the same whichever way it is turned, while it stands upright.
+        /// </summary>
+        public static void Footprint(VehicleComponent car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth, out bool exact)
+        {
+            exact = true;
             Transform body = car.transform;
             forward = body.forward;
             forward.y = 0f;
@@ -128,8 +152,9 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    own = collider.bounds;   // already in the world
+                    own = collider.bounds;   // already in the world: as the car is turned
                     at = null;
+                    exact = false;
                 }
                 Vector3 min = own.min;
                 Vector3 max = own.max;

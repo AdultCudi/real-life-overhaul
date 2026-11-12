@@ -12,12 +12,12 @@ namespace RealLifeOverhaul.Economy
     {
         private const int Overdraft = 0, Card = 1, BusinessLoan = 2, CarFinance = 3, HomeLoan = 4, Consolidate = 5, ProductCount = 6;
 
-        private static readonly string[] ProductKeys =
+        internal static readonly string[] ProductKeys =
         {
             "reallife_econ_kind_overdraft", "reallife_econ_kind_card", "reallife_econ_kind_business", "reallife_econ_kind_car", "reallife_econ_kind_home", "reallife_econ_kind_consolidate"
         };
 
-        private static readonly string[] AboutKeys =
+        internal static readonly string[] AboutKeys =
         {
             "reallife_econ_about_overdraft", "reallife_econ_about_card", "reallife_econ_about_business", "reallife_econ_about_car", "reallife_econ_about_home", "reallife_econ_about_consolidate"
         };
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Economy
             string record = FinanceText.T("reallife_econ_business_record", "days", days.ToString(), "profit", FinanceText.Money(profit));
             if (offer.Answer != ProductAnswer.Yes)
             {
-                if (offer.Answer == ProductAnswer.NoSecurity)
+                if (offer.Answer == ProductAnswer.NoSecurity || offer.Answer == ProductAnswer.NoCover)
                 {
                     box.Line(record);
                 }

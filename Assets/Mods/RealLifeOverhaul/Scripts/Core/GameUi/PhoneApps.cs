@@ -530,8 +530,8 @@ namespace RealLifeOverhaul.GameUi
                 }
                 Spread.Begin();
                 Finish();
-                string hudSays = hud != null ? hud.PageCheck() : "gone: FAIL";
-                string stripSays = strip != null ? strip.PageCheck() : "not paged: PASS";
+                string hudSays = hud != null ? hud.PageCheck() + "; " + hud.MoreEverywhere() : "gone: FAIL";
+                string stripSays = strip != null ? strip.PageCheck() + "; " + strip.MoreEverywhere() : "not paged: PASS";
                 bool same = hud != null && hud.Pages == pagesBefore && (strip == null || strip.Pages == stripBefore);
                 string visitor = hud.VisitorCheck();   // another mod's button shown again by its mod joins the pages (Hotelier and Restaurateur's)
                 bool ok = !hudSays.Contains("FAIL") && !stripSays.Contains("FAIL") && !visitor.Contains("FAIL") && same;
@@ -607,7 +607,26 @@ namespace RealLifeOverhaul.GameUi
             }
             root.AddComponent<PhoneAppRoot>().App = this;
             Root = root;
+            KitOver();
             return true;
+        }
+
+        // The app's panel is built asleep: the kit's face, if it has one, binds over it now, before the game's Select switches the
+        // panel on, so the first opening shows the kit alone, as every later one does (UiShell.Built is the one way, for every app).
+        private void KitOver()
+        {
+            if (_def.Kit == null || string.IsNullOrEmpty(_def.KitScreen))
+            {
+                return;
+            }
+            try
+            {
+                RealLifeOverhaul.Ui.UiShell.Built(_def.KitScreen);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // Each phone's private "appButtonTemplate"; failing that the object of that name; failing that any button of the kind
@@ -669,17 +688,36 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Opens the mod's app of that id as its button does; false, with nothing done, when it is not on the phone.</summary>
         public static bool OpenById(string id)
         {
+            string want = null;
+            int at = id != null ? id.IndexOf(WantMark) : -1;
+            if (at > 0)
+            {
+                want = id.Substring(at + 1);   // a calendar entry names the app and the place in it: "RealLifeServices#3:bid:7"
+                id = id.Substring(0, at);
+            }
             if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed)
             {
                 return false;
+            }
+            if (want != null && Wants.TryGetValue(id, out Action<string> take) && take != null)
+            {
+                take(want);
             }
             app.Open();
             return true;
         }
 
+        /// <summary>Between an app's id and what to open in it, in the id a calendar entry carries.</summary>
+        public const char WantMark = '#';
+
+        /// <summary>By app id: what an app does with the place a link named in it (its tab and row), before it opens; set by the app's director.</summary>
+        public static readonly Dictionary<string, Action<string>> Wants = new Dictionary<string, Action<string>>(8, StringComparer.Ordinal);
+
         /// <summary>The app's name as its button shows it, in the game's language; null when it is not on the phone.</summary>
         public static string TitleOf(string id)
         {
+            int mark = id != null ? id.IndexOf(WantMark) : -1;
+            id = mark > 0 ? id.Substring(0, mark) : id;
             if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed || app._def == null)
             {
                 return null;

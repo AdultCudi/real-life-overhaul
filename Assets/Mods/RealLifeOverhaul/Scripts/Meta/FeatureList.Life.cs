@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_social_header")
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
                 .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
+                .Owns(Settings.FamilyInterestId)   // who the player is interested in: the people who can fall for them, who they can ask out; no preset sets it, it is their own
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)
                 .Data("reallife:social", "reallife:social_*")
@@ -200,6 +201,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("social_slack", () => Guide.Number(SocialRules.Slack))
                 .Fact("social_date_aff", () => Guide.Number(SocialRules.DateAffection))
                 .Fact("social_date_trust", () => Guide.Number(SocialRules.DateTrust))
+                .Fact("social_age_gap", () => RomanceRules.AgeGap.ToString(CultureInfo.InvariantCulture))
                 .Fact("social_partner_aff", () => Guide.Number(SocialRules.PartnerAffection))
                 .Fact("social_partner_trust", () => Guide.Number(SocialRules.PartnerTrust))
                 .Fact("social_partner_days", () => SocialRules.PartnerDays.ToString(CultureInfo.InvariantCulture))
@@ -256,6 +258,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ledger_mile_big", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.BigRung - 1]))
                 .Fact("ledger_mile_city", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.CityRung - 1]))
                 .Fact("ledger_top_lead", () => Guide.Percent(Ledger.LedgerStories.TopLeadBp / 10000f))
+                .Fact("ledger_lead_margin", () => Guide.Percent(Ledger.LedgerLeads.LeadBp / 10000f))
+                .Fact("ledger_lead_most", () => Whole(Ledger.LedgerLeads.CityMost))
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
@@ -479,7 +483,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddOwnFacts(Features.Add("careers_own", "reallife_meta_title_careers_own")
                 .About("reallife_guide_careers_own_about").Help("reallife_guide_careers_own")
-                .Owns(Settings.CareersOwnId, Settings.CareersOwnOfferNotesId)
+                .Owns(Settings.CareersOwnId, Settings.CareersOwnOfferNotesId, Settings.CareersOwnDeskId, Settings.CareersOwnHoursId)
                 .Test("reallife_own_test_contract", "reallife_own_test_found")
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
@@ -642,8 +646,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("navigation", "reallife_meta_title_nav")
                 .Group("reallife_nav_header")
                 .About("reallife_guide_nav_about").Help("reallife_guide_nav")
-                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId, Settings.NavOtherRouteId,
-                    Settings.MapPlacesShownId, Settings.SpecialNamesId)
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId,
+                    Settings.Minimap25Id, Settings.NavOtherRouteId, Settings.MapPlacesShownId, Settings.SpecialNamesId)
                 .Present(Settings.NavOtherRouteId, () => OtherMods.VoogleRoute.Loaded)   // a row that is there only with that mod switched on
                 .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
                 .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))
@@ -742,7 +746,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")
                 .Owns(Settings.FamilyId, Settings.FamilyAtHomeId, Settings.FamilyWeddingId, Settings.FamilyChildrenId, Settings.FamilyRelativesId,
-                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyInterestId, Settings.FamilyYearWeeksId)
+                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId)
                 .Preset(Settings.FamilyFrictionId, 0, 1, 1)
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")
@@ -774,7 +778,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("family_nursery", () => Guide.Money(Family.FamilyBalance.NurseryPerMonth))
                 .Fact("family_nanny", () => Guide.Money(Family.FamilyBalance.NannyPerMonth))
                 .Fact("family_school", () => Guide.Money(Family.FamilyBalance.PrivateSchoolPerMonth))
-                .Fact("family_year_weeks", () => Settings.FamilyYearWeeks.ToString(CultureInfo.InvariantCulture))
+                .Fact("family_year_weeks", () => Family.ChildYearRules.Weeks(Settings.FamilyYearWeeks).ToString(CultureInfo.InvariantCulture))
                 .Fact("family_counselling", () => Guide.Money(Family.FamilyBalance.CounsellingCost))
                 .Fact("family_settlement", () => Guide.Percent(Family.FamilyBalance.SettlementShare))
                 .Fact("family_settlement_most", () => Guide.Money(Family.FamilyBalance.SettlementCap))

@@ -63,7 +63,18 @@ namespace RealLifeOverhaul.Economy
                 .Fact("sale_counter", () => Whole(ServicesCatalogue.CounterStepPct))
                 .Fact("sale_walk", () => Whole(ServicesCatalogue.CounterWalkPct))
                 .Fact("sale_part_days", () => Whole(ServicesCatalogue.InstalmentDays))
-                .Fact("sale_clause_penalty", () => Whole(ServicesCatalogue.ClausePenaltyPct));
+                .Fact("sale_clause_penalty", () => Whole(ServicesCatalogue.ClausePenaltyPct))
+                .Fact("sale_quality_least", () => Whole(ServicesCatalogue.QualityLeastPct))
+                .Fact("sale_quality_most", () => Whole(ServicesCatalogue.QualityMostPct))
+                .Fact("sale_interior_short", () => Whole(ServicesCatalogue.InteriorShortPct))
+                .Fact("sale_interior_top", () => Whole(ServicesCatalogue.InteriorTopPct))
+                .Fact("sale_rating_swing", () => Whole(ServicesCatalogue.RatingSwingPct / 2))
+                .Fact("sale_skill_swing", () => Whole(ServicesCatalogue.SkillSwingPct / 2))
+                .Fact("sale_rival_weeks", () => Whole(ServicesCatalogue.RivalPurseWeeks))
+                .Fact("sale_rival_least", () => Whole(ServicesCatalogue.RivalLeastPct))
+                .Fact("sale_rsale_ask", () => Whole(ServicesCatalogue.RivalSaleAskPct))
+                .Fact("sale_rsale_days", () => Whole(ServicesCatalogue.RivalSaleOpenDays))
+                .Fact("sale_rsale_gap", () => Whole(ServicesCatalogue.RivalSaleGapDays));
         }
 
         private static string Whole(int value) => value.ToString(Inv);

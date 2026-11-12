@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Economy
             EstateUnit u = h.Units[0];
             if (!u.Let)
             {
-                return EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString());
+                return EstateText.Empty(u.VoidDays);
             }
             return u.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", u.ArrearsDays.ToString())
                 : EstateText.T("reallife_estate_state_let", "who", EstateText.Tenant(h.Use, u.Tenant));
@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Economy
                 row.Set(6, EstateText.Money(state.Hire.TakingsYear), state.Hire.TakingsYear);
                 row.Set(7, EstateText.Money(state.Hire.CostsYear), state.Hire.CostsYear);
             }
+            WriteSpacesHeld(ref selected);   // the parking spaces held (ParkSpaces)
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_nothing_owned"));
@@ -293,7 +294,7 @@ namespace RealLifeOverhaul.Economy
                     empty += u.Let ? 0 : 1;
                     owed += u.Arrears;
                     string who = u.Let ? EstateText.Tenant(h.Use, u.Tenant) : EstateText.T("reallife_estate_row_nobody");
-                    string standing = !u.Let ? EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString())
+                    string standing = !u.Let ? EstateText.Empty(u.VoidDays)
                         : u.CourtDay > 0 ? EstateText.T("reallife_estate_state_court", "day", u.CourtDay.ToString())
                         : u.NoticeEnd > 0 ? EstateText.T("reallife_estate_state_notice", "day", u.NoticeEnd.ToString())
                         : u.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", u.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_paying");

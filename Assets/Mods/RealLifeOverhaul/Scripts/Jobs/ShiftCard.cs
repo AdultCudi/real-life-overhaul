@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -12,6 +13,8 @@ namespace RealLifeOverhaul
     /// The shift's figures on a copy of the game's job panel (top right), made asleep without its script: a headline and five
     /// lines, each written only on a change, under the game's own panel while that shows. While it shows, the game's
     /// notifications start under it (GameUi.NoticeRoom), so they never cover its lines. <see cref="Make"/> gives null if it cannot.
+    /// While the RLO interface's HUD shows, the HUD draws every card shown as a side panel of its own (Ui/HudScreens/HudSides)
+    /// and the copy stays shown but unseen (<see cref="Unseen"/>), so whatever reads it reads it as before.
     /// </summary>
     public sealed class ShiftCard
     {
@@ -37,6 +40,10 @@ namespace RealLifeOverhaul
         private GameBar _bar;
         private bool _barTried;
         private NoticeRoomMark _room;
+        private CanvasGroup _seen;
+
+        private static readonly List<ShiftCard> Made = new List<ShiftCard>(4);   // every copy made this city, for the HUD to read
+        private static bool _unseen;
 
         private ShiftCard(GameObject panel, TMP_Text title, TMP_Text[] lines, GameObject gamePanel)
         {
@@ -123,9 +130,20 @@ namespace RealLifeOverhaul
                 Vector2 size = box.sizeDelta;
                 size.y = -FirstLine + LineStep * (Lines - 1) + Foot;
                 box.sizeDelta = size;
-                panel.AddComponent<Canvas>();   // batched by itself: a line written here does not rebuild the HUD's canvas
+                // The game's panel can already carry a canvas or a group (it adds one while its job shows), and the copy keeps what the
+                // original had at that moment, so a component is taken when it is there and added only when it is not.
+                if (panel.GetComponent<Canvas>() == null)
+                {
+                    panel.AddComponent<Canvas>();   // batched by itself: a line written here does not rebuild the HUD's canvas
+                }
                 var card = new ShiftCard(panel, title, lines, game.panel);
-                card._room = panel.AddComponent<NoticeRoomMark>();   // the game's notifications start under it while it shows (GameUi.NoticeRoom)
+                card._room = panel.GetComponent<NoticeRoomMark>() ?? panel.AddComponent<NoticeRoomMark>();   // the game's notifications start under it while it shows (GameUi.NoticeRoom)
+                card._seen = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();   // the mod's own copy: unseen while the HUD draws it
+                card._seen.interactable = false;
+                card._seen.blocksRaycasts = false;
+                card._seen.alpha = _unseen ? 0f : 1f;
+                Made.RemoveAll(c => c == null || !c.Alive);
+                Made.Add(card);
                 panel.SetActive(false);
                 root.SetParent(game.transform, false);
                 root.SetAsFirstSibling();
@@ -219,9 +237,60 @@ namespace RealLifeOverhaul
 
         public void Destroy()
         {
+            Made.Remove(this);
             if (_panel != null)
             {
                 UnityEngine.Object.Destroy(_panel);
+            }
+        }
+
+        /// <summary>True while the card is up (unseen or not): the HUD's side panel shows it.</summary>
+        public bool Shown => _shown && _panel != null;
+
+        /// <summary>The headline as last written; null before it was.</summary>
+        public string TitleWords => _titleWords;
+
+        /// <summary>One of the five lines as last written (null or empty: blank).</summary>
+        public string Words(int line) => line >= 0 && line < Lines ? _words[line] : null;
+
+        /// <summary>One of the five lines' colours as last written.</summary>
+        public Color32 Colour(int line) => line >= 0 && line < Lines ? _colour[line] : new Color32(255, 255, 255, 255);
+
+        /// <summary>The card's bar if a job asked for one (<see cref="Bar"/>), without making one.</summary>
+        public GameBar MadeBar => _bar != null && _bar.Alive ? _bar : null;
+
+        /// <summary>Every copy made this city that still stands, oldest first; read, never kept.</summary>
+        public static int Count(List<ShiftCard> into)
+        {
+            into.Clear();
+            for (int i = Made.Count - 1; i >= 0; i--)
+            {
+                if (Made[i] == null || !Made[i].Alive)
+                {
+                    Made.RemoveAt(i);
+                }
+            }
+            into.AddRange(Made);
+            return into.Count;
+        }
+
+        /// <summary>
+        /// Every card unseen while the RLO interface's HUD draws them (true), or seen again (false): each stays up and keeps
+        /// its words, so nothing that reads it changes.
+        /// </summary>
+        public static void Unseen(bool unseen)
+        {
+            if (_unseen == unseen)
+            {
+                return;
+            }
+            _unseen = unseen;
+            for (int i = 0; i < Made.Count; i++)
+            {
+                if (Made[i] != null && Made[i]._seen != null)
+                {
+                    Made[i]._seen.alpha = unseen ? 0f : 1f;
+                }
             }
         }
 

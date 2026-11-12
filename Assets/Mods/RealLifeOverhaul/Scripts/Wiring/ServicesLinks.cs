@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Planner;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -11,7 +12,7 @@ namespace RealLifeOverhaul
     {
         /// <summary>
         /// The cleaning service and selling a business (ServicesBridges) with Ventures (investors bought out through its
-        /// own buy-out), the credit side (business loans paid off exactly as the game's EconoView does it), running a
+        /// own buy-out, and its investors as buyers by name), the credit side (business loans paid off exactly as the game's EconoView does it), running a
         /// business and the Planner. Called when a business's value is shown and when a sale completes.
         /// </summary>
         public static class ServicesLinks
@@ -65,6 +66,30 @@ namespace RealLifeOverhaul
                 }
             }
 
+            /// <summary>The app id a calendar entry of the services carries: the app, then the tab and row the entry is about (an offer for a
+            /// contract, an offer for a business, a part still to come).</summary>
+            internal static string CalendarApp(string app, int kind, int number)
+            {
+                string want = null;
+                ServicesState s = ServicesDirector.Instance != null ? ServicesDirector.Instance.State : null;
+                if (s != null && kind == 1)
+                {
+                    for (int i = 0; i < s.Offers.Count && want == null; i++)
+                    {
+                        want = ServicesCatalogue.Number(s.Offers[i].Place) == number ? ServicesDirector.TabContracts + ":offer:" + s.Offers[i].Place : null;
+                    }
+                }
+                else if (kind == 2)
+                {
+                    want = ServicesDirector.TabSale + ":bid:" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+                else if (kind == 3)
+                {
+                    want = ServicesDirector.TabSale + ":";
+                }
+                return want != null ? app + GameUi.PhoneApp.WantMark + want : app;
+            }
+
             private const string PayOffKey = "ba:transaction_loanpayoff";   // the game's own, for a loan paid off (LoanEntryUi.PayOffLoan)
 
             private static readonly ServicesSource Source = new ServicesSource();
@@ -78,6 +103,10 @@ namespace RealLifeOverhaul
                 ServicesBridges.LoansOwed = LoansOwed;
                 ServicesBridges.SettleLoans = SettleLoans;
                 ServicesBridges.BusinessGone = BusinessGone;
+                ServicesBridges.StaffKept = StaffKept;
+                ServicesBridges.RivalHanded = RivalHanded;
+                ServicesBridges.HoldsStaff = HoldsStaff;
+                ServicesBridges.Investors = InvestorNames;
                 CompanyBridges.OtherIncome = BusinessSales.GainsBetween;   // a sale's gain goes into the quarter's return
                 CompanyBridges.Cleaned = CleaningService.Covers;            // the staff rota planner asks for no cleaning shift where the service cleans
                 PlannerDirector.Instance?.AddSource(Source);
@@ -228,6 +257,68 @@ namespace RealLifeOverhaul
                 finally
                 {
                     Loans.Clear();   // no loan of the game's kept past the payment, a fault or not
+                }
+            }
+
+            // The save's investors (Ventures' cast), by name: the people and firms who could buy a business of the player's.
+            private static void InvestorNames(List<string> into)
+            {
+                try
+                {
+                    VenturesDirector ventures = VenturesDirector.Instance;
+                    VenturesFile file = ventures != null && ventures.Running ? ventures.File : null;
+                    for (int i = 0; file != null && i < file.Investors.Count; i++)
+                    {
+                        if (file.Investors[i] != null)
+                        {
+                            into.Add(file.Investors[i].Name);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.InvestorNames", e);
+                    into.Clear();
+                }
+            }
+
+            private static void StaffKept(List<string> ids)
+            {
+                try
+                {
+                    RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldStaff(ids);
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.StaffKept", e);
+                }
+            }
+
+            private static void RivalHanded(Address address)
+            {
+                try
+                {
+                    if (address != null)
+                    {
+                        RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldBusiness(address.streetName, address.streetNumber);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.RivalHanded", e);
+                }
+            }
+
+            private static bool HoldsStaff()
+            {
+                try
+                {
+                    return RealLifeOverhaul.Population.PopulationDirector.Instance != null && RealLifeOverhaul.Population.PopulationDirector.Instance.CanHold;
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.HoldsStaff", e);
+                    return false;
                 }
             }
 

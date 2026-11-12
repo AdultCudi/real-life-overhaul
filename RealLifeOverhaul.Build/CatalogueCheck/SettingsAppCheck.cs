@@ -392,6 +392,7 @@ namespace RealLifeOverhaul
             Console.WriteLine($"  the groups and pages from {built.Count} rows and {tests.Count} test tools {tabsMs:0.000} ms; one search over {lines.Count} lines {findMs:0.000} ms");
             Check(tabsMs < 2.0, "making the groups and pages takes " + tabsMs.ToString("0.00") + " ms");
             Check(findMs < 2.0, "a search over every line takes " + findMs.ToString("0.00") + " ms");
+            checks += OverhaulTestsCheck.Run(fail, src, built);
             Console.WriteLine($"  {checks} checks of the Settings app");
             if (checks < 200) fail("settings app: only " + checks + " checks ran");
         }

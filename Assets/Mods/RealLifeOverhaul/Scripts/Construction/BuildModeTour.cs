@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Construction
     /// preference). Its parts are the designer's (BuildModeKit) under build mode's interface; made at the first tour. Nothing
     /// runs a frame.
     /// </summary>
-    internal sealed class BuildModeTour
+    internal sealed class BuildModeTour : IBuildTour
     {
         private const string Pref = "reallife.buildmode.tour";   // not a locale key: a dot, not an underscore
         private const float CardWide = 1120f;

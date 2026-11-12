@@ -136,7 +136,7 @@ internal static partial class Program
         Check(agree && grows, "street age: an age true from the day they were met shows the same on the People page that day, whatever their birthday, and grows at the next birthday; "
                               + "a seat rolled on day 1 would have shown more (why the street sets the day)");
         string links = TextsSource(@"Wiring\StreetLinks.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs");
-        Check(links.Contains("p.AgeDay = Mathf.Max(1, SocialLife.Day);") && links.Contains("SocialTalk.AgeOf(p)") && links.Contains("StreetBridges.AgeOf = AgeOf;")
+        Check(links.Contains("SocialRules.SetAge(p, Mathf.Clamp(m.Age, 18, 85), SocialLife.Day);") && links.Contains("SocialTalk.AgeOf(p)") && links.Contains("StreetBridges.AgeOf = AgeOf;")
               && talk.Contains("{ \"age\", AgeShown(c).ToString(System.Globalization.CultureInfo.InvariantCulture) }") && talk.Contains("StreetBridges.AgeOf(cast)"),
             "street age: met in the street, the age is true from that day; somebody known says the People page's age (SocialTalk.AgeOf), anybody else the figure's");
         Check(TextsSource(@"Street\StreetGuide.cs").Contains("\"reallife_street_test_age\", () => StreetDirector.Instance?.TestAge()") && TextsSource(@"Street\StreetDirector.Tests.cs").Contains("TestBegin(true);")

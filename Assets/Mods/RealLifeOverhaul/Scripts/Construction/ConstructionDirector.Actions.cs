@@ -114,19 +114,30 @@ namespace RealLifeOverhaul.Construction
             return null;
         }
 
+        /// <summary>
+        /// The company is to be known for <paramref name="s"/>. The first choice is free of the wait and is used up only
+        /// by a speciality set, never by asking for what the company is known for already; every later one waits
+        /// <see cref="BuildCatalogue.SpecialityRest"/> days from the last (FirmRules.ChooseSpeciality). The app lists every
+        /// speciality as a choice of its own and asks in the game's question box first. Returns a text key for a refusal.
+        /// </summary>
         public string SetSpeciality(Speciality s)
         {
             FirmFile f = _state.Firm;
-            if (f.Speciality == s)
+            if (f.Founded <= 0)
             {
-                return null;
+                return "reallife_bld_answer_no_company";
             }
-            if (f.SpecialSince > 0 && ConstructionGame.Day - f.SpecialSince < BuildCatalogue.SpecialityRest)
+            int day = ConstructionGame.Day;
+            switch (FirmRules.ChooseSpeciality(f.Speciality, f.SpecialSince, s, day))
             {
-                return "reallife_bld_answer_speciality_rest";
+                case SpecialityChoice.Same:
+                    return null;
+                case SpecialityChoice.Waits:
+                    return "reallife_bld_answer_speciality_rest";
             }
             f.Speciality = s;
-            f.SpecialSince = ConstructionGame.Day;
+            f.SpecialSince = day;
+            Logger?.Info("Construction: the company is known for " + s + " from day " + day + ".");
             Changed();
             return null;
         }
@@ -163,7 +174,8 @@ namespace RealLifeOverhaul.Construction
             DevFile dev = _state.Development(lot);
             return (dev != null && (dev.Handed || dev.SiteId > 0 || dev.Design == NoDesign || dev.Public)) || _state.CityRedevOn(lot) != null   // or the city redevelops it
                    || GrowUnderWayOn(lot)   // or the city's growth builds there
-                   || ParkUnderWayOn(lot);  // or one of its builders has a car park there
+                   || ParkUnderWayOn(lot)   // or one of its builders has a car park there
+                   || AuctionOn(lot);       // or the city has it under the hammer
         }
 
         /// <summary>A lot bought outright at its price. Returns a text key.</summary>

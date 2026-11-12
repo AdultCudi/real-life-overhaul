@@ -114,6 +114,7 @@ namespace RealLifeOverhaul
         private long _splitAt;
         private bool _timing;   // this look is being measured
         private int _carsMost, _peopleMost, _proxiesMost, _brakedMost;
+        private int _walkersMost, _standingMost, _standingReadMost;   // the people looked over in a look, at most
 
         private void Awake()
         {
@@ -121,6 +122,9 @@ namespace RealLifeOverhaul
             _brakes = gameObject.AddComponent<SolidBrakes>();
             ScenePrewarm.Add("streets: the road map and the city's marked crossings being listed for the traffic", Prewarm);
             ScenePrewarm.Add("traffic: the stand-ins for people in the road being made", PrewarmStandIns);
+            // The look's code compiled behind the loading screen (Core/LoadWarm): compiled in the first look it was 6.9 ms (2 Nov 2026).
+            LoadWarm.Add("traffic: the look for people in the road compiled",
+                new[] { typeof(SolidStreets), typeof(SolidGame), typeof(SolidRules), typeof(SolidBrakes) });
         }
 
         private void OnDestroy()
@@ -157,11 +161,38 @@ namespace RealLifeOverhaul
             float now = Time.time;
             if (now < _next)
             {
+                if (MeasureNow)
+                {
+                    MeasureWaiting();   // a car the last look saw, measured in a frame with no look
+                }
                 return;
             }
             try
             {
                 Step(now);
+                if (_game.WaitedFor > MeasureWaitMost && MeasureNow)
+                {
+                    MeasureWaiting();   // no frame without a look came (a very low frame rate): after the look, outside it
+                }
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+            }
+        }
+
+        private const float MeasureWaitMost = 0.5f;   // seconds a car seen in a look may wait for a frame with no look to be measured in
+
+        // A car the looks saw waits to be measured, the looks are working, and no car has been measured in this frame yet.
+        private bool MeasureNow => _game.Waiting && _working && Settings.SolidStreets && ModState.Loaded && TrafficTools.Ready && TrafficTools.MeasureFree;
+
+        // One car seen in a look and not measured yet: its figures, once, outside every look (three measured inside one were a
+        // look of 1.7 ms). A fault is the look's (Fault): everything given back, and after three the cars are the game's alone.
+        private void MeasureWaiting()
+        {
+            try
+            {
+                _game.MeasureWaiting(Manager.GetVehicleList());
             }
             catch (Exception e)
             {
@@ -442,7 +473,14 @@ namespace RealLifeOverhaul
                          + $"; where it went, on average and in the worst look (microseconds): the cars gathered {_splitTotal[0] * micro / _ticks:F0} and {_splitWorst[0] * micro:F0}, "
                          + $"the people {_splitTotal[1] * micro / _ticks:F0} and {_splitWorst[1] * micro:F0}, "
                          + $"the strips and the decisions {_splitTotal[2] * micro / _ticks:F0} and {_splitWorst[2] * micro:F0}, "
-                         + $"the stand-ins and the fades {_splitTotal[3] * micro / _ticks:F0} and {_splitWorst[3] * micro:F0}; the diagnostics' own lines are not counted.");
+                         + $"the stand-ins and the fades {_splitTotal[3] * micro / _ticks:F0} and {_splitWorst[3] * micro:F0}; the diagnostics' own lines are not counted; "
+                         + $"people looked over in a look, at most: {_walkersMost} walking and {_standingMost} standing or sitting, "
+                         + $"{_standingReadMost} of those near enough when last listed to be read; "
+                         + $"outside the looks, {_game.MeasuredOut} car(s) measured in frames of their own ({_game.MeasureWorst * micro:F0} microseconds at most) "
+                         + $"and {_game.CopiedByKind} that took the figures of a car of their kind.");
+            _walkersMost = _standingMost = _standingReadMost = 0;
+            _game.MeasuredOut = _game.CopiedByKind = 0;
+            _game.MeasureWorst = 0L;
             _ticks = 0;
             _tickTotal = 0;
             _tickWorst = 0;

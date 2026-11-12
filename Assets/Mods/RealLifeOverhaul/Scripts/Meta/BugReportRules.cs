@@ -147,6 +147,7 @@ namespace RealLifeOverhaul.Meta
         public const int ErrorChars = 120;         // of an error's message in the failure notification: the toast takes 240 in all
         public const int KeepReports = 5;          // reports kept in the folder, the new one with them: older ones are deleted
         public const int MostWords = 500;          // characters the player may type: a few sentences; the rest belongs in the post
+        public const int BoxWords = MostWords / 2; // the two boxes share that limit, what happened and what was expected
         public const int SummaryWords = 900;       // characters of them on the clipboard: Discord takes 2,000 in a message
         public const int LineChars = 400;          // of one log line in report.txt: an exception's message, not a page of it
         public const long LogCap = 6L * 1024 * 1024;       // bytes of Player.log copied: its last 6 MB, some 600 KB zipped
@@ -659,6 +660,39 @@ namespace RealLifeOverhaul.Meta
         public static string ExplorerSelect(string path)
         {
             return "/select,\"" + path + "\"";
+        }
+
+        /// <summary>
+        /// The two boxes and where it happened, as one report. Each box is cut to <see cref="BoxWords"/> and the whole to
+        /// <see cref="MostWords"/>, so the file stays the length the one box used to allow.
+        /// </summary>
+        public static string Join(string happened, string expected, string where)
+        {
+            string done = Cut(happened == null ? string.Empty : happened.Trim(), BoxWords);
+            string wanted = Cut(expected == null ? string.Empty : expected.Trim(), BoxWords);
+            var text = new StringBuilder(done.Length + wanted.Length + 96);
+            if (done.Length > 0)
+            {
+                text.Append(done);
+            }
+            if (wanted.Length > 0)
+            {
+                if (text.Length > 0)
+                {
+                    text.Append("\n\n");
+                }
+                text.Append(wanted);
+            }
+            if (!string.IsNullOrEmpty(where))
+            {
+                if (text.Length > 0)
+                {
+                    text.Append("\n\n");
+                }
+                text.Append(where.Trim());
+            }
+            string whole = text.ToString();
+            return whole.Length <= MostWords ? whole : whole.Substring(0, MostWords);
         }
 
         /// <summary>What the player pastes in Discord with the file: the versions, their words cut to <see cref="SummaryWords"/> and where the file is, the user folder taken out.</summary>

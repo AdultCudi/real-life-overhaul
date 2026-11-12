@@ -120,7 +120,8 @@ namespace RealLifeOverhaul
             _counted = "read as " + Said(read, _heard) + ", their written answer " + react + ", counted as the warm answer to topic " + topic.Id + ": "
                        + Moved("familiarity", familiarity, _p.Familiarity, want.Familiarity) + ", " + Moved("affection", affection, _p.Affection, want.Affection)
                        + ", " + Moved("trust", trust, _p.Trust, want.Trust);
-            Show(Mine(words));
+            TalkLogGame.Said(words);   // (the history keeps the words; the page below shows them and is not kept as theirs)
+            Show(TalkLogGame.Own(Mine(words)));
             SocialComposerRules.Keep(_lines, true, words);
             _react = react;
             _reactData = data;

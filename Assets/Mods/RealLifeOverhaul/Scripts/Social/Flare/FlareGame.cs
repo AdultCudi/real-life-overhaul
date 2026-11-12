@@ -189,6 +189,9 @@ namespace RealLifeOverhaul.Flare
     /// <summary>The one place Flare touches the game: the clock, the player's businesses and takings. Asked on the hour, the day and a click.</summary>
     public static class FlareGame
     {
+        /// <summary>The player's own mood, the HUD's happiness as a whole number 0 to 100: the ring round their face on Flare.</summary>
+        public static int PlayerHappiness() => Mathf.Clamp(Mathf.RoundToInt(HappinessHelper.Happiness), 0, 100);
+
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
 
         public static int Day => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;

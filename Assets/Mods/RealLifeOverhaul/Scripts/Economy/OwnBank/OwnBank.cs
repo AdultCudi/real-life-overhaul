@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Economy
         public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in
         public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];
         public long FoundedLeast;               // the least capital when it was founded, cents at the start's prices (0: the least before the scale)
+        public long Public;                     // of the capital, what an offer of its shares on the stock market raised: kept while the stock trades, never paid out (OwnBankRules.Keep)
 
         public long CounterFees;                // what the branches' counters charged since the last day was run: into the books with the next day
         public int CounterHour = int.MinValue;  // the last hour the branches were worked (day x 24 + hour); int.MinValue: never
@@ -103,6 +104,16 @@ namespace RealLifeOverhaul.Economy
         public long PaidMonth, PaidLast, PaidAll;   // what the owner was paid this month, last month and in all
         public long PayWanted, PayGiven;        // the last day run: the pay asked for and what was paid
         public int PayHeld;                     // why less was paid that day: a BankTiers PayHeld value
+
+        // Its automatic dividends (Economy/OwnBank/Dividends).
+        public int DivEvery;                    // BankDividends: Off, Weekly, Monthly or Yearly
+        public int DivShare;                    // thousandths of the profit kept over the time paid out
+        public int DivFrom;                     // the first day of the time being added up
+        public long DivKept;                    // the profit kept since then, after the owner's pay (a loss takes it down)
+        public int DivDay;                      // the day the last one fell due; 0: none yet
+        public long DivWanted, DivPaid;         // the last one: asked for and paid
+        public int DivWhy;                      // why it was less: a BankDividends value
+        public long DivAll;                     // paid out in all
 
         public BankBranch Branch(string place)
         {
@@ -216,6 +227,7 @@ namespace RealLifeOverhaul.Economy
         public bool Courts;             // the justice system takes a lender's claims
         public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
         public int Reach;               // thousandths more of the city's people the bank's branches bring it (Economy/OwnBank/Branch): 0 with none
+        public int[] People;            // thousandths of its first day's figure the city's people now save and borrow, by pool (the savers, then the segments); null with none
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -240,6 +252,8 @@ namespace RealLifeOverhaul.Economy
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
         public long Pay;                        // the owner's pay out of the capital (OwnBankRules.OwnerPay): neither takings nor a cost
+        public long PaidOut;                    // an automatic dividend out of the capital (OwnBankRules.Dividends): neither takings nor a cost
+        public bool DividendDue;                // an automatic dividend fell due today, paid or not
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
@@ -254,7 +268,8 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
-            Counter = Pay = 0;
+            Counter = Pay = PaidOut = 0;
+            DividendDue = false;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

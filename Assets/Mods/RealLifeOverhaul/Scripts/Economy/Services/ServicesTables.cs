@@ -12,12 +12,12 @@ namespace RealLifeOverhaul.Economy
         public const int Own = 0, Contract = 1, NotOn = 2;                // Cleaning
         public const int OnCrew = 0, OffCrew = 1;                        // Crew
         public const int Offer = 0, Running = 1;                         // Contracts
-        public const int Bid = 0, Listed = 1, Unlisted = 2;              // Sell
+        public const int Bid = 0, Listed = 1, Unlisted = 2, RivalSale = 3;   // Sell
 
         private static readonly string[] RoundKinds = { "reallife_svc_kind_own", "reallife_svc_kind_contract", "reallife_svc_kind_not_on" };
         private static readonly string[] CrewKinds = { "reallife_svc_kind_crew_on", "reallife_svc_kind_crew_off" };
         private static readonly string[] ContractKinds = { "reallife_svc_kind_offer", "reallife_svc_kind_running" };
-        private static readonly string[] SaleKinds = { "reallife_svc_kind_bid", "reallife_svc_kind_listed", "reallife_svc_kind_unlisted" };
+        private static readonly string[] SaleKinds = { "reallife_svc_kind_bid", "reallife_svc_kind_listed", "reallife_svc_kind_unlisted", "reallife_svc_kind_rival_sale" };
 
         /// <summary>While the feature is not running, or a part is off: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Services", "Off").Column("reallife_co_col_business", 600f, TableSort.None, flexible: true);
@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Economy
             .Order(5, true)
             .Empty("reallife_svc_empty_contracts");
 
-        /// <summary>0 business, 1 district or buyer, 2 worth, 3 asking price or offer, 4 offers standing, 5 an offer's last day, 6 state.</summary>
+        /// <summary>0 business, 1 district, buyer or a rival selling, 2 worth, 3 asking price, offer or a rival's price, 4 offers standing, 5 an offer's last day, 6 state.</summary>
         public static readonly TableSpec Sale = new TableSpec("Services", "Sell")
             .Column("reallife_co_col_business", 460f, TableSort.Text, flexible: true)
             .Column("reallife_svc_col_buyer", 420f, TableSort.Text)

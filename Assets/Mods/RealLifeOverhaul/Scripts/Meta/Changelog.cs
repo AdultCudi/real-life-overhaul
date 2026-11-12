@@ -325,7 +325,13 @@ namespace RealLifeOverhaul.Meta
             var text = new StringBuilder();
             foreach (Entry entry in All)
             {
-                text.Append("# ").Append(entry.TitleKey.GetLocalization()).Append('\n').Append(entry.TextKey.GetLocalization()).Append("\n\n");
+                text.Append("# ").Append(entry.TitleKey.GetLocalization()).Append('\n');
+                string day = ReleaseDates.Words(entry.Order, key => key.GetLocalization());
+                if (day != null)
+                {
+                    text.Append(day).Append('\n');
+                }
+                text.Append(entry.TextKey.GetLocalization()).Append("\n\n");
             }
             return text.ToString();
         }

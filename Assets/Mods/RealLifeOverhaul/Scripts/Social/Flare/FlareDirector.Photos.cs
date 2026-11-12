@@ -22,14 +22,13 @@ namespace RealLifeOverhaul.Flare
         private const double FrontsSliceMs = 1.0;         // milliseconds of the main thread a second the fronts' list may take while it is read
         private const int FrontsMost = 2000;              // fronts held at most; the city has about a thousand businesses
         private const int FrontsNearMost = 24;            // fronts within range handed to the plan at most
-        private const int PicksALook = 8;                 // posts picked in one look at most
+        private const int PicksALook = 24;                // posts picked in one look at most (a load leaves the whole feed to pick, newest first)
 
         private FlareBank _bank;                                          // null until its file is read
         private readonly HashSet<int> _bankFiles = new HashSet<int>();    // the bank's photos with a small copy on disk
         private readonly FlarePhotoScene _scene = new FlarePhotoScene();
         private readonly List<FlareFrontSpot> _fronts = new List<FlareFrontSpot>(1024);
         private readonly List<int> _bankGone = new List<int>(16);
-        private readonly HashSet<int> _pickSkip = new HashSet<int>();
         private Func<FlarePost, int> _nicheOf;
         private string _photoFolder;
         private float _photoNext, _photoPace = FlareCityPhotoRules.PaceLeast;
@@ -283,7 +282,7 @@ namespace RealLifeOverhaul.Flare
                 _photoDay = day;
                 _photoToday = 0;
             }
-            if (_photoToday >= FlareCityPhotoRules.DayMost || !Scene(now, out Vector3? focus) || !FlareCityPhotoRules.Plan(_bank, _scene, out FlarePhotoShot shot))
+            if (_photoToday >= FlareCityPhotoRules.DayLimit(_bank.Photos.Count) || !Scene(now, out Vector3? focus) || !FlareCityPhotoRules.Plan(_bank, _scene, out FlarePhotoShot shot))
             {
                 return;   // indoors, or the bank has all it wants of here
             }
@@ -291,29 +290,29 @@ namespace RealLifeOverhaul.Flare
             StartCoroutine(Guard.Routine(PhotoTake(shot, FocusFor(shot, focus), _photoGeneration, false)));
         }
 
-        // The posts going up soon or just up, picked: a fitting photo, or none once a post is up; at most PicksALook a look.
+        // The posts going up soon or already up (a load's whole feed too), picked: the nearest fitting photo, or none once the bank is ready; at most PicksALook a look.
+        // The weather now is the weather of a post up to WindowMinutes old; an older post is taken as dry.
         private void PicksLook(long now)
         {
             int citySeed = FlareLiveRules.CitySeed(_file);
             bool wet = FlarePictureGame.Raining(), changed = false;
-            _pickSkip.Clear();
+            int cursor = int.MaxValue;
             for (int k = 0; k < PicksALook; k++)
             {
-                FlarePost p = FlareCityPhotoRules.NextPick(_file, _bank, citySeed, Settings.FlareCityPhotos, now, _nicheOf, _pickSkip);
+                FlarePost p = FlareCityPhotoRules.NextPick(_file, _bank, citySeed, Settings.FlareCityPhotos, now, _nicheOf, ref cursor);
                 if (p == null)
                 {
                     break;
                 }
                 FlareInfluencer inf = p.Author == FlareAuthor.Influencer ? _file.Influencer(p.Who) : null;
-                FlareBankPhoto photo = FlareCityPhotoRules.Wish(p, inf != null ? (int)inf.Niche : -1, inf?.District, wet, out FlarePhotoWish w)
+                FlareBankPhoto photo = FlareCityPhotoRules.Wish(p, inf != null ? (int)inf.Niche : -1, inf?.District, wet && now - p.At <= FlareCityPhotoRules.WindowMinutes, out FlarePhotoWish w)
                     ? FlareCityPhotoRules.Pick(_bank, w, FlareCommentRules.Seed(p, citySeed)) : null;
-                if (photo != null || now >= p.At)
+                if (FlareCityPhotoRules.Settled(_bank, p, photo, now))
                 {
                     FlareCityPhotoRules.Picked(_bank, p.Id, photo);
                     _bankDirty = true;
                     changed |= photo != null && p.At <= now;
                 }
-                _pickSkip.Add(p.Id);
             }
             if (changed)
             {
@@ -440,7 +439,7 @@ namespace RealLifeOverhaul.Flare
             {
                 yield break;
             }
-            _photoPace = FlareCityPhotoRules.NextPace(_photoPace, result.RenderMs);
+            _photoPace = FlareCityPhotoRules.NextPace(_photoPace, result.RenderMs, _bank.Photos.Count + (result.Written ? 1 : 0));
             if (result.Written)
             {
                 FlareCityPhotoRules.Taken(_bank, id, shot, district, light, wet, day, minute);
@@ -458,7 +457,7 @@ namespace RealLifeOverhaul.Flare
                              + "; the renders took " + result.RenderMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread over " + result.Frames + " frame(s), "
                              + result.WorstFrameMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms in the slowest (wanted under " + FlareCityPhotoRules.SlowMs + " ms in all and "
                              + FlareCityPhotoRules.FrameMs + " ms a frame, one render a frame: " + (result.WorstFrameMs < FlareCityPhotoRules.FrameMs ? "PASS" : "SLOW") + "), next in "
-                             + _photoPace.ToString("0") + " s; " + _photoToday + " of " + FlareCityPhotoRules.DayMost + " today, " + _bank.Photos.Count + " in the bank: "
+                             + _photoPace.ToString("0") + " s; " + _photoToday + " of " + FlareCityPhotoRules.DayLimit(_bank.Photos.Count) + " today, " + _bank.Photos.Count + " in the bank: "
                              + (result.Written || result.Why != null ? "PASS" : "FAIL"));
             }
             if (test)
@@ -498,6 +497,64 @@ namespace RealLifeOverhaul.Flare
                 }
                 StartCoroutine(Guard.Routine(PhotoTake(shot, FocusFor(shot, focus), _photoGeneration, true)));
             });
+        }
+
+        /// <summary>Sponsored posts the player still owes, on the days they fall. City businesses post on their own; this is the player's.</summary>
+        public void DuePosts(int fromDay, int toDay, List<FlareOffer> into)
+        {
+            into.Clear();
+            if (_city == null)
+            {
+                return;
+            }
+            for (int i = 0; i < _city.Offers.Count; i++)
+            {
+                FlareOffer offer = _city.Offers[i];
+                if (offer.Running && offer.Next >= fromDay && offer.Next <= toDay)
+                {
+                    into.Add(offer);
+                }
+            }
+        }
+
+        /// <summary>What a photo did on Flare, if a post of the player's used it. Read when the photo is opened.</summary>
+        public bool PictureStory(string photoName, out string business, out int likes, out int came, out long cents)
+        {
+            business = null;
+            likes = 0;
+            came = 0;
+            cents = 0;
+            if (_file == null || string.IsNullOrEmpty(photoName))
+            {
+                return false;
+            }
+            string pic = "f:" + photoName;
+            FlarePost found = null;
+            for (int i = 0; i < _file.Posts.Count; i++)
+            {
+                FlarePost post = _file.Posts[i];
+                if (post != null && string.Equals(post.Pic, pic, StringComparison.Ordinal))
+                {
+                    found = post;
+                    break;
+                }
+            }
+            if (found == null)
+            {
+                return false;
+            }
+            business = found.Name;
+            likes = found.Likes;
+            if (_city != null)
+            {
+                FlareFunnel funnel = _city.Funnel(FunnelKind.Post, found.Id);
+                if (funnel != null)
+                {
+                    came = funnel.Came;
+                    cents = funnel.Spent;
+                }
+            }
+            return true;
         }
     }
 }

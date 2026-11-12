@@ -227,6 +227,7 @@ namespace RealLifeOverhaul.Construction
             if (_app != null && _view != null && Running)
             {
                 _view.WantHedge(project);
+                ConstructionLive.Instance.WantPage(project, 2);
                 _app.Open();
             }
         }

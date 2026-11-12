@@ -368,8 +368,138 @@ namespace RealLifeOverhaul.Tech
             return need;
         }
 
-        /// <summary>The training a model gets a day at a level (0 to 4), AI compute unit-days.</summary>
-        public static readonly int[] TrainLevels = { 0, 20, 50, 100, 200 };
+        /// <summary>
+        /// The training a model gets a day at a level, AI compute unit-days. Levels 0 to 4 are those of before: every model may rent
+        /// the fifth's (<see cref="InfraCatalogue.RentedMost"/>). Each level past it about doubles the last and is reached only with the
+        /// compute of the player's own AI racks (<see cref="TrainMost"/>), so a lab well equipped trains a generation in days and one
+        /// without racks waits as before. A saved level means what it meant.
+        /// </summary>
+        public static readonly int[] TrainLevels = { 0, 20, 50, 100, 200, 400, 750, 1500, 3000, 6000, 12000, 24000, 48000, 96000, 192000, 384000, 768000, 1536000, 3072000 };
+
+        /// <summary>A saved level read safely: none to the top.</summary>
+        public static int TrainLevel(int train) => TalentCatalogue.Clamp(train, 0, TrainLevels.Length - 1);
+
+        /// <summary>A level's training a day past what a model may rent: the part only the player's own AI racks can give it.</summary>
+        public static long TrainBeyond(int train) => Math.Max(0L, TrainLevels[TrainLevel(train)] - (long)InfraCatalogue.RentedMost);
+
+        /// <summary>
+        /// The highest level a model may be set to with so much own AI compute for it a day: the levels its own compute and
+        /// <see cref="InfraCatalogue.RentedMost"/> rented on top cover. With none of its own, level 4, as before.
+        /// </summary>
+        public static int TrainMost(long own)
+        {
+            long most = Math.Max(0L, own) + InfraCatalogue.RentedMost;
+            int level = 0;
+            while (level + 1 < TrainLevels.Length && TrainLevels[level + 1] <= most)
+            {
+                level++;
+            }
+            return level;
+        }
+
+        /// <summary>The AI compute an AI rack bought today gives a day: the new kind at the scale's share, the old kind with the scale off (<see cref="Buy"/>).</summary>
+        public static int GpuRackUnits(int share) =>
+            (int)EndScaleRules.Mix(InfraCatalogue.GpuUnitsPerRack, (long)InfraCatalogue.GpuUnitsPerRackScale * InfraCatalogue.IncomeAtScale / 1000, share);
+
+        /// <summary>The AI compute the player's AI racks give a day at full work (no outage, the crews full): what a model's highest level is reckoned on.</summary>
+        public static long GpuOwned(IList<DataCentre> centres, int share)
+        {
+            long units = 0;
+            for (int i = 0; centres != null && i < centres.Count; i++)
+            {
+                units += GpuUnits(centres[i], share);
+            }
+            return units;
+        }
+
+        /// <summary>A product that trains on AI compute: an AI model being built or on sale (a withdrawn one takes none).</summary>
+        public static bool Trains(Product p) => p != null && p.K == ProductKind.Model && p.Stage < 2;
+
+        /// <summary>
+        /// The day's AI compute for the player's AI models, in the products' order: the one rule the cloud's day, a model's page and a training run at
+        /// the desk go by. <paramref name="into"/> gets an entry for each product, an empty one for any that does not train (<see cref="Trains"/>).
+        /// <paramref name="at"/> and <paramref name="level"/> ask what the day would do with that product at another level (<paramref name="at"/> -1:
+        /// every model as set). Returns the racks' compute left, for the cloud to sell. Integers only. COST: two passes over the products.
+        /// </summary>
+        public static long ModelsDay(IList<Product> products, long racks, List<ModelCompute> into, int at = -1, int level = 0)
+        {
+            // The player's own AI racks' compute (racks) is shared out in two passes. First each model's training past what it may rent (TrainBeyond)
+            // is kept for it, in the products' order while the racks are short. Then what is left goes, again in that order, to each model's training
+            // up to what it may rent and then to its customers' use (Inference). What the racks do not give is rented: a model's training never past
+            // InfraCatalogue.RentedMost a day, so a day short of own compute (an outage, a crew short, a throttled day) trains it less, and its
+            // customers' use in full. Each model's Keep is what its part past the rent may take without another's: the highest level it may be set
+            // to (TrainMost).
+            into.Clear();
+            int n = products != null ? products.Count : 0;
+            long all = Math.Max(0L, racks), left = all, beyond = 0;
+            for (int i = 0; i < n; i++)
+            {
+                var m = new ModelCompute();
+                if (Trains(products[i]))
+                {
+                    m.Level = TrainLevel(i == at ? level : products[i].Train);
+                    long past = TrainBeyond(m.Level);
+                    m.Kept = Math.Min(past, left);   // its part past the rent first, in the products' order while the racks are short
+                    left -= m.Kept;
+                    beyond += past;
+                }
+                into.Add(m);
+            }
+            for (int i = 0; i < n; i++)
+            {
+                Product p = products[i];
+                if (!Trains(p))
+                {
+                    continue;
+                }
+                ModelCompute m = into[i];
+                long units = TrainLevels[m.Level], past = TrainBeyond(m.Level);
+                long more = Math.Min(units - past, left);   // its training up to what it may rent, from what the racks have left
+                left -= more;
+                m.Own = m.Kept + more;
+                m.Rented = Math.Min(units - m.Own, InfraCatalogue.RentedMost);
+                long run = p.Live ? Inference(p) : 0;
+                m.RunOwn = Math.Min(run, left);
+                left -= m.RunOwn;
+                m.RunRented = run - m.RunOwn;
+                m.Keep = Math.Max(0L, all - (beyond - past));
+                into[i] = m;
+            }
+            return left;
+        }
+
+        /// <summary>A day's training added to each model's (what <see cref="ModelsDay"/> gave it, on the player's own AI racks and rented), as the cloud's day does after the share out.</summary>
+        public static void Train(IList<Product> products, List<ModelCompute> day)
+        {
+            for (int i = 0; products != null && i < products.Count && i < day.Count; i++)
+            {
+                if (Trains(products[i]))
+                {
+                    products[i].Compute += day[i].Trained;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A model's training level as set from its page: down freely, up to the highest its compute allows (<paramref name="most"/>, the
+        /// <see cref="TrainMost"/> of its <see cref="ModelCompute.Keep"/>). A level set when there was more compute stays until it is lowered.
+        /// </summary>
+        public static int TrainSet(int level, int current, int most) => TalentCatalogue.Clamp(level, 0, Math.Max(TrainLevel(current), TrainLevel(most)));
+
+        /// <summary>What so much AI compute a day rented from the rival clouds costs, cents at the start's prices.</summary>
+        public static long RentCost(long units) => Math.Max(0L, units) * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000;
+
+        /// <summary>
+        /// A lab with one model and its own AI compute (a rival's): <see cref="ModelsDay"/>'s rule for it, at the highest level that compute
+        /// covers: the level's units on its own compute first and the rest rented, never past <see cref="InfraCatalogue.RentedMost"/>.
+        /// Returns the units a day; <paramref name="rented"/>, the part rented.
+        /// </summary>
+        public static long TrainAlone(long own, out long rented)
+        {
+            long units = TrainLevels[TrainMost(own)], mine = Math.Min(units, Math.Max(0L, own));
+            rented = Math.Min(units - mine, InfraCatalogue.RentedMost);
+            return mine + rented;
+        }
 
         /// <summary>A model's customers' use of AI compute a day, units.</summary>
         public static int Inference(Product p) => (int)Math.Min(int.MaxValue, (p.Users + p.Free / 20) * InfraCatalogue.InferencePerCustomer / 1000);
@@ -420,8 +550,29 @@ namespace RealLifeOverhaul.Tech
         public static void Roll(DataCentre d, int day, long takings)
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            TechStatusRules.Age(ref d.Prev30, ref d.PrevDays, d.Days[slot]);
             d.Takings30 += takings - d.Days[slot];
             d.Days[slot] = takings;
+        }
+
+        /// <summary>Whether the centre was down on a day is written into its 90 day ring: a bit a day, the day's own place taken over from the day 90 before.</summary>
+        public static void MarkDay(DataCentre d, int day, bool down)
+        {
+            int at = ((day % InfraCatalogue.UptimeDays) + InfraCatalogue.UptimeDays) % InfraCatalogue.UptimeDays;
+            int word = at / 30, bit = 1 << (at % 30);
+            d.Outage90[word] = down ? d.Outage90[word] | bit : d.Outage90[word] & ~bit;
+        }
+
+        /// <summary>The share of the last 90 days a centre was up, in thousandths (99.9 per cent is 999): days since it was fitted out count, the days before it do not.</summary>
+        public static int Uptime(DataCentre d, int day, int fitted)
+        {
+            int days = Math.Max(1, Math.Min(InfraCatalogue.UptimeDays, day - fitted + 1)), down = 0;
+            for (int i = 0; i < days; i++)
+            {
+                int at = (((day - i) % InfraCatalogue.UptimeDays) + InfraCatalogue.UptimeDays) % InfraCatalogue.UptimeDays;
+                down += (d.Outage90[at / 30] >> (at % 30)) & 1;
+            }
+            return (days - down) * 1000 / days;
         }
     }
 }

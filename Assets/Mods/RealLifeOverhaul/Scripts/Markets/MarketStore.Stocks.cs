@@ -78,6 +78,13 @@ namespace RealLifeOverhaul.Markets
             {
                 Own(t, k);
             }
+            else if (MarketCatalogue.IsStartup(k.Id) && k.Def != null)
+            {
+                // A startup of the city that listed has no row in the catalogue: its name, ticker, sector, turnover and trade are its own, as a rival's name is.
+                t.Append('|').Append(Clean(k.Name)).Append('|').Append(Clean(k.Ticker));
+                Join(t, (int)k.Sector, k.Def.RevenueM);
+                t.Append('|').Append(Clean(k.Def.Trade));
+            }
         }
 
         /// <summary>One company's record alone: a player's company set aside while its founder is a guest elsewhere.</summary>
@@ -116,6 +123,12 @@ namespace RealLifeOverhaul.Markets
                 .Append(o.VotesAgainstBp.ToString(Inv)).Append(',').Append(o.IssuedYear.ToString(Inv)).Append(',').Append(o.IssuedBp.ToString(Inv)).Append(',').Append(o.SaleDay.ToString(Inv))
                 .Append(',').Append(R(o.Carry)).Append(',').Append(o.DealYear.ToString(Inv)).Append(',').Append(o.BoughtBp.ToString(Inv)).Append(',').Append(o.SoldBp.ToString(Inv)).Append(',')
                 .Append(o.BackBp.ToString(Inv));
+            if (o.Firm)
+            {
+                // A firm that listed on its own: after the figures an older version reads, which stop at the founder's deals of the year.
+                t.Append(',').Append('1').Append(',').Append(o.Float.ToString(Inv)).Append(',').Append(o.VestBase.ToString(Inv)).Append(',').Append(o.VestDay.ToString(Inv)).Append(',')
+                    .Append(o.VestCliff.ToString(Inv)).Append(',').Append(o.VestSpan.ToString(Inv)).Append(',').Append(o.CapCents.ToString(Inv));
+            }
             t.Append('|');
             for (int i = 0; i < o.Deals.Count; i++)
             {
@@ -125,6 +138,10 @@ namespace RealLifeOverhaul.Markets
             t.Append('|').Append(Clean(k.Def.Trade));
             t.Append('|');
             ListingSector.Write(t, o);   // the business it is in now; an older version reads the record without it
+            if (o.Firm)
+            {
+                t.Append('|').Append(Clean(o.Place));   // the firm it is, after the mix
+            }
         }
 
         private static string R(double value)
@@ -168,6 +185,19 @@ namespace RealLifeOverhaul.Markets
                 o.ActBp = 0;
             }
             ListingSector.Read(S(c, 67), o);
+            if (I(f, 34) != 0)
+            {
+                o.Firm = true;
+                o.Float = Math.Max(0, L(f, 35));
+                o.VestBase = Math.Max(0, L(f, 36));
+                o.VestDay = I(f, 37);
+                o.VestCliff = Math.Max(0, I(f, 38));
+                o.VestSpan = Math.Max(0, I(f, 39));
+                o.CapCents = Math.Max(0, L(f, 40));   // a bank's stock: after the figures an older version reads
+                o.Place = S(c, 68);
+                o.Mixed = false;
+                o.Rps = 0.0;   // a firm keeps no reserve here
+            }
             return o;
         }
 
@@ -179,6 +209,12 @@ namespace RealLifeOverhaul.Markets
             if (def == null && ListingRules.IsPlayer(id))
             {
                 own = ReadOwn(c, out def, id);   // a player's company: its row is in its record
+            }
+            else if (def == null && MarketCatalogue.IsStartup(id) && c.Length >= 64 && S(c, 59).Length > 0)
+            {
+                string trade = S(c, 63);
+                def = MarketCatalogue.StartupDef(id, S(c, 59), S(c, 60).Length > 0 ? S(c, 60) : "NEW", (MarketSector)Clamp(I(c, 61), 0, (int)MarketSector.Count - 1), Math.Max(1, I(c, 62)),
+                    trade.Length > 0 ? trade : null);   // a startup of the city that listed: its row is in its record
             }
             if (def == null || c.Length < 54)
             {
@@ -232,14 +268,14 @@ namespace RealLifeOverhaul.Markets
             k.LastExDay = I(c, 43);
             k.Adv = Math.Max(1.0, F(c, 44, 1000.0));
             k.SplitDay = Math.Max(0, I(c, 45));
-            k.SplitRatio = Clamp(I(c, 46), 0, 10);
+            k.SplitRatio = Clamp(I(c, 46), -ExtrasCatalogue.RatioMost, 10);   // under nothing: so many old shares put together into one (Extras/SplitRules)
             k.BidDay = Math.Max(0, I(c, 47));
             k.BidEndDay = Math.Max(0, I(c, 48));
             k.BidCents = Math.Max(0, I(c, 49));
             k.BidderId = Math.Max(0, I(c, 50));
             k.ResultsBoostDay = I(c, 51);
             k.LowDays = Math.Max(0, I(c, 52));
-            if (k.SplitDay > 0 && k.SplitRatio < 2)
+            if (k.SplitDay > 0 && !SplitRules.Known(k.SplitRatio))
             {
                 k.SplitDay = 0;
             }
@@ -278,6 +314,8 @@ namespace RealLifeOverhaul.Markets
             if (own != null)
             {
                 own.Founder = Math.Min(own.Founder, k.Shares);
+                own.Float = Math.Max(0L, Math.Min(own.Float, k.Shares - own.Founder));
+                own.VestBase = Math.Min(own.VestBase, own.Founder);
             }
             return k;
         }

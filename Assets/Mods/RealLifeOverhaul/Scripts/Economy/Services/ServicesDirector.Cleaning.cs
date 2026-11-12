@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Economy
 
         private readonly List<CrewMember> _crew = new List<CrewMember>(ServicesCatalogue.CrewMost);
         private readonly List<CrewMember> _crewPool = new List<CrewMember>(ServicesCatalogue.CrewMost);
+        private readonly List<KeyValuePair<string, int>> _lost = new List<KeyValuePair<string, int>>(3);
         private readonly List<RoundCleaner> _shifts = new List<RoundCleaner>(ServicesCatalogue.CrewMost);
         private readonly List<int> _shiftTrip = new List<int>(ServicesCatalogue.CrewMost);
         private readonly List<RoundJob> _jobs = new List<RoundJob>(32);
@@ -196,6 +197,10 @@ namespace RealLifeOverhaul.Economy
                 _cache.Clear();   // a bound, not a rhythm: doors change only when a business does
             }
             RoundRules.Jobs(clients, now, _jobs);
+            for (int i = 0; i < _shifts.Count; i++)
+            {
+                _shifts[i].Group = _state.GroupOf(_shifts[i].Id);
+            }
             _planned.Clear();
             int taken = RoundRules.Plan(_shifts, _jobs, _cache, _state.Van, now, _planned);
             for (int i = 0; i < _planned.Count; i++)
@@ -588,7 +593,14 @@ namespace RealLifeOverhaul.Economy
                 c.MinutesToday = 0;
                 c.CleanedToday = 0;
             }
-            int lapsed = ContractRules.Expire(_state, day);
+            _lost.Clear();
+            int lapsed = ContractRules.Close(_state, day, CrewSkill(), _lost);
+            for (int i = 0; i < _lost.Count; i++)
+            {
+                Tell(NotificationType.Warning, "reallife_svc_note_rival_won", TabContracts, null, "firm", ServicesCatalogue.RivalFirms[_lost[i].Value], "business", _lost[i].Key);
+            }
+            ContractRules.Tidy(_state);
+            ContractRules.NoteMonth(_state, day);
             if (_state.Crew.Count > 0 && ContractRules.OfferDue(_state, day))
             {
                 ServicesGame.Candidates(_candidates);
@@ -604,6 +616,7 @@ namespace RealLifeOverhaul.Economy
                 _candidates.Clear();
                 if (offer != null)
                 {
+                    ContractRules.Bid(_state, offer, day);
                     Tell(NotificationType.Info, "reallife_svc_note_offer", TabContracts, "offer:" + offer.Place, "business", offer.Name, "amount", ServicesText.Money(offer.Fee));
                 }
             }

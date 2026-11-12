@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Nav
             _dormant = dormant;
             _panel = panel;
             _rect = (RectTransform)panel.transform;
+            _live = this;
             _screen = (RectTransform)uis.playerHUD.transform;
             _tasksUi = uis.tasksUI;
             _tasks = tasks as RectTransform;
@@ -25,7 +26,7 @@ namespace RealLifeOverhaul.Nav
             _labels = uis.playerHUD.nearestBuildingText != null ? uis.playerHUD.nearestBuildingText.transform as RectTransform : null;
             _item = uis.playerHUD.itemPanelUI != null ? uis.playerHUD.itemPanelUI.transform.Find("Panel") as RectTransform : null;
 
-            // The copy is only a picture: nothing on it is clicked, scrolled or laid out by the game.
+            // The copy is only a picture: nothing on it is clicked, scrolled or laid out by the game (but its backdrop, below, takes the pointer).
             Take<ScrollRect>(panel);
             Take<ContentSizeFitter>(panel);
             var graphics = new List<Graphic>(16);
@@ -34,27 +35,69 @@ namespace RealLifeOverhaul.Nav
             {
                 graphics[i].raycastTarget = false;
             }
-            panel.AddComponent<Canvas>();   // re-batched by itself, with the HUD canvas's order and scale
+            _canvas = panel.AddComponent<Canvas>();   // re-batched by itself; Sort lifts it over the kit's HUD when that is up
+            panel.AddComponent<GraphicRaycaster>();
+            var backdrop = panel.GetComponent<Image>();
+            if (backdrop != null)
+            {
+                backdrop.raycastTarget = true;   // the card, drawn over the kit's HUD, is what the pointer hits over it: a click there reaches neither the world nor a piece under it
+            }
 
+            // The headline is the card's own band (NavHeadRules): inside the card's drawn edge, the strip's dark plate, its texts laid out by the mod alone.
+            // The game's headline was a light picture coloured by its button and laid out by its group; with those gone it stood light and wider than
+            // the card's drawn edge, so its texts went past the card and the band's colours did not hold.
             _head = (RectTransform)panel.transform.Find("Headline");
             Take<Button>(_head.gameObject);
             Take<LayoutElement>(_head.gameObject);
+            Take<LayoutGroup>(_head.gameObject);
+            Take<ContentSizeFitter>(_head.gameObject);
             _head.anchorMin = new Vector2(0f, 1f);
             _head.anchorMax = new Vector2(1f, 1f);
             _head.pivot = new Vector2(0.5f, 1f);
-            _head.offsetMin = new Vector2(Side, -Head);
-            _head.offsetMax = new Vector2(-Side, 0f);
+            _head.offsetMin = new Vector2(NavHeadRules.Inset, -Head + NavHeadRules.BandGap);
+            _head.offsetMax = new Vector2(-NavHeadRules.Inset, -NavHeadRules.Inset);
+            for (int i = 0; i < _head.childCount; i++)
+            {
+                Transform part = _head.GetChild(i);
+                if (part.name != "Label")
+                {
+                    part.gameObject.SetActive(false);   // the task panel's fold arrows and the rest of its headline: this panel does not fold
+                }
+            }
+            if (_head.GetComponent<Image>() is Image gameBand)
+            {
+                gameBand.enabled = false;
+            }
+            RectTransform band = Child("Band", _head);
+            Stretch(band);
+            band.SetAsFirstSibling();
+            Image bandImage = band.gameObject.AddComponent<Image>();
+            bandImage.color = Colour(NavHeadRules.Band);
+            bandImage.raycastTarget = false;
             Transform label = _head.Find("Label");
             _title = label != null ? label.GetComponent<TMP_Text>() : null;
-            Transform fold = _head.Find("Icon");
-            if (fold != null)
-            {
-                fold.gameObject.SetActive(false);   // the task panel's fold arrows: this panel does not fold
-            }
             if (_title is TMP_Text titleText)
             {
+                Take<LayoutElement>(label.gameObject);
+                Take<ContentSizeFitter>(label.gameObject);
+                if (lineLike != null && lineLike.GetComponent<TMP_Text>() is TMP_Text lettering && lettering.font != null)
+                {
+                    // The game's lettering of the task entries, whose material takes a colour: the headline's own drew dark whatever it was given.
+                    titleText.font = lettering.font;
+                    titleText.fontSharedMaterial = lettering.fontSharedMaterial;
+                }
+                titleText.enableVertexGradient = false;
+                titleText.overrideColorTags = false;
+                titleText.color = Colour(NavHeadRules.Name);
+                titleText.fontStyle = FontStyles.Bold | FontStyles.UpperCase;
+                titleText.alignment = TextAlignmentOptions.MidlineLeft;
+                titleText.margin = Vector4.zero;
                 titleText.textWrappingMode = TextWrappingModes.NoWrap;
                 titleText.overflowMode = TextOverflowModes.Ellipsis;
+                titleText.enableAutoSizing = true;   // a long name first gets smaller lettering, and is shortened only when that does not fit
+                titleText.fontSizeMax = 28f;
+                titleText.fontSizeMin = 21f;
+                titleText.fontSize = 28f;
             }
 
             _view = (RectTransform)panel.transform.Find("Viewport");
@@ -113,6 +156,7 @@ namespace RealLifeOverhaul.Nav
             _line2 = Line("Line 2", lineLike, new Color32(202, 205, 206, 255));   // the grey of the task panel's group labels
             UiClone.Key(_title, "reallife_nav_title");
             _titleShown = null;
+            DestinationMake();   // the address and the minutes in the headline, shown while a route leads somewhere
         }
 
         /// <summary>Copies the game's task panel with the minimap in it; null if it cannot, <paramref name="later"/> saying whether to ask again.</summary>
@@ -177,7 +221,8 @@ namespace RealLifeOverhaul.Nav
                 UnityEngine.Object.Destroy(dormant.gameObject);
                 return null;
             }
-            // Off, then onto the HUD under everything else there, so a dialog of the game's covers it.
+            // Off, then onto the game's HUD, so it goes with the game's own hide of the interface; the game's dialogs and the kit's
+            // windows stay over it by their canvases' orders (NavHud.Sort).
             panel.SetActive(false);
             panel.transform.SetParent(uis.playerHUD.transform, false);
             panel.transform.SetAsFirstSibling();
@@ -207,6 +252,12 @@ namespace RealLifeOverhaul.Nav
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
             return rect;
+        }
+
+        // One of the headline's colours (0xRRGGBBAA, NavHeadRules).
+        private static Color32 Colour(uint rgba)
+        {
+            return new Color32((byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8), (byte)rgba);
         }
 
         private static void Stretch(RectTransform rect)

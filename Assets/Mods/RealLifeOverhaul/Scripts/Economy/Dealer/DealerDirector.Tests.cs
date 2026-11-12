@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     DealerListing l = _state.Market[i];
                     if (l.Kind == ListingKind.Wholesale && !l.Gone)
                     {
-                        made += Arrive(y, l.Type, l.Colour, l.Km, l.Condition, 0, 0, l.Asking, CarSource.Wholesale) != null ? 1 : 0;
+                        made += Arrive(y, l.Type, l.Colour, l.Km, l.Condition, 0, 0, l.Asking, CarSource.Wholesale, out CarMaking _) != null ? 1 : 0;
                     }
                 }
                 TestDone(made + " new car(s) put on the lot of '" + y.Name + "' at no cost; their cost is recorded at the wholesaler's price", TabStock, null);

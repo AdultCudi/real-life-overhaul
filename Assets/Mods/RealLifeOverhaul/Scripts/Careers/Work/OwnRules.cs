@@ -62,6 +62,9 @@ namespace RealLifeOverhaul.Careers
         public const int OfferDays = 3;
         public static readonly int[] HoursOf = { 8, 12, 16, 24, 32 };   // a contract's size
         public const int SittingMinutes = 180;      // a stint of work on a contract
+        public const int SittingHoursLeast = 1;     // hours: the shortest stint the work panel's slider offers
+        public const int SittingHoursMost = 12;     // hours: the longest; a contract can run to 32 hours, and a stint is stopped at any time
+        public const int SittingHoursDefault = SittingMinutes / 60;   // hours: a stint before the slider was, and where the slider starts until the player moves it
         public const int SideWorkFound = 80;        // per mille a stint of side work under an exclusive contract is noticed
         public const int OfferChance = 250;         // per mille a day a freelancer is offered a contract...
         public const int PracticeChance = 450;      // ...and a practice, by its name
@@ -163,6 +166,31 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Minutes of a contract still to work.</summary>
         public static int Left(Contract c) => Math.Max(0, c.Hours * 60 - c.Minutes);
 
+        /// <summary>The slider's right end for a contract with this much left: the hours it takes, a part hour counted, never over <see cref="SittingHoursMost"/>.</summary>
+        public static int StintMostHours(int leftMinutes) => Math.Min(SittingHoursMost, ShiftFactsRules.MostHours(leftMinutes));
+
+        /// <summary>The hours the slider stands at: those asked for, held between its two ends for a contract with this much left.</summary>
+        public static int StintHours(int hours, int leftMinutes)
+        {
+            int most = StintMostHours(leftMinutes);
+            return hours < SittingHoursLeast ? SittingHoursLeast : hours > most ? most : hours;
+        }
+
+        /// <summary>The minutes a stint of these hours runs: the slider's hours, never more than the contract has left.</summary>
+        public static int StintMinutes(int hours, int leftMinutes) => Math.Max(0, Math.Min(leftMinutes, StintHours(hours, leftMinutes) * 60));
+
+        /// <summary>The minutes of a stint with no slider (its switch off): <see cref="SittingMinutes"/>, or what the contract has left.</summary>
+        public static int FixedMinutes(int leftMinutes) => Math.Max(0, Math.Min(leftMinutes, SittingMinutes));
+
+        /// <summary>True if a taken contract <paramref name="a"/> is worked before <paramref name="b"/> at a desk: the one due sooner, then the one taken on first (the lower id).</summary>
+        public static bool WorkedBefore(Contract a, Contract b) => a.Due != b.Due ? a.Due < b.Due : a.Id < b.Id;
+
+        /// <summary>True for a trade whose contracts are worked at the client's building (the electrician, the plumber, the carpenter): no desk of the player's is there to click.</summary>
+        public static bool IsTrade(Profession p)
+        {
+            return p.Place == Workplace.Business && (p.Id == ProCatalogue.Electrician || p.Id == ProCatalogue.Plumber || p.Id == ProCatalogue.Carpenter);
+        }
+
         /// <summary>
         /// The profession the player works as at a desk of their own business of a type (Tech's OwnDesk): of those the type
         /// employs, one whose rank they could come in at now (ProRules.BestRank) has a role that adds to a firm's crew
@@ -211,5 +239,33 @@ namespace RealLifeOverhaul.Careers
 
         // A rank whose role adds to a firm's crew (a role of the professions' that FirmsRules.Join counts).
         private static bool CountsAtFirm(ProRank r) => r.Role >= 0 && r.Role < TalentCatalogue.RoleCount && FirmsRules.Counts(TalentCatalogue.Role(r.Role));
+
+        /// <summary>
+        /// The skills a stint of own work trains and keeps up (-1: none), at a desk of a firm or on a contract: the hours teach the two of the rank's role, as a job's day
+        /// does (<see cref="Profession.SkillsOf"/>), and the two of the profession's own that the role leaves out are kept up beside them, since the work done at a firm is
+        /// its profession's whatever rank the owner has reached. An engineering manager's own work at a software firm trains Leadership and Delivery and keeps Coding and
+        /// System design up too; before, it kept up the managing pair alone and the engineering pair faded.
+        /// </summary>
+        public static void WorkSkills(Profession p, int rank, out int learnA, out int learnB, out int keepA, out int keepB)
+        {
+            p.SkillsOf(rank, out learnA, out learnB);
+            keepA = p.SkillA == learnA || p.SkillA == learnB ? -1 : p.SkillA;
+            keepB = p.SkillB == learnA || p.SkillB == learnB ? -1 : p.SkillB;
+        }
+
+        /// <summary>
+        /// A stint of own work applied to the player's skills: the two of <see cref="WorkSkills"/> taught at an hour's rate each (StudyRules.WorkGain, with the
+        /// management ladder's factor in thousandths), and every one of the four used that day, so none of them fades. The one rule of every path of own work.
+        /// </summary>
+        public static void Practise(StudyFile f, Profession p, int rank, int hours, int day, int ladder)
+        {
+            WorkSkills(p, rank, out int a, out int b, out int keepA, out int keepB);
+            StudyRules.Learn(f, a, StudyRules.WorkGain(f, a, hours, ladder), day);
+            StudyRules.Learn(f, b, StudyRules.WorkGain(f, b, hours, ladder), day);
+            StudyRules.Use(f, a, day);
+            StudyRules.Use(f, b, day);
+            StudyRules.Use(f, keepA, day);
+            StudyRules.Use(f, keepB, day);
+        }
     }
 }

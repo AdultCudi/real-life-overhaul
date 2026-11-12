@@ -201,5 +201,72 @@ namespace RealLifeOverhaul.Markets
             }
             return true;
         }
+
+        /// <summary>Test button: the Stocks app on the kit, on the market.</summary>
+        public void TestKit()
+        {
+            FinishMoment();
+            const string Test = "Open Stocks on the kit";
+            if (!TestReady(Test, false))
+            {
+                return;
+            }
+            RealLifeOverhaul.Ui.UiScreenSwitches.Set(RealLifeOverhaul.Ui.UiScreenSwitches.OptionOf("stocks"), true);
+            if (_view != null)
+            {
+                _view.Want(MarketApp.TabMarket);
+            }
+            OpenAppPartial();
+            Logger?.Info(Test + " test: the desk is open (" + State.Stocks.Count + " companies).");
+        }
+
+        /// <summary>Test button: a company's page on the kit.</summary>
+        public void TestKitCompany()
+        {
+            FinishMoment();
+            const string Test = "A company's page";
+            if (!TestReady(Test, false))
+            {
+                return;
+            }
+            Stock k = TestCompany();
+            if (k == null)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_company");
+                return;
+            }
+            RealLifeOverhaul.Ui.UiScreenSwitches.Set(RealLifeOverhaul.Ui.UiScreenSwitches.OptionOf("stocks"), true);
+            OpenCompany(k.Id);
+            Logger?.Info(Test + " test: " + k.Name + " (" + k.Ticker + ") on the desk.");
+        }
+
+        /// <summary>Test button: a small market order, so the ticket's place can be seen to fill or to say why not.</summary>
+        public void TestKitOrder()
+        {
+            FinishMoment();
+            const string Test = "Place an order";
+            if (!TestReady(Test, true))
+            {
+                return;
+            }
+            Stock k = TestCompany();
+            if (k == null)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_company");
+                return;
+            }
+            Order order = Place(k.Id, OrderSide.Buy, OrderType.Market, OrderLife.Day, 1, 0, 0, true, out OrderWhy why);
+            Logger?.Info(Test + " test: " + (order != null ? order.State + " for 1 of " + k.Ticker : why.ToString()) + ".");
+            OpenCompany(k.Id);
+        }
+
+        /// <summary>Test button: the kit's own switch for Stocks, off and on, for this run.</summary>
+        public void TestKitSwitch()
+        {
+            const string Test = "Stocks switch";
+            bool on = RealLifeOverhaul.Ui.UiScreenSwitches.On("stocks");
+            RealLifeOverhaul.Ui.UiScreenSwitches.Set(RealLifeOverhaul.Ui.UiScreenSwitches.OptionOf("stocks"), !on);
+            Logger?.Info(Test + " test: the desk is " + (!on ? "on the kit" : "the market's own page") + ".");
+        }
     }
 }

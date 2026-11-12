@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Economy
                         quotes.Add(CompanionSnapshot.Row("insurer", insurer,
                             "eligible", CoverRules.WillWrite(policy, insurer),
                             "dayCents", (long)CoverRules.Premium(kind, insurer, shop.Average, shop.Income,
-                                CoverRules.Carried(policy), _index) * 100));
+                                CoverRules.Carried(policy), _index, Certified(shop, Today)) * 100));
                     }
                     policies.Add(CompanionSnapshot.Row("kind", kind, "insurer", policy.Insurer,
                         "active", CoverRules.Covers(policy, Today), "dailyCents", (long)policy.Premium * 100,
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Economy
                 for (int kind = 0; kind < file.Permits.Length; kind++)
                 {
                     licences.Add(CompanionSnapshot.Row("kind", kind, "untilDay", file.Permits[kind].Until,
-                        "valid", LicenceRules.Valid(file.Permits[kind], Today), "autoRenew", file.Permits[kind].Auto));
+                        "valid", LicenceRules.Valid(file.Permits[kind], Today), "autoRenew", file.Permits[kind].Auto, "pendingDecisionDay", file.Permits[kind].Decide));
                 }
                 allowances.TryGetValue(file.Place, out long allowance);
                 rows.Add(CompanionSnapshot.Row("address", CompanionValues.Address(shop.Reg.StreetName, shop.Reg.StreetNumber),

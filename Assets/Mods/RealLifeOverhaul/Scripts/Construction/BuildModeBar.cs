@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Construction
     /// canvas over the map, laid out by layout groups and content size fitters so nothing is cut. Built at the first opening;
     /// written only when build mode's state changes. Nothing runs a frame.
     /// </summary>
-    internal sealed class BuildModeBar
+    internal sealed class BuildModeBar : IBuildBar
     {
         public static IModLogger Logger;
 
@@ -57,8 +57,8 @@ namespace RealLifeOverhaul.Construction
 
         private static readonly string[] ToolIcons = { "Icon-BuildingForSale", "Icon-Palette", "Icon-Building", "Icon-Delete", "Icon-CopyOutline-64", "Icon-Edit" };
         private static readonly string[] ToolIconsElse = { "Icon-Coin", "Icon-Palette", "Icon-Floors", "Icon-Walls", "Icon-CopyOutline-64", "Icon-Walls" };
-        private static readonly string[] ViewIcons = { "Icon-RealEstate", "Icon-Map", "Icon-MarketValue", "Icon-People", "Icon-Construction" };
-        private static readonly string[] ViewIconsElse = { "Icon-Building", "Icon-Palette", "Icon-Coin", "Icon-Hand", "Icon-Floors" };
+        private static readonly string[] ViewIcons = { "Icon-RealEstate", "Icon-Map", "Icon-MarketValue", "Icon-People", "Icon-Construction", "Icon-Rent", "Icon-Traffic" };
+        private static readonly string[] ViewIconsElse = { "Icon-Building", "Icon-Palette", "Icon-Coin", "Icon-Hand", "Icon-Floors", "Icon-Home", "Icon-Road" };
 
         private static readonly string[] ToolLabels =
         {
@@ -83,6 +83,13 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>The tool panel over the toolbar.</summary>
         public BuildModeSheet Sheet { get; private set; }
+
+        IBuildSheet IBuildBar.Sheet => Sheet;
+
+        IBuildLegend IBuildBar.Legend => Legend;
+
+        /// <summary>The game's HUD read again: the hint bar and the leave button keep clear of it.</summary>
+        public void ReadHud() => Hud(BuildModeGame.Hud(_root));
 
         /// <summary>The view's legend over the views.</summary>
         public BuildModeLegend Legend { get; private set; }

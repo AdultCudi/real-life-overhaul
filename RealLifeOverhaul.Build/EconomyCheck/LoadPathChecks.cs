@@ -37,6 +37,14 @@ internal static partial class Program
             {
                 continue;   // the names of the scenes that are not the city, as text
             }
+            if (source.Key == "Ui/Pause/PauseSaves.cs" || source.Key == "Ui/Pause/PauseScreen.cs" || source.Key == "Core/GameContract.Pause.cs")
+            {
+                continue;   // the pause menu's recent saves: it starts a load as the funeral does and reads nothing of one (checked below)
+            }
+            if (source.Key == "Ui/Activity/FuneralScreen.cs" || source.Key == "Core/GameContract.Activity.cs")
+            {
+                continue;   // the funeral card reads the day and time of the backup the game found (its record), and starts no load of its own beyond the game's three keys
+            }
             foreach (string mark in PathMarks)
             {
                 if (told == null && source.Value.Contains(mark))
@@ -46,6 +54,12 @@ internal static partial class Program
             }
         }
         Check(told == null, "load paths: nothing in the mod tells Continue from Load, or any way into a city from another" + (told != null ? " (" + told + ")" : string.Empty));
+        string pauseSaves = sources["Ui/Pause/PauseSaves.cs"];
+        int written = pauseSaves.IndexOf("TransitionToSave.saveToLoadData = s;", StringComparison.Ordinal);
+        Check(written >= 0 && pauseSaves.IndexOf("saveToLoadData", written + 30, StringComparison.Ordinal) < 0
+              && pauseSaves.IndexOf("saveToLoadData", StringComparison.Ordinal) == written + "TransitionToSave.".Length
+              && !sources["Ui/Pause/PauseScreen.cs"].Contains("TransitionToSave."),
+            "load paths: the pause menu only hands the game a save to load, as the funeral does; it never reads which way a city was loaded");
 
         // 2. The entry points the game runs, by scope: a city entry runs for every city, an intro entry only for a new character's creation, so
         // an intro entry's setup that a city needs is repeated in the city entry (Continue and Load never go through the intro).

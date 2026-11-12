@@ -70,6 +70,49 @@ internal static partial class Program
         bool liftSecond = slots[0] == 5 && slots[1] == 6 && slots[2] == 0 && slots[3] == -1;
         Check(liftFirst && liftSecond && FloorsRules.Pages(6, 2, 4) == 2, "floors: the lift on floor 2 of six offers 1 3 4, then 5 6, never its own floor");
 
+        // The lift with the player's own floor (their desk, today's class) first on every page, on its main button.
+        FloorsRules.Page(12, 1, 9, 0, slots);
+        bool pinFirst = slots[0] == 9 && slots[1] == 2 && slots[2] == 3 && slots[3] == -1;
+        FloorsRules.Page(12, 1, 9, 1, slots);
+        bool pinSecond = slots[0] == 9 && slots[1] == 4 && slots[2] == 5 && slots[3] == -1;
+        FloorsRules.Page(4, 2, 3, 0, slots);
+        bool pinFits = slots[0] == 3 && slots[1] == 1 && slots[2] == 4 && slots[3] == 0 && FloorsRules.Pages(4, 2, 3, 4) == 1;
+        FloorsRules.Page(6, 2, 2, 0, slots);
+        bool pinHere = slots[0] == 1 && slots[1] == 3 && slots[2] == 4 && slots[3] == -1;   // the player on their own floor: no pin
+        Check(pinFirst && pinSecond && pinFits && pinHere && FloorsRules.Pages(12, 1, 9, 4) == 5,
+            "floors: the lift on floor 1 of twelve puts the player's floor 9 first on every page (9 2 3, 9 4 5 ...), five pages; on their own floor, no pin");
+        bool pinEvery = true, pinNever = true, pinWraps = true;
+        for (int floors = 1; floors <= FloorsRules.MostFloors; floors++)
+        {
+            for (int skip = 0; skip <= floors; skip++)
+            {
+                for (int pin = 1; pin <= floors; pin++)
+                {
+                    var seen = new HashSet<int>();
+                    int pages = FloorsRules.Pages(floors, skip, pin, 4);
+                    int page = 0;
+                    for (int p = 0; p < pages; p++)
+                    {
+                        FloorsRules.Page(floors, skip, pin, page, slots);
+                        pinEvery &= pin == skip || slots[0] == pin;
+                        for (int s = 0; s < slots.Length; s++)
+                        {
+                            if (slots[s] > 0)
+                            {
+                                pinNever &= slots[s] != skip && slots[s] <= floors && (s == 0 || slots[s] != pin);
+                                seen.Add(slots[s]);
+                            }
+                        }
+                        page = FloorsRules.NextPage(page, floors, skip, pin, 4);
+                    }
+                    pinEvery &= seen.Count == floors - (skip >= 1 ? 1 : 0);
+                    pinWraps &= page == 0;
+                }
+            }
+        }
+        Check(pinEvery && pinNever && pinWraps,
+            "floors: with the player's floor pinned, each page has it first, every other floor shows once over the pages, never the one the player is on, and the last page turns to the first");
+
         bool every = true, never = true, wraps = true;
         for (int floors = 1; floors <= FloorsRules.MostFloors; floors++)
         {

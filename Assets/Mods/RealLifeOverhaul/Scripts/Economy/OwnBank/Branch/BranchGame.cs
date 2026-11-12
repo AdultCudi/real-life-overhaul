@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 CustomerEntriesCalculator calc = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg);
-                h.ShopCustomers = calc != null ? Mathf.Max(0f, calc.GetInitialCustomers()) : 0f;
+                h.ShopCustomers = calc != null ? Mathf.Max(0f, calc.GetInitialCustomers()) * CustomerScale.For(reg) : 0f;   // the living population's people, where it runs
             }
             catch (Exception)
             {
@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Economy
             h.Satisfaction = reg.satisfaction != null ? reg.satisfaction.overall : 50;
             Tellers(reg, out h.Tellers, out h.Skill);
             h.Player = player && h.Open;
+            h.People = OwnBankBridges.Branch != null ? OwnBankBridges.Branch(GameRegistrations.District(reg)) : default;   // the living population's residents round it, where it runs
             return h;
         }
 

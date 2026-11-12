@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Construction
             _onSave = OnSave;
             GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             ScenePrewarm.Add("construction: the game's parking lane being found to copy for the rows of a car park's bays", CarParkGame.Prewarm);
+            BareGroundWarm();
         }
 
         private void OnDestroy()
@@ -166,13 +167,13 @@ namespace RealLifeOverhaul.Construction
                 // A save new to the construction game: seeded once from the day (the player's company is theirs alone; nothing
                 // shared hangs on this seed: the city's developers are drawn from the lot plan and the day).
                 state = new BuildState { Seed = BuildRandom.Mix(save.Day * 7919, Environment.TickCount) | 1, FirstDay = save.Day, LastDay = save.Day - 1 };
-                state.NextClientDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Client);
-                state.NextPublicDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Public);
+                state.NextClientDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Client, TenderPeople(TenderSource.Client));
+                state.NextPublicDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Public, TenderPeople(TenderSource.Public));
             }
             Retire(state);
             if (state.NextRefitDay <= 0)
             {
-                state.NextRefitDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Refit);   // a line from before the refits' tenders too
+                state.NextRefitDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Refit, TenderPeople(TenderSource.Refit));   // a line from before the refits' tenders too
             }
             _beforeTests = save.modData.TryGetValue(BuildStore.TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _testLots.Clear();

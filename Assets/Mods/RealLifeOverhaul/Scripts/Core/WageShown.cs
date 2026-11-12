@@ -210,6 +210,18 @@ namespace RealLifeOverhaul
                    && !(GoingPublic.InSession && e.assignedAddress != null && GoingPublic.Foreign(BuildingHelper.GetBuildingRegistration(e.assignedAddress)));
         }
 
+        /// <summary>What an employee or a candidate is paid an hour, hundredths, as the game's screens now show it; the game's own figure for another player's.</summary>
+        internal static int PaidCents(EmployeeInstance e)
+        {
+            return e == null ? 0 : PaidWage.Shown(e.hourlyWage, e.id, Ours(e));
+        }
+
+        /// <summary>The same in money an hour: the one figure the mod's own employee screens name (the list, the card and the panel at the station).</summary>
+        internal static float PaidMoney(EmployeeInstance e)
+        {
+            return PaidCents(e) / 100f;
+        }
+
         /// <summary>True the first time in this save that a negotiation is told what its wage costs.</summary>
         internal static bool FirstTell(string negotiation)
         {

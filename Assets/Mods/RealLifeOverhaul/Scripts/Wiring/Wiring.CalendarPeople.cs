@@ -69,8 +69,8 @@ namespace RealLifeOverhaul
                             continue;
                         }
                         any = true;
-                        int turns = (int)Math.Floor(c.Age) + 1;
-                        for (int day = today + MonthViewRules.ChildBirthdayIn(c.Age, year), age = turns; day <= toDay; day += year, age++)
+                        int turns = ChildYearRules.Turning(c.Age, year);
+                        for (int day = today + ChildYearRules.BirthdayIn(c.Age, year), age = turns; day <= toDay && age <= (int)FamilyBalance.GrownUp; day += year, age++)
                         {
                             CalendarEntry e = into.Add(Id, i, day, CalendarGroup.Time, day);
                             if (e != null)

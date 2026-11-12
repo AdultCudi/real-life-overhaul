@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
             try
             {
                 target += ApprovalExtra != null ? ApprovalExtra() : 0f;
+                target += CivicBridges.Residents != null ? CivicBridges.Residents() : 0f;   // the residents' own satisfaction, where the living population runs
             }
             catch (Exception e)
             {

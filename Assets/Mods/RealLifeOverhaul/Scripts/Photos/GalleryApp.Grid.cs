@@ -575,6 +575,7 @@ namespace RealLifeOverhaul.Photos
 
         private void ThumbCame(string name, Texture2D made)
         {
+            NoteThumb();
             for (int i = 0; i < _liveStrips.Count; i++)
             {
                 Slot[] slots = _liveStrips[i].Slots;

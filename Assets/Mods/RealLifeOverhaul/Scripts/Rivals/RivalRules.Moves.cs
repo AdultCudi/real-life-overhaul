@@ -64,10 +64,9 @@ namespace RealLifeOverhaul.Rivals
         public static RivalMoveKind PickKind(RivalFile f, Tycoon t, RivalWorld w, int day, int tier)
         {
             int total = 0;
-            int[] weights = t.Def.Weights;
             for (int k = 0; k < (int)RivalMoveKind.Count; k++)
             {
-                total += Available(f, t, (RivalMoveKind)k, w, day, tier) ? weights[k] : 0;
+                total += Available(f, t, (RivalMoveKind)k, w, day, tier) ? Weight(t, (RivalMoveKind)k, w) : 0;
             }
             if (total <= 0)
             {
@@ -80,13 +79,25 @@ namespace RealLifeOverhaul.Rivals
                 {
                     continue;
                 }
-                at -= weights[k];
+                at -= Weight(t, (RivalMoveKind)k, w);
                 if (at < 0)
                 {
                     return (RivalMoveKind)k;
                 }
             }
             return RivalMoveKind.Count;
+        }
+
+        /// <summary>
+        /// A tycoon's liking for a kind of move today. They answer the player with the player's own two choices: a price cut of the
+        /// player's is answered by a price move of theirs, a campaign of the player's on Flare by a piece in the paper of theirs, each
+        /// <see cref="RivalCatalogue.AnswerFactor"/> times as likely while it lasts.
+        /// </summary>
+        public static int Weight(Tycoon t, RivalMoveKind kind, RivalWorld w)
+        {
+            int weight = t.Def.Weights[(int)kind];
+            bool answers = (kind == RivalMoveKind.PriceRise && w.PlayerCut) || (kind == RivalMoveKind.Press && w.PlayerCampaign);
+            return answers ? weight * RivalCatalogue.AnswerFactor : weight;
         }
 
         /// <summary>Whether a tycoon could make a kind of move today.</summary>
@@ -105,6 +116,9 @@ namespace RealLifeOverhaul.Rivals
                 case RivalMoveKind.Lobby: return shops && w.Issues && day >= t.BarredUntil && LiveCount(f, RivalMoveKind.Lobby) == 0;
                 case RivalMoveKind.Suit: return w.Court && w.Worth > 0;
                 case RivalMoveKind.Press: return w.Paper || (shops && w.Issues);
+                case RivalMoveKind.PriceRise: return shops;
+                case RivalMoveKind.Borrowed: return t.Worth > 0;
+                case RivalMoveKind.Shares: return w.Market && t.Listed;
                 default: return false;
             }
         }
@@ -251,6 +265,15 @@ namespace RealLifeOverhaul.Rivals
                 case RivalMoveKind.Press:
                     m.Amount = RivalCatalogue.PressCustomers;
                     break;
+                case RivalMoveKind.PriceRise:
+                    m.Amount = RivalCatalogue.PriceRiseCustomers;   // per cent fewer customers while it runs
+                    break;
+                case RivalMoveKind.Borrowed:
+                    m.Amount = Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.BorrowedBase * power / 1000);
+                    break;
+                case RivalMoveKind.Shares:
+                    m.Amount = Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.SharesBase * power / 1000);
+                    break;
                 default:
                     m.Amount = 0;   // (a stake and a bid: the market sizes them by its own rules)
                     break;
@@ -350,6 +373,25 @@ namespace RealLifeOverhaul.Rivals
                 }
             }
             return -(int)Math.Min(RivalCatalogue.OutletDipMost, dip);
+        }
+
+        /// <summary>Fewer customers while a rival's prices are up, per cent (0 or less), capped so it stays a nuisance.</summary>
+        public static int PriceWar(RivalFile f)
+        {
+            if (f == null)
+            {
+                return 0;
+            }
+            int dip = 0;
+            for (int i = 0; i < f.Moves.Count; i++)
+            {
+                RivalMove m = f.Moves[i];
+                if (m.Kind == RivalMoveKind.PriceRise && m.State == RivalMoveState.Running)
+                {
+                    dip += (int)m.Amount;
+                }
+            }
+            return -(int)Math.Min(RivalCatalogue.PriceWarMost, dip);
         }
 
         /// <summary>The premium on buildings for sale in a district, per mille (the largest running buying up).</summary>

@@ -53,8 +53,11 @@ namespace RealLifeOverhaul
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
+            Step("delivery trips", LogisticsLinks.Connect);
+            Step("parties and company events", PartyLinks.Connect);
             Step("the tech sector", TechLinks.Connect);
             Step("the start days of the player's businesses", FoundingLinks.Connect);   // wraps nothing: it only reads the moving companies' messages and the statements
+            Step("the pause menu's city card", PauseLinks.Connect);   // wraps nothing: it reads the net worth and the businesses as the Overview counts them
             Step("education and careers", CareersLinks.Connect);
             Step("networking", NetworkLinks.Connect);   // after the careers and the investors: the favours are theirs
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
@@ -68,18 +71,25 @@ namespace RealLifeOverhaul
             Step("invitations in Flare messages", FlareInviteLinks.Connect);
             Step("street talk", StreetLinks.Connect);   // after the invitations': Flare's look for an invitation; footfall on top of the others'
             Step("the camera and the gallery", PhotosLinks.Connect);   // after Flare's: the selfie button it wraps is theirs already
+            Step("the planner's deliveries, pay and posts", LifePlanSources.Connect);
             Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
             Step("the city's faults", FaultLinks.Connect);   // after Flare's and the interiors': its part of footfall goes on top of theirs
             Step("RLO Texts", TextsLinks.Connect);
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
+            Step("the city map's place card", MapLinks.Connect);
             Step("empty shops as offices", OfficeLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
+            Step("the desk sessions", SessionLinks.Connect);   // after running a business and the tech sector: it reads their managers and people
+            Step("the game studio's sessions", StudioLinks.Connect);   // after the desk sessions: its kinds join theirs
+            Step("the tech firms' markets and sessions", SectorLinks.Connect);   // after the desk sessions: its kinds join theirs (the population is read each game day, not here)
             Step("the seasons", SeasonLinks.Connect);   // before the calendar: its day page asks the seasons for their line
+            Step("the picture", GraphicsLinks.Connect);   // wraps nothing: it asks the seasons for the season and the snow
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
+            Step("loyalty cards", LoyaltyLinks.Connect);   // after the brands', the interiors' and the rivals': its part of footfall goes on top of theirs
             Step("the public city read API", ModApiLinks.Connect);
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
@@ -88,8 +98,22 @@ namespace RealLifeOverhaul
             Step("the construction game", ConstructionLinks.Connect);   // after the paper's and the credit side's: its piece and its account go on top of theirs
             Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
+            Step("giving", GivingLinks.Connect);   // after the schools' and the rivals': its piece of the paper goes on top of theirs
+            Step("health", HealthLinks.Connect);   // after giving's, the careers', the economy's and Home's: it wraps their doors
+            Step("insurance", InsuranceLinks.Connect);   // after health's and the rivals': it wraps what a tycoon pays of a hospital bill
+            Step("the smaller business asks", BizAsksLinks.Connect);   // parking spaces and the showroom's suppliers: wraps nothing
+            Step("taxi and delivery shifts", SideJobLinks.Connect);   // wraps nothing: it asks the jobs' director and the pump's price
+            Step("suppliers", SupplierLinks.Connect);   // after giving's: its piece of the paper goes on top of it
+            Step("the stock market's extras", StockExtrasLinks.Connect);   // after the listing's and the rivals': it wraps the company's books and adds to the rivals' page
+            Step("rivals seen", SeenLinks.Connect);   // after giving's: its society lines go on top of its piece of the paper
+            Step("the dynasty", DynastyLinks.Connect);   // after giving's: its piece of the paper and its debt go on top of theirs
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
+            Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
+            Step("Flare in the city", FlareCityLinks.Connect);   // after the living population: its residents follow, hear and go where they heard good things
+            Step("Flare's desk session", FlareSessionLinks.Connect);   // after the desk sessions: its kind joins theirs while Flare in the city runs
+            Step("the mod's own businesses and the city's people", DemandLinks.Connect);   // wraps nothing: each business's bridge reads the population's demand
             Step("the Economy app", OutlookLinks.Connect);   // wraps nothing: it only reads the economy, the market, the council and the districts
+            Step("the schemes", SchemeLinks.Connect);   // last: its pieces of the paper and its sale follow the others'
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -100,8 +124,22 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the schemes", SchemeLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
             Step("the Economy app", OutlookLinks.Disconnect);
+            Step("the mod's own businesses and the city's people", DemandLinks.Disconnect);
+            Step("Flare's desk session", FlareSessionLinks.Disconnect);
+            Step("Flare in the city", FlareCityLinks.Disconnect);
+            Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
+            Step("the stock market's extras", StockExtrasLinks.Disconnect);   // first: the books it wrapped go back before the listing's own
+            Step("insurance", InsuranceLinks.Disconnect);   // before health's: what it wrapped of the rivals' bills goes back first
+            Step("health", HealthLinks.Disconnect);   // before giving's: what it wrapped goes back first
+            Step("the smaller business asks", BizAsksLinks.Disconnect);
+            Step("taxi and delivery shifts", SideJobLinks.Disconnect);
+            Step("suppliers", SupplierLinks.Disconnect);   // before giving's: what it wrapped of the paper goes back first
+            Step("rivals seen", SeenLinks.Disconnect);   // before giving's: what it wrapped of the paper goes back first
+            Step("the dynasty", DynastyLinks.Disconnect);   // before giving's: what it wrapped of the paper and the debts goes back first
+            Step("giving", GivingLinks.Disconnect);   // before the schools': what it wrapped of the paper goes back first
             Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
             Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's
             Step("the construction game", ConstructionLinks.Disconnect);   // first: what it wrapped of the paper and the accounts goes back before the others take theirs off
@@ -112,16 +150,23 @@ namespace RealLifeOverhaul
             Step("the public city read API", ModApiLinks.Disconnect);
             Step("the calendar", CalendarLinks.Disconnect);
             Step("the Marketplace", HustleLinks.Disconnect);
+            Step("the picture", GraphicsLinks.Disconnect);
             Step("the seasons", SeasonLinks.Disconnect);
+            Step("loyalty cards", LoyaltyLinks.Disconnect);   // before the rivals': what it wrapped of footfall goes back first
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper goes back first
+            Step("the tech firms' markets and sessions", SectorLinks.Disconnect);
+            Step("the game studio's sessions", StudioLinks.Disconnect);
+            Step("the desk sessions", SessionLinks.Disconnect);
             Step("the end game at scale", EndScaleLinks.Disconnect);
+            Step("the city map's place card", MapLinks.Disconnect);
             Step("the district view", DistrictLinks.Disconnect);
             Step("empty shops as offices", OfficeLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
             Step("RLO Texts", TextsLinks.Disconnect);
             Step("the city's faults", FaultLinks.Disconnect);   // before Flare's: what it wrapped of footfall goes back first
             Step("interiors and decor", InteriorLinks.Disconnect);   // before Flare's, for the same reason
+            Step("the planner's deliveries, pay and posts", LifePlanSources.Disconnect);
             Step("the camera and the gallery", PhotosLinks.Disconnect);   // before Flare's: the selfie button it wrapped goes back first
             Step("street talk", StreetLinks.Disconnect);   // before the invitations': what it wrapped of footfall goes back first
             Step("invitations in Flare messages", FlareInviteLinks.Disconnect);
@@ -140,7 +185,10 @@ namespace RealLifeOverhaul
             Step("education and careers", CareersLinks.Disconnect);
             Step("the tech sector", TechLinks.Disconnect);
             Step("the start days of the player's businesses", FoundingLinks.Disconnect);
+            Step("the pause menu's city card", PauseLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);
+            Step("delivery trips", LogisticsLinks.Disconnect);
+            Step("parties and company events", PartyLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);

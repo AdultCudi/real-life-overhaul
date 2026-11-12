@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Construction
     /// most), two to a row, each a square of the fill inside its edge's colour and its words; the rest of the view's entries (its
     /// lines) in the game's tooltip on the box. Parts kept and reused; written only when the view changes; nothing a frame.
     /// </summary>
-    internal sealed class BuildModeLegend
+    internal sealed class BuildModeLegend : IBuildLegend
     {
         private const float KeySize = 28f;     // a square, in the canvas's units (3840 by 2160)
         private const float WordsSize = 26f;

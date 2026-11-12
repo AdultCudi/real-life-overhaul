@@ -142,6 +142,10 @@ namespace RealLifeOverhaul.Flare
             {
                 _director.EndHire(row.Number);
             }
+            else if (row != null && row.Number < 0 && _director.AcceptOffer(-row.Number))
+            {
+                Refresh(false);   // the offer taken: its first paid post is up
+            }
         }
 
         private void RowButton(FlareRow row)

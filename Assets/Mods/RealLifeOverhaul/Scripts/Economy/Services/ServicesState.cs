@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Economy
         public int DaysUnder;                    // mornings of this week under the standard
         public int Missed;                       // weeks missed running
         public int Earned;                       // fees paid so far
+        public int Crew = -1;                    // the named crew that serves it (0 to 2), or -1: whoever is free
 
         // Read from the game at each look; never saved.
         public int Worst;                        // its dirtiest tile now, hundredths
@@ -61,6 +62,30 @@ namespace RealLifeOverhaul.Economy
         public int Sqm, Capacity, X, Z;
         public int Fee, Standard;
         public int Until;                        // the last day the offer stands
+        public readonly List<RivalBid> Rivals = new List<RivalBid>(3);   // rival cleaning firms bidding for the same contract
+    }
+
+    /// <summary>A rival cleaning firm's bid for an open contract: the share of the asking fee it works for, and how well its crew cleans.</summary>
+    public sealed class RivalBid
+    {
+        public int Firm;                         // its place in ServicesCatalogue.RivalFirms
+        public int Pct;                          // of the asking fee
+        public int Skill;                        // 0 to 100
+    }
+
+    /// <summary>A member of the player's crew placed in one of the named crews.</summary>
+    public sealed class CrewPlace
+    {
+        public string Id = string.Empty;
+        public int Group;                        // 0 to ServicesCatalogue.CrewGroups - 1
+    }
+
+    /// <summary>One business's worth by day, a ring of the last days, for the change on the month and the line under the figure.</summary>
+    public sealed class WorthRing
+    {
+        public string Place = string.Empty;
+        public readonly int[] Value = new int[ServicesCatalogue.WorthDays];
+        public readonly int[] Day = new int[ServicesCatalogue.WorthDays];   // the day each slot was noted; 0: none
     }
 
     /// <summary>A business the player has put on the market.</summary>
@@ -72,6 +97,7 @@ namespace RealLifeOverhaul.Economy
         public int Step = ServicesCatalogue.AskingDefault;   // the asking price, as an index of ServicesCatalogue.AskingPct
         public int Asking;
         public int Value;                        // what it was worth when last valued
+        public int Lift;                         // thousandths the business's books showed over the truth when it was last valued (the schemes' dressed books); an offer carries it
         public int NextOfferDay;
         public int OffersMade;
     }
@@ -89,7 +115,30 @@ namespace RealLifeOverhaul.Economy
         public int ClauseDays;                   // days the seller stays out of that trade in the district; 0: no clause
         public int Deadline;                     // the last day the offer stands
         public bool Countered;
-        public int Face;                         // which of the buyer kind's names
+        public int Face;                         // which of the buyer kind's names, for an offer made before named buyers
+        public string Who = string.Empty;        // the buyer: a rival's id of the game's, an employee's id, a listed company's id, an investor's name; empty before named buyers
+        public string WhoName = string.Empty;    // their name when the offer was made
+        public int WhoCount;                     // a rival's businesses, a company's id, the staff's number; 0 for an investor
+        public int Lift;                         // thousandths the books showed over the truth when this price was made: the buyer's look and the schemes' act go by it, never by the books now
+
+        /// <summary>True for an offer from somebody by name; one made before named buyers has only its kind.</summary>
+        public bool Named => WhoName.Length > 0;
+    }
+
+    /// <summary>A business of a rival of the game's put up for sale: the player may buy it first, then another rival takes it.</summary>
+    public sealed class RivalSale
+    {
+        public int Id;
+        public string Place = string.Empty;      // its building, as a place is written
+        public string Business = string.Empty;   // its name
+        public string Seller = string.Empty;     // the rival's id of the game's
+        public string SellerName = string.Empty;
+        public string Buyer = string.Empty;      // the rival who takes it if the player does not; empty: the seller keeps it
+        public string BuyerName = string.Empty;
+        public int Price;
+        public int Weekly;                       // its takings a week when put up
+        public int Day;                          // the day it was put up
+        public int Deadline;                     // the last day the player may buy it
     }
 
     /// <summary>Money a buyer still owes for a business, in weekly parts.</summary>
@@ -142,6 +191,66 @@ namespace RealLifeOverhaul.Economy
         public readonly List<SaleDue> Dues = new List<SaleDue>(4);
         public readonly List<SaleClause> Clauses = new List<SaleClause>(4);
         public readonly List<SaleRecord> Records = new List<SaleRecord>(ServicesCatalogue.RecordsKept);
+        public readonly List<RivalSale> RivalSales = new List<RivalSale>(ServicesCatalogue.RivalSalesMost);
+        public int RivalSaleDay;                 // the day the last rival's sale was put up
+
+        public readonly List<CrewPlace> Places = new List<CrewPlace>(ServicesCatalogue.CrewMost);   // who stands in which named crew
+        public readonly int[] FeeMonths = new int[ServicesCatalogue.FeeMonths];   // the fees contracted a month, oldest first, 0 before the first month noted
+        public int FeeNoted;                     // months noted so far, up to the ring's size
+        public int FeeMonth = -1;                // the month the last figure was noted for
+        public int RivalWon;                     // contracts a rival firm took from the player's offers
+        public readonly List<WorthRing> Worths = new List<WorthRing>(ServicesCatalogue.ListingsMost);
+
+        /// <summary>The named crew a member stands in; -1 for none.</summary>
+        public int GroupOf(string id)
+        {
+            for (int i = 0; i < Places.Count; i++)
+            {
+                if (string.Equals(Places[i].Id, id, StringComparison.Ordinal))
+                {
+                    return Places[i].Group;
+                }
+            }
+            return -1;
+        }
+
+        public RivalSale RivalSale(int id)
+        {
+            for (int i = 0; i < RivalSales.Count; i++)
+            {
+                if (RivalSales[i].Id == id)
+                {
+                    return RivalSales[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>True if a rival's business at this place is up for sale now.</summary>
+        public bool RivalSelling(string place)
+        {
+            for (int i = 0; i < RivalSales.Count; i++)
+            {
+                if (string.Equals(RivalSales[i].Place, place, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>True if this buyer already has an offer standing for the business at this place.</summary>
+        public bool Offering(string place, string who)
+        {
+            for (int i = 0; !string.IsNullOrEmpty(who) && i < SaleOffers.Count; i++)
+            {
+                if (string.Equals(SaleOffers[i].Place, place, StringComparison.Ordinal) && string.Equals(SaleOffers[i].Who, who, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public CleaningClient Client(string place)
         {

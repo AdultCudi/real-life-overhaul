@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Ventures
@@ -14,6 +15,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int Diligence;        // how hard they check a figure, 0 to 100
         public int ClosedUntil;      // they see nobody before this day
         public int PitchedDay;       // last approached; 0: never
+        public int Committed;        // not saved: what rivals raising money from them took of their sum this quarter (VenturesExtraRules.Committed)
 
         public string Name => Kind == InvestorKind.Firm
             ? VenturesCatalogue.FirmNames[First % VenturesCatalogue.FirmNames.Length]
@@ -23,7 +25,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int Least => Prices.At(ChequeLeast);
 
         /// <summary>Their largest sum at today's prices.</summary>
-        public int Most => Prices.At(ChequeMost);
+        public int Most => Math.Max(Least, Prices.At(ChequeMost) - Committed);
 
         public bool LikesSector(Sector sector)
         {

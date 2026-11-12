@@ -464,7 +464,7 @@ internal static partial class Program
 
     private static void CrowdInfluencers()
     {
-        Check(FlareCast.Start >= 15 && FlareCast.Start <= 20 && FlareCast.Level == FlareLiveRules.Citizens / FlareCast.CitizensEach && FlareCast.ActiveSoft >= FlareCast.Level * 3,
+        Check(FlareCast.Start >= 25 && FlareCast.Start <= 32 && FlareCast.Level == FlareLiveRules.Citizens / FlareCast.CitizensEach && FlareCast.ActiveSoft >= FlareCast.Level * 3,
             "Flare crowd: the city starts with " + FlareCast.Start + " influencers, settles round " + FlareCast.Level + " for four hundred people, a safety bound at " + FlareCast.ActiveSoft);
         Check(FlareCast.ArrivalChance(0) > FlareCast.ArrivalChance(FlareCast.Level) && FlareCast.ArrivalChance(FlareCast.Level) > 0 && FlareCast.ArrivalChance(FlareCast.Level * 2) == 0,
             "Flare crowd: newcomers come more often to a small cast, now and then at the level, none at twice it");

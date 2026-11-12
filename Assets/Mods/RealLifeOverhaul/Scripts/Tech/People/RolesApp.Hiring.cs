@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Tech
             int cost = Prices.At(HiringRules.AdCost(days, _adBoost));
             box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
                 "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
-            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
+            box.Line(SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk(_places[_adPlace], r) : TechText.T("reallife_hire_seat_payroll"));   // which workstation the role sits at
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {
@@ -484,13 +484,14 @@ namespace RealLifeOverhaul.Tech
             }
             else if (picked != null && picked.CrewSearch)
             {
-                WriteCrewSearch(box, picked);
+                WriteCrewSearch(box, picked, day);
             }
             else if (picked != null)
             {
                 box.Title(TechText.T("reallife_hire_search_title", "role", TechText.Role(picked.Role)));
                 box.Line(TechText.Fill("reallife_hire_search_terms", "level", TechText.Level(picked.Level), "fee", TechText.Cents(picked.Fee), "paid", TechText.Cents(picked.FeePaid),
                     "day", picked.Due.ToString(), "count", HiringCatalogue.SearchCandidates.ToString()));
+                WriteRush(box, picked, day);
                 Transform buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_hire_button_applicants", () => ShowTab(TechDirector.TabApplicants));
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
@@ -502,9 +503,31 @@ namespace RealLifeOverhaul.Tech
                 box.Title(TechText.T("reallife_hire_searches_title"));
                 box.Note(TechText.Fill("reallife_hire_searches_about", "share", TechText.Bp(HiringCatalogue.SearchFeeBp), "count", HiringCatalogue.SearchCandidates.ToString(),
                     "least", HiringCatalogue.SearchDaysLeast.ToString(), "most", HiringCatalogue.SearchDaysMost.ToString()));
+                if (Settings.TechSearchRush)
+                {
+                    box.Note(TechText.Fill("reallife_hire_rush_about", "share", TechText.Bp(HiringCatalogue.SearchRushBp)));
+                }
                 Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Search;
+        }
+
+        // A search still looking: its candidates can be brought forward to tomorrow for a share of its fee for each day saved, asked through the
+        // game's question box with the price and the new day. A search due tomorrow, or one that has delivered, shows nothing.
+        private void WriteRush(InfoBox box, JobAd ad, int day)
+        {
+            if (_director.RushRefusal(ad) != null)
+            {
+                return;
+            }
+            int id = ad.Id;
+            string role = TechText.Role(ad.Role), amount = TechText.Cents(HiringRules.RushQuote(ad, day)), when = HiringRules.RushDelivery(day).ToString(), was = ad.Due.ToString();
+            string share = TechText.Bp(HiringCatalogue.SearchRushBp);
+            box.Line(TechText.Fill("reallife_hire_rush_line", "amount", amount, "day", when, "was", was, "share", share));
+            InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_hire_button_rush", () => GameConfirm.Show(
+                "reallife_hire_rush_title".Localize(new { role }),
+                "reallife_hire_rush_body".Localize(new { amount, day = when, was, share }),
+                () => UiClone.Safe(() => Do(() => _director.RushSearch(id))), null, null, null, true, false));
         }
 
         private void WriteNewSearch(InfoBox box)
@@ -536,7 +559,11 @@ namespace RealLifeOverhaul.Tech
             int fee, retainer;
             _director.SearchQuote(r.Id, _searchLevel, out fee, out retainer);
             box.Line(TechText.Fill("reallife_hire_new_search_cost", "fee", TechText.Cents(fee), "retainer", TechText.Cents(retainer), "count", HiringCatalogue.SearchCandidates.ToString()));
-            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
+            if (Settings.TechSearchRush)
+            {
+                box.Line(TechText.Fill("reallife_hire_rush_about", "share", TechText.Bp(HiringCatalogue.SearchRushBp)));   // told before the firm is briefed
+            }
+            box.Line(SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk(_places[_adPlace], r) : TechText.T("reallife_hire_seat_payroll"));   // which workstation the role sits at
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {

@@ -44,6 +44,32 @@ namespace RealLifeOverhaul.Economy
             return s != null ? CityModel.Tolerance(s, name != null ? s.District(name) : null, Level) : 1000;
         }
 
+        /// <summary>Today's price factor of a kind of goods, thousandths of its calm price (the season, the weather, a city event, a shortage or a glut); 1000 while not running.</summary>
+        public static int SupplyFactor(int kind)
+        {
+            CityState s = Live;
+            return s != null && kind >= 0 && kind < s.Supply.Length && s.Supply[kind].Factor > 0 ? s.Supply[kind].Factor : 1000;
+        }
+
+        /// <summary>
+        /// The shortage or glut of a kind of goods that is running or announced: the days until it starts (0 while it runs), the days it then still lasts and its size at
+        /// the strength in use, thousandths. None, with nothing, while there is none or the city's economy is not running (Suppliers reads it).
+        /// </summary>
+        public static SupplyShock SupplyShockOf(int kind, out int startsIn, out int days, out int size)
+        {
+            startsIn = days = size = 0;
+            CityState s = Live;
+            if (s == null || kind < 0 || kind >= s.Supply.Length || s.Supply[kind].Shock == SupplyShock.None)
+            {
+                return SupplyShock.None;
+            }
+            SupplyLine line = s.Supply[kind];
+            startsIn = Math.Max(0, line.From - s.Age);
+            days = Math.Max(0, line.From + line.Days - Math.Max(s.Age, line.From));
+            size = Math.Abs(CityModel.ShockPercent(line, Level)) * 10;
+            return days > 0 ? line.Shock : SupplyShock.None;
+        }
+
         /// <summary>A month of the model has turned: raised once, on the game's day event, after its figures are in place.</summary>
         public static event Action MonthTurned;
 

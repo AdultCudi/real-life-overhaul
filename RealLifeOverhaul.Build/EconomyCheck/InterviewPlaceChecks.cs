@@ -111,7 +111,7 @@ internal static partial class Program
             "interview places: the interview at a place is the game's panel's activity, in the book of sittings so every end settles it once");
         Check(InOrder(CompanyMethod(director, "private void CloseSitting()"), "InterviewVisit visit = _visit;", "_visit = null;", "visit?.Close();"),
             "interview places: the careers letting every sitting go (switched off, a fault, the city going) bring the player out of an interview too");
-        Check(computer.Contains("|| sitting.Kind == SittingKind.Interview;") && computer.Contains("public bool RequiresEnergy() => !_work;"),
+        Check(computer.Contains("|| sitting.Kind == SittingKind.Interview || sitting.Kind == SittingKind.Contract;") && computer.Contains("public bool RequiresEnergy() => !_work;"),
             "interview places: a video interview at the computer does not end when the energy runs low, as the standing one did not");
 
         Check(!visit.Contains("void Update(") && !visit.Contains("void LateUpdate(") && !visit.Contains("FindObjects"),

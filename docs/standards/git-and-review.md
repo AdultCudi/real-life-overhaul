@@ -4,7 +4,7 @@ These rules cover how a change gets from a branch into `main`: its branch, its c
 
 ### RLO-GIT-001: Branch names
 
-**MUST.** Name a branch `fix/<name>` for a fix or `feature/<name>` for a feature, with lower-case words and hyphens. The maintainer also uses `perf/`, `release/`, `integrate/`, `test/` and `build/`.
+**MUST.** Name a branch `fix/<name>` for a fix or `feature/<name>` for a feature, with lower-case words and hyphens. The maintainer also uses `perf/`, `release/`, `integrate/`, `test/` and `build/`, and `living/` for the parts of the living economy overhaul, merged into its integration branch.
 
 Why: the merge commit names the branch, so the history says what each change was. 231 branches are `feature/`, 74 `fix/`.
 

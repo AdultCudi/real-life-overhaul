@@ -59,11 +59,21 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (Settings.EconomyCompanyHide)
                 {
-                    box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10));
+                    box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t, _director.Today) / 10));
+                }
+                if (_director.Today < t.QuietUntil)
+                {
+                    // A tax case settled with the city: the inspector comes at half the chance until then.
+                    box.Row("reallife_co_tax_quiet", CompanyText.T("reallife_co_tax_quiet_value", "day", t.QuietUntil.ToString()));
                 }
                 box.Row("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day",
                     (t.QuarterFrom + _director.QuarterDays).ToString()));
                 box.Row("reallife_co_tax_costs", CompanyText.Money(TaxRules.CostsSum(t)));
+                long estate = EconomyBridges.EstateTax != null ? EconomyBridges.EstateTax() : -1L;   // the estate statement is the Legacy app's (Scripts/Dynasty)
+                if (estate >= 0)
+                {
+                    box.Row("reallife_dynasty_tax_row", CompanyText.Money(estate));
+                }
                 box.Row("reallife_co_row_accountant", CompanyText.Accountant(t.Accountant));
                 box.Section("reallife_ibox_sec_how");
                 box.Note(CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()));
@@ -116,6 +126,7 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_return_file", _director.FileReturn);
             }
+            QuietButton(buttons, CompanyBridges.QuietReturn, null, 0);
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
             Guide(box);
         }
@@ -180,14 +191,17 @@ namespace RealLifeOverhaul.Economy
             }
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_co_hide_saved", CompanyText.Money(t.Saved));
-            box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10), CellTone.Yellow);
+            box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t, _director.Today) / 10), CellTone.Yellow);
             box.Section("reallife_ibox_sec_risk");
             box.Note(CompanyText.T("reallife_co_hide_risk", "grow", (CompanyCatalogue.RiskPerPercent / 100f).ToString("0.##"),
                 "fall", (CompanyCatalogue.RiskDecay / 100f).ToString("0.##"), "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10)));
             box.Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit",
                 "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]), "sum", CompanyText.Money(CompanyCatalogue.CourtSum)));
             box.Note(CompanyText.T("reallife_co_hide_threshold"));
-            BackButton(box);
+            var buttons = box.ButtonRow();
+            QuietButton(buttons, CompanyBridges.QuietBooks, place, 0);
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
     }
 }

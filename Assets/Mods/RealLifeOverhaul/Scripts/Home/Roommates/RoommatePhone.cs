@@ -4,6 +4,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul.Roommates
@@ -105,7 +106,8 @@ namespace RealLifeOverhaul.Roommates
                     string refusal = d.Advertise();
                     return RoommateTalk.Close(refusal ?? "reallife_roommate_ad_up", new Fill().Cost(RoommateRules.AdFee).Count(RoommateRules.AdDays));
                 },
-                "reallife_roommate_do_ask_friend", () => Friend(d, 0, true));
+                "reallife_roommate_do_ask_friend", () => Friend(d, 0, true))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", RoommateText.Money(RoommateRules.AdFee));
         }
 
         private static DialogEntry Friend(RoommateDirector d, int index, bool first)
@@ -133,7 +135,8 @@ namespace RealLifeOverhaul.Roommates
                     string refusal = d.AskFriend(friend);
                     return RoommateTalk.Close(refusal ?? "reallife_roommate_friend_yes", f);
                 },
-                "reallife_roommate_do_someone_else", Friends.Count > 1 ? () => Friend(d, index + 1, false) : (Func<DialogEntry>)null);
+                "reallife_roommate_do_someone_else", Friends.Count > 1 ? () => Friend(d, index + 1, false) : (Func<DialogEntry>)null)
+                .Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", RoommateText.Money(weekly));
         }
 
         private static DialogEntry Notice(RoommateDirector d, RoommateState s)
@@ -198,7 +201,8 @@ namespace RealLifeOverhaul.Roommates
                     string refusal = d.Offer(c);
                     return RoommateTalk.Close(refusal ?? "reallife_roommate_moved_in", Fill.For(name).Cost(weekly).On(RoommateText.When(d.State.RentDay)));
                 },
-                "reallife_roommate_do_next", next >= 0 && next != index ? () => Applicant(d, next) : (Func<DialogEntry>)null);
+                "reallife_roommate_do_next", next >= 0 && next != index ? () => Applicant(d, next) : (Func<DialogEntry>)null)
+                .Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", RoommateText.Money(weekly));
         }
 
         private static DialogEntry Living(RoommateDirector d, RoommateState s)

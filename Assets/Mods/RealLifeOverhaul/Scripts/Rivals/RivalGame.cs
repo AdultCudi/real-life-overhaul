@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.DaySeries;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Markets;
 using UI.Notification;
@@ -46,6 +47,8 @@ namespace RealLifeOverhaul.Rivals
             into.Issues = RivalBridges.Ask(RivalBridges.IssuesOn);
             into.Court = RivalBridges.Ask(RivalBridges.CourtOn) && RivalBridges.Sue != null;
             into.Paper = RivalBridges.Ask(RivalBridges.PaperOn);
+            into.PlayerCut = DaySeriesRules.CutOn(DaySeriesDirector.Book, Day);
+            into.PlayerCampaign = RivalBridges.Ask(RivalBridges.CampaignOn);
             Books.Businesses(Regs);
             for (int i = 0; i < Regs.Count; i++)
             {
@@ -60,6 +63,25 @@ namespace RealLifeOverhaul.Rivals
                     Rented = !reg.BuildingOwnedByPlayer,
                     Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay))
                 });
+            }
+            Regs.Clear();
+        }
+
+        /// <summary>
+        /// Only the names and business types of the rivals' shops, at most a number of them: no revenue, worth or bridge is read, so it costs a walk of
+        /// the rivals' registrations and a name and a type from each (the Marketplace asks it once a morning).
+        /// </summary>
+        public static void NamesAndTypes(List<RivalShop> into, int most)
+        {
+            into.Clear();
+            if (Save == null)
+            {
+                return;
+            }
+            Books.Businesses(Regs);
+            for (int i = 0; i < Regs.Count && into.Count < most; i++)
+            {
+                into.Add(new RivalShop { Name = Name(Regs[i]), Type = Regs[i].businessTypeName ?? string.Empty });
             }
             Regs.Clear();
         }

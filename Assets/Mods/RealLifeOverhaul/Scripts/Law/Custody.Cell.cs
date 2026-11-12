@@ -39,17 +39,14 @@ namespace RealLifeOverhaul.Law
             bool listed = _panel.Open(precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr(), sheet,
                 Fill(state.Court ? "reallife_law_cell_order_term" : priors > 0 ? "reallife_law_cell_sentence_repeat" : "reallife_law_cell_sentence", "hours", state.Hours.ToString()),
                 _onClick, _inCell);
+            _panel.Since(state.StartedAt);
             if (state.Court)
             {
-                // A court's order: sit it out, and bail only if the court set one; no lawyer.
+                // A court's order: sit it out, and bail only if the court set one; no lawyer. The duty doctor stays.
                 _panel.Shape(state.Bail > 0 ? 2 : 1, "reallife_law_cell_order");
             }
             int fee = LawyerFee;
-            _panel.SetOption(0, "reallife_law_cell_wait".Tr(), "reallife_law_cell_wait_detail".Tr(), true);
-            _panel.SetOption(1, state.Bail > 0 ? "reallife_law_cell_bail_name".Tr() : "reallife_law_cell_no_bail".Tr(),
-                state.Bail > 0 ? Fill("reallife_law_cell_bail_detail", "amount", ((float)state.Bail).ToCurrencyFormat()) : null, state.Bail > 0);
-            _panel.SetOption(2, state.Lawyer ? "reallife_law_cell_lawyer_used".Tr() : "reallife_law_cell_lawyer_name".Tr(),
-                state.Lawyer ? null : Fill("reallife_law_cell_lawyer_detail", "amount", ((float)fee).ToCurrencyFormat()), !state.Lawyer);
+            Options(state, fee);
             _clicked = -1;
             ShowClock(state);
             if (listed)
@@ -118,7 +115,7 @@ namespace RealLifeOverhaul.Law
                         float now = TimeHelper.NowInMinutes();
                         state.ReleaseAt = now + LawBook.AfterLawyer(left);
                         Logger?.Info(FormattableString.Invariant($"Law: lawyer called for {fee}: {left / 60f:F1} h left becomes {(state.ReleaseAt - now) / 60f:F1} h."));
-                        _panel.SetOption(2, "reallife_law_cell_lawyer_used".Tr(), null, false);
+                        Options(state, fee);   // the lawyer is used, and the wait ends sooner
                         _panel.Refresh();
                         _panel.SetStatus("reallife_law_cell_lawyer_done".Tr());
                         StopSkip();
@@ -132,12 +129,20 @@ namespace RealLifeOverhaul.Law
                         _panel.SetStatus("reallife_law_cell_lawyer_short".Tr());
                     }
                 }
+                else if (choice == CustodyList.Doctor)
+                {
+                    Doctor(true);
+                }
 
                 if (Time.unscaledTime >= nextLook)
                 {
                     nextLook = Time.unscaledTime + 0.125f;
                     ShowClock(state);
                     Feed();
+                    if (ModState.IsSick != _unwell)
+                    {
+                        Doctor(false);   // taken ill, or well again, while held: the doctor's entry follows
+                    }
                     if (state.Court && !Bridges.CourtStands)
                     {
                         Logger?.Info("Law: the courts were switched off with " + (left / 60f).ToString("F1", CultureInfo.InvariantCulture) + " h of their hold left; the player is let out.");
@@ -159,6 +164,60 @@ namespace RealLifeOverhaul.Law
         }
 
         private static int LawyerFee => Settings.LawReputation && Reputation.Liked ? LawBook.LawyerFeeLiked : LawBook.LawyerFee;
+
+        private const string RemandReason = "reallife_justice_hold_remand";   // the courts' hold until they sit (Justice's JusticeLaw.HoldRemand)
+        private bool _unwell;                                                // the duty doctor's entry was last set for a player unwell
+
+        // The cell list's entries: sit it out (held for a hearing: wait for it) with when it ends, bail and a lawyer with what
+        // they cost, and the duty doctor.
+        private void Options(CustodyState state, int fee)
+        {
+            bool hearing = state.Court && state.Reason == RemandReason;
+            _panel.SetOption(0, (hearing ? "reallife_law_cell_hearing" : "reallife_law_cell_wait").Tr(),
+                (hearing ? "reallife_law_cell_hearing_detail" : "reallife_law_cell_wait_detail").Tr(), true, When(state.ReleaseAt), null);
+            _panel.SetOption(1, state.Bail > 0 ? "reallife_law_cell_bail_name".Tr() : "reallife_law_cell_no_bail".Tr(),
+                state.Bail > 0 ? "reallife_law_cell_bail_detail".Tr() : null, state.Bail > 0, state.Bail > 0 ? ((float)state.Bail).ToCurrencyFormat() : null, null);
+            _panel.SetOption(2, state.Lawyer ? "reallife_law_cell_lawyer_used".Tr() : "reallife_law_cell_lawyer_name".Tr(),
+                state.Lawyer ? null : "reallife_law_cell_lawyer_detail".Tr(), !state.Lawyer, state.Lawyer ? null : ((float)fee).ToCurrencyFormat(), null);
+            DoctorEntry();
+        }
+
+        // The duty doctor: free, and only for a player who is unwell, as the phone's doctor sees them (for a fee there).
+        private void DoctorEntry()
+        {
+            _unwell = ModState.IsSick;
+            _panel.SetOption(CustodyList.Doctor, "reallife_law_cell_doctor".Tr(), "reallife_law_cell_doctor_detail".Tr(), _unwell,
+                "reallife_law_cell_doctor_free".Tr(), _unwell ? null : "reallife_law_cell_doctor_fine".Tr());
+        }
+
+        // The doctor chosen, or the player's health changed while held: the treatment is the phone doctor's, and the entry follows.
+        private void Doctor(bool pressed)
+        {
+            if (pressed)
+            {
+                if (ModState.IsSick)
+                {
+                    LifeEvents.Instance?.Cure(null);
+                    Logger?.Info("Law: the duty doctor saw the player in the cell, free; treated as the phone's doctor treats.");
+                    _panel.SetStatus("reallife_law_cell_doctor_done".Tr());
+                }
+                else
+                {
+                    _panel.SetStatus("reallife_law_cell_doctor_fine".Tr());
+                }
+            }
+            DoctorEntry();
+            _panel.Refresh();
+        }
+
+        // When a time comes, in the game's clock: "Today, 14:30", "Tomorrow, 09:00", "In 2 days, 09:00".
+        private static string When(float at)
+        {
+            int minute = Mathf.Max(0, Mathf.CeilToInt(at));
+            int days = minute / 1440 - TimeHelper.CurrentDay, m = minute % 1440;
+            string key = days <= 0 ? "reallife_law_cell_when_today" : days == 1 ? "reallife_law_cell_when_tomorrow" : "reallife_law_cell_when_days";
+            return key.Tr().Replace("{time}", (m / 60).GetFormattedTime(m % 60)).Replace("{days}", days.ToString());
+        }
 
         private void ShowClock(CustodyState state)
         {

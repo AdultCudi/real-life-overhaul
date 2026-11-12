@@ -172,11 +172,12 @@ internal static partial class Program
             "own bank's fixed pay: the last day's pay asked for, paid and why less are saved and read back");
         int head = line.IndexOf("^s:", StringComparison.Ordinal), end = line.IndexOf('^', head + 3);
         string[] fields = line.Substring(head + 3, end - head - 3).Split('|');
-        string older = line.Substring(0, head + 3) + string.Join("|", fields, 0, fields.Length - 3) + line.Substring(end);
+        const int payAt = 44;   // the last day's pay asked for, after the level's and the pay's fields (OwnBankStore's TierAt and on)
+        string older = line.Substring(0, head + 3) + string.Join("|", fields, 0, payAt) + line.Substring(end);
         OwnBank old = OwnBankStore.Read(older, out _);
         Check(old != null && old.PayWanted == 0 && old.PayGiven == 0 && old.PayHeld == BankTiers.PayHeldNone && old.PaidAll == b.PaidAll,
             "own bank's fixed pay: a line written before them reads as no day's pay to tell of");
-        string odd = line.Substring(0, head + 3) + string.Join("|", fields, 0, fields.Length - 3) + "|100|900|77" + line.Substring(end);
+        string odd = line.Substring(0, head + 3) + string.Join("|", fields, 0, payAt) + "|100|900|77" + line.Substring(end);
         OwnBank bounded = OwnBankStore.Read(odd, out _);
         Check(bounded != null && bounded.PayGiven == 100 && bounded.PayHeld == BankTiers.PayHeldMost, "own bank's fixed pay: a pay read back is never more than was asked, and its reason within the list");
     }

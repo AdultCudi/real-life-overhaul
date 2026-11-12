@@ -24,6 +24,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The game's stack of notifications (NotificationsUI.container), found behind the loading screen; null before. NoticeRoom moves it.</summary>
         internal Transform Container => _container;
 
+        /// <summary>The options page's samples, one of each kind by its own key; NoticeMute's test sends them too.</summary>
+        internal static string[] Samples => TestKeys;
+
         private const string GlyphName = "RealLifeOverhaul";       // the mod's child on a picture's disc
         private const float ToastDisc = 52f;                       // px of its 3840 x 2160 canvas (the game's is 44)
         private const float ToastGlyph = 32f;                      // the kind's picture on it
@@ -112,6 +115,7 @@ namespace RealLifeOverhaul.GameUi
             }
             if (Instance == this)
             {
+                NoticeMute.Leave();   // the game's maker has its own place back on its event before the city goes
                 Instance = null;
             }
         }
@@ -226,6 +230,7 @@ namespace RealLifeOverhaul.GameUi
                              + theirs + " of " + (NoticeKinds.Count - 1) + " kinds drawn with the game's own picture"
                              + (pass ? ": PASS." : ": FAIL (see the warnings above)."));
             }
+            NoticeMute.Attached(_toasts);   // the kinds switched off are kept from the maker found here
         }
 
         // Last on the game's event, so the toast is made by the time this runs.
@@ -239,6 +244,7 @@ namespace RealLifeOverhaul.GameUi
         {
             try
             {
+                NoticeMute.Shown();   // a flag read: kinds switched off before the game's maker joined its event take its place now
                 Transform made = Newest();
                 // Something joined the event after this (a combined delegate reports the last one's target): join again at its end.
                 if (!ReferenceEquals(Notifications.onShow?.Target, this))
@@ -248,6 +254,10 @@ namespace RealLifeOverhaul.GameUi
                 if (made == null)
                 {
                     return;   // the game's maker had not run yet (it is now ahead of this)
+                }
+                if (NoticeMute.KeptBack(key, data))
+                {
+                    return;   // kept from popping up (NoticeMute): no toast was made, and the newest one up is an older one's
                 }
                 _lastToast = made;
                 NoticeKind kind = Settings.NoticeLook ? NoticeKinds.Of(key) : NoticeKind.None;

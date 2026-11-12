@@ -13,6 +13,8 @@ namespace RealLifeOverhaul.Economy
         public bool Reported;       // ...to the city, which brings its inspector
         public bool Quits;          // gave notice to go
         public bool Stays;          // ...and, better treated since, stays after all
+        public bool Asked;          // the tenant asked for an improvement (ImproveRules)
+        public bool AskLapsed;      // ...and one they asked for was left to lapse
     }
 
     /// <summary>The city's inspection of a building, as it came out.</summary>
@@ -144,7 +146,12 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            u.Call = Between(Roll(seed, day, ForCallKind, UnitKey(h, unit)), 1, EstateCatalogue.CallKinds);
+            int kind = Between(Roll(seed, day, ForCallKind, UnitKey(h, unit)), 1, EstateCatalogue.CallKinds);
+            if (ServiceRules.Averts(h, kind, seed, day, UnitKey(h, unit)))
+            {
+                return false;   // a booked service holds this kind of fault down for its season
+            }
+            u.Call = kind;
             u.CallDay = day;
             u.CallCost = CallCost(h, u.Call, c.Index);
             u.CallAnswer = (int)CallAnswer.Waiting;
@@ -227,6 +234,8 @@ namespace RealLifeOverhaul.Economy
                 d.Lapsed = true;
             }
             u.Happy = Drift(u.Happy, HappyTarget(h, unit, day, c));
+            d.AskLapsed = ImproveRules.Lapse(u, day);
+            d.Asked = ImproveRules.Ask(h, unit, seed, day, c);
             if (lapsed || (u.Happy < EstateCatalogue.ComplainBelow && Roll(seed, day, ForComplain, key) < EstateCatalogue.ComplainChance))
             {
                 u.Moans++;
@@ -238,7 +247,7 @@ namespace RealLifeOverhaul.Economy
                     d.Reported = true;
                 }
             }
-            if (u.QuitDay == 0 && u.Arrears == 0 && u.CourtDay == 0 && u.Happy < EstateCatalogue.QuitBelow && Roll(seed, day, ForQuit, key) < EstateCatalogue.QuitChance)
+            if (u.QuitDay == 0 && u.Arrears == 0 && u.CourtDay == 0 && u.Happy < EstateCatalogue.QuitBelow && Roll(seed, day, ForQuit, key) < EstateCatalogue.QuitChance + ImproveRules.QuitMore(u))
             {
                 u.QuitDay = day + EstateCatalogue.QuitDays;
                 d.Quits = true;

@@ -67,7 +67,8 @@ namespace RealLifeOverhaul
                 { "employer", JobText.T(who.NameKey) }, { "title", JobText.T(who.Ranks[0].TitleKey) }, { "rota", JobText.T(rota.NameKey) }
             };
             Notifications.Show(NotificationType.Success, "reallife_career_signed", data, 12f);
-            CareerPhone.Text("reallife_career_text_signed", data);
+            var letter = new Dictionary<string, string>(data);   // its own copy: the key fills in the address and the shop, and the letter says where the work is done
+            CareerPhone.Text(OfficeKey("reallife_career_text_signed", employer, letter), letter);
             ModState.AddModifier(ModState.MoodUp);
             CareerLinks.TellMet(who, -1);
             _logger?.Info("Careers: signed on with " + who.Id + (test ? " by the test button" : string.Empty) + ", rota " + rota.Days + "@" + rota.Hour

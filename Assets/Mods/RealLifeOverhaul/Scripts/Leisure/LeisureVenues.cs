@@ -189,7 +189,7 @@ namespace RealLifeOverhaul.Leisure
                 {
                     foreach (SubwayStation station in city.subwayStations)
                     {
-                        if (station == null)
+                        if (station == null || OwnStations.Is(station))   // a station of the mod's own carries the name value of the entrance it was copied from
                         {
                             continue;
                         }

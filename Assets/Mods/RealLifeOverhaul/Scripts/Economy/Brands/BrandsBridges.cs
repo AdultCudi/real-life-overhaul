@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>A scandal has cost a brand: the shop's place, its name, the recognition lost (hundredths) and the scale it was lost at. Default: nobody is told.</summary>
         public static Action<string, string, int, int> ScandalHeard;
 
+        /// <summary>What Flare asks to hire local creators for a brand's campaign at today's prices; 0 when it gives no figure. Default: none.</summary>
+        public static Func<int, int> CreatorsCost;
+
         public static void Reset()
         {
             Footfall = null;
@@ -47,6 +50,7 @@ namespace RealLifeOverhaul.Economy.Brands
             ScandalScale = null;
             Interior = null;
             ScandalHeard = null;
+            CreatorsCost = null;
         }
     }
 }

@@ -105,6 +105,15 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>The building filed under an id: its street and number, or false when nothing is filed (a hotel the city has not placed yet).</summary>
+        public static bool PlaceOf(string id, out string street, out int number)
+        {
+            SpecialEntry entry = Book.Of(id);
+            street = entry != null ? entry.Street : null;
+            number = entry != null ? entry.Number : 0;
+            return entry != null;
+        }
+
         /// <summary>The book's entry for a building while its feature shows it, or null: what the game's card writes from.</summary>
         internal static SpecialEntry EntryFor(CityBuildingController building)
         {

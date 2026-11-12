@@ -217,6 +217,16 @@ namespace RealLifeOverhaul.Markets
                     data = new[] { "name", name, "amount", Money(n.A), "firm", f != null ? f.Name : string.Empty };
                     return f != null ? "reallife_mkt_news_paid_bot" : "reallife_mkt_news_paid";
                 }
+                case MarketNewsKind.Reverse:
+                    data = new[] { "name", name, "ratio", n.A.ToString(), "day", n.B.ToString() };
+                    return "reallife_mkt_news_reverse";
+                case MarketNewsKind.Block:
+                {
+                    // A holding that passed a 5% step: the player's is "a holder", a tycoon's is their holding by name.
+                    Stock holder = n.C > 0 && s != null ? s.Stock(n.C) : null;
+                    data = new[] { "name", name, "stake", Percent(n.A), "holder", holder != null ? holder.Name : NameOf(n.C) };
+                    return n.C > 0 ? (n.B >= 0 ? "reallife_mkt_news_block_rival" : "reallife_mkt_news_block_rival_sold") : n.B >= 0 ? "reallife_mkt_news_block" : "reallife_mkt_news_block_sold";
+                }
                 default:
                     data = new string[0];
                     return string.Empty;

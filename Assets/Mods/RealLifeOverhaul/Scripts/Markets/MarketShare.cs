@@ -112,7 +112,14 @@ namespace RealLifeOverhaul.Markets
                 Stock own = mine.Stocks[i];
                 if (own.Listed && own.Own != null && mine.Me != 0UL && own.Own.Owner == mine.Me)
                 {
-                    host.Listing.Suspended = MarketStore.StockLine(mine, own);
+                    if (own.Own.Firm)
+                    {
+                        host.Listing.SuspendedFirms.Add(MarketStore.StockLine(mine, own));   // a firm of theirs that listed on its own is set aside the same way
+                    }
+                    else
+                    {
+                        host.Listing.Suspended = MarketStore.StockLine(mine, own);
+                    }
                     host.Listing.SetAsideDay = Math.Max(1, mine.BusinessDay);
                 }
             }
@@ -127,6 +134,7 @@ namespace RealLifeOverhaul.Markets
             host.Bots.AddRange(mine.Bots);
             host.Bonds.Take(mine.Bonds);
             host.Derivs.Take(mine.Derivs);   // the player's own futures and options, on the host's exchange
+            host.Extras.CopyFrom(mine.Extras);   // their units of the fund, cents kept, their bank's way to the market: theirs, never the host's
             if (host.Materials.Count == 0)
             {
                 host.Materials.AddRange(mine.Materials);   // a host without the exchange: the guest's own goes on with the host's days

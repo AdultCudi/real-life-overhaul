@@ -100,6 +100,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.GrowthStarted = PopulationLinks.GrowthStarted;   // the living population counts the city's growth's starts (Wiring.PopulationLinks)
                 ConstructionBridges.LetUnit = LetUnit;
                 ConstructionBridges.Retraffic = Retraffic;
                 ConstructionBridges.StandingAll = StandingAll;
@@ -141,6 +142,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = TradesBridges.Qualified;
                 ConstructionBridges.Commission = (project, storeys, units, budget) => TradesBridges.Commission(project, storeys, units, (int)Math.Min(int.MaxValue, Math.Max(0L, budget)));
                 ConstructionBridges.DesignOf = DesignOf;
+                ConstructionBridges.People = DemandLinks.Build;   // the living population's buyers and tenders (Wiring/DemandLinks)
                 ConstructionBridges.RivalNews = MarketsBuildLinks.RivalNews;
                 ConstructionBridges.HedgePlan = MarketsBuildLinks.HedgePlan;
                 ConstructionBridges.Hedge = MarketsBuildLinks.Hedge;
@@ -197,6 +199,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                ConstructionBridges.People = null;
                 BuildModeLinks.Disconnect();
                 SiteBuilders.Reset();
                 DistrictBuildings.GroundGiven = null;
@@ -227,6 +230,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.GrowthStarted = null;
                 ConstructionBridges.LetUnit = null;
                 ConstructionBridges.Retraffic = null;
                 ConstructionBridges.StandingAll = null;

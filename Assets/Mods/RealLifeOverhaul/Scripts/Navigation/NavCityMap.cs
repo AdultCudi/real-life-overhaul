@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Nav
             made.SetActive(false);
             var rect = (RectTransform)made.transform;
             rect.SetParent(layer, false);
-            rect.SetAsFirstSibling();   // under every marker
+            rect.SetAsFirstSibling();   // under every pin of the game's, so the line never covers a marker
             rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
             rect.sizeDelta = Vector2.zero;
             var map = made.AddComponent<NavCityMap>();

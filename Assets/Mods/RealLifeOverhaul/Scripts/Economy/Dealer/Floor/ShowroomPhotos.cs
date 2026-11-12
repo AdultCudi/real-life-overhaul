@@ -59,6 +59,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
+        /// <summary>The game's own icon of a vehicle type for the kit's catalogue and auction card; null when the game has none.</summary>
+        internal static Sprite IconOf(string type) => Icon(type);
+
         // The game's own icon of a vehicle type, if it has one: asked once a type, then remembered.
         private static Sprite Icon(string type)
         {

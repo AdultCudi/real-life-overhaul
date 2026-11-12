@@ -6,13 +6,15 @@ namespace RealLifeOverhaul.Tech
     /// <summary>
     /// The professionals in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h) and
     /// the files (p) and the moves followed (m, which an older version of the mod passes over), fields in the order
-    /// <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals.
+    /// <see cref="Write"/> writes them. A file is kept for every professional the game holds, however many (a save of a player's own grows by some forty
+    /// employees a day, so any bound would be met in the end, and in silence), and a read of the line stays linear in its size. Only the mod's own
+    /// payroll, which the player adds to one decision at a time, is bounded, by <see cref="PayrollMost"/>.
     /// </summary>
     public static class TalentStore
     {
         public const string Key = "reallife:tech_people";
         public const int Version = 1;
-        public const int PeopleMost = 600;
+        public const int PayrollMost = 10000;   // files of the mod's own payroll (rack crews, remote staff, a startup's chief), each paid by a booking a day; the game's employees have no bound
 
         public static TalentFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
@@ -21,7 +23,7 @@ namespace RealLifeOverhaul.Tech
             var w = new TechWriter(Version);
             w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.NextPro);
             w.Part('p');
-            for (int i = 0; i < f.People.Count && i < PeopleMost; i++)
+            for (int i = 0; i < f.People.Count; i++)
             {
                 Profile p = f.People[i];
                 w.Record().Add(p.Id).Add(p.Role).Add(p.Level).Add(p.A).Add(p.B).Add(p.Main).Add(p.YearsDays).Add(p.School).Add(p.Certs).Add(p.Morale).Add(p.Burnout)
@@ -44,6 +46,7 @@ namespace RealLifeOverhaul.Tech
             var r = new TechReader(text);
             version = r.Version;
             var f = new TalentFile();
+            var seen = new HashSet<string>(StringComparer.Ordinal);   // the ids read, so a file's id is looked up in one step, not by a pass over the files
             Fields h = r.One('h');
             f.Seed = h.Int(1);
             f.FirstDay = h.Int();
@@ -95,7 +98,7 @@ namespace RealLifeOverhaul.Tech
                     PrevDay = x.Int(-1),
                     PrevHours = Math.Max(0, x.Int())
                 };
-                if (p.Id.Length > 0 && f.Of(p.Id) == null && f.People.Count < PeopleMost)
+                if (p.Id.Length > 0 && seen.Add(p.Id))
                 {
                     f.People.Add(p);
                 }

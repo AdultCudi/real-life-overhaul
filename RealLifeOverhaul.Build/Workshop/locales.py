@@ -61,6 +61,21 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 10 Nov 2026, the three suppliers of the Car Showroom: the names of firms, kept in Latin letters where a language writes the name of a firm so
+    'reallife_carsup_name_0', 'reallife_carsup_name_1', 'reallife_carsup_name_2',
+    # 9 Nov 2026, the badge in the designer for fit-out pieces of the mod: its short name, kept in Latin letters in Chinese too
+    'reallife_ui_designer_rlo',
+    # 4 Nov 2026, the Gallery's fact about Flare: the app's name, kept in Latin letters in Chinese too
+    'reallife_gallery_fact_flare',
+    # 4 Nov 2026, the units of the Utilities screen: a speed in Mbit or Gbit and power in kWh keep their Latin letters in Chinese too
+    'reallife_ui_util_mbit', 'reallife_ui_util_gbit', 'reallife_ui_util_kwh',
+    # 2 Nov 2026, the RLO interface switch for the Persona app of the game: the name of the app, which the game keeps in Latin letters in Chinese too
+    'reallife_ui_screen_persona',
+    # 2 Nov 2026, the RLO interface's EconoView switch: the app's name, which the game keeps in Latin letters in every language
+    'reallife_ui_screen_econoview',
+    # 1 Nov 2026, the gallery of the RLO interface: its sample people, a typed name and a street are names
+    'reallife_ui_gallery_person_1', 'reallife_ui_gallery_person_2', 'reallife_ui_gallery_person_3', 'reallife_ui_gallery_person_4', 'reallife_ui_gallery_person_5',
+    'reallife_ui_gallery_person_6', 'reallife_ui_gallery_person_7', 'reallife_ui_gallery_query', 'reallife_ui_gallery_address',
     # 27 Oct 2026, the Polish and Korean batch: the cinema film titles are names
     'reallife_leisure_film_1', 'reallife_leisure_film_2', 'reallife_leisure_film_3', 'reallife_leisure_film_4', 'reallife_leisure_film_5', 'reallife_leisure_film_6', 'reallife_leisure_film_7', 'reallife_leisure_film_8', 'reallife_leisure_film_9', 'reallife_leisure_film_10', 'reallife_leisure_film_11', 'reallife_leisure_film_12',
     # 26 Oct 2026, the 0.57.2 language batch: the construction game firms and investors, two football clubs and a school trust are names
@@ -122,6 +137,13 @@ ENGLISH_OK = {
     'reallife_newbuildings_street_uptown_ridge', 'reallife_newbuildings_street_uptown_grove', 'reallife_newbuildings_street_uptown_park',
     'reallife_newbuildings_street_uptown_lake', 'reallife_newbuildings_street_uptown_uptownavenue',
     'reallife_newbuildings_street_uptown_summitavenue', 'reallife_newbuildings_street_uptown_crestavenue'
+}
+
+# Texts that may stay as the English in some languages only (the key, then the languages whose text really is the English: nothing else is excused).
+ENGLISH_OK_IN = {
+    # 11 Nov 2026, the subway stations of Uptown and Cedar Heights: a district, a place and the word for station, which German keeps as the English has them
+    # (as the game itself does in the German names of its own stations); every other language writes the word for station in its own
+    'reallife_subway_station_birchwood': ('de',), 'reallife_subway_station_summit': ('de',), 'reallife_subway_station_east': ('de',)
 }
 
 TAG = re.compile(r'</?[a-zA-Z][^<>]*>')
@@ -190,7 +212,7 @@ def text_faults(code, key, v, t, notices=()):
         bad.append('%d fixes marked %s, the English marks %d' % (t.count(FIXED[code]), json.dumps(FIXED[code], ensure_ascii=False), v.count(FIXED['en'])))
     if key == 'reallife_changes_next' and v == NOTHING['en'] and t != NOTHING.get(code, t):
         bad.append("What's new's empty next row must be exactly %s" % json.dumps(NOTHING[code], ensure_ascii=False))
-    if key not in ENGLISH_OK:
+    if key not in ENGLISH_OK and code not in ENGLISH_OK_IN.get(key, ()):
         if code in SCRIPT:
             if latin_words(t) >= SCRIPT_WORDS[code] and (t == v or not re.search(SCRIPT[code], t)):
                 bad.append('not translated (no %s letters; if the text is only a name, its key goes on ENGLISH_OK in locales.py)' % dict(LANGUAGES)[code])
