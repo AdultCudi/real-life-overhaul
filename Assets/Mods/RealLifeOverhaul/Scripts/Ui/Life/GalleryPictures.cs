@@ -6,16 +6,15 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// Where the kit's picture items of photos find their sprites ("photo:" and the photo's name, from the director's small copies
-    /// and, for the photo opened, its whole picture; the editor's preview). Hooked into UiPictures once a session, never again, so
-    /// no screen wraps another's hook round in a ring. The whole picture and the preview are made by the Gallery, destroyed when
-    /// it closes. Cost: one lookup a picture shown.
+    /// and, for the photo opened, its whole picture; the editor's preview). Added to the kit's pictures (UiPictures.Answer) once a
+    /// session, answering its own keys only, so no screen can wrap another round in a ring. The whole picture and the preview are
+    /// made by the Gallery, destroyed when it closes. Cost: one lookup a picture shown.
     /// </summary>
     internal static class GalleryPictures
     {
         public const string EditKey = "photoedit:preview";
 
         private static bool _hooked;
-        private static Func<string, Sprite> _before;
         private static Sprite _whole;
         private static Texture2D _wholeTexture;
         private static string _wholeName;
@@ -29,8 +28,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _hooked = true;
-            _before = UiPictures.Find;
-            UiPictures.Find = Find;
+            UiPictures.Answer(Find);
         }
 
         private static Sprite Find(string key)
@@ -49,7 +47,7 @@ namespace RealLifeOverhaul.Ui
                 PhotosDirector director = PhotosDirector.Instance;
                 return director != null ? director.Thumbs.Sprite(name) : null;
             }
-            return _before != null ? _before(key) : null;
+            return null;
         }
 
         /// <summary>The photo opened, whole: replaces the one before.</summary>

@@ -6,19 +6,19 @@ using UnityEngine;
 
 public static partial class UiPreviewRunner
 {
-    private static Func<string, Sprite> _contactPictures;   // the chain this file put in place; another runner's laid over it is chained again
+    private static bool _contactPictures;   // the firms' pictures answered among the kit's, added once
     private static readonly Dictionary<string, Sprite> ContactLogos = new Dictionary<string, Sprite>();
 
     // A firm's picture as the game's Contacts shows it ("contact:" and a shape of the game's logo maker, its sign's colour
     // after the colon): the game's own logo shape, white on the sign's colour, as its square signs are drawn.
     private static void ContactPicturesOn()
     {
-        if (_contactPictures != null && UiPictures.Find == _contactPictures)
+        if (_contactPictures)
         {
             return;
         }
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = _contactPictures = key => key != null && key.StartsWith("contact:", StringComparison.Ordinal) ? ContactLogo(key) : before?.Invoke(key);
+        _contactPictures = true;
+        UiPictures.Answer(key => key != null && key.StartsWith("contact:", StringComparison.Ordinal) ? ContactLogo(key) : null);
     }
 
     private static Sprite ContactLogo(string key)

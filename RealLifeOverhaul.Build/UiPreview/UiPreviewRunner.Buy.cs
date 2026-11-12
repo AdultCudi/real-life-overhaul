@@ -15,8 +15,7 @@ public static partial class UiPreviewRunner
     // Pictures: the mockups' thumbnails of the game's goods (local only, like the backdrops), and a swatch's colour flat.
     static partial void AddBuy(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => BuyPicture(key) ?? before?.Invoke(key);
+        UiPictures.Answer(BuyPicture);
         string[] checkout = { "07.jpg", "00.jpg", "05.jpg", "07.jpg", "08.jpg", "00.jpg", "07.jpg" };
         for (int i = 0; i < UiSamples.CheckoutStates.Length; i++)
         {

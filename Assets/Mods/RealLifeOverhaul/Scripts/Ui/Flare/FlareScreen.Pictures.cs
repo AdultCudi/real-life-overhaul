@@ -47,8 +47,7 @@ namespace RealLifeOverhaul.Ui
             if (!_hooked)
             {
                 _hooked = true;
-                Func<string, Sprite> before = UiPictures.Find;
-                UiPictures.Find = key => key != null && key.StartsWith(FlareFace.PicturePrefix, StringComparison.Ordinal) ? _current?.Picture(key) : before?.Invoke(key);
+                UiPictures.Answer(key => key != null && key.StartsWith(FlareFace.PicturePrefix, StringComparison.Ordinal) ? _current?.Picture(key) : null);
             }
         }
 

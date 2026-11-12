@@ -325,7 +325,7 @@ namespace RealLifeOverhaul.Ui
             Squares.Clear();
         }
 
-        // Asked first for its own keys; any other key goes to whoever asked before.
+        // Its own keys answered among the kit's pictures, added once a session; any other key is another part's.
         private static void On()
         {
             if (_on)
@@ -333,8 +333,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _on = true;
-            Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => Find(key) ?? before?.Invoke(key);
+            UiPictures.Answer(Find);
         }
 
         private static Sprite Find(string key)

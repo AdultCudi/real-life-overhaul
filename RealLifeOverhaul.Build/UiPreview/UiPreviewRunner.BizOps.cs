@@ -14,8 +14,7 @@ public static partial class UiPreviewRunner
     // languages with every key of these pages, the game's words from its own file.
     static partial void AddBizOps(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && key.StartsWith(OpsSwatch, StringComparison.Ordinal) ? OpsColour(key) : before?.Invoke(key);
+        UiPictures.Answer(key => key != null && key.StartsWith(OpsSwatch, StringComparison.Ordinal) ? OpsColour(key) : null);
         int n = 0;
         foreach (string state in UiSamples.BizOpsStates)
         {

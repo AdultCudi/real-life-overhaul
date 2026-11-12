@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Ui
                     // The layout gave the box the picture's own shape, so it fills it unstretched; one the game cannot find shows nothing.
                     var pictureSlot = (ImageSlot)slot;
                     Image picture = pictureSlot.Image;
-                    Sprite sprite = UiPictures.Find != null ? UiPictures.Find(it.Text) : null;
+                    Sprite sprite = UiPictures.Find(it.Text);
                     float px = it.X, py = it.Y, pw = it.W, ph = it.H;
                     if ((it.Flags & UiFlags.Cover) != 0 && sprite != null)
                     {

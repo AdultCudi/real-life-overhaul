@@ -1098,6 +1098,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiNotices.cs" Link="Mod\UiNotices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAllApps.cs" Link="Mod\UiAllApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiHostRules.cs" Link="Mod\UiHostRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiReentry.cs" Link="Mod\UiReentry.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAnswers.cs" Link="Mod\UiAnswers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Math.cs" Link="Mod\Map25Math.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Palette.cs" Link="Mod\Map25Palette.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Builder.cs" Link="Mod\Map25Builder.cs" />

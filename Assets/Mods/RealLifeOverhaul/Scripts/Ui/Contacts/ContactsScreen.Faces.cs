@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Ui
             return key;
         }
 
-        // The keys this file gives its pictures, answered here; any other key goes to whoever asked before.
+        // The keys this file gives its pictures, answered here; any other key is another part's.
         private static void On()
         {
             if (_on)
@@ -101,10 +101,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _on = true;
-            System.Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => key != null && key.StartsWith(Prefix, System.StringComparison.Ordinal)
-                ? Sprites.TryGetValue(key, out Sprite sprite) ? sprite : null
-                : before?.Invoke(key);
+            UiPictures.Answer(key => key != null && key.StartsWith(Prefix, System.StringComparison.Ordinal) && Sprites.TryGetValue(key, out Sprite sprite) ? sprite : null);
         }
     }
 }

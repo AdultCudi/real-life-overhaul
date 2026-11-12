@@ -13,8 +13,7 @@ public static partial class UiPreviewRunner
     // minimap_base file), the camera maths. What is made up is said in Map25Real: the heights, the roads (the gaps through the buildings), the trees.
     static partial void AddMap(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && key.StartsWith("map5:", StringComparison.Ordinal) ? MapPicture(key) : before?.Invoke(key);
+        UiPictures.Answer(key => key != null && key.StartsWith("map5:", StringComparison.Ordinal) ? MapPicture(key) : null);
         foreach (string state in UiSamples.MapFilterStates)
         {
             screens.Add(MapFiltersScreenOf(state, "en"));

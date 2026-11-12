@@ -227,6 +227,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     return;
                 }
+                _squaresUp = true;   // before the first layout, which the modal makes at once
                 Pictures();
                 _host = hud.Modal(this, UiText.T("reallife_bld_mode_title"), UiIcon.Building);
                 _host.PointerOnly = true;
@@ -241,6 +242,7 @@ namespace RealLifeOverhaul.Ui
                 if (ReferenceEquals(_current, this))
                 {
                     _current = null;
+                    _squaresUp = false;
                 }
                 if (hud != null && hud.ModalHost != null && ReferenceEquals(hud.ModalHost.Screen, this))
                 {
@@ -355,10 +357,12 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------ pictures: a colour's swatch and the game's picture of a use
 
         private static bool _picturesOn;
+        private static bool _squaresUp;   // Build mode is up: its own squares answer the swatches of colour, and go with its face
         private static readonly Dictionary<int, Sprite> Squares = new Dictionary<int, Sprite>(16);
         private const string UsePicture = "build:use:";
 
-        // The keys this face's pictures use, answered here first; any other goes to whoever asked before.
+        // The keys this face's pictures use, answered here: a use's picture always, a colour's swatch only while Build mode is up, since
+        // its squares go with the face (the world's and the buying screens' answer the swatches otherwise); any other is another part's.
         private static void Pictures()
         {
             if (_picturesOn)
@@ -366,8 +370,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _picturesOn = true;
-            Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => key != null && (key.StartsWith(UsePicture, StringComparison.Ordinal) || UiDraw.SwatchColour(key) >= 0) ? Find(key) : before?.Invoke(key);
+            UiPictures.Answer(key => key != null && (key.StartsWith(UsePicture, StringComparison.Ordinal) || (_squaresUp && UiDraw.SwatchColour(key) >= 0)) ? Find(key) : null);
         }
 
         // The colour squares made for the legend and the zones, given back with the face: they are made again, a handful, the next time Build mode opens.

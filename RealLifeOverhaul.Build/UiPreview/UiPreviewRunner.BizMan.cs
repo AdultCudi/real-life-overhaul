@@ -13,8 +13,7 @@ public static partial class UiPreviewRunner
     // shop by night. The German states are in German, the longest of the mod's languages, the game's words from its own file.
     static partial void AddBizMan(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && (key.StartsWith("bizman:", StringComparison.Ordinal) || key.StartsWith(UiDraw.SwatchPicture, StringComparison.Ordinal)) ? BizManPicture(key) : before?.Invoke(key);
+        UiPictures.Answer(key => key != null && (key.StartsWith("bizman:", StringComparison.Ordinal) || key.StartsWith(UiDraw.SwatchPicture, StringComparison.Ordinal)) ? BizManPicture(key) : null);
         for (int i = 0; i < UiSamples.BizManStates.Length; i++)
         {
             string state = UiSamples.BizManStates[i];

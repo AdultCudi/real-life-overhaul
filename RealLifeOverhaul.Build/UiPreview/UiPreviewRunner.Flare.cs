@@ -11,8 +11,7 @@ public static partial class UiPreviewRunner
     // box's shape as the game's side cuts the bank's.
     static partial void AddFlare(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && key.StartsWith(FlareFace.PicturePrefix, StringComparison.Ordinal) ? FlarePicture(key) : before?.Invoke(key);
+        UiPictures.Answer(key => key != null && key.StartsWith(FlareFace.PicturePrefix, StringComparison.Ordinal) ? FlarePicture(key) : null);
         Add("home", "13.jpg", FlareFace.LikeCommand, 0);
         Add("home_following", "02.jpg", FlareFace.TabCommand, 1);
         Add("home_businesses", "13.jpg", FlareFace.AuthorCommand, 0);
