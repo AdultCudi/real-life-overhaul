@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.GameUi
             "windows_reset_done",        // the windows put back where they were (the options page)
             "meta_welcome_note_",        // the welcome on the first run and after an update, which opens What's new
             "beta_note",                 // the same on the beta
+            "ui_note_interface_off",     // the word, once, to a player whose RLO interface 1.0.3 switched off: their screens changed unasked
             "lic_toast",                 // the driving test's words on the way, and its result
             "lic_theory_",               // the theory test's marks and result
             "lic_car_",                  // the test car: the drive is over, or it is not the player's

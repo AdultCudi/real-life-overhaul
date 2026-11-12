@@ -35,8 +35,11 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The props bundle failed or is missing a part (a second copy, an unfinished download, another game build): said once a session, with what to check.</summary>
         private static bool PropsFailed => PropLibrary.Trouble != null && !_propsShown;
 
-        /// <summary>True when this version's welcome has not been shown yet (a beta's own tag counts as a version), a beta must say two copies are on, or the props failed to load.</summary>
-        public static bool Due => Settings.ModId != null && (SeenVersion != Changelog.Shown || Twice || PropsFailed);
+        /// <summary>
+        /// True when this version's welcome has not been shown yet (a beta's own tag counts as a version), a beta must say two copies are on,
+        /// the props failed to load, or the player is owed the word that 1.0.3 switched their RLO interface off.
+        /// </summary>
+        public static bool Due => Settings.ModId != null && (SeenVersion != Changelog.Shown || Twice || PropsFailed || Settings.InterfaceOffNoticeOwed);
 
         /// <summary>Shows the welcome notice and notes the version as seen; <paramref name="asked"/> (from the options page) opens the Guide on "What changed" instead.</summary>
         public static void Open(bool asked)
@@ -78,6 +81,14 @@ namespace RealLifeOverhaul.Meta
                     _propsShown = true;
                     Notifications.Show(NotificationType.Warning, PropsNote, null, 20f, PropsNote, null, true, false);
                     MetaLog.Info("props notice shown: " + PropLibrary.Trouble + ".");
+                }
+                if (Settings.InterfaceOffNoticeOwed)
+                {
+                    // Only a player whose saved "on" 1.0.3 wrote off (UiOffRules) is told, once, at the first city loaded after it:
+                    // their screens changed without their asking. Kept in the game's list, so it can be read again after the toast.
+                    Notifications.Show(NotificationType.Info, "reallife_ui_note_interface_off", null, 20f, "reallife_ui_note_interface_off");
+                    Settings.InterfaceOffNoticeShown();
+                    MetaLog.Info("interface notice shown: the RLO interface was on here and 1.0.3 switched it off once.");
                 }
                 if (Dev.Verbose)
                 {

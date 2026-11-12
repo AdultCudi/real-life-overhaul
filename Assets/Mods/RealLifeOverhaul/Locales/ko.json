@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "만족도",
   "reallife_ui_gallery_energy": "에너지",
   "reallife_ui_enabled": "RLO 인터페이스",
-  "reallife_opt_tip_ui_interface": "모드 자체 디자인으로 연락처와 개편된 화면을 그립니다. 도시 위의 짙은 패널, 색깔 아이콘, 아래쪽 상태 막대가 있습니다. 끄면 게임 자체 화면이 나옵니다.",
+  "reallife_opt_tip_ui_interface": "연락처와 개편된 화면을 모드 자체 디자인으로 그립니다. 슬레이트 패널, 컬러 아이콘, 상태 표시줄을 씁니다. 기본값은 꺼짐이며 게임 자체 화면이 나옵니다. 이곳에서 켤 수 있습니다.",
   "reallife_ui_motion": "인터페이스 움직임",
   "reallife_opt_tip_ui_motion": "RLO 인터페이스가 움직이는 방식: 전체, 차분하게(더 느리고 짧게) 또는 끄기.",
   "reallife_ui_motion_0": "전체",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "오류가 나서 RLO 인터페이스가 물러났습니다. 게임 자체 화면이 대신 나옵니다.",
   "reallife_meta_title_ui": "RLO 인터페이스",
   "reallife_guide_ui_about": "모드 자체 디자인인 City Ledger입니다. 연락처와 개편된 화면을 도시의 금융 지면처럼 그려, 키보드와 패드를 우선합니다.",
-  "reallife_guide_ui": "# 무엇인가\n- <b>RLO 인터페이스</b>는 게임의 연락처와 개편된 화면을 모드 자체 디자인인 City Ledger로 그립니다. 세리프 제목, 지면 라벨을 대문자로, 각진 줄 친 패널, 그리고 시장 신문의 연어색 하나를 강조색으로 씁니다.\n- <b>Living population</b>의 일부이며 자체 스위치가 있습니다. 끄면 모든 화면이 다시 게임 자체 화면이 됩니다.\n\n# 사용법\n- 화살표 키나 방향 패드로 포커스 하나를 옮깁니다. Enter 또는 A는 포커스된 것을 누르고, Esc 또는 B는 뒤로 갑니다.\n- 화면 아래의 키는 지금 지정된 키입니다. 버튼에 표시된 키는 어디서든 그 버튼을 누릅니다.\n- 통화, 자체 버튼이 있는 제안, 세금표는 앱을 닫을 때까지 게임 자체 화면에서 열립니다.\n\n# 옵션\n- 어둡게 또는 밝게는 Flare의 모양 옵션을 따릅니다.\n- 인터페이스 움직임: 전체, 차분하게 또는 끄기.",
+  "reallife_guide_ui": "# 무엇인가\n- <b>RLO 인터페이스</b>는 게임의 연락처와 개편된 화면을 모드 자체 디자인인 City Ledger로 그립니다. 세리프 제목, 지면 라벨을 대문자로, 각진 줄 친 패널, 그리고 시장 신문의 연어색 하나를 강조색으로 씁니다.\n- <b>Living population</b>의 일부이며 모드 옵션의 <b>RLO 인터페이스</b>라는 자체 스위치가 있습니다. 화면의 문제가 고쳐지는 동안 기본값은 꺼짐이라, 켜기 전까지 모든 화면이 게임 자체 화면입니다.\n\n# 사용법\n- 화살표 키나 방향 패드로 포커스 하나를 옮깁니다. Enter 또는 A는 포커스된 것을 누르고, Esc 또는 B는 뒤로 갑니다.\n- 화면 아래의 키는 지금 지정된 키입니다. 버튼에 표시된 키는 어디서든 그 버튼을 누릅니다.\n- 통화, 자체 버튼이 있는 제안, 세금표는 앱을 닫을 때까지 게임 자체 화면에서 열립니다.\n\n# 옵션\n- 어둡게 또는 밝게는 Flare의 모양 옵션을 따릅니다.\n- 인터페이스 움직임: 전체, 차분하게 또는 끄기.",
   "reallife_contract_part_contacts_kit": "RLO 인터페이스로 그린 연락처 앱",
   "reallife_ui_page_details": "세부 정보",
   "reallife_ui_page_empty": "아직 아무것도 없습니다",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "이름 제안",
   "reallife_studio_after_named": "이 게임은 {name}(으)로 불리게 됩니다.",
   "reallife_studio_note_named_1": "{name}, {game}의 무료 업데이트가 나왔습니다. 약 {copies}부가 더 팔릴 예정입니다.",
-  "reallife_studio_note_named_2": "{name}, {game}의 추가 콘텐츠가 나왔습니다. 약 {copies}명의 소유자가 구매할 것입니다."
+  "reallife_studio_note_named_2": "{name}, {game}의 추가 콘텐츠가 나왔습니다. 약 {copies}명의 소유자가 구매할 것입니다.",
+  "reallife_ui_note_interface_off": "RLO 인터페이스는 지금 꺼져 있습니다. 주문, 외식, 차량 패널 등 일부 화면에 문제가 있었습니다. 게임 자체 화면이 다시 나옵니다. 모드 옵션의 RLO 인터페이스에서 다시 켤 수 있습니다."
 }

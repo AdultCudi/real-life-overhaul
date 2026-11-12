@@ -684,7 +684,7 @@
         public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
-        public static bool UiInterface = true;           // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off: the game's own screens)
+        public static bool UiInterface = false;          // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off, as shipped since 1.0.3: the game's own screens)
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
@@ -1161,6 +1161,7 @@
             EndScale = Bool(modId, EndScaleId, EndScale);
             LivingPopulation = Bool(modId, LivingPopulationId, LivingPopulation);
             LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
+            SwitchInterfaceOffOnce(modId);   // before the switch is read, and so before the interface is built: a saved "on" from before 1.0.3 is written off, once
             UiInterface = Bool(modId, UiInterfaceId, UiInterface);
             UiMotion = Int(modId, UiMotionId, UiMotion);
             Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
@@ -1437,6 +1438,49 @@
             public void Set(string id, int value) => UnityEngine.PlayerPrefs.SetInt(Key(_modId, id), value);
 
             public void Clear(string id) => UnityEngine.PlayerPrefs.DeleteKey(Key(_modId, id));
+        }
+
+        /// <summary>
+        /// Once per computer (UiOffRules.SwitchOffOnce): the RLO interface saved as on is written off, because 1.0.3 switches it off
+        /// for everyone while its screens' faults are mended. Written, so the options page shows it off too. The rule's own mark
+        /// keeps every later start away, so a player who switches it on again keeps it on.
+        /// </summary>
+        private static void SwitchInterfaceOffOnce(string modId)
+        {
+            if (UiOffRules.SwitchOffOnce(new UiOffPrefs(modId), UiInterfaceId))
+            {
+                UnityEngine.PlayerPrefs.Save();   // on disk now: a crash before the game quits must not leave the interface on at the next start
+            }
+        }
+
+        /// <summary>True while the notice of that one switching-off is owed: only to a player whose saved "on" was written off, until it was shown.</summary>
+        public static bool InterfaceOffNoticeOwed => _modId != null && UiOffRules.NoticeOwed(new UiOffPrefs(_modId));
+
+        /// <summary>The notice was shown: never again.</summary>
+        public static void InterfaceOffNoticeShown()
+        {
+            if (_modId != null)
+            {
+                UiOffRules.NoticeShown(new UiOffPrefs(_modId));
+                UnityEngine.PlayerPrefs.Save();
+            }
+        }
+
+        // The interface's switch and the rule's marks in PlayerPrefs, under the key the game's own controls use.
+        private readonly struct UiOffPrefs : IUiOffStore
+        {
+            private readonly string _modId;
+
+            public UiOffPrefs(string modId)
+            {
+                _modId = modId;
+            }
+
+            public bool Has(string id) => UnityEngine.PlayerPrefs.HasKey(Key(_modId, id));
+
+            public int Get(string id) => UnityEngine.PlayerPrefs.GetInt(Key(_modId, id), 0);
+
+            public void Set(string id, int value) => UnityEngine.PlayerPrefs.SetInt(Key(_modId, id), value);
         }
 
         // The key format the game uses when it saves mod options.

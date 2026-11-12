@@ -2,10 +2,18 @@
 
 ## In a sentence
 
-Under the living economy's master option **Living population**, the RLO interface (`ui_interface`, on by default) draws
+Under the living economy's master option **Living population**, the RLO interface (`ui_interface`, off by default) draws
 the game's Contacts and the overhaul's screens in the mod's own design, after Cities: Skylines II. Slate panels stand
 over the city with thin title strips, colourful icons, faces and charts, apps open as windows with the city round them,
 and a status bar runs along the bottom. The mouse leads, and the keyboard and a pad reach every target.
+
+It is off by default since 1.0.3, while faults in its screens are mended (eating at a counter, picking items when
+ordering by phone, the vehicle's fuel and cargo, Korean and Chinese text): the game's own screens show, and a player
+switches it on under "RLO interface" on the options page. At the first start on 1.0.3 a switch saved as on is written
+off once (`Core/UiOffRules.SwitchOffOnce`, from `Settings.Load` before the switch is read; the mark `ui_interface_reset`,
+103, keeps every later start away), and that player is told once in the game's own notification at the next city
+loaded (`Meta/Welcome`; it pops up whatever the notification switches say). A switch set on afterwards stays on. No
+preset touches it, and "reset everything" writes it off.
 
 ## Where the code is
 

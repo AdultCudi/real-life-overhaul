@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Zadowolenie",
   "reallife_ui_gallery_energy": "Energia",
   "reallife_ui_enabled": "Interfejs RLO",
-  "reallife_opt_tip_ui_interface": "Rysuje Kontakty i ekrany modu we własnym wyglądzie moda: ciemnoszare panele nad miastem, kolorowe ikony i pasek stanu na dole. Wyłączony: ekrany gry.",
+  "reallife_opt_tip_ui_interface": "Rysuje Kontakty i ekrany moda we własnym stylu: panele w odcieniu łupka, kolorowe ikony i pasek statusu. Domyślnie wyłączony, ekrany gry są na miejscu: włącz tutaj.",
   "reallife_ui_motion": "Ruch interfejsu",
   "reallife_opt_tip_ui_motion": "Jak porusza się interfejs RLO: pełny, spokojny (wolniejszy i krótszy) albo wyłączony.",
   "reallife_ui_motion_0": "Pełny",
@@ -28037,7 +28037,7 @@
   "reallife_ui_note_fallback": "Interfejs RLO ustąpił po błędzie; zamiast tego pokazuje się ekran gry.",
   "reallife_meta_title_ui": "Interfejs RLO",
   "reallife_guide_ui_about": "Własny wygląd moda, City Ledger: Kontakty i ekrany moda narysowane jak strony finansowe miasta, najpierw dla klawiatury i pada.",
-  "reallife_guide_ui": "# Czym jest\n- <b>Interfejs RLO</b> rysuje Kontakty gry i ekrany moda we własnym wyglądzie moda, City Ledger: szeryfowe nagłówki, etykiety gazety wielkimi literami, kwadratowe panele z liniami i jeden akcent, łososiowy kolor gazety o rynkach.\n- Jest częścią <b>Mieszkańców miasta</b> i ma własny przełącznik. Wyłączony, każdy ekran znów jest ekranem gry.\n\n# Jak go używać\n- Strzałki albo krzyżak przesuwają jeden fokus; Enter albo A naciska to, co ma fokus; Esc albo B wraca.\n- Klawisze na dole ekranu to te, które są teraz przypisane; klawisz pokazany na przycisku naciska go z dowolnego miejsca.\n- Połączenie, oferta z własnymi przyciskami i tabela podatków otwierają się w widoku gry, aż zamkniesz aplikację.\n\n# Opcje\n- Ciemny albo jasny zależy od opcji wyglądu Flare.\n- Ruch interfejsu: pełny, spokojny albo wyłączony.",
+  "reallife_guide_ui": "# Czym jest\n- <b>Interfejs RLO</b> rysuje Kontakty gry i ekrany moda we własnym wyglądzie moda, City Ledger: szeryfowe nagłówki, etykiety gazety wielkimi literami, kwadratowe panele z liniami i jeden akcent, łososiowy kolor gazety o rynkach.\n- Jest częścią <b>Mieszkańców miasta</b> i ma własny przełącznik, <b>Interfejs RLO</b> w opcjach moda. Domyślnie jest wyłączony, dopóki błędy w jego ekranach nie zostaną naprawione, więc każdy ekran jest ekranem gry, aż go włączysz.\n\n# Jak go używać\n- Strzałki albo krzyżak przesuwają jeden fokus; Enter albo A naciska to, co ma fokus; Esc albo B wraca.\n- Klawisze na dole ekranu to te, które są teraz przypisane; klawisz pokazany na przycisku naciska go z dowolnego miejsca.\n- Połączenie, oferta z własnymi przyciskami i tabela podatków otwierają się w widoku gry, aż zamkniesz aplikację.\n\n# Opcje\n- Ciemny albo jasny zależy od opcji wyglądu Flare.\n- Ruch interfejsu: pełny, spokojny albo wyłączony.",
   "reallife_contract_part_contacts_kit": "aplikacja Kontakty narysowana w interfejsie RLO",
   "reallife_ui_page_details": "Szczegóły",
   "reallife_ui_page_empty": "Nic tu jeszcze nie ma",
@@ -37736,5 +37736,6 @@
   "reallife_studio_button_suggest": "Zaproponuj nazwę",
   "reallife_studio_after_named": "Będzie się nazywać {name}.",
   "reallife_studio_note_named_1": "{name}, darmowa aktualizacja do gry {game}, jest już dostępna: około {copies} kolejnych egzemplarzy w drodze.",
-  "reallife_studio_note_named_2": "{name}, dodatek do gry {game}, jest już dostępny: około {copies} właścicieli go kupi."
+  "reallife_studio_note_named_2": "{name}, dodatek do gry {game}, jest już dostępny: około {copies} właścicieli go kupi.",
+  "reallife_ui_note_interface_off": "Interfejs RLO jest na razie wyłączony. Niektóre jego ekrany miały błędy: zamawianie, jedzenie na mieście i panel pojazdów. Ekrany gry są znów na miejscu. Możesz go ponownie włączyć w opcjach moda, w ustawieniu Interfejs RLO."
 }
