@@ -512,6 +512,12 @@ namespace RealLifeOverhaul
         public static readonly GameMember ConfirmOpen = Optional(StaticField(QuestionBox, Game, "HudConfirm", "isOpen", "Boolean"));
         public static readonly GameMember ConfirmListening = Optional(StaticField(QuestionBox, Game, "HudConfirm", "onShow",
             "Action<LanguageChangeEventDataHolder,LanguageChangeEventDataHolder,String,String,Action,Action,Boolean>"));
+        // Core/GameConfirm: the box's own confirm, pressed for Esc and Enter where the game reads no key for it (its main menu's start
+        // screen); and what says how much text the box has room for, the UI zoom and whether the full menu's box is the one that opens
+        // (without them the least room is taken)
+        public static readonly GameMember ConfirmPress = Optional(StaticField(QuestionBox, Game, "HudConfirm", "onConfirm", "Action"));
+        public static readonly GameMember UiZoom = Optional(Prop(QuestionBox, Game, "PlayerPrefSettings", "uiZooming", "Single", true));
+        public static readonly GameMember FullMenuOpen = Optional(Prop(QuestionBox, Game, "UI.Smartphone.FullMenu", "IsOpen", "Boolean", true));
         public static readonly GameMember VersionCurrent = Optional(StaticMethod(BuildRead, Game, "GameVersion", "GetCurrent", "GameVersion"));
         public static readonly GameMember VersionBuild = Optional(Field(BuildRead, Game, "GameVersion", "buildNumber", "Int32"));
         public static readonly GameMember MenuStartView = Optional(Field(BuildRead, Game, "MainMenuController", "startView", "GameObject"));

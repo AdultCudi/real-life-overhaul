@@ -215,12 +215,22 @@ namespace RealLifeOverhaul.Meta
                 text.Append("\n\n").Append("reallife_meta_preset_live".GetLocalization());
                 return;
             }
+            // Where there is no HUD the answer is shown in the game's question box, which has no room for a line per option:
+            // the first few are named and the rest counted, and Player.log names them all.
             text.Append("\n\n").Append("reallife_meta_preset_reload".GetLocalization());
-            foreach (string label in reload)
+            for (int i = 0; i < reload.Count && i < ReloadNamed; i++)
             {
-                text.Append("\n  - ").Append(label);
+                text.Append("\n  - ").Append(reload[i]);
+            }
+            if (reload.Count > ReloadNamed)
+            {
+                text.Append("\n  - ").Append("reallife_meta_preset_reload_more".GetLocalization()
+                    .Replace("{count}", (reload.Count - ReloadNamed).ToString(CultureInfo.InvariantCulture)));
+                MetaLog.Info("options that only apply after the save is loaded again (" + reload.Count + "): " + string.Join("; ", reload) + ".");
             }
         }
+
+        private const int ReloadNamed = 4;   // options named in an answer before the rest are counted
 
         internal static string Label(OptionInfo info)
         {
