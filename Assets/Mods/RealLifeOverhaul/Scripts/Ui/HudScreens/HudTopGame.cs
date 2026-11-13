@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            BasicTooltip tip = _bug.GetComponent<BasicTooltip>() ?? _bug.GetComponentInParent<BasicTooltip>();
+            BasicTooltip tip = _bug.GetComponent<BasicTooltip>() ?? _bug.GetComponentInParent<BasicTooltip>(true);
             if (tip == null)
             {
                 return ToolsOff[index] ? Localizor.LocalizorManager.GetLocalization(BugHeldKey) : null;

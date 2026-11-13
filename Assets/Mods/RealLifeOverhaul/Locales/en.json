@@ -28023,7 +28023,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfaction",
   "reallife_ui_gallery_energy": "Energy",
   "reallife_ui_enabled": "RLO interface",
-  "reallife_opt_tip_ui_interface": "Draws the overhaul's screens in the mod's own design. Off by default. It needs Living population on, and the people and studio pages exist only in this design.",
+  "reallife_opt_tip_ui_interface": "Draws the overhaul's screens in the mod's own design. Off by default: switch it on here. Needs Living population on. The people and studio pages exist only in this design.",
   "reallife_ui_motion": "Interface motion",
   "reallife_opt_tip_ui_motion": "How the RLO interface moves: full, calm (slower and shorter) or off.",
   "reallife_ui_motion_0": "Full",

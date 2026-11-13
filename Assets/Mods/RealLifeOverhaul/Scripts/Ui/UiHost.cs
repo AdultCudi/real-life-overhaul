@@ -482,7 +482,7 @@ namespace RealLifeOverhaul.Ui
                     EndTyping();
                     _sound?.Play(UiCue.Back);
                 }
-                else if (Input.GetKeyDown(KeyCode.Tab))
+                else if (TypingNow.Now && Input.GetKeyDown(KeyCode.Tab))
                 {
                     TakeGhost();
                 }
