@@ -210,6 +210,8 @@ def text_faults(code, key, v, t, notices=()):
         bad.append('a notification of %d characters, over the %d a toast holds' % (len(t), NOTICE_MOST))
     if (key == 'reallife_changes_next' or (code != 'zh-cn' and CHANGES.match(key))) and v.count(FIXED['en']) != t.count(FIXED[code]):
         bad.append('%d fixes marked %s, the English marks %d' % (t.count(FIXED[code]), json.dumps(FIXED[code], ensure_ascii=False), v.count(FIXED['en'])))
+    if (key == 'reallife_changes_next' or CHANGES.match(key)) and t != NOTHING.get(code) and t.startswith(NOTHING.get(code, chr(0))):
+        bad.append("What's new's row begins with the empty row's words %s before its own" % json.dumps(NOTHING[code], ensure_ascii=False))
     if key == 'reallife_changes_next' and v == NOTHING['en'] and t != NOTHING.get(code, t):
         bad.append("What's new's empty next row must be exactly %s" % json.dumps(NOTHING[code], ensure_ascii=False))
     if key not in ENGLISH_OK and code not in ENGLISH_OK_IN.get(key, ()):
@@ -302,6 +304,11 @@ def main():
     for name in sorted(os.listdir(LOC)):
         if name.endswith('.json') and name[:-5] not in codes:
             print('%s: not one of the mod\'s languages (%s); the game reads a file only by its own code for a language' % (name, ', '.join(codes)))
+            faults += 1
+    # A line added to the next row takes the place of its empty words; a row that keeps them shows "Nothing yet." before a version's notes.
+    for key, v in en.items():
+        if (key == 'reallife_changes_next' or CHANGES.match(key)) and v != NOTHING['en'] and v.startswith(NOTHING['en']):
+            print("en.json: %s: What's new's row begins with the empty row's words before its own" % key)
             faults += 1
     for code, language in LANGUAGES[1:]:
         name = code + '.json'
