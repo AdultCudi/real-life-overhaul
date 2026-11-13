@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _words = new List<string>(16);
         private string _shown, _gameTab;
         private global::Address _shownFor;
+        private int _goodHover = -1;   // the goods row whose sales card shows
         private bool _openedByKit, _listOpen, _todoOpen, _kindOpen, _fontOpen, _sliderHeld, _pagesOpen;
 
         private Transform Menu(BizManBusiness b) => Get<Transform>(GameContract.BizMenu, b);
