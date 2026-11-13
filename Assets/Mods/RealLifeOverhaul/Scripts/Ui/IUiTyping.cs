@@ -23,6 +23,16 @@ namespace RealLifeOverhaul.Ui
         void Submitted(string text);
     }
 
+    /// <summary>
+    /// A typing screen that asks for its field to take the keys as a page shows it (the game's own name box for a new business
+    /// is focused as it opens). The host asks once with its other reads and opens the field for each yes.
+    /// </summary>
+    public interface IUiTypingFocus : IUiTyping
+    {
+        /// <summary>True once each time the field should take the keys: asking clears it.</summary>
+        bool TakeFocus();
+    }
+
     /// <summary>A typing screen whose fields wait to be pressed (a social app's): the host does not start typing as it opens.</summary>
     public interface IUiTypingQuiet
     {

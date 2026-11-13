@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
     /// patches all run; nothing of the game's is worked out here. A page only the game's own view shows hands over to it.
     /// Cost: a look at a few counts and flags four times a second while it shows; a layout only when they change.
     /// </summary>
-    public sealed partial class BizManScreen : IUiScreen, IUiTyping, IUiStepping, IUiPointing, IUiTracking
+    public sealed partial class BizManScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IUiTypingFocus, IUiStepping, IUiPointing, IUiTracking
     {
         private const float Every = 0.25f;   // seconds between looks at the game's BizMan
         private const float Away = 1f;       // seconds with no look: the app was closed or stood aside meanwhile
@@ -413,6 +413,15 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return;
             }
+            for (int k = 0; list >= 0 && k < BizManModel.Scrolls; k++)
+            {
+                if (list == _m.ListList[k])
+                {
+                    _m.ListReveal[k] = index;   // a row or a switch of a list that scrolls, which the pad stepped to
+                    _dirty = true;
+                    return;
+                }
+            }
             if (OpsReveal(list, index))
             {
                 _dirty = true;
@@ -439,6 +448,15 @@ namespace RealLifeOverhaul.Ui
                 _m.ShapesOffset = Math.Max(0f, _m.ShapesOffset + by);
                 _dirty = true;
                 return;
+            }
+            for (int k = 0; clip >= 0 && k < BizManModel.Scrolls; k++)
+            {
+                if (clip == _m.ListClip[k])
+                {
+                    _m.ListOffset[k] = Math.Max(0f, _m.ListOffset[k] + by);
+                    _dirty = true;
+                    return;
+                }
             }
             if (OpsWheel(clip, by))
             {
@@ -478,6 +496,39 @@ namespace RealLifeOverhaul.Ui
         public string TypingText => _typeCommand == BizManPages.StartKinds + UiDataTable.Search ? _kindQuery
             : OpsTyping(_typeCommand, out string ops) ? ops : Field(_typeCommand, _typeArg) is TMP_InputField f ? f.text : null;
 
+
+        /// <summary>The game's own limit of the box typed into (a name's, as its Steam input reads it), or none of the page's own for a search.</summary>
+        public int TypingLimit
+        {
+            get
+            {
+                if (_typeCommand != BizManPages.Type)
+                {
+                    return 0;
+                }
+                TMP_InputField f = Field(BizManPages.Type, _typeArg);
+                return f != null && f.characterLimit > 0 ? f.characterLimit : _typeArg == BizManPages.FieldName ? BizManStartRules.NameLimit : 0;
+            }
+        }
+
+        /// <summary>Enter in a box does what the game's own box does with it: start the business, send the offer, or put the building up for sale.</summary>
+        public void Submitted(string text)
+        {
+            int what = BizManStartRules.Entered(_typeCommand == BizManPages.Type, _typeArg, _m.Page == BizManPage.Business && _m.Part == BizManPart.Start);
+            if (what < 0)
+            {
+                return;   // a search, or a name that has no Enter of its own (the settings' name is saved by its button)
+            }
+            Press(BizManPages.Action, what);
+            _focusName = what == BizManPages.DoStartHere && _refused != null;   // the game's box takes the keys again after Enter, so a name it refused is mended where it stands
+        }
+
+        public bool TakeFocus()
+        {
+            bool want = _focusName && _m.Page == BizManPage.Business && _m.Part == BizManPart.Start;
+            _focusName = false;
+            return want;
+        }
 
         public void Typed(string text)
         {

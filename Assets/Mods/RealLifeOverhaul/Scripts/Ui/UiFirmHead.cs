@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Ui
         public string TodoTitle;                    // the list's title ("Requirements")
         public string[] Checks = new string[0];     // the requirements, met or not
         public bool[] Met = new bool[0];
+        public bool[] CanHelp = new bool[0];        // which requirement has a help page of the game's: its line carries a link to it (the Help command, the line's place as the argument)
         public string[] Alerts = new string[0];     // the things it asks to be done
         public bool[] Urgent = new bool[0];
         public bool HasSwitch;                      // the open switch: on is open
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Ui
     public static class UiFirmHead
     {
         public const int First = 200;
-        public const int Name = 0, Option = 1, Place = 2, Switch = 3, Todo = 4, Action = 5;
+        public const int Name = 0, Option = 1, Place = 2, Switch = 3, Todo = 4, Action = 5, Help = 6;
         public const float Logo = UiTokens.AvatarHero;   // px: the logo's tile, a profile's face
         private const float SwitchRoom = 96f;             // px: the open switch's track and its gaps besides its word
         private const float MostList = 360f;              // px: the widest the firms' list or the needs' list opens
@@ -123,7 +124,7 @@ namespace RealLifeOverhaul.Ui
             }
             else if (m.TodoOpen && todoX >= 0f)
             {
-                Needs(s, at, m, todoX, cy + UiTokens.Badge + UiTokens.S2, Math.Min(MostList, x + w - todoX), command + Todo);
+                Needs(s, at, m, todoX, cy + UiTokens.Badge + UiTokens.S2, Math.Min(MostList, x + w - todoX), command, keys);
             }
             return UiDraw.Snap(bottom) + UiTokens.S6;
         }
@@ -196,8 +197,9 @@ namespace RealLifeOverhaul.Ui
 
         // The needs' list over the page under its link: its title, each requirement a check line, then each alert behind the
         // warning's glyph in its tone. Read only; Back or the link again closes it.
-        private static void Needs(UiScene s, UiAt under, UiFirmHeadModel m, float x, float y, float w, int command)
+        private static void Needs(UiScene s, UiAt under, UiFirmHeadModel m, float x, float y, float w, int first, IUiKeys keys)
         {
+            int command = first + Todo;
             var at = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1, Region = under.Region };
             float lines = (m.Checks.Length + m.Alerts.Length) * UiTokens.PairRow;
             float titleH = string.IsNullOrEmpty(m.TodoTitle) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
@@ -213,14 +215,21 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < m.Checks.Length; i++)
             {
+                // A requirement with a help page of the game's carries the "?" the game's own list shows beside it, at its right.
+                bool help = i < m.CanHelp.Length && m.CanHelp[i];
+                float lw = help ? iw - UiTokens.PairRow - UiTokens.S1 : iw;
+                if (help)
+                {
+                    UiDraw.Button(s, inside, ix + iw - UiTokens.PairRow, iy, UiTokens.PairRow, UiTokens.PairRow, UiButtonKind.Quiet, null, UiIcon.Info, UiAction.Count, keys, first + Help, i);
+                }
                 if (i < m.Met.Length && m.Met[i])
                 {
-                    iy += UiDraw.CheckLine(s, inside, ix, iy, iw, m.Checks[i], true);
+                    iy += UiDraw.CheckLine(s, inside, ix, iy, lw, m.Checks[i], true);
                     continue;
                 }
                 // What is missing is what to act on: the cross in the warning's colour and the words at full strength.
                 UiDraw.Icon(s, inside, ix, iy + (UiTokens.PairRow - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Close, UiRole.Warn, UiFlags.Middle, true);
-                UiDraw.TextMiddle(s, inside, ix + UiTokens.Icon + UiTokens.S2, iy, UiTokens.PairRow, iw - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, m.Checks[i],
+                UiDraw.TextMiddle(s, inside, ix + UiTokens.Icon + UiTokens.S2, iy, UiTokens.PairRow, lw - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, m.Checks[i],
                     UiFlags.Label | UiFlags.Truncate);
                 iy += UiTokens.PairRow;
             }

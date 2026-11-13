@@ -379,6 +379,8 @@ namespace RealLifeOverhaul.Ui
             Transform need = own ? Get<Transform>(GameContract.BizNeed, b) : null, alert = own ? Get<Transform>(GameContract.BizAlert, b) : null;
             var checks = new List<string>(8);
             var met = new List<bool>(8);
+            var canHelp = new List<bool>(8);
+            _checkHelp.Clear();
             for (int i = 0; need != null && need.parent != null && i < need.parent.childCount; i++)
             {
                 Transform c = need.parent.GetChild(i);
@@ -389,6 +391,11 @@ namespace RealLifeOverhaul.Ui
                 checks.Add(Label(c));
                 Toggle tick = c.GetComponentInChildren<Toggle>(true);
                 met.Add(tick != null && tick.isOn);
+                // The game's "?" beside a requirement, shown only where the requirement has a help page: its slug is what the game opens.
+                HelpIconButton help = c.GetComponentInChildren<HelpIconButton>(true);
+                bool has = help != null && help.gameObject.activeSelf && !string.IsNullOrEmpty(help.linkSlug);
+                canHelp.Add(has);
+                _checkHelp.Add(has ? help.linkSlug : null);
             }
             var alerts = new List<string>(4);
             var urgent = new List<bool>(4);
@@ -411,6 +418,7 @@ namespace RealLifeOverhaul.Ui
             }
             h.Checks = checks.ToArray();
             h.Met = met.ToArray();
+            h.CanHelp = canHelp.ToArray();
             h.Alerts = alerts.ToArray();
             h.Urgent = urgent.ToArray();
             h.TodoTitle = UiText.T("common_requirements");
@@ -492,8 +500,9 @@ namespace RealLifeOverhaul.Ui
                     Button apply = Get<Button>(GameContract.EstateApply, est);
                     GameObject cancel = Get<GameObject>(GameContract.EstateCancelPanel, est);
                     TMP_InputField price = Get<TMP_InputField>(GameContract.EstatePrice, est);
+                    Image view = Get<Image>(GameContract.PlacePhoto, Get<BizManBuildingInfo>(GameContract.BizBuildingInfo, b));   // the photo arrives after the page does
                     return sig * 31 + (slider != null ? slider.value.GetHashCode() : 0) + (apply != null && apply.interactable ? 1 : 0) + (cancel != null && cancel.activeSelf ? 2 : 0)
-                           + Hash(price != null ? price.text : null);
+                           + Hash(price != null ? price.text : null) + (view != null && view.sprite != null ? view.sprite.GetInstanceID() * 17 : 0);
                 }
                 default:
                     return sig;
@@ -520,7 +529,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Transform kinds = Get<Transform>(GameContract.StartKinds, start);
                 TMP_InputField name = Get<TMP_InputField>(GameContract.StartName, start);
-                sig = sig * 31 + (kinds != null ? kinds.childCount : 0) + Hash(name != null ? name.text : null) + Hash(_kindQuery) * 7;
+                sig = sig * 31 + (kinds != null ? kinds.childCount : 0) + Hash(name != null ? name.text : null) + Hash(_kindQuery) * 7
+                       + (b.buildingRegistration != null && !string.IsNullOrEmpty(b.buildingRegistration.BusinessName) ? 5 : 0);   // the game named the business: its logo is being made
                 for (int i = 0; kinds != null && i < kinds.childCount; i++)
                 {
                     GameObject chosen = Get<GameObject>(GameContract.KindChosen, kinds.GetChild(i).GetComponent<StartBusinessTypeUI>());
@@ -561,6 +571,7 @@ namespace RealLifeOverhaul.Ui
             _m.Kinds = _m.Fonts = new string[0];
             _m.KindOpen = _m.FontOpen = false;
             _m.Uniforms = _m.LogoTitle = _m.NameLabel = _m.NameText = _m.NamePlaceholder = null;
+            _m.TerminateNote = _m.ShutdownNote = null;
             _m.LogoEdit = false;
             _m.ShapesTitle = _m.ShapesNone = _m.ShapesOwn = _m.LogoNote = _m.PreviewPic = null;
             _m.ShapeCount = 0;

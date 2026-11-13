@@ -158,6 +158,11 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             Transform box = which == 1 ? forSale : notForSale;
+            // The game says what a building of this kind is in its for-sale box (bizman_building_description_<type>), which the lead of the page carries.
+            if (!second && which == 1 && _m.Lead == null)
+            {
+                _m.Lead = WordsAt(box, "BuildingDescription");
+            }
             // The game keeps Send's box shut until its make-an-offer button is pressed, so Send is found wired, shown or not.
             Button send = UiWidgets.Calling(pres, "SendBuyBuildingOffer");
             bool held = send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable);
@@ -202,13 +207,30 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                _m.Lead = Words(rent);   // rented by the player: the game's own words for what can be done with it
+                _m.Lead = Said(rent);   // rented by the player: the game's own words for what can be done with it, its title and its sentence both
             }
         }
 
         private void Villa(BizManPresentation pres, HamptonsPurchaseBoxUI villa)
         {
             _m.Part = BizManPart.Villa;
+            // The game's left side still says whose the house is and, for one on sale, what a house of its kind is, beside the purchase box.
+            Transform forSale = Get<Transform>(GameContract.ShowForSale, pres), notForSale = Get<Transform>(GameContract.ShowNotForSale, pres);
+            Transform said = On(forSale) ? forSale : On(notForSale) ? notForSale : null;
+            if (said != null)
+            {
+                SaidParts.Clear();
+                string about = said == forSale ? WordsAt(said, "BuildingDescription") : null, owner = WordsAt(said, "RivalBuildingOwner");
+                if (!string.IsNullOrEmpty(about))
+                {
+                    SaidParts.Add(about);
+                }
+                if (!string.IsNullOrEmpty(owner))
+                {
+                    SaidParts.Add(owner);
+                }
+                _m.Lead = BizManStartRules.Passage(SaidParts);
+            }
             Button send = UiWidgets.Calling(villa, "SendBuyBuildingOffer") ?? UiWidgets.Calling(pres, "SendBuyBuildingOffer");
             _m.Amount = new BizManAmount
             {
@@ -334,7 +356,9 @@ namespace RealLifeOverhaul.Ui
         {
             _m.CapacityTitle = UiText.T("bizman_customers_capacity");
             string now = TextOf(Get<TextMeshProUGUI>(GameContract.SeeCapacityNow, see)), limit = TextOf(Get<TextMeshProUGUI>(GameContract.SeeCapacityLimit, see));
-            _m.CapacityLine = now != null && limit != null && limit != "-" ? UiText.Fill("reallife_ui_bizman_capacity_line", "now", now, "limit", limit) : null;
+            // A building with no limit of its own ("-") still has what the shelves allow, which the game's page shows by itself.
+            _m.CapacityLine = now == null ? null : limit != null && limit != "-" ? UiText.Fill("reallife_ui_bizman_capacity_line", "now", now, "limit", limit)
+                : UiText.Fill("reallife_ui_bizman_capacity_open", "now", now);
             Transform template = Get<Transform>(GameContract.SeeCapacity, see);
             var rows = new List<BizManCapacity>(8);
             int.TryParse(limit, out int most);
@@ -355,7 +379,24 @@ namespace RealLifeOverhaul.Ui
                 int share = most > 0 ? Math.Min(100, shown * 100 / most) : 0;
                 Transform icon = e.Find("Type/Icon");
                 Image mark = icon != null ? icon.GetComponent<Image>() : null;
-                rows.Add(new BizManCapacity { Name = name, Figure = figure, Share = share, Tone = mark != null ? Tone(mark.color) : UiRole.Muted });
+                // The game lists each shelf that caps the item under it ("3x Shelf (4)" and what they come to), as a clone of its shelf template.
+                var shelves = new List<string>(3);
+                var figures = new List<string>(3);
+                for (int c = 0; c < e.childCount; c++)
+                {
+                    Transform shelf = e.GetChild(c);
+                    string line = shelf.gameObject.activeSelf && shelf.name.StartsWith("ShelfTemplate", StringComparison.Ordinal) ? WordsAt(shelf, "ItemTitle") : null;
+                    if (!string.IsNullOrEmpty(line))
+                    {
+                        shelves.Add(line);
+                        figures.Add(WordsAt(shelf, "TotalCapacityLabel") ?? string.Empty);
+                    }
+                }
+                rows.Add(new BizManCapacity
+                {
+                    Name = name, Figure = figure, Share = share, Tone = mark != null ? Tone(mark.color) : UiRole.Muted,
+                    Shelves = shelves.Count > 0 ? shelves.ToArray() : null, ShelfFigures = figures.ToArray()
+                });
             }
             _m.Capacity = rows.ToArray();
         }
@@ -387,7 +428,11 @@ namespace RealLifeOverhaul.Ui
             int n = table != null ? table.data.Count : 0;
             t.Rows = new UiDataRow[n];
             string district = b.building != null && !string.IsNullOrEmpty(b.building.Neighbourhood) ? b.building.Neighbourhood : null;   // the district the goods' market prices are of
-            bool managed = district != null && PricingManagerHelper.GetPlanCoveringNeighborhood(district) != null;
+            var covering = district != null ? PricingManagerHelper.GetPlanCoveringNeighborhood(district) : null;
+            bool managed = covering != null;
+            // The game says on each held price who sets it (its tooltip); the page says it once over the goods.
+            _m.Lead = managed ? UiText.Fill("inventory_pricing_covered_by_pricing_manager", "employeeName",
+                covering.AnalystInstance != null && covering.AnalystInstance.characterData != null ? covering.AnalystInstance.characterData.name : UiText.T("common_unassigned")) : null;
             RivalGoods(district);
             for (int i = 0; i < n; i++)
             {
@@ -452,7 +497,8 @@ namespace RealLifeOverhaul.Ui
             bool rising = box != null && Shown(box.Find("Horizontal/PositiveIcon"));
             string amount = WordsAt(box, "Horizontal/Amount") ?? "0";
             string signed = change != null && rising && !change.StartsWith("-", StringComparison.Ordinal) ? "+" + change : change;
-            return new BizManFact { Label = UiText.T(labelKey), Value = signed != null ? amount + " (" + signed + ")" : amount, Tone = rising ? UiRole.OkText : UiRole.DangerText };
+            return new BizManFact { Label = UiText.T(labelKey), Value = signed != null ? amount + " (" + signed + ")" : amount, Tone = rising ? UiRole.OkText : UiRole.DangerText,
+                Sub = WordsAt(box, "LastPeriod") };   // "Compared to 40 last period", under both figures as the game puts it
         }
 
         private void BestSellers(BizManInventoryPricing p)
@@ -471,7 +517,8 @@ namespace RealLifeOverhaul.Ui
                 string percent = WordsAt(e, "PercentageLabel");
                 float.TryParse(percent != null ? percent.TrimEnd('%') : null, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float share);
                 labels.Add(WordsAt(e, "ItemLabel"));
-                values.Add(percent);
+                string sold = WordsAt(e, "AmountLabel");   // how many it sold, which the game's legend gives beside its share
+                values.Add(!string.IsNullOrEmpty(sold) && !string.IsNullOrEmpty(percent) ? sold + " (" + percent + ")" : percent);
                 shares.Add(share);
             }
             float listed = 0f;
@@ -563,9 +610,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Columns = new[]
                 {
-                    new UiDataColumn { Title = UiText.T("common_product"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = UiText.T("common_product"), Kind = UiCellKind.Tile },
                     new UiDataColumn { Title = UiText.T("bizman_deliveries_stock"), Kind = UiCellKind.Figure, Width = 96f },
                     new UiDataColumn { Title = UiText.T("common_price"), Kind = UiCellKind.Money, Width = 104f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_boxes"), Kind = UiCellKind.Figure, Width = 72f },
                     new UiDataColumn { Title = UiText.T("common_amount"), Kind = UiCellKind.Stepper, Width = 176f },
                 },
                 EmptyIcon = UiIcon.Package, EmptyTitle = UiText.T("reallife_ui_bizman_goods_none"), Offset = old != null ? old.Offset : 0f, Reveal = old != null ? old.Reveal : -1
@@ -575,14 +623,18 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < count; i++)
             {
                 BizManDeliveriesProductModel g = goods.data[i];
+                // Each good as the game's row shows it: its picture, a shortage or backorder it is in, its limit, index, last week's order and sales, its boxes.
+                string item = g != null && g.deliveryContractItem != null ? g.deliveryContractItem.itemName : null;
                 t.Rows[i] = new UiDataRow
                 {
                     Cells = new[]
                     {
                         g != null ? g.productName : null, g != null ? UiText.Whole(g.stock) : null, g != null ? g.pricePerUnit.ToCurrencyFormat() : null,
-                        g != null ? UiText.Whole(g.Amount) : null
+                        g != null && g.deliveryContractItem != null ? UiText.Whole(g.CargoAmount) : null, g != null ? UiText.Whole(g.Amount) : null
                     },
-                    Values = new[] { 0, -1, 0, g == null || g.isContractActive ? 0 : (g.Amount > 0 ? UiDataTable.CanLess : 0) | UiDataTable.CanMore }
+                    Values = new[] { (int)UiIcon.Package, -1, 0, -1, g == null || g.isContractActive ? 0 : (g.Amount > 0 ? UiDataTable.CanLess : 0) | UiDataTable.CanMore },
+                    Pictures = new[] { item != null ? BuyPictures.Item(item) : null }, Tones = new UiRole[5],
+                    Sub = WholesaleNote(g)
                 };
             }
             t.RowCount = count;
@@ -724,6 +776,11 @@ namespace RealLifeOverhaul.Ui
             Offer(_actions, Calling(page, "TerminateContract"), BizManPages.DoTerminate, UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count, "bizman_terminate_contract_button");
             Offer(_actions, Calling(set, "ShutdownBusiness"), BizManPages.DoShutdown, UiButtonKind.Destructive, UiIcon.Close, UiAction.Count, "bizman_shutdown_business");
             _m.Actions = _actions.ToArray();
+            for (int i = 0; i < _m.Actions.Length; i++)
+            {
+                _m.TerminateNote = _m.Actions[i].Arg == BizManPages.DoTerminate ? UiText.T("bizman_settings_terminate_contract") : _m.TerminateNote;
+                _m.ShutdownNote = _m.Actions[i].Arg == BizManPages.DoShutdown ? UiText.T("bizman_shutdown_business_description") : _m.ShutdownNote;
+            }
             _m.Lead = set != null && set.HasUnsavedChanges ? UiText.T("reallife_ui_bizman_unsaved") : null;
         }
 
@@ -800,6 +857,9 @@ namespace RealLifeOverhaul.Ui
             }
             _m.Actions = _actions.ToArray();
             BizManBuildingInfo info = Get<BizManBuildingInfo>(GameContract.BizBuildingInfo, b);
+            Image photo = Get<Image>(GameContract.PlacePhoto, info);   // the building's photo the game's own tab shows beside its address and tax
+            _m.Picture = photo != null ? Pic(photo.sprite) : null;
+            _m.PictureAspect = photo != null && photo.sprite != null ? Aspect(photo.sprite) : 1.6f;
             _m.FactsTitle = UiText.T("reallife_ui_bizman_the_building");
             _m.BuildingFacts = new[]
             {
@@ -807,6 +867,30 @@ namespace RealLifeOverhaul.Ui
                 Fact("common_building_type", b.building != null ? UiText.T(b.building.BuildingType) : null),
                 new BizManFact { Label = (Words(Get<Component>(GameContract.PlaceTaxLabel, info)) ?? string.Empty).TrimEnd(':', ' '), Value = TextOf(Get<TMP_Text>(GameContract.PlaceTax, info)) },
             };
+        }
+
+        private static readonly List<TMP_Text> Spoken = new List<TMP_Text>(6);
+        private static readonly List<string> SaidParts = new List<string>(6);
+
+        // Every text the game shows under a panel, as one passage: the panel that stands for a rented place has a title and a body, and
+        // the first text alone would give the title and lose what it says to do.
+        private static string Said(Component panel)
+        {
+            if (panel == null || !panel.gameObject.activeInHierarchy)
+            {
+                return null;
+            }
+            SaidParts.Clear();
+            panel.GetComponentsInChildren(false, Spoken);
+            for (int i = 0; i < Spoken.Count; i++)
+            {
+                string words = UiWidgets.Text(Spoken[i]);
+                if (!string.IsNullOrWhiteSpace(words))
+                {
+                    SaidParts.Add(words.Trim());
+                }
+            }
+            return BizManStartRules.Passage(SaidParts);
         }
 
         // A line the game writes as its label and its figure in one ("Current rent: $9.40/m2") as a fact's label and value.

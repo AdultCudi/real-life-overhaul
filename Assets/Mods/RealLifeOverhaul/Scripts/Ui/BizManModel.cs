@@ -53,7 +53,9 @@ namespace RealLifeOverhaul.Ui
         Heading = 0,
         Fact,
         Item,
-        Note
+        Note,
+        Body,   // a paragraph of the game's own description, at the size of the lists
+        Link    // a row that opens the game's help page: its Arg is the page's place in the screen's list
     }
 
     /// <summary>A row of the chosen kind's detail; a list line's mark is its glyph (a tick, a warning) before its words, None for no mark.</summary>
@@ -64,6 +66,7 @@ namespace RealLifeOverhaul.Ui
         public string Value;
         public UiRole Tone;
         public UiIcon Mark;
+        public int Arg;     // a Link's help page, or on an Item the help page of its requirement, each as its place in the screen's list plus one; 0 for none
     }
 
     /// <summary>The kind of business chosen on the start page: what it is, its picture and every row the game says about it.</summary>
@@ -85,6 +88,7 @@ namespace RealLifeOverhaul.Ui
         public bool Link;
         public int Arg;          // what the link opens, the screen's own number
         public UiRole Tone;      // the value's tone where the game colours it (an occupancy, a gain); None for plain
+        public string Sub;       // a quiet line under the row (what a week compares to), or null
     }
 
     /// <summary>A graded figure of a page, 0 to 100, as the game's own bars hold it.</summary>
@@ -136,6 +140,8 @@ namespace RealLifeOverhaul.Ui
         public string Figure;    // "18 / 40"
         public int Share;        // 0 to 100 of the building's limit
         public UiRole Tone;      // full, a third or less, between
+        public string[] Shelves; // what caps it, a line each as the game words it ("3x Shelf (4)"), or null
+        public string[] ShelfFigures;   // and each one's customers an hour in all
     }
 
     /// <summary>One row of the logo editor's colours: what it sets, the game's swatches (picture keys) and the one chosen.</summary>
@@ -192,6 +198,9 @@ namespace RealLifeOverhaul.Ui
         public UiDataTableModel StartKinds;             // the kinds this building takes, a row each, with the game's search
         public BizManStart StartDetail;                 // the kind chosen, or null while none is
         public string StartEmptyTitle, StartEmptyBody;  // what the detail says while no kind is chosen
+        public string StartPhoto;                       // the building's photo (a picture key) or null; it and the side rows are a column of their own where the pane is wide
+        public float StartPhotoAspect = 1.6f;
+        public BizManStartRow[] StartSide = new BizManStartRow[0];   // the building's facts and the lease, which the kind chosen does not change
         public float StartOffset;                       // px the detail's rows are scrolled; Lay writes back what it took
         public int StartReveal = -1;                    // a heading stepped to, brought into view at the next layout
         public short StartClip = -1, StartList = -1;    // the detail's scroll region and headings' list, as Lay made them
@@ -232,6 +241,12 @@ namespace RealLifeOverhaul.Ui
         public float[] Shares = new float[0];
         public string SharesTitle;
 
+        // The page's lists that scroll where they are longer than their room (a slot each): the contracts, the campaigns, the agencies, a manager's plans.
+        public const int Scrolls = 4;
+        public float[] ListOffset = new float[Scrolls];                          // px each is scrolled; Lay writes back what it took
+        public int[] ListReveal = { -1, -1, -1, -1 };                            // a stop the pad stepped to, brought into view at the next layout
+        public short[] ListClip = { -1, -1, -1, -1 }, ListList = { -1, -1, -1, -1 };   // each one's scroll region and stops, as Lay made them; -1 while it fits
+
         // Deliveries, Marketing
         public string ItemsTitle;
         public BizManItem[] Items = new BizManItem[0];
@@ -256,7 +271,8 @@ namespace RealLifeOverhaul.Ui
         public string FontLabel;
         public string LogoTitle;
         public string LogoLabel;
-        public string Uniforms;                         // the link that opens the uniforms' editor, or null
+        public string TerminateNote, ShutdownNote;      // the game's sentences by the lease's end and the shutdown (what is given back, that it cannot be undone), or null
+        public string Uniforms;                       // the link that opens the uniforms' editor, or null
 
         // The logo's shape and colours, where the settings page gives way to the editor
         public bool LogoEdit;

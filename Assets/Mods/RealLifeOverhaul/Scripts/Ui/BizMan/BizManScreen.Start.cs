@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Buildings.BuildingTypes.Shared.BusinessRequirement;
+using Buildings.Retail.Businesses.CinemaTheater;
 using Helpers;
 using Localizor;
 using TMPro;
@@ -27,6 +28,8 @@ namespace RealLifeOverhaul.Ui
         private int _startChosen = -1;
         private BizManStart _startRead;
         private Sprite _startSprite;
+        private readonly List<string> _startHelp = new List<string>(8);   // the help pages the chosen kind's rows open, each by its place plus one in a row's Arg
+        private bool _focusName;                                          // the name box takes the keys as the page opens, as the game's own is focused
 
         private bool KindFound(string name) => string.IsNullOrEmpty(_kindQuery) || (name != null && name.IndexOf(_kindQuery, StringComparison.CurrentCultureIgnoreCase) >= 0);
 
@@ -43,6 +46,9 @@ namespace RealLifeOverhaul.Ui
                 _m.StartReveal = -1;
                 _startChosen = -1;
                 _startRead = null;
+                _typeCommand = BizManPages.Type;   // the game focuses its name box as the view opens, and so does the page's
+                _typeArg = BizManPages.FieldName;
+                _focusName = true;
             }
             TMP_InputField name = Get<TMP_InputField>(GameContract.StartName, start);
             _m.NameLabel = UiText.T("common_business_name");
@@ -61,6 +67,12 @@ namespace RealLifeOverhaul.Ui
             _kindRows.Clear();
             var rows = new List<UiDataRow>(_kindCards.Count);
             int selected = -1, chosen = -1;
+            // The game hides its competitors column where no kind of the building is a shop (an office, a warehouse): so does the list.
+            bool rivals = false;
+            for (int i = 0; i < _kindCards.Count && !rivals; i++)
+            {
+                rivals = TextOf(Get<TMP_Text>(GameContract.KindRivalCount, _kindCards[i].GetComponent<StartBusinessTypeUI>())) != null;
+            }
             for (int i = 0; i < _kindCards.Count; i++)
             {
                 StartBusinessTypeUI card = _kindCards[i].GetComponent<StartBusinessTypeUI>();
@@ -76,19 +88,21 @@ namespace RealLifeOverhaul.Ui
                 _kindRows.Add(i);
                 rows.Add(new UiDataRow
                 {
-                    Cells = new[] { words, TextOf(Get<TMP_Text>(GameContract.KindRivalCount, card)) ?? string.Empty },
-                    Values = new[] { (int)BizManRules.KindIcon(_kindCards[i].name, null), 0 },
-                    Pictures = new[] { icon != null ? Pic(icon.sprite) : null, null }
+                    Cells = rivals ? new[] { words, TextOf(Get<TMP_Text>(GameContract.KindRivalCount, card)) ?? string.Empty } : new[] { words },
+                    Values = rivals ? new[] { (int)BizManRules.KindIcon(_kindCards[i].name, null), 0 } : new[] { (int)BizManRules.KindIcon(_kindCards[i].name, null) },
+                    Pictures = rivals ? new[] { icon != null ? Pic(icon.sprite) : null, null } : new[] { icon != null ? Pic(icon.sprite) : null }
                 });
             }
             bool searching = !string.IsNullOrEmpty(_kindQuery);
             _m.StartKinds = new UiDataTableModel
             {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = UiText.T("common_business_type"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizman_competitors"), Kind = UiCellKind.Figure, Width = 128f }
-                },
+                Columns = rivals
+                    ? new[]
+                    {
+                        new UiDataColumn { Title = UiText.T("common_business_type"), Kind = UiCellKind.Tile },
+                        new UiDataColumn { Title = UiText.T("reallife_ui_bizman_competitors"), Kind = UiCellKind.Figure, Width = 128f }
+                    }
+                    : new[] { new UiDataColumn { Title = UiText.T("common_business_type"), Kind = UiCellKind.Tile } },
                 Rows = rows.ToArray(), RowCount = rows.Count, Selected = selected, SearchPlaceholder = UiText.T("reallife_ui_bizman_find_kind"), Query = _kindQuery,
                 Count = searching ? UiText.Whole(rows.Count) : null, EmptyIcon = UiIcon.Store, EmptyTitle = UiText.T("reallife_ui_bizman_kinds_none"),
                 EmptyAction = searching ? UiText.T("bizman_schedule_clear_filter") : null,
@@ -105,6 +119,7 @@ namespace RealLifeOverhaul.Ui
             _m.StartEmptyBody = UiText.T("reallife_ui_bizman_start_pick_body");
             _m.Facts = _m.More = _m.BuildingFacts = new BizManFact[0];
             BizManPresentation pres = PageOf<BizManPresentation>(b, BizManRules.Presentation);
+            ReadSide(b, pres);
             _actions.Clear();
             Button random = Calling(start, "RandomizeName");
             if (random != null)
@@ -116,8 +131,11 @@ namespace RealLifeOverhaul.Ui
             Button setUp = Calling(start, "SetUpBusiness");
             if (setUp != null)
             {
-                _actions.Add(Do(BizManPages.DoStartHere, UiWidgets.Label(setUp) ?? UiText.T("bizman_start_business_button"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt,
-                    !setUp.interactable));
+                // The game writes the name into the place as it starts the business and the page stays on its start view until the logo
+                // is made: a second press then would only be told the name is taken.
+                bool starting = b.buildingRegistration != null && !string.IsNullOrEmpty(b.buildingRegistration.BusinessName);
+                _actions.Add(Do(BizManPages.DoStartHere, starting ? UiText.T("reallife_ui_bizman_starting") : UiWidgets.Label(setUp) ?? UiText.T("bizman_start_business_button"),
+                    UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, starting || !setUp.interactable));
             }
             _m.Actions = _actions.ToArray();
         }
@@ -147,19 +165,69 @@ namespace RealLifeOverhaul.Ui
                 Icon = BizManRules.KindIcon(cardAt.name, null), Aspect = Aspect(_startSprite)
             };
             _startRows.Clear();
+            _startHelp.Clear();
+            BusinessType bt = Get<BusinessType>(GameContract.KindBusiness, card);
+            About(bt);
             string rivals = TextOf(Get<TMP_Text>(GameContract.KindRivalCount, card));
             if (!string.IsNullOrEmpty(rivals))
             {
                 _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = UiText.T("reallife_ui_bizman_competitors_here"), Value = rivals });
             }
-            BusinessType bt = Get<BusinessType>(GameContract.KindBusiness, card);
             GoodsOrStaff(card, bt);
             Sources(card);
             Needs(b, bt);
             Diploma(bt);
-            ThisBuilding(b);
+            Costs(bt);
             d.Rows = _startRows.ToArray();
             return d;
+        }
+
+        // What the game's own help page says the kind is, as far as its first list: the paragraphs, and a way to the whole page.
+        private void About(BusinessType bt)
+        {
+            string key = bt != null ? BizManStartRules.HelpKey(bt.businessTypeName) : null;
+            string text = key != null ? key.GetLocalization() : null;
+            string[] paragraphs = text != null && text != key ? BizManStartRules.Describe(text, 3) : new string[0];
+            if (paragraphs.Length == 0)
+            {
+                return;
+            }
+            _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_start_about") });
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Body, Label = paragraphs[i] });
+            }
+            _startHelp.Add(BizManStartRules.HelpSlug(bt.businessTypeName));
+            _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Link, Label = UiText.T("reallife_ui_bizman_start_guide"), Arg = _startHelp.Count });
+        }
+
+        // What the kind charges on top of the lease, in the game's own figures: a cinema's fee for each screen and a theatre's for its stage
+        // on each day they show, and the entrance a kind takes.
+        private void Costs(BusinessType bt)
+        {
+            if (bt == null)
+            {
+                return;
+            }
+            int from = _startRows.Count;
+            bool cinema = bt.businessTypeName == "ba:businesstype_cinema", theatre = bt.businessTypeName == "ba:businesstype_theater";
+            if (cinema || theatre)
+            {
+                float fee = cinema ? CinemaTheaterHelper.CinemaScreenLicensingFee : CinemaTheaterHelper.TheaterStageLicensingFee;
+                _startRows.Add(new BizManStartRow
+                {
+                    Kind = BizManStartKind.Fact, Label = UiText.T("stage_with_licensing_fee_enabled_sublabel").TrimEnd(':', ' '),
+                    Value = UiText.Fill(cinema ? "reallife_ui_bizman_start_fee_screen" : "reallife_ui_bizman_start_fee_stage", "amount", UiText.Money(fee))
+                });
+            }
+            if (bt.hasEntranceFee)
+            {
+                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = UiText.T("ba:transaction_entrancefee_label") });
+            }
+            if (_startRows.Count > from)
+            {
+                _startRows.Insert(from, new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_start_costs") });
+            }
         }
 
         private void GoodsOrStaff(StartBusinessTypeUI card, BusinessType bt)
@@ -168,8 +236,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            string title = Words(Get<Component>(GameContract.KindGoodsTitle, card));
-            bool staff = title != null && title == UiText.T("myemployees_title");
+            // The game's rule, not its label's words: an office, a warehouse or a headquarters lists who it hires, whatever the label says.
+            bool staff = BizManStartRules.ShowsStaff(bt.IsHeadquarters, bt.suitableBuildingType);
+            string title = Words(Get<Component>(GameContract.KindGoodsTitle, card)) ?? UiText.T(staff ? "myemployees_title" : "bizman_primary_products");
             string[] keys = staff ? bt.employeePrimarySkills : null;
             _words.Clear();
             if (!staff)
@@ -187,7 +256,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = title ?? UiText.T("bizman_primary_products") });
+            _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = title });
             int from = _startRows.Count;
             for (int i = 0; i < _words.Count; i++)
             {
@@ -272,7 +341,15 @@ namespace RealLifeOverhaul.Ui
                 int count = r is SpecificItemsInBuildingBySqm a ? a.GetRequiredItemCount(b.buildingRegistration)
                     : r is ItemsOfTypeInBuildingBySqm c ? c.GetRequiredItemCount(b.buildingRegistration) : 1;
                 string words = r.GetLocalizeKey().GetLocalization();
-                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = count > 1 ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) + " x " + words : words });
+                string help = r.GetHelpLink(b.buildingRegistration);   // the game puts a "?" beside a requirement that has a help page
+                int page = 0;
+                if (!string.IsNullOrEmpty(help))
+                {
+                    _startHelp.Add(help.ToLowerInvariant());
+                    page = _startHelp.Count;
+                }
+                string label = count > 1 ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) + " x " + words : words;
+                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = label, Arg = page });
             }
             if (_startRows.Count > from)
             {
@@ -301,28 +378,58 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The building's own facts, as its presentation lists them beside the game's start view.
-        private void ThisBuilding(BizManBusiness b)
+        // The building the business would stand in, as the game's left side lists it beside its start view: the photo, the facts with the
+        // size class, and what the lease costs. The kind chosen does not change any of it, so it is read whether or not a kind is chosen.
+        private void ReadSide(BizManBusiness b, BizManPresentation pres)
         {
-            BizManPresentation pres = PageOf<BizManPresentation>(b, BizManRules.Presentation);
+            Image photo = Get<Image>(GameContract.ShowPhoto, pres);
+            _m.StartPhoto = photo != null ? Pic(photo.sprite) : null;
+            _m.StartPhotoAspect = photo != null && photo.sprite != null ? Aspect(photo.sprite) : 1.6f;
+            _startSide.Clear();
             Transform top = Get<Transform>(GameContract.ShowTop, pres), bottom = Get<Transform>(GameContract.ShowBottom, pres);
-            int from = _startRows.Count;
             Row("common_building_type", b.building != null ? UiText.T(b.building.BuildingType) : null);
-            Row("bizman_building_total_size", WordsAt(bottom, "TotalSize") ?? (b.building != null ? b.building.totalSqm.ToFormattedArea() : null));
+            Row("common_neighborhood", WordsAt(top, "Neighborhood"));
+            // The game writes two figures, the whole size and the unit's area with its size class: one row says both while they are the same square metres.
+            string size = WordsAt(bottom, "TotalSize") ?? (b.building != null ? b.building.totalSqm.ToFormattedArea() : null), area = WordsAt(bottom, "BuildingArea");
+            bool same = b.building != null && b.building.totalSqm == BuildingHelper.GetBuildingSquareMeters(b.building.Address);
+            Row("bizman_building_total_size", same ? area ?? size : size);
+            Row("reallife_ui_world_area", same ? null : area);
             Row("bizman_traffic_index", WordsAt(top, "TrafficIndex"));
             Row("bizman_customers_capacity", Dash(WordsAt(top, "CustomerCapacity")));
             Row("bizman_market_value", Dash(WordsAt(bottom, "MarketValue")));
-            if (_startRows.Count > from)
+            if (_startSide.Count > 0)
             {
-                _startRows.Insert(from, new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_the_building") });
+                _startSide.Insert(0, new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_the_building") });
             }
+            BuildingRegistration reg = b.buildingRegistration;
+            int lease = _startSide.Count;
+            if (reg != null && reg.RentedByPlayer)
+            {
+                // What the game took when it was rented: its rent for each day and its deposit, the figures of the rent view it showed before.
+                BizManFact rent = Split(UiText.Fill("bizman_presentation_daily_rent", "dailyRent", UiText.Money(reg.RentPerDay)));
+                if (reg.RentPerDay > 0f && !string.IsNullOrEmpty(rent.Value))
+                {
+                    _startSide.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = rent.Label ?? UiText.T("reallife_ui_bizman_rent_day"), Value = rent.Value });
+                }
+                if (reg.lastDeposit > 0f)
+                {
+                    Row("ba:transaction_deposit_label", UiText.Money(reg.lastDeposit));
+                }
+            }
+            if (_startSide.Count > lease)
+            {
+                _startSide.Insert(lease, new BizManStartRow { Kind = BizManStartKind.Heading, Label = UiText.T("reallife_ui_bizman_lease") });
+            }
+            _m.StartSide = _startSide.ToArray();
         }
+
+        private readonly List<BizManStartRow> _startSide = new List<BizManStartRow>(12);
 
         private void Row(string labelKey, string value)
         {
             if (!string.IsNullOrEmpty(value))
             {
-                _startRows.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = UiText.T(labelKey), Value = value });
+                _startSide.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = UiText.T(labelKey), Value = value });
             }
         }
 
@@ -358,6 +465,29 @@ namespace RealLifeOverhaul.Ui
             }
             return handed;
         }
+
+        private readonly List<string> _checkHelp = new List<string>(8);   // the head's requirements' help pages, by the line's place; null where a line has none
+
+        // A "?" or a guide link: the game's help opened at the page, as its own help button opens it (HelpIconButton.OnClick).
+        private static bool OpenHelp(string slug)
+        {
+            HelpSystem help = InstanceBehavior<HelpSystem>.Instance;
+            if (help == null || string.IsNullOrEmpty(slug))
+            {
+                _why = BizManRefusal.Gone;
+                return false;
+            }
+            using (HotSpots.Game())
+            {
+                help.Toggle(show: true, slug.ToLowerInvariant());
+            }
+            UiDirector.Logger?.Info("BizMan (kit): the game's help opened at " + slug);
+            return true;
+        }
+
+        private bool StartHelpPage(int arg) => arg >= 1 && arg <= _startHelp.Count && OpenHelp(_startHelp[arg - 1]);
+
+        private bool CheckHelpPage(int arg) => arg >= 0 && arg < _checkHelp.Count && OpenHelp(_checkHelp[arg]);
 
         private bool ClearKindSearch()
         {
