@@ -156,7 +156,8 @@ namespace RealLifeOverhaul.Ui
             Row("The city's people pages: the city, who contributes, a household, a person, one who moved on", SweepState.Kit, "population",
                 "an app window over the city: the profile's head, the big table's rows and the facts beside them"),
             Row("The studio page of a tech firm", SweepState.Kit, "studio",
-                "an app window over the city: the next step and the firm's actions, its figures, its tables, the team's bars and its facts, as the Tech app's firm pages stand"),
+                "an app window over the city: the next step and the firm's actions, its figures, its tables, the team's bars and its facts, as the Tech app's firm pages stand",
+                "Tech/Studio/StudioPageApp.cs"),
 
             // ------------------------------------------------------------------------------------------------ left the game's by decision
             Kept("The 3D city map itself", "The 3D map stays the game's; its panels are on the kit.", "1 Nov 2026"),

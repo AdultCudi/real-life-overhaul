@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Ui
 
         // A value standing alone starts with a capital, as its neighbours do ("New levels, co-op play" beside "Under licence"),
         // though the same words sit lower case inside a sentence elsewhere.
-        private static string Capital(string value)
+        internal static string Capital(string value)
         {
             return string.IsNullOrEmpty(value) || !char.IsLower(value[0]) ? value : char.ToUpper(value[0], System.Globalization.CultureInfo.CurrentCulture) + value.Substring(1);
         }

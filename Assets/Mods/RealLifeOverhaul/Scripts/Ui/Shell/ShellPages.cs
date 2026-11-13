@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
         };
 
         // A page's Back at its top: the full menu closes, as the game's own close does (its unsaved BizMan question kept).
-        private static void CloseMenu()
+        internal static void CloseMenu()
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
             if (uis != null && uis.fullMenu != null && FullMenu.IsOpen)

@@ -196,6 +196,10 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(more, InfoBox.Positive, "reallife_tech_button_register", () => Do(() => _director.Register(place)));
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_tech_button_rivals", () => Set(() => _picked = RivalsRow + place));
+            if (_director.StudioRuns(m.K))
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_firmpage_open", () => Do(() => _director.OpenFirmPage(place)));   // the studio's whole page, as the kit draws it
+            }
             WorkButtons(box, firm, idle, true);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {

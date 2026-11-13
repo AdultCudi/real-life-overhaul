@@ -3,13 +3,13 @@ namespace RealLifeOverhaul.Outlook
     /// <summary>The Economy app's tabs, in the order they stand.</summary>
     public static class OutlookTab
     {
-        public const int Overview = 0, Prices = 1, Jobs = 2, Districts = 3, Markets = 4, Finances = 5, Insights = 6;
-        public const int Count = 7;
+        public const int Overview = 0, Prices = 1, Jobs = 2, Districts = 3, Markets = 4, Finances = 5, Insights = 6, People = 7;
+        public const int Count = 8;
 
         public static readonly string[] Keys =
         {
             "reallife_econapp_tab_overview", "reallife_econapp_tab_prices", "reallife_econapp_tab_jobs", "reallife_econapp_tab_districts",
-            "reallife_econapp_tab_markets", "reallife_econapp_tab_finances", "reallife_econapp_tab_insights"
+            "reallife_econapp_tab_markets", "reallife_econapp_tab_finances", "reallife_econapp_tab_insights", "reallife_news_nav_people"
         };
 
         public static int Clamp(int tab)

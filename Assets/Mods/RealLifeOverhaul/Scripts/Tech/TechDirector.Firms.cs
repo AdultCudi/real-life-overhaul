@@ -86,6 +86,8 @@ namespace RealLifeOverhaul.Tech
                 _techApp.Remove();
                 _techApp = null;
                 _techView = null;
+                _firmPage?.Remove();
+                _firmPage = null;
             }
         }
 

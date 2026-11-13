@@ -119,6 +119,107 @@ namespace RealLifeOverhaul.Ui
                 : new[] { rent, new UiActionModel { Label = w.T("reallife_news_busy_link") + ": " + w.District(busy), Icon = UiIcon.MapPin, Command = NewsCommands.Busy, Arg = 0 } };
         }
 
+        public const int RentersMost = 12;   // households the rent list keeps
+
+        /// <summary>
+        /// The households that pay the most rent, the highest first (an owner's upkeep is not rent), in one district or in all (-1): their places in the
+        /// household table and what each pays a day in cents, in <paramref name="slots"/> and <paramref name="rents"/> (RentersMost long). Returns how many.
+        /// </summary>
+        public static int TopRenters(PopulationState pop, int district, int[] slots, int[] rents)
+        {
+            int n = 0;
+            if (pop == null)
+            {
+                return 0;
+            }
+            for (int h = 0; h < pop.Households.Count; h++)
+            {
+                if (!pop.Households.Alive(h) || pop.Households.Landlord[h] == Landlords.Own || pop.Households.Rent[h] <= 0
+                    || (district >= 0 && pop.Households.District[h] != district))
+                {
+                    continue;
+                }
+                int rent = pop.Households.Rent[h];
+                if (n == RentersMost && rent <= rents[RentersMost - 1])
+                {
+                    continue;
+                }
+                int at = n < RentersMost ? n++ : RentersMost - 1;
+                while (at > 0 && rent > rents[at - 1])
+                {
+                    rents[at] = rents[at - 1];
+                    slots[at] = slots[at - 1];
+                    at--;
+                }
+                rents[at] = rent;
+                slots[at] = h;
+            }
+            return n;
+        }
+
+        /// <summary>The name a household goes by: its head's, or empty where it has none.</summary>
+        public static string HeadName(PopulationState pop, int home, Func<int, bool, string> nameOf)
+        {
+            int head = pop.Households.First[home];
+            return head >= 0 ? nameOf(PopulationViews.NameSeed(pop, head), pop.People.Female[head] == 1) : string.Empty;
+        }
+
+        /// <summary>The renters' table: each household's head and what it pays a day. <paramref name="slots"/> gives the household of each row.</summary>
+        public static UiDataTableModel Renters(PopulationState pop, int district, INewsWords w, Func<int, bool, string> nameOf, out int[] slots)
+        {
+            var found = new int[RentersMost];
+            var rents = new int[RentersMost];
+            int n = TopRenters(pop, district, found, rents);
+            slots = new int[n];
+            var rows = new UiDataRow[n];
+            for (int i = 0; i < n; i++)
+            {
+                slots[i] = found[i];
+                rows[i] = new UiDataRow { Cells = new[] { HeadName(pop, found[i], nameOf), w.Money(rents[i] / 100) }, Values = new[] { found[i], rents[i] }, Tones = new UiRole[2] };
+            }
+            return new UiDataTableModel
+            {
+                Columns = new[]
+                {
+                    new UiDataColumn { Title = w.T("reallife_news_col_name"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = w.T("reallife_pop_fig_rent"), Kind = UiCellKind.Text, Width = 120f }
+                },
+                Rows = rows,
+                RowCount = n,
+                EmptyTitle = w.T("reallife_news_empty_city"),
+                EmptyBody = w.T("reallife_news_empty_city_body"),
+                EmptyIcon = UiIcon.Chart
+            };
+        }
+
+        /// <summary>One household's page: its head's name, its people, its district and its rent. Null where the household is gone since the list was made.</summary>
+        public static UiInfoModel Household(PopulationState pop, int home, INewsWords w, Func<int, bool, string> nameOf)
+        {
+            if (pop == null || home < 0 || home >= pop.Households.Count || !pop.Households.Alive(home))
+            {
+                return null;
+            }
+            string name = HeadName(pop, home, nameOf);
+            return new UiInfoModel
+            {
+                Title = string.IsNullOrEmpty(name) ? w.T("reallife_news_home_title") : name,
+                Icon = UiIcon.Home,
+                Sections = new[]
+                {
+                    new UiInfoSection
+                    {
+                        Label = w.T("reallife_news_home_title"),
+                        Rows = new[]
+                        {
+                            new UiInfoRow { Label = w.T("reallife_news_head_people"), Value = pop.Households.Size[home].ToString(Inv) },
+                            new UiInfoRow { Label = w.T("reallife_news_col_district"), Value = w.District(pop.Households.District[home]) },
+                            new UiInfoRow { Label = w.T("reallife_pop_fig_rent"), Value = w.Money(pop.Households.Rent[home] / 100) }
+                        }
+                    }
+                }
+            };
+        }
+
         private static void Donuts(NewsPeople p, INewsWords w, float[] ages, float[] incomes)
         {
             p.ChartTitle = w.T("reallife_news_ages");

@@ -1439,6 +1439,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-oldside")
+        {
+            UiOldSide();   // (the Economy app's People tab, a firm's whole page on the game's widgets and the Mods page's switch that reads a fault, alone: UiOldSideChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-guard")
         {
             UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
@@ -1870,6 +1876,7 @@ internal static partial class Program
         UiOff();            // the RLO interface off by default: the step that switches a saved "on" off once and never again, who is told, the default and the presets, the order at start, the texts (UiOffChecks.cs)
         OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
         UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
+        UiOldSide();        // what only the kit had, given an equal on the game's widgets: the Economy app's People tab, a firm's whole page in the Tech app, the Mods page's switch that reads a fault (UiOldSideChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

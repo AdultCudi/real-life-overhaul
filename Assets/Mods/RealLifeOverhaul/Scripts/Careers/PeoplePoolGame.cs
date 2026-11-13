@@ -82,8 +82,9 @@ namespace RealLifeOverhaul.Careers
                     {
                         return true;
                     }
-                    Ui.PopulationScreen.Wanted = null;   // the page is not offered (the old interface has none): the person is not kept for a later opening
-                    return false;
+                    Ui.PopulationScreen.Wanted = null;   // the page is not offered (the interface is off): the person is not kept for a later opening
+                    Outlook.OutlookDirector economy = Outlook.OutlookDirector.Instance;
+                    return economy != null && economy.OpenPeople(ViewTarget.To(ViewKind.Person, i, id));   // the Economy app's People tab shows the same page
                 }
             }
             return false;
