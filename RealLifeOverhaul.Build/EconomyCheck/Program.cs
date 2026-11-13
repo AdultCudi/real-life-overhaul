@@ -706,6 +706,7 @@ internal static partial class Program
             UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
             PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             ActivityKitChecks();   // (the activity panel, time skip, funeral and time of day tool on the kit: UiChecks.Activity.cs)
+            UiKit2Checks();   // (a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion, the designer's rows: UiKit2Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1402,6 +1403,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-kit2")
+        {
+            UiKit2Checks();   // (the kit's second pass alone: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion, the designer's rows: UiKit2Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-stocks")
         {
             UiStocksFixChecks();   // (the Stocks, Company, Tech and Flare pages the kit had thinned, against the old pages: UiStocksFixChecks.cs)
@@ -1621,6 +1628,7 @@ internal static partial class Program
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
+        UiKit2Checks();      // the kit's second pass: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion (UiKit2Checks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         ScrollHints();       // the wheel over a list's rows reaches the list, the phone folds with the HUD on, the key chips keep left of the phone (ScrollHintsChecks.cs)
