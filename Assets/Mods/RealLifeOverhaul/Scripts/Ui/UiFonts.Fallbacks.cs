@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
             public bool Tried;           // a copy was asked for: never twice
             public bool Named;           // the game still names it: one it no longer names is let go
             public int Drew;             // characters of the mod's texts in this language that it draws, for the check's line
+            public int Seen;             // the characters its atlas held when the kit last looked: more than that is a font that took some in under a text's build (Glyphs)
         }
 
         private static readonly List<Link> Links = new List<Link>(8);
@@ -66,6 +67,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _language = code;
+            Book.Forget();   // another language's fonts come first: every character is asked of them again
             _ordered = false;
             _wanted = null;
             _checked = false;
@@ -235,6 +237,7 @@ namespace RealLifeOverhaul.Ui
         private static void Gather()
         {
             _gathered = true;
+            Hook();
             for (int i = 0; i < Links.Count; i++)
             {
                 Links[i].Named = false;
@@ -290,7 +293,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             string family = font.faceInfo.familyName;
-            Links.Add(new Link { Game = font, Family = string.IsNullOrEmpty(family) ? font.name : family, Listed = listed, Named = true });
+            Links.Add(new Link { Game = font, Family = string.IsNullOrEmpty(family) ? font.name : family, Listed = listed, Named = true, Seen = CountOf(font) });
             _ordered = false;
             if (_checked && _wanted != null && (_left > 0 || _leftGame > 0))
             {
@@ -345,6 +348,7 @@ namespace RealLifeOverhaul.Ui
                 line.capLine = UiFallbackRules.Cut(own.capLine, own.pointSize, line.pointSize);
                 copy.faceInfo = line;
                 link.Copy = copy;
+                link.Seen = CountOf(copy);
             }
             catch (Exception e)
             {
@@ -382,6 +386,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 Chain.Insert(at, link.Copy != null ? link.Copy : link.Game);
             }
+            bool changed = false;
             for (int i = 0; i < Read.Length; i++)
             {
                 TMP_FontAsset face = Read[i];
@@ -389,6 +394,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                changed = true;
                 if (face.fallbackFontAssetTable == null)
                 {
                     face.fallbackFontAssetTable = new List<TMP_FontAsset>(Chain.Count);
@@ -405,6 +411,10 @@ namespace RealLifeOverhaul.Ui
                     // chain is ordered after each copy, so a throw here came once a copy, a fault a second.
                     Said?.Invoke("UI: the interface's face '" + face.name + "' could not read its table again after its fallbacks changed (" + e.GetType().Name + ": " + e.Message + ")");
                 }
+            }
+            if (changed)
+            {
+                Chained();   // texts drawn by the old chain are written again, their characters asked of the new fonts
             }
         }
 
@@ -488,6 +498,11 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 copy.TryAddCharacters(characters, out uint[] _);
+                Link own = LinkOf(copy);
+                if (own != null)
+                {
+                    own.Seen = CountOf(copy);   // the kit's own addition: not one that a text's build made behind its back
+                }
                 for (int i = 0; i < characters.Length; i++)
                 {
                     drawn[i] = copy.HasCharacter((int)characters[i]);
