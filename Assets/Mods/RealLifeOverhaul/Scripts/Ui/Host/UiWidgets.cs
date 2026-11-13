@@ -180,6 +180,23 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
+        /// A toggle set through itself while an object above it is switched off on purpose (the map's lines of a folded group, which the game
+        /// switches off and keeps listening on): only the toggle's own object must be on and it must not be held. Its listeners hear the change as they would a click.
+        /// </summary>
+        public static bool SetHidden(Toggle t, bool on)
+        {
+            if (t == null || !t.gameObject.activeSelf || !t.interactable)
+            {
+                return false;
+            }
+            using (HotSpots.Game())
+            {
+                t.isOn = on;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// A toggle set through itself while the game keeps the view it stands in switched off for the page shown (BizMan's header,
         /// with its open switch, on the building's and the real estate's tabs): the caller has seen that the toggle and its own row
         /// are on, so only that view hides it, and its listeners hear the change as they would a click. False when it is not there,

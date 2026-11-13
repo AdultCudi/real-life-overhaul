@@ -111,7 +111,6 @@ namespace RealLifeOverhaul.Ui
         Food = 0,
         Groceries,
         Fuel,
-        Parking,
         Jobs,
         ForRent,
         Yours,
@@ -120,8 +119,8 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// Which of the map's lines each quick chip switches, by each line's own key and its group's: a chip is offered only when some line is its (the owner: "only
-    /// chips whose lines exist"), is lit while every one of its lines is on, and a press turns all of them on, or all of them off when they all were. Food, Groceries,
-    /// Fuel and Parking are kinds of business, named by the game's own keys (ba:businesstype_coffeeshop), so a business kind a game update adds joins by its name.
+    /// chips whose lines exist"), is lit while every one of its lines is on, and a press turns all of them on, or all of them off when they all were. Food, Groceries
+    /// and Fuel are kinds of business, named by the game's own keys (ba:businesstype_coffeeshop), so a business kind a game update adds joins by its name.
     /// Game-free.
     /// </summary>
     public static class MapChipRules
@@ -131,7 +130,6 @@ namespace RealLifeOverhaul.Ui
             new[] { "restaurant", "coffee", "bakery", "pizza", "cafe", "diner", "burger", "icecream", "sandwich", "foodstand", "hotdog" },   // Food
             new[] { "supermarket", "grocery", "fruitandvegetable", "liquor", "butcher", "convenience", "deli" },                               // Groceries
             new[] { "gasstation", "fuelstation", "petrol" },                                                                                   // Fuel
-            new[] { "parking" },                                                                                                               // Parking
         };
 
         public const string JobsGroup = "citymap_category_jobs";

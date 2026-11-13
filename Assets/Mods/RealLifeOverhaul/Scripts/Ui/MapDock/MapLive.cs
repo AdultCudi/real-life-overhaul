@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         private readonly bool _subway;
         private readonly GameUi.MapPicker _picker;   // the mod's choice of a place, when this is the picker's face
         private int _pointedEntry = -1;               // the entry of the choice the pointer rests on
+        private CityMapSubwayStationEntry _pointedStation;   // the game's row of the station the pointer rests on, which previews it as the game's own list does
         private bool _hoverNext;                      // the pointer rests on the row of the unit next door
         private readonly CityMapFilters _filters;
         private readonly CityMapSubwayStations _stations;
@@ -130,6 +131,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (_subway)
+            {
+                PointStation(command == UiMapFilters.StationCommand && arg >= 0 && arg < _stationRows.Count ? _stationRows[arg] : null);
+                return;
+            }
             bool next = _dock == Dock.Place && command == UiMapPlace.RentCommand && _nextDoor != null;
             if (next != _hoverNext)
             {
@@ -143,6 +149,29 @@ namespace RealLifeOverhaul.Ui
                 if (DistrictOwner.KitStamp != stamp)
                 {
                     _dirty = true;   // the chosen district block and the highlighted row follow the district pointed at
+                }
+            }
+        }
+
+        // The game's own row takes the pointer: after its pause the map camera glides to the station and the station is lit, and leaving sends the camera back (the row's own work).
+        private void PointStation(CityMapSubwayStationEntry entry)
+        {
+            if (ReferenceEquals(entry, _pointedStation))
+            {
+                return;
+            }
+            CityMapSubwayStationEntry before = _pointedStation;
+            _pointedStation = null;
+            using (HotSpots.Game())
+            {
+                if (before != null && before.isActiveAndEnabled)
+                {
+                    before.OnPointerExit(null);
+                }
+                if (entry != null && entry.isActiveAndEnabled)
+                {
+                    entry.OnPointerEnter(null);
+                    _pointedStation = entry;
                 }
             }
         }
@@ -176,6 +205,7 @@ namespace RealLifeOverhaul.Ui
             }
             else if (_subway)
             {
+                PointStation(null);
                 _stations.Cancel();
             }
             else
@@ -264,6 +294,7 @@ namespace RealLifeOverhaul.Ui
                 EntityController target = card != null ? GameMembers.TargetOf(card) : null;
                 bool picked = target != null && card.options != null && card.options.gameObject.activeSelf;
                 h = h * 31 + (picked ? target.GetInstanceID() : 0);
+                h = h * 31 + (!picked && target != null ? target.GetInstanceID() : 0);   // the building under the pointer
                 h = h * 31 + TimeHelper.CurrentHour;
                 h = h * 31 + (int)_dock;
                 bool open = CityMap.IsOpen;

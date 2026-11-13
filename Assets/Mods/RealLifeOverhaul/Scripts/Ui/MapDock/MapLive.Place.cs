@@ -75,10 +75,10 @@ namespace RealLifeOverhaul.Ui
             m.DirectionsLabel = UiText.T("reallife_map_directions");
             m.SaveLabel = UiText.T("reallife_map_save");
             m.SavedLabel = UiText.T("reallife_map_saved");
-            m.DestinationLabel = UiText.T("common_setdestination");
+            m.DestinationLabel = InTaxiMode ? TaxiHeadline(card) : UiText.T("common_setdestination");
             m.Saved = MapStoreGame.Saved(building.Address.streetName, building.Address.streetNumber);
             m.RouteShown = _routeShown;
-            m.CanDestination = UiWidgets.Shows(card.setDestinationButton);
+            m.CanDestination = MayTravel(card);
             m.CanBizMan = OffersBizMan(card);
             m.BizManLabel = UiText.T("reallife_co_open_bizman");
             m.Tabs = new[] { UiText.T("reallife_map_tab_overview"), UiText.T("reallife_map_tab_reviews"), UiText.T("reallife_map_tab_business") };
@@ -411,7 +411,7 @@ namespace RealLifeOverhaul.Ui
             if (key == _routeKey && _route.Options.Length > 0)
             {
                 _route.Chosen = Mathf.Clamp(_routeChoice, 0, _route.Options.Length - 1);
-                _route.CanGo = UiWidgets.Shows(Card() != null ? Card().setDestinationButton : null);
+                _route.CanGo = MayTravel(Card());
                 return;
             }
             _routeKey = key;
@@ -459,7 +459,28 @@ namespace RealLifeOverhaul.Ui
             _route.Options = options.ToArray();
             _route.Chosen = Mathf.Clamp(_routeChoice, 0, options.Count - 1);
             _route.GoLabel = UiText.T("reallife_map_go");
-            _route.CanGo = UiWidgets.Shows(Card() != null ? Card().setDestinationButton : null);
+            _route.CanGo = MayTravel(Card());
+        }
+
+        // The map in taxi mode (the player pressed "taxi"): the game shows the taxi button in place of Set destination, so the card and the strip answer to that one.
+        private static bool InTaxiMode
+        {
+            get
+            {
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                return CityMap.IsOpen && city != null && city.cityMap != null && city.cityMap.IsTaxiMode;
+            }
+        }
+
+        // What the game lets the player do with the picked building now: set it as the destination, or in taxi mode ride there.
+        private static bool MayTravel(BuildingResume card) => card != null && UiWidgets.Shows(InTaxiMode ? card.taxiTravelButton : card.setDestinationButton);
+
+        // The taxi button's first line ("Travel here"): the card's button has one line, and the strip beside it already says the minutes and the fare.
+        private static string TaxiHeadline(BuildingResume card)
+        {
+            string words = TaxiWords(card);
+            int cut = words.IndexOf('\n');
+            return cut > 0 ? words.Substring(0, cut) : words;
         }
 
 

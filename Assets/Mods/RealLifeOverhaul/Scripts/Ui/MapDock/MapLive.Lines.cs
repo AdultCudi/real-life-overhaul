@@ -412,7 +412,6 @@ namespace RealLifeOverhaul.Ui
                 case MapChipKind.Food: return "food";
                 case MapChipKind.Groceries: return "groceries";
                 case MapChipKind.Fuel: return "fuel";
-                case MapChipKind.Parking: return "parking";
                 case MapChipKind.Jobs: return "jobs";
                 case MapChipKind.ForRent: return "rent";
                 default: return "yours";
@@ -426,7 +425,6 @@ namespace RealLifeOverhaul.Ui
                 case MapChipKind.Food: return UiIcon.ForkKnife;
                 case MapChipKind.Groceries: return UiIcon.ShoppingBag;
                 case MapChipKind.Fuel: return UiIcon.Lightning;
-                case MapChipKind.Parking: return UiIcon.Car;
                 case MapChipKind.Jobs: return UiIcon.Briefcase;
                 case MapChipKind.ForRent: return UiIcon.Key;
                 default: return UiIcon.Star;
@@ -438,24 +436,38 @@ namespace RealLifeOverhaul.Ui
         {
             _results.Clear();
             _resultBuildings.Clear();
+            _resultsMore = 0;
             if (_filters == null || _search.Trim().Length < 2)
             {
                 return;
             }
             var list = GameContract.MapFilterBuildings.Field?.GetValue(_filters) as List<CityBuildingController>;
             string text = _search.Trim();
-            for (int i = 0; list != null && i < list.Count && _results.Count < 5; i++)
+            int matches = 0;
+            for (int i = 0; list != null && i < list.Count; i++)
             {
                 CityBuildingController c = list[i];
                 string name = c != null && c.buildingRegistration != null ? c.buildingRegistration.BusinessName : null;
-                string address = c != null && c.building != null ? c.building.Address.ToFormattedString() : null;
-                if (!string.IsNullOrEmpty(name) && (name.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 || (address != null && address.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)))
+                if (string.IsNullOrEmpty(name))
                 {
-                    _results.Add(new MapResult { Name = name, Address = address });
-                    _resultBuildings.Add(c);
+                    continue;
+                }
+                string address = c.building != null ? c.building.Address.ToFormattedString() : null;
+                if (name.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 || (address != null && address.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    matches++;
+                    if (_results.Count < ResultsListed)
+                    {
+                        _results.Add(new MapResult { Name = name, Address = address });
+                        _resultBuildings.Add(c);
+                    }
                 }
             }
+            _resultsMore = matches - _results.Count;
         }
+
+        private const int ResultsListed = 5;   // the matches listed under the search field (the dock's targets are counted: UiMapFilters.ResultsMost)
+        private int _resultsMore;              // the matches past those listed
 
         // ------------------------------------------------------------------------------------------------- the dock's page
 
@@ -476,6 +488,7 @@ namespace RealLifeOverhaul.Ui
             m.Search = _search;
             m.Results = _results.ToArray();
             m.ResultsNone = _search.Trim().Length >= 2 && _results.Count == 0 && _rows.Count == 0 ? UiText.T("reallife_map_no_place") : null;
+            m.ResultsMore = _resultsMore > 0 ? UiText.Fill("reallife_map_more_places", "count", UiText.Whole(_resultsMore)) : null;
             m.Chips = _search.Length > 0 ? new MapChip[0] : _chips.ToArray();
             m.ShowAll = true;
             m.ShowAllLabel = UiText.T("reallife_map_show_all");
@@ -526,6 +539,7 @@ namespace RealLifeOverhaul.Ui
             m.Search = _search;
             m.Results = new MapResult[0];
             m.ResultsNone = null;
+            m.ResultsMore = null;
             m.Chips = new MapChip[0];
             m.ShowAll = false;
             m.Picked = false;
