@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Opens the breaker of a screen; true the first time (the caller logs once).</summary>
         public static bool Trip(string screenId) => !string.IsNullOrEmpty(screenId) && Open.Add(screenId);
 
+        /// <summary>Closes a screen's breaker again (the kit's own fault, in a city that is gone: the screen is asked once more).</summary>
+        public static bool Untrip(string screenId) => screenId != null && Open.Remove(screenId);
+
         /// <summary>True once the screen is the game's own for the session.</summary>
         public static bool Tripped(string screenId) => Open.Count > 0 && screenId != null && Open.Contains(screenId);
 

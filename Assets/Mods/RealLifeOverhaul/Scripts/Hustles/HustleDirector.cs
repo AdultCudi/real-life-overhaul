@@ -303,6 +303,7 @@ namespace RealLifeOverhaul.Hustles
             if (_app != null && _view != null)
             {
                 _view.Want(tab, pick);
+                RealLifeOverhaul.Ui.MarketLive.Want(tab);   // the kit numbers the four tabs the same way
                 _app.Open();
             }
         }

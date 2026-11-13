@@ -50,6 +50,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiReentry _opening = new UiReentry();   // an opening under way: one the game sets off from inside it is refused (Opened)
         private Func<bool> _back;     // while the game runs something in its own view: true once it is over and the kit may come back
         private bool _gaveUp, _stopped;
+        private bool _ownTrip;        // the breaker was opened by this host's own fault (one an other mod's piece opened is never closed here)
+        private int _faults;          // how often this screen threw: asked again in the next city after the first, the game's own for the session after the second
         private int _misses;
         private float _nextLook;
         private string _state = NotLooked;
@@ -304,6 +306,13 @@ namespace RealLifeOverhaul.Ui
             _stopped = false;
             _misses = 0;
             _nextLook = 0f;
+            if (_gaveUp && _faults < UiPieces.Tries && _ownTrip)
+            {
+                // one fault in one city must not leave the screen the game's own until the game is started again: it is asked once more, as the pieces are
+                _gaveUp = false;
+                _ownTrip = false;
+                UiBreaker.Untrip(_screen.Id);
+            }
             if (!_gaveUp)
             {
                 _state = NotLooked;
@@ -425,8 +434,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A fault in the kit's screen (its host has counted it): the game's screen back for the rest of the session.</summary>
         public void Fallback(Exception e)
         {
-            string who = UiBreaker.Tripped(_screen.Id) ? null : UiForeignGame.Blame(e);   // another mod's code that threw while the kit read or pressed its piece
-            if (UiBreaker.Tripped(_screen.Id))
+            bool openBefore = UiBreaker.Tripped(_screen.Id);
+            string who = openBefore ? null : UiForeignGame.Blame(e);   // another mod's code that threw while the kit read or pressed its piece
+            if (openBefore)
             {
                 // its mod was named already, as the fault was caught
             }
@@ -438,9 +448,15 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDirector.Logger?.Warn("UI: " + UiText.T("reallife_ui_note_fallback") + " (" + _screen.Name + ", " + (e != null ? e.GetType().Name : "?") + ")");
             }
+            _faults++;
+            _ownTrip = (!openBefore && who == null && UiBreaker.Trip(_screen.Id)) || _ownTrip;
             UiBreaker.Trip(_screen.Id);
             Remove("a fault");
             _gaveUp = true;
+            if (_faults == 1)
+            {
+                Guard.Tell(UiText.T("reallife_ui_note_piece_off").Replace("{what}", _screen.Name));   // the game's screen is back: the player is told which, once
+            }
             _state = "the game's own after a fault of the kit's screen";
         }
 
@@ -561,8 +577,13 @@ namespace RealLifeOverhaul.Ui
             if (_root.activeSelf == own)
             {
                 _root.SetActive(!own);
-                if (!own)
+                if (own)
                 {
+                    _conceal.Show();   // the game's app is seen behind its own box, not an empty area
+                }
+                else
+                {
+                    _conceal.Hide();
                     _host.Show();
                 }
             }

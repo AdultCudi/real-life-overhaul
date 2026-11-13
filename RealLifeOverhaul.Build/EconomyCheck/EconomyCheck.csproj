@@ -1167,6 +1167,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\UiMapFilters.cs" Link="Mod\UiMapFilters.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFaultCount.cs" Link="Mod\UiFaultCount.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\IUiTabWant.cs" Link="Mod\IUiTabWant.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiClockRules.cs" Link="Mod\UiClockRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkRoutes.cs" Link="Mod\WorkRoutes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignRules.cs" Link="Mod\UiForeignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignApps.cs" Link="Mod\UiForeignApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\TypingRules.cs" Link="Mod\TypingRules.cs" />

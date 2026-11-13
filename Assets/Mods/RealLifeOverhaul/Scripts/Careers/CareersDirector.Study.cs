@@ -456,6 +456,7 @@ namespace RealLifeOverhaul.Careers
             if (_campusApp != null && _campusView != null)
             {
                 _campusView.Want(tab, pick);
+                RealLifeOverhaul.Ui.CampusLive.WantOld(tab, pick);   // the kit's face takes the same request once (Campus numbers its tabs alike on both sides)
                 _campusApp.Open();
             }
         }

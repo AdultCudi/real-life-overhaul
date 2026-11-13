@@ -338,6 +338,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_phone_test_check", "reallife_phone_test_folder", "reallife_leftpane_test");
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
+                .Cleanup(() => PlayerKnockdown.StopAll())
                 .About("reallife_guide_ragdoll_about").Help("reallife_guide_ragdoll")
                 .Fact("fine_cash_share", () => Guide.Percent(JusticeLaw.FineShareOfCash))
                 .Fact("knock_hospital", () => Guide.Number((float)System.Math.Round(PlayerKnockdown.HospitalSpeed * 3.6f)))

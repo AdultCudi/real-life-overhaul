@@ -382,7 +382,7 @@ internal static partial class Program
 
         // The interface's own letting go.
         string letGo = MemberText(director, "internal static void LetGoAll(string why)");
-        Check(StatementsInOrder(letGo, "RemoveAll(why);", "UiGameHost.RemoveEvery(why)", "BugReportBox.Close", "ShellModBox.Close", "ViewfinderHost.Hide", "HudHost.Remove(why)", "Land()", "UiRoots.HideAll()"),
+        Check(StatementsInOrder(letGo, "RemoveAll(why);", "UiGameHost.RemoveEvery(why)", "CloseCards();", "HudHost.Remove(why)", "Land()", "UiRoots.HideAll()"),
             "guard sources: the interface lets go of every kit's screen, every host, its cards, its modal piece, what was fading in, and any canvas of its own still standing");
         Check(director.Contains("ScreenHolds.Add(\"ui\", \"the RLO interface's screens, cards and canvases\", () => LetGoAll(\"its part was switched off\"), UiRoots.AnyStanding);")
               && StatementsInOrder(MemberText(director, "private IEnumerator Tick()"), "if (Stopped)", "if (!_letGo)", "LetGoAll(\"its part stopped\");", "continue;")
@@ -526,8 +526,8 @@ internal static partial class Program
         Check(StatementsInOrder(failed, "bool was = UiPieces.Trip(piece);", "FaultWords.Of(e)", "Logger?.Error(e);", "RemoveOne(kit, \"a fault\");") && !failed.Contains("Guard.Fail("),
             "guard look: a piece that failed is off, said once with what failed, its kit's screens given back, and the guard does not count it against the whole interface");
         int off = slow.IndexOf("if (!On)", StringComparison.Ordinal), once = slow.IndexOf("if (_said != 1)", StringComparison.Ordinal),
-            removal = slow.IndexOf("RemoveAll(\"the switch is off\");", StringComparison.Ordinal), kitsLoop = slow.IndexOf("for (int kit = 0;", StringComparison.Ordinal);
-        Check(off > 0 && once > off && removal > once && kitsLoop > removal && Occurs(slow, "RemoveAll(\"the switch is off\");") == 1,
+            removal = slow.IndexOf("RemoveAll(SwitchOffWhy);", StringComparison.Ordinal), kitsLoop = slow.IndexOf("for (int kit = 0;", StringComparison.Ordinal);
+        Check(off > 0 && once > off && removal > once && kitsLoop > removal && Occurs(slow, "RemoveAll(SwitchOffWhy);") == 1,
             "guard look: with the interface off every kit is taken off once, as it goes off, and not at every second");
         Check(StatementsInOrder(slow, "if (On && !UiPieces.Off(_fontsPiece))", "try", "UiFonts.Step()", "ShadersLook();", "FontsStep();", "catch (Exception e)", "PieceFailed(_fontsPiece, e);", "bool city ="),
             "guard look: the fonts' steps are a piece of their own, and run only while the interface is drawn");
@@ -609,12 +609,12 @@ internal static partial class Program
         { "Tech/Hiring/InterviewMeeting.cs", "cleanup:tech_sector" }, { "Tech/Venture/VentureMeeting.cs", "cleanup:tech_sector" },
         { "Travel/TravelDirector.cs", "cleanup:travel" },
         { "People/Seating.cs", "cleanup:family" },
-        { "Civic/OfficePanel.cs", "gap:civic" }, { "Fame/FamePanel.cs", "gap:standing" },
+        { "Civic/OfficePanel.cs", "cleanup:civic" }, { "Fame/FamePanel.cs", "cleanup:standing" },
         { "Justice/CommunityService.cs", "gap:justice" }, { "Justice/JusticeHold.cs", "gap:justice" },
-        { "Law/Custody.Scene.cs", "gap:law" }, { "Law/StationDesk.cs", "gap:law" },
-        { "Licences/SchoolDesk.cs", "gap:licences" }, { "Licences/TheoryTest.cs", "gap:licences" },
-        { "Permadeath/PermadeathGame.cs", "gap:permadeath" }, { "Ragdoll/PlayerKnockdown.cs", "gap:ragdoll" }, { "Social/SocialBody.cs", "gap:social" },
-        { "Transport/BusRider.Ride.cs", "gap:transport" }, { "Transport/BusRider.cs", "gap:transport" }, { "Transport/TransitRide.cs", "gap:transport" }, { "Transport/TransitSeat.cs", "gap:transport" },
+        { "Law/Custody.Scene.cs", "cleanup:law" }, { "Law/StationDesk.cs", "cleanup:law" },
+        { "Licences/SchoolDesk.cs", "cleanup:licences" }, { "Licences/TheoryTest.cs", "cleanup:licences" },
+        { "Permadeath/PermadeathGame.cs", "cleanup:permadeath" }, { "Ragdoll/PlayerKnockdown.cs", "cleanup:ragdoll" }, { "Social/SocialBody.cs", "cleanup:social" },
+        { "Transport/BusRider.Ride.cs", "cleanup:transport" }, { "Transport/BusRider.cs", "cleanup:transport" }, { "Transport/TransitRide.cs", "cleanup:transport" }, { "Transport/TransitSeat.cs", "cleanup:transport" },
         { "Phone/Contacts/ContactSearch.cs", "gap:phone" },
         { "TestRun/RunDirector.cs", "none:the developer's own test run, never started in play" }, { "TestRun/RunGame.cs", "none:the developer's own test run, never started in play" },
         { "Photos/Cinematic/CineGame.cs#clock", "cleanup:photos" },
@@ -705,9 +705,9 @@ internal static partial class Program
         Check(wrong.Count == 0 && held >= 14 && cleaned >= 20,
             "every hold: " + held + " are holds the guard lets go of itself and " + cleaned + " belong to a feature whose own clean-up the guard runs first"
             + (wrong.Count > 0 ? "; wrong: " + string.Join("; ", wrong) : string.Empty));
-        Check(gaps.SetEquals(new[] { "civic", "justice", "law", "licences", "permadeath", "phone", "ragdoll", "social", "standing", "transport" }),
-            "every hold: the features known to hold the player's walk, the clock or the mod's keys with no clean-up for the guard to run are these ten and no more (" + string.Join(", ", gaps)
-            + "): none of them takes the pointer or the cursor");
+        Check(gaps.SetEquals(new[] { "justice", "phone" }),
+            "every hold: the features that hold the player's walk, body, camera, fade, clock or the mod's keys with no clean-up for the guard to run are these two and no more (" + string.Join(", ", gaps)
+            + "): justice keeps a watchdog running until nothing is held and the phone's search box gives the keys back in its own OnDisable; none of them takes the pointer or the cursor");
         var gapKinds = new SortedSet<string>(StringComparer.Ordinal);
         foreach (KeyValuePair<string, string> line in HoldFiles)
         {

@@ -866,6 +866,7 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             _view.Want(UtilitiesApp.InternetTab);
+            RealLifeOverhaul.Ui.UtilitiesLive.Want(UtilitiesApp.InternetTab);   // the kit's page has the same three tabs
             _app.Open();
             return true;
         }

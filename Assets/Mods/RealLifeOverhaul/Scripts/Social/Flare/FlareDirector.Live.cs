@@ -455,6 +455,7 @@ namespace RealLifeOverhaul.Flare
             if (_app != null && _view != null && Running)
             {
                 _view.WantPost(id);
+                KitPost = id;   // the kit's face opens the same thread when it is shown
                 _app.Open();
             }
         }

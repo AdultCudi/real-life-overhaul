@@ -53,7 +53,9 @@ namespace RealLifeOverhaul.Ui
         private static readonly int[] PieceOf = MakePieces();
         private static int _fontsPiece, _playedPiece, _worthPiece, _linePiece;
         private static int _noticed;       // notices given this session for pieces taken off
-        private static bool _letGo;        // everything was let go for a part that stopped: once, until the part runs again
+        /// <summary>What the kits are told when the player's switch is turned off in a session (not a stop): the build face and the like may keep what is up.</summary>
+        internal const string SwitchOffWhy = "the switch is off";
+        private static bool _letGo;       // everything was let go for a part that stopped: once, until the part runs again
 
         private bool _fallbackSet;
         private int _said;                 // the interface's line this city: 0 none yet, 1 off, 2 on
@@ -438,9 +440,7 @@ namespace RealLifeOverhaul.Ui
         {
             RemoveAll(why);
             Quietly(() => UiGameHost.RemoveEvery(why));
-            Quietly(BugReportBox.Close);
-            Quietly(ShellModBox.Close);
-            Quietly(ViewfinderHost.Hide);
+            CloseCards();
             Quietly(() => HudHost.Remove(why));
             Quietly(() => UiTweens.Instance?.Land());
             int hidden = 0;
@@ -449,6 +449,18 @@ namespace RealLifeOverhaul.Ui
             {
                 Logger?.Warn("UI: " + hidden + " canvas(es) of the RLO interface still stood and were switched off (" + why + "), so nothing of it takes a click.");
             }
+        }
+
+        /// <summary>
+        /// The cards the kit stands on canvases of their own, closed: the desk session's card (which the game's panel is then seen under again), the report
+        /// card, the mod box and the viewfinder. For a guard stop, the unloading, and the switch turned off in a session.
+        /// </summary>
+        private static void CloseCards()
+        {
+            Quietly(() => SessionKit.Hide(null));
+            Quietly(BugReportBox.Close);
+            Quietly(ShellModBox.Close);
+            Quietly(ViewfinderHost.Hide);
         }
 
         private static void Quietly(Action work)
@@ -574,7 +586,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     // Once, as it goes off or the city comes with it off: while it stays off nothing of the kit is asked, made or looked for.
                     _said = 1;
-                    RemoveAll("the switch is off");
+                    RemoveAll(SwitchOffWhy);
+                    CloseCards();   // the cards stand on canvases of their own: a switch turned off in a session takes them away with the rest
                     Logger?.Info("UI: the RLO interface is off (" + (Settings.LivingPopulation ? "its switch is off" : "Living population is off") + "); the game's own screens show.");
                 }
                 return;

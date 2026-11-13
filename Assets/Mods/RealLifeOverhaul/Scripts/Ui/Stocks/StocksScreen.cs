@@ -84,11 +84,19 @@ namespace RealLifeOverhaul.Ui
             _dirty = true;
         }
 
+        private static int _wantedStock;
+
+        /// <summary>The Company app's button, or a notice, asked for a company's page: the screen opens it the next time it lays out.</summary>
+        public static void Want(int stockId)
+        {
+            _wantedStock = stockId;
+        }
+
         public bool Dirty
         {
             get
             {
-                if (_dirty || _relay)
+                if (_dirty || _relay || _wantedStock > 0)
                 {
                     return true;
                 }
@@ -111,6 +119,12 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            if (_wantedStock > 0)
+            {
+                int asked = _wantedStock;
+                _wantedStock = 0;
+                OpenCompany(asked);
+            }
             MarketState state = _market != null ? _market.State : null;
             // A hover, a pan, a zoom or a tip lays the page out again from the model built: only a change of what it is built from builds it again.
             if (_model == null || _dirty || _sheet.Open || _model.Page != _page)

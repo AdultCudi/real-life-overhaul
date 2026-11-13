@@ -39,6 +39,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            int wanted = _source is IUiTabWant asked ? asked.TakeWanted() : -1;
+            if (wanted >= 0)
+            {
+                _model.Tab = wanted;   // the fill clamps it to the tabs the app has
+                _model.View.Row = null;
+                _offTable = _offTable2 = _offStatement = 0f;
+                _refill = true;
+            }
             if (_source != null && (_refill || _source.Generation != _seen))
             {
                 _model.Reset();   // a tab never inherits a part (the statement, a chart, a button) from the one before it

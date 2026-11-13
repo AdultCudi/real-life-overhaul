@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private int _local;
-        private int _wanted = -1;
+        private int _wanted = -1, _pickId = -1, _pickTab = -1;
         private CareerFacts _facts = new CareerFacts();
         private int _readGeneration = -1;
         private readonly Dictionary<long, int> _metres = new Dictionary<long, int>(64);   // by post and by the home the distance is from
@@ -59,11 +59,47 @@ namespace RealLifeOverhaul.Ui
             Instance._local++;
         }
 
+        /// <summary>
+        /// A notice or a button of the old app's numbering asked for a tab with a row picked: the tab is mapped by what it is, and the row the pick
+        /// names (a profession, a post, an application) is the one the page opens on.
+        /// </summary>
+        public static void WantOld(int oldTab, string pick)
+        {
+            int tab = WorkRoutes.CareerTabOfPick(oldTab, pick);
+            if (tab < 0)
+            {
+                return;
+            }
+            Instance._pickId = Math.Max(WorkRoutes.PickId(pick, "prof:"), Math.Max(WorkRoutes.PickId(pick, "post:"), WorkRoutes.PickId(pick, "app:")));
+            Instance._pickTab = tab;
+            Want(tab);
+        }
+
         public int TakeWanted()
         {
             int tab = _wanted;
             _wanted = -1;
             return tab;
+        }
+
+        // The row a request named, found by its id in the list of the tab it was asked on; taken once.
+        private void ApplyPick(WorkView view)
+        {
+            int id = _pickId, tab = _pickTab;
+            _pickId = _pickTab = -1;
+            if (id < 0 || tab != view.Tab || !_facts.Ready)
+            {
+                return;
+            }
+            WorkTab list = tab == WorkRoutes.Professions ? _facts.Professions : tab == WorkRoutes.Jobs ? _facts.Jobs : tab == WorkRoutes.Applications ? _facts.Applications : null;
+            for (int i = 0; list != null && i < list.Rows.Count; i++)
+            {
+                if (list.Rows[i].Id == id)
+                {
+                    view.Row = i;
+                    return;
+                }
+            }
         }
 
         public UiNavEntry[] Nav(WorkView view)
@@ -77,6 +113,7 @@ namespace RealLifeOverhaul.Ui
             Read();
             CareersDirector d = CareersDirector.Instance;
             GameInstance save = SaveGameManager.Current;
+            ApplyPick(view);
             if (_facts.Ready && d != null && save != null)
             {
                 // the tabs that hold choices the player steps are built for the view
