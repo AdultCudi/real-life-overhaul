@@ -90,6 +90,7 @@ namespace RealLifeOverhaul.Outlook
                 return false;
             }
             _view.Want(OutlookTab.Clamp(tab));
+            RealLifeOverhaul.Ui.NewsLive.Economy.Want(OutlookTab.Clamp(tab));   // the kit's page numbers the same seven tabs the same way
             _app.Open();
             return true;
         }

@@ -15,8 +15,10 @@ namespace RealLifeOverhaul.Ui
     /// app's box did: the same director methods, the same refusals as notices, the same money. Rebuilt only when the utilities
     /// or the day series change, or after a button. Nothing a frame.
     /// </summary>
-    public sealed class UtilitiesLive : IUtilitiesSource
+    public sealed class UtilitiesLive : IUtilitiesSource, IUiTabWant
     {
+        private int _wanted = -1;
+
         public static readonly UtilitiesLive Instance = new UtilitiesLive();
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -26,6 +28,20 @@ namespace RealLifeOverhaul.Ui
         private int _local;
 
         private UtilitiesLive() { }
+
+        /// <summary>A notice or a button (Tech's Internet plan) asked for a tab: the page shows it the next time it lays out.</summary>
+        public static void Want(int tab)
+        {
+            Instance._wanted = tab;
+            Instance._local++;
+        }
+
+        public int TakeWanted()
+        {
+            int tab = _wanted;
+            _wanted = -1;
+            return tab;
+        }
 
         /// <summary>The words the screen writes with: the game's texts and money as the game writes it.</summary>
         public static UtilitiesWords Words() => new UtilitiesWords(UiText.Words, UtilitiesText.Money, () => UtilitiesText.Culture);

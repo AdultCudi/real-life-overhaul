@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
@@ -10,21 +8,9 @@ namespace RealLifeOverhaul.Ui
     public static class HudClockRules
     {
         /// <summary>The time of day in the player's chosen clock; the minute is cut to a whole one, as the game cuts it.</summary>
-        public static string Format(int hour, float minute, bool twelve)
-        {
-            int m = (int)minute;
-            int h = ((hour % 24) + 24) % 24;
-            if (!twelve)
-            {
-                return Two(h) + ":" + Two(m);
-            }
-            int shown = h % 12 == 0 ? 12 : h % 12;
-            return Two(shown) + ":" + Two(m) + (h >= 12 ? " PM" : " AM");
-        }
+        public static string Format(int hour, float minute, bool twelve) => UiClockRules.Format(hour, (int)minute, twelve);
 
         /// <summary>The widest time the clock can write, to keep the time pill one width all day.</summary>
         public static string Widest(bool twelve) => twelve ? "00:00 PM" : "00:00";
-
-        private static string Two(int n) => n.ToString("00", CultureInfo.InvariantCulture);
     }
 }

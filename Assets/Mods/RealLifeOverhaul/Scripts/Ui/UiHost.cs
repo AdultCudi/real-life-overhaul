@@ -73,6 +73,13 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
         public bool Exclusive;
+
+        /// <summary>
+        /// The screen stands on a canvas of its own over every other (a card over a desk session): a box of the game's own over it would sit
+        /// under that canvas and could not be clicked, so the canvas is put aside while such a box is up and comes back as it closes.
+        /// </summary>
+        public bool StepAside;
+        private Canvas _ownCanvas;
         public bool TakesInteract;   // only Interact is taken from the game each frame, for a card that answers it and no other key
 
         /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
@@ -309,6 +316,10 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
+                if (StepAside)
+                {
+                    SteppedAside();
+                }
                 OnUpdate();
             }
             catch (Exception e) when (Foreign(e))
@@ -318,7 +329,16 @@ namespace RealLifeOverhaul.Ui
             catch (Exception e)
             {
                 LastFault = ScreenId ?? (_screen != null ? _screen.Id : null);
-                Guard.Fail(FrameGuard, e, this);
+                if (UiFaultCount.Counts(LastFault))
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+                else
+                {
+                    // A screen that already faulted once this session is not counted against the whole interface again: the guard's five in half a minute is for faults
+                    // that spread over the screens, and the screen is the game's own already (UiGameHost.Fallback).
+                    ThrewAgain(e);
+                }
                 if (Failed != null)
                 {
                     Failed(e);
@@ -327,6 +347,28 @@ namespace RealLifeOverhaul.Ui
                 {
                     Stop();   // nobody to give the game's screen back: the host's own canvas goes, so a screen that failed never stays up over the game
                 }
+            }
+        }
+
+        private void ThrewAgain(Exception e)
+        {
+            UiDirector.Logger?.Warn("UI: " + LastFault + " threw again (" + FaultWords.Of(e) + ").");
+        }
+
+        private void SteppedAside()
+        {
+            if (_ownCanvas == null)
+            {
+                _ownCanvas = GetComponent<Canvas>();
+            }
+            if (_ownCanvas == null)
+            {
+                return;
+            }
+            bool aside = UiBoxes.Up && !UiBoxes.Drawn;
+            if (_ownCanvas.enabled == aside)
+            {
+                _ownCanvas.enabled = !aside;
             }
         }
 

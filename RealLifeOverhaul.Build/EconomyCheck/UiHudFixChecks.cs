@@ -32,7 +32,7 @@ internal static partial class Program
     private static void HudFrameSourceChecks()
     {
         string game = ModSource(@"Ui\UiGame.cs"), pause = ModSource(@"Ui\Pause\PauseScreen.cs"), notices = ModSource(@"Ui\Shell\ShellNotices.cs");
-        Check(!game.Contains("Hour.ToString(\"00\"") && game.Contains("HudClockRules.Format(now.Hour, now.Minute, TimeHelper.use12h)"),
+        Check(!game.Contains("Hour.ToString(\"00\"") && game.Contains("UiClock.At(now.Hour, (int)now.Minute)"),
             "hud clock: the bar and the masthead write the time in the game's own option");
         Check(!pause.Contains("Hour.ToString(\"00\"") && pause.Contains("HudClockRules.Format(") && pause.Contains("_whenTwelve != TimeHelper.use12h"),
             "hud clock: the pause menu's line follows the option and is written again when the option changes");

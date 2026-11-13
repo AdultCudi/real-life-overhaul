@@ -146,6 +146,9 @@ namespace RealLifeOverhaul
             });
         }
 
+        /// <summary>The feature's clean-up for the guard and the save tools: a scene of the run or the office ended, its window closed, the player free.</summary>
+        internal void StopAll() { _scenes?.Clear(); }
+
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);

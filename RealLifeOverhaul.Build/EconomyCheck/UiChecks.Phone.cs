@@ -515,12 +515,12 @@ internal static partial class Program
         // While the phone holds the keys the game's walking, camera and shortcuts leave them alone, by the game's own path:
         // its keys object selected on the interface's layer (GameManager.HasInputSelected); every way out gives it back.
         string take = PhoneBody(kit, "private static void Take()") ?? string.Empty, leave = PhoneBody(kit, "private static void Leave()") ?? string.Empty;
-        Check(take.Contains("events.SetSelectedGameObject(_keys);") && take.Contains("Keys.Suspended = true;") && take.Contains("TypingNow.Selected(events)")
+        Check(take.Contains("events.SetSelectedGameObject(_keys);") && take.Contains("Keys.Hold();") && take.Contains("TypingNow.Selected(events)")
               && kit.Contains("_keys.layer = ui >= 0 ? ui : UiLayer;") && kit.Contains("private const int UiLayer = 5;"),
             "phone sources: taking the keys selects the phone's keys object on the interface's layer, so the game stops the player, the camera and its shortcuts, and never over a field being typed in");
-        Check(leave.Contains("events.currentSelectedGameObject == _keys") && leave.Contains("Keys.Suspended = _suspendedBefore;") && leave.Contains("_selectedBefore")
+        Check(leave.Contains("events.currentSelectedGameObject == _keys") && leave.Contains("Keys.Release();") && leave.Contains("_selectedBefore")
               && leave.Contains("_host.Exclusive = false;"),
-            "phone sources: giving the keys back restores the selection only while it is the phone's, and the mod's keys as they were");
+            "phone sources: giving the keys back restores the selection only while it is the phone's, and the mod's keys by releasing its own counted hold");
         string frame = PhoneBody(kit, "internal static void Frame(") ?? string.Empty;
         Check(frame.Contains("if (Gate.Focused && !Held())") && PhoneBody(kit, "public static void Remove(string why)")?.Contains("Leave();") == true
               && PhoneBody(kit, "internal static void Hidden()")?.Contains("Leave();") == true && PhoneBody(kit, "private static void Collapsed(bool collapsed)")?.Contains("Leave();") == true

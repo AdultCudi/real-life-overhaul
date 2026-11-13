@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Meta
                 .Repair(HomePhone.Setup);
 
             Features.Add("law", "reallife_meta_title_law")
+                .Cleanup(() => Law.LawDirector.Instance?.StopAll())
                 .Group("reallife_law_header")
                 .About("reallife_guide_law_about").Help("reallife_guide_law")
                 .Fact("law_report_days", () => Law.Bridges.ReportDays.ToString(CultureInfo.InvariantCulture))
@@ -61,6 +62,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(Law.LawState.Reset);   // the save tools refuse while somebody is held (PoliceAttention.IsBusy)
 
             Features.Add("transport", "reallife_meta_title_transport")
+                .Cleanup(() => TransitDirector.Instance?.GivePlayerBack())
                 .Group("reallife_transport_header")
                 .About("reallife_guide_transport_about").Help("reallife_guide_transport")
                 .Fact("car_reg_late", () => Guide.Money(CarRules.RegistrationLateFee))
@@ -178,6 +180,7 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(Events.EventDirector.EndActive);
 
             Features.Add("social", "reallife_meta_title_social")
+                .Cleanup(() => SocialDirector.Instance?.StopAll())
                 .Group("reallife_social_header")
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
                 .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
@@ -325,6 +328,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
 
             Features.Add("standing", "reallife_meta_title_standing")
+                .Cleanup(() => Fame.FameDirector.Instance?.StopAll())
                 .Group("reallife_fame_header")
                 .About("reallife_guide_standing_about").Help("reallife_guide_standing")
                 .Fact("standing_start", () => Whole(Fame.FameRules.Start))
@@ -578,6 +582,7 @@ namespace RealLifeOverhaul.Meta
                 .Repair(() => LegalPhone.Setup(JusticeDirector.Logger));
 
             Features.Add("licences", "reallife_meta_title_licences")
+                .Cleanup(() => LicenceDirector.Instance?.StopAll())
                 .Group("reallife_licences_header")
                 .About("reallife_guide_licences_about").Help("reallife_guide_licences")
                 .Fact("lic_taxi_points", () => LicenceLaw.TaxiMostPoints.ToString(CultureInfo.InvariantCulture))
@@ -659,6 +664,7 @@ namespace RealLifeOverhaul.Meta
 
             // Its state is its director's, which puts its policies back itself when switched off or unloaded.
             Features.Add("civic", "reallife_meta_title_civic")
+                .Cleanup(() => CivicDirector.Instance?.StopAll())
                 .Group("reallife_civic_header")
                 .About("reallife_guide_civic_about").Help("reallife_guide_civic")
                 .Fact("office_recall_days", () => OfficeRules.RecallDays.ToString(CultureInfo.InvariantCulture))

@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Ui
 
         private PhotosDirector Director => PhotosDirector.Instance;
 
-        public bool Dirty => _force || (Director != null && (Director.Version != _dirVersion || Director.Thumbs.Version != _thumbVersion));
+        public bool Dirty => _force || (_app != null && _app.LatestForKitAsked) || (Director != null && (Director.Version != _dirVersion || Director.Thumbs.Version != _thumbVersion));
 
         /// <summary>The Gallery app closed: the whole photo, the preview and every small copy are let go.</summary>
         public static void Release()
@@ -69,6 +69,20 @@ namespace RealLifeOverhaul.Ui
                 _needPosted = false;
                 _texts.TwelveHour = PhotosGame.TwelveHour;
                 d.RefreshPosted();
+            }
+            if (_app != null && _app.TakeLatestForKit() && d != null && d.Count > 0)
+            {
+                // a photo just taken opens whole, over the whole album, as the old page does
+                _query.Clear();
+                _viewing = _select = false;
+                _rebuild = true;
+                Build();
+                int newest = GalleryRules.IndexOf(_shown, d.Photos[0].Name);
+                if (newest >= 0)
+                {
+                    _viewing = true;
+                    _index = newest;
+                }
             }
             Build();
             _force = false;

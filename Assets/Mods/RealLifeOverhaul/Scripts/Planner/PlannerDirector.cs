@@ -494,6 +494,7 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             _view.Select(id);
+            RealLifeOverhaul.Ui.PlannerScreen.Want(id);   // the kit's page opens on the same entry
             _app.Open();
         }
 

@@ -70,6 +70,10 @@ namespace RealLifeOverhaul.Ui
                     Shown();   // asked again after a gap: the screen was closed and is shown again
                 }
                 _askedFrame = frame;
+                if (_flare != null && _flare.KitPost >= 0)
+                {
+                    TakeKitPost();   // a notice's thread, asked while the page is up or as it opens
+                }
                 return _dirty || _moved || (_flare != null && _flare.Revision != _revision) || PicturesCame || PickerCame || Stale;   // Stale: the times shown moved on (ClockStep)
             }
         }
@@ -84,6 +88,17 @@ namespace RealLifeOverhaul.Ui
                 OpenNotices();
             }
             _dirty = true;
+        }
+
+        private void TakeKitPost()
+        {
+            int post = _flare.KitPost;
+            _flare.KitPost = -1;
+            _history.Clear();
+            if (OpenThread(post))
+            {
+                _dirty = true;
+            }
         }
 
         private void TakeKitPage()

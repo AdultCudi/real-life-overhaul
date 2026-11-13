@@ -15,8 +15,10 @@ namespace RealLifeOverhaul.Ui
     /// the day series, the hour or a press moves the generation, and carries each button to the director that already owns it, as the old app
     /// did: the same calls, the same questions in the game's own box, the same refusals as notices. Nothing a frame.
     /// </summary>
-    public sealed class OwnBankLive : IMoneySource, IMoneyActs
+    public sealed class OwnBankLive : IMoneySource, IMoneyActs, IUiTabWant
     {
+        private int _wanted = -1;
+
         public static readonly OwnBankLive Instance = new OwnBankLive();
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -54,6 +56,20 @@ namespace RealLifeOverhaul.Ui
         }
 
         private void Moved() => _local++;
+
+        /// <summary>A notice asked for a tab of Your bank: the page shows it the next time it lays out.</summary>
+        public static void Want(int tab)
+        {
+            Instance._wanted = tab;
+            Instance._local++;
+        }
+
+        public int TakeWanted()
+        {
+            int tab = _wanted;
+            _wanted = -1;
+            return tab;
+        }
 
         public bool Press(MoneyModel model, int command, int arg) => false;
 

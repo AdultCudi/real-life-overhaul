@@ -254,6 +254,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;   // its feature was switched off after its faults
+                GivePlayerBack();   // a rider in a stopped bus, body disabled, would stay there for the city: this is the one frame left to put them down
                 return;
             }
             try
@@ -263,6 +264,35 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        // The player let go of by every part that holds them (the bus rider, the seat, the ride), each in a try of its own.
+        internal void GivePlayerBack()
+        {
+            try
+            {
+                _rider?.Abort("the guard switched the buses off", put: true);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            try
+            {
+                _seat?.Abort();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            try
+            {
+                _ride?.Abort();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
             }
         }
 

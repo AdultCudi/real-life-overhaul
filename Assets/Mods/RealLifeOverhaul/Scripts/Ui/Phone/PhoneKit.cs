@@ -43,7 +43,6 @@ namespace RealLifeOverhaul.Ui
 
         private static GameObject _root;
         private static GameObject _keys;             // selected while the phone holds the keys: the game then leaves them alone
-        private static bool _suspendedBefore;        // the mod's own keys as they were when the phone took the keys
         private static GameObject _selectedBefore;   // what the event system had selected then (a button last clicked), given back
         private static UiHost _host;
         private static PhoneScreen _screen;
@@ -567,6 +566,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     Take();
                 }
+                else
+                {
+                    Unfold();   // put away, its head stands under the HUD's bar where the pointer cannot reach it: the key brings it back
+                }
             }
             Conceal();
             Wheel();
@@ -612,6 +615,19 @@ namespace RealLifeOverhaul.Ui
                 case KeyModifier.Ctrl: return UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
                 case KeyModifier.Alt: return UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt);
                 default: return true;
+            }
+        }
+
+        // The game's own fold button first (its listener keeps the state in the save), the window's own change of state where the button is gone.
+        private static void Unfold()
+        {
+            if (_collapse != null && _collapse.interactable)
+            {
+                UiWidgets.Hand(_collapse);
+            }
+            else if (_window != null)
+            {
+                _window.ChangeState(false);
             }
         }
 
@@ -663,8 +679,7 @@ namespace RealLifeOverhaul.Ui
             }
             _selectedBefore = events.currentSelectedGameObject;
             events.SetSelectedGameObject(_keys);
-            _suspendedBefore = Keys.Suspended;
-            Keys.Suspended = true;
+            Keys.Hold();   // a counted hold of its own: a mod field that types meanwhile sets and clears Keys.Suspended without ever undoing this
             Gate.Focused = true;
             _host.Exclusive = true;
             UiGame.Instance.Play(UiCue.Confirm);
@@ -679,7 +694,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             Gate.Focused = false;
-            Keys.Suspended = _suspendedBefore;
+            Keys.Release();
             EventSystem events = EventSystem.current;
             if (_keys != null && events != null && events.currentSelectedGameObject == _keys)
             {

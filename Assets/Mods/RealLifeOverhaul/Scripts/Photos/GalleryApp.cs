@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Photos
         private GalleryLook _look;
         private bool _gaveUp, _built, _writing;
         private float _latestAskedAt = -1f;         // real seconds when the newest photo was asked for, or -1
+        private float _latestKitAt = -1f;           // the same ask, kept for the kit's page, which takes it on its own so the two never race for one
         private int _opening;                       // counts the openings, so a worker's answer for an earlier one is let go
         private float _laidWidth = -1f, _laidHeight = -1f;
 
@@ -117,7 +118,7 @@ namespace RealLifeOverhaul.Photos
             {
                 return;
             }
-            _latestAskedAt = latest ? Time.unscaledTime : -1f;
+            _latestAskedAt = _latestKitAt = latest ? Time.unscaledTime : -1f;
             if (Showing)
             {
                 Refresh(false);
@@ -126,6 +127,16 @@ namespace RealLifeOverhaul.Photos
             {
                 _app.Open();
             }
+        }
+
+        /// <summary>True once after the newest photo was asked for (just taken, from the camera): the kit's page opens it whole.</summary>
+        internal bool LatestForKitAsked => GalleryRules.LatestWanted(_latestKitAt, Time.unscaledTime);
+
+        internal bool TakeLatestForKit()
+        {
+            bool asked = GalleryRules.LatestWanted(_latestKitAt, Time.unscaledTime);
+            _latestKitAt = -1f;
+            return asked;
         }
 
         /// <summary>A photo was added or deleted, or the list was read.</summary>
@@ -229,7 +240,7 @@ namespace RealLifeOverhaul.Photos
         private void Closed()
         {
             Ui.GalleryScreen.Release();
-            _latestAskedAt = -1f;   // an opening that never came does not open a later one on the newest photo
+            _latestAskedAt = _latestKitAt = -1f;   // an opening that never came does not open a later one on the newest photo
             Forget();
             _nav.Back();
             if (_keys != null)

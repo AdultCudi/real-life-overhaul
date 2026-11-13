@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Ui
             host.Failed = e => Destroy(go);   // a page that fails goes, with the clear picture that took the clicks; whoever opened it may give its own way out
             host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title, icon);
             host.View.Scale = UiTokens.CanvasPerPx;
+            host.StepAside = true;   // a box of the game's over this canvas (the desk card's question) would sit under order 32000 and take no click
             closing(host);
             host.Show();
             return host;

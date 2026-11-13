@@ -139,9 +139,19 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool FastOffered(UIs uis)
         {
-            PlayerActivity.PlayerActivityUI ui = uis != null ? uis.playerActivityUI : null;
-            PlayerActivity.IPlayerActivity a = ui != null && PlayerActivity.PlayerActivityUI.IsPanelOpen ? ui.GetCurrentActivity : null;
-            return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
+            try
+            {
+                PlayerActivity.PlayerActivityUI ui = uis != null ? uis.playerActivityUI : null;
+                PlayerActivity.IPlayerActivity a = ui != null && PlayerActivity.PlayerActivityUI.IsPanelOpen ? ui.GetCurrentActivity : null;
+                return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
+            }
+            catch (Exception e)
+            {
+                // This runs every frame the bar shows and asks an activity of the game's, or of another mod's, whatever its state: one that throws is no fast forward, and
+                // is not the bar's fault, so the bar is never taken off the screen for it.
+                Say("an activity's HasFastForward threw (" + FaultWords.Of(e) + "), so no fast forward is offered");
+                return false;
+            }
         }
 
         // Flips the game's own fast forward switch as its key does (the game's Secondary key). The press stays here, with the

@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Permadeath
         public static void Register()
         {
             Features.Add("permadeath", "reallife_meta_title_permadeath")
+                .Cleanup(() => PermadeathGame.LetGoRehearsal())
                 .Group("reallife_pd_header")
                 .About("reallife_guide_permadeath_about").Help("reallife_guide_permadeath")
                 .Owns(Settings.PermadeathId)

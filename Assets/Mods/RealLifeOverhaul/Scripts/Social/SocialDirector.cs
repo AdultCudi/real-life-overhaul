@@ -86,6 +86,13 @@ namespace RealLifeOverhaul
             Animations = new ClipJobAnimations();
         }
 
+        /// <summary>The feature's clean-up for the guard and the save tools: a seated outing's recovery ended, the walk, the scene's people and the clips given back.</summary>
+        internal void StopAll()
+        {
+            (_scene as OutingScene)?.EndRestEffects();
+            Body?.Release();
+        }
+
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
@@ -113,6 +120,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 (_scene as OutingScene)?.EndRestEffects();   // a seated outing's recovery is never left on
+                Body?.Release();   // the walk, the scene's people and the clips are given back too
                 enabled = false;   // its feature was switched off after its faults (Core/Guard)
                 return;
             }

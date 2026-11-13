@@ -63,10 +63,13 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
+        private string _crewAsked;   // the data centre a crew brief was asked for, passed to the kit's page with the request
+
         /// <summary>Open Roles on the page that briefs a search firm for a data centre's crew, that centre chosen.</summary>
         internal void BriefCrew(string centre)
         {
             _rolesView?.WantCrew(centre);
+            _crewAsked = centre;
             OpenRoles(TabSearch, RolesApp.NewCrewRow);
         }
 
@@ -75,6 +78,8 @@ namespace RealLifeOverhaul.Tech
             if (_rolesApp != null && _rolesView != null)
             {
                 _rolesView.Want(tab, pick);
+                RealLifeOverhaul.Ui.RolesLive.WantOld(tab, pick, _crewAsked);   // the kit's face takes the same request once, in its own tab numbering
+                _crewAsked = null;
                 _rolesApp.Open();
             }
         }

@@ -222,6 +222,9 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        /// <summary>The feature's clean-up for the guard and the save tools: the precincts, the desk, the interior and a custody let go of.</summary>
+        internal void StopAll() { OnDisable(); }
+
         private void OnDisable()
         {
             // Switched off after faults: nothing of ours stays on the street, in a room or on the screen.
@@ -237,6 +240,14 @@ namespace RealLifeOverhaul.Law
             if (_interior != null)
             {
                 _interior.End();
+            }
+            try
+            {
+                _custody?.ForceRelease("the law was switched off");   // a player held in a cell, the walk blocked and the time machine locked, is let out with the rest
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
             }
         }
 

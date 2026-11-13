@@ -36,6 +36,11 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            int wanted = _source is IUiTabWant asked ? asked.TakeWanted() : -1;
+            if (wanted >= 0)
+            {
+                ShowTab(wanted);
+            }
             if (_source != null && (_seen != _source.Generation || _m == null))
             {
                 _seen = _source.Generation;

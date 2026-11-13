@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
         private const int Enrol = 100, Pay = 101, Withdraw = 102, Graduate = 103, PayChild = 104, DeclineChild = 105, Tutor = 106, ShowSchool = 107, ShowMain = 108, OpenTeacher = 109;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StudyMode[] Modes = { StudyMode.FullTime, StudyMode.PartTime, StudyMode.Distance };
-        private int _local, _wanted = -1, _readGeneration = -1;
+        private int _local, _wanted = -1, _readGeneration = -1, _pickId = -1, _pickTab = -1;
         private WorkApp _app = new WorkApp();
 
         private CampusLive() { }
@@ -50,11 +50,43 @@ namespace RealLifeOverhaul.Ui
             Instance._local++;
         }
 
+        /// <summary>A notice or a button asked for a tab (the old app's numbering is the kit's here) with a course picked ("course:12"): the page opens on that course.</summary>
+        public static void WantOld(int tab, string pick)
+        {
+            if (tab < 0 || tab > 5)
+            {
+                return;
+            }
+            Instance._pickId = WorkRoutes.PickId(pick, "course:");
+            Instance._pickTab = tab;
+            Want(tab);
+        }
+
         public int TakeWanted()
         {
             int tab = _wanted;
             _wanted = -1;
             return tab;
+        }
+
+        // The course a request named is found by its id once the tab's rows are made; the tab is made again with it chosen.
+        private bool ApplyPick(WorkView view, int tab, WorkTab built)
+        {
+            if (_pickId < 0 || _pickTab != tab || view.Tab != tab)
+            {
+                return false;
+            }
+            int id = _pickId;
+            _pickId = _pickTab = -1;
+            for (int i = 0; i < built.Rows.Count; i++)
+            {
+                if (built.Rows[i].Id == id)
+                {
+                    view.Row = i;
+                    return true;
+                }
+            }
+            return false;
         }
 
         public UiNavEntry[] Nav(WorkView view)
@@ -72,6 +104,15 @@ namespace RealLifeOverhaul.Ui
             {
                 _app.Tabs[0] = Courses(d, d.Study, save.Day, view);
                 _app.Tabs[1] = Studying(d, d.Study, save.Day, view);
+                if (ApplyPick(view, 0, _app.Tabs[0]))
+                {
+                    _app.Tabs[0] = Courses(d, d.Study, save.Day, view);
+                }
+                else if (ApplyPick(view, 1, _app.Tabs[1]))
+                {
+                    _app.Tabs[1] = Studying(d, d.Study, save.Day, view);
+                }
+                _pickId = _pickTab = -1;
             }
             return WorkTabPages.Build(_app, view, W);
         }

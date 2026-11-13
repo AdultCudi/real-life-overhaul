@@ -606,6 +606,7 @@ namespace RealLifeOverhaul.Careers
             if (_careerApp != null && _careerView != null)
             {
                 _careerView.Want(tab, pick);
+                RealLifeOverhaul.Ui.CareerLive.WantOld(tab, pick);   // the kit's face takes the same request once, mapped to its own tabs by what each is
                 _careerApp.Open();
             }
         }

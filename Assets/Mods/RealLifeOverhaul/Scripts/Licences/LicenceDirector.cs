@@ -120,6 +120,11 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;
+                if (!_shutForGuard)
+                {
+                    _shutForGuard = true;
+                    Shutdown();   // the school desk's window, the walk hold and a test under way are given back, as after a fault of the school's own
+                }
                 return;
             }
             try
@@ -199,6 +204,15 @@ namespace RealLifeOverhaul
                 _broken = true;
                 Shutdown();
             }
+        }
+
+        private bool _shutForGuard;
+
+        /// <summary>The feature's clean-up for the guard and the save tools: a test under way, the school desk's window and the walk hold given back.</summary>
+        internal void StopAll()
+        {
+            _shutForGuard = true;
+            Shutdown();
         }
 
         private void Shutdown()

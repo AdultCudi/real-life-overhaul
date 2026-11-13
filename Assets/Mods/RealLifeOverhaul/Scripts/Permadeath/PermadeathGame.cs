@@ -286,6 +286,15 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
+        /// <summary>The feature's clean-up: a rehearsal's walk hold is given back; a death's stays, as it is meant to.</summary>
+        internal static void LetGoRehearsal()
+        {
+            if (!GameMembers.PlayerDead)
+            {
+                Hold(false, false);
+            }
+        }
+
         /// <summary>
         /// The world stops for the player: the game's own death and walking blocked. <paramref name="dead"/> false is the
         /// rehearsal's hold, walking only.
