@@ -105,7 +105,17 @@ namespace RealLifeOverhaul.Ui
         // A good as the game names it: a key written out, any other name as it is.
         private static string GoodName(string good)
         {
-            return string.IsNullOrEmpty(good) ? "?" : LocalizorManager.IsLocalizedKey(good) ? good.GetLocalization() : good;
+            if (string.IsNullOrEmpty(good))
+            {
+                return "?";
+            }
+            if (LocalizorManager.IsLocalizedKey(good))
+            {
+                return good.GetLocalization();
+            }
+            // The series keeps the name without its colon, which the game's texts need.
+            string item = DaySeriesCatalogue.ItemName(good);
+            return LocalizorManager.IsLocalizedKey(item) ? item.GetLocalization() : good;
         }
 
         // The goods the city's shops sell, one row each: its price today, the week, the month, its 120 days, and the price of your own shop where you sell it.

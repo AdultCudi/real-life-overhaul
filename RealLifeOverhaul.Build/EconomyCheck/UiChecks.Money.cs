@@ -145,6 +145,10 @@ internal static partial class Program
               && DaySeriesRules.CutFootfall(new DaySeriesBook { CutFrom = 5, CutUntil = 19 }, 19) == 0, "day series: worth is kept in thousands, and a price cut lasts 14 days");
         FinanceAuditChecks();
         Check(DaySeriesCatalogue.Clean("a|b;c") == "a b c", "day series: a name cannot break the save line");
+        Check(DaySeriesCatalogue.ItemName(DaySeriesCatalogue.Clean("ba:itemname_apple")) == "ba:itemname_apple" && DaySeriesCatalogue.ItemName("Bread") == "Bread"
+              && DaySeriesCatalogue.ItemName("a b c") == "a b c" && DaySeriesCatalogue.ItemName("x ") == "x " && DaySeriesCatalogue.ItemName(null).Length == 0
+              && ModSource(@"Ui\News\NewsLive.Prices.cs").Contains("string item = DaySeriesCatalogue.ItemName(good);"),
+            "day series: a good's name finds the game's item name again (the save line takes its colon out), so the price list shows the item's name and not its key");
         string kept = DaySeriesStore.Write(book);
         Check(kept.Contains("~n:") && kept.StartsWith("v=1"), "day series: loans share the one line");
     }
