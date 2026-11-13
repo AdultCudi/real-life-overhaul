@@ -37760,7 +37760,7 @@
   "reallife_ui_note_piece_off": "Real Life Overhaul: „{what}” w interfejsie RLO wywołało błąd, więc na razie pokazuje się wersja gry. Reszta interfejsu działa dalej, a szczegóły są w Player.log.",
   "reallife_ui_test_guard": "Wyłącz interfejs RLO tak, jak robi to zabezpieczenie",
   "reallife_ui_test_guard_stopped": "Interfejs RLO jest wyłączony do ponownego uruchomienia gry. Uruchom grę ponownie, aby przeprowadzić ten test.",
-  "reallife_session_note_no_desk": "{business} nie ma twojego biurka do sesji. Biurko to stanowisko komputerowe z krzesłem, którego nikt nie ma w grafiku Rota. Kup jedno więcej, niż potrzebujesz pracowników, albo zdejmij osobę z jednego z nich na karcie Rota w aplikacji Company.",
+  "reallife_session_note_no_desk": "{business} nie ma twojego biurka do sesji. Biurko to stanowisko komputerowe z krzesłem, bez nikogo w grafiku Rota. Kup jedno więcej niż pracowników, albo zdejmij kogoś z jednego na karcie Rota w Company.",
   "reallife_session_note_desk": "{session} jest do zrobienia w {business}, łącznie {count} do zrobienia. Twoje biurko jest zaznaczone: kliknij je, by je przeprowadzić.",
   "reallife_session_refused_desks": "W tym biurze jest za mało stanowisk komputerowych z krzesłami na tę sesję.",
   "reallife_session_note_no_way": "Nie da się stąd dojść do twojego biurka. Odblokuj drogę do niego i spróbuj ponownie. Nic nie wydano.",

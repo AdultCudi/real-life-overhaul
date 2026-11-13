@@ -37760,7 +37760,7 @@
   "reallife_ui_note_piece_off": "Real Life Overhaul: '{what}' in de RLO-interface gaf een fout, dus het wordt voorlopig getoond als die van het spel. De rest van de interface gaat door, en Player.log bevat de details.",
   "reallife_ui_test_guard": "Schakel de RLO-interface uit zoals de bewaker dat doet",
   "reallife_ui_test_guard_stopped": "De RLO-interface staat uit tot het spel opnieuw is gestart. Start het spel opnieuw om deze test uit te voeren.",
-  "reallife_session_note_no_desk": "{business} heeft geen bureau van jou voor sessies. Een bureau is een computerwerkplek met zijn stoel, waar niemand op het rooster staat. Koop er één meer dan je personeel nodig heeft, of haal iemand via het tabblad Rooster van de Company-app van een werkplek af.",
+  "reallife_session_note_no_desk": "{business} heeft geen eigen bureau voor sessies. Een bureau is een computerwerkplek met stoel, zonder iemand op het rooster. Koop er één meer dan nodig, of haal iemand via tabblad Rooster in Company-app van een werkplek af.",
   "reallife_session_note_desk": "{session} is aan de beurt bij {business}, {count} in totaal. Je bureau is aangewezen: klik erop om ze te houden.",
   "reallife_session_refused_desks": "Dit kantoor heeft te weinig computerwerkplekken met stoelen voor deze sessie.",
   "reallife_session_note_no_way": "Je kunt vanaf hier niet bij je bureau komen. Maak de weg ernaartoe vrij en probeer het opnieuw. Er is niets uitgegeven.",
