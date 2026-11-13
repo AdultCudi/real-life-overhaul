@@ -45,10 +45,12 @@ namespace RealLifeOverhaul.Ui
             TableCard(s, at, m.Table2, m.Table2Title, x + half + gap, ty, lw - half - gap, bottom - ty, keys, NewsCommands.District);
         }
 
-        // A table in a card with its label over it.
-        private static void TableCard(UiScene s, UiAt at, UiDataTableModel table, string title, float x, float y, float w, float h, IUiKeys keys, int command)
+        // A table in a card with its label over it. A table whose first head is words at the label's own edge stands a step lower
+        // (apart), so the label reads as the card's and the head as the column's.
+        private static void TableCard(UiScene s, UiAt at, UiDataTableModel table, string title, float x, float y, float w, float h, IUiKeys keys, int command, float apart = 0f)
         {
             UiAt on = Card(s, at, x, y, w, h, title, null, out float cy);
+            cy += apart;
             if (table != null && y + h - cy > UiTokens.S8)
             {
                 UiDataTable.Lay(s, on, table, x + UiTokens.S2, cy, w - UiTokens.S4, y + h - UiTokens.S2 - cy, keys, command);
@@ -204,9 +206,9 @@ namespace RealLifeOverhaul.Ui
             float movesNeed = moves ? MovesNeed(m) : 0f;
             if (m.Table != null)
             {
-                float tableH = Math.Min(room - (moves ? movesNeed + gap : 0f), TableNeed(m.Table, 6));
+                float tableH = Math.Min(room - (moves ? movesNeed + gap : 0f), TableNeed(m.Table, 6) + UiTokens.S4);
                 tableH = UiDraw.SnapDown(Math.Max(tableH, Math.Min(room, UiTokens.S16 * 3f)));
-                TableCard(s, at, m.Table, m.TableTitle, x, y, aw, tableH, keys, UiDataTable.First);
+                TableCard(s, at, m.Table, m.TableTitle, x, y, aw, tableH, keys, UiDataTable.First, UiTokens.S4);
                 if (moves)
                 {
                     float my = y + tableH + gap;
