@@ -177,7 +177,7 @@ namespace RealLifeOverhaul.Ui
             _cancel = null;
             var choices = new List<UiDecisionChoice>(4);
             var actions = new List<UiActionModel>(5);
-            int keyed = 0, primary = -1;
+            int keyed = 0, primary = -1, other = -1;
             foreach (ButtonInfo b in buttons)
             {
                 if (b == null)
@@ -202,6 +202,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     bool main = b.color == "blue";
                     primary = main ? actions.Count : primary;
+                    other = other < 0 && !main ? actions.Count : other;
                     actions.Add(new UiActionModel { Label = words, Kind = main ? UiButtonKind.Primary : UiButtonKind.Secondary,
                         Key = main ? UiAction.Alt : keyed++ == 0 ? UiAction.Option : UiAction.Count, Disabled = !b.interactable });
                     _actions.Add(b);
@@ -219,7 +220,7 @@ namespace RealLifeOverhaul.Ui
                 Kicker = UiText.T("reallife_session_enabled"), Title = Words(head), Emblem = UiIcon.Presentation, EmblemTint = UiRole.Accent,
                 Body = string.IsNullOrEmpty(rest) ? about : (string.IsNullOrEmpty(about) ? rest : about + " " + rest), BodyLines = choices.Count > 0 ? 3 : 8,
                 Choices = choices.ToArray(), Selected = choices.Count > 0 ? 0 : -1, Buttons = actions.ToArray(), Start = choices.Count > 0 ? 0 : -1,
-                StartButton = choices.Count > 0 ? -1 : Math.Max(0, primary)
+                StartButton = choices.Count > 0 ? -1 : primary >= 0 ? primary : Math.Max(0, other)   // a page that cannot begin starts on the skip, never on Cancel: Enter there closed the desk
             };
             m.Prompts = new[]
             {

@@ -127,6 +127,64 @@ namespace RealLifeOverhaul.Sessions
             return manager != null && manager.allItemControllers != null ? manager.allItemControllers.Count : 0;
         }
 
+        /// <summary>
+        /// A number that changes when somebody is put on or taken off a workstation in the week's rota. Taking a person off the last
+        /// free desk changes no item, so without it the owner's desk was never looked for again until the player left and came back.
+        /// One pass over the week's shifts, once a second at most.
+        /// </summary>
+        public static int Roster(BuildingRegistration reg)
+        {
+            int sig = 17;
+            List<ScheduleDay> week = reg != null ? reg.scheduleDays : null;
+            for (int d = 0; week != null && d < week.Count; d++)
+            {
+                List<WorkShift> shifts = week[d] != null ? week[d].workShifts : null;
+                for (int s = 0; shifts != null && s < shifts.Count; s++)
+                {
+                    if (shifts[s] != null && !string.IsNullOrEmpty(shifts[s].employeeId) && !string.IsNullOrEmpty(shifts[s].itemInstanceId))
+                    {
+                        sig = unchecked(sig * 31 + shifts[s].itemInstanceId.GetHashCode());
+                    }
+                }
+            }
+            return sig;
+        }
+
+        /// <summary>True if the player stands within a few metres of the desk, flat on the floor.</summary>
+        public static bool Near(EmployeeStationController desk)
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (player == null || desk == null)
+            {
+                return false;
+            }
+            Vector3 d = desk.transform.position - player.transform.position;
+            return d.x * d.x + d.z * d.z < NearMeters * NearMeters;
+        }
+
+        private const float NearMeters = 3f;   // m: close enough that the desk's marker is no use
+
+        /// <summary>
+        /// The game's panel drawn again from the activity's own labels and buttons. The game reads them only when the panel opens and
+        /// when the time begins, so a page changed in between (Next session, Begin, a choice) stayed as it was on screen while the
+        /// buttons behind it went on answering for the new page.
+        /// </summary>
+        public static void Redraw(PlayerActivity.IPlayerActivity activity)
+        {
+            try
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+                if (uis != null && uis.playerActivityUI != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, activity))
+                {
+                    uis.playerActivityUI.UpdateActivityDisplay();
+                }
+            }
+            catch (Exception e)
+            {
+                SessionDirector.Logger?.Error(e);
+            }
+        }
+
         // A computer workstation the game would seat somebody at: standing, bought, assignable, with its chair.
         private static bool Desk(EmployeeStationController station)
         {
@@ -199,7 +257,9 @@ namespace RealLifeOverhaul.Sessions
 
         public static int Hour => TimeHelper.CurrentHour;
 
-        public static bool PanelBusy => !PlayerActivity.PlayerActivityUI.CanStartActivity();
+        // The game's own CanStartActivity says yes whenever the player is not in a vehicle, panel open or not, and notices every ask
+        // in a vehicle (and another mod patches it): the work waits on the panel itself being open.
+        public static bool PanelBusy => DeskGame.Busy;
 
         private sealed class Behaviour : ICtaBehavior
         {

@@ -362,7 +362,7 @@ internal static partial class Program
         string panel = ModSource(@"Sessions\SessionPanel.cs");
         string page = MethodText(panel, "private void Page()");
         string work = MethodText(panel, "private void Work()");
-        Check(page.Contains("bool work = SessionBridges.WorkHereNow(_station);") && page.Contains("(work ? 1 : 0)") && page.Contains("\"WorkRealLifeSessionDesk\", \"reallife_session_button_work\"")
+        Check(page.Contains("bool work = SessionBridges.WorkHereNow(_station);") && page.Contains("SessionRules.Buttons(can, _defs.Length, hand, work)") && page.Contains("(pb.Work ? 1 : 0)") && page.Contains("\"WorkRealLifeSessionDesk\", \"reallife_session_button_work\"")
               && work.Contains("if (_state != PlayerActivityState.NotStarted || _pressed || _step >= 0)") && ComesBefore(work, "End(false, false);", "_director.WorkAfter(_station);"),
             "sessions shared desk: the panel's first page offers Work here while the work is offered at its desk; pressed, nothing of a session is spent and the work follows");
         string desk = ModSource(@"Sessions\SessionDirector.Desk.cs");

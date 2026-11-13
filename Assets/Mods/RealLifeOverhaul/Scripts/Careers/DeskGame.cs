@@ -515,6 +515,22 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
+        /// True if <see cref="WalkTo(EntityController, Action)"/> would get the player to the station: the game finds a way, or they
+        /// are beside it. Asked before a walk the game would refuse silently (its goal call says an error and never calls back), so
+        /// a caller that waits for the arrival does not wait for one that cannot come.
+        /// </summary>
+        public static bool Reaches(EntityController station)
+        {
+            PlayerController player = Player;
+            if (player == null || station == null)
+            {
+                return false;
+            }
+            Vector3 from = player.transform.position, target = station.GetClosestNavMeshTargetPosition(from);
+            return (target != Vector3.zero && player.ExistsRoute(target)) || DeskReach.AtDesk(Mathf.Sqrt(CitySpots.Flat(station.transform.position - from)));
+        }
+
+        /// <summary>
         /// The player walks to a fitted desk's place by its chair and then the action runs. If the game finds no way to that
         /// place, another by the chair it does find a way to is taken (FitReach.StandBy), or, with none, the player beside
         /// the desk already is taken as there; otherwise the game says it cannot reach it, as it does.

@@ -206,16 +206,81 @@ namespace RealLifeOverhaul.Sessions
 
         private static readonly char[] Reserved = { '#', '^', '|', '%' };
 
-        /// <summary>Due: never held, or held so many days ago or more.</summary>
+        /// <summary>
+        /// Due: never held, or held so many days ago or more. A day in the future (a save carried to a clock that is behind, a
+        /// shared session whose host is on an earlier day) reads as never held: otherwise the session waits for a day that may be years off.
+        /// </summary>
         public static bool Due(int held, int day, int every)
         {
-            return held < 0 || day - held >= Math.Max(1, every);
+            return held < 0 || held > day || day - held >= Math.Max(1, every);
         }
 
         /// <summary>Days until it is due again; 0 when due now.</summary>
         public static int DaysToDue(int held, int day, int every)
         {
             return Due(held, day, every) ? 0 : held + Math.Max(1, every) - day;
+        }
+
+        /// <summary>
+        /// The kinds a desk's panel draws, by index into the kinds held at the firm: those whose premise is met now. When none is
+        /// met every kind is drawn instead, so the panel can still say why each cannot be held and the player is never shown an empty
+        /// desk. Returns how many were put into <paramref name="into"/> (at least one for at least one kind).
+        /// </summary>
+        public static int Series(bool[] premiseMet, int count, int[] into)
+        {
+            int n = 0;
+            for (int i = 0; i < count && i < premiseMet.Length && n < into.Length; i++)
+            {
+                if (premiseMet[i])
+                {
+                    into[n++] = i;
+                }
+            }
+            if (n == 0)
+            {
+                for (int i = 0; i < count && n < into.Length; i++)
+                {
+                    into[n++] = i;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>The page the panel opens on: the first drawn kind that can be held now, else the first that is due, else the first.</summary>
+        public static int FirstPage(bool[] can, bool[] due, int count)
+        {
+            for (int i = 0; i < count && i < can.Length; i++)
+            {
+                if (can[i])
+                {
+                    return i;
+                }
+            }
+            for (int i = 0; i < count && i < due.Length; i++)
+            {
+                if (due[i])
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>The page after a skip: always another one while there is another, round the series.</summary>
+        public static int NextPage(int at, int count)
+        {
+            return count < 2 ? 0 : (Math.Max(0, at) + 1) % count;
+        }
+
+        /// <summary>The buttons of a kind's first page. Cancel is always there, so a page can always be left.</summary>
+        public struct PageButtons
+        {
+            public bool Cancel, Begin, Next, Hand, Work;
+        }
+
+        public static PageButtons Buttons(bool can, int count, int hand, bool work)
+        {
+            return new PageButtons { Cancel = true, Begin = can, Next = count > 1, Hand = hand != 0, Work = work };
         }
 
         /// <summary>
