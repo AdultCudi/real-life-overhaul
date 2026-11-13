@@ -105,6 +105,8 @@ namespace RealLifeOverhaul.Ui
         public string[] Labels = new string[0];
         public string Follow;        // the Follow or Following button; null on the player's own
         public bool Following;
+        public string[] Pills = new string[0];   // the other account's further buttons, in the old profile's order: Message, Mute, Hide
+        public int[] PillActs = new int[0];      // what each is: FlareFace.ActMessage, ActMute or ActHide (the command's argument)
         public bool Verified;
         public string Edit;          // the Edit profile button; null on another's
         public bool Person;          // a person: a painted face...
@@ -298,7 +300,10 @@ namespace RealLifeOverhaul.Ui
             PickerPhotoCommand = 332, PickerAlbumCommand = 333;
 
         // The audit's block (340 to 359; 300 to 333 are the face's own, 400 up are other parts'): none is a number another part of the window uses.
-        public const int MarkAllCommand = 340, SortCommand = 341, NicheCommand = 342, PromoteCommand = 343, EditCommand = 344;
+        public const int MarkAllCommand = 340, SortCommand = 341, NicheCommand = 342, PromoteCommand = 343, EditCommand = 344, ProfileActCommand = 345;
+
+        /// <summary>What a profile's further buttons do (ProfileActCommand's argument).</summary>
+        public const int ActMessage = 0, ActMute = 1, ActHide = 2;
 
         /// <summary>Every command the face gives its targets, for the checks.</summary>
         public static readonly int[] Commands =
@@ -307,7 +312,7 @@ namespace RealLifeOverhaul.Ui
             LikeCommand, CommentCommand, RepostCommand, ShareCommand, TagCommand, FollowCommand, ButtonCommand, SearchCommand, StudioLinkCommand,
             TrendCommand, WhoCommand, WhoFollowCommand, PickCommand, OptionCommand, SheetChipCommand, SheetConfirmCommand, SheetCancelCommand,
             SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand, PickerPhotoCommand, PickerAlbumCommand, MarkAllCommand, SortCommand, NicheCommand,
-            PromoteCommand, EditCommand
+            PromoteCommand, EditCommand, ProfileActCommand
         };
 
         public const int MostTargets = 48;          // a layer's targets at most (UiCheckRules.MostTargets): rows past them wait for the scroll

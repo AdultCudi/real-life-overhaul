@@ -1077,6 +1077,7 @@ namespace RealLifeOverhaul.Ui
                 h.Labels = inf != null ? new[] { FlareText.T("reallife_flare_kit_followers"), FlareText.T("reallife_flare_kit_posts") } : new[] { FlareText.T("reallife_flare_kit_posts") };
                 h.Following = Following(key);
                 h.Follow = Followable(key) ? FlareText.T(h.Following ? "reallife_flare_follow_on" : "reallife_flare_follow") : null;
+                ProfilePills(h, file, key);
             }
             _m.Tabs = new[] { FlareText.T("reallife_flare_tab_posts"), FlareText.T("reallife_flare_tab_replies"), FlareText.T("reallife_flare_kit_tab_media") };
             _m.Tab = _profileTab;
@@ -1086,6 +1087,28 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static string KeyOf(FlarePost p) => FlareLiveRules.KeyOf(p);
+
+        // The old profile's further buttons: a message to a player, an official, an influencer or a resident; and for a player of the session, muting and hiding them.
+        private void ProfilePills(FlareProfileModel h, FlareFile file, string key)
+        {
+            var words = new List<string>(3);
+            var acts = new List<int>(3);
+            if (FlareScreenRules.CanMessage(key))
+            {
+                words.Add(FlareText.T("reallife_flare_message"));
+                acts.Add(FlareFace.ActMessage);
+            }
+            if (FlareScreenRules.IsPlayer(key))
+            {
+                string player = key.Substring(2);
+                words.Add(FlareText.T(file.Net.IsMuted(player) ? "reallife_flare_unmute" : "reallife_flare_mute"));
+                acts.Add(FlareFace.ActMute);
+                words.Add(FlareText.T(file.Net.IsHidden(player) ? "reallife_flare_unhide" : "reallife_flare_hide"));
+                acts.Add(FlareFace.ActHide);
+            }
+            h.Pills = words.ToArray();
+            h.PillActs = acts.ToArray();
+        }
 
         private bool ProfileOfThread(string with)
         {

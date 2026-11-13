@@ -77,6 +77,13 @@ namespace RealLifeOverhaul.Ui
             c.Order = TicketOf(state, s, buy, OrderType.Market, life, qty, words, kind, price, d);
             c.Order.Place = c.Order.Buying ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order");
             Toolbar(c, state, v, words);
+            c.Views = new[] { words("reallife_mkt_view_chart", "Chart"), words("reallife_mkt_view_figures", "Figures") };
+            c.View = v.Figures ? 1 : 0;
+            if (v.Figures)
+            {
+                c.Facts = Facts(state, s, words);
+                c.Big = false;   // the big chart is the chart's: the figures stand in the usual room
+            }
             c.Signals = StocksSignals.Read(c.Chart, words);
             string split = SplitLine(state, s.Id);   // a split is said beside the chart: earlier prices are shown as they would be at today's share count
             if (split != null)
@@ -89,6 +96,17 @@ namespace RealLifeOverhaul.Ui
             c.SignalsTitle = words("reallife_stk_signals_title", "Signals");
             c.SignalsNone = words("reallife_stk_signals_none", "Add an indicator or draw a line to see what it says");
             Position(c, state, s, words);
+            var notes = new List<string>(2);
+            if (c.Position.Length == 0)
+            {
+                notes.Add(StockStatus(s));   // the old ticket says what is held, or else the company's state
+            }
+            string trust = TrustWords(s);
+            if (trust != null)
+            {
+                notes.Add(trust);
+            }
+            c.Notes = notes.ToArray();
             Alerts(c, state, s, v, words);
             m.PromptPlace = c.Order.Place;
             m.PromptOther = c.Big ? words("reallife_stk_small_chart", "Close the big chart") : words("reallife_stk_big_chart", "Open the big chart");

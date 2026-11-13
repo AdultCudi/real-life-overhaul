@@ -665,6 +665,11 @@ namespace RealLifeOverhaul.Ui
             month.Add(Sec(w.T("reallife_co_owner_month", "This month")));
             month.Add(Row(w.T("reallife_co_owner_decided", "Decisions made for you"), decided.ToString()));
             month.Add(Row(w.T("reallife_co_owner_cost", "Managers' allowances, a month"), CompanyText.Money(cost)));
+            int executives = h != null ? d.ExecutivesMonthCost() : 0;
+            if (executives > 0)
+            {
+                month.Add(Row(w.T("reallife_hier_exec_cost", "Executives a month"), CompanyText.Money(executives)));   // the old directory's second cost
+            }
             if (left.Count == 0)
             {
                 left.Add(Note(CompanyText.T("reallife_co_no_managers")));   // nothing to count for a company that has no manager: no month of zeros

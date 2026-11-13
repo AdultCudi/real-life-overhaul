@@ -14,6 +14,15 @@ namespace RealLifeOverhaul.Ui
         public string Words, State;
     }
 
+    /// <summary>The company's figures as two columns of labelled rows and the newest quarters' results under them. Plain data.</summary>
+    public sealed class StocksFacts
+    {
+        public StocksRow[] Left = new StocksRow[0], Right = new StocksRow[0];
+        public string[] ResultHead = new string[0];
+        public string[][] Results = new string[0][];      // a row a quarter, newest first: quarter, day, turnover, profit, earnings, expected, dividend
+        public bool[] Beat = new bool[0];                 // earnings at or over what was expected: green, else red
+    }
+
     /// <summary>
     /// The company page: its head, the chart's toolbar, the chart and the order panel. Words are already the player's; the
     /// layout draws it and the screen answers it. The ticket, the chart and the signals are built from the market once for a change,
@@ -37,6 +46,9 @@ namespace RealLifeOverhaul.Ui
         public StocksChip[] Chips = new StocksChip[0];
         public string AddLabel;                             // "+ Indicator"
         public bool Big;                                    // the chart is open across the window
+        public string[] Views = new string[0];              // the page's two views: the chart and the figures
+        public int View;                                    // which one is up
+        public StocksFacts Facts;                           // the figures view's rows, built while it is up
 
         // The indicator picker.
         public bool PickOpen;
@@ -48,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         public StocksTicket Order;
         public string PositionTitle, PositionNone;
         public StocksRow[] Position = new StocksRow[0];
+        public string[] Notes = new string[0];              // what the company is in a few words (a bid, a split, its results day) and what a property trust pays
         public string SignalsTitle, SignalsNone;
         public StocksSignal[] Signals = new StocksSignal[0];
         public string AlertsTitle, AlertsNone, AlertSet, AlertLine;   // the card's title, its empty line, "Set an alert" and "Alert below this line"
@@ -61,6 +74,7 @@ namespace RealLifeOverhaul.Ui
         public readonly float[] SideEdges = new float[8];
         public readonly float[] KindEdges = new float[8];
         public readonly float[] LifeEdges = new float[8];
+        public readonly float[] ViewEdges = new float[8];
         public float PickX, PickY;                          // where the picker stands
     }
 }

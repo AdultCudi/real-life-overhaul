@@ -318,6 +318,10 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Sentence(s, at, t.PropertyNote, x, cy + UiTokens.S1 + air, width, UiRole.Text2, 3, UiStyle.Small);
             }
+            if (!string.IsNullOrEmpty(t.GameNote) && bottom - cy >= UiTokens.S8)
+            {
+                cy = Sentence(s, at, t.GameNote, x, cy + UiTokens.S1 + air, width, UiRole.Muted, 4, UiStyle.Small);
+            }
             return cy;
         }
 

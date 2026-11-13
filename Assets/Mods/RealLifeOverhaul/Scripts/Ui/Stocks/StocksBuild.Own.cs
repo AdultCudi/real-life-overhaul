@@ -486,7 +486,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             if (string.IsNullOrEmpty(m.Status) && (m.Page == StocksPage.Market || m.Page == StocksPage.Companies || m.Page == StocksPage.Watch || m.Page == StocksPage.Orders
-                || m.Page == StocksPage.History || m.Page == StocksPage.Portfolio))
+                || m.Page == StocksPage.History || m.Page == StocksPage.Portfolio || m.Page == StocksPage.Index))
             {
                 m.Status = Status(d);
             }

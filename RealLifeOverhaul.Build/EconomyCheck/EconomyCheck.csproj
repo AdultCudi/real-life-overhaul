@@ -1012,6 +1012,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMessageList.cs" Link="Mod\UiMessageList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFeed.cs" Link="Mod\UiFeed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.cs" Link="Mod\FlareFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareScreenRules.cs" Link="Mod\FlareScreenRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFigures.cs" Link="Mod\FlareFigures.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Pages.cs" Link="Mod\FlareFace.Pages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Desk.cs" Link="Mod\FlareFace.Desk.cs" />

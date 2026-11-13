@@ -624,6 +624,7 @@ namespace RealLifeOverhaul.Ui
             switch (_page)
             {
                 case StocksPage.Futures: return PayCall();
+                case StocksPage.Index: return Back();
                 case StocksPage.Bots: return OpenRule(-1);
                 case StocksPage.Portfolio:
                 {
