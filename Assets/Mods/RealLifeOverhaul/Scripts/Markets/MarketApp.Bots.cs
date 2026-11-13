@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(7, MarketText.T(StatusKeys[(int)b.Status]),
                     b.Status == BotStatus.Running ? TableRow.Green : b.Status == BotStatus.Stopped ? TableRow.Red : TableRow.Plain);
             }
+            WriteRuleRows(s);
             int id = Picked(_picked, BotRow);
             BotFirm picked = id != int.MinValue ? MarketBots.Firm(id) : null;
             if (picked != null)
@@ -86,6 +87,41 @@ namespace RealLifeOverhaul.Markets
             }
             return MarketTables.Bots;
         }
+
+        // The player's own rules under the firms, for their capital, worth, deepest fall and trades closed. A rival's rules and a rule's profit are not
+        // here: a rule's budget is reset when it reinvests, so no profit read from it would be true.
+        private void WriteRuleRows(MarketState s)
+        {
+            for (int i = 0; i < s.Rules.Count; i++)
+            {
+                RuleBot r = s.Rules[i];
+                if (r.Owner != 0)
+                {
+                    continue;
+                }
+                Stock k = s.Stock(r.StockId);
+                TableRow row = Row(RuleRow, r.Id);
+                row.Pick = false;
+                int kind = (int)r.Kind;
+                row.Set(0, MarketText.T(RuleBots.NameKeys[kind >= 0 && kind < RuleBots.NameKeys.Length ? kind : 0]) + (k != null ? " " + k.Ticker : string.Empty));
+                row.Set(1, MarketText.T("reallife_stk_rule"));
+                row.Set(2, MarketText.Money(r.Budget), r.Budget);
+                long worth = RuleBots.Worth(r, k);
+                row.Set(3, MarketText.Money(worth), worth);
+                row.Set(4, string.Empty, 0.0);
+                row.Set(5, r.DrawdownBp > 0 ? "-" + MarketText.Percent(r.DrawdownBp) : string.Empty, r.DrawdownBp, r.DrawdownBp > 0 ? TableRow.Red : TableRow.Plain);
+                row.Set(6, Count(r.Closed), r.Closed);
+                int chip = r.Chip;
+                row.Set(7, MarketText.T(RuleChipKeys[chip >= 0 && chip < RuleChipKeys.Length ? chip : 0]),
+                    chip == 0 ? TableRow.Green : chip == 4 ? TableRow.Red : TableRow.Plain);
+            }
+        }
+
+        private const string RuleRow = "rb:";
+        private static readonly string[] RuleChipKeys =
+        {
+            "reallife_stk_running", "reallife_stk_waiting", "reallife_stk_paused", "reallife_stk_out_budget", "reallife_stk_stopped"
+        };
 
         private const string BotsGuideTitle = "reallife_meta_title_markets_bots";
 

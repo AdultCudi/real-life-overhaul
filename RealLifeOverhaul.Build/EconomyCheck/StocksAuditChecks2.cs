@@ -190,9 +190,7 @@ internal static partial class Program
     {
         ("Close", UiDraw.CloseCommand), ("Nav", UiAppWindow.NavCommand), ("TableHead", UiDataTable.First + UiDataTable.Head), ("TableFilter", UiDataTable.First + UiDataTable.Filter),
         ("TableSearch", UiDataTable.First + UiDataTable.Search), ("TableRow", UiDataTable.First + UiDataTable.Row), ("TableClear", UiDataTable.First + UiDataTable.Clear),
-        ("Chart.Point", UiChart.First + UiChart.Point), ("ChartDesk", UiChartDesk.Command), ("ChartDesk.Rail", UiChartDesk.Rail), ("Statement.Period", UiStatement.First + UiStatement.Period),
-        ("Statement.Group", UiStatement.First + UiStatement.Group), ("Statement.Line", UiStatement.First + UiStatement.Line), ("Track", UiTrack.First + UiTrack.Step),
-        ("Ticket.Button", UiDecision.ButtonCommand),
+        ("Chart.Point", UiChart.First + UiChart.Point), ("ChartDesk", UiChartDesk.Command), ("ChartDesk.Rail", UiChartDesk.Rail), ("Track", UiTrack.First + UiTrack.Step),
         ("Lay.Less", StocksLay.Less), ("Lay.More", StocksLay.More), ("Lay.Place", StocksLay.Place), ("Lay.Alert", StocksLay.Alert), ("Lay.Empty", StocksLay.Empty), ("Lay.Shares", StocksLay.Shares),
         ("Lay.Act", StocksLay.Act), ("Lay.PriceLess", StocksLay.PriceLess), ("Lay.PriceMore", StocksLay.PriceMore), ("Lay.PricePlain", StocksLay.PricePlain), ("Lay.Watch", StocksLay.Watch),
         ("Lay.View", StocksLay.View), ("Lay.OrderRow", StocksLay.OrderRow),
@@ -258,7 +256,7 @@ internal static partial class Program
             string[] words = name.StartsWith("Lay.") ? new[] { "StocksLay." + parts[1] } : name.StartsWith("Co.") ? new[] { "StocksCompanyLay." + parts[1] }
                 : name.StartsWith("Sheet.") ? new[] { "StocksSheetLay." + parts[1] } : name.StartsWith("Second.") ? new[] { "StocksLay.Second" }
                 : name == "Nav" ? new[] { "UiAppWindow.NavCommand" } : name.StartsWith("Table") ? new[] { "UiDataTable.First" } : name == "ChartDesk" ? new[] { "UiChartDesk.Command" }
-                : name == "ChartDesk.Rail" ? new[] { "UiChartDesk.Rail" } : name == "Ticket.Button" ? new[] { "UiDecision.ButtonCommand" } : null;
+                : name == "ChartDesk.Rail" ? new[] { "UiChartDesk.Rail" } : null;
             if (words != null && !words.Any(w => screen.IndexOf(w, StringComparison.Ordinal) >= 0) && name != "Lay.Empty" && name != "Lay.Alert" && !name.StartsWith("Statement") && name != "Track" && name != "Chart.Point")
             {
                 dead.Add(name);

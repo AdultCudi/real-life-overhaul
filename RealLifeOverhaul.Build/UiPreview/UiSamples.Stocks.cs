@@ -19,7 +19,7 @@ internal static partial class UiSamples
 
     private static readonly string[] StockBaseStates =
     {
-        "market_boom", "market_crash", "companies", "watch", "watch_empty", "ticket", "portfolio_empty", "portfolio_full", "orders", "history", "listing"
+        "market_boom", "market_crash", "companies", "watch", "watch_empty", "portfolio_empty", "portfolio_full", "orders", "history", "listing"
     };
 
     public static StocksModel Stocks(UiWords t, string state)
@@ -45,13 +45,12 @@ internal static partial class UiSamples
                 m.EmptyIcon = UiIcon.Eye;
                 break;
             case "watch": m.Table = Table(t, true, true); break;
-            case "ticket": Ticket(m, t); break;
             case "portfolio_empty":
                 m.EmptyTitle = t("reallife_stk_port_empty", "You hold nothing yet");
                 m.EmptyBody = t("reallife_stk_port_empty_body", "Buy shares from a company. The holding, its gain and the sector split show here.");
                 break;
             case "portfolio_full": Portfolio(m, t); break;
-            case "orders": m.Statement = Statement(t, true); break;
+            case "orders": m.Table = Table(t, true, false); break;
             case "history": History(m, t); break;
             case "listing": Listing(m, t); break;
             default: Company(m, t, state); break;
@@ -70,7 +69,6 @@ internal static partial class UiSamples
             case "companies": return StocksPage.Companies;
             case "watch":
             case "watch_empty": return StocksPage.Watch;
-            case "ticket": return StocksPage.Ticket;
             case "portfolio_empty":
             case "portfolio_full": return StocksPage.Portfolio;
             case "orders":
@@ -105,7 +103,7 @@ internal static partial class UiSamples
         }
         m.Groups = new[] { t("reallife_stk_group_markets", "Markets"), t("reallife_stk_group_yours", "Yours"), t("reallife_stk_group_other", "Other markets") };
         m.GroupAt = new[] { 0, 3, 8 };
-        m.NavAt = (int)(m.Page == StocksPage.Company ? StocksPage.Companies : m.Page == StocksPage.Ticket ? StocksPage.Companies : m.Page);
+        m.NavAt = (int)(m.Page == StocksPage.Company ? StocksPage.Companies : m.Page);
         if (m.NavAt > 9)
         {
             m.NavAt = 1;
@@ -184,29 +182,6 @@ internal static partial class UiSamples
         };
     }
 
-    private static void Ticket(StocksModel m, UiWords t)
-    {
-        string place = t("reallife_stk_place", "Place order");
-        string buy = t("reallife_mkt_buy", "Buy");
-        string sell = t("reallife_mkt_sell", "Sell");
-        m.Decision = new UiDecisionModel
-        {
-            Kicker = "GMF",
-            Title = place,
-            Emblem = UiIcon.ChartLineUp,
-            EmblemLabel = "GMF",
-            Body = t("reallife_stk_position_after", "Position after") + " 100. " + t("reallife_stk_cash_after", "Cash after") + " $8,695.",
-            Choices = new[]
-            {
-                new UiDecisionChoice { Name = buy, Lines = new[] { new UiConsequence { Text = "$3,705", Tone = UiConsequence.Loss, Change = -1 } } },
-                new UiDecisionChoice { Name = sell, Lines = new[] { new UiConsequence { Text = "$3,695", Tone = 1, Change = 1 } } }
-            },
-            Buttons = new[] { new UiActionModel { Label = place, Kind = UiButtonKind.Primary, Key = UiAction.Alt } },
-            Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") }, new UiPrompt { Action = UiAction.Alt, Label = place } },
-            PromptCount = 2
-        };
-    }
-
     private static void Portfolio(StocksModel m, UiWords t)
     {
         m.ViewLabels = new[] { t("reallife_stk_view_held", "Held"), t("reallife_stk_view_pays", "Pays"), t("reallife_stk_view_account", "Account") };
@@ -230,20 +205,6 @@ internal static partial class UiSamples
         m.DonutLabels = new[] { t("reallife_mkt_sector_groceries", "Groceries"), t("reallife_mkt_sector_restaurants", "Restaurants"), t("reallife_mkt_sector_leisure", "Leisure") };
         m.DonutValues = new[] { "50%", "30%", "20%" };
         m.Table = Table(t, true, false);
-    }
-
-    private static UiStatementModel Statement(UiWords t, bool open)
-    {
-        var line = new UiStatementLine { When = "412", Icon = open ? UiIcon.Receipt : UiIcon.Clock, What = "GMF 100", Out = open ? "$3,700" : null, In = open ? null : "$420" };
-        return new UiStatementModel
-        {
-            Account = t(open ? "reallife_mkt_tab_orders" : "reallife_mkt_tab_history", open ? "Orders" : "History"),
-            AccountIcon = UiIcon.Receipt,
-            BalanceLabel = t("reallife_stk_cash", "Cash"),
-            Balance = "$12,400",
-            Columns = new[] { t("reallife_mkt_col_day", "Day"), t("reallife_mkt_col_what", "What"), t("reallife_stk_in", "In"), t("reallife_stk_out", "Out"), t("reallife_stk_after", "After") },
-            Groups = new[] { new UiStatementGroup { Label = t("reallife_stk_today", "Market today"), Lines = new[] { line, line } } }
-        };
     }
 
     private static void Bots(StocksModel m, UiWords t)

@@ -374,6 +374,7 @@ namespace RealLifeOverhaul.Markets
                     return 1;
                 case Part.CloseBooks:
                     CloseBooks(day);
+                    RuleBots.Close(State);
                     Begin(Part.CloseBots, day);
                     return 1;
                 case Part.CloseBots:

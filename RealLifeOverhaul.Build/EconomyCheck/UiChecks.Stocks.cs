@@ -35,9 +35,8 @@ internal static partial class Program
     private static readonly int[] StocksCommands =
     {
         UiAppWindow.NavCommand, UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search,
-        UiDataTable.First + UiDataTable.Row, UiChart.First + UiChart.Point, UiChartDesk.Command, UiStatement.First + UiStatement.Period,
-        UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line, UiTrack.First + UiTrack.Step, UiDecision.ChoiceCommand,
-        UiDecision.ButtonCommand, UiChartDesk.Rail, StocksCompanyLay.Range, StocksCompanyLay.Type, StocksCompanyLay.Chip, StocksCompanyLay.AddIndicator, StocksCompanyLay.Pick,
+        UiDataTable.First + UiDataTable.Row, UiChart.First + UiChart.Point, UiChartDesk.Command,
+        UiTrack.First + UiTrack.Step, UiChartDesk.Rail, StocksCompanyLay.Range, StocksCompanyLay.Type, StocksCompanyLay.Chip, StocksCompanyLay.AddIndicator, StocksCompanyLay.Pick,
         StocksCompanyLay.Big, StocksCompanyLay.Side, StocksCompanyLay.Kind, StocksCompanyLay.Life, StocksCompanyLay.AlertAdd, StocksCompanyLay.PutBack,
         StocksLay.Less, StocksLay.More, StocksLay.Place, StocksLay.View, StocksLay.OrderRow, StocksCompanyLay.AlertLine, StocksCompanyLay.View,
         StocksLay.Alert, StocksLay.Empty, StocksLay.Shares, StocksLay.Act, StocksLay.PriceLess, StocksLay.PriceMore, StocksLay.PricePlain, StocksLay.Watch,

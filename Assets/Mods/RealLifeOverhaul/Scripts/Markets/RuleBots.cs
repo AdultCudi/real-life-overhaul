@@ -51,6 +51,9 @@ namespace RealLifeOverhaul.Markets
         public int FigDay;           // the day those two are counted for
         public long Shares, Cost;    // what it holds now and what that cost: a sale's gain is its price less its part of the cost
         public int OpenTrades;
+        public int Closed;           // sales it has made, each one a trade closed
+        public long Peak;            // the most its cash and holding were worth at a close
+        public int DrawdownBp;       // the deepest fall from that peak so far
         public int LastDay;
         public int ToldStock;        // a trade to mention, cleared when the director has said it
 
@@ -335,6 +338,10 @@ namespace RealLifeOverhaul.Markets
                     rule.Cost = 0;
                 }
             }
+            if (qty > 0 && rule.Closed < int.MaxValue)
+            {
+                rule.Closed++;
+            }
             long gain = value - basis;
             rule.DayGain += gain;
             rule.WeekGain += gain;
@@ -357,6 +364,55 @@ namespace RealLifeOverhaul.Markets
             }
             rule.FigDay = day;
         }
+
+        /// <summary>What a rule's cash and its holding are worth at the stock's last price.</summary>
+        public static long Worth(RuleBot rule, Stock stock)
+        {
+            long held = stock != null && rule.Shares > 0 ? rule.Shares * stock.Last / 100L : 0L;
+            return Math.Max(0L, rule.Cash) + held;
+        }
+
+        /// <summary>
+        /// A rule's worth marked at a close: a new peak, or the fall from the peak if it is deeper than any before. The peak starts at the budget
+        /// so a rule that buys at the open and loses by the close still shows the fall.
+        /// </summary>
+        public static void Mark(RuleBot rule, Stock stock)
+        {
+            if (rule == null || stock == null || stock.Last <= 0)
+            {
+                return;
+            }
+            long worth = Worth(rule, stock);
+            if (rule.Peak <= 0)
+            {
+                rule.Peak = Math.Max(rule.Budget, worth);
+            }
+            if (worth > rule.Peak)
+            {
+                rule.Peak = worth;
+            }
+            else if (rule.Peak > 0)
+            {
+                rule.DrawdownBp = Math.Max(rule.DrawdownBp, (int)Math.Min(10000L, (rule.Peak - worth) * 10000L / rule.Peak));
+            }
+        }
+
+        /// <summary>Every rule marked at the close.</summary>
+        public static void Close(MarketState state)
+        {
+            for (int i = 0; state != null && i < state.Rules.Count; i++)
+            {
+                RuleBot rule = state.Rules[i];
+                Mark(rule, state.Stock(rule.StockId));
+            }
+        }
+
+        /// <summary>The rule kinds' texts, by kind.</summary>
+        public static readonly string[] NameKeys =
+        {
+            "reallife_stk_rule_dip", "reallife_stk_rule_rider", "reallife_stk_rule_div", "reallife_stk_rule_rebalance",
+            "reallife_stk_rule_grid", "reallife_stk_rule_earn", "reallife_stk_rule_stop", "reallife_stk_rule_gap"
+        };
 
         /// <summary>Every rule's figures turned to the day.</summary>
         public static void Turn(MarketState state, int day)
