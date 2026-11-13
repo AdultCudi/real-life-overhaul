@@ -13,7 +13,6 @@ internal static partial class Program
     private static readonly int[] PickerCommands = { UiPicker.EntryCommand, UiPicker.PageCommand, UiPicker.EmptyCommand, UiPicker.ChooseCommand, UiPicker.SecondCommand };
     private static readonly int[] ActivityCardCommands = { UiActivity.ButtonCommand, UiActivity.StepCommand };
     private static readonly int[] TimeSkipCommands = { UiTimeSkip.CancelCommand };
-    private static readonly int[] MapPanelCommands = { UiMapPanel.ViewCommand, UiMapPanel.SearchCommand, UiMapPanel.FilterCommand, UiMapPanel.LocateCommand, UiMapPanel.DestinationCommand };
 
     // The HUD's pieces, every state each has: laid out in every language, frame and input as any screen.
     static partial void UiCasesHud(UiScreenDef def, List<UiScreenCase> cases)
@@ -56,10 +55,6 @@ internal static partial class Program
             case "hud_time_skip":
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (sleeping until the shift)", Title = "Skip time", Commands = TimeSkipCommands, Lay = (s, f, d, k, t) => UiSamples.HudSkipScene(s, f, d, k, t) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (in custody, no Cancel)", Title = "Skip time", Commands = TimeSkipCommands, Lay = (s, f, d, k, t) => UiSamples.HudSkipScene(s, f, d, k, t, true) });
-                break;
-            case "hud_map":
-                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a place picked)", Title = "City map", Commands = MapPanelCommands, Lay = (s, f, d, k, t) => UiSamples.HudMapScene(s, f, d, k, t, true) });
-                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (the filters alone)", Title = "City map", Commands = MapPanelCommands, Lay = (s, f, d, k, t) => UiSamples.HudMapScene(s, f, d, k, t, false) });
                 break;
         }
     }

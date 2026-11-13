@@ -81,7 +81,7 @@ namespace RealLifeOverhaul
         private void FillPaint(TravelList list)
         {
             Row(list, GarageText.T("reallife_garage_paint_factory"), _saved.Paint < 0 ? GarageText.T("reallife_garage_fitted") : GarageText.Money(GarageCatalogue.PaintPrice(_kind, false)),
-                Choose(_cart.Paint < 0), _cart.Paint >= 0, () => PickPaint(-1));
+                Choose(_cart.Paint < 0), _cart.Paint >= 0, () => PickPaint(-1), GarageCar.ToRgb(_fitted.StockColour()));
             int[] palette = GarageCatalogue.Palette;
             string price = GarageText.Money(GarageCatalogue.PaintPrice(_kind, false));
             for (int f = 0; f * Shades < palette.Length && f < Families.Length; f++)
@@ -109,13 +109,14 @@ namespace RealLifeOverhaul
                       + (sample == _saved.Paint ? GarageText.T("reallife_garage_fitted") : price) + "."
                     : GarageText.T("reallife_garage_list_shades", "all", count.ToString(), "price", price);
                 int next = palette[first + (at + 1) % count];
-                Row(list, "<color=#" + ColorUtility.ToHtmlStringRGB(shown) + ">" + GarageText.T(Families[family]) + "</color>", detail, "reallife_garage_list_next", true, () => PickPaint(next));
+                Row(list, "<color=#" + ColorUtility.ToHtmlStringRGB(shown) + ">" + GarageText.T(Families[family]) + "</color>", detail, "reallife_garage_list_next", true,
+                    () => PickPaint(next), sample);
             }
             bool mixed = _cart.Paint >= 0 && !GarageCatalogue.InPalette(_cart.Paint);
             Row(list, GarageText.T("reallife_garage_list_mix"), mixed
                     ? "#" + _cart.Paint.ToString("X6") + ". " + GarageText.T("reallife_garage_paint_mixed", "amount", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true)))
                     : GarageText.T("reallife_garage_list_mix_detail", "amount", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true))),
-                "reallife_garage_list_open", true, _mix);
+                "reallife_garage_list_open", true, _mix, mixed ? _cart.Paint : -1);
         }
 
         private void PickPaint(int colour)
@@ -205,7 +206,7 @@ namespace RealLifeOverhaul
                     {
                         _cart.Glow = colour;
                         Changed("underglow #" + colour.ToString("X6"));
-                    });
+                    }, colour);
             }
         }
 

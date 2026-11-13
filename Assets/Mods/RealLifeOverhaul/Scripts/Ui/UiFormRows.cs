@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
         public string SideNote;     // ...and the small line under it (their skill)
         public string Reason;       // why a pick cannot be chosen, in a chip at its right
         public UiIcon Icon;         // a pick's mark; None for the initials of its name on a circle of their hue
+        public string Picture;      // the game's own picture beside a line (a delivery's goods), a UiPictures key; null for none
     }
 
     /// <summary>What a form's screen keeps between layouts: the choice whose list is open, the slider the keys hold, how far it scrolled.</summary>
@@ -78,7 +79,8 @@ namespace RealLifeOverhaul.Ui
         private const float Swatch = 24f;         // px: a colour's square
         private const float Ring = 16f;           // px: an option's ring
         private const float Dot = 8f;             // px: the chosen option's dot
-        private const int NoteLines = 4, EntryLines = 3, LabelLines = 2;
+        private const int AllLines = 0;   // UiTextRules: a most of none wraps a text to every line it takes
+        private const float PictureWidth = UiTokens.ControlSmall + UiTokens.S2;   // px: a row's picture and the gap after it
 
         /// <summary>A colour's argument: its row and its place in the row.</summary>
         public static int SwatchArg(int row, int swatch) => (row << 8) | (swatch & 0xff);
@@ -108,6 +110,7 @@ namespace RealLifeOverhaul.Ui
             switch (r.Kind)
             {
                 case UiFormKind.Figure:
+                    return Lead(ref r) > 0f ? Math.Max(UiTokens.PairRow, UiTokens.ControlSmall) : UiTokens.PairRow;
                 case UiFormKind.Check:
                     return UiTokens.PairRow;
                 case UiFormKind.Pick:
@@ -121,10 +124,10 @@ namespace RealLifeOverhaul.Ui
                 case UiFormKind.Heading:
                     return UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
                 case UiFormKind.Note:
-                    return UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Small, iw - (r.Warn ? UiTokens.IconSmall + UiTokens.S2 : 0f), NoteLines));
+                    return UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Small, iw - (r.Warn ? UiTokens.IconSmall + UiTokens.S2 : 0f), AllLines));   // every line: a note is never cut
                 case UiFormKind.Entry:
                     return Math.Max(UiTokens.Control + UiTokens.S2 * 2f,
-                        UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, EntryWords(ref r, iw), EntryLines)) + UiTokens.S3 * 2f);
+                        UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, EntryWords(ref r, iw), AllLines)) + UiTokens.S3 * 2f);
                 case UiFormKind.Swatches:
                 {
                     int n = r.Swatches != null ? r.Swatches.Length : 0;
@@ -143,17 +146,54 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A control's row: one line of its words beside the control, or two when they do not fit on one (a delivery's goods
-        // with a long name, a language with long words), the row as tall as they need.
+        // A control's row: one line of its words beside the control, or as many as they need when they do not fit on one (a
+        // delivery's goods with a long name, a language with long words), the row as tall as they need; a chosen option too
+        // long for its field is read whole in a line under the row.
         private static float Labelled(ref UiFormRow r, float w)
         {
-            float lw = LabelWidth(w);
-            if (string.IsNullOrEmpty(r.Label) || UiTextRules.Fits(r.Label, UiStyle.Body, lw))
+            float lw = LabelWidth(w) - Lead(ref r);
+            float h = UiTokens.Control;
+            if (!string.IsNullOrEmpty(r.Label) && !UiTextRules.Fits(r.Label, UiStyle.Body, lw))
             {
-                return UiTokens.Control;
+                h = Math.Max(h, UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, lw, AllLines)) + UiTokens.S1 * 2f);
             }
-            return Math.Max(UiTokens.Control, UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, lw, LabelLines)) + UiTokens.S1 * 2f);
+            if (!string.IsNullOrEmpty(r.Picture))
+            {
+                h = Math.Max(h, UiTokens.ControlSmall + UiTokens.S1 * 2f);
+            }
+            return h + Overflow(ref r, w);
         }
+
+        // The picture's width at a row's left with the gap after it; none where the game shows none.
+        private static float Lead(ref UiFormRow r) => string.IsNullOrEmpty(r.Picture) ? 0f : PictureWidth;
+
+        // The game's own picture at a row's left (a delivery's goods), on a tile in the middle of the row's height; the width it takes.
+        private static float Picture(UiScene s, UiAt at, ref UiFormRow r, float x, float y, float h)
+        {
+            if (string.IsNullOrEmpty(r.Picture))
+            {
+                return 0f;
+            }
+            UiDraw.PictureFace(s, at, x, y + Math.Max(0f, UiDraw.SnapDown((h - UiTokens.ControlSmall) / 2f)), UiTokens.ControlSmall, r.Picture);
+            return PictureWidth;
+        }
+
+        // What a choice's chosen words need under the row when its field cannot hold them (a business with a long name).
+        private static float Overflow(ref UiFormRow r, float w)
+        {
+            if (r.Kind != UiFormKind.Choice || string.IsNullOrEmpty(r.Value) || UiTextRules.Fits(r.Value, UiStyle.Body, ControlWidth(w) - ChoiceInset))
+            {
+                return 0f;
+            }
+            // The room a scrolled form leaves, so no row is drawn taller than it was made.
+            return UiTokens.S1 + UiDraw.Snap(UiTextRules.WrappedHeight(r.Value, UiStyle.Small, w - UiTokens.S3 * 3f, AllLines));
+        }
+
+        // The words' room inside a choice's field: its padding and the caret at its right (UiDraw.Choice).
+        private const float ChoiceInset = UiTokens.S3 + UiTokens.Icon + UiTokens.S2 + UiTokens.S4;
+
+        // The lines a text takes in a width, whole: what a drawn text is told, so its box holds every one.
+        private static int Fit(string text, UiStyle style, float w) => Math.Max(1, UiTextRules.Lines(text, style, w, 0, out float _));
 
         // The words' room beside the controls' column, at a band's width: the narrower room a scrolled form leaves (its
         // thumb's lane), so a row is tall enough for its words whether the form scrolls or not.
@@ -236,7 +276,8 @@ namespace RealLifeOverhaul.Ui
                 ref UiFormRow r = ref rows[i];
                 float rh = RowHeight(ref r, w);
                 bool takes = Takes(ref r);
-                bool whole = !scrolls || (ry >= offset - 0.5f && ry + rh <= offset + room + 0.5f);   // one cut by the band's edge waits until it scrolls in whole
+                // One cut by the band's edge waits until it scrolls in whole; one taller than the room (a very long note) shows as it scrolls past.
+                bool whole = !scrolls || (ry >= offset - 0.5f && ry + rh <= offset + room + 0.5f) || (rh > room && ry < offset + room && ry + rh > offset);
                 if (whole)
                 {
                     float top = oy + ry;
@@ -318,17 +359,27 @@ namespace RealLifeOverhaul.Ui
                 {
                     float fx = label ? cx : x, fw = label ? cw : w;
                     UiRole ink = r.Disabled ? UiRole.Muted : UiRole.Text;
-                    if (label && UiTextRules.Fits(r.Label, UiStyle.Body, labelW))
+                    float extra = Overflow(ref r, w + UiTokens.S3 * 2f + (pick.Clip >= 0 ? UiTokens.S3 : 0f));   // the band's width again, as its height was made
+                    float rowH = h - extra;   // the row's own height: its control and words, above the chosen words read whole
+                    float lead = Picture(s, at, ref r, x, y, rowH);
+                    float lx = x + lead, lw = labelW - lead;
+                    if (label && UiTextRules.Fits(r.Label, UiStyle.Body, lw))
                     {
-                        UiDraw.TextMiddle(s, at, x, y, h, labelW, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, at, lx, y, rowH, lw, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Truncate);
                     }
                     else if (label)
                     {
-                        // Words too long for one line take two, in the middle of the row beside the control.
-                        float th = UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, labelW, LabelLines));
-                        UiDraw.Text(s, at, x, y + Math.Max(0f, UiDraw.SnapDown((h - th) / 2f)), labelW, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Wrap | UiFlags.Truncate, LabelLines);
+                        // Words too long for one line take as many as they need, in the middle of the row beside the control.
+                        int lines = Fit(r.Label, UiStyle.Body, lw);
+                        float th = UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, lw, lines));
+                        UiDraw.Text(s, at, lx, y + Math.Max(0f, UiDraw.SnapDown((rowH - th) / 2f)), lw, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Wrap | UiFlags.Truncate, lines);
                     }
-                    int node = Control(s, at, ref r, i, fx, y + Math.Max(0f, UiDraw.SnapDown((h - UiTokens.Control) / 2f)), fw, pick);
+                    int node = Control(s, at, ref r, i, fx, y + Math.Max(0f, UiDraw.SnapDown((rowH - UiTokens.Control) / 2f)), fw, pick);
+                    if (extra > 0f)
+                    {
+                        float vw = w;
+                        UiDraw.Text(s, at, x, y + rowH + UiTokens.S1, vw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Wrap | UiFlags.Truncate, Fit(r.Value, UiStyle.Small, vw));
+                    }
                     Listed(s, node, list, ordinal);
                     break;
                 }
@@ -340,7 +391,8 @@ namespace RealLifeOverhaul.Ui
                     string figure = (unset ? r.Hint : r.Value) ?? string.Empty;
                     UiStyle figureStyle = unset ? UiStyle.Body : UiStyle.BodyStrong;
                     float vw = Math.Min(UiDraw.Snap(UiTextRules.Width(figure, figureStyle) + UiTokens.S1), UiDraw.SnapDown(w * 0.6f));
-                    UiDraw.TextMiddle(s, at, x, y, h, w - vw - UiTokens.S3, style, r.Strong ? UiRole.Text : UiRole.Text2, r.Label, UiFlags.Label | UiFlags.Truncate);
+                    float lead = Picture(s, at, ref r, x, y, h);
+                    UiDraw.TextMiddle(s, at, x + lead, y, h, w - vw - UiTokens.S3 - lead, style, r.Strong ? UiRole.Text : UiRole.Text2, r.Label, UiFlags.Label | UiFlags.Truncate);
                     UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, figureStyle, unset ? UiRole.Muted : UiRole.Text, figure, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
@@ -352,7 +404,7 @@ namespace RealLifeOverhaul.Ui
                         UiDraw.Icon(s, at, x, y + (UiTextRules.LineHeight(UiStyle.Small) - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Warning, UiRole.Warn, UiFlags.Middle, true);
                         tx += UiTokens.IconSmall + UiTokens.S2;
                     }
-                    UiDraw.Text(s, at, tx, y, x + w - tx, UiStyle.Small, r.Warn ? UiRole.WarnText : UiRole.Text2, r.Label, UiFlags.Wrap | UiFlags.Truncate, NoteLines);
+                    UiDraw.Text(s, at, tx, y, x + w - tx, UiStyle.Small, r.Warn ? UiRole.WarnText : UiRole.Text2, r.Label, UiFlags.Wrap | UiFlags.Truncate, Fit(r.Label, UiStyle.Small, x + w - tx));
                     break;
                 }
                 case UiFormKind.Heading:
@@ -470,8 +522,10 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
             UiAt inside = at.In(face);
             float tw = EntryWords(ref r, w);
-            float th = UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, tw, EntryLines));
-            UiDraw.Text(s, inside, x + UiTokens.S3, y + UiDraw.SnapDown((h - th) / 2f), tw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Wrap | UiFlags.Truncate, EntryLines);
+            float lead = Picture(s, inside, ref r, x + UiTokens.S3, y, h);
+            int lines = Fit(r.Label, UiStyle.Body, tw);
+            float th = UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, tw, lines));
+            UiDraw.Text(s, inside, x + UiTokens.S3 + lead, y + UiDraw.SnapDown((h - th) / 2f), tw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Wrap | UiFlags.Truncate, lines);
             if (string.IsNullOrEmpty(r.Action))
             {
                 return -1;
@@ -483,7 +537,7 @@ namespace RealLifeOverhaul.Ui
 
         // The room an entry's words have beside its button.
         private static float EntryWords(ref UiFormRow r, float w) =>
-            w - UiTokens.S3 * 2f - (string.IsNullOrEmpty(r.Action) ? 0f : UiDraw.ButtonWidth(UiButtonKind.Secondary, r.Action, UiIcon.None, UiAction.Count, null) + UiTokens.S3);
+            w - UiTokens.S3 * 2f - Lead(ref r) - (string.IsNullOrEmpty(r.Action) ? 0f : UiDraw.ButtonWidth(UiButtonKind.Secondary, r.Action, UiIcon.None, UiAction.Count, null) + UiTokens.S3);
 
         // Colours to pick, each a square of its own colour, the chosen one in the cyan's ring, as many lines as they need.
         // Returns the first colour's target, the row's place among those the keys reach.

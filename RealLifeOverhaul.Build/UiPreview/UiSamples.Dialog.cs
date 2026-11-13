@@ -521,7 +521,9 @@ internal static partial class UiSamples
         });
         rows.Add(new UiFormRow { Kind = UiFormKind.Break });
         rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_rate", "Interest rate"), Value = Fill(t("reallife_ui_dialog_loan_rate_value", "{rate}% a year"), "rate", "9") });
-        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_payment", "Payment a day"), Value = "$245" });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("bank_dialog_interest_daily_payment", "Daily interest ({rate}%)").Replace("{rate}", "9"), Value = "$74" });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("econoview_loans_daily_payment", "Daily payment"), Value = "$171" });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("bank_dialog_total_daily_payment", "Total daily payment"), Value = "$245", Strong = true });
         rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_total", "Total to repay"), Value = "$29,477", Strong = true });
         return rows.ToArray();
     }

@@ -1056,7 +1056,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSideCard.cs" Link="Mod\UiSideCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Ring.cs" Link="Mod\UiDraw.Ring.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTimeOfDay.cs" Link="Mod\UiTimeOfDay.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMapPanel.cs" Link="Mod\UiMapPanel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMapFilter.cs" Link="Mod\UiMapFilter.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolRow.cs" Link="Mod\UiToolRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildModel.cs" Link="Mod\BuildMode\UiBuildModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildPanels.cs" Link="Mod\BuildMode\UiBuildPanels.cs" />
@@ -1252,6 +1252,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCargo.cs" Link="Mod\UiCargo.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWardrobe.cs" Link="Mod\UiWardrobe.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGarageStrip.cs" Link="Mod\UiGarageStrip.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Garage\GarageCardRules.cs" Link="Mod\Garage\GarageCardRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStatement.cs" Link="Mod\UiStatement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFactCard.cs" Link="Mod\UiFactCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Services\ServicesModel.cs" Link="Mod\Services\ServicesModel.cs" />

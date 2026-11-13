@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiStaff
     {
+        private const int WholeLines = 64;   // a note's most: far past any text the page carries, so none is cut and the page flows under it
         public const int SwitchCommand = 200, AssignCommand = 201, TrainCommand = 202, OptionCommand = 203, PreviewCommand = 204, EmptyCommand = 205;
         public const int HeldCommand = 206;                 // a page's target while a card stands over it: it answers nothing until the card goes
         private const float PersonGridRow = 60f;            // px: a person with a face and two bars, as the window's people
@@ -516,7 +517,7 @@ namespace RealLifeOverhaul.Ui
                 y += UiTokens.S3;
                 bool warns = p.NoteTone == UiRole.Warn || p.NoteTone == UiRole.Danger;   // a warning wears the warning's own glyph, never a recoloured info mark
                 UiDraw.Icon(s, at, x, y + UiTokens.Hairline, UiTokens.Icon, warns ? UiIcon.Warning : UiIcon.Info, warns ? p.NoteTone : UiRole.None, UiFlags.Middle, true);
-                int words = UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, p.Note, UiFlags.Label | UiFlags.Wrap, 2);
+                int words = UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, p.Note, UiFlags.Label | UiFlags.Wrap, WholeLines);
                 y = UiDraw.Snap(s.Items[words].Y + s.Items[words].H);
             }
             return y + UiTokens.S6;
@@ -596,7 +597,7 @@ namespace RealLifeOverhaul.Ui
             y = Title(s, at, p.DemandsTitle, x, y, w);
             if (p.Demands.Length == 0)
             {
-                int words = UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, p.DemandsEmpty, UiFlags.Label | UiFlags.Wrap, 3);
+                int words = UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, p.DemandsEmpty, UiFlags.Label | UiFlags.Wrap, WholeLines);
                 return UiDraw.Snap(s.Items[words].Y + s.Items[words].H) + UiTokens.S6;
             }
             bool met = false;

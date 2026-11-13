@@ -12,6 +12,7 @@ internal static partial class Program
         UiStocksCompanyChecks();
         UiStocksBuilderChecks();
         UiStocksOtherChecks();
+        StocksRuleFigureChecks();
     }
 
     private static StocksModel StocksPageModel(StocksPage page)

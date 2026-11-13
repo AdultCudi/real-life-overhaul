@@ -101,6 +101,12 @@ namespace RealLifeOverhaul.Ui
             ServicesState state = d != null && d.Running ? d.State : null;
             m.Title = ServicesText.T("reallife_svc_app");
             m.Icon = UiIcon.Handshake;
+            m.Prompts = new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = ServicesText.T("reallife_ui_prompt_move") },
+                new UiPrompt { Action = UiAction.Confirm, Label = ServicesText.T("reallife_ui_prompt_select") },
+                new UiPrompt { Action = UiAction.Back, Label = ServicesText.T("reallife_ui_prompt_back") }
+            };
             v.Tab = Math.Max(0, Math.Min(TabKeys.Length - 1, v.Tab));
             m.Tab = v.Tab;
             var runs = new ServicesRuns();

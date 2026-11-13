@@ -442,7 +442,7 @@ internal static partial class Program
                 }
             }
         }
-        var view = new System.Text.RegularExpressions.Regex(@"_v\.\w+\s*=|_eventYard\s*=|_eventFeature\s*=|_yardChoice\s*=|SetChoice\(|\bOpen\(|OpenWorks\(");
+        var view = new System.Text.RegularExpressions.Regex(@"_v\.\w+\s*=|_eventYard\s*=|_eventFeature\s*=|_yardChoice\s*=|SetChoice\(|\bOpen\(|OpenWorks\(|OpenTenants\(");
         var game = new System.Text.RegularExpressions.Regex(@"EstateGame\.Locate\(|ShowroomView\.Instance\?\.(Look|Place)\(|EstateLive\.OpenPerson\(");
         var director = new System.Text.RegularExpressions.Regex(@"_d\.(\w+)\(");
         var kinds = new[] { "_runs.Button(", "_runs.Link(", "_runs.Switch(", "_runs.Step(", "_runs.Do(", "_runs.Add(", "Act(runs," };

@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly UiPrompt[] Scratch = new UiPrompt[9];
 
         /// <summary>The game's hint lines into the model's prompts; how many.</summary>
-        public static int Read(UiPrompt[] into) => HudHints.Mirror(into, out _);
+        public static int Read(ref UiPrompt[] into) => HudHints.Mirror(ref into, out _);
 
         /// <summary>A number that changes when a hint line does.</summary>
         public static long Signature()

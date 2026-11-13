@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_map_review_high_clean_1", "reallife_map_review_high_wait_0", "reallife_map_review_low_wait_1", "reallife_map_review_mid_mixed_0",
             "reallife_map_review_mid_price_1", "reallife_map_route_car", "reallife_map_route_subway", "reallife_map_route_taxi", "reallife_map_route_walk",
             "reallife_map_row_address", "reallife_map_row_distance", "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner",
-            "reallife_map_row_type", "reallife_map_save", "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note",
+            "reallife_map_row_type", "reallife_map_save", "reallife_map_save_full", "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note",
             "reallife_map_tab_business", "reallife_map_tab_overview", "reallife_map_tab_reviews", "reallife_map_taxi_note",
             // the district block's sentences, as the old card says them
             "reallife_dv_card_bears", "reallife_dv_card_businesses", "reallife_dv_card_classes", "reallife_dv_card_crime", "reallife_dv_card_demand",

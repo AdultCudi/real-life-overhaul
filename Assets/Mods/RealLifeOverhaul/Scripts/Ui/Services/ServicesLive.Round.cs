@@ -385,12 +385,16 @@ namespace RealLifeOverhaul.Ui
                         group < ServicesCatalogue.CrewGroups - 1, () => _d.SetGroup(id, group - 1), () => _d.SetGroup(id, group + 1)));
                 }
                 IReadOnlyList<DayVisit> visits = _d.Visits;
-                int shown = 0;
-                for (int i = 0; on && i < visits.Count && shown < 4; i++)
+                int shown = 0, all = 0;
+                for (int i = 0; on && i < visits.Count; i++)
                 {
                     DayVisit v = visits[i];
                     CleaningClient c = v.CleanerId == id ? _s.Client(v.Place) : null;
                     if (c != null)
+                    {
+                        all++;
+                    }
+                    if (c != null && shown < 4)
                     {
                         lines.Add(UiFactLine.Say(ServicesText.Fill(v.Skipped ? "reallife_svc_crew_visit_missed" : "reallife_svc_crew_visit", "from",
                             ServicesText.Clock(v.Start), "to", ServicesText.Clock(v.End),
@@ -401,6 +405,10 @@ namespace RealLifeOverhaul.Ui
                 if (on && shown == 0)
                 {
                     lines.Add(UiFactLine.Say(ServicesText.T("reallife_svc_crew_no_visits"), UiRole.Muted));
+                }
+                else if (all > shown)
+                {
+                    lines.Add(UiFactLine.Say(ServicesText.T("reallife_ui_svc_more_visits", "count", (all - shown).ToString(Inv)), UiRole.Muted));
                 }
                 return new UiFactCardModel
                 {

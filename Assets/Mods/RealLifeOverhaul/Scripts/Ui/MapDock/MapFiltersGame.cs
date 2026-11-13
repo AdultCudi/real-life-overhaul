@@ -14,6 +14,8 @@ namespace RealLifeOverhaul.Ui
     internal sealed class MapFiltersGame : IUiGameScreen, IUiGameWay, IUiGameDraggable
     {
         private readonly bool _subway;
+        private UiConceal _conceal;    // the host's, kept so a pick can hide the game's box again where it was not found when the dock stood up
+        private bool _said;
 
         public MapFiltersGame(bool subway)
         {
@@ -66,6 +68,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Conceal(Component found, UiConceal conceal)
         {
+            _conceal = conceal;
             Transform panel = found.transform;
             for (int i = 0; i < panel.childCount; i++)
             {
@@ -80,13 +83,35 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The game's building box: its panel line, or the parent of its two halves (as the street's card finds it) where this version of the game has no such line.
         private static Transform CardPanel()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.buildingResume == null)
+            {
+                return null;
+            }
             System.Reflection.FieldInfo field = GameContract.ResumePanel.Field;
-            return uis != null && uis.buildingResume != null && field != null ? field.GetValue(uis.buildingResume) as Transform : null;
+            Transform panel = field != null ? field.GetValue(uis.buildingResume) as Transform : null;
+            return panel != null ? panel : uis.buildingResume.data != null ? uis.buildingResume.data.parent : null;
         }
 
-        public IUiScreen Make(Component found) => new MapLive(found, _subway);
+        // A building is picked and the dock's block shows it: the game's own box for it is hidden now, whether or not it was there to hide when the dock stood up. Holding a leaf
+        // twice is one hold (UiConceal.Add), so this is a few comparisons on a new pick.
+        private void HideCard()
+        {
+            Transform card = _subway || _conceal == null ? null : CardPanel();
+            if (card != null)
+            {
+                _conceal.Add(card);
+            }
+            else if (!_subway && !_said)
+            {
+                _said = true;
+                UiDirector.Logger?.Info("UI: the game's building box was not found to hide, so it shows beside the dock's block for a picked building.");
+            }
+        }
+
+        public IUiScreen Make(Component found) => new MapLive(found, _subway, HideCard);
     }
 }

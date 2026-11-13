@@ -77,6 +77,8 @@ namespace RealLifeOverhaul.Ui
             m.SavedLabel = UiText.T("reallife_map_saved");
             m.DestinationLabel = InTaxiMode ? TaxiHeadline(card) : UiText.T("common_setdestination");
             m.Saved = MapStoreGame.Saved(building.Address.streetName, building.Address.streetNumber);
+            m.SaveFull = !m.Saved && MapStoreGame.Count >= MapSaved.Most;   // a list that is full says so: the oldest place is never dropped without being told
+            m.SaveFullLabel = UiText.T("reallife_map_save_full");
             m.RouteShown = _routeShown;
             m.CanDestination = MayTravel(card);
             m.CanBizMan = OffersBizMan(card);
@@ -316,6 +318,10 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             Address a = _pickedBuilding.building.Address;
+            if (!MapStoreGame.Saved(a.streetName, a.streetNumber) && MapStoreGame.Count >= MapSaved.Most)
+            {
+                return false;   // the list is full: the button says so and a place is taken out first
+            }
             string name = _pickedBuilding.buildingRegistration != null ? _pickedBuilding.buildingRegistration.BusinessName : null;
             MapStoreGame.Toggle(a.streetName, a.streetNumber, name);
             return true;

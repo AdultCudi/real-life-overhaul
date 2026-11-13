@@ -124,6 +124,9 @@ namespace RealLifeOverhaul
 
         public static bool ListOpen => GarageList.OpenFor(Owner);
 
+        /// <summary>True for the owner the workshop's list is taken with.</summary>
+        internal static bool IsOwner(object owner) => ReferenceEquals(owner, Owner);
+
         /// <summary>Four times a second: the panel in the game's field, a stopped wash ended, the list closed when due.</summary>
         public static void Tick(GameManager gm)
         {
@@ -428,6 +431,16 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Which of the Garage's lists is in the window: the repair bay's workshop, the custom shop, "My vehicles" or a stand's rack.</summary>
+    public enum GarageListKind : byte
+    {
+        None,
+        Workshop,
+        Shop,
+        Vehicles,
+        Stand
+    }
+
     /// <summary>
     /// The one window the Garage's lists share, a copy of the game's subway station list (<see cref="TravelList"/>) made
     /// when first wanted: taking it closes whichever list had it.
@@ -443,6 +456,16 @@ namespace RealLifeOverhaul
         private static bool _failed;
 
         public static bool IsOpen => _list != null && _list.IsOpen;
+
+        /// <summary>The window the Garage's lists share, or null before the first one; the interface asks whether a list it is offered is this one.</summary>
+        public static TravelList Window => _list;
+
+        /// <summary>Whose list is in the window now.</summary>
+        public static GarageListKind Kind => !IsOpen ? GarageListKind.None : _owner is GarageShop ? GarageListKind.Shop : _owner is TwoWheelers ? GarageListKind.Stand
+            : GarageBay.IsOwner(_owner) ? GarageListKind.Workshop : GarageSummary.IsOwner(_owner) ? GarageListKind.Vehicles : GarageListKind.None;
+
+        /// <summary>The custom shop whose list is in the window, or null.</summary>
+        public static GarageShop Shop => IsOpen ? _owner as GarageShop : null;
 
         /// <summary>True while a game screen is up that a list must not stand under: the phone's menu, the map, the pause menu, a question.</summary>
         public static bool MenuUp => FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen || Scenes.MainMenu.Options.IsVisible;

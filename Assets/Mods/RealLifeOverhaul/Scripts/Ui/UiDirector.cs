@@ -580,6 +580,7 @@ namespace RealLifeOverhaul.Ui
                     PieceFailed(_worthPiece, e);
                 }
             }
+            UiSwitchOptions.Look();   // a faulted screen's switch on the game's Mods page reads off, a second at most after the fault or the page showing
             if (!On)
             {
                 if (_said != 1)
@@ -590,6 +591,7 @@ namespace RealLifeOverhaul.Ui
                     CloseCards();   // the cards stand on canvases of their own: a switch turned off in a session takes them away with the rest
                     Logger?.Info("UI: the RLO interface is off (" + (Settings.LivingPopulation ? "its switch is off" : "Living population is off") + "); the game's own screens show.");
                 }
+                MapSavedGame.Look();   // the kit's map docks do this with it on (MapKits.Install); a place saved stays on the game's own map with it off
                 return;
             }
             for (int kit = 0; kit < Kit.Count; kit++)

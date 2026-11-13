@@ -159,7 +159,6 @@ namespace RealLifeOverhaul.Ui
         public string OffTitle, OffBody, OffAction;   // OffAction: the button that leaves an app that is off, where focus starts
         public UiIcon OffIcon = UiIcon.Home;   // the glyph of the page that says the feature is off: the app's own
         public UiPrompt[] Prompts = new UiPrompt[0];
-        public string DayWords;                      // "Mon, Day 214" at the strip's right is the host's; kept for the head's sub line
         public string Guide;                         // "Guide: Real estate", a quiet line at the page's foot naming the Guide's page that explains it, or null
 
         // The head of a page with a table: a glyph, a title, a line and up to four figures at the right.
@@ -173,15 +172,14 @@ namespace RealLifeOverhaul.Ui
         public string[] RowKeys = new string[0];     // by row of the table: what a press picks
         public TableChoice[] Choices = new TableChoice[0];   // the table's filters, by the field's index: what a press on one steps through
         public UiFactCardModel Side;                 // beside the table: what the tab is, or its summary
+        public string[] Notes = new string[0];       // what the tab is and how it works, as sentences under the table (a table page draws a side card only where it holds a button)
         public string TableLink;                     // a link over the table's right ("View on the map")
         public int TableLinkRun = -1;
 
         // The roll's two lists under the table.
-        public string ListATitle, ListALink, ListAEmpty;
-        public int ListALinkRun = -1;
+        public string ListATitle, ListAEmpty;
         public EstateRow[] ListA = new EstateRow[0];
-        public string ListBTitle, ListBLink, ListBEmpty;
-        public int ListBLinkRun = -1;
+        public string ListBTitle, ListBEmpty;
         public EstateRow[] ListB = new EstateRow[0];
 
         public EstateUnitPage Unit;
@@ -269,6 +267,10 @@ namespace RealLifeOverhaul.Ui
         public int SortColumn = -1;     // the column the open table is ordered by (-1: as written) and its direction; both go with the tab
         public bool SortDown;
         public readonly int[] Chosen = { -1, -1 };   // the table's filters' choices (-1: all); they go with the tab
+        public int Hover = -1;          // the table's row the pointer or the focus rests on, whose card shows
+        public string FilterPlace;      // a link from a building's page asks the tenants' table to show that building alone: its place, taken by the next page written
+        public int FilterState = -1;    // ...and the state filter's choice with it (late tenants alone, applicants alone)
+        public string FilterDistrict;   // a link from a listing asks the market's table to show that district alone: its name as the table words it, taken by the next page written
 
         /// <summary>The table's own order and filters back to as written, as a tab opens.</summary>
         public void ResetTable()
@@ -277,6 +279,10 @@ namespace RealLifeOverhaul.Ui
             SortDown = false;
             Chosen[0] = -1;
             Chosen[1] = -1;
+            Hover = -1;
+            FilterPlace = null;
+            FilterState = -1;
+            FilterDistrict = null;
         }
     }
 }

@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
     /// with the buttons the old app had, every one a run of the source. The page is written again when the source's generation moves or the
     /// player pressed something, and nothing a frame.
     /// </summary>
-    public sealed class EstateScreen : IUiScreen, IUiTyping
+    public sealed class EstateScreen : IUiScreen, IUiTyping, IUiPointing
     {
         public const string ScreenId = "estate";
 
@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _m.Table.Offset = _view.Offset;
                 _m.Table.Reveal = _view.Reveal;
+                _m.Table.Hover = _view.Hover >= 0 && _view.Hover < _m.Table.RowCount ? _view.Hover : -1;   // the row's card shows while the pointer or the focus is on it
             }
             if (_m.Catalogue != null)
             {
@@ -88,6 +89,10 @@ namespace RealLifeOverhaul.Ui
         public bool Press(int command, int arg)
         {
             bool done = Handle(command, arg);
+            if (done)
+            {
+                _view.Hover = -1;   // the rows are written again, in whatever order: the one the card was for may be elsewhere
+            }
             _dirty |= done;
             return done;
         }
@@ -204,7 +209,29 @@ namespace RealLifeOverhaul.Ui
 
         public void Focused(int command, int arg)
         {
+            Aim(command, arg);
         }
+
+        /// <summary>The mouse rests on a row of the table (or has left it): the row's card, where it has one, shows.</summary>
+        public void Pointed(int command, int arg)
+        {
+            Aim(command, arg);
+        }
+
+        // Only a row that has a card needs the page written again: a pointer crossing the rows of a table with none costs nothing.
+        private void Aim(int command, int arg)
+        {
+            int row = command == EstateFace.TableBase + UiDataTable.Row ? arg : -1;
+            if (row == _view.Hover)
+            {
+                return;
+            }
+            bool had = Carded(_view.Hover), has = Carded(row);
+            _view.Hover = row;
+            _dirty |= had || has;
+        }
+
+        private bool Carded(int row) => _m.Table != null && _m.Table.Rows != null && row >= 0 && row < _m.Table.Rows.Length && _m.Table.Rows[row].Card != null;
 
         /// <summary>The stock's search field takes the keys when it is pressed (the host starts it).</summary>
         public int TypingCommand => EstateFace.SearchCommand;

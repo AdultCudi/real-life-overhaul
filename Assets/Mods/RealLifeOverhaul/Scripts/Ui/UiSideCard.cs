@@ -50,7 +50,6 @@ namespace RealLifeOverhaul.Ui
         public string SliderNote;                      // its own lines under the track: "Will stop resting at 19:15"
         public string SliderFrom, SliderTo;            // "1 h", "8 h"
         public float SliderShare;
-        public bool SliderDisabled, SliderHeld;
         public string SumLeft, SumRight;               // "You finish at 15:00", "$228 before tax"
 
         public UiSideChoice[] Choices = new UiSideChoice[0];
@@ -80,7 +79,8 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiSideCard
     {
-        private const int NoteLines = 2;   // the slider's note under the track, at most
+        private const int NoteLines = 64;   // the slider's note under the track, at most: far past any sentence the game writes there, so none is cut
+        private const int BodyLines = 64;   // the paragraph's most, likewise
         public const int ButtonCommand = 246, SliderCommand = 247, ChoiceCommand = 248;
         public const float Width = 980f;      // px: the card
         public const float Side = 288f;       // px: the side's column
@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The content's width at the card's right.</summary>
         public static float Inner => Width - Side - UiTokens.S8 * 2f;
 
-        /// <summary>The card's height: its words and parts at the right, at least its side's picture with room round it.</summary>
+        /// <summary>The card's height: its words and parts at the right, at least its side's picture with the card's padding round it.</summary>
         public static float Height(UiSideCardModel m, IUiKeys keys = null)
         {
             float inner = Inner;
@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Ui
             h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S3;
             if (!string.IsNullOrEmpty(m.Body))
             {
-                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, 5)) + UiTokens.S4;
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, BodyLines)) + UiTokens.S4;
             }
             if (m.Rows.Length > 0)
             {
@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Ui
                 h += UiTokens.S2;
             }
             h += UiTokens.Control + UiTokens.S8 + (FootSplit(m, keys) ? UiTokens.Control + UiTokens.S3 : 0f);
-            return Math.Max(UiDraw.Snap(h), UiDraw.Snap(SideHeight(m) + UiTokens.S12 * 2f));
+            return Math.Max(UiDraw.Snap(h), UiDraw.Snap(SideHeight(m) + UiTokens.S8 * 2f));   // the side with the card's own padding round it: no more room than the content has
         }
 
         /// <summary>The share of the slider's run a point across the screen stands at, by the track laid last.</summary>
@@ -176,8 +176,8 @@ namespace RealLifeOverhaul.Ui
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S3;
             if (!string.IsNullOrEmpty(m.Body))
             {
-                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, 5);
-                UiDraw.Text(s, on, cx, cy, inner, UiStyle.Body, UiRole.Text, m.Body, UiFlags.Label | UiFlags.Wrap, 5);
+                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, BodyLines);
+                UiDraw.Text(s, on, cx, cy, inner, UiStyle.Body, UiRole.Text, m.Body, UiFlags.Label | UiFlags.Wrap, BodyLines);
                 cy += UiDraw.Snap(bh) + UiTokens.S4;
             }
             if (m.Rows.Length > 0)
@@ -323,24 +323,23 @@ namespace RealLifeOverhaul.Ui
         // Its words and figure over the track, the track with the knob at its share, the ends under it, and the sums.
         private static void Slider(UiScene s, UiAt at, UiSideCardModel m, float x, float y, float w)
         {
-            bool off = m.SliderDisabled;
             float vw = Math.Min(UiDraw.SnapDown(w * 0.75f), UiDraw.Snap(UiTextRules.Width(m.SliderValue, UiStyle.BodyStrong) + UiTokens.S1));
             UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w - vw - UiTokens.S3, UiStyle.Body, UiRole.Text, m.SliderLabel, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, off ? UiRole.Text2 : UiRole.Text, m.SliderValue, UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, m.SliderValue, UiFlags.Right | UiFlags.Truncate);
             y += UiTokens.PairRow;
             float share = m.SliderShare < 0f ? 0f : m.SliderShare > 1f ? 1f : m.SliderShare;
-            int face = UiDraw.Box(s, at, x, y, w, UiTokens.PairRow, m.SliderHeld && !off && !s.Pointer ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
-                off ? UiFlags.Disabled : UiFlags.None);
+            int face = UiDraw.Box(s, at, x, y, w, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge,
+                UiFlags.None);
             UiAt inside = at.In(face);
             float tx = x + Knob / 2f, tw = w - Knob, mid = y + UiTokens.PairRow / 2f, th = UiTokens.S1;
             int track = UiDraw.Box(s, inside, tx, mid - th / 2f, tw, th, UiRole.Track, UiRole.None, th / 2f, UiFlags.Circle | UiFlags.Middle);
             if (share > 0f)
             {
-                UiDraw.Box(s, inside.In(track), tx, mid - th / 2f, Math.Max(th, tw * share), th, off ? UiRole.Muted : UiRole.Accent, UiRole.None, th / 2f,
+                UiDraw.Box(s, inside.In(track), tx, mid - th / 2f, Math.Max(th, tw * share), th, UiRole.Accent, UiRole.None, th / 2f,
                     UiFlags.Circle | UiFlags.Share | UiFlags.Middle);
             }
-            UiDraw.Circle(s, inside.In(track), tx + tw * share - Knob / 2f, mid - Knob / 2f, Knob, Knob, off ? UiRole.Muted : UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
-            UiDraw.Node(s, at, x, y, w, UiTokens.PairRow, m.SliderCommand, 0, face, off);
+            UiDraw.Circle(s, inside.In(track), tx + tw * share - Knob / 2f, mid - Knob / 2f, Knob, Knob, UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
+            UiDraw.Node(s, at, x, y, w, UiTokens.PairRow, m.SliderCommand, 0, face);
             m.TrackX = tx;
             m.TrackW = tw;
             y += UiTokens.PairRow;

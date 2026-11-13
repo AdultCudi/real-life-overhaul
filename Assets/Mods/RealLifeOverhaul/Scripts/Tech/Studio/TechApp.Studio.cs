@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Tech
         private readonly StudioWords _studioWords = new StudioWords();
 
         /// <summary>The screens' figures as the game writes them: money at today's prices, numbers, days and the mod's texts.</summary>
-        private sealed class StudioWords : IStudioFormat
+        internal sealed class StudioWords : IStudioFormat
         {
             public string Money(long cents) => TechText.Cents(cents * Prices.Level / 1000);
 

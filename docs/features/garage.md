@@ -21,7 +21,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `GarageTuning` | power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures, the figures page's numbers |
 | `TuningRules` | the gear change parts' sums, the figures page's units and how a figure stands, what a build fetches when its car is sold (game-free; NavCheck's TuningCheck) |
 | `GarageSaleGame` | a car with work on it sold through the game's item panel: the work's worth paid on top of the game's price |
-| `GarageShop` | the repair bays, the turntable camera, the shop's pages in the game's list, the game's colour picker, the bill; GarageDragArea (the invisible drag surface of the turntable view) |
+| `GarageShop` | the repair bays, the turntable camera, the shop's pages in the game's list (on the RLO interface the garage strip, `Ui/Garage`, draws that list: the same rows, prices, buttons and refusals, pressed through the list's own pick, as for the workshop, My vehicles and a stand's rack), the game's colour picker, the bill; GarageDragArea (the invisible drag surface of the turntable view) |
 | `GarageText` | a locale key in, the line out |
 | `Driving/Sound/*` | the recorded car sounds: engines by kind, the exhausts' and turbos' sounds, the turntable's revving (see "Recorded car sounds") |
 | `TwoWheelers` | bicycles and motorbikes as re-bodied scooters: making, removing, hiring, buying, energy, helmet, falls; the game's panel at a dock, rack or stand, the stand's list, the game's marker on one |

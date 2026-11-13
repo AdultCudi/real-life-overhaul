@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
                     return i;
                 }
             }
-            return page == StocksPage.Company || page == StocksPage.Ticket ? 1 : 0;
+            return page == StocksPage.Company ? 1 : 0;
         }
 
         public static void Nav(StocksModel m, UiWords words)
@@ -76,7 +76,6 @@ namespace RealLifeOverhaul.Ui
                 case StocksPage.Market: Market(m, state, words, sort, sector, size, find, director, portfolioView, sortColumn, sortDown); OpenOrders(state, m, words); break;
                 case StocksPage.Index: IndexPage(m, state, words, period); break;
                 case StocksPage.Company: Company(m, state, stockId, view ?? new StocksView(), buy, life, qty, words, kind, price, director); break;
-                case StocksPage.Ticket: Ticket(m, state, stockId, buy, type, life, qty, words); break;
                 case StocksPage.Portfolio: Portfolio(m, state, words, director, portfolioView, period); break;
                 case StocksPage.Orders: OrdersPage(m, state, words, done); break;
                 case StocksPage.History: HistoryPage(m, state, words); break;
@@ -413,24 +412,12 @@ namespace RealLifeOverhaul.Ui
             });
             return new StocksTicket
             {
-                Side = buy ? words("reallife_mkt_buy", "Buy") : words("reallife_mkt_sell", "Sell"),
-                Kind = words(KindKeys[kind], KindEnglish[kind]),
-                Life = life == OrderLife.UntilCancelled ? words("reallife_stk_gtc", "Until cancelled") : words("reallife_stk_day", "Day"),
                 Shares = qty.ToString(),
-                Limit = type == OrderType.Market ? words("reallife_stk_max", "Most you can buy") : words("reallife_mkt_col_price", "Price"),
-                Max = type == OrderType.Market ? most.ToString() : MarketText.Price(limit),
                 Price = type == OrderType.Market ? null : MarketText.Price(limit),
-                Cost = MarketText.Money(value),
-                Fee = MarketText.Money(fee),
-                Total = MarketText.Money(total),
-                CashAfter = MarketText.Money(Math.Max(0, cash - (buy ? total : -total))),
-                After = words("reallife_stk_position_after", "Position after") + " " + PositionWords(afterShares, average),
                 Place = buy ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order"),
-                Instead = closing ? null : buy ? words("reallife_stk_sell_instead", "Sell instead") : words("reallife_stk_buy_instead", "Buy instead"),
                 Why = why,
                 Impact = impact,
                 PlaceDisabled = why != null && !worked,
-                Watch = state.Watching(s.Id) ? words("reallife_mkt_unwatch", "Unwatch") : words("reallife_mkt_watch", "Watch"),
                 PutBack = back >= 0 ? InvestText.Reinvest(back) : null,
                 Title = words("reallife_stk_order_title", "Order"),
                 CashWords = MarketText.Fill("reallife_stk_cash_line", "cash", MarketText.Money(cash)),
@@ -445,26 +432,7 @@ namespace RealLifeOverhaul.Ui
                 PriceLabel = kind > 0 ? words(priceKeys[kind], priceEnglish[kind]) : null,
                 PutBackLabel = words("reallife_stk_put_back", "Dividends put back"),
                 Rows = rows.ToArray(),
-                MostRow = rows.Count - 1,
-                Most = most,
                 Buying = buy
-            };
-        }
-
-        private static void Ticket(StocksModel m, MarketState state, int stockId, bool buy, OrderType type, OrderLife life, long qty, UiWords words)
-        {
-            Stock s = state.Stock(stockId) ?? First(state);
-            StocksTicket t = s != null ? TicketOf(state, s, buy, type, life, qty, words) : new StocksTicket { Place = words("reallife_stk_place", "Place order") };
-            m.Decision = new UiDecisionModel
-            {
-                Kicker = s != null ? s.Ticker : words("reallife_mkt_app", "Stocks"),
-                Title = words("reallife_stk_place", "Place order"),
-                Emblem = UiIcon.ChartLineUp,
-                Body = s == null ? words("reallife_stk_market_empty_body", "Listed companies show here with the day's move.")
-                    : t.Side + " " + t.Shares + "  " + t.Cost + "  " + t.Fee,
-                Buttons = new[] { new UiActionModel { Label = t.Place, Kind = UiButtonKind.Primary, Key = UiAction.Alt } },
-                Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = words("reallife_ui_prompt_back", "Back") }, new UiPrompt { Action = UiAction.Alt, Label = t.Place } },
-                PromptCount = 2
             };
         }
 

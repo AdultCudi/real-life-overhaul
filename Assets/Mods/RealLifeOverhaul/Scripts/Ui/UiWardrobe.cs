@@ -2,16 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>A slider of the side panel's: its words, the figure it holds and how far along it stands.</summary>
-    public struct UiSliderRow
-    {
-        public string Label;
-        public string Figure;
-        public float Share;
-        public bool Disabled;
-    }
-
-    /// <summary>What the clothes shop, the hairdresser and the surgeon show beside the game's 3D preview.</summary>
+    /// <summary>What the clothes shop and the hairdresser show beside the game's 3D preview.</summary>
     public sealed class UiWardrobeModel
     {
         public string Title;                                   // the category shown, or the screen's own title
@@ -26,9 +17,6 @@ namespace RealLifeOverhaul.Ui
         public bool Searching;                                 // a search field over the grid
         public string Search, SearchHint;
         public UiCatalogueModel Grid = new UiCatalogueModel(); // the pieces: a tile each, the chosen one's foot in the cyan
-        public UiSliderRow[] Sliders = new UiSliderRow[0];     // the surgeon's and the body's sliders, or none
-        public int SliderCount;
-        public int Held = -1;                                  // the slider the keys hold, or -1
         public string ChosenName, ChosenDetail;                // the piece chosen, and what it is with its price
         public string ColourLabel;
         public string[] Swatches = new string[0];
@@ -43,24 +31,23 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The clothes shop, the hairdresser and the plastic surgeon (the game's character customisers): a catalogue panel
+    /// The clothes shop and the hairdresser (the game's character customisers; the plastic surgeon keeps the game's own screen): a catalogue panel
     /// docked at the left beside the game's 3D preview, its categories as round tabs down its edge with the game's own
     /// pictures, the category's kinds as chips, the pieces as a grid of tiles (the game's picture, the mod's name, price
-    /// and Owned or RLO), the chosen piece with its colours as a swatch row, the surgeon's sliders, and the screen's
+    /// and Owned or RLO), the chosen piece with its colours as a swatch row, and the screen's
     /// buttons with Save as the main one. What the basket holds stands at the right. Commands from
     /// <see cref="TabCommand"/>. Game-free. Cost: a layout a change, the grid's rows in view only.
     /// </summary>
     public static class UiWardrobe
     {
-        public const int TabCommand = 640, SubCommand = 641, GridCommand = 642, SwatchCommand = 644, SliderCommand = 645, ActionCommand = 646,
+        public const int TabCommand = 640, SubCommand = 641, GridCommand = 642, SwatchCommand = 644, ActionCommand = 646,
             FilterCommand = 648, SearchCommand = 649;                                  // GridCommand + UiCatalogue.Card is a tile
-        public static readonly int[] Commands = { TabCommand, SubCommand, GridCommand + UiCatalogue.Card, SwatchCommand, SliderCommand, ActionCommand, FilterCommand, SearchCommand };
-        public const float Width = 520f;                       // px: the surgeon's sliders, the preview keeps the rest
+        public static readonly int[] Commands = { TabCommand, SubCommand, GridCommand + UiCatalogue.Card, SwatchCommand, ActionCommand, FilterCommand, SearchCommand };
         public const float GridWidth = 760f;                   // px: four tiles across with their names and prices whole
         public const float LeastTile = 160f;                   // px: a tile's narrowest, a garment's name and its price on it
 
-        /// <summary>The panel's width: wide enough for four named tiles where there is a grid, the sliders' own where not.</summary>
-        public static float WidthOf(UiWardrobeModel m) => m.Grid.CardCount > 0 || m.SliderCount == 0 ? GridWidth : Width;
+        /// <summary>The panel's width: wide enough for four named tiles with their names and prices whole.</summary>
+        public static float WidthOf(UiWardrobeModel m) => GridWidth;
         private const float BasketW = 320f;
 
         public static void Lay(UiScene s, UiWardrobeModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -107,56 +94,33 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Pills(s, on, m.Subs, m.SubCount, m.Sub, SubCommand, ix, cy, iw) + UiTokens.S3;
             }
-            // From the foot up: the buttons, the chosen piece's band, the sliders; the grid takes what is left.
+            // From the foot up: the buttons, the chosen piece's band; the grid takes what is left.
             float buttons = Buttons(null, on, m, ix, 0f, iw, keys);
             float band = ChosenHeight(m, iw);
-            float sliders = SlidersHeight(m);
-            bool grid = m.Grid.CardCount > 0 || m.SliderCount == 0;
             // The panel ends under its buttons, its grid as tall as its rows, rather than standing the screen's height; a grid of
             // more rows than the screen holds scrolls in what is left.
-            float gridNeed = grid ? UiCatalogue.GridHeight(m.Grid, iw - UiTokens.S3, LeastTile) + UiTokens.S3 : 0f;
-            float under = cy + gridNeed + sliders - (sliders > 0f ? UiTokens.S2 : 0f) + (band > 0f ? UiTokens.S3 + band : 0f) + UiTokens.S3 + buttons + UiTokens.S4;
+            float gridNeed = UiCatalogue.GridHeight(m.Grid, iw - UiTokens.S3, LeastTile) + UiTokens.S3;
+            float under = cy + gridNeed + (band > 0f ? UiTokens.S3 + band : 0f) + UiTokens.S3 + buttons + UiTokens.S4;
             h = Math.Min(h, UiDraw.Snap(under - y));
             s.Items[panel].H = h;
             float foot = y + h - UiTokens.S4 - buttons;
-            float gridBottom = foot - UiTokens.S3 - (band > 0f ? band + UiTokens.S3 : 0f) - (sliders > 0f ? sliders + UiTokens.S3 : 0f);
-            if (grid)
+            float gridBottom = foot - UiTokens.S3 - (band > 0f ? band + UiTokens.S3 : 0f);
+            m.Grid.EmptyTitle = m.EmptyTitle;
+            m.Grid.EmptyBody = m.EmptyBody;
+            m.Grid.EmptyIcon = m.Icon;
+            int clips = s.ClipCount;
+            UiCatalogue.LayGrid(s, on, m.Grid, ix, cy, iw - UiTokens.S3, Math.Max(UiTokens.S16, gridBottom - cy), LeastTile, keys, out _, GridCommand);
+            if (s.ClipCount > clips)
             {
-                m.Grid.EmptyTitle = m.EmptyTitle;
-                m.Grid.EmptyBody = m.EmptyBody;
-                m.Grid.EmptyIcon = m.Icon;
-                int clips = s.ClipCount;
-                UiCatalogue.LayGrid(s, on, m.Grid, ix, cy, iw - UiTokens.S3, Math.Max(UiTokens.S16, gridBottom - cy), LeastTile, keys, out _, GridCommand);
-                if (s.ClipCount > clips)
-                {
-                    s.Clips[clips].Fills = true;   // a short kind's few pieces stand at the grid's top; the room under them is the grid's own
-                }
-                cy = gridBottom + UiTokens.S3;
+                s.Clips[clips].Fills = true;   // a short kind's few pieces stand at the grid's top; the room under them is the grid's own
             }
-            if (sliders > 0f)
-            {
-                for (int i = 0; i < m.SliderCount; i++)
-                {
-                    ref UiSliderRow r = ref m.Sliders[i];
-                    UiDraw.Text(s, on, ix, cy, iw, UiStyle.Small, UiRole.Text2, r.Label, UiFlags.Truncate | UiFlags.Label);
-                    UiDraw.Slider(s, on, ix, cy + SliderLabel, iw, r.Figure, r.Share, SliderCommand, i, r.Disabled, i == m.Held);
-                    cy += SliderRowH;
-                }
-                cy += UiTokens.S3 - UiTokens.S2;
-            }
+            cy = gridBottom + UiTokens.S3;
             if (band > 0f)
             {
                 Chosen(s, on, m, x, cy, w);
             }
             Buttons(s, on, m, ix, foot, iw, keys);
         }
-
-        // A slider's words over it, rounded up to the grid so the slider stands on it.
-        private static float SliderLabel => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S1);
-
-        private static float SliderRowH => SliderLabel + UiTokens.Control + UiTokens.S2;
-
-        private static float SlidersHeight(UiWardrobeModel m) => m.SliderCount > 0 ? m.SliderCount * SliderRowH : 0f;
 
         private static float ChosenHeight(UiWardrobeModel m, float iw)
         {

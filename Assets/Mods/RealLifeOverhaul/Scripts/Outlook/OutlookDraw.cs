@@ -173,6 +173,52 @@ namespace RealLifeOverhaul.Outlook
             }
         }
 
+        /// <summary>
+        /// A donut of shares from the top, clockwise: each slice in its colour, a hair apart from the next; a ring of nothing is drawn in
+        /// <paramref name="track"/>. Centred at (cx, cy) in the picture.
+        /// </summary>
+        public static void Donut(OutlookMesh mesh, float cx, float cy, float outer, float inner, float[] shares, int count, int[] colours, int track)
+        {
+            float start = -Mathf.PI * 0.5f;
+            float total = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                total += Mathf.Max(0f, shares[i]);
+            }
+            if (total < 0.001f)
+            {
+                Slice(mesh, cx, cy, outer, inner, start, start + Mathf.PI * 2f, K(track));
+                return;
+            }
+            float at = start;
+            for (int i = 0; i < count; i++)
+            {
+                float sweep = Mathf.Max(0f, shares[i]) / total * Mathf.PI * 2f;
+                if (sweep <= 0.0001f)
+                {
+                    continue;
+                }
+                float gap = sweep > 0.12f ? 0.02f : 0f;
+                Slice(mesh, cx, cy, outer, inner, at + gap, at + sweep - gap, K(colours[i % colours.Length]));
+                at += sweep;
+            }
+        }
+
+        // One ring segment between two angles, as strips of two triangles about every four degrees.
+        private static void Slice(OutlookMesh mesh, float cx, float cy, float outer, float inner, float from, float to, Color32 colour)
+        {
+            int steps = Mathf.Max(1, Mathf.CeilToInt((to - from) / 0.07f));
+            float step = (to - from) / steps;
+            for (int i = 0; i < steps; i++)
+            {
+                float a = from + i * step, b = a + step;
+                float ox0 = cx + Mathf.Cos(a) * outer, oy0 = cy + Mathf.Sin(a) * outer, ox1 = cx + Mathf.Cos(b) * outer, oy1 = cy + Mathf.Sin(b) * outer;
+                float ix0 = cx + Mathf.Cos(a) * inner, iy0 = cy + Mathf.Sin(a) * inner, ix1 = cx + Mathf.Cos(b) * inner, iy1 = cy + Mathf.Sin(b) * inner;
+                mesh.Triangle(ox0, oy0, ox1, oy1, ix1, iy1, colour);
+                mesh.Triangle(ox0, oy0, ix1, iy1, ix0, iy0, colour);
+            }
+        }
+
         /// <summary>A small arrow, up or down, in a box.</summary>
         public static void Arrow(OutlookMesh mesh, float x, float y, float size, bool up, int colour)
         {

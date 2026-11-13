@@ -249,21 +249,6 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        /// <summary>A person's strongest skill as the game names it, with its value 0 to 100.</summary>
-        public static bool TopSkill(EmployeeInstance person, out string name, out float value)
-        {
-            name = null;
-            value = 0f;
-            string primary = person != null ? person.GetPrimarySkill() : null;
-            if (string.IsNullOrEmpty(primary))
-            {
-                return false;
-            }
-            name = primary.GetLocalization();
-            value = person.GetSkillValue(primary);
-            return true;
-        }
-
         // ------------------------------------------------------------------------------------------------- a factory machine
 
         /// <summary>A recipe machine's recipe: what it makes, what it needs, what it makes an hour with the person at it, and the pallets' count of its output.</summary>

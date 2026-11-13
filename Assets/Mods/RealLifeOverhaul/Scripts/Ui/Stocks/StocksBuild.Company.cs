@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Ui
             var c = new StocksCompany();
             m.Co = c;
             Head(c, state, s, words);
+            c.Watching = state.Watching(s.Id);
             c.Chart = Chart(state, s, v, words);
             c.Order = TicketOf(state, s, buy, OrderType.Market, life, qty, words, kind, price, d);
             c.Order.Place = c.Order.Buying ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order");

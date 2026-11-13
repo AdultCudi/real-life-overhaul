@@ -412,13 +412,20 @@ internal static partial class UiSamples
                 : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
             CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadRb),
             CanFast = true, Fast = state == UiActivityState.Running, FastLabel = t("playeractivityui_fast_forward", "Fast forward"), FastKey = GameKey(k, "P", UiIcon.PadY),
-            CanCancel = true, CancelLabel = t("common_cancel", "Cancel"), StartLabel = "Start",
+            CanCancel = true, CancelLabel = t("common_cancel", "Cancel"),
             Prompts = new[]
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Back, Label = t("common_cancel", "Cancel") },
             },
         };
         m.PromptCount = m.Prompts.Length;
+        // The card's buttons as the game's panel hands them over: the way back at the left, Start on Interact, the time machine on its key.
+        m.Buttons = new[]
+        {
+            new UiSideButton { Label = m.CancelLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Left = true },
+            new UiSideButton { Label = "Start", Kind = UiButtonKind.Primary, Key = UiAction.Alt },
+            new UiSideButton { Label = m.SkipLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Count, GameKey = m.SkipKey },
+        };
         return m;
     }
 
@@ -456,37 +463,6 @@ internal static partial class UiSamples
         bar.Day = DayOf(SampleWords, 2, 413);
         return Over(bar);
     }
-
-    // ------------------------------------------------------------------------------------------------- the city map
-
-    /// <summary>The city map's side panel: the places' filters, the rent legend and a picked café.</summary>
-    public static UiMapPanelModel HudMap(UiWords t, bool picked) => new UiMapPanelModel
-    {
-        Title = "Rent", Icon = UiIcon.Coin, Views = new[] { UiIcon.Coin, UiIcon.Store, UiIcon.Key, UiIcon.Factory, UiIcon.Person, UiIcon.Car }, View = 0,
-        SearchPlaceholder = "Search for a place or an address", FiltersTitle = "Show on the map",
-        Filters = new[]
-        {
-            new UiMapFilter { Icon = UiIcon.Train, Name = "Subway stations", On = true, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Store, Name = "Your businesses", On = true, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Key, Name = "Homes for rent", On = false, Locate = true },
-            new UiMapFilter { Icon = UiIcon.ShoppingCart, Name = "Wholesale stores", On = true, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Car, Name = "Car dealers", On = false, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Bank, Name = "Banks", On = false, Locate = true },
-        },
-        LegendTitle = "Map legend", ScaleLabel = "Rent by block, a month", ScaleLow = "$2,000", ScaleHigh = "$40,000",
-        Picked = picked, PickedIcon = UiIcon.Coffee, PickedTitle = "Bloom Café",
-        PickedRows = new[] { new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue" }, new UiInfoRow { Label = "District", Value = "Midtown" } },
-        DestinationLabel = t("common_setdestination", "Set destination"),
-        Prompts = new[]
-        {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            new UiPrompt { Action = UiAction.Back, Label = t("common_close", "Close") },
-        },
-        PromptCount = 3,
-    };
-
-    public static void HudMapScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool picked) =>
-        WithBar(Over(HudBar(t, false, false, false)), () => UiMapPanel.Lay(s, HudMap(t, picked), f, dark, k));
 
     // ------------------------------------------------------------------------------------------------- the tool row
 

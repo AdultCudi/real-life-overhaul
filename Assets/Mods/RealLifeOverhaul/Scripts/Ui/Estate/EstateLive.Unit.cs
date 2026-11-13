@@ -79,7 +79,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 // The building's other units.
                 var others = new List<EstateRow>(4);
-                for (int i = 0; i < h.Units.Count && others.Count < 3; i++)
+                int othersShown = h.Units.Count - 1 > 3 ? 2 : 3;   // a last line takes the third place when there are more
+                for (int i = 0; i < h.Units.Count && others.Count < othersShown; i++)
                 {
                     if (i == n)
                     {
@@ -95,6 +96,10 @@ namespace RealLifeOverhaul.Ui
                             : null, Hue = ow.Hue, Icon = o.Let ? UiIcon.None : UseIcon(h.Use),
                         Chip = chip, ChipTone = tone, Amount = Month(o.Let ? o.Rent : EstateCatalogue.Share(market, o.Ask)), Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), _v.From))
                     });
+                }
+                if (h.Units.Count - 1 > othersShown)
+                {
+                    others.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, _runs.Do(() => Show(() => OpenTenants(place, -1)))));
                 }
                 p.OthersTitle = EstateText.T("reallife_ui_estate_other_units");
                 p.OthersCount = h.Units.Count > 1 ? (h.Units.Count - 1).ToString(Inv) : null;
@@ -312,7 +317,8 @@ namespace RealLifeOverhaul.Ui
             {
                 var rows = new List<EstateRow>(4);
                 string place = h.Place;
-                for (int b = 0; b < h.Services.Count && rows.Count < 3; b++)
+                int serviceCap = h.Services.Count > 3 ? 2 : 3;   // a last line takes the third place when there are more
+                for (int b = 0; b < h.Services.Count && rows.Count < serviceCap; b++)
                 {
                     ServiceBooking v = h.Services[b];
                     rows.Add(new EstateRow
@@ -321,6 +327,10 @@ namespace RealLifeOverhaul.Ui
                         Sub = EstateText.T("reallife_ui_estate_booked_with", "who", ContractorName(v.Contractor)), Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)),
                         ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = _runs.Do(() => Show(() => OpenWorks("wrk:" + place)))
                     });
+                }
+                if (h.Services.Count > serviceCap)
+                {
+                    rows.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, _runs.Do(() => Show(() => OpenWorks("wrk:" + place)))));
                 }
                 if (u.Call > 0)
                 {
@@ -374,7 +384,8 @@ namespace RealLifeOverhaul.Ui
                 bool toLet = u.ToLet;
                 lines.Add(_runs.Switch(EstateText.T("reallife_estate_ten_to_let"), toLet, on => Show(() => _d.SetToLet(place, n, on))));
                 var waiting = new List<EstateRow>(4);
-                for (int a = 0; a < u.Applicants.Count && a < 4; a++)
+                int applicantCap = u.Applicants.Count > 4 ? 3 : 4;   // a last line takes the fourth place when there are more
+                for (int a = 0; a < u.Applicants.Count && a < applicantCap; a++)
                 {
                     RentApplicant ap = u.Applicants[a];
                     string who = EstateText.Tenant(h.Use, ap.Kind);
@@ -389,6 +400,15 @@ namespace RealLifeOverhaul.Ui
                             _v.Pick = "app:" + place + ":" + id;
                         })
                     });
+                }
+                if (u.Applicants.Count > applicantCap)
+                {
+                    int all = 0;
+                    for (int k = 0; k < h.Units.Count; k++)
+                    {
+                        all += h.Units[k].Applicants.Count;
+                    }
+                    waiting.Add(MoreRow("reallife_ui_estate_more_applicants", all, _runs.Do(() => Show(() => OpenTenants(place, EstateTables.TenantApplies)))));
                 }
                 p.ApplicantsTitle = EstateText.T("reallife_ui_estate_applicants_title");
                 p.ApplicantsCount = waiting.Count > 0 ? u.Applicants.Count.ToString(Inv) : null;

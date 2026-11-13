@@ -131,6 +131,7 @@ internal static partial class Program
             "world prompt: more buttons than the card's places leaves the game's own box up with all of them");
 
         TableRuleChecks();
+        Estate3Checks();
     }
 
     // The tables of the Property and Services apps: the order a head sets, the filters, the sums and the empty cell last, as the old tables did.

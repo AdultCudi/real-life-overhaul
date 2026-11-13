@@ -8,10 +8,12 @@ namespace RealLifeOverhaul.Ui
         public const int ItemRows = 5;             // items in view in a list; the wheel moves them
         private const float ItemRow = UiTokens.Row;
 
+        private const int WholeLines = 64;   // a note's most: far past any text the panels carry, so each is drawn to its last line and its panel is as tall as it needs
+
         // ------------------------------------------------------------------ the item lists: Producer, Queue and Security
 
         private static float ItemsNoteHeight(UiDesignerItems m) =>
-            (string.IsNullOrEmpty(m.Note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(m.Note, UiStyle.Body, ItemsWidth - UiTokens.S4 * 2f, 3)) + UiTokens.S2)
+            (string.IsNullOrEmpty(m.Note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(m.Note, UiStyle.Body, ItemsWidth - UiTokens.S4 * 2f, WholeLines)) + UiTokens.S2)
             + (m.Meter >= 0 ? UiTokens.PairRow + UiTokens.S2 : 0f);
 
         /// <summary>The item list's height: its strip, what it says, and the rows in view or the empty state.</summary>
@@ -119,7 +121,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The time of day tool's height.</summary>
         public static float TimeHeight(UiDesignerTime t) =>
             UiDraw.Snap(UiFrame.Strip + UiTokens.S4 + Lh(UiStyle.Display) + UiTokens.S3 + UiTokens.Control + UiTokens.S1 + Lh(UiStyle.Small) + UiTokens.S4
-                        + UiDraw.Snap(UiTextRules.WrappedHeight(t.Note ?? string.Empty, UiStyle.Body, TimeWidth - UiTokens.S4 * 2f, 3)) + UiTokens.S4);
+                        + UiDraw.Snap(UiTextRules.WrappedHeight(t.Note ?? string.Empty, UiStyle.Body, TimeWidth - UiTokens.S4 * 2f, WholeLines)) + UiTokens.S4);
 
         /// <summary>Where the time slider stands for the face: its left edge and its width in px, to turn the pointer's place across it into a time.</summary>
         public static void TimeSlider(UiDesignerModel m, UiFrame frame, out float x, out float w)
@@ -171,7 +173,7 @@ namespace RealLifeOverhaul.Ui
             }
             cy += Lh(UiStyle.Small) + UiTokens.S4;
             UiDraw.Box(s, on, ix, cy - UiTokens.S2, iw, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
-            UiDraw.Text(s, on, ix, cy + UiTokens.S1, iw, UiStyle.Body, UiRole.Text2, t.Note, UiFlags.Wrap | UiFlags.Truncate, 3);
+            UiDraw.Text(s, on, ix, cy + UiTokens.S1, iw, UiStyle.Body, UiRole.Text2, t.Note, UiFlags.Wrap | UiFlags.Truncate, WholeLines);
         }
 
         // ------------------------------------------------------------------ save blueprint
@@ -236,7 +238,7 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The business type question's height.</summary>
         public static float TypeHeight(UiDesignerBusinessType t) =>
-            UiDraw.Snap(UiFrame.Strip + UiTokens.S4 + UiDraw.Snap(UiTextRules.WrappedHeight(t.Body ?? string.Empty, UiStyle.Body, TypeWidth - UiTokens.S4 * 2f, 3)) + UiTokens.S3
+            UiDraw.Snap(UiFrame.Strip + UiTokens.S4 + UiDraw.Snap(UiTextRules.WrappedHeight(t.Body ?? string.Empty, UiStyle.Body, TypeWidth - UiTokens.S4 * 2f, WholeLines)) + UiTokens.S3
                         + UiTokens.Control + (t.Open ? UiDraw.ChoiceListHeight(t.Count) + UiTokens.S1 : 0f) + UiTokens.S4 + UiTokens.Control + UiTokens.S4);
 
         private static void BusinessType(UiScene s, UiAt at, UiDesignerBusinessType t, float x, float y, float w, float h, IUiKeys keys)
@@ -245,7 +247,7 @@ namespace RealLifeOverhaul.Ui
             UiAt on = at.In(panel);
             float cy = UiDraw.TitleStrip(s, on, x, y, w, UiIcon.Building, t.Title, false) + UiTokens.S4;
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
-            int body = UiDraw.Text(s, on, ix, cy, iw, UiStyle.Body, UiRole.Text, t.Body, UiFlags.Wrap | UiFlags.Truncate, 3);
+            int body = UiDraw.Text(s, on, ix, cy, iw, UiStyle.Body, UiRole.Text, t.Body, UiFlags.Wrap | UiFlags.Truncate, WholeLines);
             cy += UiDraw.Snap(s.Items[body].H) + UiTokens.S3;
             string chosen = t.Chosen >= 0 && t.Chosen < t.Count ? t.Options[t.Chosen] : string.Empty;
             UiDraw.Choice(s, on, ix, cy, iw, chosen, TypeFieldCommand, 0, false);
@@ -269,14 +271,14 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The note card's height.</summary>
         public static float NoteHeight(UiDesignerNote n) =>
-            UiDraw.Snap(UiFrame.Strip + UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(n.Body ?? string.Empty, UiStyle.Body, NoteWidth - UiTokens.S4 * 2f, 4)) + UiTokens.S4);
+            UiDraw.Snap(UiFrame.Strip + UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(n.Body ?? string.Empty, UiStyle.Body, NoteWidth - UiTokens.S4 * 2f, WholeLines)) + UiTokens.S4);
 
         private static void Note(UiScene s, UiAt at, UiDesignerNote n, float x, float y, float w, float h)
         {
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
             float cy = UiDraw.TitleStrip(s, on, x, y, w, n.Icon, n.Title, false) + UiTokens.S3;
-            UiDraw.Text(s, on, x + UiTokens.S4, cy, w - UiTokens.S4 * 2f, UiStyle.Body, UiRole.Text2, n.Body, UiFlags.Wrap | UiFlags.Truncate, 4);
+            UiDraw.Text(s, on, x + UiTokens.S4, cy, w - UiTokens.S4 * 2f, UiStyle.Body, UiRole.Text2, n.Body, UiFlags.Wrap | UiFlags.Truncate, WholeLines);
         }
     }
 }

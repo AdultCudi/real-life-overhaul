@@ -60,13 +60,25 @@ namespace RealLifeOverhaul.Ui
             {
                 WorldHost.Remove("their switches are off");
             }
-            if (UiScreenSwitches.On(PickerId))
+            bool strip = UiScreenSwitches.On(GarageFace.Id);
+            if (UiScreenSwitches.On(PickerId) || strip)
             {
-                TravelList.Face = WorldPicker.Instance;
+                TravelList.Face = WorldPicker.Instance;   // one face offers each list to the garage strip first, then to the picker
             }
-            else
+            if (!UiScreenSwitches.On(PickerId))
             {
-                WorldPicker.Give("its switch is off");
+                if (strip)
+                {
+                    WorldPicker.Pause("its switch is off");
+                }
+                else
+                {
+                    WorldPicker.Give("its switch is off");
+                }
+            }
+            if (!strip)
+            {
+                GarageFace.Instance.Give("its switch is off");
             }
             if (UiScreenSwitches.On(OfferId))
             {
@@ -105,6 +117,7 @@ namespace RealLifeOverhaul.Ui
         public static void Rearm()
         {
             Offer.Rearm();
+            GarageFace.Instance.Rearm();
             for (int i = 0; i < Tools.Length; i++)
             {
                 Tools[i].Rearm();

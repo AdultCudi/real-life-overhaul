@@ -233,11 +233,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------ bots
 
-        public static readonly string[] RuleKeys =
-        {
-            "reallife_stk_rule_dip", "reallife_stk_rule_rider", "reallife_stk_rule_div", "reallife_stk_rule_rebalance",
-            "reallife_stk_rule_grid", "reallife_stk_rule_earn", "reallife_stk_rule_stop", "reallife_stk_rule_gap"
-        };
+        public static readonly string[] RuleKeys = RuleBots.NameKeys;
 
         public static readonly string[] RuleEnglish = { "Dip buyer", "Trend rider", "Dividend", "Rebalance", "Grid", "Earnings", "Stop guard", "Open gap" };
 
@@ -318,11 +314,13 @@ namespace RealLifeOverhaul.Ui
                 long ruleDay = RuleBots.DayOf(r, s.Day), ruleWeek = RuleBots.WeekOf(r, s.Day);
                 int c = r.Chip < 0 || r.Chip >= chips.Length ? 0 : r.Chip;
                 rules[i] = Row(new[] { RuleName((int)r.Kind, w), k != null ? k.Ticker : string.Empty, Money(r.Budget), DerivText.Signed(ruleDay),
-                    DerivText.Signed(ruleWeek), r.Owner == 0 ? chips[c] : w("reallife_stk_rival", "A rival") },
+                    DerivText.Signed(ruleWeek), r.DrawdownBp > 0 ? "-" + MarketText.Percent(r.DrawdownBp) : MarketText.Percent(0), r.Closed.ToString("N0"),
+                    r.Owner == 0 ? chips[c] : w("reallife_stk_rival", "A rival") },
                     (int)UiIcon.Cpu, r.Owner == 0 ? null : w("reallife_stk_rival", "A rival"),
                     new[] { UiRole.None, UiRole.None, UiRole.None,
                         ruleDay > 0 ? UiRole.OkText : ruleDay < 0 ? UiRole.DangerText : UiRole.None,
-                        ruleWeek > 0 ? UiRole.OkText : ruleWeek < 0 ? UiRole.DangerText : UiRole.None, r.Owner == 0 ? ChipTones[c] : UiRole.Muted });
+                        ruleWeek > 0 ? UiRole.OkText : ruleWeek < 0 ? UiRole.DangerText : UiRole.None, r.DrawdownBp > 0 ? UiRole.DangerText : UiRole.None, UiRole.None,
+                        r.Owner == 0 ? ChipTones[c] : UiRole.Muted });
             }
             MarketBots.Figures(s, s.Day, out long day, out long week);   // what the player's firms and rules realised today and this week: never a lifetime sum, never cash flow
             m.Status = Status(d);
@@ -360,8 +358,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     Col(w("reallife_stk_sh_rule", "Rule"), UiCellKind.Tile), Col(w("reallife_stk_sh_company", "Company"), UiCellKind.Text, 100f),
                         Col(w("reallife_stk_sh_budget", "Budget"), UiCellKind.Figure, 112f),
-                    Col(w("reallife_stk_gain_today", "Gain realised today"), UiCellKind.Figure, 136f), Col(w("reallife_stk_gain_week", "Gain realised this week"),
-                        UiCellKind.Figure, 136f), Col(w("reallife_mkt_col_state", "State"), UiCellKind.Chip, 152f)
+                    Col(w("reallife_stk_gain_today", "Gain realised today"), UiCellKind.Figure, 124f), Col(w("reallife_stk_gain_week", "Gain realised this week"),
+                        UiCellKind.Figure, 124f), Col(w("reallife_mkt_bot_col_fall", "Deepest fall"), UiCellKind.Figure, 112f),
+                    Col(w("reallife_mkt_bot_col_trades", "Trades"), UiCellKind.Figure, 88f), Col(w("reallife_mkt_col_state", "State"), UiCellKind.Chip, 152f)
                 },
                 Rows = rules, RowCount = rules.Length, EmptyIcon = UiIcon.Cpu,
                 EmptyTitle = w("reallife_stk_bots_empty", "No bots yet"), EmptyBody = w("reallife_stk_bots_empty_body", "Hire a firm, or add a rule. Rivals run the same rules.")

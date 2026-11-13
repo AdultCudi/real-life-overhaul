@@ -1439,6 +1439,24 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-oldside")
+        {
+            UiOldSide();   // (the Economy app's People tab, a firm's whole page on the game's widgets and the Mods page's switch that reads a fault, alone: UiOldSideChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-garage")
+        {
+            UiGarageHostChecks();   // (the Garage's lists as the garage strip: the custom shop, the workshop, My vehicles, a stand's rack: UiGarageHostChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-forms3")
+        {
+            UiForms3();   // (the dialogue forms' notes, entries and labels whole, answers that scroll, the game's picture beside a line, the hint chips past nine, the pieces nothing filled gone and the activity card fitted: UiForms3Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-guard")
         {
             UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
@@ -1646,6 +1664,7 @@ internal static partial class Program
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
+        UiGarageHostChecks();   // the Garage's lists as the garage strip (UiGarageHostChecks.cs)
         UiKit2Checks();      // the kit's second pass: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion (UiKit2Checks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
@@ -1870,6 +1889,7 @@ internal static partial class Program
         UiOff();            // the RLO interface off by default: the step that switches a saved "on" off once and never again, who is told, the default and the presets, the order at start, the texts (UiOffChecks.cs)
         OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
         UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
+        UiOldSide();        // what only the kit had, given an equal on the game's widgets: the Economy app's People tab, a firm's whole page in the Tech app, the Mods page's switch that reads a fault (UiOldSideChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

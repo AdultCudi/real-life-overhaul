@@ -14,7 +14,6 @@ namespace RealLifeOverhaul.Ui
         Bonds,
         Futures,
         Company,
-        Ticket,
         Index
     }
 
@@ -36,20 +35,18 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The order ticket's figures, already in the game's words. Plain data.</summary>
     public sealed class StocksTicket
     {
-        public string Side, Kind, Life, Shares, Limit, Cost, Fee, Total, CashAfter, After, Max;
+        public string Shares;
         public bool CanLess = true, CanMore = true;
-        public string Place, Instead;
+        public string Place;
         public bool PlaceDisabled;
         public string Impact;                         // "Its size moves the price 1.2% against it" when the order is big enough to matter, else null
-        public string Price, Why, Watch, PutBack;     // a limit or stop price (null at the market), why it cannot be placed, the watch button, the share of dividends put back
+        public string Price, Why, PutBack;            // a limit or stop price (null at the market), why it cannot be placed, the share of dividends put back
         // The order panel of the company page: segmented choices and labelled rows.
         public string Title, CashWords;               // "Order" and "Cash $1.9B"
         public string[] Sides = new string[0], Kinds = new string[0], Lives = new string[0];
         public int SideAt, KindAt, LifeAt;
         public string LifeLabel, SharesLabel, PriceLabel, PutBackLabel;
         public StocksRow[] Rows = new StocksRow[0];   // price, cost, fee, total and the most that can be bought or sold
-        public int MostRow = -1;                      // which of the rows is that most
-        public long Most;                             // the most shares the cash buys (or the holding sells), the number the row shows
         public bool Buying = true;
     }
 
@@ -70,11 +67,8 @@ namespace RealLifeOverhaul.Ui
         public StocksCompany Co;                                   // the company page
         public UiDataTableModel Table;
         public UiChartModel Chart;
-        public UiStatementModel Statement;
         public UiTrackModel Track;
         public UiHeroModel Hero;
-        public UiFirmHeadModel Head;
-        public UiDecisionModel Decision;
         public float[] Donut;
         public string[] DonutLabels = new string[0];
         public string[] DonutValues = new string[0];
@@ -93,7 +87,6 @@ namespace RealLifeOverhaul.Ui
         public string EmptyTitle, EmptyBody;
         public UiIcon EmptyIcon = UiIcon.ChartLineUp;
         public string PromptBack, PromptMove, PromptSelect, PromptPlace, PromptOther;
-        public UiFormRow[] Form = new UiFormRow[0];
         public string RateLine;                                    // the bank rate and inflation, under the Market's figures and the index page's chart
         public string NewsTitle;                                   // the Market's news card: its title, its lines (newest first) and whether the lines are the no-news note
         public string[] News = new string[0];

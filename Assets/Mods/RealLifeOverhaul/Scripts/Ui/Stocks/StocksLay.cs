@@ -15,11 +15,6 @@ namespace RealLifeOverhaul.Ui
 
         public static void Lay(UiScene s, StocksModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            if (m.Page == StocksPage.Ticket && m.Decision != null)
-            {
-                UiDecision.Lay(s, m.Decision, frame, dark, keys);
-                return;
-            }
             s.Begin("stocks", frame.Width, frame.Height, dark);
             frame.Icon = UiIcon.ChartLineUp;
             int win = UiDraw.Window(s, frame, m.Title, keys);
@@ -45,7 +40,7 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Views(s, at, m, x, y, w);
             }
-            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Co == null && m.Page != StocksPage.Index)
+            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Co == null && m.Page != StocksPage.Index)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, Empty, keys);
             }
@@ -363,14 +358,9 @@ namespace RealLifeOverhaul.Ui
             return bottom;
         }
 
-        // A line of words over a table: the History's totals over its trades; a statement when the page has one (the samples').
+        // A line of words over a table: the History's totals over its trades.
         private static void NoteTable(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            if (m.Statement != null)
-            {
-                Statement(s, at, m, x, y, w, bottom, keys);
-                return;
-            }
             if (!string.IsNullOrEmpty(m.Note))
             {
                 UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Body, UiRole.Text2, m.Note, UiFlags.Truncate);
@@ -407,15 +397,6 @@ namespace RealLifeOverhaul.Ui
             }
             Table(s, at, m, x, y, w, bottom, keys);
             return bottom;
-        }
-
-        private static void Statement(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
-        {
-            if (m.Statement == null)
-            {
-                return;
-            }
-            UiStatement.Lay(s, at, m.Statement, x, y, w, bottom - y, keys);
         }
 
         private static float Listing(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)

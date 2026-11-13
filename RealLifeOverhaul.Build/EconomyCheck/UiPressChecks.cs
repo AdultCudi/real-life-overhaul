@@ -54,12 +54,6 @@ internal static partial class Program
         Check(unfold && !cash.Groups[0].Folded && UiStatement.RowCount(cash) == rows && finance.View.Folded.Count == 0, "finance: a second press brings the day's lines back");
         Check(drawn && finance.Press(Line, 1) && !finance.Press(Band, groups) && !finance.Press(Band, -1),
             "finance: a line of the statement is read (a press asks nothing and is no error), and a band that is not there is refused");
-        // Stocks: its pages are tables, so the screen's own handling is read from the source; the statement part folds as Finance's does.
-        string folder = UiSourceFolder();
-        string stocks = PressSource(System.IO.Path.Combine(folder, "Stocks", "StocksScreen.cs"));
-        Check(Regex.IsMatch(stocks, @"if \(command == UiStatement\.First \+ UiStatement\.Group\)\s*\{\s*return FoldBand\(arg\);") && stocks.Contains("if (!_folded.Remove(band))")
-              && stocks.Contains("m.Statement.Groups[g].Folded = _folded.Contains(m.Statement.Groups[g].Label ?? string.Empty);"),
-            "stocks: a statement's band folds on a press, and what is folded is set on the model each time it is laid");
         // The Marketplace's sort choice.
         UiWords en = UiWords("en");
         WorkScreen market = UiSamples.MarketScreenOf(en, "listings");

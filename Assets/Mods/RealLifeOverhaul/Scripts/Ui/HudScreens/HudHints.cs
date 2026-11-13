@@ -81,6 +81,22 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// The game's hint lines alone as above, into an array that grows to hold every line (the interior designer's may be
+        /// more than nine, as a mod adds its own); how many.
+        /// </summary>
+        public static int Mirror(ref UiPrompt[] into, out int sig)
+        {
+            int n = Mirror(into, out sig);
+            if (_count > into.Length)
+            {
+                into = new UiPrompt[_count];
+                Array.Copy(_prompts, into, _count);
+                n = _count;
+            }
+            return n;
+        }
+
         /// <summary>The game's hint lines alone (no walking keys and no way back) read into chips: how many, and a number that changes when a line does.</summary>
         public static int Mirror(UiPrompt[] into, out int sig)
         {

@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>Options, Tests: each news screen on the kit, and each switch flipped back. A notice says why one cannot open.</summary>
     public sealed partial class UiDirector
     {
-        private static readonly string[] NewsSwitchIds = { "economy", "people", "newsstand", "ledger", "ending", "household", "renters" };
+        private static readonly string[] NewsSwitchIds = { "economy", "people", "newsstand", "ledger", "ending" };
 
         public void TestEconomy() => OpenNews(OutlookDirector.AppId, false);
 

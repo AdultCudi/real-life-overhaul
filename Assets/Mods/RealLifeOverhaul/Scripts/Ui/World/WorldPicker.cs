@@ -45,6 +45,10 @@ namespace RealLifeOverhaul.Ui
 
         public bool Take(TravelList list)
         {
+            if (GarageFace.Instance.Take(list))
+            {
+                return true;   // the Garage's lists are the garage strip's
+            }
             if (!UiDirector.On || !UiScreenSwitches.On(WorldKits.PickerId) || list == null || list.Window == null || Theirs(list.Name))
             {
                 return false;
@@ -66,6 +70,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Gone(TravelList list)
         {
+            GarageFace.Instance.Gone(list);
             if (!ReferenceEquals(list, _list))
             {
                 return;
@@ -89,6 +94,13 @@ namespace RealLifeOverhaul.Ui
             {
                 TravelList.Face = null;
             }
+            Pause(why);
+            GarageFace.Instance.Give(why);
+        }
+
+        /// <summary>The window again for a list the picker itself draws, the face left in place for the Garage's strip (the picker's switch went off).</summary>
+        public static void Pause(string why)
+        {
             TravelList list = Instance._list;
             if (list != null)
             {

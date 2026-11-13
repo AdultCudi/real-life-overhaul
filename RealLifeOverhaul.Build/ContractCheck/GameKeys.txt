@@ -336,6 +336,8 @@ ba:vehicletype_umcdesertdeliveryjob
 ba:vehicletype_umcnunavut
 ba:vehicletype_vordpony
 ba:vehicletype_vordv150
+bank_dialog_interest_daily_payment
+bank_dialog_total_daily_payment
 bizman_add_plan
 bizman_alerts
 bizman_avg_daily_income
@@ -586,7 +588,6 @@ character_customization_hair
 character_customization_head
 character_customization_legs
 character_customization_shoes
-character_customization_skin_color
 character_customization_torso
 citymap_category_active_businesses
 citymap_category_activities
@@ -674,7 +675,6 @@ common_redo
 common_refresh
 common_required_production_machines
 common_requirements
-common_revert
 common_risk
 common_sales_price
 common_saturday
@@ -756,6 +756,7 @@ dialog_accept_button
 dialog_bank_amount_to_loan
 dialog_bank_investment_header
 dialog_bank_investment_risk_info
+dialog_bank_investment_risk_info_tooltip
 dialog_bank_larry
 dialog_bank_loan_amount_header
 dialog_bank_new_investment
@@ -944,7 +945,6 @@ interiordesigner_show_lower_floor
 interiordesigner_show_upper_floor
 interiordesigner_timeofday_tool
 interiordesigner_wall_tool
-intro_tooltip_randomize_appearance
 inventory_pricing_covered_by_pricing_manager
 inventory_pricing_sold_breakdown
 inventory_pricing_sold_breakdown_in_service
@@ -1164,7 +1164,6 @@ personalgoal_taxes_paid
 personalgoal_taxi_rides
 phone_call_button
 phone_view_on_map_button
-plastic_surgery_title
 playeractivityui_fast_forward
 playeractivityui_time_remaining
 playeractivityui_timemachine

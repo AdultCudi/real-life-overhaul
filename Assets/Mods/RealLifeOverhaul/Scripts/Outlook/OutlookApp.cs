@@ -117,6 +117,7 @@ namespace RealLifeOverhaul.Outlook
 
         public void Closed()
         {
+            PutPeopleAway();   // a page opened from the People tab is put away: the app opens on its tab
             Save();
         }
 
@@ -133,8 +134,15 @@ namespace RealLifeOverhaul.Outlook
         {
             if (tab == _tab)
             {
+                if (tab == OutlookTab.People)
+                {
+                    PutPeopleAway();   // the tab pressed while one of its pages is open leads back to its first page, as the kit's tab does
+                    _body.ScrollToTop();
+                    Refresh();
+                }
                 return;
             }
+            PutPeopleAway();   // a tab pressed puts away what the People tab had open
             _tab = tab;
             _body.ScrollToTop();
             Refresh();

@@ -54,10 +54,6 @@ public static partial class UiPreviewRunner
             Lay = (s, f, d, k) => UiSamples.HudSkipScene(s, f, d, k, English), HoverCommand = UiTimeSkip.CancelCommand, Walk = Moves("D") });
         screens.Add(new Screen { Name = "hud_time_skip_locked", AppName = "Skip time", Icon = UiIcon.SkipForward, Backdrop = "11.jpg",
             Lay = (s, f, d, k) => UiSamples.HudSkipScene(s, f, d, k, English, true), NoKeys = true, Walk = Moves("") });
-        screens.Add(new Screen { Name = "hud_map", AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = "map_rent.png",
-            Lay = (s, f, d, k) => UiSamples.HudMapScene(s, f, d, k, English, true), HoverCommand = UiMapPanel.FilterCommand, HoverArg = 1, Walk = Moves("RDRDRDRDRDRDLDD") });
-        screens.Add(new Screen { Name = "hud_map_filters", AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = "map_rent.png",
-            Lay = (s, f, d, k) => UiSamples.HudMapScene(s, f, d, k, English, false), HoverCommand = UiMapPanel.LocateCommand, HoverArg = 2, Walk = Moves("RDRDRDRDRDLDD") });
         screens.Add(Hud("hud_tools", "03.jpg", (s, f, d, k) => UiSamples.HudTools(s, f, d, k, English, true), UiToolRow.ChoiceCommand, 3, "URRRRRLLDR"));
         screens.Add(Hud("hud_minimap", "13.jpg", (s, f, d, k) => UiSamples.HudMinimapScene(s, f, d, k, English, false), UiObjectives.LocateCommand, 0, "DDDD"));
         screens.Add(Hud("hud_minimap_beside", "02.jpg", (s, f, d, k) => UiSamples.HudMinimapScene(s, f, d, k, English, true), UiHudNotice.ActionCommand, 0, "RR"));

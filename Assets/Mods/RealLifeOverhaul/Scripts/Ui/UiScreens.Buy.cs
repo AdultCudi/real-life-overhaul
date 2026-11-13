@@ -6,8 +6,8 @@ namespace RealLifeOverhaul.Ui
     {
         // Buying and what the player holds: the game's checkout and tax payment, a vehicle's purchase beside its showcase
         // camera, the item panel over the world, manage cargo, the clothes shop, the hairdresser and the surgeon beside
-        // the 3D preview (Scripts/Ui/Buy); and the mod's garage shop beside its turntable, drawn and checked while the shop
-        // itself still opens its list.
+        // the 3D preview (Scripts/Ui/Buy); and the mod's Garage lists (the custom shop beside its turntable, the workshop, My
+        // vehicles and a stand's rack) as one strip (Scripts/Ui/Garage).
         static partial void AddBuy(List<UiScreenDef> screens)
         {
             screens.AddRange(new[]
@@ -54,24 +54,27 @@ namespace RealLifeOverhaul.Ui
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("wardrobe", UiTemplate.InfoPanel, "WardrobeScreen", new[]
                 {
-                    "change_character_clothes_title", "change_character_clothes_save_button", "change_character_hair_title", "change_character_hair_save_button", "plastic_surgery_title",
+                    "change_character_clothes_title", "change_character_clothes_save_button", "change_character_hair_title", "change_character_hair_save_button",
                     "character_customization_torso", "character_customization_legs", "character_customization_shoes", "character_customization_hair", "character_customization_head",
-                    "character_customization_skin_color", "common_apply_changes", "common_revert", "intro_tooltip_randomize_appearance", "dialog_leave_button",
-                    "reallife_clothes_screen_owned", "reallife_creator_tag", "reallife_ui_buy_colour", "reallife_ui_buy_strength", "reallife_ui_buy_weight",
+                    "dialog_leave_button",
+                    "reallife_clothes_screen_owned", "reallife_creator_tag", "reallife_ui_buy_colour",
                     "reallife_ui_buy_empty_grid", "reallife_ui_buy_empty_grid_body", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_ui_buy_filter_all", "reallife_ui_buy_filter_owned", "reallife_ui_buy_filter_rlo", "reallife_ui_buy_filter_new", "reallife_ui_buy_find",
                     "reallife_ui_buy_basket", "reallife_ui_buy_to_pay",
                     "reallife_ui_buy_reset", "reallife_ui_buy_piece", "reallife_ui_buy_style", "reallife_ui_buy_free"
                 }).Switch(UiScreenSwitches.Buy),
-                new UiScreenDef("garage_shop", UiTemplate.InfoPanel, null, new[]   // drawn and checked; the shop still opens its list (Garage/GarageShop)
+                new UiScreenDef("garage_shop", UiTemplate.InfoPanel, "GarageShopScreen", new[]   // the Garage's list window: the custom shop, the workshop, My vehicles, a stand's rack (Ui/Garage)
                 {
                     "reallife_customshop_title", "reallife_customshop_total", "reallife_garage_money", "reallife_garage_tab_paint", "reallife_garage_tab_finish",
                     "reallife_garage_tab_lights", "reallife_garage_tab_body", "reallife_garage_tab_parts", "reallife_tuning_tab_figures", "reallife_tuning_tab_figures_detail",
                     "reallife_garage_list_choose", "reallife_garage_list_chosen", "reallife_garage_list_back_name", "reallife_garage_list_pay", "reallife_garage_pay",
                     "reallife_garage_list_reset", "reallife_garage_stock",
                     "reallife_garage_list_stock_detail", "reallife_garage_paint_prices", "reallife_customshop_done", "reallife_ui_prompt_move", "reallife_ui_prompt_select",
-                    "reallife_ui_prompt_back"
-                }),
+                    "reallife_ui_prompt_back", "common_cancel", "reallife_garage_list_open", "reallife_garage_list_order", "reallife_garage_list_back", "reallife_garage_list_fit",
+                    "reallife_garage_list_remove", "reallife_garage_list_next", "reallife_garage_list_bring", "reallife_garage_summary_show", "reallife_bike_button_buy",
+                    "reallife_bike_button_sell", "reallife_tuning_list_read",
+                    "reallife_garage_sounds_rev"
+                }).Switch(UiScreenSwitches.Buy),
             });
         }
     }

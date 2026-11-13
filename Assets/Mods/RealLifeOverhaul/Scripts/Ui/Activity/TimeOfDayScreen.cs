@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Ui
 
         private readonly InGameTimeOfDayPanel _tool;
         private readonly Slider _slider;
+        private readonly TMPro.TMP_Text _words;   // the tool's own words for the hour, which the kit shows as the tool writes them
         private readonly UiTimeOfDayModel _m = new UiTimeOfDayModel();
         private bool _dirty = true;
         private float _next;
@@ -24,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         {
             _tool = tool;
             _slider = GameContract.DayToolSlider.Field != null ? GameContract.DayToolSlider.Field.GetValue(tool) as Slider : null;
+            _words = GameContract.DayToolText.Field != null ? GameContract.DayToolText.Field.GetValue(tool) as TMPro.TMP_Text : null;
         }
 
         public string Id => "time_of_day";
@@ -48,7 +50,8 @@ namespace RealLifeOverhaul.Ui
             _dirty = false;
             float min = _slider != null ? _slider.minValue : 300f, max = _slider != null ? _slider.maxValue : 1440f, value = _slider != null ? _slider.value : min;
             _m.Title = UiText.T("reallife_ui_time_of_day");
-            _m.Clock = Clock(value);
+            string said = UiWidgets.Text(_words);
+            _m.Clock = string.IsNullOrEmpty(said) ? Clock(value) : said;
             _m.Share = max > min ? (value - min) / (max - min) : 0f;
             _m.From = Clock(min);
             _m.To = Clock(max);
