@@ -52,6 +52,15 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The time pill's clock and day, a hover target of its own (arg 3): its card says the years and days; pressed it does nothing.</summary>
         public const int ClockArg = 3;
 
+        /// <summary>
+        /// The full menu's bar: the clock and the money rest targets that press nothing, so the pointer on them brings their cards (the years and days, the net worth), as the top
+        /// bar's own hover does. In the frame's range of commands, so the host asks the shell, never a screen, and a press on them is quiet.
+        /// </summary>
+        public const int ClockHoverCommand = 9013, MoneyHoverCommand = 9014;
+
+        /// <summary>True for the bar's hover-only targets (<see cref="ClockHoverCommand"/>, <see cref="MoneyHoverCommand"/>).</summary>
+        public static bool IsBarHover(int command) => command == ClockHoverCommand || command == MoneyHoverCommand;
+
         /// <summary>One of the top bar's small buttons in their pill after the place (arg: its index in UiStatusModel.Tools).</summary>
         public const int ToolPillCommand = 9025;
 
@@ -259,7 +268,13 @@ namespace RealLifeOverhaul.Ui
         private static string WeatherTop(UiStatusModel m) =>
             !string.IsNullOrEmpty(m.Temperature) ? m.Temperature : !string.IsNullOrEmpty(m.Season) ? m.Season : m.WeatherWords;
 
-        private static UiStyle WeatherStyle(UiStatusModel m) => !string.IsNullOrEmpty(m.Temperature) ? UiStyle.Number : UiStyle.BodyStrong;
+        // The top line's style: the temperature's figure, or the season's words larger as the size option asks (the pill is as tall as two of the largest).
+        private static UiStyle WeatherStyle(UiStatusModel m) => !string.IsNullOrEmpty(m.Temperature) ? UiStyle.Number
+            : string.IsNullOrEmpty(m.Season) ? UiStyle.BodyStrong : m.SeasonSize >= 2 ? UiStyle.Hero : m.SeasonSize == 1 ? UiStyle.Number : UiStyle.BodyStrong;
+
+        // The line under it: small as it was, or the season's words a step larger under the temperature, as the option asks.
+        private static UiStyle UnderStyle(UiStatusModel m) => string.IsNullOrEmpty(m.Temperature) || string.IsNullOrEmpty(m.Season) ? UiStyle.Small
+            : m.SeasonSize >= 2 ? UiStyle.Number : m.SeasonSize == 1 ? UiStyle.BodyStrong : UiStyle.Small;
 
         private static string WeatherUnder(UiStatusModel m) =>
             !string.IsNullOrEmpty(m.Temperature) ? (!string.IsNullOrEmpty(m.Season) ? m.Season : m.WeatherWords) : !string.IsNullOrEmpty(m.Season) ? m.WeatherWords : null;
@@ -267,7 +282,7 @@ namespace RealLifeOverhaul.Ui
         private static float WeatherWidth(UiStatusModel m, bool words)
         {
             string top = WeatherTop(m);
-            return string.IsNullOrEmpty(top) ? 0f : Round(PillGlyph, Math.Max(Words(top, WeatherStyle(m)), words ? Words(WeatherUnder(m), UiStyle.Small) : 0f));
+            return string.IsNullOrEmpty(top) ? 0f : Round(PillGlyph, Math.Max(Words(top, WeatherStyle(m)), words ? Words(WeatherUnder(m), UnderStyle(m)) : 0f));
         }
 
         private static float PlaceWidth(UiStatusModel m, bool district) => string.IsNullOrEmpty(m.Place) ? 0f
@@ -287,8 +302,11 @@ namespace RealLifeOverhaul.Ui
         private static float NeedsWidth(UiStatusModel m, float cell)
         {
             int n = NeedCount(m);
-            return n == 0 ? 0f : PillPad * 2f + n * cell + (n - 1) * NeedGap(cell);
+            return n == 0 ? 0f : PillPad * 2f + PortraitRoom(m) + n * cell + (n - 1) * NeedGap(cell);
         }
+
+        // The player's portrait at the needs' head, as the game's top bar keeps its avatar beside them: its room with the gap after it, 0 for none.
+        private static float PortraitRoom(UiStatusModel m) => string.IsNullOrEmpty(m.Player) ? 0f : UiTokens.AvatarRow + PillInner;
 
         private static float NeedGap(float cell) => cell > NeedTight ? UiTokens.S2 : UiTokens.S1;
 
@@ -313,7 +331,8 @@ namespace RealLifeOverhaul.Ui
                 bool chosen = m.ToolsOn != null && i < m.ToolsOn.Length && m.ToolsOn[i];
                 bool off = m.ToolsOff != null && i < m.ToolsOff.Length && m.ToolsOff[i];
                 int first = s.ItemCount;
-                int node = IconButton(s, on, bx, by, ToolButton, m.Tools[i], UiRole.Text, m.PillsPress ? ToolPillCommand : ShellToolCommand, i, chosen);
+                UiRole tint = m.ToolTints != null && i < m.ToolTints.Length && m.ToolTints[i] != UiRole.None ? m.ToolTints[i] : UiRole.Text;
+                int node = IconButton(s, on, bx, by, ToolButton, m.Tools[i], tint, m.PillsPress ? ToolPillCommand : ShellToolCommand, i, chosen);
                 if (off)
                 {
                     Dim(s, first, node);
@@ -439,6 +458,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Node(s, at, x, y, w, BarPill, command, 0, face);
             }
+            else if (m.PillsHover && command == MoneyPillCommand)
+            {
+                Node(s, at, x, y, w, BarPill, MoneyHoverCommand, 0, face);
+            }
         }
 
         // A pill's face, centred on the bar's centre line rather than on a grid step from the bar's top.
@@ -451,14 +474,14 @@ namespace RealLifeOverhaul.Ui
 
         // Two lines centred on the pill's height: the reading over its quieter words (the day, the weather, the district), or
         // the reading alone, both from x and as wide as the column.
-        private static void Column(UiScene s, UiAt at, float x, float y, float w, string top, UiStyle style, string under)
+        private static void Column(UiScene s, UiAt at, float x, float y, float w, string top, UiStyle style, string under, UiStyle underStyle = UiStyle.Small)
         {
-            float th = UiTextRules.LineHeight(style), uh = string.IsNullOrEmpty(under) ? 0f : UiTextRules.LineHeight(UiStyle.Small);
+            float th = UiTextRules.LineHeight(style), uh = string.IsNullOrEmpty(under) ? 0f : UiTextRules.LineHeight(underStyle);
             float ty = y + (BarPill - th - uh) / 2f;
             Text(s, at, x, ty, w, style, UiRole.Text, top, UiFlags.Middle | UiFlags.Truncate | UiFlags.Chrome);
             if (uh > 0f)
             {
-                Text(s, at, x, ty + th, w, UiStyle.Small, UiRole.Muted, under, UiFlags.Middle | UiFlags.Truncate | UiFlags.Chrome);
+                Text(s, at, x, ty + th, w, underStyle, UiRole.Muted, under, UiFlags.Middle | UiFlags.Truncate | UiFlags.Chrome);
             }
         }
 
@@ -483,6 +506,10 @@ namespace RealLifeOverhaul.Ui
             if (m.PillsPress)
             {
                 Node(s, inside, cx, y, x + w - PillPad - cx, BarPill, TimePillCommand, ClockArg, face);
+            }
+            else if (m.PillsHover)
+            {
+                Node(s, inside, cx, y, x + w - PillPad - cx, BarPill, ClockHoverCommand, 0, face);
             }
         }
 
@@ -510,7 +537,7 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             PillIcon(s, inside, x + PillPad, y, PillGlyph, m.Weather);
             float cx = x + PillPad + PillGlyph + PillInner;
-            Column(s, inside, cx, y, x + w - PillPad - cx, WeatherTop(m), WeatherStyle(m), words ? WeatherUnder(m) : null);
+            Column(s, inside, cx, y, x + w - PillPad - cx, WeatherTop(m), WeatherStyle(m), words ? WeatherUnder(m) : null, UnderStyle(m));
         }
 
         // The place: the pin, the nearest building's address over its district, as the game's HUD names them.
@@ -533,6 +560,11 @@ namespace RealLifeOverhaul.Ui
             int face = PillFace(s, at, x, y, w);
             UiAt inside = at.In(face);
             float gap = NeedGap(cell), cx = x + PillPad;
+            if (PortraitRoom(m) > 0f)
+            {
+                UiDraw.Portrait(s, inside, cx, y + (BarPill - UiTokens.AvatarRow) / 2f, UiTokens.AvatarRow, m.Player, UiColour.HueOf(m.Player), UiRole.None);
+                cx += PortraitRoom(m);
+            }
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.Lightning, m.Energy);
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.ForkKnife, m.Hunger);
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.SmileyHappy, m.Happiness);
@@ -677,7 +709,9 @@ namespace RealLifeOverhaul.Ui
             return rows == 0 ? 0f : rows * KeyChipHeight + (rows - 1) * UiTokens.S2;
         }
 
-        private static float KeyChipWidth(ref UiPrompt p, IUiKeys keys) => Snap(ChipInset + PromptWidth(ref p, keys) + UiTokens.S2);
+        // A chip of words alone (a hint line with no key, or one past the number keys that name them) has no cap.
+        private static float KeyChipWidth(ref UiPrompt p, IUiKeys keys) => p.Action == UiAction.Count
+            ? Snap(ChipInset + UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1 + UiTokens.S2) : Snap(ChipInset + PromptWidth(ref p, keys) + UiTokens.S2);
 
         /// <summary>
         /// Where the chips stand unless a piece of the HUD is in the way: in the lane over the bar, their last row ending at the
@@ -744,13 +778,18 @@ namespace RealLifeOverhaul.Ui
                     int chip = Box(s, UiAt.Screen, cx, ry, cw, KeyChipHeight, UiRole.StatusBar, UiRole.None, UiTokens.RadiusMedium);
                     UiAt on = UiAt.Screen.In(chip);
                     float kx = cx + ChipInset;
-                    kx += KeyCap(s, on, kx, capY, p.Action, keys, UiRole.PromptCap, UiRole.PromptInk);
+                    bool cap = p.Action != UiAction.Count;
+                    if (cap)
+                    {
+                        kx += KeyCap(s, on, kx, capY, p.Action, keys, UiRole.PromptCap, UiRole.PromptInk);
+                    }
                     if (p.Action == UiAction.TabPrev)
                     {
                         kx += UiTokens.S1;
                         kx += KeyCap(s, on, kx, capY, UiAction.TabNext, keys, UiRole.PromptCap, UiRole.PromptInk);
                     }
-                    TextMiddle(s, on, kx + UiTokens.S2, ry, KeyChipHeight, UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1, UiStyle.Prompt, UiRole.PromptInk, p.Label, UiFlags.Label);
+                    TextMiddle(s, on, kx + (cap ? UiTokens.S2 : 0f), ry, KeyChipHeight, UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1, UiStyle.Prompt, UiRole.PromptInk,
+                        p.Label, UiFlags.Label);
                     for (int k = first; k < s.ItemCount; k++)
                     {
                         s.Items[k].Flags |= UiFlags.Middle | UiFlags.Prompt | UiFlags.Chrome;

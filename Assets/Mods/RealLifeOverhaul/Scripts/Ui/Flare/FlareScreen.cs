@@ -74,6 +74,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     TakeKitPost();   // a notice's thread, asked while the page is up or as it opens
                 }
+                if (_flare != null && _flare.KitCompose >= 0)
+                {
+                    TakeKitCompose();   // a picture shared from photo mode, asked the same way
+                }
                 return _dirty || _moved || (_flare != null && _flare.Revision != _revision) || PicturesCame || PickerCame || Stale;   // Stale: the times shown moved on (ClockStep)
             }
         }
@@ -97,6 +101,26 @@ namespace RealLifeOverhaul.Ui
             _history.Clear();
             if (OpenThread(post))
             {
+                _dirty = true;
+            }
+        }
+
+        // A picture shared to Flare from another feature: the compose sheet opens on it as a moment.
+        private void TakeKitCompose()
+        {
+            int draft = _flare.KitCompose;
+            _flare.KitCompose = -1;
+            FlareFile file = _flare.File;
+            if (file == null || file.Draft(draft) == null)
+            {
+                return;
+            }
+            _history.Clear();
+            Show(FlareFace.Home);
+            if (OpenCompose(-1))
+            {
+                _kind = KindMoment;
+                _draftId = draft;
                 _dirty = true;
             }
         }

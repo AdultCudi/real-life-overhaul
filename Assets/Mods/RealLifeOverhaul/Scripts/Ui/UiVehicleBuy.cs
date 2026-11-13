@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Ui
         public string Name, Facts, Price;                      // the vehicle's name, a line of what it is, its price as the game writes it
         public string SpecsLabel;
         public UiInfoRow[] Specs = new UiInfoRow[0];
-        public string ColourLabel, ColourName;
+        public string ColourLabel;
         public string[] Swatches = new string[0];
         public int Colour = -1;
         public bool Delivery;                                  // the dealer delivers: the switch and the warehouse
@@ -18,10 +18,13 @@ namespace RealLifeOverhaul.Ui
         public bool DeliveryOn;
         public string Warehouse;                               // the warehouse chosen, or the game's words for none
         public bool WarehouseChosen;
+        public string[] WarehouseOptions = new string[0];      // every warehouse or garage the game offers, in its own order
+        public int WarehouseAt = -1;                           // the one chosen among them
+        public bool WarehouseOpen;                             // the list is open under the field
+        public float WarehouseOffset;                          // how far the open list has scrolled
         public string Buy, Cancel;
         public bool BuyEnabled, CancelEnabled;
         public string Lot;                                     // "3 of 12 on the lot", or null when the lot is not walked
-        public string LotPrevious, LotNext;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -35,8 +38,8 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiVehicleBuy
     {
-        public const int SwatchCommand = 610, DeliveryCommand = 611, WarehouseCommand = 612, BuyCommand = 613, CancelCommand = 614, LotCommand = 615;
-        public static readonly int[] Commands = { SwatchCommand, DeliveryCommand, WarehouseCommand, BuyCommand, CancelCommand, LotCommand };
+        public const int SwatchCommand = 610, DeliveryCommand = 611, WarehouseCommand = 612, BuyCommand = 613, CancelCommand = 614, LotCommand = 615, WarehouseOptionCommand = 616;
+        public static readonly int[] Commands = { SwatchCommand, DeliveryCommand, WarehouseCommand, BuyCommand, CancelCommand, LotCommand, WarehouseOptionCommand };
         public const float Width = UiInfoPanel.Width;
         private const float SwitchW = 96f;
 
@@ -88,7 +91,7 @@ namespace RealLifeOverhaul.Ui
             int panel = UiDraw.Box(s, UiAt.Screen, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = UiAt.Screen.In(panel);
             float cy = UiDraw.TitleStrip(s, on, x, y, Width, m.Icon, m.Title, m.CancelEnabled);
-            float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f, warehouseY = -1f;
             // The vehicle's name, what it is, and its price as the one large figure.
             float ty = cy + UiTokens.S4;
             UiDraw.Text(s, on, ix, ty, iw, UiStyle.Hero, UiRole.Text, m.Name, UiFlags.Truncate);
@@ -118,7 +121,7 @@ namespace RealLifeOverhaul.Ui
                 float sh = UiTokens.S2 * 2f + UiTokens.PairRow + UiTokens.S2 + swh;
                 UiDraw.Band(s, on, x, cy, Width, sh);
                 float ry = cy + UiTokens.S2;
-                ry += UiDraw.SectionRow(s, on, ix, ry, iw, m.ColourLabel, m.ColourName, false, -1, 0);
+                ry += UiDraw.SectionRow(s, on, ix, ry, iw, m.ColourLabel, null, false, -1, 0);
                 UiDraw.Swatches(s, on, ix, ry + UiTokens.S2, iw, m.Swatches, m.Swatches.Length, m.Colour, SwatchCommand);
                 cy += sh + UiTokens.S1;
             }
@@ -138,6 +141,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Switch(s, on, ix + iw - SwitchW, ry, SwitchW, m.DeliveryOn, m.DeliveryState, DeliveryCommand, 0, false);
                 ry += UiTokens.Control + UiTokens.S2;
                 UiDraw.Choice(s, on, ix, ry, iw, m.Warehouse, WarehouseCommand, 0, false);
+                warehouseY = ry;
                 cy += dh + UiTokens.S1;
             }
             if (!string.IsNullOrEmpty(m.Lot))
@@ -149,6 +153,12 @@ namespace RealLifeOverhaul.Ui
             float cw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Cancel, UiIcon.None, UiAction.Back, keys);
             UiDraw.Button(s, on, ix, by2, cw, UiTokens.Control, UiButtonKind.Secondary, m.Cancel, UiIcon.None, UiAction.Back, keys, CancelCommand, 0, !m.CancelEnabled);
             UiDraw.Button(s, on, ix + cw + UiTokens.S3, by2, iw - cw - UiTokens.S3, UiTokens.Control, UiButtonKind.Primary, m.Buy, UiIcon.None, UiAction.Alt, keys, BuyCommand, 0, !m.BuyEnabled);
+            if (m.WarehouseOpen && warehouseY >= 0f && m.WarehouseOptions.Length > 0)
+            {
+                // The game's drop-down opens its whole list: every warehouse or garage, scrolling, the chosen one ticked.
+                UiDraw.ChoiceList(s, on, ix, warehouseY + UiTokens.Control + UiTokens.S1, iw, m.WarehouseOptions, m.WarehouseOptions.Length, m.WarehouseAt, m.WarehouseOffset,
+                    WarehouseOptionCommand);
+            }
             return y + h;
         }
 

@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Ui
                 Say("the pills beyond the time and the money were left out (" + e.GetType().Name + ": " + e.Message + ")");
             }
             m.PillsPress = ForHud;
+            m.PillsHover = !ForHud;   // the full menu's bar has no press on them, only their cards
             m.AllAppsOpen |= AllAppsOpen;
             if (ToolRow != null && ToolRow.Tools.Length > 0)
             {
@@ -166,6 +167,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            string player = RealLifeOverhaul.Rivals.RivalGame.PlayerName();
+            FaceSources.Player(player);   // the game's own portrait of the player, told to the faces by the name the pill draws it under
+            m.Player = player;
             m.Energy = Whole(save.Energy);
             m.Hunger = Whole(save.Hunger);
             m.Happiness = Whole(HappinessHelper.Happiness);
@@ -195,6 +199,7 @@ namespace RealLifeOverhaul.Ui
             }
             int season = SeasonRules.SeasonOf(SeasonGame.Today, GameCalendar.DaysPerYear);
             m.Season = SeasonText.Title(season);
+            m.SeasonSize = SeasonRules.BarSizeOf(Settings.SeasonBarSize);   // the old bar's size option: the pill keeps its height, the season's words grow in it
         }
 
         // The weather in a glyph and a word or two: the mod's snow, its reading of the game's rain (mist before and after a

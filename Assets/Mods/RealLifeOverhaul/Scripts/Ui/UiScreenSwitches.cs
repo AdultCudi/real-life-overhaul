@@ -71,6 +71,28 @@ namespace RealLifeOverhaul.Ui
             return !UiBreaker.Tripped(screenId) && (at < 0 || Values[at]);   // a screen the kit faulted on for another mod's piece is the game's for the session
         }
 
+        /// <summary>The screen an option id switches, or null for any other option.</summary>
+        public static string ScreenOf(string optionId) => optionId != null && optionId.StartsWith(OptionPrefix, StringComparison.Ordinal) && optionId.Length > OptionPrefix.Length
+            ? optionId.Substring(OptionPrefix.Length) : null;
+
+        /// <summary>True when the option is a screen's switch and the kit faulted on that screen: the switch reads on and the screen is the game's own all the same.</summary>
+        public static bool Faulted(string optionId)
+        {
+            if (UiBreaker.Count == 0)
+            {
+                return false;   // no breaker open: nothing to look up
+            }
+            string screen = ScreenOf(optionId);
+            return screen != null && UiBreaker.Tripped(screen);
+        }
+
+        /// <summary>Gives a faulted screen another try, as a player turns its switch on again: its breaker is closed. True when one was open.</summary>
+        public static bool Retry(string optionId)
+        {
+            string screen = ScreenOf(optionId);
+            return screen != null && UiBreaker.Untrip(screen);
+        }
+
         /// <summary>Sets a screen's switch by its option id (the options page's own); a change is told.</summary>
         public static void Set(string optionId, bool on)
         {

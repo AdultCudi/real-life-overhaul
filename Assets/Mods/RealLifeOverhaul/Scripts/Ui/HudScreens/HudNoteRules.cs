@@ -9,6 +9,21 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class HudNoteRules
     {
+        /// <summary>
+        /// The kit's colour for the colour another mod gave a game button: none for white, grey or black (the button as the game made it), else the chart hue nearest
+        /// the colour's own, so a purple report button stays a purple pill glyph.
+        /// </summary>
+        public static UiRole TintOf(float hueDegrees, float saturation, float value)
+        {
+            if (saturation < 0.25f || value < 0.2f)
+            {
+                return UiRole.None;
+            }
+            float h = ((hueDegrees % 360f) + 360f) % 360f;
+            return h >= 260f && h < 346f ? UiRole.Chart7 : h >= 180f && h < 260f ? UiRole.Chart5 : h >= 90f && h < 180f ? UiRole.Chart3 : h >= 45f && h < 90f ? UiRole.Chart4
+                : h >= 28f && h < 45f ? UiRole.Chart2 : UiRole.Chart6;
+        }
+
         /// <summary>Today's money so far: the money now less the game's balance at the last midnight; false while it has none.</summary>
         public static bool Today(double money, IList<float> midnights, out double net)
         {

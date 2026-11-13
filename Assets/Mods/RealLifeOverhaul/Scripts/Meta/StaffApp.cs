@@ -172,6 +172,7 @@ namespace RealLifeOverhaul.Meta
                 string entry = _wanted;
                 _wanted = null;
                 _view.Want(entry);
+                StaffScreen.Want(entry);   // the same entry on the kit's page
                 _app.Open();
                 if (Dev.Verbose)
                 {

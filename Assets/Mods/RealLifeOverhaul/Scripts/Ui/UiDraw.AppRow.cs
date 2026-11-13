@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The All apps tile at the row's end, and anything that opens the All apps panel.</summary>
         public const int AllAppsCommand = 9011;
 
+        /// <summary>The tile before All apps that stands for other mods' apps the row has no room for: it opens All apps on the Other mods tab.</summary>
+        public const int MoreAppsCommand = 9015;
+
         private const int ChromeFirst = 9010, ChromeLast = 9019;   // the frame's own commands: the app row, All apps and what may join them
         private const int RowMost = 10;                            // tiles before All apps: the phone's first page is eight, with room for a long one
 
@@ -59,10 +62,13 @@ namespace RealLifeOverhaul.Ui
         // shows what it is given.
         private static int RowApps(UiStatusModel m) => m == null || m.Apps == null ? 0 : m.AllApps ? Math.Min(m.Apps.Length, RowMost) : m.Apps.Length;
 
+        // Other mods' apps the row does not carry have a tile of their own before All apps.
+        private static bool MoreTile(UiStatusModel m) => m != null && m.AllApps && m.OtherLeft > 0;
+
         // The row's width with a number of its apps, All apps after them.
         private static float RowWidth(UiStatusModel m, int apps)
         {
-            int tiles = apps + (m != null && m.AllApps ? 1 : 0);
+            int tiles = apps + (m != null && m.AllApps ? 1 : 0) + (MoreTile(m) ? 1 : 0);
             return tiles == 0 ? 0f : tiles * BarTile + (tiles - 1) * TileGap;
         }
 
@@ -84,6 +90,11 @@ namespace RealLifeOverhaul.Ui
                 int badge = m.AppBadges != null && i < m.AppBadges.Length ? m.AppBadges[i] : 0;
                 int picture = m.AppPictures != null && i < m.AppPictures.Length ? m.AppPictures[i] : 0;
                 AppTile(s, row, ax, ay, tile, m.Apps[i], tint, i == m.App, badge, m.AppsPress ? AppRowCommand : -1, i, picture);
+                ax += tile + TileGap;
+            }
+            if (MoreTile(m))
+            {
+                AppTile(s, row, ax, ay, tile, PhoneLooks.OtherMods, UiIconTints.Of(PhoneLooks.OtherMods), false, m.OtherBadge, m.AppsPress ? MoreAppsCommand : -1, 0);
                 ax += tile + TileGap;
             }
             if (m.AllApps)
