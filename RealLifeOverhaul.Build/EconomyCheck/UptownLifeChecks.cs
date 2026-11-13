@@ -42,6 +42,7 @@ internal static partial class Program
         UptownWorkChecks();
         UptownMixChecks();
         UptownSplitChecks();
+        UptownKnownChecks();
         UptownLookChecks();
     }
 
@@ -670,7 +671,7 @@ internal static partial class Program
         string rows = MemberText(lifeGame, "private static void PeopleRows(int district, DistrictFigures f)");
         Check(rows.Contains("shares.Count > 0 && !shares.ContainsKey(id)") && rows.Contains("prices.Count > 0 && !prices.ContainsKey(id)"),
             "uptown: its rows go into the game's run-long class tables only once the game has made them (its own start throws on a row put there before it)");
-        string unload = MemberText(lifeGame, "public static void Unload()");
+        string unload = MemberText(lifeGame, "public static void Unload(bool cityEnds = false)");
         Check(unload.Contains("Unlist();") && unload.Contains("UnityEngine.Object.Destroy(record);") && unload.IndexOf("Unlist();", StringComparison.Ordinal) < unload.IndexOf("Destroy(record)", StringComparison.Ordinal),
             "uptown: when its city goes, nothing of it stays in the game's lists, and its record goes last");
         string map = MemberText(lifeGame, "private static bool MapOne(int district, float x1, float z1, float x2, float z2, out string why)");

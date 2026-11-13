@@ -532,6 +532,7 @@ namespace RealLifeOverhaul.Ui
             text = text ?? string.Empty;
             if (!string.Equals(t.text, text, System.StringComparison.Ordinal))
             {
+                UiFonts.Need(t, text);   // a script the face lacks has its glyphs in the fallback's atlas before the text is built (UiFonts.Glyphs)
                 t.text = text;
             }
         }

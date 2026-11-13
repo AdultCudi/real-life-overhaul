@@ -762,7 +762,7 @@ namespace RealLifeOverhaul.Uptown
                 _closingHooked = false;
             }
             ShowHidden();
-            LifeGame.Unload();
+            LifeGame.Unload(true);   // the districts stay in the game's lookup until its next load: the other features' stand-downs still ask it
             MarketForget();
             Standing.Clear();
             StandingLots.Clear();

@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test mislukt: een ronde langs de bedrijven van de stad struikelde over een record zonder gebouw. Het logboek zegt welke.",
   "reallife_hire_test_orphan_off": "Laad eerst een savegame. Deze test draait niet in een sessie van Going Public.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: een telefoon die je hebt weggelegd kun je in de nieuwe interface altijd terughalen, met een telefoonknop in de balk of de telefoontoets, ook wanneer een andere mod de apps van de telefoon doorbladert. Opgelost: elke keuzelijst in de nieuwe interface scrolt nu met het muiswiel, door de schuifbalk of de lijst te slepen, en met de toetsen of het pad, opent met de gekozen optie in beeld en toont een lange optie helemaal. Opgelost: het Campus-dagboek en Komt eraan tonen geen lessen meer na de laatste les van een cursus, de regel met de plek van een cursus herhaalt de kamer niet meer, en de notitie Hoe een les werkt leest één zin per regel. Opgelost: een verkeerslicht dat langer op geel blijft staan dan de cyclus van een kruispunt telt niet meer mee tegen een voetganger die oversteekt, zodat de politie hen daarvoor niet waarschuwt of beboet. De mod pakt ook niet meer een auto over die midden op een kruispunt staat, wat dat licht geel had kunnen houden. Opgelost: het verlaten van een stad logt niet langer fouten voor winkels in Uptown en Cedar Heights terwijl hun klanten worden berekend.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Opgelost: als alle gebouwen die het nutsbedrijf kunnen huisvesten van jou zijn, vraag je stroom- en wateraansluitingen aan en laat je ze weer aansluiten in de Nutsvoorzieningen-app, telefonisch, voor dezelfde prijzen, en de meldingen zeggen dat; zodra een gebouw vrij is, gaat het kantoor weer open en zegt de app waar. Opgelost: na het intrekken van een sollicitatie en opnieuw solliciteren op dezelfde functie opende de Carrière-app de ingetrokken sollicitatie en was het gesprek niet te bereiken. Elke sollicitatie heeft nu een eigen regel, en het gesprek, het aanbod en het intrekken gaan naar de lopende. Opgelost: een opslag met een bedrijfsrecord waarvan de stad het gebouw niet heeft (een andere mod kan er een achterlaten) zet de techsector niet meer bij elke keer laden uit. De mod slaat zo'n record nu over overal waar hij de bedrijven van de stad leest, noemt het adres één keer in het logboek en verandert er niets aan.",
   "reallife_co_mass_raise": "Een loonsverhoging geven",
@@ -37874,5 +37874,7 @@
   "reallife_ui_estate_note_market_rents": "Huren volgen de prijzen, niet de vastgoedmarkt, dus in een hoogconjunctuur kost dezelfde huur meer om te kopen.",
   "reallife_ui_estate_note_mortgage": "Om met hypotheek te kopen, regel je die eerst in de Financiën-app, en het geld staat dan in je contant geld voor de aankoop.",
   "reallife_ui_estate_note_hotel_staff": "Personeel komt op contract op een van drie niveaus, want het spel kan je eigen medewerkers niet in een hotel zetten.",
-  "reallife_ui_estate_card_kept_night": "Gisteravond bewaard"
+  "reallife_ui_estate_card_kept_night": "Gisteravond bewaard",
+  "reallife_phone_tool_note": "Telefoon. Druk hierop of op {key} om hem weg te leggen of terug te halen.",
+  "reallife_phone_put_away": "Je telefoon is weggelegd. Druk op {key} of op de telefoonknop in de balk onderaan het scherm om hem terug te halen."
 }

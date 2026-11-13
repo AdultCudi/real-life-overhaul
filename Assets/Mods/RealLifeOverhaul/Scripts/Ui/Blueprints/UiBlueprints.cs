@@ -413,10 +413,11 @@ namespace RealLifeOverhaul.Ui
             int count = m.FilterRows.Length;
             float rowH = UiTokens.ControlSmall, h = Math.Min(Math.Max(1, count), FilterRowsInView) * rowH + UiTokens.S1 * 2f, w = FilterListWidth;
             int card = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
-            float viewH = h - UiTokens.S1 * 2f, most = Math.Max(0f, count * rowH - viewH);
-            float offset = Math.Max(0f, Math.Min(m.FilterOffset, most));
+            float viewH = h - UiTokens.S1 * 2f;
+            float offset = s.Choices.Open(UiChoiceScroll.Key(FilterRowCommand, null, count), m.FilterOffset, -1, rowH, viewH, count * rowH);   // the host scrolls it, as an open drop-down list
             m.FilterOffset = offset;
             short clip = s.AddClip(x + UiTokens.S1, y + UiTokens.S1, w - UiTokens.S2, viewH, offset);
+            s.Clips[clip].Choice = true;
             s.Clips[clip].ContentHeight = count * rowH;
             int first = (int)(offset / rowH), last = Math.Min(count - 1, (int)((offset + viewH - 0.5f) / rowH));
             short list = s.AddList(count, first, Math.Max(0, last - first + 1), clip, -1);

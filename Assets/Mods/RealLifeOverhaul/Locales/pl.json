@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: schowany telefon zawsze można przywrócić w nowym interfejsie, przyciskiem telefonu na pasku albo klawiszem Telefon, także wtedy, gdy inny mod przewija aplikacje telefonu. Naprawiono: każda lista rozwijana w nowym interfejsie przewija się teraz kółkiem myszy, przeciąganiem jej paska przewijania lub samej listy oraz klawiszami lub padem, otwiera się z wybraną opcją w polu widzenia i pokazuje długą opcję w całości. Naprawiono: dziennik Kampusu i Wkrótce nie wypisują już zajęć po ostatnich zajęciach kursu, wiersz miejsca kursu nie powtarza już sali, a notatka Jak działają zajęcia czyta się po jednym zdaniu w wierszu. Naprawiono: sygnalizator, który dłużej niż cykl skrzyżowania świeci na żółto, nie liczy się już przeciwko osobie przechodzącej, więc policja za to jej nie ostrzega ani nie karze. Mod też już nie przejmuje samochodu, który jest w połowie skrzyżowania, a to mogło utrzymać żółte światło. Naprawiono: opuszczenie miasta nie zapisuje już błędów dla sklepów w Uptown i Cedar Heights, gdy liczeni są ich klienci.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -37874,5 +37874,7 @@
   "reallife_ui_estate_note_market_rents": "Czynsze idą za cenami, a nie za rynkiem nieruchomości, więc w boomie ten sam czynsz kosztuje więcej przy zakupie.",
   "reallife_ui_estate_note_mortgage": "Aby kupić na kredyt hipoteczny, najpierw załatw go w aplikacji Finanse, a pieniądze na zakup będą w twojej gotówce.",
   "reallife_ui_estate_note_hotel_staff": "Personel zatrudniany jest na umowę na jednym z trzech poziomów, bo gra nie może wstawić twoich pracowników do hotelu.",
-  "reallife_ui_estate_card_kept_night": "Zostawione zeszłej nocy"
+  "reallife_ui_estate_card_kept_night": "Zostawione zeszłej nocy",
+  "reallife_phone_tool_note": "Telefon. Naciśnij to albo {key}, aby go schować lub przywrócić.",
+  "reallife_phone_put_away": "Telefon jest schowany. Naciśnij {key} albo przycisk telefonu na pasku u dołu ekranu, aby go przywrócić."
 }

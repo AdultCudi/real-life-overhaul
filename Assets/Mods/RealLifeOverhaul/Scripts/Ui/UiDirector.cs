@@ -324,7 +324,10 @@ namespace RealLifeOverhaul.Ui
                 case Kit.Contacts: ContactsKit.Rearm(); break;
                 case Kit.BizMan: BizManKit.Rearm(); break;
                 case Kit.EconoView: EconoViewKit.Rearm(); break;
-                case Kit.Phone: PhoneKit.Rearm(); break;
+                case Kit.Phone:
+                    PhoneKit.Rearm();
+                    PhoneReach.Rearm();
+                    break;
                 case Kit.Employees: EmployeesKit.Rearm(); break;
                 case Kit.Persona: PersonaKit.Rearm(); break;
                 case Kit.Uniforms: UniformsKit.Rearm(); break;
@@ -588,12 +591,14 @@ namespace RealLifeOverhaul.Ui
                     // Once, as it goes off or the city comes with it off: while it stays off nothing of the kit is asked, made or looked for.
                     _said = 1;
                     RemoveAll(SwitchOffWhy);
+                    PhoneReach.Stop();   // the Phone key is the game's alone again (it is kept apart from the phone kit: a fault of that kit is when it is needed)
                     CloseCards();   // the cards stand on canvases of their own: a switch turned off in a session takes them away with the rest
                     Logger?.Info("UI: the RLO interface is off (" + (Settings.LivingPopulation ? "its switch is off" : "Living population is off") + "); the game's own screens show.");
                 }
                 MapSavedGame.Look();   // the kit's map docks do this with it on (MapKits.Install); a place saved stays on the game's own map with it off
                 return;
             }
+            Quietly(PhoneReach.Ensure);   // the Phone key and the bar's phone button, whichever phone is in play
             for (int kit = 0; kit < Kit.Count; kit++)
             {
                 if (UiPieces.Off(PieceOf[kit]))

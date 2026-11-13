@@ -38,6 +38,30 @@ namespace RealLifeOverhaul.Ui
             return best;
         }
 
+        /// <summary>
+        /// The open drop-down list whose thumb strip (the right edge of its rows, a hand's width) holds a place, or -1: a press there drags the thumb, which moves the list
+        /// at the content's pace of the thumb's travel, whichever way the drag goes.
+        /// </summary>
+        public static int ThumbAt(UiScene s, float x, float y)
+        {
+            for (int i = 0; i < s.ClipCount; i++)
+            {
+                ref UiClip c = ref s.Clips[i];
+                if (c.Choice && c.ContentHeight > c.H + 0.5f && x >= c.X + c.W - UiTokens.S4 && x <= c.X + c.W && y >= c.Y && y <= c.Y + c.H)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>Where the content's offset should be once the thumb has been dragged <paramref name="moved"/> px down from where it was taken.</summary>
+        public static float ThumbWant(float start, float moved, float content, float view)
+        {
+            float thumb = Math.Max(UiTokens.S6, view * view / Math.Max(1f, content)), travel = Math.Max(1f, view - thumb);
+            return Math.Max(0f, Math.Min(start + moved * (content - view) / travel, Math.Max(0f, content - view)));
+        }
+
         private static bool HasTarget(UiScene s, int clip, int layer)
         {
             for (int i = 0; i < s.NodeCount; i++)

@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Ui
     /// takes the keys and the pad only when asked (the Phone key, the pad's View) and gives them back on Back at home.
     /// Another pager of the phone (one the classic pager stepped aside for) or another mod's screen on it has the kit
     /// stand down to the classic phone for the session, with one line in Player.log; a fault of the kit gives the classic
-    /// phone back for the session too. Cost: while it shows, the host's input reads and a few comparisons a frame, a look
+    /// phone back for the session too; the classic phone then has its folded head reached by the Phone key and the HUD bar's phone
+    /// button (PhoneReach), as the game's head stands under that bar. Cost: while it shows, the host's input reads and a few comparisons a frame, a look
     /// at the buttons four times a second; nothing while the phone is hidden or the switch is off.
     /// </summary>
     public static class PhoneKit
@@ -328,7 +329,8 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _state = state;
-            UiClone.Fallback("the RLO phone stands down to the classic phone while this lasts: " + why);
+            UiClone.Fallback("the RLO phone stands down to the classic phone while this lasts: " + why + "; the Phone key (" + Keys.Label(KeyAction.Phone)
+                             + ") and the phone button in the HUD's bar fold and unfold the classic phone meanwhile");
         }
 
         /// <summary>A new city: a phone that stood down in the last one is looked at again.</summary>
@@ -579,6 +581,10 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     Unfold();   // put away, its head stands under the HUD's bar where the pointer cannot reach it: the key brings it back
+                    if (_window.IsCollapsed)
+                    {
+                        PhoneReach.Refused();   // the game's fold took no press: Player.log says so
+                    }
                 }
             }
             Conceal();
@@ -822,6 +828,10 @@ namespace RealLifeOverhaul.Ui
                 if (_collapse != null && _collapse.interactable)
                 {
                     UiWidgets.Hand(_collapse);
+                }
+                else if (_window != null)
+                {
+                    _window.ChangeState(!_window.IsCollapsed);   // as Unfold: a fold button the game holds never leaves the head without an answer
                 }
             }
 

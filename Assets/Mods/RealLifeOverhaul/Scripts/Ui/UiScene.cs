@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Ui
         public bool Fills;             // its whole room is its content's (a short thread under the line of its beginning)
         public short List;             // the list it shows, or -1
         public bool Window;            // laid between WindowBegin and WindowEnd: it moves with the window the player drags
+        public bool Choice;            // an open drop-down list's rows: the host scrolls it itself, whatever the screen under it does (UiChoiceScroll)
     }
 
     /// <summary>A list whose rows are virtualised: only those in view are in the scene, the rest are counted.</summary>
@@ -181,9 +182,13 @@ namespace RealLifeOverhaul.Ui
         public float WindowRight;        // px: where the window may reach to at the right when the screen keeps pieces of its own there (the map's layers and buttons); 0 for the whole width
         private bool _inWindow;
 
+        /// <summary>The open drop-down list's held scroll, kept between layouts so the wheel, a drag and the keys move it for every screen alike (UiChoiceScroll).</summary>
+        public UiChoiceScroll Choices;
+
         /// <summary>Empties the scene for a new layout at a size, keeping its arrays.</summary>
         public void Begin(string name, float width, float height, bool dark)
         {
+            Choices.Begin(Name != name);
             Name = name;
             Width = width;
             Height = height;

@@ -149,8 +149,13 @@ reported all Korean text gone (12 November 2026). No glyph was missing.
   font (the first twenty are named, and the game's font then writes the whole language) or when a line of twelve of
   them, drawn through the kit's own text, does not come out whole. With the interface off none of this is done (no
   copy, no atlas, no line): it begins when the interface is switched on, a copy or sixteen characters a second, so
-  a language's characters are all in after a minute or three. Until then a text adds a character as it first shows
-  it, as any text of the game's does.
+  a language's characters are all in after a minute or three. Until then, and for a name a player typed, `UiFonts.Need`
+  (`Ui/UiFonts.Glyphs.cs`, called by `UiView.SetText` for every text) puts the characters a text holds that the face lacks
+  into the copies' atlases before TextMeshPro builds the text; a text built before its glyphs were in the atlas drew its
+  Latin letters and left the rest blank until it was written again (the BizMan table, 13 Nov 2026). The texts that hold such
+  characters are kept (`UiGlyphBook`) and built again, once for all, a frame after a font took characters in behind the
+  kit's back (TextMeshPro says nothing when an atlas gains glyphs, so the counts are compared as a text is built) or the
+  chain of fonts changed. Widths never wait on the atlas: a character the face lacks is measured by a table.
 - **Outside the kit** (`Core/GameUi/TextRoom`, `TextRoomRules`): the mod's older screens write in the game's font, in
   boxes sized by its line, and lost a Korean or Chinese line the same way wherever a box was under 1.448 em. Every text
   they have the text engine cut carries its room: its margins give a box that is too short what it lacks for one line

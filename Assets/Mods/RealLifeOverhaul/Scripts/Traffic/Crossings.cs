@@ -31,6 +31,9 @@ namespace RealLifeOverhaul
 
         private static readonly Dictionary<long, List<int>> Cells = new Dictionary<long, List<int>>();
         private static readonly List<Crossing> All = new List<Crossing>(256);
+        private const float WatchReach = 14f;     // metres: a crossing this near a person on foot has its lamp watched
+
+        private static readonly LampLedger Lamps = new LampLedger();
         private static Object _probe;             // one of the links found: gone means the city was unloaded
         private static bool _built;
         private static bool _failed;
@@ -46,6 +49,47 @@ namespace RealLifeOverhaul
             All.Clear();
             _probe = null;
             _built = false;
+            Lamps.Clear();
+        }
+
+        /// <summary>
+        /// Notes whether the cars' red lamp of each crossing near a point is lit, so that <see cref="LightStuck"/> can tell a light that
+        /// has not changed for longer than a junction's cycle. Called by the foot look every half second, never per frame. Call Ensure first.
+        /// </summary>
+        public static void Watch(Vector3 point, float now)
+        {
+            if (All.Count == 0)
+            {
+                return;
+            }
+            int cx = Mathf.FloorToInt(point.x / CellSize);
+            int cz = Mathf.FloorToInt(point.z / CellSize);
+            for (int x = cx - 1; x <= cx + 1; x++)
+            {
+                for (int z = cz - 1; z <= cz + 1; z++)
+                {
+                    if (!Cells.TryGetValue(Key(x, z), out List<int> cell))
+                    {
+                        continue;
+                    }
+                    for (int i = 0; i < cell.Count; i++)
+                    {
+                        Crossing crossing = All[cell[i]];
+                        float dx = point.x - crossing.Centre.x;
+                        float dz = point.z - crossing.Centre.z;
+                        if (crossing.Red != null && dx * dx + dz * dz < WatchReach * WatchReach)
+                        {
+                            Lamps.See(crossing.Red.GetInstanceID(), crossing.Red.activeSelf, now);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>True if this red lamp has been seen dark for longer than a junction's cycle: the light is stuck, and people may cross.</summary>
+        public static bool LightStuck(GameObject red, float now)
+        {
+            return red != null && Lamps.Stuck(red.GetInstanceID(), now);
         }
 
         /// <summary>Lists the crossings if that has not been done for this city. False if there is nothing to ask.</summary>

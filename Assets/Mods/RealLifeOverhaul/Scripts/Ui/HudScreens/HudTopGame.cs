@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     internal static class HudTopGame
     {
-        public const int Dances = 0, Accessories = 1, Help = 2, Bug = 3;   // the tools in the bar's pill, in this order when all show
+        public const int Dances = 0, Accessories = 1, Help = 2, Bug = 3, Phone = 4;   // the tools in the bar's pill, in this order when all show
 
         private static readonly string[] LeftLeaves = { "Avatar", "AccessoriesPanel", "PlayerStats", "Splitter", "Money", "MoneyTransaction", "Splitter (1)", "Date", "Time", "TimeControls" };
         private static readonly string[] RightLeaves = { "NotificationsButton", "HelpButton", "ReportBugButton", "SettingsButton" };
@@ -30,11 +30,11 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly UiConceal Hidden = new UiConceal();
         private static readonly UiConceal Selector = new UiConceal();   // the dance list's own canvas: unseen, and no longer catching clicks
-        private static readonly UiIcon[] Tools = new UiIcon[4];
-        private static readonly bool[] ToolsOn = new bool[4];
-        private static readonly bool[] ToolsOff = new bool[4];
-        private static readonly UiRole[] ToolTints = new UiRole[4];
-        private static readonly int[] ToolKind = new int[4];   // which tool each place of the pill holds
+        private static readonly UiIcon[] Tools = new UiIcon[5];
+        private static readonly bool[] ToolsOn = new bool[5];
+        private static readonly bool[] ToolsOff = new bool[5];
+        private static readonly UiRole[] ToolTints = new UiRole[5];
+        private static readonly int[] ToolKind = new int[5];   // which tool each place of the pill holds
         private static readonly Button[] DanceButtons = new Button[16];
         private static readonly string[] DanceNames = new string[16];
         private static readonly UiHudPopupModel DancesPopup = new UiHudPopupModel { Numbered = true, Rows = new UiHudPopupRow[16] };
@@ -230,6 +230,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Tool(Bug, UiIcon.Bug, false, !_bug.interactable, BugTint());   // there while the game offers it; held, with its reason on hover, in a modded save
             }
+            if (PhoneReach.Look(out bool phoneOpen))
+            {
+                Tool(Phone, UiIcon.Phone, phoneOpen, false);   // the game's own phone is in play: its head stands under this bar, so the bar folds and unfolds it
+            }
             int sig = _toolCount;
             for (int i = 0; i < _toolCount; i++)
             {
@@ -274,6 +278,10 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static string ToolNote(int index)
         {
+            if (index >= 0 && index < _toolCount && ToolKind[index] == Phone)
+            {
+                return PhoneReach.Words();
+            }
             if (index < 0 || index >= _toolCount || ToolKind[index] != Bug || _bug == null)
             {
                 return null;
@@ -330,6 +338,8 @@ namespace RealLifeOverhaul.Ui
                     return UiWidgets.Press(_help);
                 case Bug:
                     return UiWidgets.Press(_bug);
+                case Phone:
+                    return PhoneReach.Press();
             }
             return false;
         }

@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Ui
 
         private Vector2 _downPx;
         private int _panClip = -1, _panStuck;
+        private bool _panThumb;
         private float _panStart, _panFrom, _panStep = UiTokens.S16;
 
         /// <summary>The pointer went down, drags or let go at the root (UiPointer): the target is the one the press began on, found again in the scene as it is now.</summary>
@@ -88,11 +89,13 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 float dx = now.x - _downPx.x, dy = now.y - _downPx.y;
-                if (Mathf.Abs(dx) > Mathf.Abs(dy))
+                int thumb = UiPanRules.ThumbAt(_scene, _downPx.x, _downPx.y);
+                if (thumb < 0 && Mathf.Abs(dx) > Mathf.Abs(dy))
                 {
                     return;   // a sideways drag: the regions scroll up and down only
                 }
-                int clip = UiPanRules.ClipAt(_scene, _downPx.x, _downPx.y, dy);
+                _panThumb = thumb >= 0;
+                int clip = _panThumb ? thumb : UiPanRules.ClipAt(_scene, _downPx.x, _downPx.y, dy);
                 if (clip < 0)
                 {
                     return;
@@ -100,7 +103,7 @@ namespace RealLifeOverhaul.Ui
                 _panClip = clip;
                 _panStart = _scene.Clips[clip].Offset;
                 _panFrom = now.y;
-                _panStep = UiTokens.S16;
+                _panStep = _scene.Clips[clip].Choice ? UiChoiceScroll.Notch : UiTokens.S16;   // a drop-down list's wheel notch is known
                 _panStuck = 0;
                 _pressed.Dragged();   // the control under the press is not pressed when the drag ends
             }
@@ -111,7 +114,8 @@ namespace RealLifeOverhaul.Ui
                     _panClip = -1;
                     return;
                 }
-                float want = UiPanRules.Want(_panStart, now.y - _panFrom, _scene.Clips[_panClip].ContentHeight, _scene.Clips[_panClip].H);
+                float dragged = now.y - _panFrom, content = _scene.Clips[_panClip].ContentHeight, view = _scene.Clips[_panClip].H;
+                float want = _panThumb ? UiPanRules.ThumbWant(_panStart, dragged, content, view) : UiPanRules.Want(_panStart, dragged, content, view);
                 float before = _scene.Clips[_panClip].Offset, change = want - before;
                 if (Mathf.Abs(change) < 0.5f)
                 {
@@ -124,10 +128,10 @@ namespace RealLifeOverhaul.Ui
                     _panClip = -1;
                     return;
                 }
-                float moved = _scene.Clips[_panClip].Offset - before;
-                if (Mathf.Abs(moved) > 0.01f)
+                float shifted = _scene.Clips[_panClip].Offset - before;
+                if (Mathf.Abs(shifted) > 0.01f)
                 {
-                    _panStep = UiPanRules.Step(moved, notches, _panStep);
+                    _panStep = UiPanRules.Step(shifted, notches, _panStep);
                     _panStuck = 0;
                 }
                 else if (++_panStuck > 3)
