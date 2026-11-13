@@ -97,10 +97,6 @@ namespace RealLifeOverhaul.Ui
 
         private static void TablePage(UiScene s, UiAt at, ServicesModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            if (m.Strip.Length > 0)
-            {
-                y += UiAppWindow.Figures(s, at.InRegion(RegionHead), m.Strip, x, y, w) + UiTokens.S3;
-            }
             if (m.Chips.Length > 0)
             {
                 y += ChipsRow(s, at.InRegion(RegionHead), m.Chips, m.ChipAt, x, y, w, 0f, keys) + UiTokens.S3;

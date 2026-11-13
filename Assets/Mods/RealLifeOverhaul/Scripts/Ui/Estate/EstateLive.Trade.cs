@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Ui
                 int soldAll = 0, roomsAll = 0;
                 long takingsAll = 0, costsAll = 0, keptYear = 0;
                 var said = new List<EstateRow>(8);
+                int saidAll = 0;
                 int saidMost = _s.Hotels.Count * EstateCatalogue.RoomTypes;   // as many reviews as the rates beside them have rows, so the two lists end together
                 for (int i = 0; i < _s.Hotels.Count; i++)
                 {
@@ -43,9 +44,13 @@ namespace RealLifeOverhaul.Ui
                     takingsAll += f.Takings;
                     costsAll += f.Costs;
                     keptYear += (long)f.TakingsYear - f.CostsYear;
-                    for (int r = 0; r < f.Reviews.Length && said.Count < saidMost; r++)
+                    for (int r = 0; r < f.Reviews.Length; r++)
                     {
                         if (f.Reviews[r] != 0)
+                        {
+                            saidAll++;
+                        }
+                        if (f.Reviews[r] != 0 && said.Count < saidMost)
                         {
                             // The stars are the guest's own rating of the stay, high for praise and low for a complaint.
                             said.Add(new EstateRow { Icon = UiIcon.Message, Title = EstateText.Review(f.Reviews[r]), Sub = f.Name, Stars = EstateFigures.ReviewHalves(f.Reviews[r]), Run = -1 });
@@ -64,7 +69,16 @@ namespace RealLifeOverhaul.Ui
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, f.Takings < f.Costs ? UiRole.DangerText : UiRole.None,
                             left > 0 ? UiRole.Ok : UiRole.Muted, UiRole.None },
                         Subs = new[] { EstateText.District(HotelDistrict(f.Slot)), null, null, null, null, null, null, null, null },
-                        SortKeys = new[] { N, HotelRules.Stars(f.Rating) * 2, f.Clean / 10, staffShare, soldShare, f.Takings, f.Costs, left, N }
+                        SortKeys = new[] { N, HotelRules.Stars(f.Rating) * 2, f.Clean / 10, staffShare, soldShare, f.Takings, f.Costs, left, N },
+                        // The year's takings and costs the old table had a column each for: the table has no room for two more beside its meters, so they stand on the card the
+                        // takings cell raises, with what the hotel kept.
+                        Card = new UiDataCard
+                        {
+                            Column = 5, Title = f.Name,
+                            Labels = new[] { EstateText.T("reallife_ui_estate_col_takings_year"), EstateText.T("reallife_ui_estate_col_costs_year"),
+                                EstateText.T("reallife_ui_estate_fig_kept_year"), EstateText.T("reallife_ui_estate_card_kept_night") },
+                            Values = new[] { Money(f.TakingsYear), Money(f.CostsYear), Money(f.TakingsYear - f.CostsYear), Money(f.Takings - f.Costs) }
+                        }
                     });
                     keys.Add("hot:" + f.Slot);
                     // Your rate for each kind of room against the going rate, and how much of it sold.
@@ -96,6 +110,11 @@ namespace RealLifeOverhaul.Ui
                     EstateText.T("reallife_ui_estate_hotels_sub", "count", _s.Hotels.Count.ToString(Inv)), null, null, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_no_hotel"), EstateText.T("reallife_ui_estate_empty_hotel_body"), null, new[] { 5, 6 });
                 _m.RowRuns = Ordered(locate);
+                _m.Notes = new[]
+                {
+                    EstateText.T("reallife_estate_hotel_what"), EstateText.T("reallife_estate_hotel_night_what", "share", EstateText.Share(EstateCatalogue.Occupancy)),
+                    EstateText.T("reallife_ui_estate_note_hotel_staff"), EstateText.T("reallife_estate_hotel_held_what")
+                };
                 if (_s.Hotels.Count > 0)
                 {
                     _m.Strip = new[]
@@ -109,8 +128,13 @@ namespace RealLifeOverhaul.Ui
                     _m.RelatedCount = rates.Count.ToString(Inv);
                     _m.RelatedRows = 8;
                     _m.Related = rates.ToArray();
+                    if (saidAll > said.Count)
+                    {
+                        // The list ends with the rates' last line: a line that only says how many reviews it leaves out.
+                        said[said.Count - 1] = new EstateRow { Title = EstateText.T("reallife_ui_estate_more_reviews", "count", (saidAll - said.Count + 1).ToString(Inv)), Run = -1 };
+                    }
                     _m.Related2Title = EstateText.T("reallife_ui_estate_guests_say");
-                    _m.Related2Count = said.Count > 0 ? EstateText.T("reallife_ui_estate_reviews_n", "count", said.Count.ToString(Inv)) : null;
+                    _m.Related2Count = saidAll > 0 ? EstateText.T("reallife_ui_estate_reviews_n", "count", saidAll.ToString(Inv)) : null;
                     _m.Related2 = said.ToArray();
                 }
             }
@@ -257,6 +281,17 @@ namespace RealLifeOverhaul.Ui
                     string vid = v.id;
                     int price = EstateGame.CarPrice(v), going = HireRules.Going(price, _c.Index);
                     CarKind kind = EstateGame.KindOf(v.vehicleTypeName);
+                    // The cars of yours that are not on hire are rows of the table as the old table had them (its third place to filter by), each opening the page that adds it to the fleet.
+                    rows.Add(new UiDataRow
+                    {
+                        Cells = new[] { EstateGame.CarName(v.vehicleTypeName), EstateText.T("reallife_estate_row_on_lot"), Money(going), string.Empty, string.Empty, string.Empty },
+                        Values = new[] { (int)CarClass.Glyph(kind), 0, 0, 0, 0, 0 },
+                        Tones = new[] { CarClass.Tint(kind, price), UiRole.Muted, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
+                        Subs = new[] { EstateText.CarClass(HireRules.Class(price)), null, null, null, null, null },
+                        SortKeys = new[] { N, N, going, N, N, N },
+                        Kinds = new[] { HireRules.Class(price), EstateTables.CarNotOnHire }
+                    });
+                    keys.Add("add:" + vid);
                     could.Add(new EstateRow
                     {
                         Icon = CarClass.Glyph(kind), Tint = CarClass.Tint(kind, price), Title = EstateGame.CarName(v.vehicleTypeName), Sub = EstateText.CarClass(HireRules.Class(price)),
@@ -286,9 +321,10 @@ namespace RealLifeOverhaul.Ui
                     new[]
                     {
                         Choice("reallife_estate_filter_all_classes", EstateText.ClassKeys),
-                        Choice("reallife_estate_filter_all_places", "reallife_estate_filter_out", "reallife_estate_filter_in")
+                        Choice("reallife_estate_filter_all_places", "reallife_estate_filter_out", "reallife_estate_filter_in", "reallife_estate_filter_not_on_hire")
                     },
                     new[] { 4 }, EstateText.T("reallife_estate_empty_hire"));
+                _m.Notes = new[] { EstateText.T("reallife_estate_hire_what") };
                 if (hire.Running)
                 {
                     // The fleet's rating as the kit's stars before the line that says what it is.
@@ -311,8 +347,21 @@ namespace RealLifeOverhaul.Ui
                     };
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_add_cars");
                     _m.RelatedCount = could.Count > 0 ? could.Count.ToString(Inv) : null;
-                    _m.Related = could.ToArray();
                     _m.RelatedRows = 8;   // the cars within reach run in two columns of four
+                    if (could.Count > _m.RelatedRows)
+                    {
+                        // The list holds eight lines: seven cars and a last line that says how many there are and shows them in the table, filtered to the cars not on hire.
+                        int all = could.Count;
+                        could.RemoveRange(_m.RelatedRows - 1, all - (_m.RelatedRows - 1));
+                        could.Add(MoreRow("reallife_ui_estate_more_cars", all, () =>
+                        {
+                            _v.Pick = null;
+                            _v.Offset = 0f;
+                            _v.ResetTable();
+                            _v.Chosen[1] = EstateTables.CarNotOnHire;
+                        }));
+                    }
+                    _m.Related = could.ToArray();
                 }
             }
 
@@ -560,7 +609,8 @@ namespace RealLifeOverhaul.Ui
                 v.ScaleHigh = count > 0 ? Cents(high) : string.Empty;
                 int shown = Math.Min(5, count);
                 v.RankTitle = EstateText.T("reallife_ui_estate_rv_districts");
-                v.RankNote = EstateText.T("reallife_ui_estate_rv_rank_note");
+                v.RankNote = count > shown ? EstateText.T("reallife_ui_estate_rv_rank_of", "shown", shown.ToString(Inv), "count", count.ToString(Inv))
+                    : EstateText.T("reallife_ui_estate_rv_rank_note");
                 v.RankLabels = new string[shown];
                 v.RankValues = new string[shown];
                 v.RankFills = new int[shown];

@@ -58,8 +58,6 @@ namespace RealLifeOverhaul.Ui
         public string[] RowKeys = new string[0];            // by row of the table: what a press picks
         public UiFactCardModel Side;                        // beside the table: the service, or the picked row
         public UiChartModel Chart;                          // under the table: a series over time, or null
-        public UiFigureModel[] Strip = new UiFigureModel[0];   // a band of figures over the table
-        public string Back;                                 // the way back's words while a row is picked
         public string Guide;                                // "Guide: Cleaning service", a quiet line at the page's foot naming the Guide's page that explains it, or null
 
         public ServicesSell Sell;

@@ -39,6 +39,14 @@ namespace RealLifeOverhaul.Ui
 
         private EstateLive() { }
 
+        /// <summary>The pad's hints on the prompt bar: move, select and back, as the other apps write them.</summary>
+        internal static UiPrompt[] Hints() => new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = EstateText.T("reallife_ui_prompt_move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = EstateText.T("reallife_ui_prompt_select") },
+            new UiPrompt { Action = UiAction.Back, Label = EstateText.T("reallife_ui_prompt_back") }
+        };
+
         /// <summary>A notice asks for a tab and a row: taken when the screen next opens or is next written.</summary>
         public static void Want(int tab, string pick)
         {
@@ -84,6 +92,7 @@ namespace RealLifeOverhaul.Ui
             EstateState state = d != null && d.Running ? d.State : null;
             m.Title = EstateText.T("reallife_estate_app");
             m.Icon = UiIcon.Home;
+            m.Prompts = Hints();
             var runs = new EstateRuns();
             m.Tab = Math.Max(0, Math.Min(NavTab.Length - 1, v.Tab));
             if (state == null || SaveGameManager.Current == null)

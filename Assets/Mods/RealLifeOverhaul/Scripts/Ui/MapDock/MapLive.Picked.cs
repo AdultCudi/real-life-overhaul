@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!ReferenceEquals(target, _pickedTarget))
             {
+                _hideCard?.Invoke();
                 _pickedTarget = target;
                 _pickedBuilding = card.CityBuildingController;
                 _pickedAt = PositionOf(target, _pickedBuilding);

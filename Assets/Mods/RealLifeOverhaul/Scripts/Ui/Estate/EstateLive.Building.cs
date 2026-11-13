@@ -56,7 +56,8 @@ namespace RealLifeOverhaul.Ui
                     _m.ShareValues = values.ToArray();
                     // The flats as the roll's rows: the tenant's face, their state and what they pay a month.
                     var flats = new List<EstateRow>(h.Units.Count);
-                    for (int n = 0; n < h.Units.Count; n++)
+                    int flatsShown = h.Units.Count > 6 ? 5 : h.Units.Count;   // the page's list holds six lines: a last line takes the sixth when there are more
+                    for (int n = 0; n < flatsShown; n++)
                     {
                         EstateUnit u = h.Units[n];
                         StateChip(h, u, out string chip, out UiRole tone);
@@ -69,13 +70,18 @@ namespace RealLifeOverhaul.Ui
                             Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), "own:" + place))
                         });
                     }
+                    if (h.Units.Count > flatsShown)
+                    {
+                        flats.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, () => OpenTenants(place, -1)));
+                    }
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_rel_let_to");
                     _m.RelatedCount = EstateText.T("reallife_ui_estate_units_n", "count", h.Units.Count.ToString(Inv));
                     _m.RelatedRows = 6;
                     _m.Related = flats.ToArray();
                     // The works and the servicing booked on it.
                     var works = new List<EstateRow>(4);
-                    for (int b = 0; b < h.Services.Count && works.Count < 3; b++)
+                    int serviceCap = h.Services.Count > 3 ? 2 : 3;   // a last line takes the third place when there are more
+                    for (int b = 0; b < h.Services.Count && works.Count < serviceCap; b++)
                     {
                         ServiceBooking v = h.Services[b];
                         works.Add(new EstateRow
@@ -83,6 +89,10 @@ namespace RealLifeOverhaul.Ui
                             Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.FaultNoun(v.Kind)), Sub = ContractorName(v.Contractor),
                             Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
                         });
+                    }
+                    if (h.Services.Count > serviceCap)
+                    {
+                        works.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, () => OpenWorks("wrk:" + place)));
                     }
                     if (h.InspectDay > 0 && works.Count < 4)
                     {

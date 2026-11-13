@@ -45,8 +45,9 @@ namespace RealLifeOverhaul.Ui
         private bool _dirty = true;
         private readonly MapLook _look = new MapLook();   // the counts and the groups are read afresh on every open, though nothing looks while the dock is hidden
 
-        public MapLive(Component found, bool subway)
+        public MapLive(Component found, bool subway, Action hideCard = null)
         {
+            _hideCard = hideCard;
             _found = found;
             _subway = subway;
             _filters = found as CityMapFilters;
@@ -60,6 +61,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        private readonly Action _hideCard;   // hides the game's building box for a picked building (MapFiltersGame.HideCard)
         private static bool _picturesOn;
 
         /// <summary>The face of one of the mod's choices of a place on the open map (build mode's plots, a bus's stops): the same panel, its rows the choice's entries.</summary>

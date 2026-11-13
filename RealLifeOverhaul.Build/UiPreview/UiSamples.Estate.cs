@@ -256,8 +256,81 @@ internal static partial class UiSamples
                 EstateDetail(t, m, runs, w, state);
                 break;
         }
+        EstateThird(t, m, state);
         m.Runs = runs.ToArray();
         return m;
+    }
+
+    // What the live pages added after the first two passes, on the samples too, so the layout checks lay it out in every language: the sentences under a table, a row's hover
+    // card and the year blocks under a hotel.
+    private static void EstateThird(UiWords t, EstateModel m, string state)
+    {
+        string[] notes = null;
+        switch (state)
+        {
+            case "roll":
+            case "roll_twenty":
+            case "roll_first":
+                notes = new[] { W(t, "reallife_ui_estate_note_mine", "Pick a building to let it yourself, insure it or sell it. Tenants are on the Tenants tab and repairs on the Works tab."),
+                    W(t, "reallife_ui_estate_note_mine_game", "A building you have not taken on is let by the game as before, and BizMan shows its rent.") };
+                CardRows(t, m, 3, new[] { "reallife_estate_col_worth", "reallife_estate_col_paid", "reallife_ui_estate_col_rent_month", "reallife_estate_col_year_in", "reallife_estate_col_year_out" },
+                    new[] { "Worth", "Paid", "Rent a month", "In this year", "Costs this year" });
+                break;
+            case "tenants":
+                notes = new[] { W(t, "reallife_ui_estate_note_notice", "When {days} days are owed you can serve {notice} days of notice. If the tenant is still there after it, the court gives possession {court} days after you apply."),
+                    W(t, "reallife_estate_tenants_what", "Each unit of a building you let has its own tenant on a lease. Applicants offer a rent and have a record of paying."),
+                    W(t, "reallife_estate_tenants_rent_what", "The agreed rent comes in each night. A missed day brings nothing and is added to what the tenant owes.") };
+                CardRows(t, m, 2, new[] { "reallife_estate_col_owed", "reallife_ui_estate_lease_ends" }, new[] { "Owed", "Tenancy ends" });
+                break;
+            case "works":
+                notes = new[] { W(t, "reallife_ui_estate_note_works", "A building wears a little every day, faster with a careless tenant. Now and then something fails, and rarely there is a fire or a flood."),
+                    W(t, "reallife_ui_estate_note_no_new", "Nothing new can be built, so buy what is run down, improve it, then let or sell it.") };
+                break;
+            case "market":
+                notes = new[] { W(t, "reallife_estate_market_what", "The game's own listings at this mod's prices. A price follows the property market, prices, the district and the condition."),
+                    W(t, "reallife_ui_estate_note_market_rents", "Rents follow prices, not the property market, so in a boom the same rent costs more to buy."),
+                    W(t, "reallife_ui_estate_note_mortgage", "To buy with a mortgage, arrange it in the Finance app first, and the money is in your cash for the purchase.") };
+                break;
+            case "hotel":
+                notes = new[] { W(t, "reallife_estate_hotel_what", "A hotel you hold sells its rooms every night at the rates you set."),
+                    W(t, "reallife_estate_hotel_night_what", "At the going rate about {share} of the rooms sell on an ordinary night, moved by the season, the weekend, events, the economy, the district, your rate and your rating."),
+                    W(t, "reallife_ui_estate_note_hotel_staff", "Staff come on a contract at one of three levels, as the game cannot put your own employees in a hotel."),
+                    W(t, "reallife_estate_hotel_held_what", "A hotel is a business in this mod's books. The building stays the city's, and your own room there is free.") };
+                CardRows(t, m, 5, new[] { "reallife_ui_estate_col_takings_year", "reallife_ui_estate_col_costs_year", "reallife_ui_estate_fig_kept_year", "reallife_ui_estate_card_kept_night" },
+                    new[] { "Takings this year", "Costs this year", "Kept this year", "Kept last night" });
+                break;
+            case "hire":
+                notes = new[] { W(t, "reallife_estate_hire_what", "Vehicles you own can go out to customers from a lot. A hired car is gone from the street until it comes back.") };
+                break;
+        }
+        if (notes != null)
+        {
+            for (int i = 0; i < notes.Length; i++)
+            {
+                notes[i] = notes[i].Replace("{days}", "10").Replace("{notice}", "30").Replace("{court}", "21").Replace("{share}", "62%");
+            }
+            m.Notes = notes;
+        }
+    }
+
+    private static void CardRows(UiWords t, EstateModel m, int column, string[] keys, string[] fallbacks)
+    {
+        if (m.Table == null)
+        {
+            return;
+        }
+        var labels = new string[keys.Length];
+        var values = new string[keys.Length];
+        for (int k = 0; k < keys.Length; k++)
+        {
+            labels[k] = W(t, keys[k], fallbacks[k]);
+            values[k] = Usd(125000 * (k + 1));
+        }
+        for (int r = 0; r < m.Table.Rows.Length; r++)
+        {
+            m.Table.Rows[r].Card = new UiDataCard { Column = column, Title = m.Table.Rows[r].Cells != null && m.Table.Rows[r].Cells.Length > 0 ? m.Table.Rows[r].Cells[0] : null, Labels = labels, Values = values };
+        }
+        m.Table.Hover = Math.Min(1, m.Table.Rows.Length - 1);   // the second row's card is up: the layout checks lay it out in every language
     }
 
     // ------------------------------------------------------------------------------------------------- the rent roll

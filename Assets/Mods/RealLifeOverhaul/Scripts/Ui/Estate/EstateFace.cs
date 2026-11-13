@@ -167,12 +167,13 @@ namespace RealLifeOverhaul.Ui
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
             float listsH = m.ListA.Length > 0 || m.ListB.Length > 0 || !string.IsNullOrEmpty(m.ListAEmpty) || !string.IsNullOrEmpty(m.ListBEmpty) ? ListsHeight(m) : 0f;
             float lowerLeast = m.Lower != null ? LowerLeast + UiTokens.S3 : 0f;
-            float room = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - lowerLeast;
+            float notes = NotesBlock(m, w);
+            float room = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - lowerLeast - notes;
             float th = Math.Max(UiTokens.S16, Math.Min(Natural(m.Table), room));
             if (m.Lower == null || Natural(m.Table) > room)
             {
                 // A table that fills the page keeps the lists at the foot and the chart out: the page is whole without it.
-                th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f);
+                th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - notes;
                 m.Lower = null;
             }
             float[] widths = Spread(m.Table, w);
@@ -180,13 +181,15 @@ namespace RealLifeOverhaul.Ui
             Unspread(m.Table, widths);
             m.TableClip = ClipOf(s, m.TableList);
             float under = y + th + UiTokens.S3;
+            Notes(s, at, m, x, under, w);
+            under += notes;
             if (listsH > 0f)
             {
                 float ly = m.Lower != null ? under : bottom - listsH, half = UiDraw.SnapDown((w - UiTokens.S6) * ListWidthShare);
                 under = ly + listsH + UiTokens.S3;
                 UiAt lists = at.InRegion(RegionLists);
-                List(s, lists, m.ListATitle, m.ListALink, m.ListALinkRun, m.ListAEmpty, m.ListA, x, ly, half, listsH, ListRows(m));
-                List(s, lists, m.ListBTitle, m.ListBLink, m.ListBLinkRun, m.ListBEmpty, m.ListB, x + half + UiTokens.S6, ly, w - half - UiTokens.S6, listsH, ListRows(m));
+                List(s, lists, m.ListATitle, m.ListAEmpty, m.ListA, x, ly, half, listsH, ListRows(m));
+                List(s, lists, m.ListBTitle, m.ListBEmpty, m.ListB, x + half + UiTokens.S6, ly, w - half - UiTokens.S6, listsH, ListRows(m));
             }
             LowerCard(s, at, m, x, under, w, bottom, LowerLeast, LowerMost);
         }
@@ -338,19 +341,14 @@ namespace RealLifeOverhaul.Ui
 
         private static float ListsHeight(EstateModel m) => UiDraw.Snap(UiTokens.PairRow + UiTokens.S2 + ListRows(m) * RowHeight);
 
-        // A short list under a table: its title in capitals with its link at the right, then its rows.
-        private static void List(UiScene s, UiAt at, string title, string link, int linkRun, string empty, EstateRow[] rows, float x, float y, float w, float h, int most)
+        // A short list under a table: its title in capitals, then its rows.
+        private static void List(UiScene s, UiAt at, string title, string empty, EstateRow[] rows, float x, float y, float w, float h, int most)
         {
             if (string.IsNullOrEmpty(title))
             {
                 return;
             }
-            float lw = string.IsNullOrEmpty(link) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(link, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-            UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w - lw - (lw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
-            if (lw > 0f)
-            {
-                UiDraw.LinkRow(s, at, x + w - lw, y - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), lw, UiTokens.Control, link, ActionCommand, linkRun);
-            }
+            UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
             float ry = y + UiTokens.PairRow + UiTokens.S2;
             if (rows.Length == 0)
             {
@@ -457,15 +455,16 @@ namespace RealLifeOverhaul.Ui
             float sw = side ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f);
             float footH = FootHeight(m, w), foot = footH > 0f ? footH + UiTokens.S4 : 0f;
+            float notes = NotesBlock(m, w);
             if (m.FootFirst && foot > 0f)
             {
                 Foot(s, at, m, x, y + UiTokens.S1, w, bottom);
                 y += foot;
                 foot = 0f;
             }
-            float room = bottom - y - foot - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
+            float room = bottom - y - foot - notes - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
-            float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
+            float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y - notes;
             float[] widths = Spread(m.Table, tw);
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
             Unspread(m.Table, widths);
@@ -475,12 +474,69 @@ namespace RealLifeOverhaul.Ui
                 UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true, true);
             }
             float under = y + th + UiTokens.S3;
+            Notes(s, at, m, x, under, w);
+            under += notes;
             if (foot > 0f)
             {
                 Foot(s, at, m, x, under + UiTokens.S1, w, bottom);
                 under += foot;
             }
             LowerCard(s, at, m, x, under, w, bottom);
+        }
+
+        private const int NoteLines = 3;
+
+        // The sentences that say what a tab is, in two columns where the page is wide enough for two: the height they take, and the gap above them.
+        private static float NotesBlock(EstateModel m, float w)
+        {
+            float h = NotesHeight(m, w);
+            return h > 0f ? h + UiTokens.S3 : 0f;
+        }
+
+        private static bool NotesPaired(EstateModel m, float w) => m.Notes != null && m.Notes.Length >= 2 && w >= PairFrom;
+
+        private static float NotesHeight(EstateModel m, float w)
+        {
+            if (m.Notes == null || m.Notes.Length == 0)
+            {
+                return 0f;
+            }
+            bool pair = NotesPaired(m, w);
+            float col = pair ? UiDraw.SnapDown((w - UiTokens.S6) / 2f) : w;
+            int split = pair ? (m.Notes.Length + 1) / 2 : m.Notes.Length;
+            return UiDraw.Snap(Math.Max(NotesColumn(m, 0, split, col), NotesColumn(m, split, m.Notes.Length, col)));
+        }
+
+        private static float NotesColumn(EstateModel m, int from, int to, float w)
+        {
+            float h = 0f;
+            for (int i = from; i < to; i++)
+            {
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Notes[i] ?? string.Empty, UiStyle.Small, w, NoteLines)) + UiTokens.S2;
+            }
+            return h;
+        }
+
+        private static void Notes(UiScene s, UiAt at, EstateModel m, float x, float y, float w)
+        {
+            if (m.Notes == null || m.Notes.Length == 0)
+            {
+                return;
+            }
+            bool pair = NotesPaired(m, w);
+            float col = pair ? UiDraw.SnapDown((w - UiTokens.S6) / 2f) : w;
+            int split = pair ? (m.Notes.Length + 1) / 2 : m.Notes.Length;
+            for (int i = 0; i < m.Notes.Length; i++)
+            {
+                if (i == split)
+                {
+                    y -= NotesColumn(m, 0, split, col);
+                }
+                float nx = i >= split ? x + col + UiTokens.S6 : x;
+                string note = m.Notes[i] ?? string.Empty;
+                UiDraw.Text(s, at, nx, y, col, UiStyle.Small, UiRole.Text2, note, UiFlags.Label | UiFlags.Wrap, NoteLines);
+                y += UiDraw.Snap(UiTextRules.WrappedHeight(note, UiStyle.Small, col, NoteLines)) + UiTokens.S2;
+            }
         }
 
         // ------------------------------------------------------------------------------------------------- a page about one thing
