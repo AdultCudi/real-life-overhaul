@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Ui
         public int TabHover = -1;                              // the tab the pointer rests on, or -1
         public int FitTab = -1;                                // the "RLO fit-out" tab's place among the tabs (the last), or -1 where there is none
         public string SearchPlaceholder, Search = string.Empty;
+        public string SearchGhost;                             // the game's suggested completion of the search (its whole text), or null
         public string FavouritesLabel;
         public bool FavouritesOnly;
         public UiDesignerCard[] Cards = new UiDesignerCard[0];

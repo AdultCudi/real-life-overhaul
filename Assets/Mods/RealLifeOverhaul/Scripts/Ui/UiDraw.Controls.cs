@@ -218,9 +218,16 @@ namespace RealLifeOverhaul.Ui
         /// A search box: its glyph, the words typed or its placeholder, and how many it finds; its target takes the command
         /// with an argument (0 where a screen has one search). Returns the focus target.
         /// </summary>
-        public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command, int arg = 0)
+        public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command, int arg = 0, string ghost = null,
+            string acceptKey = null)
         {
             float h = UiTokens.Control;
+            // The game's suggested completion (its whole text, as the game's own field keeps it) shows muted after what is typed, the key that takes it where the count stands.
+            string rest = GhostRest(query, ghost);
+            if (rest != null && !string.IsNullOrEmpty(acceptKey))
+            {
+                count = acceptKey;
+            }
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted, UiFlags.Middle);
@@ -245,7 +252,25 @@ namespace RealLifeOverhaul.Ui
             {
                 CaretAfter(s, inside, tx, y, h, typed ? shown : null, UiStyle.Body, room);
             }
+            if (rest != null)
+            {
+                float used = Math.Min(UiTextRules.Width(shown, UiStyle.Body) + UiTokens.S1 / 2f + (caret ? CaretWidth + UiTokens.S1 / 2f : 0f), room);
+                if (room - used > UiTokens.S4)
+                {
+                    TextMiddle(s, inside, tx + used, y, h, room - used, UiStyle.Body, UiRole.Muted, rest, UiFlags.Truncate | UiFlags.Decor);
+                }
+            }
             return Node(s, at, x, y, w, h, command, arg, face);
+        }
+
+        /// <summary>What a suggested completion adds to the typed words: null when there is none, or it does not begin with them or adds nothing.</summary>
+        public static string GhostRest(string query, string ghost)
+        {
+            if (string.IsNullOrEmpty(query) || string.IsNullOrEmpty(ghost) || ghost.Length <= query.Length || !ghost.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            return ghost.Substring(query.Length);
         }
 
         /// <summary>

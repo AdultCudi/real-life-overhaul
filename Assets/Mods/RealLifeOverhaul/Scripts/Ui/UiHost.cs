@@ -478,6 +478,10 @@ namespace RealLifeOverhaul.Ui
                     EndTyping();
                     _sound?.Play(UiCue.Back);
                 }
+                else if (Input.GetKeyDown(KeyCode.Tab))
+                {
+                    TakeGhost();
+                }
                 else if (now >= _blinkAt)
                 {
                     Blink(now);
@@ -1176,8 +1180,40 @@ namespace RealLifeOverhaul.Ui
             _view.SetCaret(_caretOn);
         }
 
+        // Tab in a field whose screen offers a suggested completion takes it, as the game's own field does. The key reaches this as a keystroke or as a tab the
+        // field was given; taking the suggestion twice does nothing the second time, since the game has none once it is taken.
+        private bool TakeGhost()
+        {
+            if (!_typing || !(_screen is IUiTypingGhost ghost) || string.IsNullOrEmpty(ghost.Ghost))
+            {
+                return false;
+            }
+            string taken = ghost.Accept();
+            if (taken != null && _field != null)
+            {
+                _field.SetTextWithoutNotify(taken);
+                _field.caretPosition = taken.Length;
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+            }
+            return taken != null;
+        }
+
         private void Typed(string text)
         {
+            if (_typing && text != null && text.IndexOf('\t') >= 0)
+            {
+                // A tab is never part of what is searched for: it asks for the suggestion, and the words stay as they were.
+                text = text.Replace("\t", string.Empty);
+                _field.SetTextWithoutNotify(text);
+                _field.caretPosition = text.Length;
+                if (TakeGhost())
+                {
+                    return;
+                }
+            }
             if (_typing && _screen is IUiTyping typing)
             {
                 typing.Typed(text);
