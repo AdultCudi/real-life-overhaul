@@ -7,6 +7,9 @@ namespace RealLifeOverhaul.Ui
     public struct StaffRow
     {
         public string Name;
+        public string Face;          // the key their face is drawn by (FaceSources.Key); null: the name
+        public int Age;              // in years
+        public int Hours;            // the hours a week they are assigned
         public string Role;          // the primary skill's name
         public string Business;      // the business they work at; null or empty while unassigned
         public int Skill;            // the primary skill, 0 to 100
@@ -21,6 +24,7 @@ namespace RealLifeOverhaul.Ui
     public struct CandidateRow
     {
         public string Name;
+        public string Face;
         public string Role;
         public int Skill;
         public string Wage;          // what they would be paid an hour
@@ -56,6 +60,7 @@ namespace RealLifeOverhaul.Ui
     {
         public bool Candidate;
         public string Name, Role;
+        public string Face;
         public UiIcon RoleIcon = UiIcon.Briefcase;
         public string Business;      // null while unassigned
         public string Status;
@@ -72,6 +77,7 @@ namespace RealLifeOverhaul.Ui
     public struct StaffMate
     {
         public string Name, Role;
+        public string Face;
         public UiIcon RoleIcon;
         public int Skill, Satisfaction;
     }
@@ -87,6 +93,7 @@ namespace RealLifeOverhaul.Ui
     public struct StaffBatchRow
     {
         public string Name, Role, Business;
+        public string Face;              // the key their face is drawn by; null: the name
         public string Now, After, Day;   // pay an hour now, after, and the change for a working day (empty when nothing changes)
         public string Result;            // "Raise", "Will be hired", or why they are left out
         public UiRole Tone;              // the result chip's tone: good, or warn for one left out
@@ -109,6 +116,7 @@ namespace RealLifeOverhaul.Ui
     {
         public bool Candidate;
         public string Name;
+        public string Face;
         public string Role;
         public UiIcon RoleIcon = UiIcon.Briefcase;
         public string Business;                    // null while unassigned
@@ -124,6 +132,7 @@ namespace RealLifeOverhaul.Ui
         public bool Soon;
         public string Task;
         public string HrManager;                   // null for none
+        public string Sick;                        // "{name} called in sick today"; null when they are not
         public string Positive, Negative, Additional;   // the box's buttons' words as the game wrote them; null for a button not shown
         public bool PositiveOn = true, NegativeOn = true, AdditionalOn = true;
         public bool NegativeArmed;                 // a discard pressed once: the second press does it
@@ -152,6 +161,7 @@ namespace RealLifeOverhaul.Ui
         public string[] Filters = new string[0];   // each filter's value in words, as the tab's filter row holds them
         public int SortColumn = -1;
         public bool SortDown;
+        public bool[] Locked;                      // by column, true where the game's table cannot sort by it
         public string Query;
         public bool Filtered;                      // a filter or the search narrows the list
         public bool Picking;
@@ -170,6 +180,7 @@ namespace RealLifeOverhaul.Ui
         public int OpenList = -1;
         public string[] Options = new string[0];
         public int OptionChosen = -1;
+        public bool[] OptionTicks;                 // a list where several options stand on at once (the filters): which; null for a list of one
         public float OptionOffset;
     }
 
@@ -183,7 +194,7 @@ namespace RealLifeOverhaul.Ui
     public static class StaffViews
     {
         public const int Business = 0;    // the employees' filter row: business (the kit's own), skill, demand, status
-        public const int ColumnSkill = 2, ColumnWage = 3;
+        public const int ColumnSkill = 3, ColumnWage = 4;
         public const string StaffApp = "MyEmployees", RivalsApp = "Rivals";   // the game's names for the apps, as the phone's looks know them
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -206,6 +217,14 @@ namespace RealLifeOverhaul.Ui
             m.LeadActions = new UiActionModel[0];
             m.Person = v.Person != null ? Person(t, v.Person) : null;
             m.Preview = v.Person == null && v.Preview != null ? Preview(t, v.Preview) : null;
+            if (m.Preview != null && (v.Picking || v.Batch != null))
+            {
+                // The picking bar's and the review sheet's own action is the layer's one main action: the row's hire steps down beside it.
+                for (int i = 0; i < m.Preview.Actions.Length; i++)
+                {
+                    m.Preview.Actions[i].Kind = m.Preview.Actions[i].Kind == UiButtonKind.Primary ? UiButtonKind.Secondary : m.Preview.Actions[i].Kind;
+                }
+            }
             m.Card = v.Person != null && v.Person.TrainingCard ? TrainingCard(t, v.Person) : null;
             m.Batch = v.Batch != null ? Batch(t, v.Batch) : null;
             m.EmptyOnly = false;
@@ -217,6 +236,7 @@ namespace RealLifeOverhaul.Ui
             m.OpenList = v.OpenList;
             m.Options = v.Options ?? new string[0];
             m.OptionChosen = v.OptionChosen;
+            m.OptionTicks = v.OptionTicks;
             m.OptionOffset = v.OptionOffset;
             m.Prompts = Prompts(t, v.Person == null);
         }
@@ -225,6 +245,10 @@ namespace RealLifeOverhaul.Ui
         private static void Table(UiDataTableModel table, UiWords t, StaffView v)
         {
             table.Columns = v.Candidates ? CandidateColumns(t) : EmployeeColumns(t);
+            for (int c = 0; v.Locked != null && c < v.Locked.Length && c < table.Columns.Length; c++)
+            {
+                table.Columns[c].Sortable &= !v.Locked[c];
+            }
             table.SortColumn = v.SortColumn;
             table.SortDown = v.SortDown;
             if (v.Candidates)
@@ -261,7 +285,7 @@ namespace RealLifeOverhaul.Ui
                 new UiActionModel { Label = t("common_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Count },
                 new UiActionModel { Label = t("common_confirm", "Confirm"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Count },
             };
-            table.Totals = !v.Candidates && table.RowCount > 1 ? new[] { null, null, null, v.TotalWage, null, null } : null;   // one row needs no foot
+            table.Totals = !v.Candidates && table.RowCount > 1 ? new[] { null, null, null, null, v.TotalWage, null, null, null } : null;   // one row needs no foot
             table.TotalsLabel = t("reallife_ui_staff_totals", "Listed");
             table.Offset = v.Offset;
             table.Reveal = v.Reveal;
@@ -305,17 +329,19 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// The employees' columns: a face with the name and skill, the business, skill, pay, satisfaction and what they do; the
-        /// age and hours stand in the preview beside the table.
+        /// The employees' columns as the game's table has them: a face with the name and skill, the age, the business, skill,
+        /// pay, satisfaction, what they do and the hours a week.
         /// </summary>
         public static UiDataColumn[] EmployeeColumns(UiWords t) => new[]
         {
             new UiDataColumn { Title = t("myemployees_employee_name", "Employee Name"), Kind = UiCellKind.Person, Sortable = true },
+            new UiDataColumn { Title = t("myemployees_age", "Age"), Kind = UiCellKind.Figure, Width = 64f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_current_business", "Current Business"), Kind = UiCellKind.Text, Sortable = true },
             new UiDataColumn { Title = t("myemployees_jobtype", "Skill"), Kind = UiCellKind.Meter, Width = 144f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_hourly_wage", "Hourly Wage"), Kind = UiCellKind.Money, Width = 112f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_satisfaction", "Satisfaction"), Kind = UiCellKind.Meter, Width = 144f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_task", "Task"), Kind = UiCellKind.Chip, Width = 144f, Sortable = true },
+            new UiDataColumn { Title = t("myemployees_hours_per_week", "Hours Per Week"), Kind = UiCellKind.Figure, Width = 128f, Sortable = true },
         };
 
         /// <summary>The candidates' columns: a face with the name and skill, the skill, the wage they would be paid, the hours they ask, where they came from and how long they stay.</summary>
@@ -331,10 +357,14 @@ namespace RealLifeOverhaul.Ui
 
         private static UiDataRow Row(UiWords t, ref StaffRow r) => new UiDataRow
         {
-            Cells = new[] { r.Name, string.IsNullOrEmpty(r.Business) ? t("common_unassigned", "Unassigned") : r.Business, Whole(r.Skill), r.Wage, Whole(r.Satisfaction), r.Task },
-            Values = new[] { -1, -1, r.Skill, -1, r.Satisfaction, -1 },
-            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.TaskTone },
-            Sub = r.Role, Hue = UiColour.HueOf(r.Name), Ring = Mood(r.Satisfaction), Picked = r.Picked
+            Cells = new[]
+            {
+                r.Name, Whole(r.Age), string.IsNullOrEmpty(r.Business) ? t("common_unassigned", "Unassigned") : r.Business, Whole(r.Skill), r.Wage, Whole(r.Satisfaction), r.Task,
+                Whole(r.Hours)
+            },
+            Values = new[] { -1, -1, -1, r.Skill, -1, r.Satisfaction, -1, -1 },
+            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.TaskTone, UiRole.None },
+            Sub = r.Role, Face = r.Face, Hue = UiColour.HueOf(r.Name), Ring = Mood(r.Satisfaction), Picked = r.Picked
         };
 
         private static UiDataRow Row(UiWords t, ref CandidateRow r) => new UiDataRow
@@ -342,7 +372,7 @@ namespace RealLifeOverhaul.Ui
             Cells = new[] { r.Name, r.Schedule, r.Source, Whole(r.Skill), r.Wage, r.Expires },
             Values = new[] { -1, -1, -1, r.Skill, -1, -1 },
             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Soon ? UiRole.Warn : UiRole.Muted },
-            Sub = r.Role, Hue = UiColour.HueOf(r.Name), Ring = UiRole.None, Picked = r.Picked
+            Sub = r.Role, Face = r.Face, Hue = UiColour.HueOf(r.Name), Ring = UiRole.None, Picked = r.Picked
         };
 
         /// <summary>
@@ -353,7 +383,7 @@ namespace RealLifeOverhaul.Ui
         {
             var p = new UiStaffPreview
             {
-                Name = v.Name, Hue = UiColour.HueOf(v.Name ?? string.Empty), Ring = v.Candidate ? UiRole.None : Mood(Math.Max(0, v.Satisfaction)), Role = v.Role, RoleIcon = v.RoleIcon,
+                Name = v.Name, Face = v.Face, Hue = UiColour.HueOf(v.Name ?? string.Empty), Ring = v.Candidate ? UiRole.None : Mood(Math.Max(0, v.Satisfaction)), Role = v.Role, RoleIcon = v.RoleIcon,
                 Status = v.Status, StatusTone = v.StatusTone, Link = t("reallife_ui_staff_open", "Open their page"),
                 DemandsTitle = t("myemployees_wants_and_demands", "Wants & Demands"), Demands = v.DemandRows ?? new UiStaffDemand[0]
             };
@@ -364,6 +394,13 @@ namespace RealLifeOverhaul.Ui
                 p.RowValues = new[] { Whole(v.Age), v.Wage, v.Schedule, v.Source };
                 p.BarLabels = new[] { t("myemployees_jobtype", "Skill") };
                 p.BarValues = new[] { v.Skill };
+                // The actions the game's candidate row carries (discard, negotiate, hire), in the box's own order: the danger first, the main one last.
+                p.Actions = new[]
+                {
+                    CandidateAction(t("myemployees_discardcandidate_button", "Discard"), UiButtonKind.Destructive, UiIcon.Trash, 0),
+                    CandidateAction(t("dialog_negotiate_button", "Negotiate"), UiButtonKind.Secondary, UiIcon.Message, 1),
+                    CandidateAction(t("myemployees_hirecandidate_button", "Hire"), UiButtonKind.Primary, UiIcon.Handshake, 2),
+                };
             }
             else
             {
@@ -380,6 +417,9 @@ namespace RealLifeOverhaul.Ui
             }
             return p;
         }
+
+        private static UiActionModel CandidateAction(string label, UiButtonKind kind, UiIcon icon, int arg) =>
+            new UiActionModel { Label = label, Kind = kind, Icon = icon, Key = UiAction.Count, Command = UiStaff.PreviewCommand, Arg = arg };
 
         /// <summary>A portrait's ring for a satisfaction, by the game's own steps (its table turns red at 30 and yellow at 60).</summary>
         public static UiRole Mood(int satisfaction) => UiTokens.Grade(Math.Max(0, Math.Min(100, satisfaction)));
@@ -498,7 +538,7 @@ namespace RealLifeOverhaul.Ui
             var p = new UiStaffPerson();
             p.Profile = new UiProfileModel
             {
-                Name = v.Name, Hue = UiColour.HueOf(v.Name ?? string.Empty), Ring = v.Candidate ? UiRole.None : Mood(Math.Max(0, v.Satisfaction)), Role = v.Role, RoleIcon = v.RoleIcon,
+                Name = v.Name, Face = v.Face, Hue = UiColour.HueOf(v.Name ?? string.Empty), Ring = v.Candidate ? UiRole.None : Mood(Math.Max(0, v.Satisfaction)), Role = v.Role, RoleIcon = v.RoleIcon,
                 RoleTint = UiRole.None, Employer = string.IsNullOrEmpty(v.Business) ? null : v.Business, EmployerIcon = UiIcon.Store, Status = v.Status, StatusTone = v.StatusTone,
                 RatingLabel = t("myemployees_jobtype", "Skill"), Rating = Math.Max(0, Math.Min(10, (int)Math.Round(v.Level / 10f, MidpointRounding.AwayFromZero)))
             };
@@ -558,10 +598,16 @@ namespace RealLifeOverhaul.Ui
                 p.RowValues = values.ToArray();
             }
             Mates(t, v, p);
+            if (!string.IsNullOrEmpty(v.Sick))
+            {
+                p.Note = v.Sick;   // the game's warning line, in its words
+                p.NoteTone = UiRole.Warn;
+            }
             if (!string.IsNullOrEmpty(v.Training))
             {
-                p.Note = Fill(t("reallife_ui_staff_training", "Training {skill}: {left}."), "skill", v.Training, "left", v.TrainingLeft ?? string.Empty);
-                p.NoteTone = UiRole.None;
+                string training = Fill(t("reallife_ui_staff_training", "Training {skill}: {left}."), "skill", v.Training, "left", v.TrainingLeft ?? string.Empty);
+                p.Note = string.IsNullOrEmpty(p.Note) ? training : p.Note + " " + training;
+                p.NoteTone = string.IsNullOrEmpty(v.Sick) ? UiRole.None : UiRole.Warn;
             }
 
             return p;
@@ -576,7 +622,7 @@ namespace RealLifeOverhaul.Ui
             {
                 p.People[i] = new UiPersonRow
                 {
-                    Name = mates[i].Name, Hue = UiColour.HueOf(mates[i].Name ?? string.Empty), RoleIcon = mates[i].RoleIcon, RoleTint = UiRole.None, Role = mates[i].Role,
+                    Name = mates[i].Name, Face = mates[i].Face, Hue = UiColour.HueOf(mates[i].Name ?? string.Empty), RoleIcon = mates[i].RoleIcon, RoleTint = UiRole.None, Role = mates[i].Role,
                     FirstLabel = t("myemployees_jobtype", "Skill"), First = mates[i].Skill, SecondLabel = t("myemployees_satisfaction", "Satisfaction"), Second = mates[i].Satisfaction
                 };
             }
@@ -606,6 +652,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     Label = v.Candidate ? v.Additional : v.Bonus, Kind = UiButtonKind.Secondary, Icon = v.Candidate ? UiIcon.Message : UiIcon.Coin, Key = UiAction.Option,
                     Command = UiAppWindow.ActionCommand, Arg = 1, Disabled = v.Candidate ? !v.AdditionalOn : !v.BonusOn
+                });
+            }
+            if (!v.Candidate && !string.IsNullOrEmpty(v.HrManager))
+            {
+                list.Add(new UiActionModel
+                {
+                    Label = t("myemployees_hrmanager", "HR Manager"), Kind = UiButtonKind.Secondary, Icon = UiIcon.People, Key = UiAction.Count,
+                    Command = UiAppWindow.ActionCommand, Arg = 3
                 });
             }
             if (!string.IsNullOrEmpty(v.Positive))
@@ -665,12 +719,13 @@ namespace RealLifeOverhaul.Ui
                     ? new UiDataRow
                     {
                         Cells = new[] { r.Name, business, r.Now, r.Result }, Values = new[] { -1, -1, -1, -1 },
-                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Face = r.Face, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
                     }
                     : new UiDataRow
                     {
                         Cells = new[] { r.Name, business, r.Now, r.After, r.Day, r.Result }, Values = new[] { -1, -1, -1, -1, -1, -1 },
-                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Face = r.Face,
+                        Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
                     };
             }
             table.RowCount = table.Rows.Length;
@@ -703,7 +758,7 @@ namespace RealLifeOverhaul.Ui
         {
             var card = new UiCardModel
             {
-                Icon = UiIcon.Cap, Title = t("myemployees_task_training", "Training"), Face = v.Name, FaceHue = UiColour.HueOf(v.Name ?? string.Empty),
+                Icon = UiIcon.Cap, Title = t("myemployees_task_training", "Training"), Face = v.Face ?? v.Name, FaceHue = UiColour.HueOf(v.Name ?? string.Empty),
                 FaceRing = Mood(Math.Max(0, v.Satisfaction)),
                 Body = Fill(t("reallife_ui_staff_training_body", "{name} is training {skill}: {left}. Until it ends they cannot be assigned to a business."),
                     "name", v.Name, "skill", v.Training ?? string.Empty, "left", v.TrainingLeft ?? string.Empty),

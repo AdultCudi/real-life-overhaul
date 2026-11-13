@@ -1063,6 +1063,7 @@ myemployees_configure_uniform_presets
 myemployees_current_business
 myemployees_days_hired
 myemployees_discardcandidate_button
+myemployees_employee_days
 myemployees_employee_name
 myemployees_employees_tab
 myemployees_expiresin
@@ -1072,6 +1073,8 @@ myemployees_hourly_wage
 myemployees_hourlywage
 myemployees_hours_per_week
 myemployees_hrmanager
+myemployees_hrmanager_info
+myemployees_hrmanager_info_with_health_insurance
 myemployees_jobtype
 myemployees_manage_schedule
 myemployees_mass_action_assign_business_title

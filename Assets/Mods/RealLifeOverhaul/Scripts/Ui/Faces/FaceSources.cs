@@ -80,11 +80,24 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
+        /// The key a screen draws a hired person's or candidate's face by: their name, and their own id behind it, so two people
+        /// of one name (the game's name generator repeats) each keep their own face. Nothing is shown of the id; a person with no
+        /// id (a made-up row) is told by the name alone.
+        /// </summary>
+        public static string Key(string name, EmployeeInstance employee)
+        {
+            return employee == null || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(employee.id) ? name : name + "\u0001" + employee.id;
+        }
+
+        /// <summary>
         /// An employee, a candidate or a rival's staff member by the name a screen shows them under. With a look of their own
         /// (appearance parts) the game's generator draws them; the people the game offers without one (a rival's staff, made
         /// from a name, a sex and an age) have no character to draw, so they are painted from the sex and age the game gives.
         /// </summary>
-        public static void Employee(string shown, EmployeeInstance employee)
+        public static void Employee(string shown, EmployeeInstance employee) => Employee(shown, shown, employee);
+
+        /// <summary>The same, told under <paramref name="key"/> (see <see cref="Key"/>) where the screen draws the face by that key.</summary>
+        public static void Employee(string shown, string key, EmployeeInstance employee)
         {
             CharacterData data = employee != null ? employee.characterData : null;
             if (data == null || string.IsNullOrEmpty(shown) || shown != data.name)
@@ -93,11 +106,11 @@ namespace RealLifeOverhaul.Ui
             }
             if (data.elements != null && data.elements.Count > 0)
             {
-                Character(shown, data);
+                Character(key, data);
             }
             else
             {
-                UiFaces.Traits(shown, data.gender == BigAmbitions.Characters.Gender.Female, TimeHelper.GetYearsByDays(data.ageInDays));
+                UiFaces.Traits(key, data.gender == BigAmbitions.Characters.Gender.Female, TimeHelper.GetYearsByDays(data.ageInDays));
             }
         }
 

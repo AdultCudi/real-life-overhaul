@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiStaffPreview
     {
         public string Name;
+        public string Face;                        // the key the face is drawn by; null: the name
         public float Hue;
         public UiRole Ring = UiRole.None;
         public string Role;
@@ -103,6 +104,7 @@ namespace RealLifeOverhaul.Ui
         public int OpenList = -1;                  // the choice whose list is open: a filter's index, UiStaff.ListAssign or ListMass; -1 for none
         public string[] Options = new string[0];
         public int OptionChosen = -1;
+        public bool[] OptionTicks;                 // several options ticked at once (a filter's); null: OptionChosen alone
         public float OptionOffset;
         public UiCardModel Card;                   // a card over the page (the training under way); null for none
         public UiBatchModel Batch;                 // the review sheet of a batch waiting for a yes (a raise for several, hiring several); null for none
@@ -265,7 +267,7 @@ namespace RealLifeOverhaul.Ui
             int band = UiDraw.Box(s, at, x, y, w, ph, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(band);
             float py = y + UiTokens.S4;
-            UiDraw.Portrait(s, on, ix + ring, py + ring, face, p.Name, p.Hue, p.Ring);
+            UiDraw.Portrait(s, on, ix + ring, py + ring, face, p.Face ?? p.Name, p.Hue, p.Ring);
             float tx = ix + face + ring * 2f + UiTokens.S4, tw = x + w - UiTokens.S4 - tx;
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
             float block = lh + UiTokens.PairRow + (string.IsNullOrEmpty(p.Status) ? 0f : UiTokens.S1 + UiTokens.Badge + UiTokens.S1);
@@ -558,7 +560,7 @@ namespace RealLifeOverhaul.Ui
             int row = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, rowH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(row);
             float face = UiTokens.AvatarRow;
-            UiDraw.Portrait(s, inside, x, y + (rowH - face) / 2f, face, person.Name, person.Hue, UiRole.None);
+            UiDraw.Portrait(s, inside, x, y + (rowH - face) / 2f, face, person.Face ?? person.Name, person.Hue, UiRole.None);
             float tx = x + face + UiTokens.S3, half = UiDraw.SnapDown((x + w - tx) * 0.46f);
             float lh = UiTextRules.LineHeight(UiStyle.Title);
             float top = y + (rowH - lh - UiTokens.S1 - UiTokens.Icon) / 2f;
@@ -688,7 +690,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            UiDraw.ChoiceList(s, at, fx, fy + UiTokens.Control + UiTokens.S1, fw, m.Options, m.Options.Length, m.OptionChosen, m.OptionOffset, OptionCommand);
+            UiDraw.ChoiceList(s, at, fx, fy + UiTokens.Control + UiTokens.S1, fw, m.Options, m.Options.Length, m.OptionChosen, m.OptionOffset, OptionCommand, 1, m.OptionTicks);
         }
     }
 }

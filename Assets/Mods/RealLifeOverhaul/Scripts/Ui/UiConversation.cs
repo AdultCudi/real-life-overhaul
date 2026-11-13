@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Ui
     public static partial class UiConversation
     {
         public const int ChoiceCommand = 60, FormCommand = 61, FormLess = 62, FormMore = 63, ComposeCommand = 64, SendCommand = 65;
+        public const int DeleteCommand = 73;    // a message's delete button; its argument is the message's Remove less one
         public const float DockShare = 1f / 3f;      // of the screen's width, the docked panel at its right
         public const float DockLeast = 520f;         // px: the docked panel's least width, a choice's name beside its note
         private const float Face = 48f;              // px: the speaker's face at the head
@@ -240,6 +241,13 @@ namespace RealLifeOverhaul.Ui
                     {
                         UiDraw.Bubble(s, inClip.Arriving(i), 0f, my, w, ref m.Messages[i]);
                     }
+                }
+                if (m.Messages[i].Remove > 0 && my + bh > offset && my < offset + vh)
+                {
+                    // At the thread's free edge on the side the message is not on, so it never sits over the words and stays in one column.
+                    float tool = UiTokens.ControlSmall;
+                    UiDraw.IconButton(s, inClip.Arriving(i), m.Messages[i].From == UiFrom.Me ? 0f : w - tool, my + UiTokens.S1, tool, UiIcon.Trash, UiRole.Text2, DeleteCommand,
+                        m.Messages[i].Remove - 1, false, UiAction.Count, false, true);
                 }
                 my += bh + UiTokens.S3;
             }
