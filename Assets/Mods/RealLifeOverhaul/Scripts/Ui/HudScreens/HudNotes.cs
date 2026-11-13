@@ -16,14 +16,15 @@ namespace RealLifeOverhaul.Ui
     /// fade (in quarters): the personal goal reached (PersonalGoalOverlay, with the next goal and the reward the economy
     /// paid), the day's summary (DailySummary: its figure as the game, or the mod's day result, wrote it, each row as it
     /// fades in, the day's best earner, the EconoView link), the hospital (where and when the player collapsed, the bill, a
-    /// shift the stay went over, its Continue), the casino boat's message and the skip bridge button. The game's pieces run as before, hidden by leaf
+    /// shift the stay went over, its Continue), the casino boat's message, the skip bridge button and (HudJobSummary) the result popup of a delivery shift or a food delivery.
+    /// The game's pieces run as before, hidden by leaf
     /// (each panel's own picture by its renderer, its group left to the game's fades); the hospital's dimmer stays the
     /// game's, so the city dims and clicks are held as the game wants. Every press is the game's own button. Cost: four
     /// reads a second of a few alphas while the HUD shows.
     /// </summary>
     internal static class HudNotes
     {
-        private const int Goal = 0, Summary = 1, Hospital = 2, Casino = 3, Bridge = 4, Kinds = 5;
+        private const int Goal = 0, Summary = 1, Hospital = 2, Casino = 3, Bridge = 4, Job = 5, Kinds = 6;
         private const float Seen = 0.02f;   // a panel's alpha from which it counts as showing
 
         private static readonly UiConceal Hidden = new UiConceal();
@@ -114,6 +115,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             Hidden.Hide();
+            HudJobSummary.Begin();
             _on = true;
             return true;
         }
@@ -140,6 +142,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _on = false;
+            HudJobSummary.End();
             Hidden.Clear();
         }
 
@@ -200,6 +203,13 @@ namespace RealLifeOverhaul.Ui
             if (Up(_summary, out a))
             {
                 sig = unchecked(sig * 31 + SummaryCard(Card(Summary, a, ref count)) + Quarter(a));
+            }
+            UiHudNoticeModel job = HudJobSummary.Look(_daily, out int jobSig);
+            if (job != null)
+            {
+                KindOf[count] = Job;
+                Shown[count++] = job;
+                sig = unchecked(sig * 31 + jobSig);
             }
             if (_hospital != null && _hospital.gameObject.activeInHierarchy && _hospital.alpha > Seen)
             {
@@ -482,6 +492,10 @@ namespace RealLifeOverhaul.Ui
                 if (kind == Bridge)
                 {
                     return UiWidgets.Press(_bridge);
+                }
+                if (kind == Job)
+                {
+                    return HudJobSummary.Press();
                 }
             }
             return kind < 0;   // a test's sample: nothing behind it

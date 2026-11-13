@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.Ui
         public string EmptyTitle;
         public string EmptyBody;
         public string CountLabel;         // "12 photos" at the right of the second row
+        public string StorageLabel;       // "12 of 300 photos kept for this save" under the grid, or null for none
+        public bool StorageFull;          // the store is at its cap: the line is the accent's
         public float Offset;
         public int Reveal = -1;
         public int ViewFirst = -1, ViewLast = -1;   // out: the photos in view and a row either side, for the thumbnails to ask for
@@ -69,7 +71,13 @@ namespace RealLifeOverhaul.Ui
         public static void Lay(UiScene s, UiAt at, UiAlbumModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             float tools = Tools(s, at, m, x, y, w, keys);
-            Grid(s, at, m, x, y + tools + UiTokens.S3, w, h - tools - UiTokens.S3, Photo);
+            float foot = 0f;
+            if (!string.IsNullOrEmpty(m.StorageLabel))
+            {
+                foot = UiTokens.Chip + UiTokens.S2;   // the storage line stands under the grid, as the old page's footer did
+                UiDraw.TextMiddle(s, at, x, y + h - UiTokens.Chip, UiTokens.Chip, w, UiStyle.Small, m.StorageFull ? UiRole.Accent : UiRole.Muted, m.StorageLabel, UiFlags.Truncate);
+            }
+            Grid(s, at, m, x, y + tools + UiTokens.S3, w, h - tools - UiTokens.S3 - foot, Photo);
         }
 
         /// <summary>

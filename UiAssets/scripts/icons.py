@@ -209,6 +209,10 @@ ICONS = [
     ("Eyedropper", "eyedropper", "duotone", "4a397eadada7af0e6f23593f5909c90b95c2d79afbfbd5c0465037845d763e63"),
     ("Undo", "arrow-u-up-left", "duotone", "23c40b3701ce556eee89166f7c0aea2ee200177af773cddd0f538c1b152ee442"),
     ("Redo", "arrow-u-up-right", "duotone", "25d375dd48f9773eb2dc7e5ddb96ee0605d454d58fc61de85601213e4f91cf4f"),
+    ("Waves", "waves", "duotone", "fab5cb9ab0a07b4eb0ad8e0c0bbfb981d9c4c34e9e66bb4d1bb4208de43a55f7"),
+    ("Ticket", "ticket", "duotone", "89673690a1fd213542b4793dde4ae2e7d165fda42e06fa01e13a96682a0290a6"),
+    ("Golf", "golf", "duotone", "f981df8ca9bfd546e34d7fdadcc13b81dc1533dddd365f60a9836448d01b78fe"),
+    ("TennisBall", "tennis-ball", "duotone", "1ce02a3d8f07225966ccaf99ac3a132c3fea6a2d8d794770f0e2518a6e7d2bc8"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -352,6 +356,10 @@ FILLS = {
     "Eyedropper": "8fb839f52aaadbe156dc9982deab2288c1e23fe335d65f7a638ba21ac8078037",
     "Undo": "f9e8890a04c24f2f973e7ff3f764bae79df60056d654e987da351618a9cabfc4",
     "Redo": "5b4c7535d1c58bde4c4f87e2ab23c8d20ddf6a1d039a1f968445c811bcc537c3",
+    "Waves": "8d89488693654e8c4966f427c00c91e19f1e28fa1bc09a51f1506a287b7e142a",
+    "Ticket": "05d5f1f92438ec68001c936f5c6c9bd6a95aa2719b6ad61e499be4733960353d",
+    "Golf": "4bc4bd1bbc9c7f7078d7c1eb802fac0c4822b861d9b92b1fb10db89a8106c6fc",
+    "TennisBall": "f2f3bf2a4b14c0bd49d283e26ebe5cfc5e3ec08eb8d95d35fe192a65a0228a70",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never
