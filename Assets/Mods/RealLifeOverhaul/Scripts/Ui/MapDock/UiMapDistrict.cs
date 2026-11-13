@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Ui
         public bool HasChosen;
         public string ChosenName, ChosenRank, ShowLabel;      // "Midtown", "Rank 1 of 7", "Show on map"
         public UiInfoRow[] Chosen = new UiInfoRow[0];
+        // The rest of the district's figures as the old card says them, the layer shown first, a sentence each, kept while the panel has the room.
+        public string[] ChosenNotes = new string[0];
         public string TableTitle;                             // "Ranked by rent"
         public string ColDistrict, ColFigure, ColMonth, ColEmpty;
         public MapDistrictRow[] Rows = new MapDistrictRow[0];
@@ -86,7 +88,7 @@ namespace RealLifeOverhaul.Ui
             // The sections in the order of the mockup; each is kept only while the table keeps its least rows (three) under them.
             float least = TableHead(m) + RowHeight * Math.Min(3, m.Rows.Length) + UiTokens.S2;
             cy = Band(s, on, px, cy, m.AverageTitle, m.Average, ix, iw);
-            if (m.ChartShares != null && m.ChartShares.Length > 0 && bottom - cy - ChartHeight(m) - LegendHeight(m) - ChosenHeight(m) >= least)
+            if (m.ChartShares != null && m.ChartShares.Length > 0 && bottom - cy - ChartHeight(m) - LegendHeight(m) - ChosenHeight(m, 0f) >= least)
             {
                 cy = Donut(s, on, m, px, cy, ix, iw);
             }
@@ -94,9 +96,11 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Legend(s, on, m, px, cy, ix, iw);
             }
-            if (m.HasChosen && bottom - cy - ChosenHeight(m) >= least)
+            if (m.HasChosen && bottom - cy - ChosenHeight(m, 0f) >= least)
             {
-                cy = Chosen(s, on, m, px, cy, ix, iw);
+                // The notes take what the panel leaves above the table's least rows, as many whole sentences as fit.
+                float notesRoom = bottom - cy - ChosenHeight(m, 0f) - least;
+                cy = Chosen(s, on, m, px, cy, ix, iw, NotesHeight(m, iw, notesRoom, out int shown), shown);
             }
             Table(s, on, m, px, cy, bottom);
             return px + Width;
@@ -115,7 +119,7 @@ namespace RealLifeOverhaul.Ui
             need += BandHeight(m.Average);
             need += m.ChartShares != null && m.ChartShares.Length > 0 ? ChartHeight(m) : 0f;
             need += LegendHeight(m);
-            need += ChosenHeight(m);
+            need += ChosenHeight(m, m.HasChosen ? NotesHeight(m, iw, float.MaxValue, out int all) : 0f);
             need += TableHead(m) + m.Rows.Length * RowHeight + UiTokens.S2;
             return UiDraw.Snap(need);
         }
@@ -242,11 +246,31 @@ namespace RealLifeOverhaul.Ui
             return y + h + UiTokens.S1;
         }
 
-        private static float ChosenHeight(MapDistrictModel m) => !m.HasChosen ? 0f : UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + m.Chosen.Length * UiTokens.PairRow + UiTokens.S2 + UiTokens.S1;
+        private static float ChosenHeight(MapDistrictModel m, float notes) =>
+            !m.HasChosen ? 0f : UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + m.Chosen.Length * UiTokens.PairRow + notes + UiTokens.S2 + UiTokens.S1;
 
-        private static float Chosen(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw)
+        // The notes' height while whole sentences fit the room given: how many of them show, and what they take (a line of room under each).
+        private static float NotesHeight(MapDistrictModel m, float iw, float room, out int shown)
         {
-            float h = ChosenHeight(m) - UiTokens.S1;
+            float sum = 0f;
+            shown = 0;
+            for (int i = 0; m.ChosenNotes != null && i < m.ChosenNotes.Length; i++)
+            {
+                int lines = UiTextRules.Lines(m.ChosenNotes[i], UiStyle.Small, iw, 3, out float widest);
+                float one = UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
+                if (sum + one > room)
+                {
+                    break;
+                }
+                sum += one;
+                shown++;
+            }
+            return sum;
+        }
+
+        private static float Chosen(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw, float notes, int shown)
+        {
+            float h = ChosenHeight(m, notes) - UiTokens.S1;
             UiDraw.Band(s, at, px, y, Width, h);
             float cy = y + UiTokens.S3;
             float nw = UiDraw.Snap(UiTextRules.Width(m.ChosenName, UiStyle.Title) + UiTokens.S1);
@@ -272,6 +296,12 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.Chosen.Length; i++)
             {
                 cy += UiDraw.InfoRow(s, at, ix, cy, iw, m.Chosen[i].Label, m.Chosen[i].Value, false, -1, 0, m.Chosen[i].Ink == UiRole.None ? UiRole.Text : m.Chosen[i].Ink);
+            }
+            for (int i = 0; i < shown; i++)
+            {
+                int lines = UiTextRules.Lines(m.ChosenNotes[i], UiStyle.Small, iw, 3, out float widest);
+                UiDraw.Text(s, at, ix, cy, iw, UiStyle.Small, UiRole.Text2, m.ChosenNotes[i], UiFlags.Wrap | UiFlags.Label, lines);
+                cy += UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
             }
             return y + h + UiTokens.S1;
         }
