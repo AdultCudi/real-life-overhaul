@@ -54,6 +54,11 @@ namespace RealLifeOverhaul.Markets
                     // The two before the open trades were a cash flow's day and week, never a gain: kept as places, read as nothing.
                     .Append('|').Append(r.Cash).Append('|').Append(0).Append('|').Append(0).Append('|').Append(r.OpenTrades)
                     .Append('|').Append(r.DayGain).Append('|').Append(r.WeekGain).Append('|').Append(r.FigDay).Append('|').Append(r.Shares).Append('|').Append(r.Cost);
+                if (r.Closed != 0 || r.Peak != 0 || r.DrawdownBp != 0)
+                {
+                    // Written only once there is something to say, so a rule that has not traded keeps the line it always had.
+                    t.Append('|').Append(r.Closed).Append('|').Append(r.Peak).Append('|').Append(r.DrawdownBp);
+                }
             }
             ListingFile file = state.Listing;
             if (file != null && file.BidCount > 0)
@@ -123,6 +128,13 @@ namespace RealLifeOverhaul.Markets
                         made.FigDay = I(c, 23);
                         made.Shares = Math.Max(0, L(c, 24));
                         made.Cost = Math.Max(0, L(c, 25));
+                    }
+                    if (c.Length >= 29)
+                    {
+                        RuleBot made = state.Rules[state.Rules.Count - 1];
+                        made.Closed = Math.Max(0, I(c, 26));
+                        made.Peak = Math.Max(0, L(c, 27));
+                        made.DrawdownBp = Clamp(I(c, 28), 0, 10000);
                     }
                 }
                 else if (c[0] == "b" && state.Listing != null && c.Length >= 4)

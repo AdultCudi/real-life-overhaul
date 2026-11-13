@@ -33,7 +33,6 @@ namespace RealLifeOverhaul.Ui
         private int _revealOne = -1, _revealTwo = -1;
         private int _listOne = -1, _clipTwo = -1;
         private string _find = string.Empty;
-        private readonly HashSet<string> _folded = new HashSet<string>(StringComparer.Ordinal);   // a statement's bands the player folded, by their words, while the app lives
         private bool _dirty = true;
         private int _stamp = int.MinValue;
         private int _last = int.MinValue;
@@ -153,10 +152,6 @@ namespace RealLifeOverhaul.Ui
                 m.Table2.Offset = _offsetTwo;
                 m.Table2.Reveal = _revealTwo;
             }
-            for (int g = 0; m.Statement != null && g < m.Statement.Groups.Length; g++)
-            {
-                m.Statement.Groups[g].Folded = _folded.Contains(m.Statement.Groups[g].Label ?? string.Empty);   // the model is built afresh: what is folded is the screen's to keep
-            }
             StocksLay.Lay(s, m, frame, dark, keys);
             if (m.Table != null)
             {
@@ -200,14 +195,6 @@ namespace RealLifeOverhaul.Ui
             if (command == StocksLay.OrderRow)
             {
                 return OpenOrderRow(arg);
-            }
-            if (command == UiStatement.First + UiStatement.Group)
-            {
-                return FoldBand(arg);
-            }
-            if (command == UiStatement.First + UiStatement.Line)
-            {
-                return _model != null && _model.Statement != null;   // a line of a statement is read, a stop on the way down the list: a press asks nothing of the market
             }
             if (command >= StocksLay.Second && command < StocksLay.Second + 10)
             {
@@ -332,30 +319,11 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return true;
             }
-            if (command == StocksLay.Place || (command == UiDecision.ButtonCommand && _page == StocksPage.Ticket))
+            if (command == StocksLay.Place)
             {
                 return Place();
             }
             return false;
-        }
-
-        // A statement's band folds its lines away and brings them back, as its mark shows. The app's pages are tables today
-        // (the orders, the history), so no page builds a statement; the layout keeps the part (StocksLay.Statement), and one
-        // laid answers its bands instead of the error sound.
-        private bool FoldBand(int group)
-        {
-            UiStatementModel statement = _model != null ? _model.Statement : null;
-            if (statement == null || group < 0 || group >= statement.Groups.Length)
-            {
-                return false;
-            }
-            string band = statement.Groups[group].Label ?? string.Empty;
-            if (!_folded.Remove(band))
-            {
-                _folded.Add(band);
-            }
-            _relay = true;   // laid again from the model built: nothing it is built from changed
-            return true;
         }
 
         public void Focused(int command, int arg)
@@ -368,12 +336,6 @@ namespace RealLifeOverhaul.Ui
             if (_sheet.Open)
             {
                 return SheetBack();
-            }
-            if (_page == StocksPage.Ticket)
-            {
-                _page = StocksPage.Company;
-                _dirty = true;
-                return true;
             }
             if (_page == StocksPage.Index)
             {
@@ -592,13 +554,6 @@ namespace RealLifeOverhaul.Ui
             OpenCompany(stockId);
         }
 
-        /// <summary>Opens the order card for the company on screen.</summary>
-        public void Order()
-        {
-            _page = StocksPage.Ticket;
-            _dirty = true;
-        }
-
         private bool Place()
         {
             if (_market == null || !_market.Running || _stock <= 0)
@@ -629,10 +584,6 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             // The old app asked before every order, with what it comes to: so does the sheet, and the order goes when it is confirmed.
-            if (_page == StocksPage.Ticket)
-            {
-                _page = StocksPage.Company;   // the decision card has no room for a sheet
-            }
             OpenSheet(StocksSheets.Ticket, 0);
             long[] v = _sheet.V;
             v[StocksSheets.TStock] = _stock;
