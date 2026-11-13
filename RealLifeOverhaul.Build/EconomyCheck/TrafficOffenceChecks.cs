@@ -50,6 +50,8 @@ internal static partial class Program
         OffenceRidePins();
         OffenceWords();
         OffenceBodyPins();
+        StuckLightRules();
+        StuckLightPins();
     }
 
     // The player's car can be destroyed between the police's slow lookups: a destroyed body is dropped before anything reads it.
@@ -953,5 +955,43 @@ internal static partial class Program
             "ride: neither the Guide nor What's new claims that every vehicle of every mod is covered");
         Check(AnyChangesRow(en, "Each traffic offence now has its own switch in the options, under Traffic offences"),
             "traffic offences: What's new has the feature's line (any row, as the version step moves the next row into its own)");
+    }
+
+    // A player found a junction's light stuck on amber for minutes and the police fining a walk across it. The game keeps the amber while
+    // a car is between the stop line and the exit; a light dark for longer than a cycle is taken as stuck and the crossing is free.
+    private static void StuckLightRules()
+    {
+        var lamps = new LampLedger();
+        const int red = 7;
+        lamps.See(red, false, 100f);
+        Check(!lamps.MayWalk(red, false, 100f + LampLedger.StuckAfter - 1f), "stuck light: a lamp dark for less than a cycle is still against the walker");
+        Check(lamps.MayWalk(red, false, 100f + LampLedger.StuckAfter), "stuck light: a lamp dark for a whole cycle and more is free to cross");
+        lamps.See(red, false, 500f);
+        Check(lamps.MayWalk(red, false, 500f), "stuck light: a later look at a dark lamp does not start the time again");
+        lamps.See(red, true, 501f);
+        Check(!lamps.Stuck(red, 502f) && lamps.MayWalk(red, true, 502f), "stuck light: a lamp that lit is not stuck, and its red is the walker's turn");
+        lamps.See(red, false, 600f);
+        Check(!lamps.MayWalk(red, false, 601f), "stuck light: after a change the time counts from the next dark look");
+        Check(!lamps.Stuck(8, 9999f), "stuck light: a lamp never seen is not stuck");
+        for (int i = 0; i < 400; i++)
+        {
+            lamps.See(1000 + i, false, 10f);
+        }
+        Check(lamps.Count <= 128, "stuck light: the ledger stays small");
+    }
+
+    private static void StuckLightPins()
+    {
+        string offences = ModSource(@"Crime\PlayerOffences.cs"), crossings = ModSource(@"Traffic\Crossings.cs");
+        string tools = ModSource(@"Traffic\TrafficTools.cs"), unit = ModSource(@"Traffic\ResponseUnit.cs"), staging = ModSource(@"Traffic\TrafficAccidents.Staging.cs");
+        string foot = Between(offences, "public Offence OnFoot(", "private bool Carried(");
+        Check(foot.Contains("Crossings.LightStuck(link.redTrafficLight, now)") && foot.Contains("Crossings.Watch(position, now)"),
+            "stuck light: the foot look watches the lamps near the player and lets a stuck light go");
+        Check(foot.IndexOf("Crossings.Watch(", StringComparison.Ordinal) < foot.IndexOf("if (Witness == null || !walking", StringComparison.Ordinal),
+            "stuck light: the lamps are watched while the player waits, with no officer and no walking");
+        Check(crossings.Contains("Lamps.Clear();") && crossings.Contains("crossing.Red.activeSelf"), "stuck light: the watch is forgotten with the city and reads only the lamp's own state");
+        Check(Between(unit, "public bool Take(VehicleComponent car)", "private void Hold(").Contains("TrafficTools.InJunction(car)")
+              && staging.Contains("!TrafficTools.InJunction(car)"), "junction: no car is taken from the traffic while it heads into or through a junction");
+        Check(tools.Contains("target.IsInIntersection() || !TrafficManager.IsNotIntersection(target)"), "junction: the test is the game's own, by the car's target road point");
     }
 }

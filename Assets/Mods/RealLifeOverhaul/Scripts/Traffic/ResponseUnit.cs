@@ -131,7 +131,7 @@ namespace RealLifeOverhaul
         /// <summary>Takes over a traffic car where it stands. It keeps its looks; Path starts empty.</summary>
         public bool Take(VehicleComponent car)
         {
-            if (InUse || car == null || !car.gameObject.activeInHierarchy)
+            if (InUse || car == null || !car.gameObject.activeInHierarchy || TrafficTools.InJunction(car))
             {
                 return false;
             }

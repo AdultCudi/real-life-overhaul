@@ -491,7 +491,7 @@ namespace RealLifeOverhaul
         {
             return car != null && car.gameObject.activeInHierarchy && car.presetPath == null
                    && !TrafficTools.IsAmbulance(car) && !TrafficTools.SpokenFor(car)
-                   && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex());
+                   && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex()) && !TrafficTools.InJunction(car);
         }
 
         // Takes the car away from the traffic system. It is not pinned yet.
