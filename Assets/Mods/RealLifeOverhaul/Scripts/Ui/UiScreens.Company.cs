@@ -138,7 +138,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ibox_sec_before_during", "reallife_ibox_sec_campaign", "reallife_ibox_sec_feeling", "reallife_ibox_sec_how",
                 "reallife_ibox_sec_money", "reallife_ibox_sec_pay", "reallife_ibox_sec_return", "reallife_ibox_sec_risk", "reallife_ibox_sec_terms",
                 "reallife_mgr_allowance", "reallife_mgr_allowance_label", "reallife_mgr_appoint", "reallife_mgr_appoint_replaces",
-                "reallife_mgr_appoint_title", "reallife_mgr_dec_from_to", "reallife_mgr_dec_undo_what", "reallife_mgr_dec_when",
+                "reallife_mgr_appoint_title", "reallife_mgr_dec_from_to", "reallife_mgr_dec_undo_what", "reallife_ui_mgr_dec_when",
                 "reallife_mgr_decided", "reallife_mgr_did_prices", "reallife_mgr_did_raise_agree", "reallife_mgr_did_rota", "reallife_mgr_did_stock",
                 "reallife_mgr_empty_post", "reallife_mgr_filter_needs", "reallife_mgr_hand_back", "reallife_mgr_in_post",
                 "reallife_mgr_kind_warehouse", "reallife_mgr_mistake_chance", "reallife_mgr_mistakes", "reallife_mgr_off", "reallife_mgr_pay",
