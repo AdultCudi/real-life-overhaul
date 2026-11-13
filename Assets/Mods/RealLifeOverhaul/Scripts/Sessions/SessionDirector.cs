@@ -33,6 +33,9 @@ namespace RealLifeOverhaul.Sessions
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
 
+        /// <summary>One log line for an event of the desk (pressed, found, drawn, skipped, held, refused), never one a frame: a report of it can be read from Player.log.</summary>
+        internal static void Note(string line) => Logger?.Info("Sessions: " + line);
+
         /// <summary>True while sessions run: the master option and the sessions' own on, and no fault has stopped them.</summary>
         public static bool On => Settings.LivingPopulation && Settings.LivingDesks && Instance != null && !Instance._broken;
 
@@ -69,6 +72,7 @@ namespace RealLifeOverhaul.Sessions
         private void Awake()
         {
             Instance = this;
+            _mark = new GameUi.GuideMark("the owner's desk for desk sessions").While(MarkWanted);
             _onSave = OnSave;
             SessionGame.Clicks = DeskClicked;
             StartCoroutine(Guard.Routine(Tick()));
@@ -173,6 +177,7 @@ namespace RealLifeOverhaul.Sessions
             bool fresh = f == null;
             _file = f ?? new SessionFile { Seed = new System.Random().Next(1, int.MaxValue) };   // a save's own seed for its managers' rolls, kept with it
             _day = _hour = -1;
+            _told.Clear();
             if (!fresh || Verbose)
             {
                 Logger?.Info("Sessions: " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + ": " + _file.Records.Count + " record(s), "

@@ -57,13 +57,12 @@ namespace RealLifeOverhaul.Sessions
                     return;
                 }
                 _forced = def.Id;   // due now for this visit, whatever its record says, so the test can be pressed again
-                EmployeeStationController desk = _desk;
-                if (!DeskGame.WalkTo(desk, () => OpenPanel(desk)))
+                if (!OpenPanel(_desk))
                 {
                     SessionGame.Tell(NotificationType.Warning, "reallife_session_test_busy", null, 8f);
                     return;
                 }
-                Logger?.Info("Sessions: test: the weekly team meeting at " + _here.Name + " made due and its desk walked to.");
+                Note("test: the weekly team meeting at " + _here.Name + " made due and its panel opened.");
             }
             catch (Exception e)
             {

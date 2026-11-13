@@ -156,6 +156,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 1 && args[0] == "--hold-meeting")
+        {
+            HoldMeeting(args.Length == 2 && args[1] == "table");   // "Hold meeting" at the owner's desk: the sessions table, every state, a stuck save, the panel's redraw, the texts (HoldMeetingChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--charts")
         {
             ChartPlotChecks(false);   // every kind of chart with every hard case of values, and the report's EconoView page (UiChecks.ChartPlot.cs)
@@ -1614,6 +1620,7 @@ internal static partial class Program
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
         Sessions();     // the desk sessions: the registry, the schedule and furniture, managers' seeded choices, reminders, the save's line, the weekly team meeting and its week, the sources, the texts (SessionChecks.cs)
+        HoldMeeting(false);   // "Hold meeting" at the owner's desk: the sessions table, every state of what a firm can lack, a stuck save, the panel's redraw and walk, the texts (HoldMeetingChecks.cs)
         TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiCleanupChecks(); // the dead dashboard page kind gone, every decision card's choices lifting (UiChecks.Lift.cs)

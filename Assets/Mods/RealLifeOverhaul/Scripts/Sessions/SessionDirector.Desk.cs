@@ -21,7 +21,13 @@ namespace RealLifeOverhaul.Sessions
         private EmployeeStationController _desk;
         private string _deskAt;                  // the place whose desk was looked for this visit
         private int _desks, _free, _items = -1;  // the office's workstations, those nobody is rostered at, and its items when looked
+        private int _roster;                     // the week's rota as it was when the desk was looked for (SessionGame.Roster)
         private SessionPanel _panel;
+        private GameUi.GuideMark _mark;          // the game's destination marker on the owner's desk while a session waits there
+        private string _markName;
+        private bool _markDue;                   // a session waits and the marker is wanted
+        private readonly HashSet<string> _told = new HashSet<string>(StringComparer.Ordinal);       // places told they have no desk, once a game session
+        private readonly HashSet<string> _toldDesk = new HashSet<string>(StringComparer.Ordinal);   // places whose desk was pointed out on this visit
         private const float WorkWaitSeconds = 2f;   // real seconds the work chosen on the panel waits for the game's panel to close
         private string _forced;                  // a kind the test opens due, whatever its record says, until held or the visit ends
 
@@ -48,8 +54,8 @@ namespace RealLifeOverhaul.Sessions
             {
                 return;
             }
-            int items = SessionGame.Items(manager);
-            if (_deskAt == _here.Place && items == _items)
+            int items = SessionGame.Items(manager), roster = SessionGame.Roster(reg);
+            if (_deskAt == _here.Place && items == _items && roster == _roster)
             {
                 return;
             }
@@ -59,14 +65,85 @@ namespace RealLifeOverhaul.Sessions
             }
             _deskAt = _here.Place;
             _items = items;
+            _roster = roster;
             _desk = SessionGame.OwnDesk(manager, reg, out _desks, out _free);
             SessionGame.Target = _desk;
-            if (Verbose)
+            Logger?.Info("Sessions check (desk): " + _here.Name + ": " + _desks + " computer workstation(s), " + _free + " nobody is rostered at; the owner's desk "
+                         + (_desk != null ? "is the first of those by the layout's ids at " + _desk.transform.position.ToString("F1", CultureInfo.InvariantCulture) : "is missing")
+                         + ": " + (_desk != null || _free == 0 ? "PASS" : "FAIL"));
+            DeskTold();
+        }
+
+        /// <summary>
+        /// The first words a player gets about the desk, once a visit: where it is (the game's marker on it, and a notice that says a
+        /// session waits), or, with none, what to buy or free to have one. Said only for an office where something can be held, so a
+        /// firm with nothing to hold is left alone. Never per frame: on going in, and when the furniture or the rota changes.
+        /// </summary>
+        private void DeskTold()
+        {
+            SessionRegistry.For(_here.Type, _hereKinds);
+            int met = 0, due = 0, shortBy = 0;
+            string first = null;
+            for (int i = 0; i < _hereKinds.Count; i++)
             {
-                Logger?.Info("Sessions check (desk): " + _here.Name + ": " + _desks + " computer workstation(s), " + _free + " nobody is rostered at; the owner's desk "
-                             + (_desk != null ? "is the first of those by the layout's ids at " + _desk.transform.position.ToString("F1", CultureInfo.InvariantCulture) : "is missing")
-                             + ": " + (_desk != null || _free == 0 ? "PASS" : "FAIL"));
+                SessionDef def = _hereKinds[i];
+                if (Blocked(def, Ask(_here, SessionGame.Day, SessionGame.Hour, false, null, 100)) != null)
+                {
+                    continue;
+                }
+                met++;
+                if (!Due(def))
+                {
+                    continue;
+                }
+                due++;
+                first = first ?? SessionText.T(def.TitleKey);
+                if (SessionRules.Missing(def, _desks, _free, out int missing) == SessionNeed.Desks)
+                {
+                    shortBy = Math.Max(shortBy, missing);
+                }
             }
+            if (met == 0)
+            {
+                Note("desk at " + _here.Name + ": no kind of session can be held here now, so nothing is said");
+                return;
+            }
+            if (_desk == null)
+            {
+                if (_told.Add(_here.Place))
+                {
+                    SessionGame.Tell(NotificationType.Warning, "reallife_session_note_no_desk", new Dictionary<string, string>(1) { { "business", _here.Name } }, 20f);
+                }
+                Note("no desk at " + _here.Name + ": " + _desks + " computer workstation(s) with a chair, none free of the rota; " + met
+                     + " kind(s) could be held; the player was told what to buy or free");
+                return;
+            }
+            _markDue = due > 0;
+            if (!_markDue)
+            {
+                _mark?.Hide();
+                return;
+            }
+            if (_toldDesk.Add(_here.Place))
+            {
+                if (shortBy > 0)
+                {
+                    SessionGame.Tell(NotificationType.Warning, "reallife_session_status_desks",
+                        new Dictionary<string, string>(2) { { "missing", SessionText.Whole(shortBy) }, { "need", SessionText.Whole(_desks + shortBy) } }, 15f);
+                }
+                SessionGame.Tell(NotificationType.Info, "reallife_session_note_desk",
+                    new Dictionary<string, string>(3) { { "business", _here.Name }, { "session", first }, { "count", SessionText.Whole(due) } }, 15f);
+            }
+            _markName = _markName ?? SessionText.T("reallife_session_mark");
+            bool shown = _desk != null && !SessionGame.Near(_desk) && _mark != null && _mark.Show(_desk.transform.position, _markName);
+            Note("desk at " + _here.Name + ": " + due + " session(s) due, the desk is "
+                 + (shown ? "marked on the game's destination marker" : "within reach or the marker is taken by something else"));
+        }
+
+        // The marker stays while a session waits at this desk and the player is not at it yet.
+        private bool MarkWanted()
+        {
+            return On && _desk != null && _deskAt != null && _markDue && (_panel == null || !_panel.Open) && !SessionGame.Near(_desk);
         }
 
         /// <summary>The owner's desk let go: the panel closed (nothing held), the click taken off.</summary>
@@ -85,24 +162,34 @@ namespace RealLifeOverhaul.Sessions
             _desk = null;
             _deskAt = null;
             _items = -1;
+            _roster = 0;
             _forced = null;
+            _markDue = false;
+            _mark?.Hide();
+            _toldDesk.Clear();
         }
 
-        // A click on the owner's desk: the player walks there, then the game's panel opens on the first kind due.
+        // A click on the owner's desk: the game's panel opens at once on the first kind that can be held. The walk to the chair
+        // comes after the choices, as the game's own work panel does it; walking to the desk first made the click answer only when the player arrived.
         private void DeskClicked()
         {
+            Note("the desk was clicked");
             if (!On || _desk == null || (_panel != null && _panel.Open) || _deskAt == null)
             {
+                Note("the click is ignored: " + (!On ? "sessions are off" : _desk == null ? "there is no desk" : _deskAt == null ? "no office" : "a session panel is open already"));
                 return;
             }
             _items = -1;
-            DeskWatch();   // the week's rota may have changed since the desk was looked for (no item comes or goes for that)
+            DeskWatch();   // the rota or the furniture may have changed since the desk was looked for
             if (_desk == null)
             {
+                SessionGame.Tell(NotificationType.Warning, "reallife_session_note_no_desk", new Dictionary<string, string>(1) { { "business", _here.Name } }, 20f);
                 return;
             }
-            EmployeeStationController desk = _desk;
-            DeskGame.WalkTo(desk, () => OpenPanel(desk));
+            if (!OpenPanel(_desk))
+            {
+                SessionGame.Tell(NotificationType.Warning, "reallife_session_test_busy", null, 8f);
+            }
         }
 
         /// <summary>
@@ -137,23 +224,44 @@ namespace RealLifeOverhaul.Sessions
             SessionRegistry.For(_here.Type, _hereKinds);
             if (_hereKinds.Count == 0)
             {
+                Note("the panel was not opened: no kind of session is held at " + _here.Type);
                 return false;
             }
-            int first = 0;
-            for (int i = 0; i < _hereKinds.Count; i++)
+            // Only the kinds whose premise is met are drawn (all of them, with their reasons, when none is), and the panel opens on the
+            // first that can be held: it used to open on the first never-held kind, whatever it lacked, so a player always landed on the same dead page.
+            int n = _hereKinds.Count;
+            var met = new bool[n];
+            var can = new bool[n];
+            var due = new bool[n];
+            for (int i = 0; i < n; i++)
             {
-                if (Due(_hereKinds[i]))
-                {
-                    first = i;
-                    break;
-                }
+                SessionDef def = _hereKinds[i];
+                met[i] = Blocked(def, Ask(_here, SessionGame.Day, SessionGame.Hour, false, null, 100)) == null;
+                due[i] = Due(def);
+                can[i] = met[i] && due[i] && SessionRules.Missing(def, _desks, _free, out _) == SessionNeed.None;
             }
-            var panel = new SessionPanel(this, desk, _hereKinds.ToArray(), first);
+            var pick = new int[n];
+            int shown = SessionRules.Series(met, n, pick);
+            var defs = new SessionDef[shown];
+            var shownCan = new bool[shown];
+            var shownDue = new bool[shown];
+            for (int i = 0; i < shown; i++)
+            {
+                defs[i] = _hereKinds[pick[i]];
+                shownCan[i] = can[pick[i]];
+                shownDue[i] = due[pick[i]];
+            }
+            int first = SessionRules.FirstPage(shownCan, shownDue, shown);
+            var panel = new SessionPanel(this, desk, defs, first);
             if (!DeskGame.Show(panel))
             {
+                Note("the panel was not opened: the game's panel is busy or refused it");
                 return false;
             }
             _panel = panel;
+            _markDue = false;
+            _mark?.Hide();
+            Note("the panel is open at " + _here.Name + ": " + shown + " of " + n + " kind(s) drawn, opening on " + (first + 1));
             Ui.SessionKit.Show(panel);   // the RLO interface over the panel's pages while they are chosen; the panel keeps the flow and the seat
             return true;
         }
@@ -226,6 +334,7 @@ namespace RealLifeOverhaul.Sessions
             }
             SessionRecord rec = _file.Get(_here.Place, def.Id);
             bool there = SessionBridges.ManagerAt(_here.Place, out string manager, out int skill);
+            Note((rec.Delegated ? "take back" : "hand to manager") + " pressed for " + def.Id + " at " + _here.Name + ": " + (there ? "a manager is at work" : "no manager at work"));
             if (rec.Delegated)
             {
                 rec.Delegated = false;
@@ -261,9 +370,10 @@ namespace RealLifeOverhaul.Sessions
             {
                 return "reallife_session_refused_off";
             }
-            if (SessionRules.Missing(def, _desks, _free, out _) != SessionNeed.None)
+            SessionNeed need = SessionRules.Missing(def, _desks, _free, out _);
+            if (need != SessionNeed.None)
             {
-                return "reallife_session_status_own_desk";
+                return need == SessionNeed.Desks ? "reallife_session_refused_desks" : "reallife_session_status_own_desk";
             }
             string blocked = Blocked(def, Ask(_here, SessionGame.Day, SessionGame.Hour, false, null, 100));
             if (blocked != null)
@@ -306,10 +416,13 @@ namespace RealLifeOverhaul.Sessions
             SessionOutcome o = Apply(def, ask, choices);
             if (!o.Done || string.IsNullOrEmpty(o.Key))
             {
+                Note("refused at the end of " + def.Id + " at " + _here.Name + ": " + (o.Done ? "no words to tell it" : o.Key ?? "no reason given") + "; nothing changed, it stays due");
                 SessionGame.Tell(NotificationType.Warning, o.Done ? "reallife_session_refused_fault" : o.Key ?? "reallife_session_refused_fault", SessionGame.Data(o.Pairs), 10f);
                 return;
             }
             Record(def, _here.Place, ask.Day, false, o);
+            Note("held " + def.Id + " at " + _here.Name + " on day " + ask.Day + " with the choices " + string.Join(",", choices)
+                 + ": the record is kept, due again on day " + (ask.Day + def.EveryDays));
             if (_forced == def.Id)
             {
                 _forced = null;
@@ -328,10 +441,7 @@ namespace RealLifeOverhaul.Sessions
         internal void Stopped(SessionDef def, int done, int length)
         {
             SessionGame.Tell(NotificationType.Warning, "reallife_session_note_stopped", new Dictionary<string, string>(1) { { "session", SessionText.T(def.TitleKey) } }, 8f);
-            if (Verbose)
-            {
-                Logger?.Info("Sessions: " + def.Id + " stopped after " + done + " of " + length + " minutes; nothing held, it stays due.");
-            }
+            Note(def.Id + " stopped after " + done + " of " + length + " minutes; nothing held, it stays due");
         }
     }
 }
