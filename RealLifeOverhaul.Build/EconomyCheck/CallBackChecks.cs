@@ -459,9 +459,9 @@ internal static partial class Program
             record = r.StartsWith("2|", StringComparison.Ordinal) ? r : record;
         }
         string[] f = record != null ? record.Split('|') : new string[0];
-        Check(f.Length == 48 && f[42] == "30" && f[43] == (40 * CbMinutes + 615).ToString() && f[44] == "40" && f[45] == ((int)PlanKind.Cinema).ToString() && f[46] == "0"
-              && f[47] == "The Grand/Cinema Two",
-            "call back: the minute of the text a call opened on and the outing to text about tomorrow are saved after the age's day, the last fields of the record, the place made one field");
+        Check(f.Length == 51 && f[42] == "30" && f[43] == (40 * CbMinutes + 615).ToString() && f[44] == "40" && f[45] == ((int)PlanKind.Cinema).ToString() && f[46] == "0"
+              && f[47] == "The Grand/Cinema Two" && f[48] == string.Empty && f[49] == "0" && f[50] == "0",
+            "call back: the minute of the text a call opened on and the outing to text about tomorrow are saved after the age's day, before the three fields of the asks (the line sent last, the tour's two days: SocialAskRules), the place made one field");
         SocialState.Load(data, 31, 112, 9, 1);
         SocialPerson back = SocialState.Get(2);
         Check(back != null && back.FollowedAt == 40 * CbMinutes + 615 && back.AfterDay == 40 && back.AfterKind == PlanKind.Cinema && !back.AfterWell && back.AfterPlace == "The Grand/Cinema Two"

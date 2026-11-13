@@ -280,13 +280,18 @@ namespace RealLifeOverhaul.Seasons
             return held + " good(s) held for " + SeasonText.Name(season) + ", " + wrong + " not as wanted" + (first != null ? " (first " + first + ")" : string.Empty);
         }
 
+        private const string TurnKey = "reallife_season_turn";
+
         // The season's first morning, the snow forecast in the morning and the evening before, and the first flakes.
         private void News(int day, int hour, int year, int salt)
         {
             if (hour >= MorningFrom && hour < MorningTo && _toldSeason != day && SeasonRules.BeginsOn(day, year) && day > 1)
             {
                 _toldSeason = day;
-                MorningNews.Show(NotificationType.Info, "reallife_season_turn", SeasonText.TurnData(Season), 12f, "rlo-season");
+                if (LineNeeds.Fits(TurnKey))   // what sells at their businesses now: said to somebody who has one
+                {
+                    MorningNews.Show(NotificationType.Info, TurnKey, SeasonText.TurnData(Season), 12f, "rlo-season");
+                }
             }
             if (!Settings.WeatherMatters)
             {

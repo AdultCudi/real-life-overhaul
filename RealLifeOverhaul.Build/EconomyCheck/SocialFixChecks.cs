@@ -167,7 +167,7 @@ internal static partial class Program
         Check(when.Length > 0 && agree.Length > 0 && !when.Contains("Close(") && !when.Contains("PlanBusy") && !when.Contains("SocialLife.Now") && !agree.Contains("Random")
               && !agree.Contains("PlanMood") && agree.Contains("SocialLife.MakePlan(_p, kind, time, venue, theirIdea, out string reason)"),
             "social, plans: after the player's yes nothing turns it down: the hour put forward is the one offered, and the plan is made at it");
-        int invited = asked.IndexOf("found = SocialLife.PlaceAndHour(_p, kind, player, 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);", StringComparison.Ordinal);
+        int invited = asked.IndexOf("found = SocialLife.PlaceAndHour(_p, kind, player, tour ? 0f : 40f, tour ? TourReach : 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);", StringComparison.Ordinal);
         int moving = asked.IndexOf("float time = SocialLife.NextSlot(_p, PlanKind.Walk, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
         Check(invited > 0 && invited < asked.IndexOf("Line(def.Offer, invite)", StringComparison.Ordinal) && asked.Contains("When(kind, venue, first, true)")
               && moving > 0 && moving < asked.IndexOf("DialogEntry moving = Line(def.Offer, data);", StringComparison.Ordinal) && Occurs(asked, "NextSlot(") == 1 && Occurs(asked, "PlaceAndHour(") == 1,

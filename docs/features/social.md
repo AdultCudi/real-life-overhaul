@@ -323,6 +323,12 @@ Never more than "Most texts in a day" (3) from everybody together, one a person 
 Somebody close may ring instead: a prompt for 22 s and a notice, and the call opens in the contacts app with what they rang about. The interaction key or the prompt's button answers, so does a click on the notice (unless a call or conversation is already open), and so does calling them from the phone while it rings (`SocialDirector.TakeRing`). While a screen hides the prompt (the phone open, a menu) the ring waits for it, two minutes at most, so opening the phone never lets it lapse unseen.
 An invitation or favour is answered by calling them.
 
+### What they ask, and what they do not say twice (`SocialAskRules`)
+- The tour of the player's business is asked only of a player who has a business (`SocialPlaces.BusinessHeldDays`: the businesses Finance counts, theirs alone in a session), one they have had for two days (`TourHeardDays`). Nobody wishes for it with none (`MayWish`). Somebody whose wish it is asks for a coffee meanwhile (`InviteKind`).
+- Each person asks once: `SocialPerson.TourAskDay` keeps the day, a person asks again only after 30 days (`TourAgainDays`) when it was turned down or not answered, and never once shown round (`TourDay`, set when the tour scene ends). Ringing them searches the whole city for the player's business (`PersonDialog.Asked`), so the call that answers it finds it. Both days and `LastLine` are saved as fields 48 to 50 of a person's record; a save without them loads.
+- No text of the social life is the line the person sent last (`SocialLife.SendText` through `SocialLines.After`, `SocialAskRules.Next`): another line of its pool that fits the player (Core/LineNeeds), else none, but for a report of something that happened (a loan repaid, a plan called off).
+- A friend's written comment under a post of the player's is never the words they wrote under the player's post before (`FlareDirector.FriendLine`, `FlareRules.ReplyLine`).
+- EconomyCheck `--premises` also reads every line the mod sends of its own accord for what its words take for granted (a business, staff, a partner, children, a job, a degree, followers, shares) and wants each to say what holds it: Core/LineNeeds, a life event that needs a business, or a line of `PremiseHeld`.
 ### Calling back after a text (`PersonDialog.CallBack`)
 
 When somebody texts and the player rings them back, the call opens on what they wrote about, whichever feature sent the text:

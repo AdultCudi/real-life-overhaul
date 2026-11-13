@@ -19,9 +19,11 @@ internal static partial class Program
               && crossings.Contains("full = count >= CrossingOverlaps.Length;") && crossings.Contains("crossing = true;")
               && crossings.Contains("CrossingOverlaps[i] = null;") && crossings.Contains("return !crossing && !full;"),
             "crossing clearance: the query reuses its buffer, releases collider references and refuses a full buffer");
-        Check(Occurs(spots, "Physics.OverlapBoxNonAlloc(") == 1 && Occurs(spots, "CompareTag(\"Crosswalk\")") == 1
+        // Two box queries in CitySpots, both its own: this one, and the ground read under every place stood on (SiteGroundRules,
+        // which refuses a crossing for every kind of site, not for chess alone).
+        Check(Occurs(spots, "Physics.OverlapBoxNonAlloc(") == 2 && Occurs(spots, "CompareTag(\"Crosswalk\")") == 2
               && !ModSource(@"Jobs\Kinds\VendorJob.Placement.cs").Contains("CompareTag(\"Crosswalk\")"),
-            "crossing clearance: one test in CitySpots, which the chess scenes and the drinks cart share");
+            "crossing clearance: one test in CitySpots, which the chess scenes and the drinks cart share, beside the ground read under every place");
 
         string leisure = ModSource(@"Leisure\Activities\ChessGame.cs");
         string put = MemberText(leisure, "public bool PutOut(Vector3 anchor, Vector3 player, out TestRefusal why)");

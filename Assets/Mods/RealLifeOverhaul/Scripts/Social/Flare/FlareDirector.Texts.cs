@@ -78,6 +78,25 @@ namespace RealLifeOverhaul.Flare
             return FlareBridges.TextKept != null ? FlareBridges.TextKept("fr:" + post + ":" + person) : null;
         }
 
+        /// <summary>
+        /// A friend's written reply under a post of the player's, never the words they wrote under the player's post before:
+        /// the posts they replied to are walked in order and each picks its line after the last (FlareRules.ReplyLine). Asked
+        /// as a thread is drawn, never per frame; reads the reactors in place.
+        /// </summary>
+        public string FriendLine(FlarePost p, int index, FlarePerson person)
+        {
+            string last = null;
+            for (int k = 0; _file != null && k < _file.Posts.Count; k++)
+            {
+                FlarePost q = _file.Posts[k];
+                if (q.Author == FlareAuthor.Player && q.Id < p.Id && FlareLiveRules.Replied(q.Reactors, index))
+                {
+                    last = FlareText.ReplyKey(FlareRules.ReplyOf(person, q), q, index, last);
+                }
+            }
+            return FlareText.T(FlareText.ReplyKey(FlareRules.ReplyOf(person, p), p, index, last));
+        }
+
         /// <summary>The answer to a message of the player's: the model's words, or null for its written line.</summary>
         public string DmWords(FlareDm m)
         {

@@ -1522,5 +1522,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Graphics\GraphicsRules.cs" Link="Mod\GraphicsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Graphics\GraphicsPicture.cs" Link="Mod\GraphicsPicture.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Graphics\GraphicsModel.cs" Link="Mod\GraphicsModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialAskRules.cs" Link="Mod\SocialAskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\SiteGroundRules.cs" Link="Mod\SiteGroundRules.cs" />
   </ItemGroup>
 </Project>

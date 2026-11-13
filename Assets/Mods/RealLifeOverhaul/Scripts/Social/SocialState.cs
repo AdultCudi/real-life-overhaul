@@ -318,6 +318,9 @@ namespace RealLifeOverhaul
                 // a version that reads 43 fields leaves them (Social/SocialFollowRules).
                 text.Append(Field).Append(p.FollowedAt).Append(Field).Append(p.AfterDay).Append(Field).Append((int)p.AfterKind).Append(Field).Append(p.AfterWell ? 1 : 0)
                     .Append(Field).Append(Clean(p.AfterPlace));
+                // The line they sent last, then the tour of the player's business asked for and given (Social/SocialAskRules):
+                // a version that reads 48 fields leaves them.
+                text.Append(Field).Append(Clean(p.LastLine)).Append(Field).Append(p.TourAskDay).Append(Field).Append(p.TourDay);
             }
         }
 
@@ -410,6 +413,19 @@ namespace RealLifeOverhaul
             {
                 p.AfterDay = 0;   // (a later version's outing: never a number past the table)
             }
+        }
+
+        // Fields 48 to 50, the line they sent last and the tour's two days. A record from before them has none: any line may
+        // come first, and the tour has been neither asked for nor given.
+        private static void ReadAsks(SocialPerson p, string[] f)
+        {
+            if (f.Length < 51)
+            {
+                return;
+            }
+            p.LastLine = f[48].Length > 0 ? f[48] : null;
+            p.TourAskDay = Math.Max(0, Int(f[49]));
+            p.TourDay = Math.Max(0, Int(f[50]));
         }
 
         // Field 41, the look kept from the street, gives them its seed; one that cannot be read is let go.
@@ -565,6 +581,7 @@ namespace RealLifeOverhaul
             ReadLook(p, f);
             p.AgeDay = AgeDayOf(f, day);
             ReadFollow(p, f);
+            ReadAsks(p, f);
             SocialCatalogue.FixedFor(p, "the social life's people");   // the one fixed look, before a later version's origin is read as an old friend below
             if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
             {

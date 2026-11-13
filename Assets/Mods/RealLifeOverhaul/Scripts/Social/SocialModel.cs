@@ -106,6 +106,9 @@ namespace RealLifeOverhaul
         public PlanKind AfterKind;   // ...what it was
         public bool AfterWell;       // ...whether it went well
         public string AfterPlace;    // ...where it was, as it was agreed; null if not known
+        public string LastLine;      // the key of the line they last sent by text: never sent twice running (SocialAskRules.Next); null none yet
+        public int TourAskDay;       // the game day they last asked for the tour of the player's business; 0 never
+        public int TourDay;          // the game day they were shown round it, after which they do not ask; 0 not yet
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;

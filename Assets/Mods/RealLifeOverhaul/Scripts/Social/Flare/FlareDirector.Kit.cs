@@ -435,28 +435,29 @@ namespace RealLifeOverhaul.Flare
             return p;
         }
 
-        // A rival runs the player's business down: its own post saying so, and a message to the player, who can answer it.
-        private void RivalAttack(string name, string district, string mine, int day, int hour)
+        // A rival runs a business of the player's down: its own post naming the business, and a message to the player, who can
+        // answer it there (FlareLiveRules.Attacked, SendDm). False when no post could go up, and then nothing is told.
+        private bool RivalAttack(string name, string district, FlareShop mine, int day, int hour)
         {
-            if (Following || string.IsNullOrEmpty(name) || _file == null)
+            if (Following || string.IsNullOrEmpty(name) || _file == null || string.IsNullOrEmpty(mine.Place))
             {
-                return;
+                return false;
             }
             int id = _file.NextId++;
             var p = new FlarePost
             {
                 Id = id, Day = day, Hour = hour, Minute = FlareRules.Roll(_city.Seed, day, 86) % 60, Author = FlareAuthor.Business, Source = FlareSource.BusinessPost, Name = name,
                 Arg = RivalAttackArg, District = district, Topic = "shoplocal", Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29),
-                Reach = 600 + FlareRules.Roll(_city.Seed, day, 87)
+                Reach = 600 + FlareRules.Roll(_city.Seed, day, 87), Text = Clean(mine.Name)   // the business it names (FlareText.Built), as a sector's post keeps its product
             };
             p.Likes = p.Reach / 12;
             p.Replies = p.Reach / 120;
             _file.Posts.Add(p);
             FlareRules.Prune(_file);
             ShareChanged(p);
-            BuildingRegistration reg = FlareGame.Business(mine);
-            FlareLiveRules.Dm(_file.Net, "k:" + name, name, FlareLiveRules.Now(day, hour, 30), false, null, "reallife_flare_dm_rival",
-                "business=" + Clean(reg != null ? FlareGame.Name(reg) : mine));
+            FlareLiveRules.Dm(_file.Net, "k:" + name, name, FlareLiveRules.Now(day, hour, 30), false, null, FlareLiveRules.RivalDmKey,
+                "business=" + Clean(mine.Name));
+            return true;
         }
     }
 }

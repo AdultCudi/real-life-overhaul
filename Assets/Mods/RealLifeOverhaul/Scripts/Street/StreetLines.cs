@@ -152,7 +152,10 @@ namespace RealLifeOverhaul.Street
 
         public const int SaidMost = 32;   // written lines a person remembers having said today
 
-        /// <summary>One line of a kind, by the person's seed: never the one said last, nor one said today while one is unsaid.</summary>
+        /// <summary>
+        /// One line of a kind, by the person's seed: never the one said last, nor one said today while one is unsaid, nor one
+        /// whose words take for granted what the player has not got (Core/LineNeeds: "your businesses" to somebody with none).
+        /// </summary>
         public static string Pick(StreetLine line, int seed, int turn, string last, List<string> said)
         {
             string[] pool = Lines[(int)line];
@@ -161,6 +164,11 @@ namespace RealLifeOverhaul.Street
             for (int k = 0; k < pool.Length; k++)
             {
                 int at = (start + k) % pool.Length;
+                if (!LineNeeds.Fits(pool[at]))
+                {
+                    start = at == start ? (start + 1) % pool.Length : start;   // the fallback below is never a line that does not fit
+                    continue;
+                }
                 if (pool.Length > 1 && pool[at] == last)
                 {
                     continue;
