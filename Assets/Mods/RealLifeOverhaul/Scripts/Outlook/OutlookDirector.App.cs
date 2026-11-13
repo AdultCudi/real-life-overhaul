@@ -90,7 +90,19 @@ namespace RealLifeOverhaul.Outlook
                 return false;
             }
             _view.Want(OutlookTab.Clamp(tab));
-            RealLifeOverhaul.Ui.NewsLive.Economy.Want(OutlookTab.Clamp(tab));   // the kit's page numbers the same seven tabs the same way
+            RealLifeOverhaul.Ui.NewsLive.Economy.Want(OutlookTab.Clamp(tab));   // the kit's page numbers the same eight tabs the same way
+            _app.Open();
+            return true;
+        }
+
+        /// <summary>Opens the app on its People tab, on the city's people page for a person or a place (a teacher's or a seller's page); false while the app is not on the phone.</summary>
+        internal bool OpenPeople(RealLifeOverhaul.Population.ViewTarget at)
+        {
+            if (_app == null || _view == null || _broken || !Settings.EconomyApp)
+            {
+                return false;
+            }
+            _view.WantPeople(at);
             _app.Open();
             return true;
         }

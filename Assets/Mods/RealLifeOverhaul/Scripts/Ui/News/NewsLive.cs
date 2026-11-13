@@ -968,6 +968,16 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly Words PageWords = new Words();
 
+        /// <summary>The people's page's words for a population, for the Economy app's own People tab on the game's widgets: one set of words for both sides.</summary>
+        internal static INewsWords WordsFor(PopulationState pop)
+        {
+            PageWords.Pop = pop;
+            return PageWords;
+        }
+
+        /// <summary>A district's name by its place in the population's table.</summary>
+        internal static string DistrictNameOf(PopulationState pop, int place) => DistrictName(pop, place);
+
         private static string DistrictName(PopulationState pop, int d)
         {
             if (pop == null || d < 0 || d >= pop.Districts.Count)
@@ -1044,30 +1054,12 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
-            int head = pop.Households.First[_home];
-            string name = head >= 0 ? Population.PopulationGame.NameOf(Population.PopulationViews.NameSeed(pop, head), pop.People.Female[head] == 1) : OutlookText.T("reallife_news_home_title");
+            PageWords.Pop = pop;
             model.BackLabel = _path.RentersOpen || _app == NewsApp.Renters ? OutlookText.T("reallife_news_rent_link") : DistrictName(pop, _path.District);
             model.PageTitle = null;   // the card carries the household's name
-            model.Household = new UiInfoModel
-            {
-                Title = name,
-                Icon = UiIcon.Home,
-                Prompts = model.Prompts,
-                PromptCount = model.Prompts.Length,
-                Sections = new[]
-                {
-                    new UiInfoSection
-                    {
-                        Label = OutlookText.T("reallife_news_home_title"),
-                        Rows = new[]
-                        {
-                            new UiInfoRow { Label = OutlookText.T("reallife_news_head_people"), Value = pop.Households.Size[_home].ToString(Inv) },
-                            new UiInfoRow { Label = OutlookText.T("reallife_news_col_district"), Value = DistrictName(pop, pop.Households.District[_home]) },
-                            new UiInfoRow { Label = OutlookText.T("reallife_pop_fig_rent"), Value = LedgerText.Money(pop.Households.Rent[_home] / 100) }
-                        }
-                    }
-                }
-            };
+            model.Household = NewsPeopleRules.Household(pop, _home, PageWords, Population.PopulationGame.NameOf);
+            model.Household.Prompts = model.Prompts;
+            model.Household.PromptCount = model.Prompts.Length;
         }
 
         private void FillRenters(NewsModel model)
@@ -1085,55 +1077,11 @@ namespace RealLifeOverhaul.Ui
             model.EmptyBody = OutlookText.T("reallife_news_empty_rent_body");
         }
 
-        private const int RentersMost = 12;
-
         // The households that pay the most rent, the highest first (an owner's upkeep is not rent): its head's name and what it pays a day. In one district, or in all.
         private UiDataTableModel RentTable(int district)
         {
-            var rows = new List<UiDataRow>(RentersMost);
-            var slots = new int[RentersMost];
-            var rents = new int[RentersMost];
-            int n = 0;
-            PopulationState pop = Pop;
-            if (pop != null)
-            {
-                for (int h = 0; h < pop.Households.Count; h++)
-                {
-                    if (!pop.Households.Alive(h) || pop.Households.Landlord[h] == Landlords.Own || pop.Households.Rent[h] <= 0
-                        || (district >= 0 && pop.Households.District[h] != district))
-                    {
-                        continue;
-                    }
-                    int rent = pop.Households.Rent[h];
-                    if (n == RentersMost && rent <= rents[RentersMost - 1])
-                    {
-                        continue;
-                    }
-                    int at = n < RentersMost ? n++ : RentersMost - 1;
-                    while (at > 0 && rent > rents[at - 1])
-                    {
-                        rents[at] = rents[at - 1];
-                        slots[at] = slots[at - 1];
-                        at--;
-                    }
-                    rents[at] = rent;
-                    slots[at] = h;
-                }
-            }
-            _slots = new int[n];
-            for (int i = 0; i < n; i++)
-            {
-                _slots[i] = slots[i];
-                int head = pop.Households.First[slots[i]];
-                string name = head >= 0 ? Population.PopulationGame.NameOf(Population.PopulationViews.NameSeed(pop, head), pop.People.Female[head] == 1) : string.Empty;
-                rows.Add(new UiDataRow
-                {
-                    Cells = new[] { name, LedgerText.Money(rents[i] / 100) },
-                    Values = new[] { slots[i], rents[i] },
-                    Tones = new UiRole[2]
-                });
-            }
-            return Table(new[] { "reallife_news_col_name", "reallife_pop_fig_rent" }, rows);
+            PageWords.Pop = Pop;
+            return NewsPeopleRules.Renters(Pop, district, PageWords, Population.PopulationGame.NameOf, out _slots);
         }
 
         // A district row of the districts' table or the overview's: that district's own page. The table's rows are the city's readings in their order; the page is the

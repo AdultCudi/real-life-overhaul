@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Outlook
                     case OutlookTab.Markets: used = Markets(content); break;
                     case OutlookTab.Finances: used = Finances(content); break;
                     case OutlookTab.Insights: used = Insights(content); break;
+                    case OutlookTab.People: used = People(content); break;
                     default: used = Overview(content); break;
                 }
             }
