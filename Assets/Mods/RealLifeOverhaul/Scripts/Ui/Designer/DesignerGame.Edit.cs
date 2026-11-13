@@ -466,7 +466,11 @@ namespace RealLifeOverhaul.Ui
             i.ShowLabel = UiText.T("reallife_ui_designer_show");
             i.HowLabel = UiText.T("reallife_ui_designer_how");
             string pair = UiText.T("reallife_ui_designer_count_of");
-            int met = 0, n = Math.Min(Rows.Count, UiDesignerInfo.RequireMost);
+            int met = 0, n = Rows.Count;
+            if (i.Require.Length < n)
+            {
+                i.Require = new UiDesignerRequirement[n];   // every need is listed: the figure counts them all
+            }
             for (int k = 0; k < Rows.Count; k++)
             {
                 met += Rows[k].Met ? 1 : 0;

@@ -88,6 +88,17 @@ internal static partial class Program
     private static void BlueprintsUiChecks()
     {
         UiWords en = (key, english) => english;
+        // The card's downloads are the game's words for them (Blueprint.GetDownloadsLabel), and the terms card is pressed through its own buttons.
+        Check(BlueprintsRules.DownloadsKey(0f, out string n0) == "blueprints_no_downloads" && n0 == null && BlueprintsRules.DownloadsKey(1f, out _) == "blueprints_one_download"
+              && BlueprintsRules.DownloadsKey(999f, out string n1) == "blueprints_downloads_amount" && n1 == "999" && BlueprintsRules.DownloadsKey(1000f, out string n2) == "blueprints_downloads_amount_thousands" && n2 == "1"
+              && BlueprintsRules.DownloadsKey(15499f, out string n3) == "blueprints_downloads_amount_thousands" && n3 == "15" && BlueprintsRules.DownloadsKey(2500000f, out string n4) == "blueprints_downloads_amount_millions" && n4 == "2"
+              && BlueprintsRules.DownloadsKey(-3f, out _) == "blueprints_no_downloads", "blueprints: the downloads on a card are the game's own count in words, none, one, hundreds, thousands, millions");
+        string bpScreen = BlueprintsRead(@"Ui\Blueprints\BlueprintsScreen.cs");
+        int termsAt = bpScreen.IndexOf("private bool Terms(int arg)", StringComparison.Ordinal);
+        string termsCode = termsAt >= 0 ? bpScreen.Substring(termsAt, Math.Min(1700, bpScreen.Length - termsAt)) : string.Empty;
+        Check(termsCode.Contains("UiWidgets.Calling(card != null ? card.transform : null, method)") && termsCode.Contains("UiWidgets.Press(button)") && termsCode.Contains("\"UploadToSteamWorkshop\"") && termsCode.Contains("_panel.CloseWorkshopConfirm();"),
+            "blueprints: Yes on the terms card presses the card's own button, so the game's listener and other mods' run and the card closes; only without it the method is called and the card closed");
+        Check(bpScreen.Contains("card.Downloads = ") && BlueprintsRead(@"Ui\UiScreens.Blueprints.cs").Contains("\"blueprints_downloads_amount_thousands\""), "blueprints: a card carries its downloads and the screen's keys list the game's words for them");
         // Stars: the game keeps a rating of 0 to 1, the window shows it out of five by halves and as one figure.
         Check(BlueprintsRules.Halves(0.96f) == 10 && BlueprintsRules.Halves(0.5f) == 5 && BlueprintsRules.Halves(0.14f) == 1 && BlueprintsRules.Halves(0f) == 0 && BlueprintsRules.Halves(2f) == 10
               && BlueprintsRules.Halves(float.NaN) == 0, "blueprints: a rating of 0 to 1 is stars by halves, never past five");

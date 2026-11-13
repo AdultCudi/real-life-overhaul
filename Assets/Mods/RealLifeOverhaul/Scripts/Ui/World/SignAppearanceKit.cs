@@ -62,7 +62,9 @@ namespace RealLifeOverhaul.Ui
         private readonly ColorListUI[] _lists = new ColorListUI[2];
         private readonly int[] _listAt = new int[UiToolPanel.MostLines];
         private string[][] _keys = { new string[24], new string[24] };
-        private int _kindLine = -1;
+        private readonly List<bool>[] _own = { new List<bool>(24), new List<bool>(24) };   // by swatch: one of the player's own colours, which the game lets a right click remove
+        private int _kindLine = -1, _removeLine = -1;
+        private bool _removing;   // the next own colour pressed is removed instead of chosen: a right click has no equal on a pad
 
         public SignAppearanceScreen(SignAppearance sign, RectTransform panel)
         {
@@ -124,12 +126,37 @@ namespace RealLifeOverhaul.Ui
             M.Icon = UiIcon.PaintBrush;
             M.Close = true;
             M.State = null;
+            _removeLine = -1;
             _kindLine = M.LineCount;
             ref UiToolLine kind = ref Add(UiToolKind.Choice);
             kind.Label = UiText.T("sign_appearance_sign_type");
             kind.Value = DropdownValue(Kind, GameContract.SignOptionsLocalized, "common_select_type");
             Colours(0, "sign_appearance_sign_light_color");
             Colours(1, "sign_appearance_sign_bulb_color");
+            bool any = false;
+            for (int l = 0; l < 2; l++)
+            {
+                any |= _own[l].Contains(true);
+            }
+            if (!any)
+            {
+                _removing = false;
+                return;
+            }
+            _removeLine = M.LineCount;
+            ref UiToolLine remove = ref Add(UiToolKind.Buttons);
+            remove.Label = UiText.T(_removing ? "reallife_ui_sign_remove_on" : "reallife_ui_sign_remove");
+            remove.Icon = _removing ? UiIcon.Close : UiIcon.Trash;
+        }
+
+        protected override bool Line(int line)
+        {
+            if (line != _removeLine || line < 0)
+            {
+                return false;
+            }
+            _removing = !_removing;
+            return true;
         }
 
         // A row of the game's colours as it lists them, the player's own first; only while the kind lights that part.
@@ -138,6 +165,7 @@ namespace RealLifeOverhaul.Ui
             ColorListUI list = List(l);
             _lists[l] = list;
             _colours[l].Clear();
+            _own[l].Clear();
             if (list == null || !list.gameObject.activeSelf)
             {
                 return;
@@ -166,6 +194,7 @@ namespace RealLifeOverhaul.Ui
                     chosen = at;
                 }
                 _colours[l].Add(b);
+                _own[l].Add(child.GetComponent<PlayerColor>() != null);
             }
             _listAt[M.LineCount] = l;
             ref UiToolLine row = ref Add(UiToolKind.Swatches);
@@ -212,7 +241,25 @@ namespace RealLifeOverhaul.Ui
         protected override bool Colour(int line, int index)
         {
             int l = line >= 0 && line < _listAt.Length ? _listAt[line] : -1;
-            return l >= 0 && index >= 0 && index < _colours[l].Count && UiWidgets.Press(_colours[l][index]);
+            if (l < 0 || index < 0 || index >= _colours[l].Count)
+            {
+                return false;
+            }
+            if (_removing)
+            {
+                _removing = false;
+                PlayerColor own = _own[l][index] && _colours[l][index] != null ? _colours[l][index].GetComponent<PlayerColor>() : null;
+                if (own == null)
+                {
+                    return true;   // a colour the game gives is not the player's to remove
+                }
+                using (HotSpots.Game())
+                {
+                    own.onRemove.Invoke();   // what a right click does: the game asks, then removes the colour and writes both lists again
+                }
+                return true;
+            }
+            return UiWidgets.Press(_colours[l][index]);
         }
 
         protected override bool AddColour(int line)

@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Ui
         public string State;         // the chip in the picture's corner ("Yours", "In your library"); null for none
         public UiRole StateTone;
         public bool Old;             // made in an older game version: the warning glyph by its size
+        public string Downloads;     // "1.2k downloads", as the game's card words them; null for a local blueprint (the game's card says "no Steam info" there)
     }
 
     /// <summary>A row of the filters' list: a group's caption, or one option of it with whether it is on.</summary>
@@ -262,9 +263,14 @@ namespace RealLifeOverhaul.Ui
             float ix = x + UiTokens.S3, iw = w - UiTokens.S3 * 2f, ty = fy + UiTokens.S3;
             UiDraw.Text(s, onFoot, ix, ty, iw, UiStyle.Title, ink, c.Name, UiFlags.Truncate);
             ty += TitleLine + UiTokens.S1;
+            float downW = string.IsNullOrEmpty(c.Downloads) ? 0f : Math.Min(UiDraw.SnapDown(iw * 0.6f), UiDraw.Snap(UiTextRules.Width(c.Downloads, UiStyle.Small) + UiTokens.S1));
             if (!string.IsNullOrEmpty(c.Author))
             {
-                UiDraw.Text(s, onFoot, ix, ty, iw, UiStyle.Small, soft, c.Author, UiFlags.Truncate);
+                UiDraw.Text(s, onFoot, ix, ty, Math.Max(0f, iw - downW - (downW > 0f ? UiTokens.S2 : 0f)), UiStyle.Small, soft, c.Author, UiFlags.Truncate);
+            }
+            if (downW > 0f)
+            {
+                UiDraw.Text(s, onFoot, ix + iw - downW, ty, downW, UiStyle.Small, chosen ? UiRole.OnAccent : UiRole.Muted, c.Downloads, UiFlags.Right | UiFlags.Truncate);
             }
             ty += SmallLine + UiTokens.S2;
             float line = RatingLine;

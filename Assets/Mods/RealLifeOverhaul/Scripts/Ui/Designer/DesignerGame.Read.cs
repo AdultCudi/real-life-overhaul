@@ -38,14 +38,21 @@ namespace RealLifeOverhaul.Ui
 
         private static void FillBar(UiDesignerModel m, int tool)
         {
-            if (m.Tools.Tools.Length != (int)UiDesignerTool.Count)
+            int known = (int)UiDesignerTool.Count, all = known + ExtraCount;
+            if (m.Tools.Tools.Length != all)
             {
-                m.Tools.Tools = new UiTool[(int)UiDesignerTool.Count];
+                m.Tools.Tools = new UiTool[all];
+                m.ToolOff = new bool[all];
             }
-            for (int i = 0; i < m.Tools.Tools.Length; i++)
+            for (int i = 0; i < known; i++)
             {
                 m.Tools.Tools[i] = new UiTool { Icon = DesignerGlyphs.ToolIcons[i], Name = UiText.T(DesignerGlyphs.ToolKeys[i]) };
                 m.ToolOff[i] = !Offers(i);
+            }
+            for (int i = known; i < all; i++)
+            {
+                m.Tools.Tools[i] = new UiTool { Icon = UiIcon.Wrench, Name = ExtraName(i - known) };   // the kit knows no glyph of another mod's tool
+                m.ToolOff[i] = ExtraOff(i - known);
             }
             m.Tools.Tool = tool;
             InteriorDesignerUI ui = Ui;

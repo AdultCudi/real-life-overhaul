@@ -12,13 +12,13 @@ namespace RealLifeOverhaul.Ui
     public static class UiBuildPanels
     {
         public const int ViewCommand = 7700, RowCommand = 7701, LeaveCommand = 7702, TabCommand = 7703, SearchCommand = 7704, FavouritesCommand = 7705, CardCommand = 7706,
-            StarCommand = 7707, PlaceCommand = 7708, BackCommand = 7709, TourNextCommand = 7710, TourSkipCommand = 7711;
+            StarCommand = 7707, PlaceCommand = 7708, BackCommand = 7709, TourNextCommand = 7710, TourSkipCommand = 7711, FilterCommand = 7712;
 
         /// <summary>Every command the panels answer, for the layout checks.</summary>
         public static readonly int[] Commands =
         {
             UiToolRow.ToolCommand, UiToolRow.ChoiceCommand, ViewCommand, RowCommand, LeaveCommand, TabCommand, SearchCommand, FavouritesCommand, CardCommand, StarCommand,
-            PlaceCommand, BackCommand, TourNextCommand, TourSkipCommand
+            PlaceCommand, BackCommand, TourNextCommand, TourSkipCommand, FilterCommand
         };
 
         public const float Rail = 104f;          // px: the views' menu, two icons across, as the city map's
@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Ui
             float sheetTop = UiTokens.S4 + UiTokens.Control + UiTokens.S2;
             if (m.Catalogue == null && (m.LineCount > 0 || !string.IsNullOrEmpty(m.SheetTitle)))
             {
-                Sheet(s, UiAt.Screen.InRegion(SheetRegion), m, right - SheetWidth, sheetTop, keys);
+                Sheet(s, UiAt.Screen.InRegion(SheetRegion), m, right - SheetWidth, sheetTop, frame, keys);
             }
             Hint(s, UiAt.Screen, m, frame, lx + lw + UiTokens.S4, right - SheetWidth - UiTokens.S4);
             if (m.Catalogue != null)
@@ -316,9 +316,14 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static void Sheet(UiScene s, UiAt at, UiBuildModel m, float x, float y, IUiKeys keys)
+        /// <summary>How far the tool panel may reach down from <paramref name="top"/>: to just over the status bar.</summary>
+        public static float SheetRoom(UiFrame frame, float top) => UiDraw.SnapDown(frame.BandY - UiTokens.S3 - top);
+
+        private static void Sheet(UiScene s, UiAt at, UiBuildModel m, float x, float y, UiFrame frame, IUiKeys keys)
         {
-            float h = SheetHeight(m);
+            float full = SheetHeight(m), room = SheetRoom(frame, y);
+            bool scrolls = full > room + 0.5f && room > UiFrame.Strip + UiTokens.Control * 2f;
+            float h = scrolls ? room : full;
             int panel = UiDraw.Box(s, at, x, y, SheetWidth, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
             float cy = UiDraw.TitleStrip(s, on, x, y, SheetWidth, m.SheetIcon, m.SheetTitle, false);
@@ -329,6 +334,25 @@ namespace RealLifeOverhaul.Ui
             }
             float ix = x + UiTokens.S4, iw = SheetWidth - UiTokens.S4 * 2f;
             cy += UiTokens.S3;
+            UiAt lines = on;
+            float lx = ix, ly = cy;
+            if (scrolls)
+            {
+                // Taller than the room: the lines scroll in a clip under the title strip, as the design window's cards do, with the wheel and a thumb.
+                float view = UiDraw.SnapDown(y + h - UiTokens.S2 - cy), content = full - (cy - y) - UiTokens.S2;
+                float offset = Math.Max(0f, Math.Min(m.SheetScroll, Math.Max(0f, content - view)));
+                m.SheetScroll = offset;
+                short clip = s.AddClip(x, cy, SheetWidth - UiTokens.S2, view, offset);
+                s.Clips[clip].ContentHeight = content;
+                lines = new UiAt { Parent = -1, Clip = clip, Layer = on.Layer, Order = -1, Region = on.Region };
+                lx = UiTokens.S4;
+                ly = 0f;
+                UiDraw.ScrollThumb(s, on, x + SheetWidth - UiTokens.S2 - UiTokens.S1, cy, view, offset, content);
+            }
+            else
+            {
+                m.SheetScroll = 0f;
+            }
             bool primary = false;
             for (int i = 0; i < m.LineCount && i < m.Lines.Length; i++)
             {
@@ -336,25 +360,25 @@ namespace RealLifeOverhaul.Ui
                 switch (l.Kind)
                 {
                     case UiBuildLineKind.Text:
-                        UiDraw.Text(s, on, ix, cy, iw, UiStyle.Body, l.Tone, l.Label, UiFlags.Wrap | UiFlags.Truncate, 4);
+                        UiDraw.Text(s, lines, lx, ly, iw, UiStyle.Body, l.Tone, l.Label, UiFlags.Wrap | UiFlags.Truncate, 4);
                         break;
                     case UiBuildLineKind.Fact:
-                        UiDraw.InfoRow(s, on, ix, cy, iw, l.Label, l.Value, false, -1, 0, l.Tone);
+                        UiDraw.InfoRow(s, lines, lx, ly, iw, l.Label, l.Value, false, -1, 0, l.Tone);
                         break;
                     case UiBuildLineKind.Zone:
-                        Zone(s, on, ref l, ix, cy, iw);
+                        Zone(s, lines, ref l, lx, ly, iw);
                         break;
                     case UiBuildLineKind.Buttons:
-                        Buttons(s, on, ref l, ix, cy, iw, keys, ref primary);
+                        Buttons(s, lines, ref l, lx, ly, iw, keys, ref primary);
                         break;
                     case UiBuildLineKind.Choices:
-                        Choices(s, on, ref l, ix, cy, iw, keys);
+                        Choices(s, lines, ref l, lx, ly, iw, keys);
                         break;
                     default:
-                        Site(s, on, ref l, ix, cy, iw);
+                        Site(s, lines, ref l, lx, ly, iw);
                         break;
                 }
-                cy += LineHeight(ref l, iw) + UiTokens.S2;
+                ly += LineHeight(ref l, iw) + UiTokens.S2;
             }
         }
 
@@ -432,7 +456,7 @@ namespace RealLifeOverhaul.Ui
         {
             x = UiDraw.SnapDown(leftRight + UiTokens.S2);
             w = UiDraw.SnapDown(Math.Min(1180f, frame.Width - x - UiTokens.S4));
-            h = UiDraw.Snap(UiTokens.S3 * 2f + UiTokens.Control + UiTokens.S2 + CardRows * CardHeight + (CardRows - 1) * UiTokens.S2 + UiTokens.S3);
+            h = UiDraw.Snap(UiTokens.S3 * 2f + (UiTokens.Control + UiTokens.S2) * (c != null && c.Filters.Length > 0 ? 2f : 1f) + CardRows * CardHeight + (CardRows - 1) * UiTokens.S2 + UiTokens.S3);
             y = UiDraw.SnapDown(frame.BandY - UiTokens.S3 - h);
         }
 
@@ -450,6 +474,31 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return n;
+        }
+
+        /// <summary>The chosen card's place in the list while the search and the favourites switch leave it among those shown, else -1: a design the list hides is not offered for Place.</summary>
+        public static int ChosenShown(UiBuildCatalogueModel c)
+        {
+            for (int i = 0; i < c.CardCount; i++)
+            {
+                if (c.Cards[i].Chosen && Passes(c, ref c.Cards[i]))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool ChosenAny(UiBuildCatalogueModel c)
+        {
+            for (int i = 0; i < c.CardCount; i++)
+            {
+                if (c.Cards[i].Chosen)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool Passes(UiBuildCatalogueModel c, ref UiBuildCard card)
@@ -503,6 +552,20 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Switch(s, on, hx, hy, favW, c.FavouritesOnly, c.FavouritesLabel, FavouritesCommand, 0, false);
             UiDraw.Search(s, on, sx, hy, searchW, c.SearchPlaceholder, c.Search, null, SearchCommand);
             float by = hy + UiTokens.Control + UiTokens.S2;
+            if (c.Filters.Length > 0)
+            {
+                // The filters: the designs that fit the squares, the corner buildings, the city's own, each with its count; a refused design is read under the last two.
+                float fx = x + UiTokens.S4;
+                for (int f = 0; f < c.Filters.Length; f++)
+                {
+                    string label = c.Filters[f] ?? string.Empty;
+                    float fw = Math.Max(UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys),
+                        UiDraw.ButtonWidth(UiButtonKind.Chosen, label, UiIcon.None, UiAction.Count, keys));
+                    UiDraw.Button(s, on, fx, by, fw, UiTokens.Control, f == c.Filter ? UiButtonKind.Chosen : UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys, FilterCommand, f);
+                    fx += fw + UiTokens.S2;
+                }
+                by += UiTokens.Control + UiTokens.S2;
+            }
             UiDraw.Band(s, on, x, by - UiTokens.S1, w, UiTokens.Hairline);
             float gridW = w - DetailWidth - UiTokens.S2;
             int cols = Columns(gridW), shown = Shown(c);
@@ -600,20 +663,13 @@ namespace RealLifeOverhaul.Ui
         private static void Detail(UiScene s, UiAt at, UiBuildCatalogueModel c, float x, float y, float w, float h, IUiKeys keys)
         {
             UiDraw.Band(s, at, x, y, UiTokens.Hairline, h);
-            int chosen = -1;
-            for (int i = 0; i < c.CardCount; i++)
-            {
-                if (c.Cards[i].Chosen)
-                {
-                    chosen = i;
-                }
-            }
+            int chosen = ChosenShown(c);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f, cy = y + UiTokens.S3;
             float buttonsH = UiTokens.ControlSmall * 3f + UiTokens.S2 * 2f;
             float by = y + h - UiTokens.S3 - buttonsH;
             if (chosen < 0)
             {
-                UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, c.SummaryLine, UiFlags.Wrap | UiFlags.Truncate, 4);
+                UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, string.IsNullOrEmpty(c.PickLine) || !ChosenAny(c) ? c.SummaryLine : c.PickLine, UiFlags.Wrap | UiFlags.Truncate, 4);
                 DetailButtons(s, at, c, -1, ix, by, iw, keys);
                 return;
             }
@@ -650,8 +706,9 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Button(s, at, x, y, w, UiTokens.ControlSmall, starred ? UiButtonKind.Chosen : UiButtonKind.Secondary, c.FavouriteLabel, UiIcon.Star, UiAction.Count, keys, StarCommand,
                 Math.Max(0, starIndex), starIndex < 0);
             y += UiTokens.ControlSmall + UiTokens.S2;
-            UiDraw.Button(s, at, x, y, w, UiTokens.ControlSmall, c.PlaceUsable ? UiButtonKind.Primary : UiButtonKind.Secondary, c.PlaceLabel, UiIcon.None, UiAction.Alt, keys,
-                PlaceCommand, 0, !c.PlaceUsable);
+            bool place = c.PlaceUsable && starIndex >= 0;   // no chosen card among those shown: nothing to place
+            UiDraw.Button(s, at, x, y, w, UiTokens.ControlSmall, place ? UiButtonKind.Primary : UiButtonKind.Secondary, c.PlaceLabel, UiIcon.None, UiAction.Alt, keys,
+                PlaceCommand, 0, !place);
             y += UiTokens.ControlSmall + UiTokens.S2;
             UiDraw.Button(s, at, x, y, w, UiTokens.ControlSmall, UiButtonKind.Secondary, c.BackLabel, UiIcon.None, UiAction.Back, keys, BackCommand, 0);
         }

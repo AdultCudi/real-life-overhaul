@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Ui
         private static BarPlan Plan(UiDesignerModel m, UiFrame f, IUiKeys keys)
         {
             var p = new BarPlan { Under = !string.IsNullOrEmpty(m.OnApply) };
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 p.ToolsShown += m.ToolOff[i] ? 0 : 1;
             }
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Ui
         public static float RowWidth(UiDesignerModel m)
         {
             int tools = 0, steps = 0;
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 tools += m.ToolOff[i] ? 0 : 1;
             }
@@ -261,7 +261,7 @@ namespace RealLifeOverhaul.Ui
             UiAt row = band.InRegion(BarRegion);
             float ty = UiDraw.BarMiddle(frame) - BarTilePx / 2f, tx = p.ToolsX;
             int first = s.NodeCount;
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 if (m.ToolOff[i])
                 {

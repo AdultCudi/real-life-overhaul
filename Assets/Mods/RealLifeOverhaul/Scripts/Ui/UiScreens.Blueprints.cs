@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bp_count", "reallife_ui_bp_page", "reallife_ui_bp_page_of", "reallife_ui_bp_prev", "reallife_ui_bp_next", "reallife_ui_bp_loading",
                     "reallife_ui_bp_none", "reallife_ui_bp_none_found", "reallife_ui_bp_none_body", "reallife_ui_bp_none_found_body", "reallife_ui_bp_clear",
                     "reallife_ui_bp_pick", "reallife_ui_bp_by", "reallife_ui_bp_yours", "reallife_ui_bp_shared", "reallife_ui_bp_subscribed", "reallife_ui_bp_in_library",
+                    "blueprints_no_downloads", "blueprints_one_download", "blueprints_downloads_amount", "blueprints_downloads_amount_thousands", "blueprints_downloads_amount_millions",
                     "reallife_ui_bp_facts", "reallife_ui_bp_cost", "reallife_ui_bp_subscribers", "reallife_ui_bp_released", "reallife_ui_bp_items",
                     "reallife_ui_bp_size_floors", "reallife_ui_bp_inside", "reallife_ui_bp_in_counters", "reallife_ui_bp_in_shelves", "reallife_ui_bp_in_tables",
                     "reallife_ui_bp_in_seats", "reallife_ui_bp_in_workstations", "reallife_ui_bp_in_machines", "reallife_ui_bp_counting", "reallife_ui_bp_not_here",

@@ -130,6 +130,36 @@ namespace RealLifeOverhaul.Ui
             return t("reallife_ui_bp_size_floors", "{size}, {floors} floors").Replace("{size}", size).Replace("{floors}", floors.ToString(CultureInfo.InvariantCulture));
         }
 
+        /// <summary>
+        /// The game's key for a count of downloads (Blueprint.GetDownloadsLabel), with the number its text takes in <paramref name="number"/>: none and one have a key of their own
+        /// and no number; below a thousand the count, below a million the thousands, above that the millions.
+        /// </summary>
+        public static string DownloadsKey(float downloads, out string number)
+        {
+            int n = (int)Math.Round(downloads);   // as Mathf.RoundToInt rounds, which the game's label uses
+            number = null;
+            if (n <= 0)
+            {
+                return "blueprints_no_downloads";
+            }
+            if (n == 1)
+            {
+                return "blueprints_one_download";
+            }
+            if (n < 1000)
+            {
+                number = n.ToString(CultureInfo.InvariantCulture);
+                return "blueprints_downloads_amount";
+            }
+            if (n < 1000000)
+            {
+                number = (n / 1000).ToString(CultureInfo.InvariantCulture);
+                return "blueprints_downloads_amount_thousands";
+            }
+            number = (n / 1000000).ToString(CultureInfo.InvariantCulture);
+            return "blueprints_downloads_amount_millions";
+        }
+
         /// <summary>Subscribers as the game counts them: whole numbers, thousands grouped.</summary>
         public static string Subscribers(float downloads) => Math.Max(0, (int)Math.Round(downloads)).ToString("N0", CultureInfo.CurrentCulture);
     }

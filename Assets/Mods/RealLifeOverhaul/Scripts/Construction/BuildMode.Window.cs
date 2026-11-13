@@ -616,8 +616,8 @@ namespace RealLifeOverhaul.Construction
                     return;
                 }
             }
-            ReadUseCounts();
             ReadDesignFacts();
+            ReadUseCounts();
             int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
             _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
             _card = _design >= 0 && _design < n ? _design : -1;
@@ -640,8 +640,8 @@ namespace RealLifeOverhaul.Construction
             BuildModeCatalogue.Order(_dCost, _dFits, n, _dOrder);
         }
 
-        // How many designs fit for each use (the kit's tabs) and what each use's demand is in the district. The use in hand is the list already read; the others are read as the
-        // footprint's designs, quietly.
+        // How many designs each use's tab opens on (the kit's tabs): the cards its first filter shows, as the window will count them, so a tab never says more than its cards. The
+        // use in hand is the list already read (ReadDesignFacts first); the others are read as the footprint's designs, quietly, and judged the way ReadDesignFacts judges.
         private void ReadUseCounts()
         {
             if (!((object)_bar is IBuildFace))
@@ -652,11 +652,18 @@ namespace RealLifeOverhaul.Construction
             {
                 if (u == (int)_use)
                 {
-                    _useCount[u] = _designs.Count;
+                    int own = Math.Min(_designs.Count, BuildModeCatalogue.Most);
+                    _useCount[u] = BuildModeCatalogue.Count(BuildModeCatalogue.First(_dCorner, _dFits, own), _dCorner, _dFits, own);
                     continue;
                 }
                 _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, (BuildUse)u, _otherDesigns, true);
-                _useCount[u] = Math.Min(_otherDesigns.Count, BuildModeCatalogue.Most);
+                int others = Math.Min(_otherDesigns.Count, BuildModeCatalogue.Most);
+                for (int i = 0; i < others; i++)
+                {
+                    _oFits[i] = BuildModeRules.MayBuild(_d.PlaceWarnings(_site.FirstColumn, _site.Count, _otherDesigns[i], true, (BuildUse)u, _parking, out _, out _));
+                    _oCorner[i] = !string.IsNullOrEmpty(_otherDesigns[i].Look);
+                }
+                _useCount[u] = BuildModeCatalogue.Count(BuildModeCatalogue.First(_oCorner, _oFits, others), _oCorner, _oFits, others);
             }
             _otherDesigns.Clear();
             int district = _d.DistrictOfColumn(_site.FirstColumn);
@@ -666,6 +673,8 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        private readonly bool[] _oFits = new bool[BuildModeCatalogue.Most];
+        private readonly bool[] _oCorner = new bool[BuildModeCatalogue.Most];
         private readonly int[] _useCount = new int[(int)BuildUse.Count];
         private readonly int[] _demandNow = new int[(int)BuildUse.Count];
         private readonly List<DesignChoice> _otherDesigns = new List<DesignChoice>(BuildModeCatalogue.Most);
@@ -735,8 +744,8 @@ namespace RealLifeOverhaul.Construction
             }
             _design = -1;
             _card = -1;
-            ReadUseCounts();
             ReadDesignFacts();
+            ReadUseCounts();
             _filter = BuildModeCatalogue.First(_dCorner, _dFits, Math.Min(_designs.Count, BuildModeCatalogue.Most));
             WriteCatalogue(true);
         }
@@ -758,6 +767,11 @@ namespace RealLifeOverhaul.Construction
             if (filter >= 0 && filter < BuildModeCatalogue.FilterCount)
             {
                 _filter = filter;
+                int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
+                if (_card >= 0 && (_card >= n || !BuildModeCatalogue.Shows(filter, _dCorner[_card], _dFits[_card])))
+                {
+                    _card = -1;   // the design picked is no longer among the cards: Place must not build what the window does not show
+                }
                 WriteCatalogue(true);
             }
         }

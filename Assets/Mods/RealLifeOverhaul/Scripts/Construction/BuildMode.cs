@@ -38,7 +38,8 @@ namespace RealLifeOverhaul.Construction
 
         private BuildFaceCalls Calls() => new BuildFaceCalls
         {
-            Tool = ToolPicked, View = ViewPicked, Row = Picked, Leave = Close, Card = CardPicked, Use = UsePicked, Favourite = FavouritePicked, Back = CatalogueBack, Place = CataloguePlace
+            Tool = ToolPicked, View = ViewPicked, Row = Picked, Leave = Close, Card = CardPicked, Use = UsePicked, Filter = FilterPicked, Favourite = FavouritePicked,
+            Back = CatalogueBack, Place = CataloguePlace
         };
 
         private const float DragEvery = 0.05f;   // seconds (real time) between looks at the cell under the pointer while dragging
