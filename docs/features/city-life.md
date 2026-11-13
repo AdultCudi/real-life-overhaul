@@ -45,7 +45,7 @@ People at work and about their day on the pavements near the player: sweepers, w
   footprint's reach, no bus zone and no parking under it (`CitySpots.Read`, one box query, the road map and the bus zones' table).
   The site is asked for as a whole too when it is chosen, and every twenty seconds while it is out: one whose place is no longer
   pavement is taken in, with one log line. Sites are never saved, so a load starts with none. `SiteGroundRules.Kinds` lists every
-  kind covered; EconomyCheck fails on a catalogue entry without one. Other features that ask `CitySpots` for the walking ground
+  kind covered; EconomyCheck fails on a catalogue entry without one. A fail-safe watches the session's verdicts (`SiteGroundRules.RoadLayerWatch`): if 40 or more places were asked and 95% or more were refused as the road with not one pavement, the Roads-layer part of the test is judged unreliable for this game build and dropped for the session (one log line, "City life road layer fallback"); crossings, lanes, bus zones, parking and doorways keep deciding, and the City life test's print says whether it is on. Other features that ask `CitySpots` for the walking ground
   (a works' dressing at the kerb, a bus stop's riders, the vendor job's cart) keep their own rules.
 
 ## Rules the living city keeps

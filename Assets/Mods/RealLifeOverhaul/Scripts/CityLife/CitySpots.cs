@@ -47,6 +47,15 @@ namespace RealLifeOverhaul
         private static bool _roadLogged;     // the first place refused as in the road has been written to the log this session
         private static int _forSite;         // sites finding their places now: counted, so one scope inside another is no fault
         private static bool _kerbside;       // the site finding its places stands at the kerb's edge by its nature (SiteGroundRules.Kerbside)
+        private static readonly SiteGroundRules.RoadLayerWatch RoadWatch = new SiteGroundRules.RoadLayerWatch();   // the session's verdicts: the Roads layer dropped if it refuses every place
+
+        /// <summary>True when the Roads layer was judged unreliable this session and no longer decides (SiteGroundRules.RoadLayerWatch).</summary>
+        public static bool RoadLayerFallback => RoadWatch.Off;
+
+        /// <summary>The watch's counts for the City life test's print: places asked, refused as the carriageway, found pavement.</summary>
+        public static string RoadLayerWords() =>
+            (RoadWatch.Off ? "road layer test OFF (fallback: judged unreliable, lanes, crossings, bus zones, parking and doorways decide)" : "road layer test on")
+            + " (" + RoadWatch.Asked + " places asked, " + RoadWatch.Carriageway + " refused as the road, " + RoadWatch.Pavement + " pavement)";
 
         /// <summary>
         /// Held while a standing site of the living city finds and takes its places (CityLifeDirector.Open, the chess table):
@@ -196,7 +205,14 @@ namespace RealLifeOverhaul
             }
             facts.BusZone = BusZones.Holds(spot, Vector3.forward, reach, reach);
             facts.DoorNear = door && Physics.CheckSphere(spot + Vector3.up, DoorKeepOut, _doorMask, QueryTriggerInteraction.Collide);
-            return SiteGroundRules.Verdict(in facts);
+            StreetGround ground = RoadWatch.Judge(in facts, out bool tripped);
+            if (tripped)
+            {
+                CityLifeDirector.Logger?.Info("City life road layer fallback: of " + RoadWatch.Asked + " places asked on walking ground " + RoadWatch.Carriageway
+                                              + " were refused as the road's own surface and none was pavement, so the Roads layer is judged unreliable for this game build and is not used again "
+                                              + "this session; crossings, traffic lanes, bus zones, parking and doorways still decide.");
+            }
+            return ground;
         }
 
         /// <summary>True if a point of walking ground is pavement for something that reaches so far from it; a refusal is counted, and the first of a session logged.</summary>

@@ -120,6 +120,51 @@ namespace RealLifeOverhaul
             return f.DoorNear ? StreetGround.Doorway : StreetGround.Pavement;
         }
 
+        /// <summary>
+        /// A session's watch over the verdicts, for the one reading nobody could check against the game's scenes: that a road's
+        /// surface is on the Roads layer and a pavement is not. If pavements were on it, every place would be refused as the
+        /// carriageway and the city's street life would vanish. <see cref="Judge"/> gives each verdict through the rule and
+        /// counts it; when at least <see cref="MinAsked"/> places have been asked, <see cref="RefusedPercent"/> percent of them
+        /// or more refused as the carriageway and not one was pavement, the layer test is judged unreliable for this game build
+        /// and dropped for the rest of the session. The crossing, the traffic lane (the lane clearance alone keeps a site out
+        /// of the carriageway), the bus zone, parking and the doorway keep deciding: none depends on that layer.
+        /// COST: a few integer comparisons a place asked.
+        /// </summary>
+        public sealed class RoadLayerWatch
+        {
+            // 40 places is several site searches (a ring search asks up to eight, a place its four sides): a few seconds in a
+            // street, far too many for a real road to be all of them with no pavement among them. With the layer right, a
+            // pavement turns up within the first few; 95% leaves room for the crossings and lanes of a street that is all
+            // road, and the one pavement seen ever (the Pavement count) is proof that the layer says something.
+            public const int MinAsked = 40;          // places asked on walking ground before the layer is judged
+            public const int RefusedPercent = 95;    // share of them refused as the carriageway, with no pavement among them
+
+            public int Asked, Carriageway, Pavement;   // verdicts counted while the layer test was on
+            public bool Off;                           // the layer test is dropped for this session
+
+            /// <summary>The verdict for what was read, with the layer test dropped once it is judged unreliable; counted until then.</summary>
+            public StreetGround Judge(in StreetGroundFacts facts, out bool tripped)
+            {
+                tripped = false;
+                if (Off)
+                {
+                    StreetGroundFacts without = facts;
+                    without.RoadUnder = false;
+                    return Verdict(in without);
+                }
+                StreetGround ground = Verdict(in facts);
+                Asked++;
+                Carriageway += ground == StreetGround.Carriageway ? 1 : 0;
+                Pavement += ground == StreetGround.Pavement ? 1 : 0;
+                if (Asked >= MinAsked && Pavement == 0 && Carriageway * 100 >= Asked * RefusedPercent)
+                {
+                    Off = true;
+                    tripped = true;
+                }
+                return ground;
+            }
+        }
+
         /// <summary>True only for pavement or a square.</summary>
         public static bool Stands(in StreetGroundFacts f) => Verdict(in f) == StreetGround.Pavement;
 
