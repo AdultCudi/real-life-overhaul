@@ -62,10 +62,14 @@ namespace RealLifeOverhaul.Tech
                 NoButtons = true,
                 Build = Build,
                 Opened = () => UiClone.Safe(Refresh),
-                Closed = Closed
+                Closed = Closed,
+                Kit = () => new StudioPageScreen(_place ?? FirstPlace()) { Close = ShellPages.CloseMenu },   // the kit's page for the firm, when it and its switch are on
+                KitScreen = "studio",
+                KitIcon = UiIcon.GameController
             };
             _app = PhoneApp.Install(def, out bool tryAgain);
             _gaveUp = _app == null && !tryAgain;
+            UiShell.Face(_app, def);
             if (_gaveUp)
             {
                 TechDirector.Logger?.Warn("Tech: the game's menu is not built as this version expects, so a firm's whole page is not shown on the game's widgets.");
@@ -83,6 +87,9 @@ namespace RealLifeOverhaul.Tech
             _table = null;
             DropSpark();
         }
+
+        // The first firm's place, for the kit's face of a page opened before any firm was asked for; null with no firm.
+        private string FirstPlace() => _director.FirmPlaces.Count > 0 ? _director.FirmPlaces[0].File.Place : null;
 
         /// <summary>Opens the page on a firm; false while the page is not among the apps.</summary>
         public bool Open(string place)
