@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
         private void FillPrices(NewsModel model, OutlookBook book)
         {
             int bp = BasketChange(book, out string led, out int fromDay);
-            model.Chip = led.Length > 0 ? OutlookText.T("reallife_news_chip_led", "good", led) : model.Chip;
+            model.Chip = led.Length > 0 ? NewsRules.Opening(OutlookText.T("reallife_news_chip_led", "good", led)) : model.Chip;
             if (fromDay > 0)
             {
                 // No month of prices is kept yet: the basket has no change to give, so the page says from which day, never that prices held still.
@@ -215,6 +215,7 @@ namespace RealLifeOverhaul.Ui
             int end = series.LastDay;
             var all = new List<UiSeries>(DaySeriesCatalogue.CityGoodsMost);
             var swing = new List<float>(DaySeriesCatalogue.CityGoodsMost);
+            var starts = new List<int>(DaySeriesCatalogue.CityGoodsMost);
             List<string> names = series.Names();
             for (int i = 0; i < names.Count; i++)
             {
@@ -224,9 +225,11 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 float first = 0f;
+                int start = 0;
                 for (int d = 0; d < span && first <= 0f; d++)
                 {
                     first = GoodRaw[d] == DaySeriesCatalogue.NoValue ? 0f : GoodRaw[d];
+                    start = d;
                 }
                 if (first <= 0f)
                 {
@@ -241,12 +244,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 all.Add(new UiSeries { Label = GoodName(key.Substring(DaySeriesCatalogue.CityPrefix.Length)), Values = line });
                 swing.Add(Math.Abs(line[span - 1] - 100f));
+                starts.Add(start);
             }
             if (all.Count == 0)
             {
                 return null;
             }
             var chosen = new List<UiSeries>(3);
+            int cut = span - 1;
             for (int pick = 0; pick < 3 && all.Count > 0; pick++)
             {
                 int top = 0;
@@ -255,9 +260,19 @@ namespace RealLifeOverhaul.Ui
                     top = swing[i] > swing[top] ? i : top;
                 }
                 chosen.Add(all[top]);
+                cut = Math.Min(cut, starts[top]);
                 all.RemoveAt(top);
                 swing.RemoveAt(top);
+                starts.RemoveAt(top);
             }
+            // The chart begins on the first day a price was kept: the days before it, and any before the save began, are no part of it.
+            for (int k = 0; cut > 0 && k < chosen.Count; k++)
+            {
+                UiSeries one = chosen[k];
+                one.Values = NewsRules.From(one.Values, cut);
+                chosen[k] = one;
+            }
+            span -= cut;
             int shown = Math.Min(span, NewsRules.DaysBook);
             var whole = new string[span];
             for (int i = 0; i < span; i++)
