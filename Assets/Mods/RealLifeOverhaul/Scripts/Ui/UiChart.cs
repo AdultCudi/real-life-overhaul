@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public Func<float, string> Format;          // a value as the game writes it, in a card and at a line's end
         public Func<float, string> AxisFormat;      // a tick's value, shorter where the game has a short form ("$40k"), or null for Format
         public Func<float, string> CountFormat;     // a candle's volume as the game writes a count
+        public float LeastSpan;                     // the least the value axis covers, or 0: an index rebased to 100 asks a few points either side, so one day's small move on a young save is no cliff
         public bool Whole;                          // the values are counts: the axis steps by whole numbers (1, 2, 5 of a power of ten), never 0.5
         public int Focus = -1;                      // the point read in its card, or -1
         public bool EvenAxis;                       // the point names stand at even steps counted back from the last point, which is always named (a series of days)
@@ -325,6 +326,12 @@ namespace RealLifeOverhaul.Ui
             {
                 low = Math.Min(0f, low);
                 high = Math.Max(0f, high);
+            }
+            else if (m.LeastSpan > 0f && high - low < m.LeastSpan)
+            {
+                float mid = (low + high) / 2f;
+                low = mid - m.LeastSpan / 2f;
+                high = mid + m.LeastSpan / 2f;
             }
             else if (high - low < 1e-6f)
             {
