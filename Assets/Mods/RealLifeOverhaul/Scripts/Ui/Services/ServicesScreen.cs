@@ -56,10 +56,6 @@ namespace RealLifeOverhaul.Ui
             {
                 _seen = _source.Generation;
                 _source.Fill(_m, _view);
-                if (_m.Prompts.Length == 0)
-                {
-                    _m.Prompts = BuyKits.Prompts();   // the pad's hints on the bar: move, select and back
-                }
             }
             UiDataTableModel table = Table(_m);
             if (table != null)

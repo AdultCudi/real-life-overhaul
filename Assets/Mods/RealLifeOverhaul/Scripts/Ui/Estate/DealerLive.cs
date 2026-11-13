@@ -121,6 +121,7 @@ namespace RealLifeOverhaul.Ui
             DealerState state = d != null && d.Running ? d.State : null;
             m.Title = DealerText.T("reallife_dealer_app");
             m.Icon = UiIcon.Car;
+            m.Prompts = EstateLive.Hints();
             m.TabsAcross = true;
             var runs = new EstateRuns();
             m.Tab = Math.Max(0, Math.Min(NavTab.Length - 1, v.Tab));

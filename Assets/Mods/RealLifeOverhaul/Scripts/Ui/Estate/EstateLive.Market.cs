@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Ui
                         "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind") }, new[] { 1 }, EstateText.T("reallife_estate_empty_market"));
                 _m.RowRuns = Ordered(locate);
                 // The three sentences the old page ended with: what moves a price, what moves a rent, and how a mortgage is arranged.
-                _m.Notes = new[] { EstateText.T("reallife_estate_market_what"), EstateText.T("reallife_estate_market_rents"), EstateText.T("reallife_estate_market_mortgage") };
+                _m.Notes = new[] { EstateText.T("reallife_estate_market_what"), EstateText.T("reallife_ui_estate_note_market_rents"), EstateText.T("reallife_ui_estate_note_mortgage") };
                 // Where the cycle is heading, under the head's title: the line the old market page led with stands in the head.
                 _m.HeadSub = EstateText.T("reallife_ui_estate_market_heading", "cycle", EstateText.Cycle(_c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(_c.Cycle, _c.Quarters)));
                 _m.TableLink = EstateText.T("reallife_ui_estate_view_map");

@@ -70,22 +70,14 @@ namespace RealLifeOverhaul.Ui
                             left > 0 ? UiRole.Ok : UiRole.Muted, UiRole.None },
                         Subs = new[] { EstateText.District(HotelDistrict(f.Slot)), null, null, null, null, null, null, null, null },
                         SortKeys = new[] { N, HotelRules.Stars(f.Rating) * 2, f.Clean / 10, staffShare, soldShare, f.Takings, f.Costs, left, N },
-                        // The year's takings and costs the old table had a column each for: the table has no room for two more beside its meters, so they stand under the hotel's row.
-                        Blocks = new[]
+                        // The year's takings and costs the old table had a column each for: the table has no room for two more beside its meters, so they stand on the card the
+                        // takings cell raises, with what the hotel kept.
+                        Card = new UiDataCard
                         {
-                            new UiDataBlock
-                            {
-                                Title = EstateText.T("reallife_ui_estate_block_year"),
-                                Labels = new[] { EstateText.T("reallife_ui_estate_col_takings"), EstateText.T("reallife_ui_estate_col_costs") },
-                                Values = new[] { Money(f.TakingsYear), Money(f.CostsYear) }
-                            },
-                            new UiDataBlock
-                            {
-                                Title = EstateText.T("reallife_ui_estate_block_kept"),
-                                Labels = new[] { EstateText.T("reallife_ui_estate_block_year"), EstateText.T("reallife_ui_estate_block_last_night") },
-                                Values = new[] { Money(f.TakingsYear - f.CostsYear), Money(f.Takings - f.Costs) },
-                                Tones = new[] { f.TakingsYear >= f.CostsYear ? UiRole.OkText : UiRole.DangerText, f.Takings >= f.Costs ? UiRole.OkText : UiRole.DangerText }
-                            }
+                            Column = 5, Title = f.Name,
+                            Labels = new[] { EstateText.T("reallife_ui_estate_col_takings_year"), EstateText.T("reallife_ui_estate_col_costs_year"),
+                                EstateText.T("reallife_ui_estate_fig_kept_year"), EstateText.T("reallife_ui_estate_card_kept_night") },
+                            Values = new[] { Money(f.TakingsYear), Money(f.CostsYear), Money(f.TakingsYear - f.CostsYear), Money(f.Takings - f.Costs) }
                         }
                     });
                     keys.Add("hot:" + f.Slot);
@@ -118,11 +110,10 @@ namespace RealLifeOverhaul.Ui
                     EstateText.T("reallife_ui_estate_hotels_sub", "count", _s.Hotels.Count.ToString(Inv)), null, null, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_no_hotel"), EstateText.T("reallife_ui_estate_empty_hotel_body"), null, new[] { 5, 6 });
                 _m.RowRuns = Ordered(locate);
-                _m.Table.BlockLines = 2;
                 _m.Notes = new[]
                 {
                     EstateText.T("reallife_estate_hotel_what"), EstateText.T("reallife_estate_hotel_night_what", "share", EstateText.Share(EstateCatalogue.Occupancy)),
-                    EstateText.T("reallife_estate_hotel_staff_what"), EstateText.T("reallife_estate_hotel_held_what")
+                    EstateText.T("reallife_ui_estate_note_hotel_staff"), EstateText.T("reallife_estate_hotel_held_what")
                 };
                 if (_s.Hotels.Count > 0)
                 {

@@ -30,7 +30,6 @@ internal static partial class Program
             }
         }
         Check(tableBottom > 0f && noteTop >= tableBottom - 0.5f, "Property: the notes start under the table's last row, not over it");
-        Check(scene.PromptCount >= 3, "Property: the pad's hints stand on the prompt bar (move, select, back) for a source that wrote none");
 
         // A row's card shows while the pointer or the focus is on a row that has one; a row without one costs no page.
         screen.Pointed(EstateFace.TableBase + UiDataTable.Row, 0);
@@ -65,9 +64,9 @@ internal static partial class Program
         string model = Map5Source("Ui/Estate/EstateModel.cs");
         string[] oldNotes =
         {
-            "reallife_estate_market_what", "reallife_estate_market_rents", "reallife_estate_market_mortgage", "reallife_estate_hotel_what", "reallife_estate_hotel_night_what",
-            "reallife_estate_hotel_staff_what", "reallife_estate_hotel_held_what", "reallife_estate_mine_what", "reallife_estate_mine_game", "reallife_estate_tenants_notice_what",
-            "reallife_estate_tenants_what", "reallife_estate_tenants_rent_what", "reallife_estate_works_what", "reallife_estate_works_no_new", "reallife_estate_works_wear",
+            "reallife_estate_market_what", "reallife_ui_estate_note_market_rents", "reallife_ui_estate_note_mortgage", "reallife_estate_hotel_what", "reallife_estate_hotel_night_what",
+            "reallife_ui_estate_note_hotel_staff", "reallife_estate_hotel_held_what", "reallife_ui_estate_note_mine", "reallife_ui_estate_note_mine_game", "reallife_ui_estate_note_notice",
+            "reallife_estate_tenants_what", "reallife_estate_tenants_rent_what", "reallife_ui_estate_note_works", "reallife_ui_estate_note_no_new", "reallife_ui_estate_note_wear",
             "reallife_estate_works_market", "reallife_estate_hire_what"
         };
         string everything = mine + trade + works + market;
@@ -84,8 +83,8 @@ internal static partial class Program
             "Property: the roll's and a tab's table give up the room the notes take, so the table never runs under them");
         Check(mine.Contains("Card = BuildingCard(h)") || (mine.Contains("own.Card = BuildingCard(h)") && mine.Contains("unitRow.Card = card")), "Property: a building's, a unit's, a hotel's and a space's row of the roll carries the worth, the price paid and the year's figures");
         Check(mine.Contains("EstateText.T(\"reallife_estate_col_worth\")") && mine.Contains("\"reallife_estate_col_paid\"") && mine.Contains("\"reallife_estate_col_year_in\"") && mine.Contains("\"reallife_estate_col_year_out\"")
-            && trade.Contains("Blocks = new[]") && trade.Contains("_m.Table.BlockLines = 2;") && trade.Contains("f.TakingsYear") && trade.Contains("f.CostsYear"),
-            "Property: the Mine table's worth, paid and year columns and the Hotel table's two year columns are the old ones' figures, on a card and under the hotel's row");
+            && trade.Contains("reallife_ui_estate_card_kept_night") && trade.Contains("f.TakingsYear") && trade.Contains("f.CostsYear"),
+            "Property: the Mine table's worth, paid and year columns and the Hotel table's two year columns are the old ones' figures, all on a card");
         Check(works.Contains("Card = !u.Let ? null") && works.Contains("\"reallife_estate_col_owed\"") && works.Contains("\"reallife_ui_estate_lease_ends\""), "Property: a tenant's row carries what is owed and the day the lease ends, the old table's two columns");
         Check(works.Contains("TakeFilter(places)") && works.Contains("\"reallife_ui_estate_all_buildings\"") && model.Contains("public string FilterPlace;") && model.Contains("FilterPlace = null;"),
             "Property: the tenants' table takes a building filter that a link on a building's page sets, and a tab opened by hand starts without one");
@@ -100,8 +99,9 @@ internal static partial class Program
         Check(!model.Contains("DayWords") && !model.Contains("ListALink") && !model.Contains("ListBLink"), "Property: fields nothing filled are gone");
         Check(Map5Source("Ui/Services/ServicesModel.cs").Contains("public string Guide;") && !Map5Source("Ui/Services/ServicesModel.cs").Contains("public UiFigureModel[] Strip") && !Map5Source("Ui/Services/ServicesModel.cs").Contains("public string Back;"),
             "Services: a band of figures and a way back that nothing filled are gone from its model");
-        Check(Map5Source("Ui/Services/ServicesScreen.cs").Contains("_m.Prompts = BuyKits.Prompts();") && Map5Source("Ui/Services/ServicesLive.Round.cs").Contains("reallife_ui_svc_more_visits")
-            && Map5Source("Ui/Services/ServicesLive.Sell.cs").Contains("reallife_ui_svc_more_after"), "Services: the pad's hints stand on the bar, and a crew member's visits and the sale's dues say how many more there are");
+        Check(Map5Source("Ui/Estate/EstateLive.cs").Contains("m.Prompts = Hints();") && Map5Source("Ui/Estate/DealerLive.cs").Contains("m.Prompts = EstateLive.Hints();")
+            && Map5Source("Ui/Services/ServicesLive.cs").Contains("new UiPrompt { Action = UiAction.Move") && Map5Source("Ui/Services/ServicesLive.Round.cs").Contains("reallife_ui_svc_more_visits")
+            && Map5Source("Ui/Services/ServicesLive.Sell.cs").Contains("reallife_ui_svc_more_after"), "Property, the showroom and Services: the pad's hints stand on the prompt bar (move, select, back), and a Services crew member's visits and the sale's dues say how many more there are");
 
         // The map: the game's building box is hidden for a picked building whether or not it was found when the dock stood up, and a full list of saved places says so.
         string game = Map5Source("Ui/MapDock/MapFiltersGame.cs");

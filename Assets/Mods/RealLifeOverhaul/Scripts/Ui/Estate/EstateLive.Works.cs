@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Ui
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
                 _m.Notes = new[]
                 {
-                    EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(Inv), "notice", EstateRules.NoticeLength(_c.RentLever).ToString(Inv),
+                    EstateText.T("reallife_ui_estate_note_notice", "days", EstateCatalogue.NoticeArrearsDays.ToString(Inv), "notice", EstateRules.NoticeLength(_c.RentLever).ToString(Inv),
                         "court", EstateCatalogue.CourtDays.ToString(Inv)),
                     EstateText.T("reallife_estate_tenants_what"), EstateText.T("reallife_estate_tenants_rent_what")
                 };
@@ -513,9 +513,9 @@ namespace RealLifeOverhaul.Ui
                 _m.RowRuns = Ordered(locate);
                 _m.Notes = new[]
                 {
-                    EstateText.T("reallife_estate_works_wear", "poor", EstateText.Level(EstateCatalogue.ConditionPoor), "unfit", EstateText.Level(EstateCatalogue.ConditionUnfit)),
+                    EstateText.T("reallife_ui_estate_note_wear", "poor", EstateText.Level(EstateCatalogue.ConditionPoor), "unfit", EstateText.Level(EstateCatalogue.ConditionUnfit)),
                     EstateText.T("reallife_estate_works_market", "market", EstateText.Share(_s.Real)),
-                    EstateText.T("reallife_estate_works_what"), EstateText.T("reallife_estate_works_no_new")
+                    EstateText.T("reallife_ui_estate_note_works"), EstateText.T("reallife_ui_estate_note_no_new")
                 };
                 // The services booked ahead, the soonest first, and the city's inspections, the nearest first: what is coming, under what is waiting.
                 var ahead = new List<KeyValuePair<EstateHolding, ServiceBooking>>(8);

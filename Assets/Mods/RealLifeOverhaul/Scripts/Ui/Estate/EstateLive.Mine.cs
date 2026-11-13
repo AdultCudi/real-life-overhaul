@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Ui
                 _m.RowKeys = keys.ToArray();
                 Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind") },
                     null, EstateText.T("reallife_estate_empty_mine"));
-                _m.Notes = new[] { EstateText.T("reallife_estate_mine_what"), EstateText.T("reallife_estate_mine_game") };
+                _m.Notes = new[] { EstateText.T("reallife_ui_estate_note_mine"), EstateText.T("reallife_ui_estate_note_mine_game") };
                 // What is due is the let flats' rent, so the foot shows it while flats are among the rows shown, and says nothing over hotels, the lot and spaces alone.
                 if (t.RowCount > 0 && (_v.Chosen[0] < 0 || _v.Chosen[0] == EstateTables.OwnBuilding))
                 {
