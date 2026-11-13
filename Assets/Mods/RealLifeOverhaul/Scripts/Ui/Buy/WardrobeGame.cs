@@ -9,18 +9,17 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>Which of the game's three character screens a wardrobe host draws over.</summary>
+    /// <summary>Which of the game's character screens a wardrobe host draws over (the surgeon's stays the game's own).</summary>
     internal enum WardrobeKind : byte
     {
         Clothes = 0,   // the clothes shop and the wardrobe at home (ChangeCharacterClothesUI)
-        Hair,          // the hairdresser (ChangeCharacterHairUI)
-        Surgery        // the surgeon (PlasticSurgeryUI)
+        Hair           // the hairdresser (ChangeCharacterHairUI)
     }
 
     /// <summary>
     /// One of the game's character screens as the host binds it: the side panels drawn by the kit, the 3D preview and its
     /// camera the game's own. The game's categories, pieces (the mod's own tiles from GridLooks among them, read from the
-    /// bands it adds), colours, the surgeon's body sliders and the buttons are pressed as the player would; Leave asks the
+    /// bands it adds), colours and the buttons are pressed as the player would; Leave asks the
     /// game's own question when something is not kept.
     /// </summary>
     internal sealed class WardrobeGame : IUiGameScreen, IUiGameWay
@@ -34,7 +33,7 @@ namespace RealLifeOverhaul.Ui
 
         public string Id => BuyKits.WardrobeId;
 
-        public string Name => _kind == WardrobeKind.Clothes ? "the clothes screen" : _kind == WardrobeKind.Hair ? "the hairdresser" : "the surgeon";
+        public string Name => _kind == WardrobeKind.Clothes ? "the clothes screen" : "the hairdresser";
 
         public string Title => WardrobeScreen.TitleOf(_kind);
 
@@ -72,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            return kind == WardrobeKind.Clothes ? uis.changeCharacterClothesUI : kind == WardrobeKind.Hair ? (CharacterCustomizer)uis.changeCharacterHairUI : uis.plasticSurgeryUI;
+            return kind == WardrobeKind.Clothes ? uis.changeCharacterClothesUI : (CharacterCustomizer)uis.changeCharacterHairUI;
         }
     }
 }

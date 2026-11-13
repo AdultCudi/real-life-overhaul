@@ -29,10 +29,11 @@ namespace RealLifeOverhaul.Ui
         private static readonly UiGameHost Checkout = new UiGameHost(new CheckoutGame());
         private static readonly UiGameHost Vehicle = new UiGameHost(new VehicleBuyGame());
         private static readonly UiGameHost Cargo = new UiGameHost(new CargoGame());
+        // The surgeon is not here: its screen has the face sliders, the eye and skin colours and the zoom, which the kit does not draw, so the game's own
+        // screen stays whole while it is open.
         private static readonly UiGameHost[] Wardrobes =
         {
-            new UiGameHost(new WardrobeGame(WardrobeKind.Clothes)), new UiGameHost(new WardrobeGame(WardrobeKind.Hair)),
-            new UiGameHost(new WardrobeGame(WardrobeKind.Surgery))
+            new UiGameHost(new WardrobeGame(WardrobeKind.Clothes)), new UiGameHost(new WardrobeGame(WardrobeKind.Hair))
         };
 
         /// <summary>Once a second while the interface is on: each screen's host put on while its switch is on, the game's own while off.</summary>
@@ -77,8 +78,8 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The screens' states for the interface's line at load.</summary>
         public static string States() => "the checkout (" + Checkout.State + "), buying a vehicle (" + Vehicle.State + "), manage cargo (" + Cargo.State
-                                         + "), the clothes shop (" + Wardrobes[0].State + "), the hairdresser (" + Wardrobes[1].State + "), the surgeon ("
-                                         + Wardrobes[2].State + "), the item panel (" + ItemPanelKit.State + ")";
+                                         + "), the clothes shop (" + Wardrobes[0].State + "), the hairdresser (" + Wardrobes[1].State + "), the surgeon (the game's own), the item panel ("
+                                         + ItemPanelKit.State + ")";
 
         /// <summary>True while the kit draws the checkout, for the tests.</summary>
         internal static bool CheckoutShowing => Checkout.Showing;

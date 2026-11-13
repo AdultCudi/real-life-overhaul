@@ -57,8 +57,7 @@ namespace RealLifeOverhaul.Ui
             _m.PromptCount = _m.Prompts.Length;
         }
 
-        internal static string TitleOf(WardrobeKind kind) => UiText.T(kind == WardrobeKind.Clothes ? "change_character_clothes_title"
-            : kind == WardrobeKind.Hair ? "change_character_hair_title" : "plastic_surgery_title");
+        internal static string TitleOf(WardrobeKind kind) => UiText.T(kind == WardrobeKind.Clothes ? "change_character_clothes_title" : "change_character_hair_title");
 
         public string Id => BuyKits.WardrobeId;
 
@@ -164,10 +163,6 @@ namespace RealLifeOverhaul.Ui
             {
                 hair.Hide();
             }
-            else if (_ui is PlasticSurgeryUI surgery)
-            {
-                surgery.Hide();
-            }
             return Again(true);
         }
 
@@ -251,7 +246,6 @@ namespace RealLifeOverhaul.Ui
             ReadMenu();
             ReadPieces();
             ReadColours();
-            ReadSliders();
             ReadActions();
             ReadBasket();
             string kind = _m.Tab >= 0 && _m.Tab < _m.Tabs.Length ? _m.Tabs[_m.Tab].Label : null;
@@ -571,53 +565,8 @@ namespace RealLifeOverhaul.Ui
             _sb.Append(_m.Swatch).Append('|');
         }
 
-        // The surgeon's body: strength and weight as the game's own sliders hold them.
-        private void ReadSliders()
-        {
-            int n = 0;
-            BodyValues body = _kind == WardrobeKind.Surgery ? BuyKits.Get<BodyValues>(GameContract.LookBody, _ui) : null;
-            Slider strength = null, weight = null;
-            if (body != null && body.gameObject.activeInHierarchy)
-            {
-                strength = BuyKits.Get<Slider>(GameContract.LookStrength, body);
-                weight = BuyKits.Get<Slider>(GameContract.LookWeight, body);
-                n = (strength != null ? 1 : 0) + (weight != null ? 1 : 0);
-            }
-            if (_sliders.Length != n)
-            {
-                _sliders = new Slider[n];
-                _m.Sliders = new UiSliderRow[n];
-            }
-            int at = 0;
-            if (strength != null && n > 0)
-            {
-                _sliders[at] = strength;
-                _m.Sliders[at++] = Row(UiText.T("reallife_ui_buy_strength"), strength);
-            }
-            if (weight != null && n > 0)
-            {
-                _sliders[at] = weight;
-                _m.Sliders[at] = Row(UiText.T("reallife_ui_buy_weight"), weight);
-            }
-            _m.SliderCount = n;
-            if (_m.Held >= n)
-            {
-                _m.Held = -1;
-            }
-            for (int i = 0; i < n; i++)
-            {
-                _sb.Append(_m.Sliders[i].Figure).Append(';');
-            }
-        }
-
-        private static UiSliderRow Row(string label, Slider s)
-        {
-            float range = s.maxValue - s.minValue, share = range > 0f ? Mathf.Clamp01((s.value - s.minValue) / range) : 0f;
-            return new UiSliderRow { Label = label, Share = share, Figure = Mathf.RoundToInt(share * 100f).ToString(System.Globalization.CultureInfo.InvariantCulture), Disabled = !s.interactable };
-        }
-
         // The screen's own buttons, the main one last: the clothes' Save (the mod's shop writes Buy with the price there),
-        // the hairdresser's Change hair, the surgeon's Randomize, Revert and Apply.
+        // the hairdresser's Change hair.
         private void ReadActions()
         {
             _buttons.Clear();
@@ -631,11 +580,6 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case WardrobeKind.Hair:
                     Add(BuyKits.Get<Button>(GameContract.LookHairButton, _ui), BuyKits.Get<Component>(GameContract.LookHairLabel, _ui), UiButtonKind.Primary, UiAction.Alt);
-                    break;
-                default:
-                    Add(BuyKits.Get<Button>(GameContract.LookRandomize, _ui), null, UiButtonKind.Secondary, UiAction.Count, "intro_tooltip_randomize_appearance");
-                    Add(BuyKits.Get<Button>(GameContract.LookRevert, _ui), null, UiButtonKind.Secondary, UiAction.Count, "common_revert");
-                    Add(BuyKits.Get<Button>(GameContract.LookApply, _ui), BuyKits.Get<Component>(GameContract.LookApplyLabel, _ui), UiButtonKind.Primary, UiAction.Alt);
                     break;
             }
             if (_m.Actions.Length != _actions.Count)

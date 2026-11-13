@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_buy_speed", "reallife_ui_buy_yours", "reallife_ui_buy_not_yours", "reallife_ui_buy_slots",
                     "reallife_ui_buy_in_hands", "reallife_ui_buy_unpaid_total",
                     "reallife_ui_buy_more", "reallife_ui_buy_minigame", "reallife_ui_buy_range", "reallife_ui_buy_range_value", "reallife_ui_buy_speed_of",
-                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for", "action_consumefood", "action_consumedrink", "reallife_car_note_service"
+                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for", "action_consumefood", "action_consumedrink", "reallife_car_note_service",
+                    "reallife_ui_buy_steering_on", "reallife_ui_buy_steering_off"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("manage_cargo", UiTemplate.AppWindow, "CargoScreen", new[]
                 {
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_buy_count", "reallife_ui_buy_in_cargo", "reallife_ui_buy_empty_cargo", "reallife_ui_buy_empty_cargo_body", "reallife_ui_prompt_move",
                     "reallife_ui_prompt_select", "reallife_ui_prompt_back", "reallife_ui_buy_packs", "reallife_ui_buy_pieces", "reallife_ui_buy_paid", "reallife_ui_buy_to_pay",
                     "reallife_ui_buy_sells_for", "reallife_ui_buy_each", "reallife_ui_buy_worth_now", "reallife_ui_buy_sell_for", "reallife_ui_buy_keeps", "reallife_ui_buy_keeps_cold",
-                    "reallife_ui_buy_days", "reallife_ui_buy_keeps_tile"
+                    "reallife_ui_buy_days", "reallife_ui_buy_keeps_tile", "reallife_ui_buy_contains"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("wardrobe", UiTemplate.InfoPanel, "WardrobeScreen", new[]
                 {
