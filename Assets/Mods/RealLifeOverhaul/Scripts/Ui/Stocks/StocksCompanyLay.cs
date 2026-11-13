@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
     public static class StocksCompanyLay
     {
         public const int Range = 56, Type = 57, Chip = 58, AddIndicator = 59, Pick = 60, Big = 62, Side = 63, Kind = 64, Life = 65, AlertAdd = 66, PutBack = 67,
-            AlertLine = 68;   // AlertAdd opens the alert sheet; AlertLine stands an alert under the selected level line
+            AlertLine = 68, View = 61;   // View picks the chart or the figures; AlertAdd opens the alert sheet; AlertLine stands an alert under the selected level line
         private const float Tall = UiTokens.ControlSmall;   // px: a toolbar's row
         private const float HeadH = 64f;                    // px: the head, the logo's tile and a little over it
 
@@ -31,7 +31,14 @@ namespace RealLifeOverhaul.Ui
             float left = w - right - gap;
             float cy = Head(s, at, c, x, y, left);
             cy = Toolbar(s, at, c, x, cy, left, keys, false);
-            Chart(s, at, c, x, cy, left, bottom, keys);
+            if (c.View == 1 && c.Facts != null)
+            {
+                Facts(s, at, c.Facts, x, cy, left, bottom);
+            }
+            else
+            {
+                Chart(s, at, c, x, cy, left, bottom, keys);
+            }
             StocksOrderLay.Lay(s, at, c, x + left + gap, y, right, bottom, keys);
             PickerList(s, c);
             return bottom;
@@ -121,17 +128,77 @@ namespace RealLifeOverhaul.Ui
             return y + height + UiTokens.S2;
         }
 
+        // The figures view: the company's figures in two cards of labelled rows, and the newest quarters' results under them.
+        private static void Facts(UiScene s, UiAt at, StocksFacts f, float x, float y, float w, float bottom)
+        {
+            const float pad = UiTokens.S3;
+            float row = UiTokens.PairRow, gap = UiTokens.S3;
+            float colW = UiDraw.SnapDown((w - gap) / 2f);
+            int rows = Math.Max(f.Left.Length, f.Right.Length);
+            float h = pad + rows * row + pad;
+            for (int side = 0; side < 2; side++)
+            {
+                StocksRow[] list = side == 0 ? f.Left : f.Right;
+                float cx = x + side * (colW + gap);
+                int card = UiDraw.Box(s, at, cx, y, colW, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+                UiAt on = at.In(card);
+                for (int i = 0; i < list.Length; i++)
+                {
+                    UiDraw.InfoRow(s, on, cx + pad, y + pad + i * row, colW - pad * 2f, list[i].Label, list[i].Value, false, -1, 0,
+                        list[i].Tone != UiRole.None ? list[i].Tone : UiRole.Text);
+                }
+            }
+            y += h + gap;
+            if (f.ResultHead.Length == 0)
+            {
+                return;
+            }
+            // The results: as many of the newest quarters as the window has room for, at least one.
+            int shown = Math.Min(f.Results.Length, Math.Max(1, (int)((bottom - y - pad * 2f) / row) - 1));
+            if (f.Results.Length == 0 || y + pad + row * 2f + pad > bottom)
+            {
+                return;
+            }
+            float ch = pad + (1 + shown) * row + pad;
+            int rc = UiDraw.Box(s, at, x, y, w, ch, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiAt rin = at.In(rc);
+            float inner = w - pad * 2f;
+            float[] share = { 0.19f, 0.09f, 0.17f, 0.17f, 0.14f, 0.14f, 0.10f };
+            float px = x + pad;
+            for (int col = 0; col < f.ResultHead.Length && col < share.Length; col++)
+            {
+                float cw = UiDraw.SnapDown(inner * share[col]);
+                UiFlags align = col == 0 ? UiFlags.None : UiFlags.Right;
+                UiDraw.TextMiddle(s, rin, px, y + pad, row, cw - UiTokens.S2, UiStyle.SectionHeader, UiRole.Muted, f.ResultHead[col], UiFlags.Label | UiFlags.Truncate | align);
+                for (int r = 0; r < shown; r++)
+                {
+                    UiRole tone = col == 4 ? (f.Beat[r] ? UiRole.OkText : UiRole.DangerText) : UiRole.Text;
+                    UiDraw.TextMiddle(s, rin, px, y + pad + (1 + r) * row, row, cw - UiTokens.S2, UiStyle.Body, tone, f.Results[r][col], UiFlags.Truncate | align);
+                }
+                px += cw;
+            }
+        }
+
         // The toolbar: range and type as segmented choices, the indicator button, and the chart's size button at the right; then
         // one chip for each indicator on, each in its colour with an X. Returns where the chart can begin.
         private static float Toolbar(UiScene s, UiAt at, StocksCompany c, float x, float y, float w, IUiKeys keys, bool big)
         {
             float cx = x;
+            if (c.View == 1)
+            {
+                // The figures stand where the chart stood: its range, type and indicators have nothing to act on, so only the way back to the chart is offered.
+                UiSegments.Lay(s, at, cx, y, UiSegments.Width(c.Views, UiStyle.Nav), Tall, c.Views, c.View, View, c.ViewEdges, false);
+                return y + Tall + UiTokens.S2;
+            }
             float rangeW = UiSegments.Width(c.Ranges, UiStyle.Nav);
             UiSegments.Lay(s, at, cx, y, rangeW, Tall, c.Ranges, c.Range, Range, c.RangeEdges, false);
             cx += rangeW + UiTokens.S3;
             float typeW = UiSegments.Width(c.Types, UiStyle.Nav);
             UiSegments.Lay(s, at, cx, y, typeW, Tall, c.Types, c.Type, Type, c.TypeEdges, false);
             cx += typeW + UiTokens.S3;
+            float viewsW = UiSegments.Width(c.Views, UiStyle.Nav);
+            UiSegments.Lay(s, at, cx, y, viewsW, Tall, c.Views, c.View, View, c.ViewEdges, false);
+            cx += viewsW + UiTokens.S3;
             float addW = UiDraw.ButtonWidth(UiButtonKind.Chip, c.AddLabel, UiIcon.None, UiAction.Count, null);
             float right = x + w;
             float bigSize = Tall;

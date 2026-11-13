@@ -78,6 +78,23 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The group on screen, so a report can name it. Null when the app is not the one open.</summary>
         public static string Place { get; private set; }
 
+        /// <summary>
+        /// A section ("s:interiors") or an option (its id) another feature asks the app to open on (SettingsApp.Open): the screen takes it the next time it lays out, shows
+        /// that section's group and brings the row into view.
+        /// </summary>
+        public static void Want(string target)
+        {
+            _wanted = target;
+            if (_one != null)
+            {
+                _one._dirty = true;
+            }
+        }
+
+        private static string _wanted;
+        private SettingsLine _scrollTo;      // the option asked for, to bring into view once its group is filled
+        private string _scrollToHeading;     // or the section's heading by its words
+
         public string Id => ScreenId;
 
         public bool Dirty => _dirty;

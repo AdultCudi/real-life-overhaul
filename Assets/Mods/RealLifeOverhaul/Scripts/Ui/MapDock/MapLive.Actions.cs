@@ -71,7 +71,8 @@ namespace RealLifeOverhaul.Ui
                 LineInfo line = _lines[_chipLines[i]];
                 if (line.On != target && line.Obj.Toggle != null)
                 {
-                    any |= UiWidgets.Set(line.Obj.Toggle, target);
+                    // SetHidden: the game switches off every line of a folded group, and its switch still answers.
+                    any |= UiWidgets.SetHidden(line.Obj.Toggle, target);
                 }
             }
             return any;
@@ -226,7 +227,7 @@ namespace RealLifeOverhaul.Ui
             LayerRef layer = _layerLines[index];
             if (layer.Line != null)
             {
-                return layer.Line.Obj.Toggle != null && UiWidgets.Set(layer.Line.Obj.Toggle, !layer.Line.On);
+                return layer.Line.Obj.Toggle != null && UiWidgets.SetHidden(layer.Line.Obj.Toggle, !layer.Line.On);
             }
             return layer.Cat != null && layer.Cat.Obj.ToggleAll != null && UiWidgets.Set(layer.Cat.Obj.ToggleAll, !(layer.Cat.Total > 0 && layer.Cat.On == layer.Cat.Total));
         }

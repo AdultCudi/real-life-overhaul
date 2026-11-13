@@ -103,7 +103,12 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.Goods + UiDataTable.More:
                     return StepGood(b, arg, command == BizManPages.Goods + UiDataTable.More);
                 case BizManPages.Goods + UiDataTable.Type:
+                case BizManPages.Goods + UiDataTable.Hover:
                     return true;
+                case BizManPages.StartHelp:
+                    return StartHelpPage(arg);
+                case UiFirmHead.First + UiFirmHead.Help:
+                    return CheckHelpPage(arg);
                 case BizManPages.StartKinds + UiDataTable.Row:
                     return ChooseKind(arg);
                 case BizManPages.StartKinds + UiDataTable.Clear:

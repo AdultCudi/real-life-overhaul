@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private bool _dirty = true;
         private CargoItem _detailOf;   // the stack the detail was made for, and its packs then
-        private int _detailPacks;
+        private int _detailPacks, _detailNested;
+        private readonly List<string> _contents = new List<string>(4);   // what the chosen bundle holds, kind by kind
         private string _sell;          // "Sell for $2,407": the chosen stack's own Sell, or null for the game's word
         private Entities.Warehouse _to;   // the player's warehouse the vehicle stands at, for Move to a warehouse; null for none
         private CargoItem _chosen;     // the chosen stack as the game made it, for the same
@@ -240,12 +241,14 @@ namespace RealLifeOverhaul.Ui
         private void Detail(CargoItem item)
         {
             int packs = item != null && item.cargoInstances != null ? item.cargoInstances.Count : 0;
-            if (ReferenceEquals(item, _detailOf) && packs == _detailPacks)
+            int held = packs > 0 && item.cargoInstances[0] != null && item.cargoInstances[0].nestedCargoInstances != null ? item.cargoInstances[0].nestedCargoInstances.Count : 0;
+            if (ReferenceEquals(item, _detailOf) && packs == _detailPacks && held == _detailNested)
             {
                 return;
             }
             _detailOf = item;
             _detailPacks = packs;
+            _detailNested = held;
             _sell = null;
             UiCatalogueModel c = _m.Catalogue;
             if (packs == 0)
@@ -265,7 +268,8 @@ namespace RealLifeOverhaul.Ui
             float each = sells ? item.cargoInstances[0].GetSellingPrice() : 0f;
             string goods = GoodsOf(item);
             int keeps = SpoilRead.Keeps(goods, false), cold = keeps > 0 ? SpoilRead.Keeps(goods, true) : -1;
-            int n = 3 + (sells ? 2 : 0) + (keeps > 0 ? 1 : 0) + (cold > keeps ? 1 : 0), at = 3;
+            Nested(item);
+            int n = 3 + (sells ? 2 : 0) + (keeps > 0 ? 1 : 0) + (cold > keeps ? 1 : 0) + _contents.Count, at = 3;
             c.DetailLabels = new string[n];
             c.DetailValues = new string[n];
             c.DetailLabels[0] = UiText.T("reallife_ui_buy_packs");
@@ -293,9 +297,46 @@ namespace RealLifeOverhaul.Ui
             {
                 string all = (each * packs).ToShortCurrencyFormat();
                 c.DetailLabels[at] = UiText.T("reallife_ui_buy_worth_now");
-                c.DetailValues[at] = all;
+                c.DetailValues[at++] = all;
                 _sell = UiText.T("reallife_ui_buy_sell_for").Replace("{price}", all);
             }
+            for (int i = 0; i < _contents.Count; i++)
+            {
+                c.DetailLabels[at] = i == 0 ? UiText.T("reallife_ui_buy_contains") : string.Empty;
+                c.DetailValues[at++] = _contents[i];
+            }
+        }
+
+        // What a bundle or a box holds, each kind with its count, as the game's tooltip on the stack lists it (CargoItemUi.SetupItem): the
+        // goods of the first pack, the same kind added together. Fills _contents; returns the number of nested items, which says when the pack changed.
+        private int Nested(CargoItem item)
+        {
+            _contents.Clear();
+            List<NestedCargoInstance> nested = item.cargoInstances[0] != null ? item.cargoInstances[0].nestedCargoInstances : null;
+            if (nested == null || nested.Count == 0)
+            {
+                return 0;
+            }
+            var kinds = new List<string>(nested.Count);
+            var counts = new List<int>(nested.Count);
+            for (int i = 0; i < nested.Count; i++)
+            {
+                int at = kinds.IndexOf(nested[i].itemName);
+                if (at < 0)
+                {
+                    kinds.Add(nested[i].itemName);
+                    counts.Add(nested[i].amount);
+                }
+                else
+                {
+                    counts[at] += nested[i].amount;
+                }
+            }
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                _contents.Add(Helpers.LocalizationHelper.GetItemLabel(kinds[i], counts[i]).ToString());
+            }
+            return nested.Count;
         }
 
         // The product a stack holds, by the name the game keys it with; null for none.

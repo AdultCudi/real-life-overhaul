@@ -23,7 +23,9 @@ namespace RealLifeOverhaul.Ui
         {
             BuildMode.KitOn = null;
             BuildMode.KitMake = null;
-            if (BuildFace.Showing)
+            // A switch turned off in a session takes hold at the next opening: the face already up stays until Build mode is left, so a player who flips it
+            // back mid-build is never thrown out of the mode. Anything else that takes the interface away (the guard, a city going) cannot keep it, so the mode is left.
+            if (BuildFace.Showing && why != UiDirector.SwitchOffWhy)
             {
                 BuildFace.Leave();
             }

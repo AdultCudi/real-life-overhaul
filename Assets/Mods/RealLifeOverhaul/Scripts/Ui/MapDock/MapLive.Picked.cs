@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _pickedTarget = null;
                 _pickedBuilding = null;
-                return false;
+                return ReadHover(ref p, card, target);
             }
             if (!ReferenceEquals(target, _pickedTarget))
             {
@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Ui
             p.Picture = PictureOfPlace(_pickedBuilding, PickedPicture);
             p.Chips = PlaceChips(card, reg, BizFacts.Read(_pickedBuilding));
             p.BlockLabel = UiText.T("reallife_map_picked");
+            p.Hover = false;
             p.ClearLabel = UiText.T("reallife_map_clear");
             p.LocateLabel = UiText.T("reallife_map_locate");
             p.DestinationLabel = taxi ? TaxiWords(card) : UiText.T("common_setdestination");
@@ -190,6 +191,35 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             cam.MoveCameraToTarget(_pickedAt);
+            return true;
+        }
+
+        // The building under the pointer on the open map (the game's card shows its facts and not its options): the same block as a picked place, with its facts only. The game's
+        // own box is hidden under the dock, so without this nothing says what the pointer rests on.
+        private bool ReadHover(ref MapPicked p, BuildingResume card, EntityController target)
+        {
+            CityBuildingController building = target != null && CityMap.IsOpen ? card.CityBuildingController : null;
+            if (building == null || building.building == null)
+            {
+                return false;
+            }
+            BuildingRegistration reg = building.buildingRegistration;
+            string address = building.building.Address.ToFormattedString();
+            string district = Districts.DistrictGame.Name(building.building.Neighbourhood);
+            string name = reg != null && !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : address;
+            p.Name = name;
+            p.Address = string.IsNullOrEmpty(district) || name == address ? (name == address ? district : address) : address + ", " + district;
+            p.Distance = DistanceWords(PositionOf(target, building), -1f);
+            p.Icon = reg != null ? TypeGlyph(reg) : UiIcon.MapPin;
+            p.Tint = reg != null ? UiRole.CatRetail : UiRole.None;
+            p.Picture = PictureOfPlace(building, PickedPicture);
+            p.Chips = PlaceChips(card, reg, BizFacts.Read(building));
+            p.BlockLabel = UiText.T("reallife_map_hover");
+            p.ClearLabel = null;
+            p.CanDestination = false;
+            p.CanDetails = false;
+            p.CanBizMan = false;
+            p.Hover = true;
             return true;
         }
 

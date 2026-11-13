@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Read(ref UiInputState state)
         {
-            if (_failed)
+            if (_failed || (_pausedUntil > 0f && Time.unscaledTime < _pausedUntil))
             {
                 return;
             }
@@ -58,13 +58,31 @@ namespace RealLifeOverhaul.Ui
                 ReadKeys(ref state);
                 ReadPad(ref state);
                 state.Pad = _pad;
+                _faults = 0;
             }
             catch (Exception e)
             {
-                _failed = true;   // a game without these members: the kit reads nothing, the pointer still works
-                Guard.DoesWithout(e, "the keyboard and a pad on the RLO interface's screens");
+                if (Guard.Missing(e))
+                {
+                    _failed = true;   // a game without these members: the kit reads nothing, the pointer still works
+                    Guard.DoesWithout(e, "the keyboard and a pad on the RLO interface's screens");
+                    return;
+                }
+                // Any other fault (a null in a menu changing over) is the moment's: said once, and the keys are read again after a short rest, never given up for the session.
+                if (_faults++ == 0 && !_said)
+                {
+                    _said = true;
+                    Debug.LogWarning("[Mod:Real Life Overhaul] The keyboard and pad read on the RLO interface's screens failed once and is tried again: " + FaultWords.Of(e));
+                }
+                _pausedUntil = _faults >= FaultsBeforeRest ? Time.unscaledTime + RestSeconds : 0f;
             }
         }
+
+        private const int FaultsBeforeRest = 5;
+        private const float RestSeconds = 1f;
+        private int _faults;
+        private float _pausedUntil;
+        private bool _said;
 
         public void TakeBack()
         {
@@ -287,7 +305,7 @@ namespace RealLifeOverhaul.Ui
                 return null;
             }
             Timestamp now = TimeHelper.Now();
-            string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
+            string time = UiClock.At(now.Hour, (int)now.Minute);   // the 12 hour clock option is honoured, as the game's own bar does
             // The game's own top bar writes the money short ("$2.0B"), and no other figure on a page carries cents.
             return save.Money.ToShortCurrencyFormat(abbreviated: true) + "     " + LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time });
         }
@@ -319,10 +337,14 @@ namespace RealLifeOverhaul.Ui
                 return null;
             }
             Timestamp now = TimeHelper.Now();
-            string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
+            string time = UiClock.At(now.Hour, (int)now.Minute);   // the 12 hour clock option is honoured, as the game's own bar does
             // The day as the game's top bar writes it ("Monday (Day 12)"): the timestamp's words with no time left a comma behind.
             string day = RealLifeOverhaul.Planner.PlannerText.Date(now.Day);
             var m = new UiStatusModel { Time = time, Day = day, Money = save.Money.ToShortCurrencyFormat(abbreviated: true) };
+            if (UiShell.Taken && !HudStatusGame.ForHud)
+            {
+                HudTopGame.FillShell(m);   // the game's Help and Report bug, which its full menu keeps at the bottom left
+            }
             if (UiShell.Taken || HudStatusGame.Shows)   // the app row in the full menu, and on the HUD's bar while walking (the owner, item 11)
             {
                 Row(m);
@@ -350,7 +372,15 @@ namespace RealLifeOverhaul.Ui
                 UiShellApp a = UiShellApps.Items[i];
                 if (!a.InRow)
                 {
-                    m.AllAppsBadge += a.Badge;
+                    if (a.Kind == UiShellKind.Other)
+                    {
+                        m.OtherLeft++;   // their own tile on the row: the Other mods tab of All apps
+                        m.OtherBadge += a.Badge;
+                    }
+                    else
+                    {
+                        m.AllAppsBadge += a.Badge;
+                    }
                     continue;
                 }
                 m.Apps[at] = a.Icon;

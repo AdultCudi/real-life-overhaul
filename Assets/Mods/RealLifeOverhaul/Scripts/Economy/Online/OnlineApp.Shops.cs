@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     case PageRating: WriteRating(box, picked, day); break;
                     case PageSettings: WriteSettings(box, picked, state); break;
+                    case PageStore: WriteStore(box, picked); break;
                     default: WriteFigures(box, picked, day, now); break;
                 }
                 return OnlineColumns.Shops;
@@ -131,6 +132,7 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(buttons, InfoBox.Additional, "bizman_menu_settings", () => Page(PageSettings));
             Transform more = box.ButtonRow();
             InfoBox.Button(more, InfoBox.Positive, "reallife_online_button_days", () => Page(PageDays));
+            InfoBox.Button(more, InfoBox.Additional, "reallife_ui_shop_tab_store", () => Page(PageStore));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -294,6 +296,7 @@ namespace RealLifeOverhaul.Economy
                 _director.AdQuote(place, out cost, out percent);
                 box.Line(OnlineText.Fill("reallife_online_set_ads", "amount", OnlineText.Money(cost * 100), "days", OnlineCatalogue.AdDays.ToString(), "percent", percent.ToString()));
             }
+            WriteExtras(box, place, state);
             Transform first = box.ButtonRow();
             if (shop.Offline)
             {

@@ -576,31 +576,28 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
+        // A row of the futures table opens what its Key says it is: a contract held, a material or a company's option.
         private bool RowFuture(MarketState s, bool second, int arg)
         {
-            if (second)
-            {
-                if (arg >= s.Derivs.Contracts.Count)
-                {
-                    return false;
-                }
-                OpenSheet(StocksSheets.Contract, s.Derivs.Contracts[arg].Id);
-                return true;
-            }
-            if (arg < s.Materials.Count)
-            {
-                OpenSheet(StocksSheets.Material, arg);
-                return true;
-            }
-            var stocks = new List<int>(16);
-            StocksBuild.OptionStocks(s, stocks);
-            int at = arg - s.Materials.Count;
-            if (at < 0 || at >= stocks.Count)
+            UiDataTableModel laid = _model != null ? _model.Table : null;
+            if (second || laid == null || arg >= laid.RowCount || arg >= laid.Rows.Length)
             {
                 return false;
             }
-            OpenSheet(StocksSheets.ShareOption, stocks[at]);
-            return true;
+            int key = laid.Rows[arg].Key, value = key % StocksBuild.FutureKeyBase;
+            switch (key / StocksBuild.FutureKeyBase)
+            {
+                case StocksBuild.FutureContract:
+                    OpenSheet(StocksSheets.Contract, value);
+                    return true;
+                case StocksBuild.FutureMaterial:
+                    OpenSheet(StocksSheets.Material, value);
+                    return true;
+                case StocksBuild.FutureCompany:
+                    OpenSheet(StocksSheets.ShareOption, value);
+                    return true;
+            }
+            return false;
         }
 
         private bool OpenRule(int index)
@@ -624,6 +621,7 @@ namespace RealLifeOverhaul.Ui
             switch (_page)
             {
                 case StocksPage.Futures: return PayCall();
+                case StocksPage.Index: return Back();
                 case StocksPage.Bots: return OpenRule(-1);
                 case StocksPage.Portfolio:
                 {

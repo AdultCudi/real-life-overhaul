@@ -374,12 +374,29 @@ namespace RealLifeOverhaul.Ui
                 {
                     Title = title != null ? UiWidgets.Text(title.TextContainer) : null,
                     Progress = progress != null && progress.gameObject.activeSelf ? UiWidgets.Text(progress.TextContainer) : null,
-                    Tiers = tiers, Steam = g.HighestCompletedSteamTierIndex, Kind = g.DisplayGoal != null ? g.DisplayGoal.GetType().Name : null
+                    Tiers = tiers, Steam = g.HighestCompletedSteamTierIndex, Kind = g.DisplayGoal != null ? g.DisplayGoal.GetType().Name : null, TierTitles = TierTitles(g)
                 });
             }
             _v.Goals = _goalRows.ToArray();
             _v.GoalSort = Number(GameContract.PersonaGoalSort, _goals);
             _v.GoalSortDown = Number(GameContract.PersonaGoalOrder, _goals) == 1;   // the game's SortDirection: 1 descending, 2 ascending
+        }
+
+        // What each tier asks, as the game's tooltip on that tier's box says it (the title of the tier's goal), so a player can see what Silver needs before reaching Bronze.
+        private static string[] TierTitles(PersonalGoalTierGroup g)
+        {
+            var titles = new string[PersonaViews.GoalsTiers];
+            for (int t = 0; t < titles.Length; t++)
+            {
+                GenericPersonalGoal tier = g.GetTier(t);
+                titles[t] = null;
+                if (tier != null)
+                {
+                    LanguageChangeEventDataHolder title = tier.GetTitle();
+                    titles[t] = string.IsNullOrEmpty(title.Key) ? null : Localizor.LocalizorManager.GetLocalization(title.Key, title.Arguments);
+                }
+            }
+            return titles;
         }
 
         // ------------------------------------------------------------------------------------------------- reading helpers

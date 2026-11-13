@@ -28,10 +28,25 @@ namespace RealLifeOverhaul.Ui
 
         public string Id => "planner";
 
-        public bool Dirty => _flow.Dirty;
+        private static EntryId _wanted;
+        private static bool _hasWanted;
+
+        /// <summary>A reminder's notice asked for an entry: the page opens on it the next time it lays out.</summary>
+        public static void Want(EntryId id)
+        {
+            _wanted = id;
+            _hasWanted = true;
+        }
+
+        public bool Dirty => _hasWanted || _flow.Dirty;
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            if (_hasWanted)
+            {
+                _hasWanted = false;
+                _flow.ShowEntry(_wanted);
+            }
             if (_flow.Dirty)
             {
                 _flow.Build();

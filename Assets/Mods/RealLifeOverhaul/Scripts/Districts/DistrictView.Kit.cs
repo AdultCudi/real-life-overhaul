@@ -438,6 +438,17 @@ namespace RealLifeOverhaul.Districts
                 rows.Add(new UiInfoRow { Label = UiText.T("reallife_map_businesses"), Value = Whole(d.Businesses) });
             }
             m.Chosen = rows.ToArray();
+            // Every other figure of the district, the layer shown first, said as the old card says them: the dock's block had only the shown layer's, the residents and the businesses.
+            _notes = new List<string>(16);
+            try
+            {
+                CardLines(d, which);
+                m.ChosenNotes = _notes.ToArray();
+            }
+            finally
+            {
+                _notes = null;
+            }
         }
 
         // ------------------------------------------------------------------------------------------------- the words

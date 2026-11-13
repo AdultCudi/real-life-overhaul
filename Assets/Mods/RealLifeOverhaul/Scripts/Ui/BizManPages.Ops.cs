@@ -511,7 +511,7 @@ namespace RealLifeOverhaul.Ui
             _split = rx - UiTokens.S4;
             bool form = o.Rows.Length > 0 || o.Table != null || o.Stops.Length > 0;
             bool onTitle = form && ActionsOnTitle(o, rw, keys);   // both columns' titles then stand level on a control's row
-            PlanList(s, at, o, x, y, PlansW, bottom, onTitle, keys);
+            PlanList(s, at, m, o, x, y, PlansW, bottom, onTitle, keys);
             if (!form)
             {
                 if (o.Plans.Length > 0 && !string.IsNullOrEmpty(o.FormEmpty))
@@ -536,10 +536,10 @@ namespace RealLifeOverhaul.Ui
 
         // The plans as rows under their title, the chosen one in the cyan fifth, a plan without a manager marked; the actions
         // (add one, move the chosen one up or down) at the foot. No plans: what one is and the way to add one.
-        private static void PlanList(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, bool onRow, IUiKeys keys)
+        private static void PlanList(UiScene s, UiAt at, BizManModel m, BizOpsModel o, float x, float y, float w, float bottom, bool onRow, IUiKeys keys)
         {
             float actionsH = o.PlanActions.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
-            Items(s, at, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH, OpsPlan, -1, onRow, keys);
+            Items(s, at, m, ScrollPlans, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH, OpsPlan, -1, onRow, keys);
             if (actionsH > 0f)
             {
                 PlanActions(s, at, o.PlanActions, x, bottom - UiTokens.Control, w, keys);

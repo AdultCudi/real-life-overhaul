@@ -112,12 +112,14 @@ namespace RealLifeOverhaul.Ui
     {
         public string Time;           // "14:32"
         public string Day;            // "Tuesday (Day 12)", as the game's top bar writes it
+        public string TimeWidest;     // the widest time of day in the player's clock (12 hour adds AM or PM): the pill keeps one width all day
         public string DayWidest;      // the widest day of the week written the same way: the time pill keeps its width all week
         public bool Paused;
         public int Speed;             // 1 the game's own pace, 3 an activity's fast forward, or 0 while the game has not said
         public bool TimeLocked;       // the game holds the clock (a scene, Going Public's shared one): its pause and play are dim and press nothing
         public bool FastOffered;      // the game offers its fast forward now (an activity that has it, inside a building): its square presses it
         public string Season;         // "Autumn"
+        public int SeasonSize;        // the season line's size, the mod's option for it: 0 as the bar writes it, 1 larger, 2 the largest the pill's height holds
         public UiIcon Weather = UiIcon.CloudSun;
         public string Temperature;    // beside the weather's icon, as the game writes it; null for the season alone
         public string WeatherWords;   // the weather in a word or two under the season ("Sunny", "Rain", "Heat wave"); null for none
@@ -128,6 +130,7 @@ namespace RealLifeOverhaul.Ui
         public int MoneyTrend;        // that figure's way: +1 a gain (green, an arrow up), -1 a loss (red, an arrow down), 0 none
         public string MoneyChange;    // the last change, merged per minute as the game merges it ("+$1,240"), rising from the money and fading; null for none
         public bool MoneyChangeRises; // the change adds to the money: green and an arrow up
+        public string Player;         // the player character's name: their portrait stands at the needs pill's head (the game's, told to the faces by this name), or null for none
         public int Energy = -1;       // 0 to 100, or -1 to leave the meter out
         public int Hunger = -1;
         public int Happiness = -1;
@@ -135,6 +138,7 @@ namespace RealLifeOverhaul.Ui
         public int Stress = -1;       // the more the worse: its meter fills as it rises
         public int HomeNeed = -1;
         public int Alerts;            // notifications waiting
+        public bool PillsHover;       // the clock and the money are hover targets that press nothing, answered with their cards: the full menu's bar
         public bool PillsPress;       // the time, the needs, the alerts, the money and the settings are targets: only the HUD answers them (UiDraw.HudBar)
         public UiIcon[] Apps;         // the toolbar's app buttons, in order
         public UiRole[] AppTints;     // each one's category colour
@@ -143,6 +147,8 @@ namespace RealLifeOverhaul.Ui
         public int[] AppPictures;     // another mod's own picture for its tile (UiDraw.PictureKey); null or 0 for the glyph
         public bool AllApps;          // the All apps tile ends the row
         public bool AllAppsOpen;      // the All apps panel is up: its tile in the chosen tone
+        public int OtherLeft;         // other mods' apps the row does not carry: a tile before All apps (the Other mods tab) says they are there; 0 for none
+        public int OtherBadge;        // their news, on that tile
         public int AllAppsBadge;      // news of apps the row never lists (another mod's), on the All apps tile
         public bool AppsPress;        // the tiles are targets: true where the frame answers them (the full menu)
         public string AllAppsLabel;   // the prompt's words for the pad's View, which opens All apps from anywhere
@@ -153,7 +159,9 @@ namespace RealLifeOverhaul.Ui
         public UiIcon[] Tools;        // in order; null for none
         public bool[] ToolsOn;        // each one's panel open: its glyph on the chosen tone
         public bool[] ToolsOff;       // each one the game will not answer now (the dances while driving): greyed
+        public UiRole[] ToolTints;    // each one's glyph in the colour another mod gave the game's button (Going Public's purple report button); null or None for the plain one
         public int ToolCount;
+        public bool ToolsShell;       // the tools stand on this bar as targets though the pills do not: the full menu's Help and Report bug (UiShell)
 
         // Appended with the frames-a-second figure (4 Nov 2026).
         public int Fps;               // the frames a second, shown as a small pill before the needs while the game's show-FPS option is on; 0 for none

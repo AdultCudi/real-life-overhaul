@@ -167,7 +167,8 @@ namespace RealLifeOverhaul.Ui
             Kept("Loading screens", "They run before the city.", "1 Nov 2026"),
             Kept("Character creation, the blueprint creator scene", "Characters are the owner's own work; the creator is a scene of its own.", "1 Nov 2026"),
             Kept("World markers: points of interest, direction guiders, item warning icons", "Left as the game's; sprites in the world.", "1 Nov 2026"),
-            Kept("The game's feedback form", "The mod has its own bug report; nothing in the kit opens this one.", "3 Nov 2026"),
+            Kept("The game's feedback form", "The mod has its own bug report. The top bar's report button is the game's own and the kit presses it; "
+                + "the game turns that button off in a modded save, so the form does not open there.", "3 Nov 2026"),
             Kept("The mod conflict notice", "The mod loader shows it before the mod is loaded.", "3 Nov 2026"),
             Kept("Debug console, fps meter, test panels, the faint vignette, the gamepad cursor", "Developer tools and input plumbing, not screens.", "3 Nov 2026"),
         };

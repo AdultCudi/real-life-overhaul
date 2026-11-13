@@ -51,10 +51,10 @@ namespace RealLifeOverhaul.Ui
             switch (m.Panel)
             {
                 case UiDesignerPanelKind.Furniture:
-                    Catalogue(s, UiAt.Screen.InRegion(PanelRegion), m.Catalogue, px, py, pw, ph, keys);
+                    Catalogue(s, UiAt.Screen.InRegion(PanelRegion), m.Catalogue, px, py, pw, ph, keys, RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Materials:
-                    Materials(s, UiAt.Screen.InRegion(PanelRegion), m.Materials, px, py, pw, ph, keys);
+                    Materials(s, UiAt.Screen.InRegion(PanelRegion), m.Materials, px, py, pw, ph, keys, RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Items:
                     Items(s, UiAt.Screen.InRegion(PanelRegion), m.Items, px, py, pw, ph);
@@ -85,11 +85,11 @@ namespace RealLifeOverhaul.Ui
             {
                 case UiDesignerPanelKind.Furniture:
                     w = Math.Min(CatalogueWidth, UiDraw.SnapDown(frame.Width - Margin * 2f));
-                    h = GridPanelHeight(m.Catalogue.CardCount, w, CatalogueDetailNeed(m.Catalogue));
+                    h = GridPanelHeight(m.Catalogue.CardCount, w, CatalogueDetailNeed(m.Catalogue), RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Materials:
                     w = Math.Min(CatalogueWidth, UiDraw.SnapDown(frame.Width - Margin * 2f));
-                    h = GridPanelHeight(m.Materials.CardCount, w, MaterialDetailNeed(m.Materials));
+                    h = GridPanelHeight(m.Materials.CardCount, w, MaterialDetailNeed(m.Materials), RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Items:
                     w = ItemsWidth;
@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Ui
         private static BarPlan Plan(UiDesignerModel m, UiFrame f, IUiKeys keys)
         {
             var p = new BarPlan { Under = !string.IsNullOrEmpty(m.OnApply) };
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 p.ToolsShown += m.ToolOff[i] ? 0 : 1;
             }
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Ui
         public static float RowWidth(UiDesignerModel m)
         {
             int tools = 0, steps = 0;
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 tools += m.ToolOff[i] ? 0 : 1;
             }
@@ -261,7 +261,7 @@ namespace RealLifeOverhaul.Ui
             UiAt row = band.InRegion(BarRegion);
             float ty = UiDraw.BarMiddle(frame) - BarTilePx / 2f, tx = p.ToolsX;
             int first = s.NodeCount;
-            for (int i = 0; i < (int)UiDesignerTool.Count; i++)
+            for (int i = 0; i < m.ToolOff.Length; i++)
             {
                 if (m.ToolOff[i])
                 {

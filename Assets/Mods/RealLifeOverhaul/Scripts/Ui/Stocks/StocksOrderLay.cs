@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
             float h = OrderHeight(t, w, keys);
             Order(s, at, c, t, x, y, w, h, keys);
             y += h + UiTokens.S2;
-            float ph = PositionHeight(c, t);
+            float ph = PositionHeight(c, t, w);
             if (y + ph <= bottom)
             {
                 Position(s, at, c, t, x, y, w, ph);
@@ -61,14 +61,31 @@ namespace RealLifeOverhaul.Ui
             {
                 h += UiDraw.Snap(UiTextRules.WrappedHeight(t.Why, UiStyle.Small, w - Pad * 2f, 2)) + UiTokens.S1;
             }
+            if (!string.IsNullOrEmpty(t.Impact))
+            {
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(t.Impact, UiStyle.Small, w - Pad * 2f, 2)) + UiTokens.S1;
+            }
             return UiDraw.Snap(h + UiTokens.S2 + UiTokens.Control + Pad);
         }
 
-        private static float PositionHeight(StocksCompany c, StocksTicket t)
+        private static float PositionHeight(StocksCompany c, StocksTicket t, float w)
         {
             float rows = c.Position.Length > 0 ? c.Position.Length * Row : Row;
-            return Pad + Row + rows + (string.IsNullOrEmpty(t.PutBack) ? 0f : UiTokens.S2 + UiTokens.Control) + Pad;
+            return Pad + Row + rows + NotesHeight(c, w) + (string.IsNullOrEmpty(t.PutBack) ? 0f : UiTokens.S2 + UiTokens.Control) + Pad;
         }
+
+        // The company's state and what a trust pays, each as small wrapped words under the position.
+        private static float NotesHeight(StocksCompany c, float w)
+        {
+            float h = 0f;
+            for (int i = 0; i < c.Notes.Length; i++)
+            {
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(c.Notes[i], UiStyle.Small, w - Pad * 2f, NoteLines)) + UiTokens.S1;
+            }
+            return h;
+        }
+
+        private const int NoteLines = 4;
 
         private static float SignalsHeight(int rows) => Pad + Row + Math.Max(1, rows) * Row + Pad;
 
@@ -124,6 +141,12 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, on, ix, cy, iw, UiStyle.Small, t.PlaceDisabled ? UiRole.DangerText : UiRole.WarnText, t.Why, UiFlags.Wrap | UiFlags.Truncate, 2);
                 cy += wh + UiTokens.S1;
             }
+            if (!string.IsNullOrEmpty(t.Impact))
+            {
+                float ih = UiDraw.Snap(UiTextRules.WrappedHeight(t.Impact, UiStyle.Small, iw, 2));
+                UiDraw.Text(s, on, ix, cy, iw, UiStyle.Small, UiRole.WarnText, t.Impact, UiFlags.Wrap | UiFlags.Truncate, 2);
+                cy += ih + UiTokens.S1;
+            }
             UiDraw.Button(s, on, ix, y + h - Pad - UiTokens.Control, iw, UiTokens.Control, UiButtonKind.Primary, t.Place, UiIcon.None, UiAction.Alt, keys, StocksLay.Place, 0, t.PlaceDisabled);
         }
 
@@ -143,6 +166,12 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.InfoRow(s, on, ix, cy, iw, c.Position[i].Label, c.Position[i].Value, false, -1, 0, c.Position[i].Tone != UiRole.None ? c.Position[i].Tone : UiRole.Text);
                 cy += Row;
+            }
+            for (int i = 0; i < c.Notes.Length; i++)
+            {
+                float nh = UiDraw.Snap(UiTextRules.WrappedHeight(c.Notes[i], UiStyle.Small, iw, NoteLines));
+                UiDraw.Text(s, on, ix, cy, iw, UiStyle.Small, UiRole.Text2, c.Notes[i], UiFlags.Wrap | UiFlags.Truncate, NoteLines);
+                cy += nh + UiTokens.S1;
             }
             if (!string.IsNullOrEmpty(t.PutBack))
             {

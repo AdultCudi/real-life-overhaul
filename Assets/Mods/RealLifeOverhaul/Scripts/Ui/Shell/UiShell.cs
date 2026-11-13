@@ -192,9 +192,17 @@ namespace RealLifeOverhaul.Ui
                 {
                     return ToggleApps(-1);
                 }
+                if (command == UiDraw.MoreAppsCommand)
+                {
+                    return ToggleApps(UiShellApps.Other);   // other mods' apps the row has no room for: their tab of All apps
+                }
                 if (command == UiDraw.AppRowCommand)
                 {
                     return OpenRow(arg);
+                }
+                if (command == UiDraw.ShellToolCommand)
+                {
+                    return HudTopGame.PressShellTool(arg);
                 }
                 return false;
             }

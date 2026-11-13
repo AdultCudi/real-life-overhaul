@@ -184,7 +184,7 @@ internal static partial class Program
         bool onIsBoth = director.Contains("public static bool Wanted => Settings.LivingPopulation && Settings.UiInterface;") && director.Contains("public static bool On => Wanted && !Stopped;");
         bool onAtDefaults = living.Success && shipped.Success && living.Groups[1].Value == "true" && shipped.Groups[1].Value == "true";
         Check(onIsBoth && living.Success && !onAtDefaults, "interface off: UiDirector.On is Living population and the switch and the part running, false at the shipped values");
-        Check(StatementsInOrder(Block(director, "if (!On)"), "RemoveAll(\"the switch is off\");", "return;"),
+        Check(StatementsInOrder(Block(director, "if (!On)"), "RemoveAll(SwitchOffWhy);", "return;"),
             "interface off: with the switch off the director takes every kit off and installs none");
 
         // Every default the mod states comes from that field: the table's, the page's row, Standard, the reset.

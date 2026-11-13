@@ -30,18 +30,46 @@ namespace RealLifeOverhaul.Ui
                 Label = ServicesText.T("reallife_co_back"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = ServicesFace.BackCommand, Arg = 0
             };
 
-            private void Rows(UiDataColumn[] columns, List<UiDataRow> rows, List<string> keys, string emptyTitle, string emptyBody, UiIcon icon)
+            private const long N = TableRules.None;   // a sort key for a cell with nothing to order by
+
+            // The table of rows written, in the order its head is set to (as written where none is) and with the sums of the columns given at its foot. The keys come back in step.
+            private UiDataTableModel Arranged(UiDataColumn[] columns, List<UiDataRow> rows, List<string> keys, int[] sums, out string[] shownKeys)
             {
-                int picked = keys.IndexOf(_v.Pick);
+                for (int c = 0; c < columns.Length; c++)
+                {
+                    columns[c].Sortable = columns[c].Kind != UiCellKind.Action && !string.IsNullOrEmpty(columns[c].Title);
+                }
+                int sort = _v.SortColumn >= 0 && _v.SortColumn < columns.Length && columns[_v.SortColumn].Sortable ? _v.SortColumn : -1;
+                bool down = sort >= 0 && _v.SortDown;
+                UiDataRow[] written = rows.ToArray();
+                int[] order = TableRules.Order(written, sort, down, null);
+                var t = new UiDataTableModel { Columns = columns, Rows = sort >= 0 ? TableRules.Take(written, order) : written, RowCount = written.Length, SortColumn = sort, SortDown = down };
+                shownKeys = sort >= 0 ? TableRules.Take(keys, order) : keys.ToArray();
+                if (sums != null && written.Length > 0)
+                {
+                    t.TotalsLabel = ServicesText.T("reallife_table_total");
+                    t.Totals = new string[columns.Length];
+                    for (int i = 0; i < sums.Length; i++)
+                    {
+                        t.Totals[sums[i]] = Money((float)Math.Min(TableRules.Sum(written, order, sums[i]), int.MaxValue / 2));
+                    }
+                }
+                return t;
+            }
+
+            private void Rows(UiDataColumn[] columns, List<UiDataRow> rows, List<string> keys, string emptyTitle, string emptyBody, UiIcon icon, int[] sums = null)
+            {
+                _m.Table = Arranged(columns, rows, keys, sums, out string[] shown);
+                _m.RowKeys = shown;
+                int picked = Array.IndexOf(shown, _v.Pick);
                 if (_v.Pick != null && picked < 0)
                 {
                     _v.Pick = null;   // a row that is gone (a contract ended, a business sold): the page goes back to the table
                 }
-                _m.Table = new UiDataTableModel
-                {
-                    Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, Selected = picked, EmptyTitle = emptyTitle, EmptyBody = emptyBody, EmptyIcon = icon
-                };
-                _m.RowKeys = keys.ToArray();
+                _m.Table.Selected = picked;
+                _m.Table.EmptyTitle = emptyTitle;
+                _m.Table.EmptyBody = emptyBody;
+                _m.Table.EmptyIcon = icon;
             }
 
             // ------------------------------------------------------------------------------------------------- Cleaning
@@ -76,7 +104,8 @@ namespace RealLifeOverhaul.Ui
                             ServicesText.T("reallife_ui_svc_min", "count", c.MinutesToday.ToString(Inv)), c.Now.ToString(Inv), next, state },
                         Values = new[] { (int)(c.Outside ? UiIcon.Building : UiIcon.Store), 0, 0, c.Now, 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
-                        Subs = new[] { ServicesText.District(c.District), null, null, null, null, null }
+                        Subs = new[] { ServicesText.District(c.District), null, null, null, null, null },
+                        SortKeys = new[] { N, need > 0 ? need : N, c.MinutesToday, c.Now, N, N }
                     });
                     keys.Add("cli:" + c.Place);
                     pickedClient = "cli:" + c.Place == _v.Pick ? c : pickedClient;
@@ -100,7 +129,8 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { ServicesGame.Name(_shops[i]), string.Empty, string.Empty, clean.ToString(Inv), string.Empty, ServicesText.T("reallife_ui_svc_state_not_on") },
                         Values = new[] { (int)UiIcon.Store, 0, 0, clean, 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
-                        Subs = new[] { ServicesText.District(GameRegistrations.District(_shops[i])), null, null, null, null, null }
+                        Subs = new[] { ServicesText.District(GameRegistrations.District(_shops[i])), null, null, null, null, null },
+                        SortKeys = new[] { N, N, N, clean, N, N }
                     });
                     keys.Add("add:" + place);
                     adding = "add:" + place == _v.Pick ? _shops[i] : adding;
@@ -284,14 +314,16 @@ namespace RealLifeOverhaul.Ui
                         : _member.TodayFrom >= 0 ? ServicesText.T("reallife_svc_crew_shift", "from", ServicesText.Clock(_member.TodayFrom), "to",
                             ServicesText.Clock(Math.Min(_member.TodayTo, 24 * 60 - 1)))
                         : ServicesText.T("reallife_svc_crew_no_shift");
+                    int week = (int)((long)_member.Wage * _member.WeekHours / 100);
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { _member.Name, _member.Skill.ToString(Inv), _member.Mood.ToString(Inv), CompanyText.Wage(_member.Wage), _member.WeekHours.ToString(Inv), today,
+                        Cells = new[] { _member.Name, _member.Skill.ToString(Inv), _member.Mood.ToString(Inv), CompanyText.Wage(_member.Wage), _member.WeekHours.ToString(Inv), Money(week), today,
                         crew && _s.GroupOf(_member.Id) >= 0 ? GroupName(_s.GroupOf(_member.Id)) : ServicesText.T(crew ? "reallife_svc_crew_on" : "reallife_svc_crew_off") },
-                        Values = new[] { 0, _member.Skill, _member.Mood, 0, 0, 0, 0 },
-                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, crew ? UiRole.Ok : UiRole.Muted },
-                        Subs = new[] { _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"), null, null, null, null, null, null },
-                        Hue = UiColour.HueOf(_member.Name), Ring = _member.Mood >= 70 ? UiRole.Ok : _member.Mood >= 40 ? UiRole.Warn : UiRole.Danger
+                        Values = new[] { 0, _member.Skill, _member.Mood, 0, 0, 0, 0, 0 },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, crew ? UiRole.Ok : UiRole.Muted },
+                        Subs = new[] { _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"), null, null, null, null, null, null, null },
+                        Hue = UiColour.HueOf(_member.Name), Ring = _member.Mood >= 70 ? UiRole.Ok : _member.Mood >= 40 ? UiRole.Warn : UiRole.Danger,
+                        SortKeys = new[] { N, _member.Skill, _member.Mood, _member.Wage, _member.WeekHours, week, N, N }
                     });
                     keys.Add("emp:" + _member.Id);
                     picked = "emp:" + _member.Id == _v.Pick ? _cleaners[i] : picked;
@@ -303,11 +335,12 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_mood"), Kind = UiCellKind.Meter, Width = 128f },
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_wage"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_hours"), Kind = UiCellKind.Figure, Width = 104f },
+                    new UiDataColumn { Title = ServicesText.T("reallife_svc_col_week"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_today"), Kind = UiCellKind.Text, Width = 168f },
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_crew"), Kind = UiCellKind.Chip, Width = 152f }
                 };
                 Chips(new[] { ServicesText.T("reallife_ui_svc_chip_all"), ServicesText.T("reallife_svc_kind_crew_on"), ServicesText.T("reallife_svc_kind_crew_off") }, new[] { on + off, on, off });
-                Rows(columns, rows, keys, ServicesText.T("reallife_ui_svc_no_cleaners"), ServicesText.T("reallife_svc_row_no_cleaner"), UiIcon.People);
+                Rows(columns, rows, keys, ServicesText.T("reallife_ui_svc_no_cleaners"), ServicesText.T("reallife_svc_row_no_cleaner"), UiIcon.People, new[] { 5 });
                 if (picked == null)
                 {
                     _m.Side = new UiFactCardModel
@@ -404,7 +437,8 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { o.Name, Money(o.Fee), o.Standard.ToString(Inv), string.Empty, ServicesText.T("reallife_econ_day", "day", o.Until.ToString(Inv)),
                             Bidding(o) },
                         Values = new[] { (int)UiIcon.Building, 0, 0, -1, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Warn },
-                        Subs = new[] { ServicesText.District(o.District), null, null, null, null, null }
+                        Subs = new[] { ServicesText.District(o.District), null, null, null, null, null },
+                        SortKeys = new[] { N, o.Fee, o.Standard, N, o.Until, N }
                     });
                     keys.Add("offer:" + o.Place);
                     offer = "offer:" + o.Place == _v.Pick ? o : offer;
@@ -424,7 +458,8 @@ namespace RealLifeOverhaul.Ui
                             ServicesText.T(late ? "reallife_ui_svc_state_late" : "reallife_ui_svc_state_active") },
                         Values = new[] { (int)UiIcon.Building, 0, 0, c.Now, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, late ? UiRole.Danger : UiRole.Ok },
                         Subs = new[] { c.Crew >= 0 ? ServicesText.T("reallife_ui_svc_sub_crew", "district", ServicesText.District(c.District), "crew", GroupName(c.Crew))
-                            : ServicesText.District(c.District), null, null, null, null, null }
+                            : ServicesText.District(c.District), null, null, null, null, null },
+                        SortKeys = new[] { N, c.Fee, c.Standard, c.Now, weekEnds, N }
                     });
                     keys.Add("con:" + c.Place);
                     contract = "con:" + c.Place == _v.Pick ? c : contract;
@@ -441,7 +476,7 @@ namespace RealLifeOverhaul.Ui
                 Chips(new[] { ServicesText.T("reallife_ui_svc_chip_all"), ServicesText.T("reallife_svc_kind_offer"), ServicesText.T("reallife_ui_svc_chip_running") },
                     new[] { _s.Offers.Count + running, _s.Offers.Count, running });
                 Rows(columns, rows, keys, ServicesText.T("reallife_ui_svc_no_contracts"),
-                    ServicesText.T(_s.Crew.Count == 0 ? "reallife_svc_row_no_offer_no_crew" : "reallife_svc_row_no_offer"), UiIcon.ClipboardText);
+                    ServicesText.T(_s.Crew.Count == 0 ? "reallife_svc_row_no_offer_no_crew" : "reallife_svc_row_no_offer"), UiIcon.ClipboardText, new[] { 1 });
                 _m.Chart = MonthChart();
                 _m.Side = offer != null ? OfferCard(offer) : contract != null ? ContractCard(contract) : ContractsCard(running);
             }

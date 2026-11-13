@@ -58,11 +58,21 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             _trafficMask = LayerMask.GetMask("AiVehicles");
+            _live = this;
         }
+
+        private static PlayerKnockdown _live;
+
+        /// <summary>The feature's clean-up for the guard and the save tools: a player knocked down is stood up, in control, with the camera on them.</summary>
+        internal static void StopAll() { _live?.Restore(stand: true); }
 
         private void OnDestroy()
         {
             Restore(stand: false);
+            if (_live == this)
+            {
+                _live = null;
+            }
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Ragdoll: PlayerKnockdown.Update");
@@ -73,6 +83,7 @@ namespace RealLifeOverhaul
             if (FrameGuard.Off)
             {
                 enabled = false;
+                Restore(stand: true);   // a player knocked down stays down, blocked, with the agent and collider off, if nothing puts them back: this is the frame left to do it
                 return;
             }
             try

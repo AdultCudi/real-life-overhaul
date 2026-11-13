@@ -16,6 +16,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember TalkEntryView = Field(UiContactsTalk, Game, "DialogController", "_currentEntryComponent", "CanvasGroup");
         public static readonly GameMember TalkForm = Field(UiContactsTalk, Game, "DialogController", "_currentInputTemplate", "Transform");
 
+        // The template the thread's text entries are copied from: its parent holds every entry, and each text the game shows has a delete button of its own.
+        public static readonly GameMember TalkTexts = Optional(Field(ContactsKit, Game, "DialogController", "textTemplate", "CanvasGroup"));
+
         // The offers' buttons in the thread (an offer of work, a health plan, a reply the game asks for), each a copy the game
         // made and keeps until one of its group is pressed.
         public static readonly GameMember TalkOfferButtons = StaticField(UiContactsTalk, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "ContextButtons", "List<ContextButton>");

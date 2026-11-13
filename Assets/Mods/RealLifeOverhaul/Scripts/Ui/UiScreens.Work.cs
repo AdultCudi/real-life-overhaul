@@ -306,7 +306,18 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_you_qualify", "reallife_work_you_will_learn", "reallife_work_your_ads", "reallife_work_your_ads_n",
                 "reallife_work_your_asking", "reallife_work_your_class", "reallife_work_your_lead", "reallife_work_your_lead_chip",
                 "reallife_work_your_offer", "reallife_work_your_pay_now", "reallife_work_your_record_at", "reallife_work_your_take",
-                "reallife_work_your_teacher_title", "reallife_work_your_top_pay"
+                "reallife_work_your_teacher_title", "reallife_work_your_top_pay",
+                "reallife_campus_button_attend", "reallife_campus_button_homework", "reallife_campus_button_sit", "reallife_campus_child_declined",
+                "reallife_campus_child_graduated", "reallife_campus_child_grown", "reallife_campus_row_next", "reallife_career_button_register",
+                "reallife_career_button_work", "reallife_career_col_day", "reallife_career_desk_title", "reallife_career_sec_boards",
+                "reallife_ibox_interview_early", "reallife_ladder_button_move", "reallife_ladder_row_skill_label", "reallife_ladder_row_wants",
+                "reallife_life_button_late", "reallife_own_button_work", "reallife_work_aim_seat", "reallife_work_and_more_posts",
+                "reallife_work_desk_short", "reallife_work_first_step_lead", "reallife_work_more_on_jobs", "reallife_work_move_role",
+                "reallife_work_move_to", "reallife_work_people_shown", "reallife_work_room_value",
+                "reallife_work_school_none", "reallife_work_set_role", "reallife_work_stores_shown", "reallife_work_study_how_lead",
+                "reallife_work_tasks_shown", "reallife_work_the_interview",
+                "reallife_life_why_day_first", "reallife_study_why_exam_hours", "reallife_campus_studying_about",
+                "reallife_work_tasks_range", "reallife_work_staff_range", "reallife_work_stores_range", "reallife_career_col_where"
             };
         }
     }

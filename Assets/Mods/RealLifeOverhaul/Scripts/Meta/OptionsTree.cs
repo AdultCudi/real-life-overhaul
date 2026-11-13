@@ -443,6 +443,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("fraud scam scheme schemes laundering launder bribe bribes bribery gift secret inquiry investigation trial insurance claim expense books club cash "
                         + "favour judge investigator councillor rival fund"),
                 S("trips").For("trips").Opt("living_trips", "living_population").Opt("living_spoilage", "living_population")
+                    .Opt("living_spoilage_pace", "living_population", "living_spoilage")
                     .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
                 S("parties").For("parties").Opt("living_parties", "living_population")
                     .Also("party parties host guests friends invite invitation dinner drinks staff event lunch evening team day morale satisfaction standing company"),

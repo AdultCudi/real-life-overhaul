@@ -194,6 +194,7 @@ namespace RealLifeOverhaul.Ui
             model.Title = OutlookText.T("reallife_econapp_app");
             model.Nav = Nav();
             model.StripNote = OutlookText.Day(Look.Day);
+            ClearCards(model);
             switch (_path.Page(model.Tab))
             {
                 case NewsPage.Household: FillHome(model); return;
@@ -247,9 +248,33 @@ namespace RealLifeOverhaul.Ui
                 model.TableTitle = null;
             }
             model.Table2Title = OutlookText.T("reallife_news_districts_pull");
-            if (model.Shape == NewsShape.Prices)
+            if (model.Shape == NewsShape.Overview)
+            {
+                FillOverviewCards(model, book);
+                model.AdviceMore = model.Advice.Length > 0 ? OutlookText.T("reallife_econapp_all_insights", "n", model.Advice.Length.ToString(Inv)) : null;
+            }
+            else if (model.Shape == NewsShape.Prices)
             {
                 FillPrices(model, book);
+                FillPricesCards(model, book);
+            }
+            else if (model.Shape == NewsShape.Jobs)
+            {
+                FillJobsCards(model, book);
+            }
+            else if (model.Shape == NewsShape.Districts)
+            {
+                model.Table = DistrictsFull(book);
+                FillPlaces(model);
+            }
+            else if (model.Shape == NewsShape.Finances)
+            {
+                FillFinanceCards(model);
+            }
+            else if (model.Shape == NewsShape.Insights)
+            {
+                model.Note = OutlookText.T("reallife_econapp_insights_note");
+                model.AdviceMore = OutlookText.T("reallife_econapp_places_more");
             }
             else if (model.Shape == NewsShape.Markets)
             {
@@ -411,7 +436,6 @@ namespace RealLifeOverhaul.Ui
             if (shape == NewsShape.Jobs)
             {
                 Copy(book, OutlookCatalogue.Unemployment, end, span, Inflation);
-                Copy(book, OutlookCatalogue.Vacancies, end, span, Rate);
                 for (int i = 0; i < span; i++)
                 {
                     Inflation[i] /= 10f;   // per mille into per cent
@@ -500,21 +524,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return DistrictTable(book);
             }
-            if (shape == NewsShape.Jobs)
-            {
-                return JobsTable();
-            }
             return null;
-        }
-
-        private UiDataTableModel JobsTable()
-        {
-            var rows = new List<UiDataRow>(2)
-            {
-                new UiDataRow { Cells = new[] { OutlookText.T("reallife_news_series_jobless"), (Look.Unemployment / 10f).ToString("0.0", Inv) + "%" }, Values = new int[2], Tones = new UiRole[2] },
-                new UiDataRow { Cells = new[] { OutlookText.T("reallife_news_series_vacancies"), Look.Vacancies.ToString(Inv) }, Values = new int[2], Tones = new UiRole[2] }
-            };
-            return Table(new[] { "reallife_news_col_name", "reallife_news_col_today" }, rows);
         }
 
         private static void Copy(OutlookBook book, string key, int end, int span, float[] into)
@@ -730,7 +740,7 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             PullFell(book, out string district, out int dropped);
-            if (dropped > 0 && list.Count < 5)
+            if (dropped > 0)
             {
                 list.Add(new NewsAdvice
                 {
@@ -742,7 +752,7 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             OutlookInsights.Build(Look, Insights);
-            for (int i = 0; i < Insights.Count && list.Count < 5; i++)
+            for (int i = 0; i < Insights.Count; i++)
             {
                 list.Add(new NewsAdvice
                 {
@@ -805,6 +815,12 @@ namespace RealLifeOverhaul.Ui
 
         private static UiDataTableModel GoodsColumns(List<UiDataRow> rows, bool full)
         {
+            // Your own price column is there only when you sell one of the goods: an empty column on a save with no shop is room taken from the others.
+            bool yours = false;
+            for (int i = 0; full && i < rows.Count; i++)
+            {
+                yours |= rows[i].Cells != null && rows[i].Cells.Length > 5 && !string.IsNullOrEmpty(rows[i].Cells[5]);
+            }
             UiDataColumn[] columns = full
                 ? new[]
                 {
@@ -822,6 +838,22 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = OutlookText.T("reallife_news_col_month"), Kind = UiCellKind.Trend, Width = 104f },
                     new UiDataColumn { Title = OutlookText.T("reallife_news_col_spark"), Kind = UiCellKind.Spark, Width = 88f }
                 };
+            if (full && !yours)
+            {
+                Array.Resize(ref columns, 5);
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    UiDataRow row = rows[i];
+                    if (row.Cells == null || row.Cells.Length < 6)
+                    {
+                        continue;
+                    }
+                    Array.Resize(ref row.Cells, 5);
+                    Array.Resize(ref row.Values, 5);
+                    Array.Resize(ref row.Tones, 5);
+                    rows[i] = row;
+                }
+            }
             if (!full)
             {
                 for (int i = 0; i < rows.Count; i++)
@@ -1116,7 +1148,9 @@ namespace RealLifeOverhaul.Ui
             }
             else if (pop != null && row >= 0 && row < Look.DistrictCount)
             {
-                d = pop.DistrictOf(Look.Districts[row].Id);
+                // The districts tab lists them by pull, the overview in the readings' order.
+                int at = model.Tab == (int)NewsShape.Districts && row < _districtRows.Length ? _districtRows[row] : row;
+                d = pop.DistrictOf(Look.Districts[at].Id);
             }
             if (!_path.OpenDistrict(d))
             {

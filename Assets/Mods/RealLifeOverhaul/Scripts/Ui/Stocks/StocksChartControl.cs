@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
         public int AnchorDay;           // the first click of a two click drawing: its game day...
         public float AnchorPrice;       // ...and its price in dollars; 0 day for none
         public int Selected = -1;       // the selected drawing of this company, in the order they were made
-        public bool PickOpen, Big;
+        public bool PickOpen, Big, Figures;   // Figures: the company page shows its figures in place of the chart
     }
 
     /// <summary>What a change of the chart's view needs: nothing, a layout from the model already built, or the page built again from the market.</summary>
@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Ui
             v.Selected = -1;
             v.PickOpen = false;
             v.Big = false;
+            v.Figures = false;
             _panning = false;
         }
 

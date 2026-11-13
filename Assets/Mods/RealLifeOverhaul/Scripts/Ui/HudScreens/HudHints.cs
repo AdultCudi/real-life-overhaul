@@ -20,12 +20,12 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     internal static class HudHints
     {
-        private const int Most = 9;   // the kit's chips carry their keys on Pick1 to Pick9
+        private const int PickSlots = 9;   // the kit's chips name their keys on Pick1 to Pick9; a line past them carries its key in its words, so no hint line is left out
 
         private static readonly UiConceal Hidden = new UiConceal();
         private static readonly List<SingleControlHintEntry> Entries = new List<SingleControlHintEntry>(8);
-        private static readonly string[] Names = new string[Most];
-        private static readonly UiPrompt[] Prompts = new UiPrompt[Most];
+        private static readonly string[] Names = new string[PickSlots];
+        private static UiPrompt[] _prompts = new UiPrompt[PickSlots + 1];
         private static readonly HintKeys Keys = new HintKeys();
         private static readonly PlayerAction[] Walking = { PlayerAction.OpenMap, PlayerAction.Pause };
         private static readonly string[] WalkingWords = { "input_key_openmap", "input_key_pause" };
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Entries.Clear();
                     _hints.GetComponentsInChildren(false, Entries);
-                    for (int i = 0; i < Entries.Count && _count < Most - 1; i++)
+                    for (int i = 0; i < Entries.Count; i++)
                     {
                         sig = unchecked(sig * 31 + Hint(Entries[i].transform));
                     }
@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Ui
                 _count = _picks = 0;
             }
             int n = Math.Min(_count, into.Length);
-            Array.Copy(Prompts, into, n);
+            Array.Copy(_prompts, into, n);
             sig = unchecked(sig * 31 + n);
             return n;
         }
@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 sig = Read();
-                if (_picks > 0)
+                if (_count > 0)
                 {
                     sig = Back(sig);
                 }
@@ -165,11 +165,11 @@ namespace RealLifeOverhaul.Ui
                 _count = _picks = 0;
                 _back = null;
             }
-            if (model.Prompts.Length < Most)
+            if (model.Prompts.Length < _count)
             {
-                model.Prompts = new UiPrompt[Most];
+                model.Prompts = new UiPrompt[Math.Max(_count, PickSlots + 1)];
             }
-            Array.Copy(Prompts, model.Prompts, _count);
+            Array.Copy(_prompts, model.Prompts, _count);
             model.PromptCount = _count;
             return unchecked(sig * 31 + _count);
         }
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Entries.Clear();
                 _hints.GetComponentsInChildren(false, Entries);
-                for (int i = 0; i < Entries.Count && _count < Most; i++)
+                for (int i = 0; i < Entries.Count; i++)
                 {
                     sig = unchecked(sig * 31 + Hint(Entries[i].transform));
                 }
@@ -209,12 +209,13 @@ namespace RealLifeOverhaul.Ui
         private static int Back(int sig)
         {
             string key = PlayerAction.Menu.GetDisplayName();
-            if (string.IsNullOrEmpty(key) || _count >= Most)
+            if (string.IsNullOrEmpty(key))
             {
                 return sig;
             }
             _back = key;
-            Prompts[_count++] = new UiPrompt { Action = UiAction.Back, Label = UiText.T("input_key_menu") };
+            Grow();
+            _prompts[_count++] = new UiPrompt { Action = UiAction.Back, Label = UiText.T("input_key_menu") };
             return unchecked(sig * 31 + key.GetHashCode());
         }
 
@@ -245,22 +246,39 @@ namespace RealLifeOverhaul.Ui
                     words = words == null ? piece : words + " " + piece;
                 }
             }
-            if (key == null || words == null)
+            if (key == null && words == null)
             {
                 return 0;
             }
-            Add(key, words);
-            return unchecked(key.GetHashCode() * 7 + words.GetHashCode());
+            Add(key, words);   // as the game's list shows it: keys with their words, a line of words alone, a line of keys alone
+            return unchecked((key != null ? key.GetHashCode() : 0) * 7 + (words != null ? words.GetHashCode() : 0));
         }
 
+        private static void Grow()
+        {
+            if (_count >= _prompts.Length)
+            {
+                Array.Resize(ref _prompts, _prompts.Length * 2);
+            }
+        }
+
+        // A hint line as a chip: its key on a cap and its words. A line of words alone is a chip without a cap, and the lines past the ones the
+        // kit's number actions can name carry their key as the first of their words, so every line of the game's list stands.
         private static void Add(string key, string words)
         {
-            if (_picks >= Most - 1)
+            Grow();
+            if (key == null)
             {
-                return;   // the last place is the way back's
+                _prompts[_count++] = new UiPrompt { Action = UiAction.Count, Label = words };
+                return;
+            }
+            if (_picks >= PickSlots)
+            {
+                _prompts[_count++] = new UiPrompt { Action = UiAction.Count, Label = words == null ? key : key + " " + words };
+                return;
             }
             Names[_picks] = key;
-            Prompts[_count++] = new UiPrompt { Action = (UiAction)((int)UiAction.Pick1 + _picks), Label = words };
+            _prompts[_count++] = new UiPrompt { Action = (UiAction)((int)UiAction.Pick1 + _picks), Label = words ?? string.Empty };
             _picks++;
         }
 

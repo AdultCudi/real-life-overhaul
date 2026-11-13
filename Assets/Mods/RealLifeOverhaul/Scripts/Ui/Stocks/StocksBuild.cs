@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
 
         public static StocksModel Page(MarketState state, StocksPage page, int stockId, StocksView view, bool buy, OrderType type,
             OrderLife life, long qty, int sort, int sector, int size, int rule, string find, UiWords words,
-            MarketDirector director = null, bool done = false, int kind = 0, int price = 0, int portfolioView = 0, int period = 0)
+            MarketDirector director = null, bool done = false, int kind = 0, int price = 0, int portfolioView = 0, int period = 0, int sortColumn = -1, bool sortDown = true)
         {
             Built++;
             var m = new StocksModel { Title = words("reallife_mkt_app", "Stocks"), Page = page };
@@ -71,9 +71,10 @@ namespace RealLifeOverhaul.Ui
             }
             switch (page)
             {
-                case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find); break;
-                case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find); break;
-                case StocksPage.Market: Market(m, state, words, sort, sector, size, find); OpenOrders(state, m, words); break;
+                case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find, director, sortColumn, sortDown); break;
+                case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find, director, sortColumn, sortDown); break;
+                case StocksPage.Market: Market(m, state, words, sort, sector, size, find, director, portfolioView, sortColumn, sortDown); OpenOrders(state, m, words); break;
+                case StocksPage.Index: IndexPage(m, state, words, period); break;
                 case StocksPage.Company: Company(m, state, stockId, view ?? new StocksView(), buy, life, qty, words, kind, price, director); break;
                 case StocksPage.Ticket: Ticket(m, state, stockId, buy, type, life, qty, words); break;
                 case StocksPage.Portfolio: Portfolio(m, state, words, director, portfolioView, period); break;
@@ -91,14 +92,14 @@ namespace RealLifeOverhaul.Ui
             return m;
         }
 
-        private static void Market(StocksModel m, MarketState state, UiWords words, int sort, int sector, int size, string find)
+        private static void Market(StocksModel m, MarketState state, UiWords words, int sort, int sector, int size, string find, MarketDirector director, int view, int sortColumn, bool sortDown)
         {
             StocksMath.Today(state, out int up, out int down, out long turnover);
             m.Figures = new[]
             {
-                Fig(words("reallife_mkt_col_index", "Index"), state.IndexLast.ToString(), StocksMath.ChangeBp(state.IndexPrevClose, state.IndexLast)),
-                Fig(words("reallife_stk_small", "Small caps"), ((int)StocksMath.ValueOf(state.Stocks, (int)MarketSize.Small)).ToString(), 0),
-                Fig(words("reallife_stk_all", "All shares"), ((int)StocksMath.ValueOf(state.Stocks, -1)).ToString(), 0),
+                Fig(words("reallife_mkt_col_index", "Index"), IndexWords(state.IndexLast), StocksMath.ChangeBp(state.IndexPrevClose, state.IndexLast)),
+                Fig(words("reallife_stk_small", "Small caps"), MarketText.Large(StocksMath.ValueOf(state.Stocks, (int)MarketSize.Small)), 0),
+                Fig(words("reallife_stk_all", "All shares"), MarketText.Large(StocksMath.ValueOf(state.Stocks, -1)), 0),
                 Fig(words("reallife_stk_today", "Market today"), up + " / " + down + " / " + MarketText.Large(turnover), 0)
             };
             if (state.Positions.Count > 0)
@@ -108,7 +109,22 @@ namespace RealLifeOverhaul.Ui
             }
             m.TapeTitle = words("reallife_stk_tape", "Who is trading");
             m.Tape = Tape(state, 0, 3, words);
-            m.Table = Companies(state, words, false, sort, sector, size, find);
+            m.RateLine = RateLine(state);
+            m.NewsTitle = words("reallife_mkt_box_news", "The news");
+            m.News = NewsLines(state, StocksModel.NewsShown, out bool anyNews);
+            if (!anyNews)
+            {
+                m.News = new[] { words("reallife_mkt_box_no_news", "No news in the last days") };
+                m.NewsQuiet = true;
+            }
+            m.ViewLabels = new[] { words("reallife_mkt_tab_companies", "Companies"), words("reallife_ledger_sectors", "Sectors") };
+            m.View = view == MarketSectors ? MarketSectors : MarketCompanies;
+            if (m.View == MarketSectors)
+            {
+                m.Table = SectorTable(state, words);
+                return;
+            }
+            m.Table = Companies(state, words, false, sort, sector, size, find, director, sortColumn, sortDown);
             if (m.Table.RowCount == 0 && string.IsNullOrWhiteSpace(find))
             {
                 m.Table.EmptyTitle = words("reallife_stk_market_empty", "No companies are listed");
@@ -122,10 +138,11 @@ namespace RealLifeOverhaul.Ui
             return new UiFigureModel { Label = label, Value = value, Change = bp == 0 ? null : MarketText.Change(bp), Good = bp >= 0 };
         }
 
-        private static UiDataTableModel Companies(MarketState state, UiWords words, bool watch, int sort, int sector, int size, string find)
+        private static UiDataTableModel Companies(MarketState state, UiWords words, bool watch, int sort, int sector, int size, string find, MarketDirector director = null, int sortColumn = -1,
+            bool sortDown = true)
         {
             var table = Head(words);
-            table.SortColumn = 2;
+            table.SortColumn = 3;
             table.SortDown = sort != (int)MarketSort.Losers;
             string[] sizes = { words("reallife_mkt_size_large", "Large"), words("reallife_mkt_size_mid", "Mid"), words("reallife_mkt_size_small", "Small") };
             string sectorWord = sector >= 0 && sector < (int)MarketSector.Count ? MarketText.Sector((MarketSector)sector) : words("reallife_stk_filter_all", "All sectors");
@@ -158,16 +175,41 @@ namespace RealLifeOverhaul.Ui
                     spark = null;
                 }
                 bool rising = spark != null && spark[spark.Length - 1] >= spark[0];
+                double worth = s.Shares * (s.Last / 100.0);
+                double pe = MarketApp.Pe(s);
+                int yield = MarketApp.YieldBp(s);
+                long held = HeldOrFounder(state, s, director);
                 rows[n++] = new UiDataRow
                 {
-                    Cells = new[] { s.Name, MarketText.Price(s.Last), MarketText.Change(bp), string.Empty, s.DayVolume.ToString() },
-                    Values = new[] { (int)UiIcon.Building, 0, bp > 0 ? 1 : bp < 0 ? -1 : 0, 0, 0 },
-                    Tones = new[] { UiTokens.Chart((int)s.Sector), UiRole.None, UiRole.None, rising ? UiRole.Ok : UiRole.Danger, UiRole.None },
-                    Sub = s.Ticker, Line = spark
+                    Cells = new[]
+                    {
+                        s.Name, MarketText.Sector(s.Sector), MarketText.Price(s.Last), MarketText.Change(bp), string.Empty, s.DayVolume.ToString("N0"),
+                        MarketText.Large(worth), double.IsNaN(pe) ? "-" : pe.ToString("0.0"), yield > 0 ? MarketText.Percent(yield) : "-", held != 0 ? held.ToString("N0") : string.Empty
+                    },
+                    Values = new[] { (int)UiIcon.Building, 0, 0, bp > 0 ? 1 : bp < 0 ? -1 : 0, 0, 0, 0, 0, 0, 0 },
+                    Tones = new[]
+                    {
+                        UiTokens.Chart((int)s.Sector), UiRole.None, UiRole.None, UiRole.None, rising ? UiRole.Ok : UiRole.Danger, UiRole.None, UiRole.None, UiRole.None, UiRole.None,
+                        UiRole.None
+                    },
+                    Sub = s.Ticker, Line = spark, Key = s.Id + 1,
+                    Sorts = new float[]
+                    {
+                        UiDataSort.None, UiDataSort.None, s.Last, bp, UiDataSort.None, s.DayVolume, (float)worth, double.IsNaN(pe) ? UiDataSort.None : (float)pe,
+                        yield > 0 ? yield : UiDataSort.None, held != 0 ? held : UiDataSort.None
+                    }
                 };
             }
             table.Rows = rows;
             table.RowCount = n;
+            if (sortColumn >= 0)
+            {
+                // A column the player chose: the table's own order is over the desk's four orders, whose first filter says so no more.
+                table.SortColumn = sortColumn;
+                table.SortDown = sortDown;
+                table.Filters[0] = table.Columns[Math.Min(sortColumn, table.Columns.Length - 1)].Title;
+                UiDataSort.Sort(table);
+            }
             table.Query = find;
             bool searching = !string.IsNullOrWhiteSpace(find);
             if (searching)
@@ -189,6 +231,42 @@ namespace RealLifeOverhaul.Ui
             return table;
         }
 
+        public const int ImpactWarnBp = 5;   // the size of a move against the order from which the ticket says so, as the old ticket does
+
+        /// <summary>A company's state in a few words: a bid for it, a split coming, its results' day, or its sector and size. The old ticket's status line.</summary>
+        public static string StockStatus(Stock k)
+        {
+            if (k.BidCents > 0)
+            {
+                return MarketText.Fill("reallife_mkt_status_bid", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString());
+            }
+            if (k.SplitDay > 0)
+            {
+                return ExtrasText.Status(k);
+            }
+            if (k.ResultsDay > 0)
+            {
+                return MarketText.Fill("reallife_mkt_status_results", "day", k.ResultsDay.ToString());
+            }
+            return MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size);
+        }
+
+        /// <summary>What a property trust pays: its year's rate a share, how often, and the next distribution declared. Null for any other company.</summary>
+        public static string TrustWords(Stock k)
+        {
+            if (!TrustRules.Is(k))
+            {
+                return null;
+            }
+            string every = MarketText.T(k.Def.PayDays >= MarketCatalogue.TrustWeekly ? "reallife_mkt_trust_every_week" : "reallife_mkt_trust_every_three");
+            if (k.DeclaredCents > 0 && !k.ExDone && k.RecordDay > 0)
+            {
+                return MarketText.Fill("reallife_mkt_ticket_trust", "year", MarketText.Price(TrustRules.YearCents(k)), "every", every, "next", MarketText.Price(k.DeclaredCents),
+                    "record", k.RecordDay.ToString(), "pay", k.PayDay.ToString());
+            }
+            return MarketText.Fill("reallife_mkt_ticket_trust_none", "year", MarketText.Price(TrustRules.YearCents(k)), "every", every);
+        }
+
         public const int SparkDays = 5;   // the days of the spark beside a company in the table
 
         private static readonly string[] SortKeys = { "reallife_stk_sort_movers", "reallife_stk_sort_gainers", "reallife_stk_sort_losers", "reallife_stk_sort_active" };
@@ -208,10 +286,15 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = words("reallife_mkt_col_company", "Company"), Kind = UiCellKind.Tile, Sortable = true },
-                    new UiDataColumn { Title = words("reallife_mkt_col_price", "Price"), Kind = UiCellKind.Figure, Width = 120f, Sortable = true },
-                    new UiDataColumn { Title = words("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 140f, Sortable = true },
-                    new UiDataColumn { Title = words("reallife_stk_five_days", "5 days"), Kind = UiCellKind.Spark, Width = 120f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_volume", "Volume"), Kind = UiCellKind.Figure, Width = 120f, Sortable = true }
+                    new UiDataColumn { Title = words("reallife_mkt_col_sector", "Sector"), Kind = UiCellKind.Text, Width = 140f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_price", "Price"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 120f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_stk_five_days", "5 days"), Kind = UiCellKind.Spark, Width = 100f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_volume", "Volume"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_worth", "Worth"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_pe", "P/E"), Kind = UiCellKind.Figure, Width = 70f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_yield", "Yield"), Kind = UiCellKind.Figure, Width = 80f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_held", "You hold"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true }
                 },
                 Filters = new[] { words("reallife_stk_sort_movers", "Movers"), words("reallife_stk_filter_all", "All sectors"), words("reallife_stk_all", "All shares") },
                 SearchPlaceholder = words("reallife_stk_search", "Find a company"),
@@ -272,7 +355,7 @@ namespace RealLifeOverhaul.Ui
             int least = d != null ? d.CommissionLeast : MarketCatalogue.CommissionLeastAtStart;   // the fee rule's floor, at today's prices
             long fee = MarketTrading.Commission(value, least);
             long total = buy ? value + fee : Math.Max(0, value - fee);
-            string why = null;
+            string why = null, impact = null;
             bool worked = false;
             if (d != null)
             {
@@ -282,6 +365,10 @@ namespace RealLifeOverhaul.Ui
                     value = e.Value;
                     fee = e.Fee;
                     total = e.Total;
+                    if (e.ImpactBp >= ImpactWarnBp)
+                    {
+                        impact = MarketText.Fill("reallife_mkt_ticket_impact", "move", MarketText.Percent(e.ImpactBp));
+                    }
                 }
                 else if (!(e.Why == OrderWhy.TooLarge && type == OrderType.Market && !closing && Settings.MarketsLarge))
                 {
@@ -301,7 +388,10 @@ namespace RealLifeOverhaul.Ui
             int back = position != null && position.Shares > 0 && Settings.MarketsReinvest ? InvestRules.ReinvestOf(position.Reinvest) : -1;
             string[] priceKeys = { null, "reallife_stk_limit_price", "reallife_stk_stop_price", "reallife_stk_profit_price" };
             string[] priceEnglish = { null, "Limit price", "Stop price", "Take profit price" };
-            var rows = new List<StocksRow>(5);
+            var rows = new List<StocksRow>(7);
+            Quote quote = MarketTrading.QuoteOf(state, s, state.Phase);
+            rows.Add(new StocksRow { Label = words("reallife_ibox_bid", "Bid"), Value = MarketText.Price(quote.Bid) });
+            rows.Add(new StocksRow { Label = words("reallife_ibox_ask", "Ask"), Value = MarketText.Price(quote.Ask) });
             if (type == OrderType.Market)
             {
                 rows.Add(new StocksRow { Label = words("reallife_stk_row_price", "Price"), Value = MarketText.Price(price) });
@@ -338,6 +428,7 @@ namespace RealLifeOverhaul.Ui
                 Place = buy ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order"),
                 Instead = closing ? null : buy ? words("reallife_stk_sell_instead", "Sell instead") : words("reallife_stk_buy_instead", "Buy instead"),
                 Why = why,
+                Impact = impact,
                 PlaceDisabled = why != null && !worked,
                 Watch = state.Watching(s.Id) ? words("reallife_mkt_unwatch", "Unwatch") : words("reallife_mkt_watch", "Watch"),
                 PutBack = back >= 0 ? InvestText.Reinvest(back) : null,
@@ -407,11 +498,15 @@ namespace RealLifeOverhaul.Ui
             var by = new long[(int)MarketSector.Count];
             var values = new long[state.Positions.Count];
             var rows = new UiDataRow[state.Positions.Count];
+            var held = new List<PortfolioRow>(16);
+            InvestRules.Holdings(state, state.Phase, held, false);   // the old tab's own sums: worth at the bid, cost with commission, income, the next payment
             for (int i = 0; i < state.Positions.Count; i++)
             {
                 Position p = state.Positions[i];
                 Stock s = state.Stock(p.StockId);
-                long value = s != null ? p.Shares * s.Last / 100L : 0L;
+                PortfolioRow h = HeldRow(held, p.StockId);
+                long value = s != null ? h.Stock > 0 ? h.Worth : p.Shares * s.Last / 100L : 0L;
+                long cost = h.Stock > 0 ? h.Cost : p.Cost;
                 values[i] = value;
                 worth += value;
                 if (s != null)
@@ -424,19 +519,26 @@ namespace RealLifeOverhaul.Ui
                     int dps = s.DeclaredCents > 0 ? s.DeclaredCents : s.DpsCents;
                     div += p.Shares * dps / 100L;
                 }
-                int bp = p.Cost > 0 ? (int)((value - p.Cost) * 10000L / p.Cost) : 0;
+                long gain = value - cost;
+                int bp = cost != 0 ? (int)Math.Max(-1000000L, Math.Min(1000000L, gain * 10000L / Math.Abs(cost))) : 0;
+                int day = s != null ? StocksMath.ChangeBp(s.PrevClose, s.Last) : 0;
                 rows[i] = new UiDataRow
                 {
-                    Cells = new[] { s != null ? s.Name : words("reallife_stk_none", "None"), p.Shares.ToString(), MarketText.Money(value), "0%", MarketText.Change(bp) },
-                    Values = new[] { (int)UiIcon.Building, 0, 0, 0, bp > 0 ? 1 : bp < 0 ? -1 : 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
+                    Cells = new[]
+                    {
+                        s != null ? s.Name : words("reallife_stk_none", "None"), p.Shares.ToString("N0"), MarketText.Money(cost), MarketText.Money(value), "0%", MarketText.Change(day),
+                        MarketText.Money(gain) + " (" + MarketText.Change(bp) + ")", MarketText.Money(h.Stock > 0 ? h.Paid : p.Dividends),
+                        h.Stock > 0 ? PaymentWords(h.Next) : string.Empty
+                    },
+                    Values = new[] { (int)UiIcon.Building, 0, 0, 0, 0, day > 0 ? 1 : day < 0 ? -1 : 0, gain > 0 ? 1 : gain < 0 ? -1 : 0, 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                     Sub = s != null ? s.Ticker : string.Empty
                 };
             }
             for (int i = 0; i < rows.Length; i++)
             {
                 int weight = worth > 0 ? (int)(values[i] * 100L / worth) : 0;
-                rows[i].Cells[3] = weight + "%";
+                rows[i].Cells[4] = weight + "%";
             }
             m.Figures = new[]
             {
@@ -453,14 +555,41 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = words("reallife_mkt_col_company", "Company"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = words("reallife_mkt_col_shares", "Shares"), Kind = UiCellKind.Figure, Width = 120f },
-                    new UiDataColumn { Title = words("reallife_stk_worth", "Worth"), Kind = UiCellKind.Figure, Width = 140f },
-                    new UiDataColumn { Title = words("reallife_stk_weight", "Weight"), Kind = UiCellKind.Figure, Width = 100f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 120f }
+                    new UiDataColumn { Title = words("reallife_mkt_col_shares", "Shares"), Kind = UiCellKind.Figure, Width = 90f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_cost", "Cost"), Kind = UiCellKind.Figure, Width = 110f },
+                    new UiDataColumn { Title = words("reallife_stk_worth", "Worth"), Kind = UiCellKind.Figure, Width = 110f },
+                    new UiDataColumn { Title = words("reallife_stk_weight", "Weight"), Kind = UiCellKind.Figure, Width = 80f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 100f },
+                    new UiDataColumn { Title = words("reallife_stk_gain", "Gain"), Kind = UiCellKind.Trend, Width = 170f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_income", "Income"), Kind = UiCellKind.Figure, Width = 100f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_next_pay", "Next payment"), Kind = UiCellKind.Figure, Width = 150f }
                 },
                 Rows = rows, RowCount = rows.Length, EmptyIcon = UiIcon.ChartPie,
                 Filters = new[] { PeriodWord(period, words) }
             };
+        }
+
+        // The player's own row of the old tab's holdings for a company: the shares they hold themselves, not a bot's, a bond or the founder's stake.
+        private static PortfolioRow HeldRow(List<PortfolioRow> held, int stockId)
+        {
+            for (int i = 0; i < held.Count; i++)
+            {
+                if (held[i].Stock == stockId && held[i].Firm == 0 && held[i].Bond == 0 && !held[i].Founder)
+                {
+                    return held[i];
+                }
+            }
+            return default(PortfolioRow);
+        }
+
+        // A payment to come in words: "120, day 34", owed on a short "-120, day 34".
+        private static string PaymentWords(in ComingPayment p)
+        {
+            if (p.Day <= 0 || p.Cents == 0)
+            {
+                return string.Empty;
+            }
+            return MarketText.Fill("reallife_mkt_next_pay", "amount", (p.Cents < 0 ? "-" : string.Empty) + BondText.Money(Math.Abs(p.Cents)), "day", p.Day.ToString());
         }
 
         // The worth of what is held over a period: the days the candles keep within it, each holding marked to its closes with the trades on their days.

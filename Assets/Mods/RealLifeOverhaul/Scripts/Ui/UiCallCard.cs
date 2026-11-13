@@ -6,6 +6,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiCallModel
     {
         public string Name;
+        public string Face;                         // the key the face is drawn by (two of one name); null: the name
         public float Hue;
         public UiRole Ring = UiRole.None;           // the mood the game shows by the line; None where it shows none
         public UiIcon Icon = UiIcon.None;           // a firm or a service: its picture on a tile in place of a face
@@ -193,7 +194,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.Portrait(s, at, fx, fy, Face, m.Name, m.Hue, m.Ring);
+                UiDraw.Portrait(s, at, fx, fy, Face, m.Face ?? m.Name, m.Hue, m.Ring);
             }
             if (!string.IsNullOrEmpty(m.Length))
             {

@@ -194,9 +194,12 @@ namespace RealLifeOverhaul.Ui
                     Meter = true, Fill = OverlayRules.Percent(who.satisfaction) / 100f,
                 }
             };
-            if (OverlayFactsLive.TopSkill(who, out string skill, out float level))
+            // Every skill with its percent, as the game's own panel lists them.
+            var skills = who.characterData != null ? who.characterData.skills : null;
+            for (int i = 0; skills != null && i < skills.Count; i++)
             {
-                how.Add(new UiInfoRow { Label = skill, Value = OverlayRules.Percent(level) + "%", Meter = true, Fill = OverlayRules.SkillShare(level) / 100f });
+                float level = Convert.ToSingle(skills[i].GetRoundedValue());
+                how.Add(new UiInfoRow { Label = Plain(skills[i].name.GetLocalization()), Value = OverlayRules.Percent(level) + "%", Meter = true, Fill = OverlayRules.SkillShare(level) / 100f });
             }
             sections[1] = new UiInfoSection { Label = UiText.T("reallife_ui_overlay_how"), Rows = how.ToArray() };
 
@@ -213,17 +216,23 @@ namespace RealLifeOverhaul.Ui
             };
             if (sections.Length > 3)
             {
-                var wants = new UiInfoRow[Math.Min(4, who.demands.Count)];
+                var wants = new UiInfoRow[who.demands.Count];
+                int fulfilled = 0;
                 for (int i = 0; i < wants.Length; i++)
                 {
                     bool met = JobDemandHelper.GetByName(who.demands[i]).Fulfilled(who, null);
+                    fulfilled += met ? 1 : 0;
                     wants[i] = new UiInfoRow
                     {
                         Label = Plain(who.demands[i].GetLocalization()), Value = UiText.T(met ? "reallife_ui_overlay_met" : "reallife_ui_overlay_unmet"),
                         Ink = met ? UiRole.OkText : UiRole.WarnText,
                     };
                 }
-                sections[3] = new UiInfoSection { Label = UiText.T("reallife_ui_overlay_wants"), Rows = wants };
+                sections[3] = new UiInfoSection
+                {
+                    Label = UiText.T("reallife_ui_overlay_wants") + " (" + UiText.Fill("reallife_ui_overlay_of", "amount", fulfilled.ToString(), "room", wants.Length.ToString()) + ")",
+                    Rows = wants,
+                };
             }
             m.Sections = sections;
             m.FooterLabel = UiText.T("reallife_ui_overlay_open");

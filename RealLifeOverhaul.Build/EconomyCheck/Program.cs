@@ -293,6 +293,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--bike-lanes")
+        {
+            BikeLanes();   // a stand, a rack or a dock never in the lane to a repair bay, a pump, a display spot or a garage door (BikeLaneChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bus-kerb")
         {
             BusKerb();   // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
@@ -320,6 +326,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--click-draw")
         {
             UiClickDrawChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-items")
+        {
+            ItemsFixChecks();   // (the buying, items and overlays fixes: pages of a card buttons, steering assist, the surgeon, the caps, stale fields: UiChecks.ItemsFix.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -694,6 +706,7 @@ internal static partial class Program
             UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
             PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             ActivityKitChecks();   // (the activity panel, time skip, funeral and time of day tool on the kit: UiChecks.Activity.cs)
+            UiKit2Checks();   // (a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion, the designer's rows: UiKit2Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1131,6 +1144,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--logistics")
+        {
+            Logistics();   // (delivery trips and food spoilage alone, while working on them: LogisticsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--parties")
         {
             Parties();   // (parties and company events alone, while working on them: PartyChecks.cs)
@@ -1390,6 +1409,36 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-kit2")
+        {
+            UiKit2Checks();   // (the kit's second pass alone: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion, the designer's rows: UiKit2Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-stocks")
+        {
+            UiStocksFixChecks();   // (the Stocks, Company, Tech and Flare pages the kit had thinned, against the old pages: UiStocksFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-cover")
+        {
+            UiCoverFixChecks();   // (the tutorial's arrow at a list row, the activity glyphs, the Gallery's storage line and the delivery result popups, alone: UiCoverChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-seam")
+        {
+            UiSeam();   // (the routing of a notice or a button to the kit's apps, the one clock, the screens' faults and the clean-ups the guard runs, alone: UiSeamChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-lists2")
+        {
+            UiLists2();   // (every warehouse in an open list, a cart that scrolls, a filter of several types, a bundle's contents, the bar's hover cards and portrait, the hints and objectives uncapped, and the pages that take what is asked: UiLists2Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-guard")
         {
             UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
@@ -1596,6 +1645,8 @@ internal static partial class Program
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
+        UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
+        UiKit2Checks();      // the kit's second pass: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion (UiKit2Checks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         ScrollHints();       // the wheel over a list's rows reaches the list, the phone folds with the HUD on, the key chips keep left of the phone (ScrollHintsChecks.cs)

@@ -10,7 +10,7 @@ internal static partial class Program
     private static readonly int[] ConversationCommands =
     {
         UiAppWindow.NavCommand, UiMessageList.RowCommand, UiMessageList.SearchCommand, UiConversation.ChoiceCommand, UiConversation.FormCommand, UiConversation.FormLess,
-        UiConversation.FormMore, UiConversation.ComposeCommand, UiConversation.SendCommand
+        UiConversation.FormMore
     };
     private static readonly int[] FeedCommands = { UiAppWindow.NavCommand, UiFeed.AuthorCommand, UiFeed.ReactCommand, UiFeed.ProfileCommand, UiFeed.ListCommand, UiFeed.PersonCommand };
     private static readonly int[] EditionCommands = { UiAppWindow.NavCommand, UiEdition.StoryCommand, UiEdition.LeadCommand };

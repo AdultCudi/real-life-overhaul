@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly UiIcon[] Tools = new UiIcon[4];
         private static readonly bool[] ToolsOn = new bool[4];
         private static readonly bool[] ToolsOff = new bool[4];
+        private static readonly UiRole[] ToolTints = new UiRole[4];
         private static readonly int[] ToolKind = new int[4];   // which tool each place of the pill holds
         private static readonly Button[] DanceButtons = new Button[16];
         private static readonly string[] DanceNames = new string[16];
@@ -52,8 +53,53 @@ namespace RealLifeOverhaul.Ui
             m.Tools = Tools;
             m.ToolsOn = ToolsOn;
             m.ToolsOff = ToolsOff;
+            m.ToolTints = ToolTints;
             m.ToolCount = _toolCount;
         }
+
+        private static readonly UiIcon[] ShellTools = new UiIcon[2];
+        private static readonly bool[] ShellOff = new bool[2];
+        private static readonly bool[] ShellOn = new bool[2];
+        private static readonly Button[] ShellButtons = new Button[2];
+
+        /// <summary>
+        /// The full menu's own Help and Report bug (its bottom left buttons, which the kit's frame no longer draws) as the two tools
+        /// of the kit bar there; a button the game keeps off or holds is left out or greyed as on the HUD.
+        /// </summary>
+        public static void FillShell(UiStatusModel m)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            UI.Smartphone.FullMenu menu = uis != null ? uis.fullMenu : null;
+            int count = 0;
+            if (menu != null)
+            {
+                if (UiWidgets.There(menu.bottomBarHelpButton))
+                {
+                    ShellButtons[count] = menu.bottomBarHelpButton;
+                    ShellTools[count] = UiIcon.Info;
+                    ShellOff[count] = !menu.bottomBarHelpButton.interactable;
+                    count++;
+                }
+                if (UiWidgets.There(menu.bottomBarSubmitBugButton))
+                {
+                    ShellButtons[count] = menu.bottomBarSubmitBugButton;
+                    ShellTools[count] = UiIcon.Bug;
+                    ShellOff[count] = !menu.bottomBarSubmitBugButton.interactable;
+                    count++;
+                }
+            }
+            if (count > 0)
+            {
+                m.Tools = ShellTools;
+                m.ToolsOn = ShellOn;
+                m.ToolsOff = ShellOff;
+                m.ToolCount = count;
+                m.ToolsShell = true;
+            }
+        }
+
+        /// <summary>One of the full menu's tools pressed: the game's own button, which opens its Help or its bug report.</summary>
+        public static bool PressShellTool(int index) => index >= 0 && index < ShellButtons.Length && UiWidgets.Press(ShellButtons[index]);
 
         /// <summary>The game's top bar hidden by leaf; false while it is not built yet.</summary>
         public static bool Begin(UIs uis)
@@ -180,14 +226,14 @@ namespace RealLifeOverhaul.Ui
             {
                 Tool(Help, UiIcon.Info, false, !_help.interactable);
             }
-            if (UiWidgets.Shows(_bug))
+            if (UiWidgets.There(_bug))
             {
-                Tool(Bug, UiIcon.Bug, false, false);   // only while the game (or Going Public) offers it
+                Tool(Bug, UiIcon.Bug, false, !_bug.interactable, BugTint());   // there while the game offers it; held, with its reason on hover, in a modded save
             }
             int sig = _toolCount;
             for (int i = 0; i < _toolCount; i++)
             {
-                sig = sig * 31 + ToolKind[i] * 4 + (ToolsOn[i] ? 1 : 0) + (ToolsOff[i] ? 2 : 0);
+                sig = sig * 31 + ToolKind[i] * 4 + (ToolsOn[i] ? 1 : 0) + (ToolsOff[i] ? 2 : 0) + (int)ToolTints[i] * 8;
             }
             if (dancesOpen)
             {
@@ -200,8 +246,9 @@ namespace RealLifeOverhaul.Ui
             return sig;
         }
 
-        private static void Tool(int kind, UiIcon icon, bool on, bool off)
+        private static void Tool(int kind, UiIcon icon, bool on, bool off, UiRole tint = UiRole.None)
         {
+            ToolTints[_toolCount] = tint;
             Tools[_toolCount] = icon;
             ToolsOn[_toolCount] = on;
             ToolsOff[_toolCount] = off;
@@ -219,6 +266,51 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return -1;
+        }
+
+        /// <summary>
+        /// The words a tool gives on hover: the report button's own tooltip as the game or the mod that took it over wrote it (Going Public recycles it as its
+        /// own report, with a title and a description), which in a modded save is the game's reason it is held (ReportBugButton); null for any other tool.
+        /// </summary>
+        public static string ToolNote(int index)
+        {
+            if (index < 0 || index >= _toolCount || ToolKind[index] != Bug || _bug == null)
+            {
+                return null;
+            }
+            BasicTooltip tip = _bug.GetComponent<BasicTooltip>() ?? _bug.GetComponentInParent<BasicTooltip>(true);
+            if (tip == null)
+            {
+                return ToolsOff[index] ? Localizor.LocalizorManager.GetLocalization(BugHeldKey) : null;
+            }
+            string words = null;
+            if (!string.IsNullOrEmpty(tip.titleKey))
+            {
+                words = Localizor.LocalizorManager.GetLocalization(tip.titleKey);
+            }
+            if (!string.IsNullOrEmpty(tip.descriptionKey))
+            {
+                foreach (string key in tip.descriptionKey.Split(','))   // each piece a line, as the game's own tooltip lists them
+                {
+                    string line = Localizor.LocalizorManager.GetLocalization(key);
+                    words = words == null ? line : words + "\n" + line;
+                }
+            }
+            return words ?? (ToolsOff[index] ? Localizor.LocalizorManager.GetLocalization(BugHeldKey) : null);
+        }
+
+        private const string BugHeldKey = "menu_report_bug_disabled_mods_tooltip";
+
+        // The colour another mod gave the report button (Going Public's purple), as the nearest of the kit's hues; none for the game's own.
+        private static UiRole BugTint()
+        {
+            Graphic g = _bug != null ? _bug.targetGraphic : null;
+            if (g == null)
+            {
+                return UiRole.None;
+            }
+            Color.RGBToHSV(g.color, out float h, out float s, out float v);
+            return HudNoteRules.TintOf(h * 360f, s, v);
         }
 
         /// <summary>A tool of the bar's pill pressed: the game's own button or method, as its top bar's own does.</summary>

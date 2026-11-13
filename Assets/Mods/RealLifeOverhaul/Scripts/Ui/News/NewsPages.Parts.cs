@@ -114,9 +114,16 @@ namespace RealLifeOverhaul.Ui
         /// Ranked bars that run both ways from a centre line, a rise to the right in the good colour and a fall to the left in the bad:
         /// the label, the bar and the figure. As many rows as the card has room for.
         /// </summary>
-        private static void BarRows(UiScene s, UiAt at, NewsBar[] bars, float x, float y, float w, float h)
+        private static void BarRows(UiScene s, UiAt at, NewsBar[] bars, float x, float y, float w, float h, string more = null)
         {
             int rows = Math.Min(bars.Length, (int)(h / BarRow));
+            int left = bars.Length - rows;
+            if (left > 0 && !string.IsNullOrEmpty(more) && rows > 1)
+            {
+                rows--;   // the last row of the room says how many are left
+                left++;
+                UiDraw.TextMiddle(s, at, x, y + rows * BarRow, BarRow, w, UiStyle.Small, UiRole.Muted, more.Replace("{n}", left.ToString()), UiFlags.Truncate);
+            }
             float labelW = UiDraw.SnapDown(w * 0.34f);
             float valueW = UiDraw.SnapDown(w * 0.2f);
             float trackX = x + labelW + UiTokens.S2;

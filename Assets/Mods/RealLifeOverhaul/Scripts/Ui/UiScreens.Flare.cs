@@ -121,6 +121,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_tone_1", "reallife_flare_tone_2", "reallife_flare_tone_3", "reallife_flare_city_target_0", "reallife_flare_city_target_1",
                 "reallife_flare_city_target_2", "reallife_flare_city_target_3", "reallife_flare_city_target_4",
                 "reallife_flare_kit_reach_title", "reallife_flare_kit_reach_empty",
+                "reallife_flare_message", "reallife_flare_mute", "reallife_flare_unmute", "reallife_flare_hide", "reallife_flare_unhide"
             }).Switch(UiScreenSwitches.Social));
         }
     }

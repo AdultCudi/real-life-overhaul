@@ -78,7 +78,12 @@ namespace RealLifeOverhaul.Careers
                 if (s.People.Id[i] == id)
                 {
                     Ui.PopulationScreen.Want(ViewTarget.To(ViewKind.Person, i, id));
-                    return Ui.ShellPages.OpenPeople();
+                    if (Ui.ShellPages.OpenPeople())
+                    {
+                        return true;
+                    }
+                    Ui.PopulationScreen.Wanted = null;   // the page is not offered (the old interface has none): the person is not kept for a later opening
+                    return false;
                 }
             }
             return false;

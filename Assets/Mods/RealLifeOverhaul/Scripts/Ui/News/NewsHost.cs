@@ -46,6 +46,17 @@ namespace RealLifeOverhaul.Ui
                 }
                 return true;
             }
+            if (command == NewsCommands.Tab)
+            {
+                // A tile or a link opens another tab of the window, put away whatever the tab it leaves had open, as a press on a tab does.
+                _model.Tab = arg;
+                _dirty = true;
+                if (_source != null)
+                {
+                    _source.Press(_model, UiAppWindow.NavCommand, arg);
+                }
+                return true;
+            }
             if (_source != null && _source.Press(_model, command, arg))
             {
                 _dirty = true;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AI.Employees.SalaryNegotiation;
+using Buildings.Office.Headquarters;
 using Characters.EmojiSystem;
 using Entities;
 using Helpers;
@@ -163,7 +164,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < _rows.Count; i++)
             {
                 Contact c = _rows[i];
-                Face(c);
+                string faceKey = Face(c);
                 TextMessage last = Last(c);
                 List<TalkLine> talk = TalkLogGame.Lines(c);
                 bool talked = talk != null && (last == null || talk[talk.Count - 1].Minute >= Minute(last));   // a call after the last text: its last line is the preview
@@ -182,7 +183,7 @@ namespace RealLifeOverhaul.Ui
                 bool mine = talked ? talk[talk.Count - 1].Mine : last != null && last.isFromPlayer;
                 rows[i] = new UiMessageRow
                 {
-                    Name = Name(c), Hue = UiColour.HueOf(c.id), Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category), Picture = Logo(c),
+                    Name = Name(c), Face = faceKey, Hue = UiColour.HueOf(c.id), Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category), Picture = Logo(c),
                     Preview = mine ? UiText.Fill("reallife_ui_contacts_you", "text", preview) : preview,
                     Time = talked ? When(talk[talk.Count - 1].Minute) : last != null ? When(last) : string.Empty,
                     Unread = c.NumberOfUnreadMessages, Selected = c == _app.selectedContact, Section = section
@@ -250,7 +251,7 @@ namespace RealLifeOverhaul.Ui
             EmployeeInstance employee = c.IsEmployeeContact ? EmployeeOf(c.id, out candidate) : null;
             UiHeadModel h = _m.Head;
             h.Name = Name(c);
-            Face(c);
+            h.Face = Face(c);
             h.Hue = UiColour.HueOf(c.id);
             h.Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category);
             h.Picture = Logo(c);
@@ -431,13 +432,13 @@ namespace RealLifeOverhaul.Ui
         {
             UiConversationModel t = _m.Talk;
             t.Name = c != null ? Name(c) : null;
+            t.FaceKey = c != null ? Face(c) : null;
             t.Choices = new UiDecisionChoice[0];
             t.Chosen = -1;
             t.Fields = new UiFormField[0];
             t.FieldCount = 0;
             t.FormHint = null;
             t.Typing = false;
-            t.Composer = false;
             t.EmptyTitle = UiText.T("reallife_ui_contacts_quiet_title");
             t.EmptyBody = UiText.T("reallife_ui_contacts_quiet_body");
             if (c == null)
@@ -501,12 +502,15 @@ namespace RealLifeOverhaul.Ui
 
         private void Texts(Contact c, List<UiMessageModel> list, List<TalkLine> talk, ref int said)
         {
+            int place = 0;
+            bool removable = !Relayed();
             foreach (TextMessage msg in c.messagesQueue)
             {
                 if (msg == null)
                 {
                     continue;
                 }
+                place++;
                 int minute = Minute(msg);
                 for (; talk != null && said < talk.Count && TalkLogRules.Before(talk[said].Minute, minute); said++)
                 {
@@ -521,6 +525,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     m.Text = Words(msg);
                 }
+                m.Remove = removable ? place : 0;
                 list.Add(m);
                 string offer = OfferLine(msg, out bool open);
                 if (offer != null && !open)   // an open offer's terms stand on its answer instead (OfferChoices)
@@ -593,6 +598,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 string terms = ContactsRules.Plain(LocalizorManager.GetLocalization("dialog_health_insurance_plan_offer_price", (object)new { price = UiText.Money(o.initialOfferPrice) }));
                 open = !o.negotiationFinished;
+                // The plan and the HR manager it comes from, as the game's card names them before the price.
+                string manager = HrManagerHelper.GetPlanFromId(o.hrManagerPlanId)?.HrManagerInstance?.characterData.name;
+                terms = LocalizorManager.GetLocalization(o.planType.GetLocalizeKey()) + " · " + UiText.T("myemployees_hrmanager") + ": " + (manager ?? "-") + " · " + terms;
                 return o.negotiationFinished ? terms + " \u00b7 " + UiText.T(o.accepted ? "common_accepted" : "common_declined") : terms;
             }
             return null;
@@ -666,7 +674,7 @@ namespace RealLifeOverhaul.Ui
             CanvasGroup view = EntryView();
             var call = new UiCallModel
             {
-                Name = _m.Head.Name, Hue = _m.Head.Hue, Icon = _m.Head.Icon, Tint = _m.Head.Tint, Picture = _m.Head.Picture, Ring = Mood(_m.Head.Ring),
+                Name = _m.Head.Name, Face = _m.Head.Face, Hue = _m.Head.Hue, Icon = _m.Head.Icon, Tint = _m.Head.Tint, Picture = _m.Head.Picture, Ring = Mood(_m.Head.Ring),
                 Role = string.IsNullOrEmpty(_m.Head.Employer) ? _m.Head.Role : _m.Head.Role + " \u00b7 " + _m.Head.Employer,
                 Length = ContactsRules.Length(Time.unscaledTime - _talkSince)
             };

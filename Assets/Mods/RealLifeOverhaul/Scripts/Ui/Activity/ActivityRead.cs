@@ -38,6 +38,19 @@ namespace RealLifeOverhaul.Ui
         public static string Words(ButtonInfo b) => b == null || string.IsNullOrEmpty(b.key) ? string.Empty : LocalizorManager.GetLocalization(b.key, b.arguments);
 
         /// <summary>
+        /// A slider end's words with the key that moves the slider there beside them (the key's name before the left end's,
+        /// after the right's); the words alone where there is no name.
+        /// </summary>
+        public static string Capped(string key, string words, bool after)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return words;
+            }
+            return string.IsNullOrEmpty(words) ? key : after ? words + "  " + key : key + "  " + words;
+        }
+
+        /// <summary>
         /// The game's key for an action on a cap: a pad's glyph for the four the pad's face buttons are while a pad leads,
         /// the key's name as the game's own labels print it otherwise.
         /// </summary>
@@ -147,6 +160,30 @@ namespace RealLifeOverhaul.Ui
         public static UiIcon Icon(IPlayerActivity a)
         {
             string name = a != null ? a.GetType().Name : string.Empty;
+            if (a is EntertainActivity)
+            {
+                return Entertain(a);
+            }
+            if (Has(name, "Swimming"))
+            {
+                return UiIcon.Waves;
+            }
+            if (Has(name, "Hygiene"))
+            {
+                return UiIcon.Drop;
+            }
+            if (Has(name, "Golf"))
+            {
+                return UiIcon.Golf;
+            }
+            if (Has(name, "Tennis"))
+            {
+                return UiIcon.TennisBall;
+            }
+            if (Has(name, "PaidActivity"))
+            {
+                return UiIcon.Ticket;   // a ride or a stall of a fair: the game's PaidActivity is the ticket, not a desk's work
+            }
             if (Has(name, "Sleep"))
             {
                 return UiIcon.Moon;
@@ -199,12 +236,25 @@ namespace RealLifeOverhaul.Ui
             {
                 return UiIcon.Clock;
             }
-            if (Has(name, "Paid") || Has(name, "Work") || Has(name, "Shift") || Has(name, "Desk") || Has(name, "Job") || Has(name, "Hustle") || Has(name, "Vendor")
+            if (Has(name, "Work") || Has(name, "Shift") || Has(name, "Desk") || Has(name, "Job") || Has(name, "Hustle") || Has(name, "Vendor")
                 || Has(name, "Stint") || Has(name, "Skip"))
             {
                 return UiIcon.Briefcase;
             }
             return UiIcon.Clock;
+        }
+
+        // Entertaining is one activity for four things to do; the game keeps which on the device it uses.
+        private static UiIcon Entertain(IPlayerActivity a)
+        {
+            var device = GameContract.ActivityEntertainDevice.Field != null ? GameContract.ActivityEntertainDevice.Field.GetValue(a) as EntertainDevice : null;
+            switch (device != null ? device.entertainType : EntertainType.Play)
+            {
+                case EntertainType.WatchTV: return UiIcon.Monitor;
+                case EntertainType.DJ: return UiIcon.MusicNotes;
+                case EntertainType.Read: return UiIcon.Newspaper;
+                default: return UiIcon.GameController;
+            }
         }
 
         private static bool Has(string name, string part) => name.IndexOf(part, StringComparison.Ordinal) >= 0;

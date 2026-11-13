@@ -58,9 +58,14 @@ namespace RealLifeOverhaul
         // The action panels' own list (the furniture panel, the materials, the item lists, the time of day, the blueprint), found once as the designer opens.
         public static readonly GameMember DesignerPanelList = Field(UiDesigner, Game, "UI.InteriorDesigner.InteriorDesignerActionPanelUI", "actionPanels", "List<ActionPanelUI>");
 
+        // The info panels' own list (cost, score, capacity, requirements), read so a panel another mod added to it can be left showing.
+        public static readonly GameMember DesignerInfoList = Field(UiDesigner, Game, "UI.InteriorDesigner.InteriorDesignerInfoPanelUI", "infoPanels", "List<InfoPanelUI>");
+
         // The furniture panel's pieces the face mirrors and presses: its table of tiles, its search, its All and Favourites switches, and a category's own switch.
         public static readonly GameMember DesignerScroller = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "scrollingController", "IDItemTemplateScrollingController");
         public static readonly GameMember DesignerSearch = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "searchField", "InputField");
+        // The search field's suggested completion: the game's field keeps the whole suggested text in a label behind the typed words, and Tab takes it.
+        public static readonly GameMember DesignerSuggestion = Optional(Field(UiDesigner, Game, "UI.Components.InputField", "autocompleteField", "TMP_Text"));
         public static readonly GameMember DesignerAllToggle = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "showAllItemsToggle", "Toggle");
         public static readonly GameMember DesignerFavToggle = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "showFavoriteItemsToggle", "Toggle");
         public static readonly GameMember DesignerCategoryToggle = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureCategoryToggle", "toggle", "Toggle");

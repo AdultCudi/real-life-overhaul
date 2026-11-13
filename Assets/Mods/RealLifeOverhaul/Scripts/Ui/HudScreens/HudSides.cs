@@ -349,6 +349,7 @@ namespace RealLifeOverhaul.Ui
             {
                 sig = Line(Child<TMP_Text>(parking, "Price"), ref rows, sig);
                 sig = Line(Child<TMP_Text>(parking, "ParkedVehicles"), ref rows, sig);
+                sig = ParkedTypes(parking, ref rows, sig);
             }
             SetRows(m, rows);
             if (_closed != null && _closed.gameObject.activeInHierarchy)
@@ -401,6 +402,7 @@ namespace RealLifeOverhaul.Ui
             {
                 sig = Line(Child<TMP_Text>(parking, "Price"), ref rows, sig);
                 sig = Line(Child<TMP_Text>(parking, "ParkedVehicles"), ref rows, sig);
+                sig = ParkedTypes(parking, ref rows, sig);
             }
             SetRows(m, rows);
             SetActions(m, 0);
@@ -486,13 +488,37 @@ namespace RealLifeOverhaul.Ui
                 from = Math.Min(from, today.openingHourSlots[i].startingHour);
                 to = Math.Max(to, today.openingHourSlots[i].endingHour);
             }
-            return UiText.T("contacts_today_opening_hours_open").Replace("{startingHour}", from.GetFormattedTime()).Replace("{endingHour}", to.GetFormattedTime());
+            return UiText.T("contacts_today_opening_hours_open").Replace("{startingHour}", UiClock.At(from, 0)).Replace("{endingHour}", UiClock.At(to, 0));
         }
 
         // The walls' state as the game's own walls button shows it: its picture is the walls standing only while they all stand.
         private static bool WallsLowered() => _building.wallsButtonImage != null && _building.wallsButtonImage.sprite != _building.wallsVisibleSprite;
 
         // A line of the game's own words as a row of its own, its label and value apart where the game wrote "Label: value".
+        // The vehicle types parked here, which the game lists in the hover over the parked count (LocalizedListTooltip on that label): one
+        // row each in the rows left, the last of them "and N more" when they do not all fit.
+        private static int ParkedTypes(Transform parking, ref int rows, int sig)
+        {
+            Transform label = parking.Find("ParkedVehicles");
+            var tip = label != null && label.gameObject.activeInHierarchy ? label.GetComponent<Tooltip.LocalizedListTooltip>() : null;
+            List<string> types = tip != null ? tip.list : null;
+            int room = UiSidePanelModel.MostRows - rows;
+            for (int i = 0; types != null && i < types.Count && room > 0; i++)
+            {
+                if (i == room - 1 && types.Count > room)
+                {
+                    Rows[rows++] = new UiInfoRow { Label = UiText.T("reallife_ui_hud_parked_more").Replace("{count}", (types.Count - i).ToString(System.Globalization.CultureInfo.InvariantCulture)) };
+                    sig = unchecked(sig * 31 + types.Count);
+                    break;
+                }
+                string name = types[i];
+                string words = Localizor.LocalizorManager.IsLocalizedKey(name) ? Localizor.LocalizorManager.GetLocalization(name) : name;
+                Rows[rows++] = new UiInfoRow { Label = words };
+                sig = unchecked(sig * 31 + (name != null ? name.GetHashCode() : 0));
+            }
+            return sig;
+        }
+
         private static int Line(TMP_Text text, ref int rows, int sig)
         {
             if (text == null || !text.gameObject.activeInHierarchy || rows >= UiSidePanelModel.MostRows)

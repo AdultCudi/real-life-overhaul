@@ -10,7 +10,19 @@ namespace RealLifeOverhaul.Ui
         public const float HeaderHeight = 56f;          // px: the tabs, the favourites switch and the search
         private const float TileW = 160f, TileH = 140f, TilePicture = 88f, TileGap = UiTokens.S2;
         private const float GridTop = UiTokens.S3, GridLeft = UiTokens.S3;
-        public const int Rows = 2;                      // rows of tiles in view; the wheel moves them
+        public const string AcceptKey = "Tab";           // the key that takes the search's suggestion, as the game's own field does
+        public const int Rows = 2;                      // rows of tiles in view on the reference 1080 px frame, the least any frame shows; the wheel moves them
+        private const float RowsShare = 0.4f;           // of the frame's height, the most the grid's panel may take
+
+        /// <summary>
+        /// The rows of tiles in view for a frame of this height: two on the 1080 px reference, more as a taller frame gives the panel room
+        /// (its head, the grid's margins and whole rows within <see cref="RowsShare"/> of the height), so a tall window shows more of a long catalogue.
+        /// </summary>
+        public static int RowsFor(float frameHeight)
+        {
+            float room = frameHeight * RowsShare - HeaderHeight - GridTop - UiTokens.S3 + TileGap;
+            return Math.Max(Rows, (int)(room / RowStep));
+        }
 
         // ------------------------------------------------------------------ the grid's geometry, shared with the face
 
@@ -25,7 +37,7 @@ namespace RealLifeOverhaul.Ui
         public static float RowStep => TileH + TileGap;
 
         /// <summary>The tiles in view for a scroll (the first and the last index), so the face has their pictures ready; false when there are none.</summary>
-        public static bool Visible(int count, int columns, float scroll, out int first, out int last)
+        public static bool Visible(int count, int columns, float scroll, out int first, out int last, int viewRows = Rows)
         {
             first = last = 0;
             if (count <= 0)
@@ -33,25 +45,25 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             int rows = (count + columns - 1) / columns;
-            int top = Math.Max(0, Math.Min((int)(scroll / RowStep + 0.5f), Math.Max(0, rows - Rows)));
+            int top = Math.Max(0, Math.Min((int)(scroll / RowStep + 0.5f), Math.Max(0, rows - viewRows)));
             first = top * columns;
-            last = Math.Min(count - 1, (top + Rows) * columns - 1);
+            last = Math.Min(count - 1, (top + viewRows) * columns - 1);
             return true;
         }
 
         /// <summary>The scroll the grid takes: a whole row, never past the last one.</summary>
-        public static float Scrolled(int count, int columns, float scroll)
+        public static float Scrolled(int count, int columns, float scroll, int viewRows = Rows)
         {
             int rows = (count + columns - 1) / columns;
-            float most = Math.Max(0, rows - Rows) * RowStep;
+            float most = Math.Max(0, rows - viewRows) * RowStep;
             return Math.Max(0f, Math.Min((float)Math.Round(scroll / RowStep) * RowStep, most));
         }
 
         // The panel's height by what it holds: its head, then the taller of the rows of tiles in view and the chosen one's detail, so a short list leaves no empty panel.
-        private static float GridPanelHeight(int count, float width, float detailNeed)
+        private static float GridPanelHeight(int count, float width, float detailNeed, int viewRows)
         {
             int cols = Columns(width);
-            int rows = Math.Max(1, Math.Min(Rows, (count + cols - 1) / cols));
+            int rows = Math.Max(1, Math.Min(viewRows, (count + cols - 1) / cols));
             float grid = GridTop + rows * TileH + (rows - 1) * TileGap + UiTokens.S3;
             return UiDraw.Snap(HeaderHeight + Math.Max(grid, detailNeed));
         }
@@ -73,7 +85,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------ the furniture catalogue
 
-        private static void Catalogue(UiScene s, UiAt at, UiDesignerCatalogue c, float x, float y, float w, float h, IUiKeys keys)
+        private static void Catalogue(UiScene s, UiAt at, UiDesignerCatalogue c, float x, float y, float w, float h, IUiKeys keys, int viewRows)
         {
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
@@ -87,7 +99,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Box(s, on, detailX, body, UiTokens.Hairline, h - HeaderHeight, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
             }
-            Grid(s, on, c, x + GridLeft, body + GridTop, none ? w - GridLeft * 2f : detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w);
+            Grid(s, on, c, x + GridLeft, body + GridTop, none ? w - GridLeft * 2f : detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w, viewRows);
             if (!none)
             {
                 Detail(s, on.InRegion(DetailRegion), c, detailX, body, DetailWidth, h - HeaderHeight, keys);
@@ -100,7 +112,7 @@ namespace RealLifeOverhaul.Ui
         {
             float hy = y + (HeaderHeight - UiTokens.Control) / 2f, chipY = y + (HeaderHeight - UiTokens.ControlSmall) / 2f;
             float searchW = 224f, sx = x + w - UiTokens.S4 - searchW;
-            UiDraw.Search(s, on, sx, hy, searchW, c.SearchPlaceholder, c.Search, null, SearchCommand);
+            UiDraw.Search(s, on, sx, hy, searchW, c.SearchPlaceholder, c.Search, null, SearchCommand, 0, c.SearchGhost, AcceptKey);
             float favW = UiDraw.Snap(UiDraw.Snap(UiTextRules.Width(c.FavouritesLabel ?? string.Empty, UiStyle.Body) + UiTokens.S1) + 44f + UiTokens.S3 + UiTokens.S2 * 2f);
             float fx = sx - UiTokens.S3 - favW;
             UiDraw.Switch(s, on, fx, hy, favW, c.FavouritesOnly, c.FavouritesLabel, FavouritesCommand, 0, false);
@@ -191,8 +203,8 @@ namespace RealLifeOverhaul.Ui
 
         private static float CountWidth(string count) => string.IsNullOrEmpty(count) ? 0f : UiDraw.Snap(UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1);
 
-        // The tiles, two rows in view, the wheel moving them a row; only the rows in view are laid out.
-        private static void Grid(UiScene s, UiAt on, UiDesignerCatalogue c, float x, float y, float w, float h, float panelWidth)
+        // The tiles, a frame's rows in view (two on the reference frame), the wheel moving them a row; only the rows in view are laid out.
+        private static void Grid(UiScene s, UiAt on, UiDesignerCatalogue c, float x, float y, float w, float h, float panelWidth, int viewRows)
         {
             int cols = Columns(panelWidth);
             if (c.CardCount == 0)
@@ -204,13 +216,13 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             int rows = (c.CardCount + cols - 1) / cols;
-            float step = RowStep, view = Rows * step - TileGap, content = rows * step - TileGap;
-            float offset = Scrolled(c.CardCount, cols, c.Scroll);
+            float step = RowStep, view = viewRows * step - TileGap, content = rows * step - TileGap;
+            float offset = Scrolled(c.CardCount, cols, c.Scroll, viewRows);
             c.Scroll = offset;
             short clip = s.AddClip(x, y, w, Math.Min(view, content), offset);
             s.Clips[clip].ContentHeight = content;
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = on.Layer, Order = -1, Region = on.Region };
-            int top = (int)(offset / step + 0.5f), last = Math.Min(rows - 1, top + Rows - 1);
+            int top = (int)(offset / step + 0.5f), last = Math.Min(rows - 1, top + viewRows - 1);
             short list = s.AddList(rows, top, last - top + 1, clip, c.Chosen >= 0 ? c.Chosen / cols : -1);
             c.ShownFirst = top * cols;
             c.ShownLast = Math.Min(c.CardCount - 1, (last + 1) * cols - 1);

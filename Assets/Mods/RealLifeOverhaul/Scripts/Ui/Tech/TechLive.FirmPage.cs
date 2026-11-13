@@ -557,7 +557,12 @@ namespace RealLifeOverhaul.Ui
                 string focus = TechText.T("reallife_tech_firm_focus", "focus", TechText.FocusName((Focus)m.Focus));
                 facts.Step(TechText.T("reallife_ui_tech_focus"), focus, null, true, true,
                     Do(() => _d.SetFocus(place, (m.Focus + (int)Focus.Count - 1) % (int)Focus.Count)), Do(() => _d.SetFocus(place, (m.Focus + 1) % (int)Focus.Count)));
-                _m.Left = new[] { facts.Build() };
+                var left = new List<UiFactCardModel>(2) { facts.Build() };
+                if (!(_d.SectorOn && _d.SectorFirmScreen(_firm, W) != null))
+                {
+                    left.Add(CrewCard());   // the page the sector screen replaces carries these lines itself; every other firm's page has them
+                }
+                _m.Left = left.ToArray();
                 var raise = new TechCard(_runs, TechText.T("reallife_tech_tab_funding"));
                 VentureFile venture = _d.Ventures;
                 if (venture == null)
@@ -580,6 +585,51 @@ namespace RealLifeOverhaul.Ui
 
             private void PathCard()
             {
+            }
+
+            // The old firm page's crew line, the connection, the research relief and the risks, said in its words from the same figures.
+            private UiFactCardModel CrewCard()
+            {
+                FirmPlace firm = _firm;
+                Firm m = firm.File;
+                Crew c = firm.Crew;
+                var card = new TechCard(_runs, TechText.T("reallife_ui_tech_crew"));
+                card.Say(TechText.Fill("reallife_tech_firm_crew", "people", firm.People.ToString(Inv), "engineering", c.Engineering.ToString(Inv), "testing", c.Testing.ToString(Inv),
+                    "design", c.Design.ToString(Inv), "product", c.Product.ToString(Inv), "selling", c.Selling.ToString(Inv), "support", c.Support.ToString(Inv),
+                    "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
+                string net = NetWords(firm, out bool slow);
+                card.Say(net, slow ? UiRole.WarnText : UiRole.None);
+                card.Row(TechText.Fill("reallife_ui_tech_relief", "day", (m.ReliefDay + 90).ToString(Inv)), Cents(FirmsRules.Relief(m.RnD)));
+                card.Say(TechText.Fill("reallife_tech_firm_risks", "security", TechText.Mille(c.Security), "reliability", TechText.Mille(c.Reliability), "debt", TechText.Mille(m.Debt),
+                    "reputation", TechText.Mille(m.Reputation), "outages", m.Outages.ToString(Inv), "breaches", m.Breaches.ToString(Inv)));
+                return card.Build();
+            }
+
+            // The office's connection and what it does to the firm's work, as the morning's work read it (or as it reads now, before the first morning since loading), and the plan
+            // that would lift it; null with speed not counted. Slow: the work is under what a good connection gives.
+            private static string NetWords(FirmPlace firm, out bool slow)
+            {
+                slow = false;
+                int mbps = firm.Mbps != NetSpeedRules.Unknown ? firm.Mbps : TechBridges.PlanMbpsAt(firm.Reg), kind = firm.File.Kind;
+                if (mbps == NetSpeedRules.Unknown)
+                {
+                    return null;
+                }
+                if (mbps == NetSpeedRules.Grace)
+                {
+                    return TechText.T("reallife_tech_firm_net_grace");
+                }
+                int next = NetSpeedRules.NextFloor(mbps);
+                if (mbps == 0)
+                {
+                    slow = true;
+                    return TechText.T("reallife_tech_firm_net_none", "mbps", next.ToString(Inv), "work", TechText.Mille(FirmsRules.Connection(kind, next)));
+                }
+                int work = FirmsRules.Connection(kind, mbps);
+                slow = work < 1000;
+                string lift = next > 0 ? TechText.T("reallife_tech_firm_net_lift", "mbps", next.ToString(Inv), "work", TechText.Mille(FirmsRules.Connection(kind, next)))
+                    : TechText.T("reallife_tech_firm_net_top");
+                return TechText.Fill("reallife_tech_firm_net", "mbps", mbps.ToString(Inv), "work", TechText.Mille(work), "lift", lift);
             }
 
             private void Awards()

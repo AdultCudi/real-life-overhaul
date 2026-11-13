@@ -68,6 +68,15 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        /// <summary>The feature's clean-up for the guard and the save tools: a scene of the press ended, its window closed, the player free.</summary>
+        internal void StopAll()
+        {
+            if (_panel != null && _panel.Active)
+            {
+                _panel.End();
+            }
+        }
+
         private void PressStandDown()
         {
             if (_reporter != null)

@@ -31,8 +31,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiConceal _simpleHide = new UiConceal();
         private readonly UiConceal _detailHide = new UiConceal();
         private readonly UiOverlayModel _model = new UiOverlayModel();
-        private readonly Button[] _buttons = new Button[UiOverlayModel.MostActions];
-        private readonly Action[] _does = new Action[UiOverlayModel.MostActions];
+        private Button[] _buttons = new Button[UiOverlayModel.MostActions];
+        private Action[] _does = new Action[UiOverlayModel.MostActions];
         private UiView _view, _leader;
         private CanvasGroup _group;
         private float _scale = UiTokens.CanvasPerPx;
@@ -100,6 +100,14 @@ namespace RealLifeOverhaul.Ui
             // A person's box needs the person's panel: with its switch off the whole box is the game's own.
             bool person = click && _person != null && _person.gameObject.activeSelf && !personOn;
             Form want = click && clickOn && !person ? Form.Click : hover && hoverOn ? Form.Hover : Form.None;
+            if (!click && !hover)
+            {
+                _skipId = 0;   // the pointer is off every box: the next one is tried afresh
+            }
+            else if (want != Form.None && want == _skipForm && (want == Form.Click ? _detailed.relevantController : _simple.relevantController).GetInstanceID() == _skipId)
+            {
+                want = Form.None;
+            }
             if (want != _form)
             {
                 Leave();
@@ -109,6 +117,7 @@ namespace RealLifeOverhaul.Ui
                 _digest = int.MinValue;
                 _openChoice = -1;
                 _page = 0;
+                _actionPage = 0;
             }
             if (_form == Form.None)
             {
@@ -123,6 +132,7 @@ namespace RealLifeOverhaul.Ui
                 _seenId = id;
                 _openChoice = -1;
                 _page = 0;
+                _actionPage = 0;
                 _due = 0f;
             }
             bool renaming = _form == Form.Click && Typing();
@@ -326,6 +336,10 @@ namespace RealLifeOverhaul.Ui
                     return chosen;
                 case OverlayAct.Page:
                     _page = OverlayRules.ClampPage(_page + arg, _model.Choices[_openChoice].OptionCount, UiOverlayModel.PerPage);
+                    _relay = true;
+                    return true;
+                case OverlayAct.ActionPage:
+                    _actionPage = Math.Max(0, _actionPage + arg);
                     _relay = true;
                     return true;
                 case OverlayAct.Step:

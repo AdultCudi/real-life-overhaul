@@ -90,7 +90,11 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_svc_then_taken", "reallife_ui_svc_then_value", "reallife_ui_svc_threshold_hint", "reallife_ui_svc_van",
                 "reallife_ui_svc_view_offers", "reallife_ui_svc_view_offers_title", "reallife_ui_svc_view_rivals",
                 "reallife_ui_svc_view_rivals_title", "reallife_ui_svc_visits_n", "reallife_ui_svc_visits_needed", "reallife_ui_svc_week_split",
-                "reallife_ui_svc_whoever", "reallife_ui_svc_worth_change", "reallife_ui_svc_worth_sub", "reallife_ui_svc_worth_today"
+                "reallife_ui_svc_whoever", "reallife_ui_svc_worth_change", "reallife_ui_svc_worth_sub", "reallife_ui_svc_worth_today",
+                // the table's foot and the crew's weekly wage column
+                "reallife_table_total", "reallife_svc_col_week",
+                // the Guide's page named at the foot
+                "reallife_guide_app", "reallife_meta_title_economy_sale", "reallife_meta_title_economy_cleaning"
             };
         }
     }

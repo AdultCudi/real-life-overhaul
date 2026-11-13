@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
     {
         public UiNotice[] Cards = new UiNotice[0];
         public int CardCount;
+        public string More;               // "2 earlier" under the newest cards while more toasts stand than are drawn; null for none
         public float Top = UiTokens.S4;   // px: where the game's stack starts (the mod's panels push it down)
         public float AvoidX, AvoidY, AvoidW, AvoidH;   // px of the layout: the mod's minimap card, kept clear of; 0 wide for none
     }
@@ -97,6 +98,11 @@ namespace RealLifeOverhaul.Ui
             {
                 y += Card(s, ref m.Cards[i], i, x, y) + UiTokens.S2;
             }
+            if (!string.IsNullOrEmpty(m.More))
+            {
+                // The older toasts wait behind the newest and come forward as those go, with their own click.
+                UiDraw.Text(s, UiAt.Screen, x, y, CardWidth, UiStyle.Small, UiRole.Text2, m.More, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
+            }
         }
 
         /// <summary>Where the stack of cards stands, px of the layout: at the top right under the game's stack top, off the minimap's card; 0 high for none.</summary>
@@ -118,7 +124,7 @@ namespace RealLifeOverhaul.Ui
             {
                 h += CardHeight(ref m.Cards[i]) + (i > from ? UiTokens.S2 : 0f);
             }
-            return h;
+            return string.IsNullOrEmpty(m.More) ? h : h + UiTokens.S2 + UiTextRules.LineHeight(UiStyle.Small);
         }
 
         /// <summary>A card's height for its words.</summary>

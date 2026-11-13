@@ -50,9 +50,11 @@ namespace RealLifeOverhaul.Ui
         private string _title;
         private UiIcon _icon;
         private Vector2 _laidSize;
+        private bool _barCard;   // a card of the bar's clock or money is asked for by the pointer
         private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private int _typeCommand = -1, _typeArg;   // the target that takes the keys while _typing: the scene tells its field to draw the caret
-        private bool _caretOn;                      // the caret shows now (the blink's state)
+        private IUiTypingFocus _typeFocus;          // the screen's own asks for the keys, if it makes them
+        private bool _caretOn;                     // the caret shows now (the blink's state)
         private float _blinkAt;                     // the clock time of the blink's next turn
         private UiPad _laidPad;
         private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
@@ -72,6 +74,13 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
         public bool Exclusive;
+
+        /// <summary>
+        /// The screen stands on a canvas of its own over every other (a card over a desk session): a box of the game's own over it would sit
+        /// under that canvas and could not be clicked, so the canvas is put aside while such a box is up and comes back as it closes.
+        /// </summary>
+        public bool StepAside;
+        private Canvas _ownCanvas;
         public bool TakesInteract;   // only Interact is taken from the game each frame, for a card that answers it and no other key
 
         /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
@@ -154,6 +163,7 @@ namespace RealLifeOverhaul.Ui
         {
             _icon = icon;
             _screen = screen;
+            _typeFocus = screen as IUiTypingFocus;
             _input = input;
             _sound = sound;
             _dark = dark;
@@ -169,6 +179,7 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerPressed = Guard.Wrap<int>(PressedSafe);
                 _view.PointerReport = PressTrace;
                 _view.Wheeled = Guard.Wrap<int, float>(WheeledSafe);
+                _view.DragTaken = () => _dragging || _grip.Moving;   // a slider, a board's shift or a window's grip keeps its drag: no region follows it
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
                 _view.PointerMoved = Guard.Wrap<int, UiDragPoint>(PointerMoved);
                 _view.Tracked = Tracked;
@@ -250,6 +261,7 @@ namespace RealLifeOverhaul.Ui
             EndDrag(true);
             _grip.End();
             _view?.Still();
+            CardGone();
             enabled = false;
             string line = _cost?.Hidden(Time.unscaledTime);
             if (line != null && Meta.Dev.Verbose)
@@ -307,6 +319,10 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
+                if (StepAside)
+                {
+                    SteppedAside();
+                }
                 OnUpdate();
             }
             catch (Exception e) when (Foreign(e))
@@ -316,7 +332,16 @@ namespace RealLifeOverhaul.Ui
             catch (Exception e)
             {
                 LastFault = ScreenId ?? (_screen != null ? _screen.Id : null);
-                Guard.Fail(FrameGuard, e, this);
+                if (UiFaultCount.Counts(LastFault))
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+                else
+                {
+                    // A screen that already faulted once this session is not counted against the whole interface again: the guard's five in half a minute is for faults
+                    // that spread over the screens, and the screen is the game's own already (UiGameHost.Fallback).
+                    ThrewAgain(e);
+                }
                 if (Failed != null)
                 {
                     Failed(e);
@@ -325,6 +350,28 @@ namespace RealLifeOverhaul.Ui
                 {
                     Stop();   // nobody to give the game's screen back: the host's own canvas goes, so a screen that failed never stays up over the game
                 }
+            }
+        }
+
+        private void ThrewAgain(Exception e)
+        {
+            UiDirector.Logger?.Warn("UI: " + LastFault + " threw again (" + FaultWords.Of(e) + ").");
+        }
+
+        private void SteppedAside()
+        {
+            if (_ownCanvas == null)
+            {
+                _ownCanvas = GetComponent<Canvas>();
+            }
+            if (_ownCanvas == null)
+            {
+                return;
+            }
+            bool aside = UiBoxes.Up && !UiBoxes.Drawn;
+            if (_ownCanvas.enabled == aside)
+            {
+                _ownCanvas.enabled = !aside;
             }
         }
 
@@ -344,6 +391,7 @@ namespace RealLifeOverhaul.Ui
                     EndDrag(true);
                     _grip.End();
                     _view?.Still();
+                    CardGone();
                     _cost?.Hidden(Time.unscaledTime);
                 }
                 catch (Exception)
@@ -402,6 +450,10 @@ namespace RealLifeOverhaul.Ui
                     BeginTyping(box, box.TypingCommand, 0);
                 }
             }
+            if (_typeFocus != null && !_typing && _typeFocus.TakeFocus())
+            {
+                BeginTyping(_typeFocus, _typeFocus.TypingCommand, 0);
+            }
             _input.Read(ref _state);
             if (Exclusive)
             {
@@ -429,6 +481,10 @@ namespace RealLifeOverhaul.Ui
                     _input.TakeBack();
                     EndTyping();
                     _sound?.Play(UiCue.Back);
+                }
+                else if (TypingNow.Now && Input.GetKeyDown(KeyCode.Tab))
+                {
+                    TakeGhost();
                 }
                 else if (now >= _blinkAt)
                 {
@@ -665,6 +721,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (UiDraw.IsBarHover(n.Command))
+            {
+                _pressNote = "a card's target";   // the clock and the money only bring their cards: a press says nothing, as on the game's own bar
+                return;
+            }
             if (UiDraw.IsChrome(n.Command))
             {
                 _pressNote = "frame";
@@ -835,8 +896,30 @@ namespace RealLifeOverhaul.Ui
             if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
                 _view.SetHover(node);
+                BarCard(ref _scene.Nodes[node]);
                 Pointed(_scene.Nodes[node].Command, _scene.Nodes[node].Arg);
             }
+        }
+
+        // The bar's card goes: the pointer left its pill, or the screen did.
+        private void CardGone()
+        {
+            if (_barCard)
+            {
+                _barCard = false;
+                TooltipKit.MoneyOut();
+            }
+        }
+
+        // The pointer on the bar's clock or money in the full menu: the years and days or the net worth card, over the pill as it is on the HUD.
+        private void BarCard(ref UiNode n)
+        {
+            if (!UiDraw.IsBarHover(n.Command) || _laidSize.x <= 0f || _laidSize.y <= 0f)
+            {
+                return;
+            }
+            float x = n.X * _view.Scale / _laidSize.x, y = n.Y * _view.Scale / _laidSize.y, w = n.W * _view.Scale / _laidSize.x;
+            _barCard = n.Command == UiDraw.ClockHoverCommand ? TooltipKit.Years(x, y, w) : TooltipKit.Money(x, y, w);
         }
 
         private void PointerExited(int node)
@@ -845,6 +928,7 @@ namespace RealLifeOverhaul.Ui
             if (_mode.Exited(node))
             {
                 _view.SetHover(-1);
+                CardGone();
                 Pointed(-1, -1);
             }
         }
@@ -882,6 +966,7 @@ namespace RealLifeOverhaul.Ui
         private void PointerPressed(int node)
         {
             using var cost = Measured(UiWork.Press);
+            CardGone();
             _beforeFocus = _view.Focus;
             _beforeNode = NodeName(node);
             _beforeCommand = node >= 0 && node < _scene.NodeCount ? _scene.Nodes[node].Command : -1;
@@ -1113,6 +1198,7 @@ namespace RealLifeOverhaul.Ui
             _field.gameObject.SetActive(true);
             _field.SetTextWithoutNotify(typing.TypingText ?? string.Empty);
             _field.ActivateInputField();
+            (typing as IUiTypingStart)?.TypingStarted();
             if (EventSystem.current != null)
             {
                 EventSystem.current.SetSelectedGameObject(_field.gameObject);   // the game holds its key shortcuts while a field is selected
@@ -1127,8 +1213,40 @@ namespace RealLifeOverhaul.Ui
             _view.SetCaret(_caretOn);
         }
 
+        // Tab in a field whose screen offers a suggested completion takes it, as the game's own field does. The key reaches this as a keystroke or as a tab the
+        // field was given; taking the suggestion twice does nothing the second time, since the game has none once it is taken.
+        private bool TakeGhost()
+        {
+            if (!_typing || !(_screen is IUiTypingGhost ghost) || string.IsNullOrEmpty(ghost.Ghost))
+            {
+                return false;
+            }
+            string taken = ghost.Accept();
+            if (taken != null && _field != null)
+            {
+                _field.SetTextWithoutNotify(taken);
+                _field.caretPosition = taken.Length;
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+            }
+            return taken != null;
+        }
+
         private void Typed(string text)
         {
+            if (_typing && text != null && text.IndexOf('\t') >= 0)
+            {
+                // A tab is never part of what is searched for: it asks for the suggestion, and the words stay as they were.
+                text = text.Replace("\t", string.Empty);
+                _field.SetTextWithoutNotify(text);
+                _field.caretPosition = text.Length;
+                if (TakeGhost())
+                {
+                    return;
+                }
+            }
             if (_typing && _screen is IUiTyping typing)
             {
                 typing.Typed(text);

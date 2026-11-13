@@ -177,6 +177,29 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Asks for the next layout to read everything again (a note was changed from outside).</summary>
         public void Refresh() => _force = true;
 
+        /// <summary>
+        /// Opens the page of an entry a notice named (a reminder), found among the days ahead; false when it is no longer there. The page it came from
+        /// is the list, so Back goes to today's.
+        /// </summary>
+        public bool ShowEntry(EntryId id)
+        {
+            _items.Clear();
+            int today = _host.Today;
+            _host.Look(today, today + DaysAhead, _items);
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].Id.Equals(id))
+                {
+                    _settings = false;
+                    _page = UiPlanPageKind.List;
+                    OpenEntry(_items[i]);
+                    return true;
+                }
+            }
+            _force = true;
+            return false;
+        }
+
         // ---------------------------------------------------------------- what is shown
 
         public void Build()

@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
     /// press back to the game as the call its own button makes. The room, the camera and every overlay in the room stay the game's: the piece takes the mouse over its own
     /// targets and no key. Cost: a comparison a frame; ten times a second a few dozen reads; a layout when the game's state changed.
     /// </summary>
-    internal sealed class DesignerFace : IUiScreen, IUiPointing, IUiTyping, IUiDragging, IUiTracking
+    internal sealed class DesignerFace : IUiScreen, IUiPointing, IUiTyping, IUiTypingGhost, IUiDragging, IUiTracking
     {
         public const string ScreenId = "designer";
 
@@ -249,6 +249,23 @@ namespace RealLifeOverhaul.Ui
                         return -1;
                 }
             }
+        }
+
+        public string Ghost => _m.Panel == UiDesignerPanelKind.Furniture ? _m.Catalogue.SearchGhost : null;
+
+        public string Accept()
+        {
+            if (_m.Panel != UiDesignerPanelKind.Furniture)
+            {
+                return null;
+            }
+            string taken = DesignerGame.AcceptSuggestion();
+            if (taken != null)
+            {
+                _m.Catalogue.Scroll = 0f;
+                Touch();
+            }
+            return taken;
         }
 
         public string TypingText

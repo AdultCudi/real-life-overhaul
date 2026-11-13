@@ -277,12 +277,14 @@ namespace RealLifeOverhaul.Ui
     /// or what it needs, the parking zone and how much it carries. A hand truck, a cart and a scooter keep the full panel:
     /// their tiles are the game's one way to take a box off them, and a tile's press is the game's own click (CargoTake).
     /// </summary>
-    internal sealed class ItemPanelScreen : IUiScreen
+    internal sealed class ItemPanelScreen : IUiScreen, IUiPointing
     {
         private const float Every = 0.25f;
         private const string SpeedRow = "RealLifeOverhaul Speed";   // the mod's speed, a copy of the condition row in the vehicle panel
         private readonly ItemPanelUI _ui;
         private readonly UiItemPanelModel _m = new UiItemPanelModel();
+        private VehicleInfoPanel _steerPanel;   // the vehicle panel the steering button was found under
+        private Button _steer;
         private readonly List<Button> _buttons = new List<Button>(10);   // the game's button an action presses; null for Manage cargo
         private VehicleController _car;                                  // the vehicle the panel shows, or null
         private bool _mine = true;                                       // the vehicle is the player's own (always, outside a Going Public session)
@@ -304,6 +306,8 @@ namespace RealLifeOverhaul.Ui
         private readonly StringBuilder _sb = new StringBuilder(256);
         private readonly Vector3[] _corners = new Vector3[4];
         private UiCatalogueCard[] _cargo = new UiCatalogueCard[0];
+        private string[][] _contents = new string[0][];                  // what each tile's bundle holds, read from the game's tooltip on the slot
+        private int _hover = -1;                                         // the cargo tile the pointer rests on
         private string _status, _streetOf, _districtOf;   // the street and district the HUD shows, and the words they came from
         private string _range, _speed, _speedUnit;         // the range's and the speed's words, made again only when a figure changes
         private string _rangeShort;                        // "310 km", the range beside the fuel's figure on the driving card
@@ -385,6 +389,17 @@ namespace RealLifeOverhaul.Ui
         }
 
         public bool Back() => false;
+
+        // The pointer on a cargo tile: a bundle's contents show beside it, as the game's tooltip hangs on its slot.
+        public void Pointed(int command, int arg)
+        {
+            int tile = command == UiItemPanel.CargoCommand ? arg : -1;
+            if (tile != _hover)
+            {
+                _hover = tile;
+                _dirty = true;
+            }
+        }
 
         public void Tab(int step)
         {
@@ -711,10 +726,31 @@ namespace RealLifeOverhaul.Ui
             if (_cargo.Length != _slots.Count)
             {
                 _cargo = new UiCatalogueCard[_slots.Count];
+                _contents = new string[_slots.Count][];
             }
             for (int i = 0; i < _slots.Count; i++)
             {
                 var slot = _slots[i].GetComponent<CargoItemUi>();
+                var bundle = BuyKits.Get<global::Tooltip.LocalizedListTooltip>(GameContract.SlotBundle, slot);
+                List<string> held = bundle != null && bundle.gameObject.activeSelf ? bundle.list : null;   // the game switches it on for a bundle of several kinds only
+                if (held == null || held.Count == 0)
+                {
+                    _contents[i] = null;
+                }
+                else
+                {
+                    if (_contents[i] == null || _contents[i].Length != held.Count)
+                    {
+                        _contents[i] = new string[held.Count];
+                    }
+                    held.CopyTo(_contents[i]);
+                    _sb.Append('[');
+                    for (int k = 0; k < held.Count; k++)
+                    {
+                        _sb.Append(held[k]).Append(',');
+                    }
+                    _sb.Append(']');
+                }
                 TMP_Text count = BuyKits.Get<TMP_Text>(GameContract.SlotCount, slot), price = BuyKits.Get<TMP_Text>(GameContract.SlotPrice, slot);
                 bool owed = price != null && price.gameObject.activeSelf;
                 string pieces = count != null && count.gameObject.activeSelf ? UiWidgets.Text(count) : null;
@@ -728,6 +764,9 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_cargo[i].Name).Append(_cargo[i].Figure).Append(';');
             }
             _m.Cargo = _cargo;
+            _m.CargoContents = _contents;
+            _m.CargoHover = _hover < _slots.Count ? _hover : -1;
+            _m.CargoContainsLabel = UiText.T("reallife_ui_buy_contains");
             _m.CargoSlots = Math.Max(most, _slots.Count);
             _m.CargoLabel = _m.CargoSlots > 0 ? UiText.T("common_cargo") : null;
             _m.CargoValue = _m.CargoSlots > 0
@@ -760,6 +799,7 @@ namespace RealLifeOverhaul.Ui
                 first.Main = !first.Danger;
                 _actions[0] = first;
             }
+            Steering();
             if (_m.Actions.Length != _actions.Count)
             {
                 _m.Actions = new UiItemAction[_actions.Count];
@@ -771,6 +811,33 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
             }
             _sb.Append(_m.More);
+        }
+
+        // The car's steering assist, which the game's panel shows as an icon that turns on and off by a click on it. The game's own
+        // button is pressed, so its listener flips the setting; the label says which way it stands.
+        private void Steering()
+        {
+            VehicleInfoPanel info = _ui.vehicleInfo;
+            if (!(_car is CarController) || info == null || !info.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            GameObject row = BuyKits.Get<GameObject>(GameContract.InfoSteering, info);
+            if (row == null || !row.activeSelf)
+            {
+                return;
+            }
+            if (_steerPanel != info)
+            {
+                _steerPanel = info;
+                _steer = row.GetComponentInChildren<Button>(true) ?? UiWidgets.Calling(info, "ToggleSteeringAssist");
+            }
+            if (_steer == null)
+            {
+                return;
+            }
+            _buttons.Add(_steer);
+            _actions.Add(new UiItemAction { Label = UiText.T(PlayerPrefSettings.SteeringAssist ? "reallife_ui_buy_steering_on" : "reallife_ui_buy_steering_off"), Disabled = !_steer.interactable });
         }
 
         private void Add(Button b, Component label, UiGameKey key, bool danger)

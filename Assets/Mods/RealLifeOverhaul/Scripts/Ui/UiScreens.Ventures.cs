@@ -82,7 +82,10 @@ namespace RealLifeOverhaul.Ui
             screens.Add(new UiScreenDef("webshop", UiTemplate.AppWindow, "VentScreen", new[]
             {
                 // KEYS BEGIN
-                "reallife_brand_back", "reallife_online_app", "reallife_online_row_offline", "reallife_online_state_not_offered",
+                "reallife_brand_back", "reallife_online_app", "reallife_online_button_back", "reallife_online_button_better",
+                "reallife_online_button_open", "reallife_online_open_agency", "reallife_online_open_full", "reallife_online_open_hosting_value",
+                "reallife_online_open_net", "reallife_online_open_net_none", "reallife_online_open_note", "reallife_online_open_orders_value",
+                "reallife_online_open_title", "reallife_online_row_offline", "reallife_online_set_better", "reallife_online_state_not_offered",
                 "reallife_online_state_offered", "reallife_online_tab_catalogue", "reallife_online_tab_orders", "reallife_online_tab_shops",
                 "reallife_ui_bra_col_rating", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select",
                 "reallife_ui_shop_advertise", "reallife_ui_shop_area", "reallife_ui_shop_arrives_label", "reallife_ui_shop_basket",
@@ -90,24 +93,29 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_shop_close", "reallife_ui_shop_col_badge", "reallife_ui_shop_col_customer", "reallife_ui_shop_col_district",
                 "reallife_ui_shop_col_items", "reallife_ui_shop_col_price", "reallife_ui_shop_col_product", "reallife_ui_shop_col_rival",
                 "reallife_ui_shop_col_seller", "reallife_ui_shop_col_stage", "reallife_ui_shop_col_state", "reallife_ui_shop_col_stock",
-                "reallife_ui_shop_col_total", "reallife_ui_shop_delivered", "reallife_ui_shop_delivery_sec", "reallife_ui_shop_edit_desc",
-                "reallife_ui_shop_edit_title", "reallife_ui_shop_express", "reallife_ui_shop_fee", "reallife_ui_shop_free",
-                "reallife_ui_shop_free_over", "reallife_ui_shop_is_free", "reallife_ui_shop_late", "reallife_ui_shop_lines_how",
-                "reallife_ui_shop_match", "reallife_ui_shop_missed_week", "reallife_ui_shop_n_stars", "reallife_ui_shop_never",
-                "reallife_ui_shop_night", "reallife_ui_shop_no_lines", "reallife_ui_shop_no_orders", "reallife_ui_shop_no_results",
-                "reallife_ui_shop_no_results_how", "reallife_ui_shop_no_reviews", "reallife_ui_shop_no_rivals", "reallife_ui_shop_none",
+                "reallife_ui_shop_col_total", "reallife_ui_shop_courier_note", "reallife_ui_shop_delivered", "reallife_ui_shop_delivery_sec",
+                "reallife_ui_shop_edit_desc", "reallife_ui_shop_edit_title", "reallife_ui_shop_express", "reallife_ui_shop_fee",
+                "reallife_ui_shop_free", "reallife_ui_shop_free_over", "reallife_ui_shop_hosting_label", "reallife_ui_shop_hosting_month",
+                "reallife_ui_shop_is_free", "reallife_ui_shop_late", "reallife_ui_shop_lines_how", "reallife_ui_shop_match",
+                "reallife_ui_shop_missed_week", "reallife_ui_shop_n_stars", "reallife_ui_shop_never", "reallife_ui_shop_night",
+                "reallife_ui_shop_no_lines", "reallife_ui_shop_no_orders", "reallife_ui_shop_no_results", "reallife_ui_shop_no_results_how",
+                "reallife_ui_shop_no_reviews", "reallife_ui_shop_no_rivals", "reallife_ui_shop_none", "reallife_ui_shop_none_places",
                 "reallife_ui_shop_off_body", "reallife_ui_shop_off_title", "reallife_ui_shop_on_site", "reallife_ui_shop_only_left",
-                "reallife_ui_shop_open_orders", "reallife_ui_shop_order_n", "reallife_ui_shop_order_pick", "reallife_ui_shop_orders_how",
+                "reallife_ui_shop_open_cost", "reallife_ui_shop_open_for", "reallife_ui_shop_open_orders", "reallife_ui_shop_open_site",
+                "reallife_ui_shop_order_n", "reallife_ui_shop_order_pick", "reallife_ui_shop_orders_day", "reallife_ui_shop_orders_how",
                 "reallife_ui_shop_orders_today", "reallife_ui_shop_overdue", "reallife_ui_shop_pack_30", "reallife_ui_shop_pack_60",
                 "reallife_ui_shop_pack_day", "reallife_ui_shop_packing", "reallife_ui_shop_pay", "reallife_ui_shop_pick_line",
-                "reallife_ui_shop_price", "reallife_ui_shop_product_line", "reallife_ui_shop_rated", "reallife_ui_shop_refund",
+                "reallife_ui_shop_price", "reallife_ui_shop_product_line", "reallife_ui_shop_promise", "reallife_ui_shop_promise_next",
+                "reallife_ui_shop_promise_same", "reallife_ui_shop_quality", "reallife_ui_shop_rated", "reallife_ui_shop_refund",
                 "reallife_ui_shop_rename", "reallife_ui_shop_returned", "reallife_ui_shop_reviews", "reallife_ui_shop_reviews_how",
                 "reallife_ui_shop_reviews_sec", "reallife_ui_shop_rival_catalogue", "reallife_ui_shop_rival_line", "reallife_ui_shop_sales_none",
                 "reallife_ui_shop_sales_sec", "reallife_ui_shop_search", "reallife_ui_shop_send", "reallife_ui_shop_settings",
-                "reallife_ui_shop_site_n", "reallife_ui_shop_sold_out", "reallife_ui_shop_stars", "reallife_ui_shop_stock",
-                "reallife_ui_shop_stock_label", "reallife_ui_shop_store_line", "reallife_ui_shop_subtotal", "reallife_ui_shop_tab_store",
-                "reallife_ui_shop_takings_today", "reallife_ui_shop_to_free", "reallife_ui_shop_total", "reallife_ui_shop_was",
-                "reallife_ui_shop_was_label", "reallife_ui_shop_week", "reallife_ui_shop_you_answered"
+                "reallife_ui_shop_setup_label", "reallife_ui_shop_site_n", "reallife_ui_shop_site_sec", "reallife_ui_shop_sold_out",
+                "reallife_ui_shop_stars", "reallife_ui_shop_stock", "reallife_ui_shop_stock_label", "reallife_ui_shop_store_line",
+                "reallife_ui_shop_subtotal", "reallife_ui_shop_tab_store", "reallife_ui_shop_takings_today", "reallife_ui_shop_to_free",
+                "reallife_ui_shop_total", "reallife_ui_shop_vans_ready", "reallife_ui_shop_was", "reallife_ui_shop_was_label",
+                "reallife_ui_shop_way", "reallife_ui_shop_way_courier", "reallife_ui_shop_way_vans", "reallife_ui_shop_week",
+                "reallife_ui_shop_you_answered"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
             screens.Add(new UiScreenDef("giving", UiTemplate.AppWindow, "VentScreen", new[]

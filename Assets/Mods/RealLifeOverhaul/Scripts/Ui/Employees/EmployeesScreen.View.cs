@@ -29,8 +29,11 @@ namespace RealLifeOverhaul.Ui
         private static readonly Slot[] CandidateSlots = { Slot.Skill, Slot.Demand };
 
         // The game's header of each column, which sorts its table (BaTable: a header's name is the model's field); null: none.
-        private static readonly string[] EmployeeHeaders = { "EmployeeName", "CurrentBusinessName", "PrimarySkill", "HourlyWage", "Satisfaction", "Task" };
+        // The age and the hours are headers the prefab may name by the model's field or by the word, so each has a second name to try.
+        private static readonly string[] EmployeeHeaders = { "EmployeeName", "AgeInDays", "CurrentBusinessName", "PrimarySkill", "HourlyWage", "Satisfaction", "Task", "HoursPerWeek" };
+        private static readonly string[] EmployeeHeadersAlt = { null, "Age", null, null, null, null, null, "Hours" };
         private static readonly string[] CandidateHeaders = { "EmployeeName", "Schedule", null, "PrimarySkill", "HourlyWage", "ExpiresIn" };
+        private static readonly string[] NoHeaders = new string[0];
 
         private const string TrainingTask = "myemployees_task_training";   // the game's task words while they train (EmployeeInstance.GetCurrentTask)
         private const string AbsentTask = "myemployees_task_absent";
@@ -88,8 +91,10 @@ namespace RealLifeOverhaul.Ui
             if (p != null)
             {
                 sig = sig * 31 + p.GetHashCode();
+                sig = sig * 31 + (int)(TimeHelper.NowInMinutes() / 15);   // the "at work" chip follows the shift's clock
                 sig = sig * 31 + (int)p.satisfaction + (p.IsTraining ? 1000 : 0) + (p.isAbsent ? 2000 : 0) + (UiWidgets.Shows(_bonus) ? 4000 : 0);
                 sig = sig * 31 + (p.assignedAddress != null ? p.assignedAddress.GetHashCode() : 0) + p.assignedWeeklyHours * 7 + p.workedHoursThisWeek;
+                sig = sig * 31 + p.workedDays * 13 + (p.assignedWeeklyDays != null ? p.assignedWeeklyDays.Count * 17 : 0);
                 for (int i = 0; p.characterData != null && i < p.characterData.skills.Count; i++)
                 {
                     sig = sig * 31 + p.characterData.skills[i].GetRoundedValue();
@@ -153,10 +158,11 @@ namespace RealLifeOverhaul.Ui
                     }
                     bool on = picked != null && picked.Contains(c.employeeInstance);
                     pickedCount += on ? 1 : 0;
-                    FaceSources.Employee(c.employeeName, c.employeeInstance);   // their face from the game: drawn from their own look, never painted
+                    string face = FaceSources.Key(c.employeeName, c.employeeInstance);
+                    FaceSources.Employee(c.employeeName, face, c.employeeInstance);   // their face from the game: drawn from their own look, never painted
                     rows[n++] = new CandidateRow
                     {
-                        Name = c.employeeName, Role = c.primarySkillName.GetLocalization(), Skill = c.primarySkillPercentage, Wage = Wage(c.employeeInstance), Schedule = c.schedule,
+                        Name = c.employeeName, Face = face, Role = c.primarySkillName.GetLocalization(), Skill = c.primarySkillPercentage, Wage = Wage(c.employeeInstance), Schedule = c.schedule,
                         Source = c.recruitmentSource, Expires = Expires(c.hoursUntilExpiring), Soon = c.hoursUntilExpiring < 24, Picked = on
                     };
                     _rows.Add(c.employeeInstance);
@@ -185,12 +191,14 @@ namespace RealLifeOverhaul.Ui
                     pickedCount += on ? 1 : 0;
                     float paid = PaidMoney(e.employeeInstance);
                     wages += paid;
-                    FaceSources.Employee(e.employeeName, e.employeeInstance);
+                    string face = FaceSources.Key(e.employeeName, e.employeeInstance);
+                    FaceSources.Employee(e.employeeName, face, e.employeeInstance);
                     rows[n++] = new StaffRow
                     {
-                        Name = e.employeeName, Role = e.primarySkillName.GetLocalization(), Business = e.currentBusinessName,
+                        Name = e.employeeName, Face = face, Age = TimeHelper.GetYearsByDays(e.ageInDays), Hours = e.hoursPerWeek,
+                        Role = e.primarySkillName.GetLocalization(), Business = e.currentBusinessName,
                         Skill = e.primarySkillPercentage, Wage = paid.ToCurrencyFormat(), Satisfaction = Mathf.RoundToInt(e.satisfaction),
-                        Task = TaskWords(e.task), TaskTone = TaskTone(e.task, e.isAbsent), Picked = on
+                        Task = e.isAbsent ? UiText.T(AbsentTask) : TaskWords(e.task), TaskTone = TaskTone(e.task, e.isAbsent), Picked = on
                     };
                     _rows.Add(e.employeeInstance);
                     _dataIndex.Add(i);
@@ -227,9 +235,14 @@ namespace RealLifeOverhaul.Ui
             string[] headers = candidates ? CandidateHeaders : EmployeeHeaders;
             Transform root = (candidates ? (Component)_app.candidateScrollerController : _app.employeeScrollerController).transform.Find("Headers");
             v.SortColumn = -1;
+            if (v.Locked == null || v.Locked.Length != headers.Length)
+            {
+                v.Locked = new bool[headers.Length];
+            }
             for (int c = 0; root != null && c < headers.Length; c++)
             {
-                Transform head = headers[c] != null ? root.Find(headers[c]) : null;
+                Transform head = HeaderOf(root, candidates, c);
+                v.Locked[c] = headers[c] != null && head == null;   // a column the game's table has no sortable header for is shown unsorted, never pressed
                 Transform up = head != null ? head.Find("ArrowUp") : null, down = head != null ? head.Find("ArrowDown") : null;
                 if ((up != null && up.gameObject.activeSelf) || (down != null && down.gameObject.activeSelf))
                 {
@@ -239,10 +252,42 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The game's header of a column that its table can sort by: the child of its header row under the name the model's field has.
+        private static Transform HeaderOf(Transform root, bool candidates, int column)
+        {
+            string[] names = candidates ? CandidateHeaders : EmployeeHeaders;
+            string[] alt = candidates ? NoHeaders : EmployeeHeadersAlt;
+            Transform head = column >= 0 && column < names.Length && names[column] != null ? root.Find(names[column]) : null;
+            if (head == null && column >= 0 && column < alt.Length && alt[column] != null)
+            {
+                head = root.Find(alt[column]);
+            }
+            return head != null && SortsBy(candidates, head.name) ? head : null;
+        }
+
+        // The game sorts by a model's field or property of the header's name, ignoring case, and refuses any other.
+        private static bool SortsBy(bool candidates, string name)
+        {
+            Dictionary<string, bool> known = candidates ? SortsCandidates : SortsEmployees;
+            if (known.TryGetValue(name, out bool sorts))
+            {
+                return sorts;
+            }
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
+            Type model = candidates ? typeof(CandidateModel) : typeof(EmployeeModel);
+            sorts = model.GetField(name, flags) != null || model.GetProperty(name, flags) != null;
+            known[name] = sorts;   // asked once a name: the answer is the model's, and it does not change
+            return sorts;
+        }
+
+        private static readonly Dictionary<string, bool> SortsEmployees = new Dictionary<string, bool>(8), SortsCandidates = new Dictionary<string, bool>(8);
+
         private string Header(int column)
         {
-            string[] headers = Candidates() ? CandidateHeaders : EmployeeHeaders;
-            return column >= 0 && column < headers.Length ? headers[column] : null;
+            bool candidates = Candidates();
+            Transform root = (candidates ? (Component)_app.candidateScrollerController : _app.employeeScrollerController).transform.Find("Headers");
+            Transform head = root != null ? HeaderOf(root, candidates, column) : null;
+            return head != null ? head.name : null;
         }
 
         // The game's actions for several picked, in its own order (Going Public narrows them on another player's staff), and
@@ -397,6 +442,7 @@ namespace RealLifeOverhaul.Ui
             _optionToggle.Clear();
             v.OpenList = _open;
             v.OptionChosen = -1;
+            v.OptionTicks = null;
             v.OptionOffset = _optionOffset;
             if (_open < 0)
             {
@@ -448,7 +494,7 @@ namespace RealLifeOverhaul.Ui
                 words.Add(UiText.T(AllKey(slot)));
                 _optionKeys.Add(null);
                 _optionToggle.Add(-1);
-                int on = 0, chosen = 0;
+                int on = 0;
                 for (int k = 0; k < _toggles.Count; k++)
                 {
                     if (_toggles[k] == null || !InSlot(GroupOf(_toggles[k]), slot))
@@ -458,13 +504,21 @@ namespace RealLifeOverhaul.Ui
                     if (IsOn(_toggles[k]))
                     {
                         on++;
-                        chosen = words.Count;
                     }
                     words.Add((_toggleKeys[k] ?? string.Empty).GetLocalization());
                     _optionKeys.Add(_toggleKeys[k]);
                     _optionToggle.Add(k);
                 }
-                v.OptionChosen = on == 0 ? 0 : on == 1 ? chosen : -1;
+                v.OptionChosen = -1;
+                if (v.OptionTicks == null || v.OptionTicks.Length != words.Count)
+                {
+                    v.OptionTicks = new bool[words.Count];
+                }
+                v.OptionTicks[0] = on == 0;
+                for (int o = 1; o < words.Count; o++)
+                {
+                    v.OptionTicks[o] = IsOn(_toggles[_optionToggle[o]]);
+                }
             }
             v.Options = words.ToArray();
         }
@@ -485,27 +539,31 @@ namespace RealLifeOverhaul.Ui
             return names;
         }
 
-        // A filter set through the game's own toggles: the group's others off, the chosen on, then the game's table filters
-        // itself again and puts back the sort its header shows, as it does after loading.
+        // A filter set through the game's own toggles, each switched on or off by itself as in the game's panel (the groups of
+        // demands combine, and so do several skills); the first option, "all", switches the filter's own off. Then the game's
+        // table filters itself again and puts back the sort its header shows, as it does after loading.
         private bool SetFilter(int list, int option)
         {
             Slot[] slots = Slots();
-            if (list < 0 || list >= slots.Length || option >= _optionToggle.Count)
+            if (list < 0 || list >= slots.Length || option < 0 || option >= _optionToggle.Count)
             {
                 return false;
             }
             Slot slot = slots[list];
-            for (int k = 0; k < _toggles.Count; k++)
+            int chosen = _optionToggle[option];
+            if (chosen < 0)
             {
-                if (_toggles[k] != null && InSlot(GroupOf(_toggles[k]), slot))
+                for (int k = 0; k < _toggles.Count; k++)
                 {
-                    SetOn(_toggles[k], false);
+                    if (_toggles[k] != null && InSlot(GroupOf(_toggles[k]), slot))
+                    {
+                        SetOn(_toggles[k], false);
+                    }
                 }
             }
-            int chosen = _optionToggle[option];
-            if (chosen >= 0 && _toggles[chosen] != null)
+            else if (_toggles[chosen] != null)
             {
-                SetOn(_toggles[chosen], true);
+                SetOn(_toggles[chosen], !IsOn(_toggles[chosen]));
             }
             Refilter();
             _offset = 0f;
@@ -557,7 +615,8 @@ namespace RealLifeOverhaul.Ui
             string primary = e.GetPrimarySkill();
             p.Candidate = candidate;
             p.Name = e.characterData != null ? e.characterData.name : string.Empty;
-            FaceSources.Employee(p.Name, e);
+            p.Face = FaceSources.Key(p.Name, e);
+            FaceSources.Employee(p.Name, p.Face, e);
             p.Role = string.IsNullOrEmpty(primary) ? null : primary.GetLocalization();
             p.RoleIcon = StaffViews.SkillIcon(primary);
             p.Business = BuildingHelper.GetBuildingRegistration(e.assignedAddress)?.BusinessName;
@@ -601,13 +660,15 @@ namespace RealLifeOverhaul.Ui
             string primary = e.GetPrimarySkill();
             p.Candidate = candidate;
             p.Name = e.characterData != null ? e.characterData.name : string.Empty;
-            FaceSources.Employee(p.Name, e);
+            p.Face = FaceSources.Key(p.Name, e);
+            FaceSources.Employee(p.Name, p.Face, e);
             p.Role = string.IsNullOrEmpty(primary) ? null : primary.GetLocalization();
             p.RoleIcon = StaffViews.SkillIcon(primary);
             p.Business = BuildingHelper.GetBuildingRegistration(e.assignedAddress)?.BusinessName;
             p.Satisfaction = Mathf.RoundToInt(e.satisfaction);
             p.Level = string.IsNullOrEmpty(primary) ? 0 : Mathf.RoundToInt(e.GetSkillValue(primary));
             p.Age = e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0;
+            p.Gender = e.characterData != null ? e.characterData.gender.GetLocalization() : null;
             p.Wage = PaidMoney(e).ToCurrencyFormat();
             p.Positive = Shown(_positive) ? UiWidgets.Label(_positive) : null;
             p.PositiveOn = UiWidgets.Shows(_positive);
@@ -628,6 +689,7 @@ namespace RealLifeOverhaul.Ui
                 p.Bonus = null;
                 p.Cooldown = null;
                 p.HrManager = null;
+                p.Sick = null;
             }
             else
             {
@@ -643,13 +705,30 @@ namespace RealLifeOverhaul.Ui
                 var cooldown = GameContract.StaffCooldown.Field?.GetValue(_app) as TextLocalizationComponent;
                 p.Cooldown = cooldown != null && cooldown.gameObject.activeSelf ? UiWidgets.Text(cooldown.TextContainer) : null;
                 HrManagerPlan plan = string.IsNullOrEmpty(e.assignedHrManagerPlanId) ? null : HrManagerHelper.GetPlanFromId(e.assignedHrManagerPlanId);
-                p.HrManager = plan != null && plan.HrManagerInstance != null && plan.HrManagerInstance.characterData != null ? plan.HrManagerInstance.characterData.name : null;
+                p.HrManager = HrManagerWords(plan);
+                p.Sick = e.isAbsent && e.characterData != null ? "myemployees_called_in_sick".Localize(new { employeeName = e.characterData.name }).ToString() : null;
             }
             Assignment(p);
             Training(e, p);
             Skills(e, p, candidate);
             Demands(e, p, candidate);
             Mates(e, p, candidate, primary);
+        }
+
+        // The manager of the plan an employee is under, as the game's tooltip on its HR button says it: the name, and the health insurance the plan holds, if any.
+        private static string HrManagerWords(HrManagerPlan plan)
+        {
+            if (plan == null || plan.HrManagerInstance == null || plan.HrManagerInstance.characterData == null)
+            {
+                return null;
+            }
+            string name = plan.HrManagerInstance.characterData.name;
+            if (plan.healthInsurancePlan == null)
+            {
+                return "myemployees_hrmanager_info".Localize(new { hrManagerName = name }).ToString();
+            }
+            string cover = plan.healthInsurancePlan.planType.GetLocalizeKey().GetLocalization();
+            return "myemployees_hrmanager_info_with_health_insurance".Localize(new { hrManagerName = name, healthInsurance = cover }).ToString();
         }
 
         // The people beside a person: who works at the same business, or (for a candidate) the staff with the same skill, the
@@ -683,10 +762,12 @@ namespace RealLifeOverhaul.Ui
             {
                 EmployeeInstance m = _mates[i];
                 string skill = m.GetPrimarySkill();
-                FaceSources.Employee(m.characterData != null ? m.characterData.name : null, m);
+                string mateName = m.characterData != null ? m.characterData.name : null;
+                string mateFace = FaceSources.Key(mateName, m);
+                FaceSources.Employee(mateName, mateFace, m);
                 p.Mates[i] = new StaffMate
                 {
-                    Name = m.characterData != null ? m.characterData.name : string.Empty, Role = string.IsNullOrEmpty(skill) ? null : skill.GetLocalization(),
+                    Name = mateName ?? string.Empty, Face = mateFace, Role = string.IsNullOrEmpty(skill) ? null : skill.GetLocalization(),
                     RoleIcon = StaffViews.SkillIcon(skill), Skill = string.IsNullOrEmpty(skill) ? 0 : Mathf.RoundToInt(m.GetSkillValue(skill)), Satisfaction = Mathf.RoundToInt(m.satisfaction)
                 };
             }
@@ -760,12 +841,29 @@ namespace RealLifeOverhaul.Ui
                 bool fulfilled = !candidate && d != null && d.Fulfilled(e, null);
                 rows[i] = new UiStaffDemand
                 {
-                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = null,   // the hours worked stand once, in the work's rows
+                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = DaysNote(e, d, candidate), About = About(key),   // the hours worked stand once, in the work's rows
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
                 };
             }
             return rows;
+        }
+
+        // The words the game's tooltip on a demand shows under its name (the demand's key and "_description"); null for a demand it has none for.
+        private static string About(string demand)
+        {
+            string key = demand + "_description";
+            return LocalizorManager.IsLocalizedKey(key) ? key.GetLocalization() : null;
+        }
+
+        // The days a hired person is scheduled and has worked, under the demand that asks for days, in the words the game's box writes it in.
+        private static string DaysNote(EmployeeInstance e, JobDemand d, bool candidate)
+        {
+            if (candidate || !(d is DaysWorkingPerWeek) || e.assignedWeeklyDays == null)
+            {
+                return null;
+            }
+            return "myemployees_employee_days".Localize(new { assignedWeeklyDays = e.assignedWeeklyDays.Count, workedDays = e.workedDays }).ToString().Replace("\r", string.Empty).Replace("\n", ". ");
         }
 
         // A demand's glyph by the game's group for it: hours, schedule, equipment, health insurance, the workplace.

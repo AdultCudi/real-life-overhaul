@@ -483,7 +483,7 @@ internal static partial class Program
             "parking spaces page: every page reads the car parks again as it is built, never the last day's list, and a space is in no total of the Property app's tables");
         Check(CountOfText(app, "AskSpace(") >= 4 && CountOfText(live, "AskSpace(") >= 4 && app.Contains("GameConfirm.Show(") && live.Contains("GameConfirm.Show("), "parking spaces page: buying, renting and selling are asked first in the game's own question box");
         Check(ModSource(@"Economy\Estate\EstateApp.cs").Contains("WriteSpaceRows(districts, ref selected)") && ModSource(@"Economy\Estate\EstateApp.Property.cs").Contains("WriteSpacesHeld(ref selected)")
-              && ModSource(@"Ui\Estate\EstateLive.Market.cs").Contains("SpaceRows(rows, keys, locate)") && ModSource(@"Ui\Estate\EstateLive.Mine.cs").Contains("SpaceHeld(rows, keys)"),
+              && ModSource(@"Ui\Estate\EstateLive.Market.cs").Contains("SpaceRows(rows, keys, locate, where)") && ModSource(@"Ui\Estate\EstateLive.Mine.cs").Contains("SpaceHeld(rows, keys)"),
             "parking spaces page: the car parks are rows of the Market tab and the spaces held rows of the Mine tab, in the game's frame and on the kit");
     }
 

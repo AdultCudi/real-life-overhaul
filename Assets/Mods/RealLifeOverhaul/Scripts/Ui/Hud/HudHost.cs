@@ -136,11 +136,13 @@ namespace RealLifeOverhaul.Ui
             _view.PointerEntered = Guard.Wrap<int>(PointerEntered);
             _view.PointerExited = Guard.Wrap<int>(PointerExited);
             _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
+            _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
             _view.Ring = false;   // the HUD takes no key, so the keys' ring never shows on it
             _change = new UiView(rect, "MoneyChange") { Scale = _scale };
             _changeGroup = _change.Root.gameObject.AddComponent<CanvasGroup>();
             _changeGroup.alpha = 0f;
-            _screen.AllApps = OpenAllApps;   // pressed from the guarded pointer handler
+            _screen.AllApps = () => OpenAllApps(-1);   // pressed from the guarded pointer handler
+            _screen.OtherApps = () => OpenAllApps(UiShellApps.Other);
         }
 
         private Canvas _canvas;
@@ -283,7 +285,7 @@ namespace RealLifeOverhaul.Ui
 
         // The All apps tile on the walking bar: the frame's own All apps (the shell's screen, its folders and its presses)
         // over the city on the HUD's modal host; an app pressed there opens as the full menu's row opens it.
-        private bool OpenAllApps()
+        private bool OpenAllApps(int folder)
         {
             if (!UiScreenSwitches.On("all_apps"))
             {
@@ -299,7 +301,7 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             UiShellApps.Refresh();
-            _allApps.Show(-1, null);
+            _allApps.Show(folder, null);
             Modal(_allApps, UiText.T("reallife_ui_shell_all_apps"), UiIcon.Grid);
             HudStatusGame.AllAppsOpen = true;
             return true;
@@ -576,6 +578,19 @@ namespace RealLifeOverhaul.Ui
             UiGame.Instance.Play(UiCue.Confirm);
         }
 
+        // The wheel over a scrolling piece of the HUD (the objectives' groups): the screen moves it and the HUD lays out again.
+        private void Wheeled(int clip, float notches)
+        {
+            if (notches != 0f)
+            {
+                _screen.Wheel(clip, notches);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+            }
+        }
+
         // A hover only lifts the target's face: no ring, no sound, as everywhere the mouse leads.
         private void PointerEntered(int node)
         {
@@ -586,6 +601,18 @@ namespace RealLifeOverhaul.Ui
                 if (over.Command == UiDraw.MoneyPillCommand && _laidSize.x > 0f && _laidSize.y > 0f)
                 {
                     TooltipKit.Money(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x);   // the net worth card over the pill
+                }
+                else if (over.Command == UiDraw.ToolPillCommand && _laidSize.x > 0f && _laidSize.y > 0f)
+                {
+                    string why = HudTopGame.ToolNote(over.Arg);
+                    if (why != null)
+                    {
+                        TooltipKit.Note(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x, why);   // why the game holds the button
+                    }
+                }
+                else if (over.Command == UiDraw.TimePillCommand && over.Arg == UiDraw.ClockArg && _laidSize.x > 0f && _laidSize.y > 0f)
+                {
+                    TooltipKit.Years(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x);   // the years and days, as the game's date says them on hover
                 }
             }
         }

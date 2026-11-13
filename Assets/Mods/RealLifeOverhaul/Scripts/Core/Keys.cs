@@ -113,7 +113,29 @@ namespace RealLifeOverhaul
         private static readonly bool[] Off = new bool[All.Length];
 
         /// <summary>While true no action fires: one of the mod's own panels has the keyboard.</summary>
-        public static bool Suspended;
+        public static bool Suspended
+        {
+            get => _suspended || _held > 0;
+            set => _suspended = value;
+        }
+
+        private static bool _suspended;
+        private static int _held;
+
+        /// <summary>
+        /// A hold on the keys that is counted, not written: the phone takes the keys while it has the keyboard and gives them back by releasing its own hold,
+        /// whatever a text field of the mod set or cleared meanwhile. Two holds that overlap in any order never leave the keys stuck off, or on.
+        /// </summary>
+        public static void Hold() => _held++;
+
+        /// <summary>Gives back one <see cref="Hold"/>.</summary>
+        public static void Release()
+        {
+            if (_held > 0)
+            {
+                _held--;
+            }
+        }
 
         public static int Count => All.Length;
 

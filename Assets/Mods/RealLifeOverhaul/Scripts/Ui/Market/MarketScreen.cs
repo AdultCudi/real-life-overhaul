@@ -310,22 +310,29 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // An option of the open filter: every type (all toggles off) or one (its toggle on, the rest off), then the game's
-        // table filters itself again.
+        // An option of the open filter: "every type" clears them all; a type switches its own toggle, so several can stand on at
+        // once as the game's panel lets them. The list stays open to take the next, and the game's table filters itself again.
         private bool Option(int option)
         {
-            int list = _open;
-            _open = -1;
-            if (list != 0 || option < 0 || option > _toggles.Count)
+            if (_open != 0 || option < 0 || option > _toggles.Count)
             {
+                _open = -1;
                 return false;
             }
             for (int k = 0; k < _toggles.Count; k++)
             {
-                SetOn(_toggles[k], k == option - 1);
+                if (option == 0)
+                {
+                    SetOn(_toggles[k], false);
+                }
+                else if (k == option - 1)
+                {
+                    SetOn(_toggles[k], !IsOn(_toggles[k]));
+                }
             }
             Refresh();
             _offset = 0f;
+            _dirty = true;
             return true;
         }
 
@@ -375,6 +382,10 @@ namespace RealLifeOverhaul.Ui
         {
             long sig = _selected * 31L + _open + (_events ? 7 : 0);
             sig = sig * 31 + _event;
+            for (int k = 0; k < _toggles.Count; k++)
+            {
+                sig = sig * 2 + (IsOn(_toggles[k]) ? 1 : 0);   // a type switched on or off changes the filter's words
+            }
             string chosen = Chosen();
             sig = sig * 31 + (chosen != null ? chosen.GetHashCode() : 0);
             bool estate = Estate();
@@ -570,7 +581,16 @@ namespace RealLifeOverhaul.Ui
                 options[k + 1] = UiText.T(_toggleKeys[k] ?? string.Empty);
             }
             _v.Options = options;
-            _v.OptionChosen = on == 0 ? 0 : on == 1 ? last + 1 : -1;
+            _v.OptionChosen = -1;
+            if (_v.OptionTicks == null || _v.OptionTicks.Length != options.Length)
+            {
+                _v.OptionTicks = new bool[options.Length];
+            }
+            _v.OptionTicks[0] = on == 0;
+            for (int k = 0; k < _toggles.Count; k++)
+            {
+                _v.OptionTicks[k + 1] = IsOn(_toggles[k]);
+            }
         }
 
         private void Toggles(bool estate)

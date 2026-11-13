@@ -136,6 +136,7 @@ namespace RealLifeOverhaul.Ui
         public string Headline;                 // the Lead's one-line statement: "Dev Kapoor asks for $19 an hour. Ray can approve up to $18."
         public string Body;                     // the narrative
         public string Asker, AskerRole, Subject, SubjectRole;     // the manager (or executive) who asks and the person it is about; null where there is none
+        public string AskerFace, SubjectFace;     // the keys their faces are drawn by (null: the name)
         public float AskerHue;
         public UiRole AskerRing = UiRole.Warn, SubjectRing = UiRole.Ok;
         public string[] FactLabels = new string[0];

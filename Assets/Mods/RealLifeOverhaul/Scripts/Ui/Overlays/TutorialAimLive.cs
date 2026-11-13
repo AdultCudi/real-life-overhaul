@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Ui
     /// there), so the arrow stood where the hidden button is. Four times a second, while the tutorial has an arrow at a hidden
     /// button, the kit looks in the views that stand for the node that says the same words as the button and keeps the arrow on
     /// it each frame, after the game moved it; where no node says them the arrow is put away until one does, so it never points
-    /// at nothing. The arrows come back exactly as found when the switch goes off. Cost: nothing without an arrow; with one, a
+    /// at nothing. A row of a scrolling game list is led to first (TutorialAimScroll), so the game's own hide condition for a row out of its scroll view lets the arrow show.
+    /// The arrows come back exactly as found when the switch goes off. Cost: nothing without an arrow; with one, a
     /// walk of the standing views' items four times a second and one position write a frame.
     /// </summary>
     internal static class TutorialAimLive
@@ -69,7 +70,17 @@ namespace RealLifeOverhaul.Ui
                     Give(n);
                 }
                 Arrows[n] = arrow;
-                bool found = Find(UiWidgets.Label(target), out Vector2 screen);
+                string label = UiWidgets.Label(target);
+                bool shows = TutorialAimScroll.Reveal(data, target);   // the game's list scrolled to the row, so the game's own conditions let the arrow show
+                bool found = Find(label, out Vector2 screen);
+                if (!found && shows && TutorialAimScroll.Lead(target, label))
+                {
+                    found = Find(label, out screen);   // the kit's list scrolled to the row once, for a player led by the arrow
+                }
+                if (found)
+                {
+                    TutorialAimScroll.Settled(target, label);
+                }
                 Aimed[n] = found;
                 if (found)
                 {
@@ -110,6 +121,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Every arrow back as the game had it.</summary>
         public static void Release()
         {
+            TutorialAimScroll.Reset();
             for (int i = 0; i < _count; i++)
             {
                 Give(i);
@@ -163,16 +175,21 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < scene.ItemCount; i++)
                 {
                     UiItem item = scene.Items[i];
-                    if (item.Kind != UiKind.Text || item.Node < 0 || item.Clip >= 0 || !string.Equals(item.Text, label, System.StringComparison.OrdinalIgnoreCase))
+                    if (item.Kind != UiKind.Text || item.Node < 0 || !string.Equals(item.Text, label, System.StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
                     UiNode node = scene.Nodes[item.Node];
-                    if (node.Disabled || node.Clip >= 0)
+                    if (node.Disabled)
                     {
                         continue;
                     }
-                    Vector3 world = view.Root.TransformPoint(new Vector3((node.X + node.W / 2f) * view.Scale, -(node.Y + node.H / 2f) * view.Scale, 0f));
+                    scene.NodeBox(item.Node, out float x, out float y, out float w, out float h);
+                    if (node.Clip >= 0 && (y + h / 2f < scene.Clips[node.Clip].Y || y + h / 2f > scene.Clips[node.Clip].Y + scene.Clips[node.Clip].H))
+                    {
+                        continue;   // a row of a list that is scrolled out of its view
+                    }
+                    Vector3 world = view.Root.TransformPoint(new Vector3((x + w / 2f) * view.Scale, -(y + h / 2f) * view.Scale, 0f));
                     screen = new Vector2(world.x, world.y);
                     return true;
                 }

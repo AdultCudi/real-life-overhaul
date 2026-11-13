@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Ui
         private TextLocalizationComponent _first, _left, _right;
         private string _seenFirst, _seenLeft, _seenRight;
         private int _seenCount = -1, _seenLast;
-        private bool _readDue, _shown, _off;
+        private bool _readDue, _shown, _off, _overflow;
         private Vector2 _at = new Vector2(float.NaN, float.NaN);
         private string _state = "not looked at yet";
 
@@ -107,6 +107,17 @@ namespace RealLifeOverhaul.Ui
                 _readDue = false;
                 Read();
                 Lay();
+            }
+            if (_overflow)
+            {
+                // More buttons than the card has places for (another mod's): the game's own box stays up with every one of them, where the card would leave some out of the pointer's reach.
+                if (_shown)
+                {
+                    _shown = false;
+                    _conceal.Show();
+                    _view.Root.gameObject.SetActive(false);
+                }
+                return;
             }
             if (!_shown)
             {
@@ -232,6 +243,7 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
             }
+            _overflow = _found.Count > UiPromptCardModel.MostActions;
             int n = Math.Min(UiPromptCardModel.MostActions, _found.Count);
             for (int i = 0; i < n; i++)
             {

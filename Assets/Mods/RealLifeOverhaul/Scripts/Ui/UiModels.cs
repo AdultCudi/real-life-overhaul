@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // a business's or a place's icon on a tile in its family's colour, in place of a person's face
         public UiRole Tint;
         public string Picture;   // the business's own picture (its logo, a UiPictures key) on the tile in place of the icon; null for the icon
+        public string Face;      // the key the person's face is drawn by where the name is not theirs alone; null: the name
     }
 
     /// <summary>A service or an action with its price, as a detail's side column lists them.</summary>
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul.Ui
         public UiLedgerLine[] Table;   // a table the message carries (the tax office's notice): drawn in the bubble under its words; null for none
         public string TableFoot;       // the words under the table ("Please pay by Day 410"); null for none
         public UiIcon Mood;            // the mood the game shows by their line, a small glyph beside the bubble; None for none
+        public int Remove;             // 1 + the place of this message among the game's own, which the player can delete (a quiet button at the thread's edge); 0 for none
     }
 
     /// <summary>A group or a tab of a sidebar.</summary>

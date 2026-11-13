@@ -44,6 +44,11 @@ namespace RealLifeOverhaul.Ui
         public string Meta;                                        // the strip's quiet word at its right: "12 open"
         public string LocateLabel;                                 // the locate link's word ("Locate"); null for the glyph alone
         public int GroupCount = -1;                                // the groups in use when Groups is kept between layouts; -1 for all
+
+        // Appended with the objectives' scroll (13 Nov 2026).
+        public float MaxHeight;                                    // px the panel may stand tall (the room over the bar); 0 for no limit. Taller content scrolls inside it
+        public float Offset;                                       // how far the groups have scrolled, px
+        public int Clip = -1;                                      // the scroll region of the last layout, so the wheel knows it; -1 while the panel fits
     }
 
     /// <summary>
@@ -53,11 +58,12 @@ namespace RealLifeOverhaul.Ui
     /// green check when done, an open ring while not), its words wrapping to two lines with a quieter line under them, how far
     /// along at its right or a locate link where the line has a place, and a meter with its way out under a mission's line.
     /// Commands: <see cref="FoldCommand"/> (the panel), <see cref="GroupCommand"/> (a group's index), <see cref="LineCommand"/>,
-    /// <see cref="LocateCommand"/> and <see cref="CloseCommand"/> (group * 32 + line). Game-free. Cost: a layout a change.
+    /// <see cref="LocateCommand"/> and <see cref="CloseCommand"/> (group * <see cref="LineStride"/> + line). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiObjectives
     {
         public const int FoldCommand = 220, GroupCommand = 221, LineCommand = 222, LocateCommand = 223, CloseCommand = 224;
+        public const int LineStride = 1024;         // a line's command arg is its group times this plus its place in the group
         public const float Width = 360f;            // px: as a side panel, so the left and right columns match
         private const float Tick = UiTokens.IconSmall;
         private const float Head = UiTokens.ControlSmall;   // px: a group's band
@@ -76,11 +82,23 @@ namespace RealLifeOverhaul.Ui
             {
                 return UiDraw.Snap(h + EmptyRoom(m));
             }
+            float body = Body(m, groups);
+            if (m.MaxHeight > 0f && h + body + UiTokens.S1 > m.MaxHeight)
+            {
+                return UiDraw.SnapDown(Math.Max(h + UiTokens.ControlSmall, m.MaxHeight));   // the groups scroll in what is left under the strip
+            }
+            return UiDraw.Snap(h + body + UiTokens.S1);
+        }
+
+        // The groups' own height, folded or open, all of them.
+        private static float Body(UiObjectivesModel m, int groups)
+        {
+            float h = 0f;
             for (int g = 0; g < groups; g++)
             {
                 h += GroupHeight(m, ref m.Groups[g], g == groups - 1);
             }
-            return UiDraw.Snap(h + UiTokens.S1);
+            return h;
         }
 
         private static int Groups(UiObjectivesModel m) => m.GroupCount < 0 ? m.Groups.Length : Math.Min(m.GroupCount, m.Groups.Length);
@@ -168,6 +186,26 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, on, ix, cy, iw, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, UiDefaultKeys.Keyboard);
                 return y + h;
             }
+            float body = Body(m, groups);
+            if (m.MaxHeight > 0f && UiFrame.Strip + body + UiTokens.S1 > m.MaxHeight)
+            {
+                // More than the room: the groups scroll under the strip, the wheel moves them and the thumb says where they stand.
+                float view = h - UiFrame.Strip - UiTokens.S1, content = body;
+                m.Offset = Math.Max(0f, Math.Min(m.Offset, content - view));
+                short clip = s.AddClip(x, cy, Width, view, m.Offset);
+                s.Clips[clip].ContentHeight = content;
+                m.Clip = clip;
+                var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = Region };
+                float ly = 0f;
+                for (int g = 0; g < groups; g++)
+                {
+                    ly = Group(s, inClip, m, ref m.Groups[g], g, 0f, ly, UiTokens.S4, iw, g == groups - 1);
+                }
+                UiDraw.ScrollThumb(s, on, x + Width - UiTokens.S2, cy, view, m.Offset, content);
+                return y + h;
+            }
+            m.Clip = -1;
+            m.Offset = 0f;
             for (int g = 0; g < groups; g++)
             {
                 cy = Group(s, on, m, ref m.Groups[g], g, x, cy, ix, iw, g == groups - 1);
@@ -204,7 +242,7 @@ namespace RealLifeOverhaul.Ui
             int lines = group.Collapsed ? 0 : Lines(ref group);
             for (int i = 0; i < lines; i++)
             {
-                ly += Line(s, at, m, ref group.Lines[i], index * 32 + i, ix, ly, iw);
+                ly += Line(s, at, m, ref group.Lines[i], index * LineStride + i, ix, ly, iw);
             }
             return ly + (lines > 0 ? UiTokens.S1 : group.Collapsed && !last ? FoldedGap : 0f);
         }

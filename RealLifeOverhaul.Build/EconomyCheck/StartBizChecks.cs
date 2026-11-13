@@ -13,6 +13,7 @@ internal static partial class Program
         StartBizSources();
         StartBizPictures();
         StartBizTexts();
+        StartBizParity();   // the page as the game's own carries it, Enter and focus, and the lists that scroll (StartBizParityChecks.cs)
     }
 
     private static int StartBizRowsSeen(UiScene s, int rows)

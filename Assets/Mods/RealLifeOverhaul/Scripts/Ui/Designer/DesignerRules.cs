@@ -11,6 +11,12 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class DesignerRules
     {
+        /// <summary>
+        /// True when a panel of the designer's lists is another mod's: its class is in neither the game's assembly nor this mod's. The kit hides the game's own and hands
+        /// the rest back.
+        /// </summary>
+        public static bool Foreign(string assembly, string game, string own) => !string.IsNullOrEmpty(assembly) && assembly != game && assembly != own;
+
         public const int ClockMin = 0, ClockMax = 1440;   // minutes: a day
 
         // ------------------------------------------------------------------ the search

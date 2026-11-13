@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Ui
             DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoEdit = 15, DoLogoDone = 28, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
             DoOrder = 20, DoUrgent = 21, DoCancelContract = 22, DoEndContract = 23, DoEconoView = 25, DoClassic = 26, DoRandomName = 27;
         public const int DoStartHere = 29;            // the start page's own Start business, the game's SetUpBusiness
-        public const int StartKinds = 9800;           // the start page's kinds table, from here as UiDataTable's from its First (this job's block 9800 to 9819)
+        public const int StartHelp = 9815;            // a start page row's help link (a kind's guide page, a requirement's "?"): its argument the page's place in the screen's list plus one
+        public const int StartKinds = 9800;         // the start page's kinds table, from here as UiDataTable's from its First (this job's block 9800 to 9819)
 
         /// <summary>Every action a page's button asks for, for the checks: each one known to the screen's dispatch, none twice.</summary>
         public static readonly int[] Actions =
@@ -50,10 +51,11 @@ namespace RealLifeOverhaul.Ui
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
             Classic, Cancel, Page, Heading, Pages, Suppliers, LineAction, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
-            UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action,
+            UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action, UiFirmHead.First + UiFirmHead.Help, StartHelp,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
             UiDataTable.First + UiDataTable.Clear, UiDataTable.First + UiDataTable.Act,
-            Goods + UiDataTable.Head, Goods + UiDataTable.Less, Goods + UiDataTable.Type, Goods + UiDataTable.More, Goods + UiDataTable.Row,
+            Goods + UiDataTable.Head, Goods + UiDataTable.Less, Goods + UiDataTable.Type, Goods + UiDataTable.More, Goods + UiDataTable.Row, Goods + UiDataTable.Hover,
+            UiDataTable.First + UiDataTable.RowAct,
             UiChart.First + UiChart.Point, StartKinds + UiDataTable.Search, StartKinds + UiDataTable.Row, StartKinds + UiDataTable.Clear,
             OpsRow, OpsChoice, OpsOption, OpsLess, OpsType, OpsMore, OpsSlider, OpsPlan, OpsAction, OpsTab, OpsStop, OpsStopRemove, OpsStopChoice, OpsDayOpen, OpsSearch,
             OpsCancelFill, OpsFirstPlan, OpsHours, OpsHour, OpsSheetDone, OpsFilter, UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand,
@@ -71,6 +73,10 @@ namespace RealLifeOverhaul.Ui
         {
             s.Begin("bizman", frame.Width, frame.Height, dark);
             _split = float.NaN;
+            for (int k = 0; k < BizManModel.Scrolls; k++)
+            {
+                m.ListClip[k] = m.ListList[k] = -1;   // a list that scrolls says so as it is laid
+            }
             _keptCount = 0;
             _headChain = false;
             // One section needs no sidebar: its page takes the window's width, and Back goes to the portfolio (or closes it).
@@ -260,6 +266,11 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 y += UiDraw.InfoRow(s, at, x, y, w, f.Label, f.Value, f.Link, FactLink, f.Arg, f.Tone == UiRole.None ? UiRole.Text : f.Tone);
+                if (!string.IsNullOrEmpty(f.Sub))
+                {
+                    UiDraw.Text(s, at, x, y, w, UiStyle.Small, UiRole.Text2, f.Sub, UiFlags.Label | UiFlags.Truncate);
+                    y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
+                }
             }
             return y;
         }

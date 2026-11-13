@@ -160,6 +160,7 @@ internal static partial class UiSamples
         var c = new UiBuildCatalogueModel
         {
             Context = "For your 6 squares on 125th Street, zoned Homes, up to 12 storeys", Tabs = new[] { "Homes 9", "Shops 12", "Offices 8", "Warehouses 5" }, Tab = 0,
+            Filters = new[] { "Fits here 9", "Corner buildings 3", "City designs 9" }, Filter = 0, PickLine = "Pick a design to see it here.",
             SearchPlaceholder = t("reallife_ui_build_search", "Search buildings"), FavouritesLabel = t("reallife_ui_build_favourites", "Favourites"),
             WantedLabel = t("reallife_ui_build_wanted", "WANTED"), FavouriteLabel = t("reallife_ui_build_favourite", "Favourite"), PriceLabel = t("reallife_ui_build_price", "Price"), SizeLabel = t("reallife_ui_build_size", "Size"),
             BuildTimeLabel = t("reallife_ui_build_time", "Build time"), RentLabel = t("reallife_ui_build_rent", "Rent when let"), PlanningLabel = t("reallife_ui_build_planning", "Planning"),

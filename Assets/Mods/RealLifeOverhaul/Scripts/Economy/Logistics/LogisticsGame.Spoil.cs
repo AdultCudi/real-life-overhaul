@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The products a place holds that spoil, each once: its name, whether any of it sits in a fridge or a freezer, and how
-        /// long it keeps there. Shelves, tills, storage and pallets alike: every holder with goods in it.
+        /// long it keeps there at the usual pace (the caller scales it). Shelves, tills, storage and pallets alike: every holder with goods in it.
         /// </summary>
         public static void Spoilable(BuildingRegistration reg, List<string> items, List<int> lives)
         {
@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     Item item = cargo.ItemCached;
-                    int life = SpoilRules.Life(cargo.itemName, item != null && item.requiresWeighing, cold);
+                    int life = SpoilRules.UsualLife(cargo.itemName, item != null && item.requiresWeighing, cold);
                     if (life <= 0)
                     {
                         continue;

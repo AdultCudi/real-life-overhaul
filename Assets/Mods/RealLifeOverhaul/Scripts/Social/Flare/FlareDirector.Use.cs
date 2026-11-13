@@ -15,6 +15,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The page a test opens the kit on, or -1 for home.</summary>
         public int KitPage = -1;
 
+        /// <summary>The post a notice asked the kit's page to open as a thread, or -1; taken once by the screen.</summary>
+        public int KitPost = -1;
+
+        /// <summary>The draft (a picture from photo mode or the selfie) another feature shared to Flare: the kit's compose sheet opens on it, taken once by the screen; -1 for none.</summary>
+        public int KitCompose = -1;
+
         /// <summary>The last dry run, for the screen. Not saved.</summary>
         public FlareExpect LastExpect;
 

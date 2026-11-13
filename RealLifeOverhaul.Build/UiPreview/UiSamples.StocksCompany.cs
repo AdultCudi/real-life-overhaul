@@ -233,6 +233,7 @@ internal static partial class UiSamples
             Ranges = new[] { t("reallife_mkt_frame_today", "Today"), t("reallife_mkt_frame_days", "Days"), t("reallife_mkt_frame_weeks", "Weeks"), t("reallife_mkt_frame_months", "Months"), t("reallife_mkt_frame_years", "Years") },
             Range = today ? 0 : years ? 4 : weeks ? 2 : months ? 3 : 1,
             Types = new[] { t("reallife_stk_kind_candles", "Candles"), t("reallife_stk_kind_line", "Line"), t("reallife_stk_kind_area", "Area") }, Type = kind,
+            Views = new[] { t("reallife_mkt_view_chart", "Chart"), t("reallife_mkt_view_figures", "Figures") },
             AddLabel = t("reallife_stk_add_indicator", "+ Indicator"), Big = state == "company_big", PickOpen = state == "company_picker",
             Chart = chart
         };

@@ -283,11 +283,20 @@ namespace RealLifeOverhaul.Ui
             return t != null && UiWidgets.Set(t, !t.isOn);
         }
 
+        // The terms card's Yes, No and Read terms: the card's own buttons are pressed, so what the prefab wired to them runs (the upload, the card closing, another mod's listener);
+        // only where a button cannot be found does the kit call the same method itself.
         private bool Terms(int arg)
         {
             if (_selected == null)
             {
                 return false;
+            }
+            GameObject card = _list != null ? GameContract.BpListConfirm.Field?.GetValue(_list) as GameObject : null;
+            string method = arg == 0 ? "UploadToSteamWorkshop" : arg == 1 ? "CloseWorkshopConfirm" : "ReadWorkshopTermsOfService";
+            Button button = UiWidgets.Calling(card != null ? card.transform : null, method);
+            if (button != null && UiWidgets.Press(button))
+            {
+                return true;
             }
             using (HotSpots.Game())
             {
@@ -295,13 +304,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     case 0:
                         _selected.UploadToSteamWorkshop();
+                        _panel.CloseWorkshopConfirm();   // the game's own Yes leaves the card to its button; with none found it must not stay over the list
                         break;
                     case 1:
                         _panel.CloseWorkshopConfirm();
                         break;
                     default:
                         _selected.ReadWorkshopTermsOfService();
-                        return true;
+                        break;
                 }
             }
             return true;
@@ -609,8 +619,20 @@ namespace RealLifeOverhaul.Ui
             card.Halves = rated ? BlueprintsRules.Halves(b.rating) : -1;
             card.Rating = rated ? BlueprintsRules.RatingFigure(b.rating) : null;
             card.Author = Author(b);
+            card.Downloads = b.metadata.blueprintType == BlueprintType.SavedLocally ? null : DownloadsText(b.downloads);
             card.Old = GameVersion.IsBuildFromOlderVersionGroup(b.metadata.buildNumber);
             return card;
+        }
+
+        // The game's own words for a count of downloads (BlueprintElementUI shows them through Blueprint.GetDownloadsLabel).
+        private static string DownloadsText(float downloads)
+        {
+            string key = BlueprintsRules.DownloadsKey(downloads, out string number);
+            if (number == null)
+            {
+                return UiText.T(key);
+            }
+            return UiText.Fill(key, key == "blueprints_downloads_amount" ? "downloadsAmount" : key == "blueprints_downloads_amount_thousands" ? "downloadsInThousands" : "downloadsInMillions", number);
         }
 
         // "by name" for what other players made; the player's own and the unnamed carry none on the card (their chip says whose).

@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiHeadModel
     {
         public string Name;
+        public string Face;                 // the key the face is drawn by (two of one name); null: the name
         public float Hue;
         public UiRole Ring = UiRole.None;   // the mood; None where it is not known
         public UiIcon Icon = UiIcon.None;   // a firm or a place: its picture on a tile in place of a face
@@ -47,7 +48,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.Portrait(s, at, x + ring, y + ring, HeadFace, h.Name, h.Hue, h.Ring);
+                UiDraw.Portrait(s, at, x + ring, y + ring, HeadFace, h.Face ?? h.Name, h.Hue, h.Ring);
             }
             float side = HeadFace + ring * 2f;
             float right = Buttons(s, at, actions, x + w, y + (side - UiTokens.Control) / 2f, keys);

@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// Food spoilage's line in the save: "v=1", then '^' and one record each, its fields split by '|': P a place (its key, the last
     /// day turned, the seven days' stamps, pieces spoiled, pieces come in and the spoiled cost, each seven split by ',', then
-    /// its products split by ';', each a name, '=' and its batches day:count split by ','), N the last day a notice was given.
+    /// its products split by ';', each a name, '=' and its batches day:count split by ',', then, only when it is not the usual one, the pace its
+    /// batches' days were last read at), N the last day a notice was given.
     /// Places and products sorted by name, so a state always writes the same line. A save from before has no line: everything
     /// held then is taken as stocked on the day it loads. Game-free.
     /// </summary>
@@ -53,6 +54,10 @@ namespace RealLifeOverhaul.Economy
                         t.Append(c > 0 ? "," : string.Empty).Append(N(b[c].Day)).Append(':').Append(N(b[c].Count));
                     }
                 }
+                if (p.Pace != SpoilRules.PaceUsual)
+                {
+                    t.Append('|').Append(N(p.Pace));
+                }
             }
             t.Append("^N|").Append(N(s.Told));
             return t.ToString();
@@ -86,7 +91,15 @@ namespace RealLifeOverhaul.Economy
         private static bool PlaceOf(string[] c, SpoilState s)
         {
             var p = new SpoilPlace();
-            if (c.Length != 8 || !I(c[2], out p.Turned) || !Ring(c[3], p.Stamp) || !Ring(c[4], p.Spoiled) || !Ring(c[5], p.Came) || !Ring(c[6], p.Cents))
+            if (c.Length != 8 && c.Length != 9)
+            {
+                return false;
+            }
+            if (c.Length == 9 && (!I(c[8], out p.Pace) || p.Pace < SpoilRules.PaceLeast || p.Pace > SpoilRules.PaceMost))
+            {
+                return false;
+            }
+            if (!I(c[2], out p.Turned) || !Ring(c[3], p.Stamp) || !Ring(c[4], p.Spoiled) || !Ring(c[5], p.Came) || !Ring(c[6], p.Cents))
             {
                 return false;
             }

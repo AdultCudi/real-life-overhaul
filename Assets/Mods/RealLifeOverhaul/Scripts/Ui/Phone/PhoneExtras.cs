@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly List<string> Names = new List<string>(48);
         private static readonly List<string> Titles = new List<string>(48);
+        private static readonly List<string> Owners = new List<string>(48);   // the mod each other-mod button belongs to, null where not known: two mods may word an app alike
         private static readonly List<Button> Known = new List<Button>(4);   // the game's own controls on the phone, which the kit presses itself
         private static readonly List<Transform> Hangers = new List<Transform>(4);   // other mods' buttons hung on the phone, switched on or off, as last read
 
@@ -115,10 +116,13 @@ namespace RealLifeOverhaul.Ui
         {
             Names.Clear();
             Titles.Clear();
+            Owners.Clear();
             for (int i = 0; i < buttons.Count; i++)
             {
                 Names.Add(ids[i]);
-                Titles.Add(kinds[i] == PhoneLayoutRules.OtherItem ? Words(buttons[i]) : null);
+                bool other = kinds[i] == PhoneLayoutRules.OtherItem;
+                Titles.Add(other ? Words(buttons[i]) : null);
+                Owners.Add(other ? UiForeignGame.ButtonOwner(buttons[i].GetComponent<Button>()) : null);
             }
             Transform row = Row();
             for (int i = 0; row != null && i < row.childCount; i++)
@@ -134,9 +138,10 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 string words = Words(child);
-                if (!UiForeignApps.Listed(name, words, Names, Titles, Names.Count))
+                string owner = UiForeignGame.ButtonOwner(child.GetComponent<Button>());
+                if (!UiForeignApps.Listed(name, words, Names, Titles, Names.Count, owner, Owners))
                 {
-                    Take(child, name, words, PhoneItemFrom.Row, buttons, kinds, places, ids, from);
+                    Take(child, name, words, owner, PhoneItemFrom.Row, buttons, kinds, places, ids, from);
                 }
             }
             Hangers.Clear();
@@ -176,7 +181,7 @@ namespace RealLifeOverhaul.Ui
                         Hangers.Add(child);
                         if (child.gameObject.activeSelf)
                         {
-                            Take(child, UiForeignApps.Unique(child.name, Names, Names.Count), Words(child), PhoneItemFrom.Frame, buttons, kinds, places, ids, from);
+                            Take(child, UiForeignApps.Unique(child.name, Names, Names.Count), Words(child), UiForeignGame.ButtonOwner(button), PhoneItemFrom.Frame, buttons, kinds, places, ids, from);
                         }
                     }
                     continue;
@@ -188,7 +193,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static void Take(Transform button, string id, string words, PhoneItemFrom where, List<Transform> buttons, List<int> kinds, List<int> places, List<string> ids,
+        private static void Take(Transform button, string id, string words, string owner, PhoneItemFrom where, List<Transform> buttons, List<int> kinds, List<int> places, List<string> ids,
             List<PhoneItemFrom> from)
         {
             buttons.Add(button);
@@ -198,6 +203,7 @@ namespace RealLifeOverhaul.Ui
             from.Add(where);
             Names.Add(id);
             Titles.Add(words);
+            Owners.Add(owner);
         }
 
         private static string Words(Transform button)

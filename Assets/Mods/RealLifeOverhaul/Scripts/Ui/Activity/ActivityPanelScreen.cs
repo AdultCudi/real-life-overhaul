@@ -188,6 +188,16 @@ namespace RealLifeOverhaul.Ui
                 (string key, object args) label = a.GetProgressBarLabel();
                 _m.Progress = new UiProgressModel { Label = ActivityRead.Words(label.key, label.args), Share = Mathf.Clamp01(a.GetProgressBarPercentageValue() / 100f) };
             }
+            if (state == UiActivityState.NotStarted && a.HasProgressBar())
+            {
+                // The game's panel shows a study session's way to the diploma before Start (the others hold no bar until they run), as one more row on the card.
+                (string key, object args) label = a.GetProgressBarLabel();
+                float share = Mathf.Clamp01(a.GetProgressBarPercentageValue() / 100f);
+                var lines = new UiInfoRow[_m.Lines.Length + 1];
+                Array.Copy(_m.Lines, lines, _m.Lines.Length);
+                lines[lines.Length - 1] = new UiInfoRow { Label = ActivityRead.Words(label.key, label.args), Value = UiText.Whole(Mathf.RoundToInt(share * 100f)) + "%", Meter = true, Fill = share };
+                _m.Lines = lines;
+            }
             _m.StateWords = state == UiActivityState.Moving ? UiText.T("reallife_ui_activity_moving") : state == UiActivityState.Waiting ? UiText.T("reallife_ui_activity_waiting")
                 : state == UiActivityState.Finished ? UiText.T("reallife_ui_activity_done") : null;
             _m.CanSkip = a.HasTimeMachine();
@@ -203,6 +213,12 @@ namespace RealLifeOverhaul.Ui
             _m.CancelLabel = UiText.T("common_cancel");
             Buttons(a, state);
             ActivityFacts.Fill(a, _m);   // what the mod knows of its own activities beyond the game's panel (a working day's place and sums)
+            if (_m.HasDuration)
+            {
+                // The keys the game prints by the slider's two ends (SliderLeft, SliderRight), at the end each moves it towards.
+                _m.DurationFrom = ActivityRead.Capped(ActivityRead.Key(PlayerAction.SliderLeft).Name, _m.DurationFrom, false);
+                _m.DurationTo = ActivityRead.Capped(ActivityRead.Key(PlayerAction.SliderRight).Name, _m.DurationTo, true);
+            }
         }
 
         // The panel's buttons on the card (the way back at the left, the blue one the main one, the time machine beside it)

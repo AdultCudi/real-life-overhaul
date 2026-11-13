@@ -456,7 +456,7 @@ internal static partial class Program
         // 3. The viewfinder's ask for the newest photo lasts only while the app opens.
         Check(GalleryRules.LatestWanted(10f, 10f) && GalleryRules.LatestWanted(10f, 11.9f) && !GalleryRules.LatestWanted(10f, 12.1f) && !GalleryRules.LatestWanted(-1f, 5f)
               && !GalleryRules.LatestWanted(10f, 9f), "gallery review: the ask for the newest photo is kept two seconds, then forgotten");
-        Check(Between(gallery, "private void Closed()", "private void Refresh(bool top)").Contains("_latestAskedAt = -1f;") && gallery.Contains("GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime)")
+        Check(Between(gallery, "private void Closed()", "private void Refresh(bool top)").Contains("_latestAskedAt = _latestKitAt = -1f;") && gallery.Contains("GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime)")
               && !gallery.Contains("_wantLatest"), "gallery review: closing the app forgets the ask, and it is honoured only while fresh");
 
         // 4. A day heading scrolled into view sets words made with the rows; nothing is made while scrolling.

@@ -154,9 +154,9 @@ namespace RealLifeOverhaul
         {
             try
             {
-                if (string.IsNullOrEmpty(body))
+                if (string.IsNullOrEmpty(body) || KitCard)
                 {
-                    return null;
+                    return null;   // the RLO interface draws the question itself, wrapping a long body in its own card: the game's box is not the player's view
                 }
                 float zoom = Zoom;
                 bool menuToo = MenuBoxToo;
@@ -177,6 +177,12 @@ namespace RealLifeOverhaul
                 return null;
             }
         }
+
+        /// <summary>True while the RLO interface draws the game's question boxes as its own card, which has the room the game's box lacks.</summary>
+        public static bool KitCard => Ui.UiDirector.On && Ui.UiScreenSwitches.On(QuestionScreenId);
+
+        /// <summary>The kit's question box card (Ui/Shell/ShellBoxes).</summary>
+        public const string QuestionScreenId = "question_box";
 
         /// <summary>The game's UI zoom (its Options' slider); the largest, which leaves a box the least room, where it cannot be read.</summary>
         public static float Zoom

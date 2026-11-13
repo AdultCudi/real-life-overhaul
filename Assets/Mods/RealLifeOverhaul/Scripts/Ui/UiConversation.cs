@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Title;                           // the docked panel's strip: "Talking to Maya Okafor"
         public string Name;
+        public string FaceKey;                         // the key the face is drawn by (two of one name); null: the name
         public float Hue;
         public UiRole Ring = UiRole.Ok;                // the mood
         public UiIcon Icon = UiIcon.None;              // nobody's face (a file, a firm): its picture on a tile in the face's place; None for the face
@@ -59,8 +60,6 @@ namespace RealLifeOverhaul.Ui
         public UiFormPick Pick = new UiFormPick();           // that form's open choice, held slider and scroll
         public bool FormOn;                            // a switch
         public bool FormCanLess = true, FormCanMore = true;
-        public bool Composer;                          // the line takes the player's own words (the mod's texts): the composer at the foot
-        public string ComposerPlaceholder, Draft, SendLabel;
         public string EmptyTitle, EmptyBody;           // a thread with nothing in it yet
         public UiPrompt[] Prompts = new UiPrompt[0];   // the docked panel's own prompt bar
         public int PromptCount;
@@ -76,13 +75,13 @@ namespace RealLifeOverhaul.Ui
     /// switch or words, and the choices as numbered rows with their consequences in coloured lines, as the decision card
     /// reads (the game's buttons map onto them: cancel, the second option, confirm), each on its number's key, or the
     /// composer where the line takes the player's own words. Commands: <see cref="ChoiceCommand"/> (a choice),
-    /// <see cref="FormCommand"/>, <see cref="FormLess"/> and <see cref="FormMore"/> (the slot's field and its steps),
-    /// <see cref="ComposeCommand"/> and <see cref="SendCommand"/> (the composer).
+    /// <see cref="FormCommand"/>, <see cref="FormLess"/> and <see cref="FormMore"/> (the slot's field and its steps).
     /// Game-free. Cost: a layout a change; only the messages in view are laid out.
     /// </summary>
     public static partial class UiConversation
     {
-        public const int ChoiceCommand = 60, FormCommand = 61, FormLess = 62, FormMore = 63, ComposeCommand = 64, SendCommand = 65;
+        public const int ChoiceCommand = 60, FormCommand = 61, FormLess = 62, FormMore = 63;
+        public const int DeleteCommand = 73;    // a message's delete button; its argument is the message's Remove less one
         public const float DockShare = 1f / 3f;      // of the screen's width, the docked panel at its right
         public const float DockLeast = 520f;         // px: the docked panel's least width, a choice's name beside its note
         private const float Face = 48f;              // px: the speaker's face at the head
@@ -104,12 +103,6 @@ namespace RealLifeOverhaul.Ui
         {
             float top = y;
             float foot = y + h;
-            float composerH = m.Composer ? UiTokens.Control + UiTokens.S2 : 0f;
-            if (composerH > 0f)
-            {
-                UiDraw.Composer(s, at.InRegion(RegionChoices), x, foot - composerH, w, m.ComposerPlaceholder, m.Draft, m.SendLabel, ComposeCommand, SendCommand);
-                foot -= composerH + (m.Choices.Length > 0 ? UiTokens.S3 : 0f);
-            }
             float choicesH = ChoicesHeight(m, w);
             float formH = FormHeight(m, w);
             float cy = foot - choicesH;
@@ -119,7 +112,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Form(s, at.InRegion(RegionChoices), m, x, fy, w);
             }
-            float threadBottom = fy - (choicesH + formH + composerH > 0f ? UiTokens.S4 : 0f);
+            float threadBottom = fy - (choicesH + formH > 0f ? UiTokens.S4 : 0f);
             Thread(s, at.InRegion(RegionThread), m, x, top, w, threadBottom - top);
         }
 
@@ -141,7 +134,7 @@ namespace RealLifeOverhaul.Ui
             // one grows up the screen and then scrolls.
             float inner = w - UiTokens.S5 * 2f;
             float need = UiFrame.Strip + UiTokens.S4 + Face + UiTokens.S4 + ThreadHeight(m, inner) + UiTokens.S4 + FormHeight(m, inner) + (FormHeight(m, inner) > 0f ? UiTokens.S3 : 0f)
-                         + ChoicesHeight(m, inner) + (m.Composer ? UiTokens.Control + UiTokens.S2 + UiTokens.S3 : 0f) + UiTokens.S5;
+                         + ChoicesHeight(m, inner) + UiTokens.S5;
             float h = Math.Min(UiDraw.SnapDown(frame.BandY - UiTokens.S4 * 2f), UiDraw.Snap(need));
             float y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
             int panel = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
@@ -172,7 +165,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.Name, m.Hue, m.Ring);
+                UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.FaceKey ?? m.Name, m.Hue, m.Ring);
             }
             float tx = x + Face + UiTokens.S3, tw = x + w - tx;
             float nameH = UiTextRules.LineHeight(UiStyle.Title), roleH = UiTextRules.LineHeight(UiStyle.Small);
@@ -214,7 +207,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, vh, offset, contentH);
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
             // A short thread sits at its foot by what answers it; with nothing under it, it starts under the head, so no hole stands over it.
-            bool answered = m.Choices.Length > 0 || m.Composer || FormHeight(m, w) > 0f;
+            bool answered = m.Choices.Length > 0 || FormHeight(m, w) > 0f;
             float my = answered ? UiDraw.SnapDown(Math.Max(0f, vh - contentH)) : 0f;
             if (startH > 0f)
             {
@@ -240,6 +233,13 @@ namespace RealLifeOverhaul.Ui
                     {
                         UiDraw.Bubble(s, inClip.Arriving(i), 0f, my, w, ref m.Messages[i]);
                     }
+                }
+                if (m.Messages[i].Remove > 0 && my + bh > offset && my < offset + vh)
+                {
+                    // At the thread's free edge on the side the message is not on, so it never sits over the words and stays in one column.
+                    float tool = UiTokens.ControlSmall;
+                    UiDraw.IconButton(s, inClip.Arriving(i), m.Messages[i].From == UiFrom.Me ? 0f : w - tool, my + UiTokens.S1, tool, UiIcon.Trash, UiRole.Text2, DeleteCommand,
+                        m.Messages[i].Remove - 1, false, UiAction.Count, false, true);
                 }
                 my += bh + UiTokens.S3;
             }

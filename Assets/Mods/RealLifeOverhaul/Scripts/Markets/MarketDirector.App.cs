@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Markets
             if (_app != null && _view != null && Running)
             {
                 _view.WantCompany(stockId);
+                RealLifeOverhaul.Ui.StocksScreen.Want(stockId);   // the kit's page opens the same company
                 _app.Open();
             }
         }

@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // a business or a place has its icon on a tile in place of a face
         public UiRole Tint;
         public string Picture;   // the business's own picture (its logo, a UiPictures key) in place of the icon; null for the icon
+        public string Face;      // the key the person's face is drawn by (two of one name); null: the name
         public string Preview;   // the last words, cut at a whole word
         public string Time;
         public int Unread;
@@ -124,7 +125,7 @@ namespace RealLifeOverhaul.Ui
                     var model = new UiRowModel
                     {
                         Name = row.Name, Preview = row.Preview, Time = row.Time, Unread = row.Unread, Hue = row.Hue, Online = row.Online, Selected = row.Selected,
-                        Icon = row.Icon, Tint = row.Tint, Picture = row.Picture
+                        Icon = row.Icon, Tint = row.Tint, Picture = row.Picture, Face = row.Face
                     };
                     // The row's tone under a clear face, so the pointer's still lift reads on it.
                     UiDraw.Box(s, arriving, 0f, rowTop, w, UiTokens.Row, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);

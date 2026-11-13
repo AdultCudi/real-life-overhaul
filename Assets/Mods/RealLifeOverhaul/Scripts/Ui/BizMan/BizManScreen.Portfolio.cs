@@ -306,6 +306,7 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             t.Rows = new UiDataRow[_entries.Count];
+            int most = 0;
             for (int i = 0; i < _entries.Count; i++)
             {
                 Transform e = _entries[i];
@@ -327,16 +328,86 @@ namespace RealLifeOverhaul.Ui
                 }
                 Slots(e, out int slots, out int drivers);
                 FirstRunOut(e, out string good, out string days);
+                UiDataBlock[] blocks = WarehouseBlocks(e, ref most);
                 t.Rows[i] = new UiDataRow
                 {
                     Cells = new[] { WordsAt(e, "WarehouseName"), good, days, UiText.Whole(slots), UiText.Whole(drivers), null },
                     Values = new[] { (int)icon, 0, -1, -1, -1, (int)UiIcon.Locate },
                     Tones = new[] { UiIconTints.Of(icon), UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                    Sub = WordsAt(e, "Address")
+                    Sub = WordsAt(e, "Address"), Blocks = blocks
                 };
             }
             t.RowCount = _entries.Count;
+            if (!heads)
+            {
+                t.BlockLines = most;
+                t.BlockActions = true;
+            }
             return t;
+        }
+
+        private const int MostBlockLines = 8;   // the lines a warehouse's slots or stock take under its row, whatever it holds
+
+        // What the game's warehouse entry lists under its name: each vehicle slot with its vehicle and driver (red where either is missing) and its
+        // button to manage the drivers, and up to four goods with the days they last and its button for the full inventory.
+        private static UiDataBlock[] WarehouseBlocks(Transform e, ref int most)
+        {
+            var slotLabels = new List<string>(4);
+            var slotValues = new List<string>(4);
+            var slotTones = new List<UiRole>(4);
+            Transform list = e.Find("VehicleSlotsList");
+            for (int i = 0; list != null && i < list.childCount && slotLabels.Count < MostBlockLines; i++)
+            {
+                Transform slot = list.GetChild(i);
+                if (!slot.gameObject.activeSelf || slot.name == "VehicleSlotEntry")
+                {
+                    continue;
+                }
+                string vehicle = WordsAt(slot, "VehicleName");
+                slotLabels.Add(WordsAt(slot, "SlotNumber") + (string.IsNullOrEmpty(vehicle) ? string.Empty : ", " + vehicle));
+                slotValues.Add(WordsAt(slot, "DriverStatus"));
+                slotTones.Add(Painted(slot, "DriverStatus") == UiRole.Danger || Painted(slot, "VehicleName") == UiRole.Danger ? UiRole.DangerText : UiRole.None);
+            }
+            var stockLabels = new List<string>(4);
+            var stockValues = new List<string>(4);
+            var stockTones = new List<UiRole>(4);
+            Transform stock = e.Find("InventoryList");
+            for (int i = 0; stock != null && i < stock.childCount && stockLabels.Count < MostBlockLines; i++)
+            {
+                Transform item = stock.GetChild(i);
+                if (!item.gameObject.activeSelf || item.name == "InventoryEntry")
+                {
+                    continue;
+                }
+                string amount = WordsAt(item, "Amount");
+                stockLabels.Add(WordsAt(item, "ItemName") + (string.IsNullOrEmpty(amount) ? string.Empty : " (" + amount + ")"));
+                stockValues.Add(WordsAt(item, "DaysLeft"));
+                UiRole tone = Painted(item, "DaysLeft");
+                stockTones.Add(tone == UiRole.Danger ? UiRole.DangerText : tone == UiRole.Warn ? UiRole.WarnText : UiRole.None);
+            }
+            most = Math.Max(most, Math.Max(slotLabels.Count, stockLabels.Count));
+            return new[]
+            {
+                new UiDataBlock
+                {
+                    Title = UiText.T("bizman_vehicle_slots"), Labels = slotLabels.ToArray(), Values = slotValues.ToArray(), Tones = slotTones.ToArray(),
+                    Action = UiText.T("bizman_manage_drivers"), ActionIcon = UiIcon.Truck, ActionOff = e.Find("ManageDrivers/ManageDriversButton") == null
+                },
+                new UiDataBlock
+                {
+                    Title = UiText.T("bizman_menu_inventory"), Labels = stockLabels.ToArray(), Values = stockValues.ToArray(), Tones = stockTones.ToArray(),
+                    Action = UiText.T("bizman_show_full_inventory"), ActionIcon = UiIcon.Package, ActionOff = e.Find("ShowFullInventory/ShowFullInventoryButton") == null
+                }
+            };
+        }
+
+        // A warehouse row's own buttons, as the game's entry has them: its drivers, then its full inventory.
+        private bool RowAction(int arg)
+        {
+            int row = arg / UiDataTable.ActsMost, block = arg % UiDataTable.ActsMost;
+            string path = block == 0 ? "ManageDrivers/ManageDriversButton" : "ShowFullInventory/ShowFullInventoryButton";
+            Transform button = row >= 0 && row < _entries.Count ? _entries[row].Find(path) : null;
+            return button != null && Click(button.GetComponent<Button>(), block == 0 ? "manage a warehouse's drivers" : "show a warehouse's full inventory");
         }
 
         // The entries the game made from a template: its shown copies beside it.
@@ -538,6 +609,8 @@ namespace RealLifeOverhaul.Ui
                     return OpenRow(arg);
                 case UiDataTable.First + UiDataTable.Act:
                     return DestinationOf(arg);
+                case UiDataTable.First + UiDataTable.RowAct:
+                    return RowAction(arg);
                 default:
                     return false;
             }

@@ -71,13 +71,18 @@ namespace RealLifeOverhaul.Economy
             {
                 p.Turned = today;   // first seen (a save from before, or new stock): everything held is taken as stocked today
             }
+            int pace = SpoilRules.Pace;
+            if (p.Pace != pace)
+            {
+                Repace(p, pace, today);
+            }
             if (p.Turned < today)
             {
                 Turn(reg, p, today);
             }
             for (int i = 0; i < _spoilItems.Count; i++)
             {
-                p.Lives[_spoilItems[i]] = _spoilLives[i];
+                p.Lives[_spoilItems[i]] = SpoilRules.Scale(_spoilLives[i], pace);
                 int came = SpoilRules.Match(p.Of(_spoilItems[i]), LogisticsGame.InStock(reg, _spoilItems[i]), today);
                 p.Note(today, 0, came, 0);
             }
@@ -96,6 +101,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The option moved since this place was last looked at: its batches keep the share of their life they have used, so nothing
+        // is thrown out at once by a shorter life and nothing is made fresh by a longer one.
+        private void Repace(SpoilPlace p, int pace, int today)
+        {
+            foreach (KeyValuePair<string, List<Cohort>> kv in p.Batches)
+            {
+                int at = _spoilItems.IndexOf(kv.Key);
+                int usual = at >= 0 ? _spoilLives[at] : SpoilRules.UsualLife(kv.Key, LogisticsGame.Weighed(kv.Key), false);
+                SpoilRules.Rebase(kv.Value, usual, p.Pace, pace, today);
+            }
+            p.Pace = pace;
+        }
+
         // The turn of a day at a place: each product's pieces past their life thrown out by the game's own calls.
         private void Turn(BuildingRegistration reg, SpoilPlace p, int today)
         {
@@ -103,7 +121,7 @@ namespace RealLifeOverhaul.Economy
             foreach (KeyValuePair<string, List<Cohort>> kv in p.Batches)
             {
                 int at = _spoilItems.IndexOf(kv.Key);
-                int life = at >= 0 ? _spoilLives[at] : SpoilRules.Life(kv.Key, LogisticsGame.Weighed(kv.Key), false);
+                int life = at >= 0 ? SpoilRules.Scale(_spoilLives[at], p.Pace) : SpoilRules.Life(kv.Key, LogisticsGame.Weighed(kv.Key), false);
                 int due = SpoilRules.Expired(kv.Value, life, today);
                 if (due <= 0)
                 {
@@ -156,14 +174,34 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _taken.Clear();
+            int fromPace = SpoilRules.PaceUsual;
             if (_spoil.Places.TryGetValue(fromKey, out SpoilPlace from) && from.Batches.TryGetValue(item, out List<Cohort> b))
             {
                 SpoilRules.Take(b, count, _taken);
+                fromPace = from.Pace;
             }
             SpoilPlace to = _spoil.Place(toKey);
             if (to.Turned < 0)
             {
                 to.Turned = LogisticsGame.Day;
+            }
+            if (_taken.Count > 0 && fromPace != to.Pace)
+            {
+                // The two places last read their batches at different paces: the goods arrive aged as the place they come to reads age.
+                var arriving = new List<Cohort>(_taken.Count);
+                for (int i = 0; i < _taken.Count; i++)
+                {
+                    arriving.Add(_taken[i]);
+                }
+                _taken.Clear();
+                var scratch = new List<Cohort>(SpoilRules.CohortsMost + 1);
+                for (int i = 0; i < arriving.Count; i++)
+                {
+                    scratch.Clear();
+                    scratch.Add(arriving[i]);
+                    SpoilRules.Rebase(scratch, SpoilRules.UsualLife(item, LogisticsGame.Weighed(item), true), fromPace, to.Pace, LogisticsGame.Day);
+                    _taken.Add(new Cohort(scratch[0].Day, arriving[i].Count));
+                }
             }
             List<Cohort> into = to.Of(item);
             for (int i = 0; i < _taken.Count; i++)

@@ -268,6 +268,7 @@
         public const string LivingTripsId = "living_trips";
         public const string LivingRivalsSeenId = "living_rivals_seen";   // ...rivals seen around the city (Scripts/RivalsSeen)
         public const string LivingSpoilageId = "living_spoilage";
+        public const string LivingSpoilagePaceId = "living_spoilage_pace";
         public const string LivingPartiesId = "living_parties";
         public const string LivingSuppliersId = "living_suppliers";
         public const string EconomyBrandsId = "economy_brands";
@@ -694,6 +695,7 @@
         public static bool LivingTrips = true;           // ...logistics routes run as delivery trips: departure times, vehicles and drivers, drive time, fuel (Economy/Logistics)
         public static bool LivingRivalsSeen = true;      // ...rivals seen around the city: at the places their week has them, their cars, the sightings (RivalsSeen)
         public static bool LivingSpoilage = true;        // ...food spoils: shelf life by kind, longer in a fridge or freezer, oldest sold first (Economy/Logistics)
+        public static int LivingSpoilagePace = 100;      // per cent of the usual shelf life, 25 to 400; 100 in a Going Public session (SpoilRules)
         public static bool LivingParties = true;         // ...parties with friends and company events for a business's staff, the rivals' too (Parties)
         public static bool LivingSuppliers = true;       // ...a choice of wholesalers, fixed price contracts under take or pay, late or short deliveries, the rivals by the same rules (Suppliers)
         public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
@@ -716,6 +718,9 @@
 
         /// <summary>The id the options are kept under once they were read (the mod's own, never the copy's); null before.</summary>
         public static string ModId => _modId;
+
+        /// <summary>The shelf life the rules use: the option, or the usual in a Going Public session so that every machine spoils the same.</summary>
+        public static int SpoilPaceNow() => GoingPublic.InSession ? global::RealLifeOverhaul.Economy.SpoilRules.PaceUsual : global::RealLifeOverhaul.Economy.SpoilRules.ClampPace(LivingSpoilagePace);
 
         /// <summary>The PlayerPrefs key of one of the mod's options, in the game's own format, under the mod's own id.</summary>
         public static string PrefsKey(string id) => _modId == null ? null : Key(_modId, id);
@@ -1172,6 +1177,8 @@
             LivingTrips = Bool(modId, LivingTripsId, LivingTrips);
             LivingRivalsSeen = Bool(modId, LivingRivalsSeenId, LivingRivalsSeen);
             LivingSpoilage = Bool(modId, LivingSpoilageId, LivingSpoilage);
+            LivingSpoilagePace = global::RealLifeOverhaul.Economy.SpoilRules.ClampPace(Int(modId, LivingSpoilagePaceId, LivingSpoilagePace));
+            global::RealLifeOverhaul.Economy.SpoilRules.PaceSource = SpoilPaceNow;
             LivingParties = Bool(modId, LivingPartiesId, LivingParties);
             LivingSuppliers = Bool(modId, LivingSuppliersId, LivingSuppliers);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);

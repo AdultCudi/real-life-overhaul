@@ -101,6 +101,7 @@ namespace RealLifeOverhaul.Ui
             {
                 case NotificationType.Success: return UiIcon.Check;
                 case NotificationType.Info: return UiIcon.Info;
+                case NotificationType.Error: return UiIcon.Close;   // the game gives an error its own look; a warning keeps the triangle
                 default: return UiIcon.Warning;
             }
         }
@@ -372,6 +373,7 @@ namespace RealLifeOverhaul.Ui
                     };
                 }
                 _m.CardCount = _entries.Count;
+                _m.More = _entries.Count > UiNotices.MostCards ? UiText.Fill("reallife_ui_notice_more", "count", UiText.Whole(_entries.Count - UiNotices.MostCards)) : null;
                 UiMinimapBox.Read(frame.Width, frame.Height, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);
                 var rect = _stack as RectTransform;
                 if (rect != null)
@@ -478,6 +480,7 @@ namespace RealLifeOverhaul.Ui
                 case UiIcon.Spark: return "reallife_ui_notice_other";
                 case UiIcon.Check: return "reallife_ui_notice_done";
                 case UiIcon.Warning: return "reallife_ui_notice_warning";
+                case UiIcon.Close: return "reallife_ui_notice_error";
                 default: return "reallife_ui_notice_info";
             }
         }
@@ -614,10 +617,11 @@ namespace RealLifeOverhaul.Ui
                     _m.Rows[i] = new UiNotice
                     {
                         Icon = glyph, Header = UiText.T(KindKey(glyph)), Body = Plain(LocalizorManager.GetLocalization(n.key, (object)n.notificationData)),
-                        Age = LocalizorManager.GetLocalization("timestamp_full", new { day = n.date.Day, time = n.date.Hour.ToString("00") + ":" + ((int)n.date.Minute).ToString("00") })
+                        Age = LocalizorManager.GetLocalization("timestamp_full", new { day = n.date.Day, time = HudClockRules.Format(n.date.Hour, n.date.Minute, TimeHelper.use12h) })
                     };
                 }
                 _m.RowCount = _all.Count;
+                HudStatusGame.NoticesRead();   // the list is up: its notices are read
                 _m.First = Math.Max(0, Math.Min(_m.First, _m.RowCount - _fit));
                 _m.Title = UiText.T("reallife_ui_notice_list");
                 _m.Empty = UiText.T("reallife_ui_notice_none");

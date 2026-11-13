@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     "purchaseui_title_with_amounts", "purchaseui_place_order", "common_cancel", "purchaseui_totalprice", "purchaseui_waiting_in_queue", "purchaseui_pay_taxes",
                     "common_amount", "common_price", "common_total", "reallife_ui_buy_goods", "reallife_ui_buy_each", "reallife_ui_buy_pack", "reallife_ui_buy_paused",
-                    "reallife_ui_buy_page", "reallife_ui_buy_owed", "reallife_ui_buy_pay", "reallife_ui_buy_amount_hint", "reallife_ui_buy_empty", "reallife_ui_buy_empty_body",
+                    "reallife_ui_buy_owed", "reallife_ui_buy_pay", "reallife_ui_buy_amount_hint", "reallife_ui_buy_empty", "reallife_ui_buy_empty_body",
                     "taxes_pay_item", "taxes_back_taxes_pay_item", "casinoboat_ticket_pay_item", "common_purchase", "reallife_ui_prompt_move", "reallife_ui_prompt_select",
                     "reallife_ui_prompt_back", "reallife_ui_buy_delivered_to", "reallife_ui_buy_queue_served", "reallife_ui_buy_queue_next", "reallife_ui_buy_queue_place",
                     "reallife_ui_buy_sales_tax"
@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     "common_vehicle", "purchasecar_specs", "common_cargo_capacity", "vehicle_tank_capacity", "vehicle_auto_park_support", "vehicle_max_speed", "common_yes",
                     "common_purchase", "furniture_delivery_dialog_order", "common_cancel", "purchasevehicleui_delivertowarehouse", "purchasevehicleui_no_warehouses_available",
-                    "dialog_select_address", "reallife_ui_buy_colour", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
+                    "dialog_select_address", "reallife_meta_on", "reallife_meta_off", "reallife_ui_buy_colour", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_tuning_fig_to100", "reallife_ui_buy_seconds", "reallife_ui_buy_insurance", "reallife_ui_buy_a_month", "reallife_ui_buy_lot", "reallife_ui_buy_carkind_1",
                     "reallife_ui_buy_carkind_2", "reallife_ui_buy_carkind_3", "reallife_ui_buy_carkind_4", "reallife_ui_buy_carkind_5", "reallife_ui_buy_carkind_6",
                     "reallife_ui_buy_carkind_7", "reallife_ui_buy_fuel_use", "reallife_ui_buy_l100", "reallife_ui_buy_mpg",
@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_buy_speed", "reallife_ui_buy_yours", "reallife_ui_buy_not_yours", "reallife_ui_buy_slots",
                     "reallife_ui_buy_in_hands", "reallife_ui_buy_unpaid_total",
                     "reallife_ui_buy_more", "reallife_ui_buy_minigame", "reallife_ui_buy_range", "reallife_ui_buy_range_value", "reallife_ui_buy_speed_of",
-                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for", "action_consumefood", "action_consumedrink", "reallife_car_note_service"
+                    "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for", "action_consumefood", "action_consumedrink", "reallife_car_note_service",
+                    "reallife_ui_buy_steering_on", "reallife_ui_buy_steering_off"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("manage_cargo", UiTemplate.AppWindow, "CargoScreen", new[]
                 {
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_buy_count", "reallife_ui_buy_in_cargo", "reallife_ui_buy_empty_cargo", "reallife_ui_buy_empty_cargo_body", "reallife_ui_prompt_move",
                     "reallife_ui_prompt_select", "reallife_ui_prompt_back", "reallife_ui_buy_packs", "reallife_ui_buy_pieces", "reallife_ui_buy_paid", "reallife_ui_buy_to_pay",
                     "reallife_ui_buy_sells_for", "reallife_ui_buy_each", "reallife_ui_buy_worth_now", "reallife_ui_buy_sell_for", "reallife_ui_buy_keeps", "reallife_ui_buy_keeps_cold",
-                    "reallife_ui_buy_days", "reallife_ui_buy_keeps_tile"
+                    "reallife_ui_buy_days", "reallife_ui_buy_keeps_tile", "reallife_ui_buy_contains"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("wardrobe", UiTemplate.InfoPanel, "WardrobeScreen", new[]
                 {

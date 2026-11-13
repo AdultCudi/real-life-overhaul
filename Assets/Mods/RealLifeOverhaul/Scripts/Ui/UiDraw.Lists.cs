@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                avatar = Portrait(s, inside, ax, ay, size, row.Name, row.Hue, UiRole.None);
+                avatar = Portrait(s, inside, ax, ay, size, row.Face ?? row.Name, row.Hue, UiRole.None);
             }
             if (row.Online)
             {

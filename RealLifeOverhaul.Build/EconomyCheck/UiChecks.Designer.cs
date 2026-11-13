@@ -35,6 +35,36 @@ internal static partial class Program
         DesignerRequirementChecks();
         DesignerShieldChecks();
         DesignerWiringChecks();
+        DesignerOtherModChecks();
+    }
+
+    // The business that cannot be robbed says so as the game does, another mod's tool has a tile and its panels are left showing, and a long list of needs is listed whole.
+    private static void DesignerOtherModChecks()
+    {
+        string sheets = ModSource(@"Ui\Designer\DesignerGame.Sheets.cs"), game = ModSource(@"Ui\Designer\DesignerGame.cs"), read = ModSource(@"Ui\Designer\DesignerGame.Read.cs");
+        string edit = ModSource(@"Ui\Designer\DesignerGame.Edit.cs"), screens = ModSource(@"Ui\UiScreens.Designer.cs");
+        string items = MethodText(sheets, "private static bool FillItems(");
+        Check(items.Contains("interior_designer_security_coverage_not_required") && items.Contains("Businesstag.allowtheft") && items.Contains("UiRole.Muted") && screens.Contains("\"interior_designer_security_coverage_not_required\""),
+            "designer kit security: a business that cannot be robbed is titled as the game titles it, shows no rating, and an uncovered camera is no fault");
+        Check(DesignerRules.Foreign("SomeOtherMod", "Assembly-CSharp", "RealLifeOverhaul") && !DesignerRules.Foreign("Assembly-CSharp", "Assembly-CSharp", "RealLifeOverhaul") && !DesignerRules.Foreign("RealLifeOverhaul", "Assembly-CSharp", "RealLifeOverhaul")
+              && !DesignerRules.Foreign(null, "Assembly-CSharp", "RealLifeOverhaul"), "designer kit other mods: a panel whose class is in neither the game's nor this mod's assembly is another mod's");
+        Check(game.Contains("ConcealPanels(conceal, Part(GameContract.DesignerInfoPanels, ui), GameContract.DesignerInfoList)") && game.Contains("ConcealPanels(conceal, Part(GameContract.DesignerActionPanels, ui), GameContract.DesignerPanelList)")
+              && MethodText(game, "private static void ConcealPanels(").Contains("conceal.Shared(manager);") && MethodText(game, "private static void ConcealPanels(").Contains("DesignerRules.Foreign("),
+            "designer kit other mods: the game's own panels are hidden one by one so a panel another mod added keeps showing");
+        Check(game.Contains("private static void ReadExtras()") && MethodText(game, "public static bool Tool(int tool)").Contains("Extras[extra].toolName") && read.Contains("ExtraName(i - known)") && read.Contains("ExtraOff(i - known)")
+              && MethodText(game, "public static int ToolInHand()").Contains("Tools.Length + i"), "designer kit other mods: a toolbar button of another mod's gets a tile in the row, is pressed through the game's ToggleTool and counts as the tool in hand");
+        Check(edit.Contains("i.Require = new UiDesignerRequirement[n];") && !edit.Contains("Math.Min(Rows.Count, UiDesignerInfo.RequireMost)"), "designer kit needs: every requirement is listed, the figure never counts more than the list shows");
+        var m = new UiDesignerModel();
+        m.Tools.Tools = new UiTool[(int)UiDesignerTool.Count + 2];
+        m.ToolOff = new bool[(int)UiDesignerTool.Count + 2];
+        for (int i = 0; i < m.Tools.Tools.Length; i++)
+        {
+            m.Tools.Tools[i] = new UiTool { Icon = UiIcon.Wrench, Name = "tool " + i };
+        }
+        Check(UiDesignerPanels.RowWidth(m) > UiDesignerPanels.RowWidth(new UiDesignerModel()), "designer kit other mods: the bar's row is as wide as the tools it holds, another mod's among them");
+        string sign = ModSource(@"Ui\World\SignAppearanceKit.cs");
+        Check(sign.Contains("GetComponent<PlayerColor>()") && sign.Contains("own.onRemove.Invoke();") && sign.Contains("protected override bool Line(int line)") && sign.Contains("reallife_ui_sign_remove_on")
+              && ModSource(@"Ui\UiScreens.World.cs").Contains("\"reallife_ui_sign_remove\""), "sign editor: a saved colour is removed through the game's own removal (what a right click runs), by a button that works on a pad too");
     }
 
     // Each tool's panel is a page of its own: the tool in hand names its panel, no two states draw the same words, and a state with nothing to show says so.

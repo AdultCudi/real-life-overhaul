@@ -209,6 +209,7 @@ namespace RealLifeOverhaul.Ui
             }
             TMP_InputField search = SearchField();
             c.Search = search != null ? search.text ?? string.Empty : string.Empty;
+            c.SearchGhost = Suggestion();
             Listed.Clear();
             List<IDItemTemplatesModel> rows = scroller.data;
             for (int r = 0; rows != null && r < rows.Count; r++)
@@ -533,6 +534,31 @@ namespace RealLifeOverhaul.Ui
                 data.onClickItemName(null, data.itemName);
             }
             return true;
+        }
+
+        // The game's suggested completion for what is typed: its label keeps the whole text (what is typed and the rest of the word); empty when it has none.
+        private static string Suggestion()
+        {
+            var field = BuyKits.Get<global::UI.Components.InputField>(GameContract.DesignerSearch, DesignerPanes.Furniture);
+            var label = field != null ? BuyKits.Get<TMP_Text>(GameContract.DesignerSuggestion, field) : null;
+            string words = label != null ? label.text : null;
+            return string.IsNullOrEmpty(words) ? null : words;
+        }
+
+        /// <summary>The suggestion taken as the game's own Tab takes it: its confirm runs, so the game's search narrows to the word, and the field holds it. Null when there is none.</summary>
+        public static string AcceptSuggestion()
+        {
+            string words = Suggestion();
+            var field = BuyKits.Get<global::UI.Components.InputField>(GameContract.DesignerSearch, DesignerPanes.Furniture);
+            if (words == null || field == null || field.tmpInputField == null)
+            {
+                return null;
+            }
+            using (HotSpots.Game())
+            {
+                field.onAutoCompleteConfirm?.Invoke(words);
+            }
+            return UiWidgets.Type(field.tmpInputField, words, false) ? words : null;
         }
 
         /// <summary>Typed into the game's search field, which filters as it does when the player types there.</summary>

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_designer_pick_wall", "reallife_ui_designer_pick_floor", "reallife_ui_designer_shades",
                 "reallife_ui_designer_price_piece", "reallife_ui_designer_score_if", "reallife_ui_designer_shade",
                 "reallife_ui_designer_lay", "interior_designer_producer_panel", "interior_designer_queue_designer",
-                "interior_designer_security_coverage", "reallife_ui_designer_note_producer", "reallife_ui_designer_note_queue",
+                "interior_designer_security_coverage", "interior_designer_security_coverage_not_required", "reallife_ui_designer_note_producer", "reallife_ui_designer_note_queue",
                 "reallife_ui_designer_note_security", "interior_designer_no_producers_in_building", "reallife_ui_designer_not_set",
                 "reallife_ui_designer_secured", "reallife_ui_designer_not_covered", "interior_designer_security_rating",
                 "reallife_ui_designer_time_title", "reallife_ui_designer_time_sub", "reallife_ui_designer_clock",

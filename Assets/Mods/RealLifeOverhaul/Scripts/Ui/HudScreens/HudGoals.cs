@@ -18,22 +18,21 @@ namespace RealLifeOverhaul.Ui
     /// way out, a high priority alert marked, a mission's quieter lines and the delivery's way so far as a meter; after the
     /// alerts, the game's personal goals now with their progress (HudGoalBook), their lines pressing nothing. A line, its locate
     /// link and its Cancel press the entry's own buttons, so the game does what its window does; the strip folds the game's
-    /// own window (TasksUI.SetCollapsedState) and each group folds for the session. The panel never runs into the bar: the
-    /// last open groups fold first, then a long group shows its first lines. The game's window stays up, hidden by leaf.
+    /// own window (TasksUI.SetCollapsedState) and each group folds for the session. The panel never runs into the bar: groups and
+    /// lines past the room scroll inside it, and none is cut. The game's window stays up, hidden by leaf.
     /// Cost: four reads a second of the window's entries while the HUD shows.
     /// </summary>
     internal static class HudGoals
     {
-        private const int MostGroups = 12, MostLines = 24;
+        private const int FirstGroups = 8, FirstLines = 16;   // the room the model starts with: it grows to what the window holds, so no group or line is left out
         private const string DeliveryKey = "ba:skill_deliverydriver";   // the delivery driver's group, as the game titles it
         private const string AlertsKey = "bizman_alerts";               // the business alerts' group: the personal goals' band follows it
 
         private static readonly UiConceal Hidden = new UiConceal();
-        private static readonly UiObjectivesModel Model = new UiObjectivesModel { Groups = new UiObjectiveGroup[MostGroups], GroupCount = 0 };
-        private static readonly Transform[] GroupOf = new Transform[MostGroups];
-        private static readonly Transform[][] LineOf = new Transform[MostGroups][];
+        private static readonly UiObjectivesModel Model = new UiObjectivesModel { Groups = new UiObjectiveGroup[FirstGroups], GroupCount = 0 };
+        private static Transform[] _groupOf = new Transform[FirstGroups];
+        private static Transform[][] _lineOf = new Transform[FirstGroups][];
         private static readonly Dictionary<string, bool> Folded = new Dictionary<string, bool>();   // the player's own fold per group's words, this session
-        private static readonly bool[] AutoFolded = new bool[MostGroups];
 
         private static TasksUI _tasks;
         private static CanvasGroup _shown;
@@ -43,11 +42,40 @@ namespace RealLifeOverhaul.Ui
 
         static HudGoals()
         {
-            for (int g = 0; g < MostGroups; g++)
+            for (int g = 0; g < FirstGroups; g++)
             {
-                Model.Groups[g].Lines = new UiObjectiveLine[MostLines];
-                LineOf[g] = new Transform[MostLines];
+                Model.Groups[g].Lines = new UiObjectiveLine[FirstLines];
+                _lineOf[g] = new Transform[FirstLines];
             }
+        }
+
+        // Room for one more group, and for a group's lines: the arrays double, never cut.
+        private static void RoomForGroup(int groups)
+        {
+            if (groups <= Model.Groups.Length)
+            {
+                return;
+            }
+            int to = Math.Max(groups, Model.Groups.Length * 2), from = Model.Groups.Length;
+            Array.Resize(ref Model.Groups, to);
+            Array.Resize(ref _groupOf, to);
+            Array.Resize(ref _lineOf, to);
+            for (int g = from; g < to; g++)
+            {
+                Model.Groups[g].Lines = new UiObjectiveLine[FirstLines];
+                _lineOf[g] = new Transform[FirstLines];
+            }
+        }
+
+        private static void RoomForLines(int group, int lines)
+        {
+            if (lines <= Model.Groups[group].Lines.Length)
+            {
+                return;
+            }
+            int to = Math.Max(lines, Model.Groups[group].Lines.Length * 2);
+            Array.Resize(ref Model.Groups[group].Lines, to);
+            Array.Resize(ref _lineOf[group], to);
         }
 
         /// <summary>The game's window hidden by leaf; false while it is not built.</summary>
@@ -90,7 +118,7 @@ namespace RealLifeOverhaul.Ui
             _content = null;
             _title = null;
             Folded.Clear();
-            Array.Clear(GroupOf, 0, GroupOf.Length);
+            Array.Clear(_groupOf, 0, _groupOf.Length);
             HudGoalBook.Forget();
         }
 
@@ -144,7 +172,7 @@ namespace RealLifeOverhaul.Ui
             int groups = 0, open = 0, sig = Hash(m.Title);
             bool goals = GoalsKept() && HudGoalBook.Count > 0;
             int after = goals ? AlertsAt() : -1;   // the goals' band after the alerts' group, first without one
-            for (int i = 0; i < _content.childCount && groups < MostGroups; i++)
+            for (int i = 0; i < _content.childCount; i++)
             {
                 if (goals && i > after)
                 {
@@ -152,10 +180,11 @@ namespace RealLifeOverhaul.Ui
                     goals = false;
                 }
                 Transform group = _content.GetChild(i);
-                if (!group.gameObject.activeSelf || group.name == "GroupTemplate" || groups >= MostGroups)
+                if (!group.gameObject.activeSelf || group.name == "GroupTemplate")
                 {
                     continue;
                 }
+                RoomForGroup(groups + 1);
                 ref UiObjectiveGroup g = ref m.Groups[groups];
                 string key = KeyOf(group, out TMP_Text head);
                 int lines = Lines(group, groups, ref g, key == DeliveryKey, ref open, ref sig);
@@ -173,12 +202,11 @@ namespace RealLifeOverhaul.Ui
                 g.Note = HudNoteRules.GroupNote(done, lines, UiText.T("reallife_ui_hud_goals_done"));   // "3" open, or "1 of 3 done"
                 g.LineCount = lines;
                 g.Collapsed = Folded.TryGetValue(g.Title ?? string.Empty, out bool f) && f;
-                GroupOf[groups] = group;
-                AutoFolded[groups] = false;
+                _groupOf[groups] = group;
                 sig = unchecked(sig * 31 + Hash(g.Title) + lines);
                 groups++;
             }
-            if (goals && groups < MostGroups)
+            if (goals)
             {
                 groups += GoalsBand(groups, ref sig);   // the window's groups are all before it
             }
@@ -227,12 +255,14 @@ namespace RealLifeOverhaul.Ui
         // The personal goals' band: the first kinds' goals now, each with its progress, and at its right all the goals done.
         private static int GoalsBand(int index, ref int sig)
         {
+            RoomForGroup(index + 1);
             ref UiObjectiveGroup g = ref Model.Groups[index];
-            int n = Math.Min(HudGoalBook.Count, MostLines);
+            int n = HudGoalBook.Count;
+            RoomForLines(index, n);
             for (int k = 0; k < n; k++)
             {
                 g.Lines[k] = new UiObjectiveLine { Text = HudGoalBook.Titles[k], Progress = HudGoalBook.Progress[k] };
-                LineOf[index][k] = null;   // nothing of the game's behind it: a press does nothing
+                _lineOf[index][k] = null;   // nothing of the game's behind it: a press does nothing
                 sig = unchecked(sig * 31 + Hash(g.Lines[k].Text) + Hash(g.Lines[k].Progress) * 3);
             }
             g.Title = UiText.T("common_personal_goals");
@@ -240,8 +270,7 @@ namespace RealLifeOverhaul.Ui
             g.Note = HudNoteRules.DoneNote(HudGoalBook.Done, HudGoalBook.Total, UiText.T("reallife_ui_hud_goals_done"));
             g.LineCount = n;
             g.Collapsed = Folded.TryGetValue(g.Title ?? string.Empty, out bool f) && f;
-            GroupOf[index] = null;
-            AutoFolded[index] = false;
+            _groupOf[index] = null;
             sig = unchecked(sig * 31 + Hash(g.Title) + Hash(g.Note) + n);
             return 1;
         }
@@ -251,8 +280,8 @@ namespace RealLifeOverhaul.Ui
         private static int Lines(Transform group, int index, ref UiObjectiveGroup g, bool delivery, ref int open, ref int sig)
         {
             int lines = 0;
-            Transform[] of = LineOf[index];
-            for (int i = 0; i < group.childCount && lines < MostLines; i++)
+            Transform[] of = _lineOf[index];
+            for (int i = 0; i < group.childCount; i++)
             {
                 Transform entry = group.GetChild(i);
                 if (!entry.gameObject.activeSelf || entry.name == "Headline" || entry.name == "EntryTemplate" || entry.name == "NestedEntryTemplate")
@@ -274,6 +303,8 @@ namespace RealLifeOverhaul.Ui
                 bool done = (tick != null && tick.gameObject.activeSelf && tick.isOn) || (label.fontStyle & FontStyles.Strikethrough) != 0;
                 Button close = Child<Button>(entry, "CloseButton");
                 bool closes = close != null && close.gameObject.activeSelf;
+                RoomForLines(index, lines + 1);
+                of = _lineOf[index];
                 ref UiObjectiveLine line = ref g.Lines[lines];
                 line.Text = words;
                 line.Done = done;
@@ -367,39 +398,21 @@ namespace RealLifeOverhaul.Ui
             return UiIcon.Flag;
         }
 
-        // Too tall for the room above the bar: the last open groups fold, then the last group's lines are cut.
+        // The room over the bar is the panel's most: past it the groups scroll inside the panel (UiObjectives), so nothing is folded for the player or cut.
         private static void Fit(float frameHeight)
         {
-            UiObjectivesModel m = Model;
-            if (m.Collapsed)
+            Model.MaxHeight = frameHeight - UiTokens.S4 - UiFrame.BandHeight - UiTokens.S4 - UiDraw.KeyChipHeight - UiTokens.S3;
+        }
+
+        /// <summary>The wheel over the objectives' groups scrolls them; true when it was theirs.</summary>
+        public static bool Wheel(int clip, float notches)
+        {
+            if (clip < 0 || clip != Model.Clip)
             {
-                return;
+                return false;
             }
-            float room = frameHeight - UiTokens.S4 - UiFrame.BandHeight - UiTokens.S4 - UiDraw.KeyChipHeight - UiTokens.S3;
-            // A group the player opened stays open while another can fold instead.
-            for (int pass = 0; pass < 2; pass++)
-            {
-                for (int g = m.GroupCount - 1; g > 0 && UiObjectives.Height(m) > room; g--)
-                {
-                    bool opened = Folded.TryGetValue(m.Groups[g].Title ?? string.Empty, out bool f) && !f;
-                    if (!m.Groups[g].Collapsed && (pass == 1 || !opened))
-                    {
-                        m.Groups[g].Collapsed = true;
-                        AutoFolded[g] = true;
-                    }
-                }
-            }
-            while (m.GroupCount > 1 && UiObjectives.Height(m) > room)
-            {
-                m.GroupCount--;   // more groups than bands fit: the last wait under the strip's count
-            }
-            for (int g = 0; g < m.GroupCount; g++)
-            {
-                while (!m.Groups[g].Collapsed && m.Groups[g].LineCount > 1 && UiObjectives.Height(m) > room)
-                {
-                    m.Groups[g].LineCount--;
-                }
-            }
+            Model.Offset = Math.Max(0f, Model.Offset - notches * UiTokens.S16);
+            return true;
         }
 
         // ------------------------------------------------------------------------------------------------- presses
@@ -425,12 +438,12 @@ namespace RealLifeOverhaul.Ui
                 Folded[Model.Groups[arg].Title ?? string.Empty] = !Model.Groups[arg].Collapsed;   // what shows flips, and stays so
                 return true;
             }
-            int group = arg / 32, line = arg % 32;
+            int group = arg / UiObjectives.LineStride, line = arg % UiObjectives.LineStride;
             if (group < 0 || group >= Model.GroupCount || line < 0 || line >= Model.Groups[group].LineCount)
             {
                 return false;
             }
-            Transform entry = LineOf[group][line];
+            Transform entry = _lineOf[group][line];
             if (entry == null)
             {
                 return false;

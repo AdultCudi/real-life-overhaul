@@ -53,8 +53,13 @@ namespace RealLifeOverhaul.Ui
             var controllers = BuyKits.Get<List<ItemController>>(GameContract.DesignerListControllers, panel);
             int selected = BuyKits.Value(GameContract.DesignerListSelected, panel, -1);
             bool security = tool == UiDesignerTool.Security;
+            BuildingRegistration reg = security ? Registration() : null;
+            BusinessType type = reg != null ? BusinessTypeHelper.GetData(reg) : null;
+            // A business that cannot be robbed needs no cameras: the game says so in the title and hides the rating, and an uncovered camera is no fault there.
+            bool rated = type != null && type.HasTag(BigAmbitions.Tags.TagRef.Businesstag.allowtheft);
+            bool required = !security || type == null || rated;
             m.Title = UiText.T(tool == UiDesignerTool.Producer ? "interior_designer_producer_panel"
-                : tool == UiDesignerTool.Queue ? "interior_designer_queue_designer" : "interior_designer_security_coverage");
+                : tool == UiDesignerTool.Queue ? "interior_designer_queue_designer" : required ? "interior_designer_security_coverage" : "interior_designer_security_coverage_not_required");
             m.Icon = DesignerGlyphs.ToolIcons[(int)tool];
             m.Note = UiText.T(tool == UiDesignerTool.Producer ? "reallife_ui_designer_note_producer"
                 : tool == UiDesignerTool.Queue ? "reallife_ui_designer_note_queue" : "reallife_ui_designer_note_security");
@@ -81,8 +86,8 @@ namespace RealLifeOverhaul.Ui
                 if (security)
                 {
                     bool covered = c.ItemInstance.isSecured;
-                    glyph = covered ? UiIcon.Check : UiIcon.Warning;
-                    tone = covered ? UiRole.Ok : UiRole.Warn;
+                    glyph = covered ? UiIcon.Check : required ? UiIcon.Warning : UiIcon.None;
+                    tone = covered ? UiRole.Ok : required ? UiRole.Warn : UiRole.Muted;
                     line = UiText.T(covered ? "reallife_ui_designer_secured" : "reallife_ui_designer_not_covered");
                 }
                 else if (tool == UiDesignerTool.Producer)
@@ -99,9 +104,7 @@ namespace RealLifeOverhaul.Ui
             m.Count = shown;
             if (security)
             {
-                BuildingRegistration reg = Registration();
-                BusinessType type = reg != null ? BusinessTypeHelper.GetData(reg) : null;
-                if (type != null && type.HasTag(BigAmbitions.Tags.TagRef.Businesstag.allowtheft))
+                if (rated)
                 {
                     int percent = Mathf.FloorToInt(reg.securityLevelPercentage);
                     m.Meter = Mathf.Clamp(percent, 0, 100);

@@ -32,7 +32,9 @@ namespace RealLifeOverhaul.Ui
         private float _scale = UiTokens.CanvasPerPx, _w, _h;
         private int _sig;
         private bool _readDue, _shown, _gameOwn, _kind;   // _kind: the card shown is the money's
-        private bool _moneyAsked;
+        private string _note;   // the words of a held button card, else null
+        private CanvasGroup _gameGroup;   // the game's own tooltip group: its alpha is 0 while the game hides or pauses its tooltip
+        private bool _moneyAsked, _years;   // a pill's card is asked for: the clock's years and days when _years, else the net worth
         private float _moneyDue, _moneyX, _moneyY, _moneyW;   // the pill's box as fractions of the screen
         private bool _faulted, _byScale, _scaleHeld;
         private Transform _data;
@@ -79,6 +81,7 @@ namespace RealLifeOverhaul.Ui
             host = rect.gameObject.AddComponent<TooltipHost>();
             CanvasGroup gameGroup = GameContract.TipGroup.Field != null ? GameContract.TipGroup.Field.GetValue(system) as CanvasGroup : null;
             host.Build(rect, read, data, gameGroup != null && data.GetComponent<CanvasGroup>() == gameGroup);
+            host._gameGroup = gameGroup;
             return null;
         }
 
@@ -145,6 +148,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The pointer settled on the money pill (its box as fractions of the screen): the net worth card shows after a moment.</summary>
         internal void MoneyIn(float x, float y, float w)
         {
+            _years = false;
+            _note = null;
             _moneyAsked = true;
             _moneyDue = Time.unscaledTime + MoneyDelay;
             _moneyX = x;
@@ -154,6 +159,20 @@ namespace RealLifeOverhaul.Ui
             {
                 HideCard();
             }
+        }
+
+        /// <summary>The pointer settled on the clock of the time pill: the years and days card shows after a moment, as the money's does.</summary>
+        internal void YearsIn(float x, float y, float w)
+        {
+            MoneyIn(x, y, w);
+            _years = true;
+        }
+
+        /// <summary>The pointer settled on a held button of the bar: its reason shows in a card after a moment.</summary>
+        internal void NoteIn(float x, float y, float w, string words)
+        {
+            MoneyIn(x, y, w);
+            _note = words;
         }
 
         /// <summary>The pointer left the money pill, or pressed it: its card goes.</summary>
@@ -219,6 +238,16 @@ namespace RealLifeOverhaul.Ui
                     Conceal(true);   // the game's own tooltip is done: the next is read by the card again
                 }
                 _sig = 0;
+                return;
+            }
+            // A tooltip the game holds back (TooltipSystem.PauseTooltips while a work shift is dragged) stays IsVisible with its group at
+            // alpha 0: no card either, until the game lets it show again.
+            if (_gameGroup != null && _gameGroup.alpha <= 0f)
+            {
+                if (_shown)
+                {
+                    HideCard();
+                }
                 return;
             }
             int sig = _read.Signature();
@@ -330,7 +359,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            if (!TooltipWorth.Make(_model))
+            if (!(_note != null ? TooltipWorth.MakeNote(_model, _note) : _years ? TooltipWorth.MakeYears(_model) : TooltipWorth.Make(_model)))
             {
                 _moneyAsked = false;
                 return;

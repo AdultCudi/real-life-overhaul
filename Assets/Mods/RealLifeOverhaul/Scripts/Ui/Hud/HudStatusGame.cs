@@ -15,10 +15,10 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The status bar's pills read from the game, mirrored and never worked out again: the game's speed, pause and time
     /// lock (GameSpeedController), the player's energy, hunger and happiness as the game's top bar reads them, the mod's
-    /// hygiene, stress and home (HomeState, while the needs are on), the season (the mod's calendar, while the seasons are
+    /// hygiene, stress and home (HomeState, while the needs are on), the season (the mod's calendar, while the seasons and the season-on-the-bar option are
     /// on), the weather in a glyph and a word (the mod's snow and its reading of the game's rain, Events.Weather), the place
-    /// as the game's HUD names it (PlayerHUD's nearest building and district), today's money so far under the money (less
-    /// the last midnight's balance; before one, Topbar.moneyChange: yesterday's result), and the notices the game keeps. It stands
+    /// as the game's HUD names it (PlayerHUD's nearest building and district), yesterday's result under the money (the game's
+    /// Topbar.moneyChange, which the day result option writes the mod's money into), and the notices the game keeps. It stands
     /// behind UiChrome.Bar, after the time, the day, the money and the app row (UiGame.Bar). A member that fails leaves its
     /// pill out with one line in Player.log. Cost: a few reads each time the bar is laid out; <see cref="Signature"/> a few
     /// loads a frame while the HUD shows.
@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Ui
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 Speed(m, uis);
                 m.DayWidest = Widest();
+                m.TimeWidest = HudClockRules.Widest(TimeHelper.use12h);
                 Needs(m);
                 Season(m, uis);
                 Sky(m);
@@ -72,13 +73,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     m.Fps = HudFps.Value;   // 0 while the game's show-FPS option is off
                 }
-                m.Alerts = SaveGameManager.Current != null && SaveGameManager.Current.notifications != null ? SaveGameManager.Current.notifications.Count : 0;   // the notices the game's list keeps
+                m.Alerts = Unread();
             }
             catch (Exception e)
             {
                 Say("the pills beyond the time and the money were left out (" + e.GetType().Name + ": " + e.Message + ")");
             }
             m.PillsPress = ForHud;
+            m.PillsHover = !ForHud;   // the full menu's bar has no press on them, only their cards
             m.AllAppsOpen |= AllAppsOpen;
             if (ToolRow != null && ToolRow.Tools.Length > 0)
             {
@@ -138,9 +140,19 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool FastOffered(UIs uis)
         {
-            PlayerActivity.PlayerActivityUI ui = uis != null ? uis.playerActivityUI : null;
-            PlayerActivity.IPlayerActivity a = ui != null && PlayerActivity.PlayerActivityUI.IsPanelOpen ? ui.GetCurrentActivity : null;
-            return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
+            try
+            {
+                PlayerActivity.PlayerActivityUI ui = uis != null ? uis.playerActivityUI : null;
+                PlayerActivity.IPlayerActivity a = ui != null && PlayerActivity.PlayerActivityUI.IsPanelOpen ? ui.GetCurrentActivity : null;
+                return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
+            }
+            catch (Exception e)
+            {
+                // This runs every frame the bar shows and asks an activity of the game's, or of another mod's, whatever its state: one that throws is no fast forward, and
+                // is not the bar's fault, so the bar is never taken off the screen for it.
+                Say("an activity's HasFastForward threw (" + FaultWords.Of(e) + "), so no fast forward is offered");
+                return false;
+            }
         }
 
         // Flips the game's own fast forward switch as its key does (the game's Secondary key). The press stays here, with the
@@ -155,6 +167,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            string player = RealLifeOverhaul.Rivals.RivalGame.PlayerName();
+            FaceSources.Player(player);   // the game's own portrait of the player, told to the faces by the name the pill draws it under
+            m.Player = player;
             m.Energy = Whole(save.Energy);
             m.Hunger = Whole(save.Hunger);
             m.Happiness = Whole(HappinessHelper.Happiness);
@@ -178,8 +193,13 @@ namespace RealLifeOverhaul.Ui
                 m.Season = OtherSeason(uis);
                 return;
             }
+            if (!Settings.SeasonBar)
+            {
+                return;   // the option the old bar's season piece keeps to; the weather pill stays without the season line
+            }
             int season = SeasonRules.SeasonOf(SeasonGame.Today, GameCalendar.DaysPerYear);
             m.Season = SeasonText.Title(season);
+            m.SeasonSize = SeasonRules.BarSizeOf(Settings.SeasonBarSize);   // the old bar's size option: the pill keeps its height, the season's words grow in it
         }
 
         // The weather in a glyph and a word or two: the mod's snow, its reading of the game's rain (mist before and after a
@@ -289,20 +309,12 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Today's money so far under the money ("+$1,240 today"): the money now less the game's balance at the last midnight
-        // (GameInstance.midnightBankBalances, saved). Before a save's first midnight, the figure the game's top bar writes
-        // under its money (yesterday's result, or the mod's day result, Economy/DayResult) with its arrow; else none.
+        // The figure under the money as the game's top bar writes it (Topbar.SetMoneyChangeValue): yesterday's result, which
+        // the mod's day result option (Economy/DayResult) writes into the same label with the mod's money. Mirrored whenever
+        // the label shows, so the option keeps working past the first midnight; no figure while the game shows none.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void MoneyDay(UiStatusModel m, UIs uis)
         {
-            GameInstance save = SaveGameManager.Current;
-            if (save != null && HudNoteRules.Today(save.Money, save.midnightBankBalances, out double net))
-            {
-                m.MoneyTrend = HudNoteRules.Trend(net);
-                string sign = m.MoneyTrend > 0 ? "+" : m.MoneyTrend < 0 ? "-" : string.Empty;
-                m.MoneyDay = UiText.T("reallife_ui_hud_money_today").Replace("{amount}", sign + Math.Abs(net).ToShortCurrencyFormat(abbreviated: true));
-                return;
-            }
             TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;
             if (day == null || !day.gameObject.activeSelf || string.IsNullOrEmpty(day.text))
             {
@@ -311,6 +323,39 @@ namespace RealLifeOverhaul.Ui
             m.MoneyDay = day.text;
             Transform down = day.transform.Find("NegativeArrow");
             m.MoneyTrend = down != null && down.gameObject.activeSelf ? -1 : 1;
+        }
+
+        // The notices that came since the list was last opened: the game keeps a year of them, so their whole count would only grow.
+        // A new city starts with none unread; a list cleared or trimmed below what was seen brings the mark down with it.
+        private static GameInstance _noticeSave;
+        private static int _noticesSeen;
+
+        private static int NoticeCount()
+        {
+            GameInstance save = SaveGameManager.Current;
+            return save != null && save.notifications != null ? save.notifications.Count : 0;
+        }
+
+        private static int Unread()
+        {
+            int count = NoticeCount();
+            if (_noticeSave != SaveGameManager.Current)
+            {
+                _noticeSave = SaveGameManager.Current;
+                _noticesSeen = count;
+            }
+            if (count < _noticesSeen)
+            {
+                _noticesSeen = count;
+            }
+            return count - _noticesSeen;
+        }
+
+        /// <summary>The notice list is open: what it holds is read, and the bell's number starts again from there.</summary>
+        public static void NoticesRead()
+        {
+            _noticeSave = SaveGameManager.Current;
+            _noticesSeen = NoticeCount();
         }
 
         /// <summary>
@@ -334,8 +379,8 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + Whole(save.Energy) * 10201 + Whole(save.Hunger) * 101 + Whole(HappinessHelper.Happiness);
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
-                h = h * 31 + (save.notifications != null ? save.notifications.Count : 0);
-                h = h * 31 + HudFps.Value;
+                h = h * 31 + (save.notifications != null ? save.notifications.Count : 0) * 7 + _noticesSeen;
+                h = h * 31 + HudFps.Value + (Settings.SeasonBar ? 1 : 0) + (TimeHelper.use12h ? 2 : 0);
                 h = h * 31 + (int)Weather.Sky * 16 + (int)Weather.Spell * 4 + (RainHelper.isRaining ? 2 : 0) + (SeasonDirector.Instance != null && SeasonDirector.Instance.Snowing ? 1 : 0);
                 TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;
                 h = h * 31 + (day != null && day.gameObject.activeSelf && day.text != null ? day.text.GetHashCode() : 0);

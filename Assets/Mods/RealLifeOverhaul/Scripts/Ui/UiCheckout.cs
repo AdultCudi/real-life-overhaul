@@ -27,15 +27,16 @@ namespace RealLifeOverhaul.Ui
     /// <summary>What a checkout shows: the goods or the taxes, the total, the queue, and the game's own buttons as they stand.</summary>
     public sealed class UiCheckoutModel
     {
-        public const int PerPage = 6;
+        public const int PerPage = 6;                           // rows in view at least; a taller screen shows more (Rows)
 
         public string Title;                                   // the game's title ("Purchase (3/10 items)", "Pay taxes")
         public UiCheckoutLine[] Lines = new UiCheckoutLine[0];
         public UiCheckoutTax[] Taxes = new UiCheckoutTax[0];
         public bool Choose;                                    // the register lets the player pick packs (up to the game's most)
-        public int Page;
+        public int Rows = PerPage;                             // rows of goods in view; the rest scroll under them with the totals standing
+        public float Offset;                                   // how far the goods have scrolled
+        public int Reveal = -1;                                // a row the keys moved to, brought into view
         public string ColumnGoods, ColumnPrice, ColumnPacks, ColumnTotal;
-        public string PageWords;                               // "Page {page} of {pages}"
         public string PriceEach;                               // "{price} a pack"
         public string TotalLabel, Total;                       // "To pay", "$4,980"; Total null when the game hides it
         public string Paused;                                  // "Time is paused" while the game holds time, else null
@@ -67,13 +68,13 @@ namespace RealLifeOverhaul.Ui
     /// the goods as rows (the item's picture on a tile, its name and pack, a pack's price, the packs as a stepper while the
     /// register lets the player pick, the row's price), or at the tax office the taxes owed with the amount to pay; the
     /// total as the large figure, Cancel and Order with their keys; once the order is in, the queue as one row. A long
-    /// list turns in pages. Commands from <see cref="LessCommand"/>. Game-free. Cost: a layout a change.
+    /// list scrolls under its columns while the total and the buttons stay in view. Commands from <see cref="LessCommand"/>. Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiCheckout
     {
-        public const int LessCommand = 600, MoreCommand = 601, PackCommand = 602, PageCommand = 603, TaxTypeCommand = 604, TaxPayCommand = 605,
+        public const int LessCommand = 600, MoreCommand = 601, PackCommand = 602, TaxTypeCommand = 604, TaxPayCommand = 605,
             OrderCommand = 606, CancelCommand = 607;
-        public static readonly int[] Commands = { LessCommand, MoreCommand, PackCommand, PageCommand, TaxTypeCommand, TaxPayCommand, OrderCommand, CancelCommand };
+        public static readonly int[] Commands = { LessCommand, MoreCommand, PackCommand, TaxTypeCommand, TaxPayCommand, OrderCommand, CancelCommand };
 
         public const float Width = 760f;                 // px: a receipt wide enough for a row's four columns
         private const float LineH = UiTokens.S16;         // px: a row of goods, its picture's tile with room round it
@@ -81,14 +82,10 @@ namespace RealLifeOverhaul.Ui
         private const float PriceW = 136f, StepW = 136f, TotalW = 112f;
         private const float Foot = UiTokens.S16 + UiTokens.S6;   // px: the total and the buttons
         private const float HeadH = UiTokens.S16 + UiTokens.S2;  // px: the shop's line
+        private const int MostRows = 14;                          // rows in view on the tallest screen
 
-        public static int Pages(UiCheckoutModel m) => Math.Max(1, (m.Lines.Length + UiCheckoutModel.PerPage - 1) / UiCheckoutModel.PerPage);
-
-        private static int Shown(UiCheckoutModel m)
-        {
-            int page = Math.Max(0, Math.Min(m.Page, Pages(m) - 1));
-            return Math.Max(0, Math.Min(UiCheckoutModel.PerPage, m.Lines.Length - page * UiCheckoutModel.PerPage));
-        }
+        // The rows of goods in view: all of them while they fit, else as many as the screen has room for, the rest scrolling.
+        private static int Shown(UiCheckoutModel m) => Math.Max(0, Math.Min(m.Rows, m.Lines.Length));
 
         private static bool Queued(UiCheckoutModel m) => !string.IsNullOrEmpty(m.Queue);
 
@@ -110,7 +107,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                h += UiTokens.TableRow + Shown(m) * LineH + UiTokens.S2 + (Pages(m) > 1 ? UiTokens.Control + UiTokens.S2 : 0f) + SumsH(m) + PlaceH(m);
+                h += UiTokens.TableRow + Shown(m) * LineH + UiTokens.S2 + SumsH(m) + PlaceH(m);
             }
             return UiDraw.Snap(h + Foot);
         }
@@ -129,6 +126,13 @@ namespace RealLifeOverhaul.Ui
             s.Begin("checkout", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
+            if (m.Lines.Length > 0 && !Queued(m) && m.Taxes.Length == 0)
+            {
+                // As many rows as the screen has room for between the margins, the totals and buttons beneath them kept in view.
+                m.Rows = 0;
+                float fixedH = Height(m);
+                m.Rows = Math.Max(UiCheckoutModel.PerPage, Math.Min(MostRows, (int)((frame.BandY - UiTokens.S8 * 2f - fixedH) / LineH)));
+            }
             float h = Height(m);
             // Once the order is in the game slides its panel down out of the way while the player waits: the queue row docks
             // low over the bar, the store in view above it.
@@ -181,23 +185,37 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 cy = Columns(s, on, m, ix, cy, iw);
-                int pages = Pages(m), page = Math.Max(0, Math.Min(m.Page, pages - 1));
-                int first = page * UiCheckoutModel.PerPage, shown = Shown(m);
-                for (int i = 0; i < shown; i++)
-                {
-                    Line(s, on, ref m.Lines[first + i], first + i, m, ix, cy, iw);
-                    cy += LineH;
-                }
+                cy = Goods(s, on, m, ix, cy, iw);
                 cy += UiTokens.S2;
-                if (pages > 1)
-                {
-                    cy = Pager(s, on, m, page, pages, ix, cy, iw);
-                }
                 cy = Sums(s, on, m, x, cy);
                 cy = Place(s, on, m, x, cy);
             }
             Footer(s, on, m, x, cy, keys, true);
             return h;
+        }
+
+        // The goods in a scroll region of the rows that fit, every row of the cart in it: the wheel and the keys bring the rest into view.
+        private static float Goods(UiScene s, UiAt at, UiCheckoutModel m, float x, float y, float w)
+        {
+            int shown = Shown(m);
+            float viewH = shown * LineH, content = m.Lines.Length * LineH, offset = m.Offset;
+            if (m.Reveal >= 0 && m.Reveal < m.Lines.Length)
+            {
+                offset = Math.Min(offset, m.Reveal * LineH);
+                offset = Math.Max(offset, (m.Reveal + 1) * LineH - viewH);
+            }
+            offset = Math.Max(0f, Math.Min(offset, content - viewH));
+            m.Offset = offset;
+            m.Reveal = -1;
+            short clip = s.AddClip(x, y, w, viewH, offset);
+            s.Clips[clip].ContentHeight = content;
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            for (int i = 0; i < m.Lines.Length; i++)
+            {
+                Line(s, inClip, ref m.Lines[i], i, m, 0f, i * LineH, w);
+            }
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S2, y, viewH, offset, content);
+            return y + viewH;
         }
 
         // The shop's line: its kind's glyph on a tile, its name over its address, and where the goods go at the right.
@@ -288,29 +306,6 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, at, x, ny, nw, UiStyle.Title, UiRole.Text, t.Name, UiFlags.Truncate | UiFlags.Middle);
             string owed = (m.OwedWords ?? "{amount}").Replace("{amount}", t.Owed ?? string.Empty);
             UiDraw.Text(s, at, x, ny + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1, nw, UiStyle.Small, UiRole.Text2, owed, UiFlags.Truncate | UiFlags.Middle);
-        }
-
-        // The pages of a long list: the arrows either side of where the list stands, the arrow with no page greyed.
-        private static float Pager(UiScene s, UiAt at, UiCheckoutModel m, int page, int pages, float x, float y, float w)
-        {
-            float b = UiTokens.ControlSmall, by = y + (UiTokens.Control - b) / 2f;
-            string words = (m.PageWords ?? "{page} / {pages}").Replace("{page}", (page + 1).ToString(System.Globalization.CultureInfo.InvariantCulture))
-                .Replace("{pages}", pages.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            float tw = UiDraw.Snap(UiTextRules.Width(words, UiStyle.Small) + UiTokens.S1), mid = x + w / 2f;
-            int drawn = s.ItemCount;
-            int back = UiDraw.IconButton(s, at, UiDraw.SnapDown(mid - tw / 2f - UiTokens.S3 - b), by, b, UiIcon.Back, UiRole.Text, PageCommand, -1, false, UiAction.Count, false, true);
-            if (page == 0)
-            {
-                UiDraw.Dim(s, drawn, back);
-            }
-            UiDraw.TextMiddle(s, at, UiDraw.SnapDown(mid - tw / 2f), y, UiTokens.Control, tw, UiStyle.Small, UiRole.Text2, words, UiFlags.Centre);
-            drawn = s.ItemCount;
-            int next = UiDraw.IconButton(s, at, UiDraw.Snap(mid + tw / 2f + UiTokens.S3), by, b, UiIcon.Next, UiRole.Text, PageCommand, 1, false, UiAction.Count, false, true);
-            if (page >= pages - 1)
-            {
-                UiDraw.Dim(s, drawn, next);
-            }
-            return y + UiTokens.Control + UiTokens.S2;
         }
 
         // The goods and the tax in them, a row each on a band under the goods, their sum the total at the foot.

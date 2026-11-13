@@ -23,6 +23,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The All apps tile pressed: the HUD host stands the frame's All apps over the city.</summary>
         public Func<bool> AllApps;
 
+        /// <summary>The tile for other mods' apps pressed: the same All apps, on its Other mods tab.</summary>
+        public Func<bool> OtherApps;
+
         public string Id => "hud";
 
         public bool Dirty { get; set; } = true;
@@ -56,7 +59,7 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiDraw.TimePillCommand:
-                    return arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0);
+                    return arg == UiDraw.ClockArg || (arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0));   // the clock is only there to hover
                 case UiDraw.MoneyPillCommand:
                     return TopBar(true);
                 case UiDraw.NeedsPillCommand:
@@ -73,6 +76,10 @@ namespace RealLifeOverhaul.Ui
             if (command == UiDraw.AllAppsCommand)
             {
                 return AllApps != null && AllApps();
+            }
+            if (command == UiDraw.MoreAppsCommand)
+            {
+                return OtherApps != null && OtherApps();
             }
             return PiecePressed != null && PiecePressed(command, arg);
         }
@@ -143,6 +150,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             uis.notificationsListUI.Toggle(true);
+            HudStatusGame.NoticesRead();
             return true;
         }
 
@@ -183,6 +191,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
+            Dirty |= HudGoals.Wheel(clip, notches);   // the objectives' groups scroll when they outgrow the room over the bar
         }
     }
 }

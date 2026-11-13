@@ -326,7 +326,23 @@ namespace RealLifeOverhaul.Ui
                 "reallife_space_btn_buy", "reallife_space_btn_rent", "reallife_space_btn_sell", "reallife_space_btn_end", "reallife_space_btn_keep",
                 "reallife_space_refuse_off", "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full",
                 "reallife_space_refuse_limit", "reallife_space_refuse_park_limit", "reallife_space_refuse_cash", "reallife_space_refuse_not_held",
-                "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned", "reallife_space_refuse_moved"
+                "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned", "reallife_space_refuse_moved",
+                // the tables' filters, their empty sentences and the foot (as the old app's tables had them)
+                "reallife_table_total", "reallife_ui_shop_no_results", "reallife_tab_all_districts", "reallife_tab_all_kinds", "reallife_tab_all_stages",
+                "reallife_estate_filter_all_states", "reallife_estate_filter_all_classes", "reallife_estate_filter_all_places", "reallife_estate_filter_paying",
+                "reallife_estate_filter_behind", "reallife_estate_filter_notice", "reallife_estate_filter_empty", "reallife_estate_filter_works_on",
+                "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none", "reallife_estate_filter_calls", "reallife_estate_filter_out",
+                "reallife_estate_filter_in", "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing",
+                "reallife_estate_empty_market", "reallife_estate_empty_mine", "reallife_estate_empty_tenants", "reallife_estate_empty_works",
+                "reallife_estate_empty_agency", "reallife_estate_empty_hire",
+                // the tenant's page: what stands behind the mood
+                "reallife_ui_estate_ten_happy_up", "reallife_ui_estate_ten_happy_down", "reallife_ui_estate_ten_moans", "reallife_estate_ten_quitting",
+                "reallife_ui_estate_ten_plan", "reallife_ui_estate_ten_reminded",
+                // a listing's repair cost and the market's notes
+                "reallife_ui_estate_listing_run_down", "reallife_ui_estate_listing_kept", "reallife_ui_estate_listing_how",
+                "reallife_ui_estate_market_heading", "reallife_estate_hire_how",
+                // the Guide's page named at the foot
+                "reallife_guide_app", "reallife_meta_title_economy_estate", "reallife_meta_title_economy_estate_duties", "reallife_meta_title_parking_spaces"
             };
         }
 

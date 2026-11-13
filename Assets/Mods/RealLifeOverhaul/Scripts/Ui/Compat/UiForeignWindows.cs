@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Canvas> Open = new List<Canvas>(4);          // the foreign windows up
         private static readonly List<bool> WasOverride = new List<bool>(4);       // ...and how each was sorted before it was lifted
         private static readonly List<int> WasOrder = new List<int>(4);
+        private static readonly List<int> LiftedTo = new List<int>(4);            // ...and the order each was lifted to: put back only while it still stands there
+        private static CursorLockMode _wasLock;                                   // the cursor as it was when the first window freed it
+        private static bool _wasVisible;
         private static readonly HashSet<int> Before = new HashSet<int>();         // the canvases up when the first kit screen opened
         private static readonly Dictionary<int, bool> Judged = new Dictionary<int, bool>();   // canvases judged once: another mod's or not
         private static IDictionary _registry;
@@ -118,15 +121,28 @@ namespace RealLifeOverhaul.Ui
         {
             for (int i = 0; i < Open.Count; i++)
             {
-                if (Open[i] != null)
+                if (Open[i] != null && Open[i].sortingOrder == LiftedTo[i])
                 {
+                    // only while the window still stands where this put it: an order the mod moved it to since is the mod's own
                     Open[i].overrideSorting = WasOverride[i];
                     Open[i].sortingOrder = WasOrder[i];
                 }
             }
+            bool windowUp = false;
+            for (int i = 0; i < Open.Count; i++)
+            {
+                windowUp |= Open[i] != null && Open[i].isActiveAndEnabled;
+            }
+            if (_cursorFreed && !windowUp && Cursor.lockState == CursorLockMode.None && Cursor.visible)
+            {
+                // the cursor this freed for the window goes back as it was once no window stands, unless the game or the mod set it otherwise meanwhile
+                Cursor.lockState = _wasLock;
+                Cursor.visible = _wasVisible;
+            }
             Open.Clear();
             WasOverride.Clear();
             WasOrder.Clear();
+            LiftedTo.Clear();
             Judged.Clear();
             Before.Clear();
             Up = false;
@@ -238,8 +254,11 @@ namespace RealLifeOverhaul.Ui
                 c.overrideSorting = true;
                 c.sortingOrder = order;
             }
+            LiftedTo.Add(c.sortingOrder);
             if (!_cursorFreed && (Cursor.lockState != CursorLockMode.None || !Cursor.visible))
             {
+                _wasLock = Cursor.lockState;
+                _wasVisible = Cursor.visible;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 _cursorFreed = true;

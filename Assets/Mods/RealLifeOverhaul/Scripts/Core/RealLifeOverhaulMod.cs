@@ -1269,6 +1269,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_trips_test", () => Economy.LogisticsDirector.Instance?.TestTrips())
                 .AddToggle(Settings.LivingSpoilageId, "reallife_spoil_enabled", Settings.LivingSpoilage,
                     v => Settings.LivingSpoilage = v)
+                .AddSlider(Settings.LivingSpoilagePaceId, "reallife_spoil_pace", Economy.SpoilRules.PaceLeast, Economy.SpoilRules.PaceMost, Settings.LivingSpoilagePace,
+                    v => Settings.LivingSpoilagePace = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.LivingPartiesId, "reallife_party_enabled", Settings.LivingParties,
                     v => Settings.LivingParties = v)
                 .AddButton("reallife_party_test_invite", () => Parties.PartyDirector.Instance?.TestInvite())

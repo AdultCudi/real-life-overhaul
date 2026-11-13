@@ -1008,7 +1008,7 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
-        private static string Clock(Transaction t) => t.timestamp.Hour.ToString("00", Inv) + ":" + ((int)t.timestamp.Minute).ToString("00", Inv);
+        private static string Clock(Transaction t) => UiClock.At(t.timestamp.Hour, (int)t.timestamp.Minute);
 
         private static string Localised(string key) => string.IsNullOrEmpty(key) ? string.Empty : LocalizorManager.IsLocalizedKey(key) ? LocalizorManager.GetLocalization(key) : key;
 

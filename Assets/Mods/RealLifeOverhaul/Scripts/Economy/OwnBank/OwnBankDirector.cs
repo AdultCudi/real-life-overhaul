@@ -271,6 +271,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && Running)
             {
                 _view.Want(tab);
+                RealLifeOverhaul.Ui.OwnBankLive.Want(tab);   // the kit's page takes the same tab once (it numbers the five alike)
                 _app.Open();
             }
         }

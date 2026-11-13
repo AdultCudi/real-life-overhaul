@@ -114,6 +114,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPath.cs" Link="Mod\News\NewsPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsHost.cs" Link="Mod\News\NewsHost.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPeopleRules.cs" Link="Mod\News\NewsPeopleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsCardRules.cs" Link="Mod\News\NewsCardRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Cards.cs" Link="Mod\News\NewsPages.Cards.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Stand.cs" Link="Mod\News\NewsPages.Stand.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsText.cs" Link="Mod\News\NewsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsReadingPage.cs" Link="Mod\News\NewsReadingPage.cs" />
@@ -886,6 +888,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorStore.cs" Link="Mod\InteriorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusZoneRules.cs" Link="Mod\BusZoneRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeLaneRules.cs" Link="Mod\BikeLaneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />
@@ -1012,6 +1015,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMessageList.cs" Link="Mod\UiMessageList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFeed.cs" Link="Mod\UiFeed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.cs" Link="Mod\FlareFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareScreenRules.cs" Link="Mod\FlareScreenRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFigures.cs" Link="Mod\FlareFigures.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Pages.cs" Link="Mod\FlareFace.Pages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Desk.cs" Link="Mod\FlareFace.Desk.cs" />
@@ -1070,6 +1074,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudNotice.cs" Link="Mod\UiHudNotice.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudPopup.cs" Link="Mod\UiHudPopup.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\HudScreens\HudNoteRules.cs" Link="Mod\HudNoteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Hud\HudClockRules.cs" Link="Mod\HudClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.EmptyStateHeight.cs" Link="Mod\UiDraw.EmptyStateHeight.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiDragging.cs" Link="Mod\IUiDragging.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDiary.cs" Link="Mod\UiDiary.cs" />
@@ -1167,6 +1172,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\UiMapFilters.cs" Link="Mod\UiMapFilters.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPanRules.cs" Link="Mod\UiPanRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFaultCount.cs" Link="Mod\UiFaultCount.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\IUiTabWant.cs" Link="Mod\IUiTabWant.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiClockRules.cs" Link="Mod\UiClockRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkRoutes.cs" Link="Mod\WorkRoutes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignRules.cs" Link="Mod\UiForeignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignApps.cs" Link="Mod\UiForeignApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\TypingRules.cs" Link="Mod\TypingRules.cs" />
@@ -1178,6 +1188,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Fields.cs" Link="Mod\UiDraw.Fields.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Caret.cs" Link="Mod\UiDraw.Caret.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataTable.cs" Link="Mod\UiDataTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataSort.cs" Link="Mod\UiDataSort.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksModel.cs" Link="Mod\StocksModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartDesk.cs" Link="Mod\UiChartDesk.cs" />

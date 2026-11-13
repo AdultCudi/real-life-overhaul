@@ -23,8 +23,10 @@ namespace RealLifeOverhaul.Ui
             Refs = 113, Background = 114, Reject = 115, Buyout = 116, Rush = 117, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134,
             SetRole = 141, SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+        private const int RoleSlot = 1;   // the amount place a person's page keeps the role chosen to move them to in
         private static readonly int[] PayBands = { 900, 1000, 1100, 1200, 1350 };   // thousandths of the going rate an ad's top pay can be set at
-        private int _local, _wanted = -1, _readGeneration = -1;
+        private int _local, _wanted = -1, _readGeneration = -1, _pickId = -1, _pickTab = -1;
+        private string _crewPlace;
         private WorkApp _app = new WorkApp();
         private readonly List<BuildingRegistration> _places = new List<BuildingRegistration>(8);
 
@@ -52,11 +54,59 @@ namespace RealLifeOverhaul.Ui
             Instance._local++;
         }
 
+        /// <summary>
+        /// A notice or a button of the old app's numbering asked for a tab, with an applicant picked ("app:12") or a data centre's crew search
+        /// ("newcrew", the centre's place): the tab is mapped by what it is and the page opens on that applicant or that centre.
+        /// </summary>
+        public static void WantOld(int oldTab, string pick, string crewPlace)
+        {
+            int tab = WorkRoutes.RolesTab(oldTab);
+            if (tab < 0)
+            {
+                return;
+            }
+            Instance._pickId = WorkRoutes.PickId(pick, "app:");
+            Instance._pickTab = tab;
+            Instance._crewPlace = pick == "newcrew" ? crewPlace : null;
+            Want(tab);
+        }
+
         public int TakeWanted()
         {
             int tab = _wanted;
             _wanted = -1;
             return tab;
+        }
+
+        // What the request named, applied to the view the page is about to be made for; taken once.
+        private void ApplyPick(HiringFile h, WorkView view)
+        {
+            int id = _pickId, tab = _pickTab;
+            string crew = _crewPlace;
+            _pickId = _pickTab = -1;
+            _crewPlace = null;
+            if (tab != view.Tab)
+            {
+                return;
+            }
+            if (id >= 0 && tab == 1 && h.ApplicantOf(id) != null)
+            {
+                view.Sub = 1;
+                view.Pick = id;
+                view.PageTab = 0;
+            }
+            if (crew != null && tab == 3)
+            {
+                TalentGame.Businesses(_places);
+                for (int i = 0; i < _places.Count; i++)
+                {
+                    if (TalentGame.Place(_places[i]) == crew)
+                    {
+                        view.Set(2, i);
+                        return;
+                    }
+                }
+            }
         }
 
         public UiNavEntry[] Nav(WorkView view)
@@ -73,6 +123,7 @@ namespace RealLifeOverhaul.Ui
             GameInstance save = SaveGameManager.Current;
             if (_app.Ready && h != null && save != null)
             {
+                ApplyPick(h, view);
                 int day = save.Day;
                 _app.Tabs[0] = view.Sub == 3 ? NewAdTab(d, h, day, view) : Jobs(d, h, day);
                 _app.Tabs[1] = view.Sub == 1 ? ApplicantPage(d, h, day, view) : Applicants(d, h, day, view);

@@ -192,6 +192,10 @@ namespace RealLifeOverhaul.Ui
         Eyedropper, // the designer's eyedropper tool
         Undo, // a step taken back
         Redo, // a step taken back, put forward again
+        Waves, // swimming
+        Ticket, // a paid attraction
+        Golf, // a round of golf
+        TennisBall, // a game of tennis
         Count
     }
 
@@ -226,7 +230,7 @@ namespace RealLifeOverhaul.Ui
                     return UiRole.Chart5;   // the weather's grey days in a cool blue, a fair one keeps the sun's yellow
                 case UiIcon.Check: case UiIcon.ShieldCheck: case UiIcon.SmileyHappy: case UiIcon.TrendUp: case UiIcon.Phone: case UiIcon.Walk:
                     return UiRole.Ok;
-                case UiIcon.Trash: case UiIcon.SmileySad: case UiIcon.TrendDown: case UiIcon.Heartbeat: case UiIcon.Heart:
+                case UiIcon.Trash: case UiIcon.SmileySad: case UiIcon.TrendDown: case UiIcon.Heartbeat: case UiIcon.Heart: case UiIcon.Close:   // a cross: an error notice
                     return UiRole.Danger;
                 case UiIcon.Warning: case UiIcon.SmileyMeh: case UiIcon.Bell: case UiIcon.Lightning: case UiIcon.Taxi:   // a cab's amber
                     return UiRole.Warn;

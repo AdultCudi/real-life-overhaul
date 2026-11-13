@@ -139,6 +139,16 @@ internal static partial class UiSamples
             {
                 j.Shifts.Add(new CareerShift { Day = SDay(w, Today - 1 - i), Hours = i == 1 ? "4h" : "8h", Score = score[i], Pay = "$" + pay[i] });
             }
+            if (state == "my_job_desk")
+            {
+                // no desk could be had: the shift is begun from the page, and overtime the same way
+                j.DeskLine = "Your desk is at Harbourside Freight HSF, floor 1.";
+                j.DeskFallback = "No desk of the depot is free, so the day is begun from here.";
+                j.DeskWhy = null;
+                j.CanStart = true;
+                j.CanLate = true;
+                j.LateWhy = w.T("reallife_life_why_day_first", "Work today's day first.");
+            }
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_next_review"), SDay(w, 421)));
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_boss"), Sx(w, "reallife_life_boss_mentor")));
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_overtime"), Sf(w, "reallife_study_hours_minutes", "hours", "6", "minutes", "00")));

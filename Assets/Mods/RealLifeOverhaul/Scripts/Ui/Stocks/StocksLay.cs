@@ -41,11 +41,11 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Header(s, at, m, x, y, w, keys);
             }
-            if (m.Page == StocksPage.Portfolio && m.ViewLabels.Length > 1)
+            if ((m.Page == StocksPage.Portfolio || m.Page == StocksPage.Market || m.Page == StocksPage.Index) && m.ViewLabels.Length > 1)
             {
                 y = Views(s, at, m, x, y, w);
             }
-            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Co == null)
+            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Co == null && m.Page != StocksPage.Index)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, Empty, keys);
             }
@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     case StocksPage.Company: y = Company(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Portfolio: y = Portfolio(s, at, m, x, y, w, bottom, keys); break;
+                    case StocksPage.Index: y = IndexPage(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Orders:
                     case StocksPage.History: NoteTable(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Listing: y = Listing(s, at, m, x, y, w, bottom, keys); break;
@@ -186,20 +187,38 @@ namespace RealLifeOverhaul.Ui
             {
                 y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
             }
-            bool tape = m.Tape != null && m.Tape.Length > 0, orders = m.OrderLines != null && m.OrderLines.Length > 0;
-            if (tape || orders)
+            if (!string.IsNullOrEmpty(m.RateLine))
             {
-                // The tape and the player's open orders side by side, one row of cards; the tape alone takes the width when nothing is open.
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Body, UiRole.Text2, m.RateLine, UiFlags.Truncate);
+                y += UiTokens.PairRow + UiTokens.S2;
+            }
+            bool news = m.News != null && m.News.Length > 0, tape = m.Tape != null && m.Tape.Length > 0, orders = m.OrderLines != null && m.OrderLines.Length > 0;
+            if (news || tape || orders)
+            {
+                // The news, the tape and the player's open orders side by side, one row of cards; the news is the wider, and each takes the width alone when it is the only one.
                 float gap = UiTokens.S3;
-                float tw = tape && orders ? UiDraw.SnapDown((w - gap) * 0.55f) : w;
-                float h = UiTokens.S2 + UiTokens.PairRow + Math.Max(1, Math.Max(tape ? Math.Min(3, m.Tape.Length) : 0, orders ? Math.Min(3, m.OrderLines.Length) : 0)) * UiTokens.PairRow;
+                float wn = news ? 1.6f : 0f, wt = tape ? 1f : 0f, wo = orders ? 1f : 0f;
+                float units = wn + wt + wo;
+                float room = w - gap * ((news ? 1 : 0) + (tape ? 1 : 0) + (orders ? 1 : 0) - 1);
+                int lines = Math.Max(1, Math.Max(news ? Math.Min(StocksModel.NewsShown, m.News.Length) : 0,
+                    Math.Max(tape ? Math.Min(3, m.Tape.Length) : 0, orders ? Math.Min(3, m.OrderLines.Length) : 0)));
+                float h = UiTokens.S2 + UiTokens.PairRow + lines * UiTokens.PairRow;
+                float cx = x;
+                if (news)
+                {
+                    float cw = UiDraw.SnapDown(room * wn / units);
+                    NewsCard(s, at, m, cx, y, cw, h);
+                    cx += cw + gap;
+                }
                 if (tape)
                 {
-                    Tape(s, at, m, x, y, tw, h);
+                    float cw = UiDraw.SnapDown(room * wt / units);
+                    Tape(s, at, m, cx, y, cw, h);
+                    cx += cw + gap;
                 }
                 if (orders)
                 {
-                    Orders(s, at, m, tape ? x + tw + gap : x, y, tape ? w - tw - gap : w, h);
+                    Orders(s, at, m, cx, y, Math.Max(UiTokens.S16, x + w - cx), h);
                 }
                 y += h + UiTokens.S3;
             }
@@ -237,6 +256,49 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, row, x + w - UiTokens.S3 - vw, ry, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, m.OrderValues[i], UiFlags.Right | UiFlags.Truncate);
                 UiDraw.Node(s, on, x + UiTokens.S1, ry, w - UiTokens.S2, UiTokens.PairRow, OrderRow, i, face);
             }
+        }
+
+        // The news: the newest pieces in the old Market box's words, or its no-news note.
+        private static void NewsCard(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float h)
+        {
+            UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiDraw.TextMiddle(s, at, x + UiTokens.S3, y + UiTokens.S1, UiTokens.PairRow, w - UiTokens.S6, UiStyle.SectionHeader, UiRole.Text, m.NewsTitle, UiFlags.Label | UiFlags.Truncate);
+            int n = Math.Min(StocksModel.NewsShown, m.News.Length);
+            for (int i = 0; i < n; i++)
+            {
+                UiDraw.TextMiddle(s, at, x + UiTokens.S3, y + UiTokens.S1 + UiTokens.PairRow + i * UiTokens.PairRow, UiTokens.PairRow, w - UiTokens.S6, UiStyle.Body,
+                    m.NewsQuiet ? UiRole.Muted : UiRole.Text2, m.News[i], UiFlags.Truncate);
+            }
+        }
+
+        // The index page: its figures, the index over the chosen period filling the room, and the rate line and what the index is under it.
+        private static float IndexPage(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (m.Figures != null && m.Figures.Length > 0)
+            {
+                y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
+            }
+            float foot = (string.IsNullOrEmpty(m.RateLine) ? 0f : UiTokens.PairRow) + (string.IsNullOrEmpty(m.Note) ? 0f : UiTokens.PairRow);
+            float ch = bottom - y - foot - (foot > 0f ? UiTokens.S3 : 0f);
+            if (m.Chart != null && ch > UiTokens.S16 * 2f)
+            {
+                UiChart.Lay(s, at, m.Chart, x, y, w, ch);
+            }
+            else if (m.Chart == null && ch > UiTokens.S16 * 2f)
+            {
+                UiDraw.EmptyState(s, at, x, y, w, ch, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, Empty, keys);
+            }
+            float fy = bottom - foot;
+            if (!string.IsNullOrEmpty(m.RateLine))
+            {
+                UiDraw.TextMiddle(s, at, x, fy, UiTokens.PairRow, w, UiStyle.Body, UiRole.Text2, m.RateLine, UiFlags.Truncate);
+                fy += UiTokens.PairRow;
+            }
+            if (!string.IsNullOrEmpty(m.Note))
+            {
+                UiDraw.TextMiddle(s, at, x, fy, UiTokens.PairRow, w, UiStyle.Small, UiRole.Muted, m.Note, UiFlags.Truncate);
+            }
+            return bottom;
         }
 
         private static float Tape(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float h)

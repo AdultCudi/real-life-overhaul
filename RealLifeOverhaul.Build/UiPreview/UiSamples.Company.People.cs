@@ -597,7 +597,7 @@ internal static partial class UiSamples
                 };
                 var c = new CompanyCard
                 {
-                    Kicker = speedy.Name, Title = TaskName(w, 4), Icon = UiIcon.Package, Sub = w.F("reallife_mgr_dec_when", "{place}, day {day} at {hour}:00, by {name}", "place", speedy.Name, "day", Dn(214), "hour", "08", "name", ray.Name),
+                    Kicker = speedy.Name, Title = TaskName(w, 4), Icon = UiIcon.Package, Sub = w.F("reallife_ui_mgr_dec_when", "{place}, day {day} at {time}, by {name}", "place", speedy.Name, "day", Dn(214), "time", "08:00", "name", ray.Name),
                     Chips = new[] { w.T("reallife_mgr_state_done", "Done") }, ChipTones = new[] { UiRole.Ok }, Back = CBack(w, "mgr:" + place, CompanyView.Managers)
                 };
                 c.Blocks = new[]

@@ -134,6 +134,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember EstateForSale = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "cancelSaleLabel", "TextLocalizationComponent"));
         public static readonly GameMember EstateCancelPanel = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "cancelSetForSalePanel", "GameObject"));
         public static readonly GameMember PlaceKind = Optional(Field(BizManKitPart, Game, "BizManBuildingInfo", "buildingType", "TextLocalizationComponent"));
+        public static readonly GameMember PlacePhoto = Optional(Field(BizManKitPart, Game, "BizManBuildingInfo", "buildingImage", "Image"));
         public static readonly GameMember PlaceTaxLabel = Optional(Field(BizManKitPart, Game, "BizManBuildingInfo", "taxesInfo", "TextLocalizationComponent"));
         public static readonly GameMember PlaceTax = Optional(Field(BizManKitPart, Game, "BizManBuildingInfo", "taxesValue", "TMP_Text"));
     }

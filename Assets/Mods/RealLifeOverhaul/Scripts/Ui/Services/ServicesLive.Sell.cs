@@ -237,7 +237,8 @@ namespace RealLifeOverhaul.Ui
                             Values = new[] { (int)UiIcon.Store, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                             Subs = new[] { v.Buyer.Length > 0 ? ServicesText.T("reallife_ui_svc_then_taken", "buyer",
                                 v.BuyerName) : ServicesText.T("reallife_ui_svc_then_kept"), ServicesText.T("reallife_ui_svc_rival_owner"), null, null, null },
-                            Hue = UiColour.HueOf(v.SellerName), Ring = UiRole.None
+                            Hue = UiColour.HueOf(v.SellerName), Ring = UiRole.None,
+                            SortKeys = new[] { N, N, v.Price, v.Weekly, v.Deadline }
                         });
                         keys.Add("rsale:" + v.Id);
                     }
@@ -268,7 +269,8 @@ namespace RealLifeOverhaul.Ui
                         {
                             Cells = new[] { buyer, Money(o.Price), Against(o.Price, b.Value), Terms(o), ServicesText.T("reallife_econ_day", "day", o.Deadline.ToString(Inv)) },
                             Values = new[] { 0, 0, Standing(o.Price, b.Value), 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                            Subs = new[] { ServicesText.Who(o), null, null, null, null }, Hue = UiColour.HueOf(buyer), Ring = UiRole.None
+                            Subs = new[] { ServicesText.Who(o), null, null, null, null }, Hue = UiColour.HueOf(buyer), Ring = UiRole.None,
+                            SortKeys = new[] { N, o.Price, Standing(o.Price, b.Value), N, o.Deadline }
                         });
                         keys.Add("bid:" + o.Id);
                     }
@@ -278,22 +280,22 @@ namespace RealLifeOverhaul.Ui
                     p.OffersTitle = ServicesText.T("reallife_ui_svc_view_offers_title");
                     p.OffersNote = rows.Count > 0 ? ServicesText.T("reallife_ui_svc_offers_note", "count", rows.Count.ToString(Inv)) : null;
                 }
-                int picked = keys.IndexOf(_v.Pick);
+                p.Offers = Arranged(columns, rows, keys, null, out string[] shown);
+                p.OfferKeys = shown;
+                int picked = Array.IndexOf(shown, _v.Pick);
                 if (_v.Pick != null && picked < 0)
                 {
                     _v.Pick = null;   // an offer that lapsed, was refused or accepted: its card gives way to the first
                 }
-                if (_v.Pick == null && keys.Count > 0)
+                if (_v.Pick == null && shown.Length > 0)
                 {
-                    picked = 0;   // the first row is the one the page is about until another is chosen: a sale page is never a table without a decision beside it
+                    picked = 0;   // the first row shown is the one the page is about until another is chosen: a sale page is never a table without a decision beside it
                 }
-                p.Offers = new UiDataTableModel
-                {
-                    Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, Selected = picked, EmptyTitle = emptyTitle, EmptyBody = emptyBody,
-                    EmptyIcon = UiIcon.Tag
-                };
-                p.OfferKeys = keys.ToArray();
-                _picked = picked >= 0 ? keys[picked] : null;
+                p.Offers.Selected = picked;
+                p.Offers.EmptyTitle = emptyTitle;
+                p.Offers.EmptyBody = emptyBody;
+                p.Offers.EmptyIcon = UiIcon.Tag;
+                _picked = picked >= 0 ? shown[picked] : null;
             }
 
             private string _picked;

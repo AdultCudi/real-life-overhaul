@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Ui
         Bonds,
         Futures,
         Company,
-        Ticket
+        Ticket,
+        Index
     }
 
     /// <summary>One labelled figure of the ticket, the position or a signal: the label says what the number is.</summary>
@@ -39,6 +40,7 @@ namespace RealLifeOverhaul.Ui
         public bool CanLess = true, CanMore = true;
         public string Place, Instead;
         public bool PlaceDisabled;
+        public string Impact;                         // "Its size moves the price 1.2% against it" when the order is big enough to matter, else null
         public string Price, Why, Watch, PutBack;     // a limit or stop price (null at the market), why it cannot be placed, the watch button, the share of dividends put back
         // The order panel of the company page: segmented choices and labelled rows.
         public string Title, CashWords;               // "Order" and "Cash $1.9B"
@@ -57,6 +59,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed class StocksModel
     {
+        public const int NewsShown = 3;                            // the newest pieces of news the Market page carries; the Ledger's markets page has the rest
         public string Title = "Stocks";
         public UiNavEntry[] Nav = new UiNavEntry[0];
         public int NavAt;
@@ -91,6 +94,10 @@ namespace RealLifeOverhaul.Ui
         public UiIcon EmptyIcon = UiIcon.ChartLineUp;
         public string PromptBack, PromptMove, PromptSelect, PromptPlace, PromptOther;
         public UiFormRow[] Form = new UiFormRow[0];
+        public string RateLine;                                    // the bank rate and inflation, under the Market's figures and the index page's chart
+        public string NewsTitle;                                   // the Market's news card: its title, its lines (newest first) and whether the lines are the no-news note
+        public string[] News = new string[0];
+        public bool NewsQuiet;
         public string Status;                                      // the market's state, over the page's actions
         public UiActionModel[] Actions = new UiActionModel[0];     // the page's own buttons: pay a call, add a rule, deposit
         public string TableTitle, Table2Title;                     // the capitals over a table, when the page holds two

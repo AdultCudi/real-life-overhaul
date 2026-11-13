@@ -50,7 +50,6 @@ namespace RealLifeOverhaul.Ui
             _m.ColumnPacks = UiText.T("common_amount");
             _m.ColumnTotal = UiText.T("common_total");
             _m.PriceEach = UiText.T("reallife_ui_buy_each");
-            _m.PageWords = UiText.T("reallife_ui_buy_page");
             _m.TotalLabel = UiText.T("purchaseui_totalprice");
             _m.Pay = UiText.T("reallife_ui_buy_pay");
             _m.AmountHint = UiText.T("reallife_ui_buy_amount_hint");
@@ -103,17 +102,6 @@ namespace RealLifeOverhaul.Ui
                     // The row itself takes one more, as the game's row does (PurchaseUiItem.IncreaseAmount), through the plus: the row's own
                     // button answers a click at the order's most too and adds nothing.
                     return Step(arg, GameContract.StepMore);
-                case UiCheckout.PageCommand:
-                {
-                    int pages = UiCheckout.Pages(_m), page = Mathf.Clamp(_m.Page + arg, 0, pages - 1);
-                    if (page == _m.Page)
-                    {
-                        return false;
-                    }
-                    _m.Page = page;
-                    _dirty = true;
-                    return true;
-                }
                 case UiCheckout.TaxPayCommand:
                     return Pay(arg);
                 case UiCheckout.OrderCommand:
@@ -129,6 +117,11 @@ namespace RealLifeOverhaul.Ui
             if (command == UiCheckout.TaxTypeCommand || command == UiCheckout.TaxPayCommand)
             {
                 _taxRow = arg;
+            }
+            else if (command == UiCheckout.LessCommand || command == UiCheckout.MoreCommand || command == UiCheckout.PackCommand)
+            {
+                _m.Reveal = arg;   // the keys moved to a row of a long cart: it scrolls into view
+                _dirty = true;
             }
         }
 
@@ -146,6 +139,8 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
+            _m.Offset = Mathf.Max(0f, _m.Offset - notches * UiTokens.S16);
+            _dirty = true;
         }
 
         // ------------------------------------------------------------------------------------------------- the tax's field
@@ -324,10 +319,6 @@ namespace RealLifeOverhaul.Ui
             _m.CancelEnabled = _ui.cancelButton.interactable;
             _sb.Append(_m.Total).Append('|').Append(_m.Queue).Append('|').Append(_m.QueueDetail).Append('|');
             _sb.Append(_m.Order).Append(_m.OrderEnabled).Append('|').Append(_m.Cancel).Append(_m.CancelEnabled);
-            if (_m.Page > 0 && _m.Page >= UiCheckout.Pages(_m))
-            {
-                _m.Page = 0;
-            }
             if (Field(_taxRow) is TMP_InputField typing && typing.isFocused)
             {
                 typing.DeactivateInputField();   // the game focuses its field as it opens: the kit's own field types, so no key lands twice

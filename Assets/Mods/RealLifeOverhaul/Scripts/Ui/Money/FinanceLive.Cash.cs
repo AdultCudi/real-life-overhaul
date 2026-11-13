@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Ui
                 groupNet += e.Amount;
                 lines.Add(new UiStatementLine
                 {
-                    When = e.Hour.ToString("00", Inv) + ":00", Icon = e.Amount >= 0f ? UiIcon.Coin : UiIcon.Receipt, What = CashFlow.ItemName(e.Type,
+                    When = UiClock.At(e.Hour, 0), Icon = e.Amount >= 0f ? UiIcon.Coin : UiIcon.Receipt, What = CashFlow.ItemName(e.Type,
                         e.Data), Where = FinanceText.T(CashCategory.Keys[e.Category]),
                     In = e.Amount > 0f ? Money(e.Amount) : null, Out = e.Amount < 0f ? Money(-e.Amount) : null, Balance = Money(balance)
                 });

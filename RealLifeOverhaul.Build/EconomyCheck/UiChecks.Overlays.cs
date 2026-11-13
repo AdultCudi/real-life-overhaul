@@ -274,7 +274,7 @@ internal static partial class Program
         string hide = System.IO.File.Exists(System.IO.Path.Combine(folder, "OverlayCardsLive.Hide.cs")) ? System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "OverlayCardsLive.Hide.cs")) : string.Empty;
         string conceal = ModSource(@"Ui\Host\UiConceal.cs");
         string keep = OverlayBetween(hide, "private void KeepHidden(", "// Each button and nested canvas");
-        string sweep = hide.Contains("private static void Sweep(") ? hide.Substring(hide.IndexOf("private static void Sweep(", StringComparison.Ordinal)) : string.Empty;
+        string sweep = hide.Contains("private static Button Sweep(") ? hide.Substring(hide.IndexOf("private static Button Sweep(", StringComparison.Ordinal)) : string.Empty;
         Check(keep.Contains("root.hierarchyCount") && keep.Contains("OverlayRules.SweepDue(") && keep.Contains("Sweep(hide, root)") && keep.Contains("hide.Reassert()")
               && keep.Contains("_form == Form.Hover") && keep.Contains("_simple.transform") && keep.Contains("_detailed.transform"),
             "overlay behind: while a card stands, the game's box (small or large) is counted each frame, looked through when it changed, and every group held is hidden again if shown");

@@ -34,6 +34,30 @@ namespace RealLifeOverhaul.Ui
         public int Steps;        // a steps column's ladder: how many pips
     }
 
+    /// <summary>A card a row's cell raises while the pointer or the focus rests on it: a title and lines of a label and its figure (the sales at each price).</summary>
+    public sealed class UiDataCard
+    {
+        public int Column;        // the cell that raises it
+        public string Title;
+        public string[] Labels;
+        public string[] Values;
+    }
+
+    /// <summary>
+    /// A block under a row's first line, side by side with its neighbours: a small head, lines of a label and a figure in a tone (OkText, WarnText,
+    /// DangerText, or None for the words' own) and, where the table asks for them, a button of its own for the row (see <see cref="UiDataTable.RowAct"/>).
+    /// </summary>
+    public struct UiDataBlock
+    {
+        public string Title;
+        public string[] Labels;
+        public string[] Values;
+        public UiRole[] Tones;    // by line, or null
+        public string Action;     // the block's button words, or null for none
+        public UiIcon ActionIcon;
+        public bool ActionOff;
+    }
+
     /// <summary>
     /// A row of a big table, by column: the words of each cell, a value of 0 to 100 for a meter or a graded figure, a tone
     /// for a chip, and the person the row is about (a role under the name, a hue for the face, the ring of their mood).
@@ -44,6 +68,7 @@ namespace RealLifeOverhaul.Ui
         public int[] Values;
         public UiRole[] Tones;
         public string Sub;       // a person cell's second line: their role
+        public string Face;      // the key a person cell's face is drawn by where the name alone would tell two people apart; null: the name
         public string[] Subs;    // a cell's own second line where a row holds a tile and a person (a machine and who works it); null: Sub
         public float Hue;
         public UiRole Ring;      // their mood, as every portrait's ring says it
@@ -51,6 +76,12 @@ namespace RealLifeOverhaul.Ui
         public float Share;      // a steps cell's way through the step after those reached, 0 to 1
         public string[] Pictures;   // by column, a tile cell's picture of the game's (a good, a machine) by its UiPictures key, over its glyph; null: the glyph
         public float[] Line;        // a spark column's values, oldest first, or null
+        public long[] SortKeys;     // by column, the figure a sorting screen orders it by where the cell's words cannot say it (money, a day); the screen's own, not drawn; null: the words
+        public int[] Kinds;         // by filter, the choice the row answers to (an index into that filter's options); the screen's own, not drawn; null: every filter shows it
+        public UiDataCard Card;     // raised while the pointer rests on the card's cell (the row, where the row is a target of its own), or null
+        public UiDataBlock[] Blocks;   // under the first line, where the table has room for them (BlockLines), or null
+        public float[] Sorts;       // by column, the figure the row sorts by (UiDataSort.None for none); null: it sorts by its words
+        public int Key;             // what the screen knows the row by (an id plus one), kept with the row through a sort; 0 for none
     }
 
     /// <summary>
@@ -87,6 +118,9 @@ namespace RealLifeOverhaul.Ui
         public string MassFieldTitle;               // while a mass action asks one thing more (the business to assign to): what it asks
         public string MassField;                    // that answer's value as a choice field; null while no mass action asks
         public UiActionModel[] MassFieldActions = new UiActionModel[0];   // its way back and its confirm, the confirm last
+        public int Hover = -1;                      // the row whose card shows (its Card), set from the page's Pointed and Focused, or -1
+        public int BlockLines;                      // the lines every row's blocks make room for under its first line; 0 where no row has blocks
+        public bool BlockActions;                   // the blocks' buttons have room too
         public float MassFieldX, MassFieldW;        // written back: where the field stood, so the page opens its list under it
     }
 
@@ -110,6 +144,12 @@ namespace RealLifeOverhaul.Ui
         // A stepper cell's and a row action's commands stand past the other blocks' ranges (from 170), so a table's never
         // meets a chart's or a catalogue's on one page.
         public const int Less = 60, Type = 61, More = 62, Act = 63;
+        /// <summary>
+        /// A cell's card is raised by the target over it (arg: the row); a block's button is pressed as <see cref="RowAct"/> with the row times
+        /// <see cref="ActsMost"/> plus its block.
+        /// </summary>
+        public const int Hover = 64, RowAct = 65;
+        public const int ActsMost = 4;   // blocks a row may give a button
         public const int CanLess = 1, CanMore = 2;   // a stepper cell's Values: which way it may step now
         private const float LeastShare = 128f;     // px: the least a shared column keeps when a longer translation widens the fixed ones
         public const float StepperWidth = 176f;  // px: a stepper cell's widest, room for a price between its buttons
@@ -129,8 +169,21 @@ namespace RealLifeOverhaul.Ui
         private const float MostFilter = 240f;   // px: and widest
         private const float MostSearch = 320f;   // px: a search field's widest
 
-        /// <summary>The height a row takes in this table: taller when a column holds people.</summary>
-        public static float RowHeight(UiDataTableModel m)
+        /// <summary>The height a row takes in this table: taller when a column holds people, and by the lines its blocks take.</summary>
+        public static float RowHeight(UiDataTableModel m) => LineHeight(m) + BlocksHeight(m);
+
+        // The room under a row's first line for its blocks: their head, their lines and a button's row, or none where no row has them.
+        private static float BlocksHeight(UiDataTableModel m)
+        {
+            if (m.BlockLines <= 0)
+            {
+                return 0f;
+            }
+            return UiTokens.PairRow * (1 + m.BlockLines) + (m.BlockActions ? UiTokens.S2 + UiTokens.ControlSmall : 0f) + UiTokens.S3;
+        }
+
+        // The first line of a row: the cells' own height.
+        private static float LineHeight(UiDataTableModel m)
         {
             if (Amounts(m))
             {
@@ -235,7 +288,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                list = Rows(s, at, m, x, ty, w, viewH, rowH, cx, cw, command);
+                list = Rows(s, at, m, x, ty, w, viewH, rowH, cx, cw, command, keys);
+                HoverCard(s, at, m, x, y, w, h, ty, viewH, rowH, cx, cw);
             }
             if (m.Totals != null)
             {
@@ -448,9 +502,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The rows in view, in a region that scrolls inside its frame, each a row of one list.
-        private static short Rows(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, float viewH, float rowH, float[] cx, float[] cw, int command)
+        private static short Rows(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, float viewH, float rowH, float[] cx, float[] cw, int command, IUiKeys keys)
         {
             int rows = m.RowCount;
+            float lineH = LineHeight(m);
             float offset = m.Offset;
             if (m.Reveal >= 0 && m.Reveal < rows)
             {
@@ -490,8 +545,12 @@ namespace RealLifeOverhaul.Ui
                 int stop = -1;
                 for (int c = 0; c < m.Columns.Length; c++)
                 {
-                    int node = Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], rowH, sel, command, r);
+                    int node = Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], lineH, sel, command, r);
                     stop = stop < 0 ? node : stop;
+                }
+                if (m.BlockLines > 0 && row.Blocks != null)
+                {
+                    Blocks(s, inside, m, ref row, cx[0] - x, ry + lineH, w - (cx[0] - x) - UiTokens.S2, command, r, list, keys);
                 }
                 int rowNode = -1;
                 if (!steps)
@@ -504,12 +563,18 @@ namespace RealLifeOverhaul.Ui
                     s.Nodes[stop].List = list;
                     s.Nodes[stop].Index = r;
                 }
+                if (steps && row.Card != null && m.Columns.Length > 0)
+                {
+                    // A row of amounts has no target of its own over its words: the cell that raises a card gets one, laid before the buttons so it never covers them.
+                    int cc = Math.Max(0, Math.Min(m.Columns.Length - 1, row.Card.Column));
+                    UiDraw.Node(s, inClip, cx[cc] - x, ry, cw[cc], lineH, command + Hover, r, face, false, list, r);
+                }
                 for (int c = 0; c < m.Columns.Length; c++)
                 {
                     if (m.Columns[c].Kind == UiCellKind.Action)
                     {
                         // Laid after the row's own target, so the button over it takes its press.
-                        int button = ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r, list);
+                        int button = ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], lineH, command, r, list);
                         if (button >= 0 && rowNode >= 0)
                         {
                             // The pad goes from the row to its button and back by links of their own: the nearest-target search never leaves a list for its own row's button.
@@ -519,12 +584,112 @@ namespace RealLifeOverhaul.Ui
                     }
                     else if (sel && m.Columns[c].Kind == UiCellKind.Stepper && m.Columns[c].OnChosen)
                     {
-                        ChosenStepper(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r);   // over the row's target too
+                        ChosenStepper(s, inside, ref row, c, cx[c] - x, ry, cw[c], lineH, command, r);   // over the row's target too
                     }
                 }
             }
             UiDraw.ScrollThumb(s, at, x + w - UiTokens.S1, y, viewH, offset, rows * rowH);
             return list;
+        }
+
+        // A row's blocks under its first line, from the first column's left to the row's right: side by side in equal shares, each a head, its lines of a
+        // label and its figure, and its button where it has one.
+        private static void Blocks(UiScene s, UiAt at, UiDataTableModel m, ref UiDataRow row, float x, float y, float w, int command, int r, short list, IUiKeys keys)
+        {
+            int n = Math.Min(row.Blocks.Length, ActsMost);
+            if (n == 0 || w < UiTokens.S16)
+            {
+                return;
+            }
+            float gap = UiTokens.S4, bw = UiDraw.SnapDown((w - gap * (n - 1)) / n);
+            for (int b = 0; b < n; b++)
+            {
+                ref UiDataBlock block = ref row.Blocks[b];
+                float bx = x + b * (bw + gap), by = y;
+                if (!string.IsNullOrEmpty(block.Title))
+                {
+                    UiDraw.TextMiddle(s, at, bx, by, UiTokens.PairRow, bw, UiStyle.SectionHeader, UiRole.Muted, block.Title, UiFlags.Label | UiFlags.Truncate);
+                }
+                by += UiTokens.PairRow;
+                int lines = block.Labels != null ? Math.Min(block.Labels.Length, m.BlockLines) : 0;
+                for (int k = 0; k < lines; k++)
+                {
+                    string value = block.Values != null && k < block.Values.Length ? block.Values[k] : null;
+                    float vw = string.IsNullOrEmpty(value) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(value, UiStyle.SmallStrong) + UiTokens.S1), UiDraw.SnapDown(bw * 0.5f));
+                    UiRole tone = block.Tones != null && k < block.Tones.Length && block.Tones[k] != UiRole.None ? block.Tones[k] : UiRole.Text;
+                    UiDraw.TextMiddle(s, at, bx, by, UiTokens.PairRow, bw - vw - (vw > 0f ? UiTokens.S2 : 0f), UiStyle.Small, UiRole.Text2, block.Labels[k], UiFlags.Truncate);
+                    if (vw > 0f)
+                    {
+                        UiDraw.TextMiddle(s, at, bx + bw - vw, by, UiTokens.PairRow, vw, UiStyle.SmallStrong, tone, value, UiFlags.Right | UiFlags.Truncate);
+                    }
+                    by += UiTokens.PairRow;
+                }
+                if (m.BlockActions && !string.IsNullOrEmpty(block.Action) && keys != null)
+                {
+                    float ay = y + UiTokens.PairRow * (1 + m.BlockLines) + UiTokens.S2;
+                    float aw = Math.Min(bw, UiDraw.ButtonWidth(UiButtonKind.Secondary, block.Action, block.ActionIcon, UiAction.Count, keys));
+                    int node = UiDraw.Button(s, at, bx, ay, aw, UiTokens.ControlSmall, UiButtonKind.Secondary, block.Action, block.ActionIcon, UiAction.Count, keys, command + RowAct,
+                        r * ActsMost + b, block.ActionOff);
+                    if (node >= 0 && node < s.NodeCount && s.Nodes[node].Command == command + RowAct)
+                    {
+                        s.Nodes[node].List = list;   // the pad that reaches the row's list reaches its buttons
+                        s.Nodes[node].Index = r;
+                    }
+                }
+            }
+        }
+
+        // The card of the row the pointer or the focus is on, a slate card on the layer over the page, under the row's card cell (above it where the table's foot is
+        // near), kept inside the table's width. Only a row in view has one.
+        private static void HoverCard(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, float h, float ty, float viewH, float rowH, float[] cx, float[] cw)
+        {
+            int r = m.Hover;
+            if (r < 0 || r >= m.RowCount || r >= m.Rows.Length || m.Rows[r].Card == null || m.Columns.Length == 0)
+            {
+                return;
+            }
+            UiDataCard card = m.Rows[r].Card;
+            int rows = card.Labels != null ? card.Labels.Length : 0;
+            float line = LineHeight(m), ry = ty + r * rowH - m.Offset;
+            if (rows == 0 || ry < ty - 0.5f || ry + line > ty + viewH + 0.5f)
+            {
+                return;
+            }
+            float lw = 0f, vw = 0f;
+            for (int k = 0; k < rows; k++)
+            {
+                lw = Math.Max(lw, UiTextRules.Width(card.Labels[k] ?? string.Empty, UiStyle.Small));
+                vw = Math.Max(vw, UiTextRules.Width(card.Values != null && k < card.Values.Length ? card.Values[k] ?? string.Empty : string.Empty, UiStyle.SmallStrong));
+            }
+            string title = card.Title ?? string.Empty;
+            float rowStep = UiTokens.S5;
+            float cwidth = UiDraw.Snap(Math.Max(UiTextRules.Width(title, UiStyle.SmallStrong), lw + UiTokens.S4 + vw) + UiTokens.S1 + UiTokens.S3 * 2f);
+            cwidth = Math.Min(cwidth, UiDraw.SnapDown(w - UiTokens.S4));
+            float ch = UiDraw.Snap(UiTokens.S2 * 2f + (title.Length > 0 ? UiTextRules.LineHeight(UiStyle.SmallStrong) + UiTokens.S1 : 0f) + rows * rowStep);
+            int col = Math.Max(0, Math.Min(m.Columns.Length - 1, card.Column));
+            float px = UiDraw.Snap(cx[col] + cw[col] - cwidth);
+            px = Math.Max(x + UiTokens.S2, Math.Min(px, x + w - UiTokens.S2 - cwidth));
+            float py = UiDraw.Snap(ry + line + UiTokens.S1);
+            if (py + ch > y + h)
+            {
+                py = UiDraw.SnapDown(Math.Max(y, ry - ch - UiTokens.S1));
+            }
+            var over = new UiAt { Parent = at.Parent, Clip = -1, Layer = 1, Order = -1, Region = at.Region };
+            int face = UiDraw.Box(s, over, px, py, cwidth, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            UiAt inCard = over.In(face);
+            float cy = py + UiTokens.S2;
+            if (title.Length > 0)
+            {
+                UiDraw.Text(s, inCard, px + UiTokens.S3, cy, cwidth - UiTokens.S3 * 2f, UiStyle.SmallStrong, UiRole.Text, title, UiFlags.Truncate);
+                cy += UiTextRules.LineHeight(UiStyle.SmallStrong) + UiTokens.S1;
+            }
+            for (int k = 0; k < rows; k++)
+            {
+                string value = card.Values != null && k < card.Values.Length ? card.Values[k] : null;
+                UiDraw.TextMiddle(s, inCard, px + UiTokens.S3, cy + k * rowStep, rowStep, cwidth - UiTokens.S3 * 2f - vw - UiTokens.S2, UiStyle.Small, UiRole.Text2,
+                    card.Labels[k], UiFlags.Label | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inCard, px + cwidth - UiTokens.S3 - vw - UiTokens.S1, cy + k * rowStep, rowStep, vw + UiTokens.S1, UiStyle.SmallStrong, UiRole.Text, value, UiFlags.Right);
+            }
         }
 
         // The chosen row's stepper where its figure stands on the other rows: minus, the typed figure and plus, each a target
@@ -581,7 +746,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     else if (!nobody)
                     {
-                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
+                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, row.Face ?? words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
                     }
                     float tx = nobody ? cx + UiTokens.S1 : cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
