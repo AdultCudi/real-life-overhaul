@@ -15,8 +15,10 @@ namespace RealLifeOverhaul.Ui
     /// fridge), the game's boxes stay alive and hidden by leaf, every button is the game's own button pressed as a click presses
     /// it, and every choice goes through the game's own drop-down. The card follows the game's own projected point, so a shown
     /// card costs no projection of its own beyond its leader. Read again when the game shows another thing, when a card is
-    /// pressed, and four times a second while it shows; laid out again only when what it says changed. Cost a frame: a few
-    /// comparisons and one move; nothing allocated, searched or queried.
+    /// pressed, and four times a second while it shows; laid out again only when what it says changed. The game's box under a
+    /// card is held hidden piece by piece and hidden again if anything shows it (OverlayCardsLive.Hide.cs). Cost a frame: a few
+    /// comparisons and one move, a count of the box's transforms and a few group reads; nothing allocated or queried, and the scene is never searched
+    /// (the box's own transforms are walked when they changed or at a read).
     /// </summary>
     internal sealed partial class OverlayCardsLive
     {
@@ -124,7 +126,8 @@ namespace RealLifeOverhaul.Ui
                 _due = 0f;
             }
             bool renaming = _form == Form.Click && Typing();
-            if (now >= _due || _relay || renaming)
+            bool read = now >= _due || _relay || renaming;
+            if (read)
             {
                 _due = now + ReadEvery;
                 _relay = false;
@@ -142,6 +145,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             Conceal();
+            KeepHidden(read);
             if (!card)
             {
                 _view.Root.gameObject.SetActive(false);
@@ -175,6 +179,7 @@ namespace RealLifeOverhaul.Ui
             }
             _simpleHide.Show();
             _detailHide.Show();
+            _simpleSeen = _detailSeen = -1;   // the next card looks through the box again
             _form = Form.None;
             _model.Clear();
             _digest = int.MinValue;

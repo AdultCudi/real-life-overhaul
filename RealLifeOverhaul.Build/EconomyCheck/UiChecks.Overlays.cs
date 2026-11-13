@@ -61,6 +61,7 @@ internal static partial class Program
         OverlayRuleChecks();
         OverlayCardChecks();
         OverlaySourceChecks();
+        OverlayBehindChecks();
     }
 
     // ---------------------------------------------------------------- the table of kinds
@@ -250,6 +251,55 @@ internal static partial class Program
         Check(texts && UiScreens.All.Count(d => d.Id.StartsWith("world_overlay", StringComparison.Ordinal)) == 3 && UiScreens.All.Any(d => d.Id == UiOverlays.PointerId)
             && en.Contains("\"reallife_ui_screen_world_tutorial_pointer\"") && en.Contains("\"reallife_opt_sec_uiscreens_overlays\""),
             "overlays: the three screens are registered, each has its switch with its label and tip, and every key it names is in the English locale");
+    }
+
+    // ---------------------------------------------------------------- the game's box behind a card (a player, 13 Nov: three of the game's blue buttons stuck out from behind the computer's card)
+
+    private static void OverlayBehindChecks()
+    {
+        // The rules: a held group is still hidden only while it is unseen and takes no choice; a box is looked through again when its transforms changed in number or the card is read.
+        Check(UiHostRules.StillHidden(0f, false, false, false), "overlay behind: a group held hidden (unseen, no choice, no pointer) is still hidden");
+        Check(!UiHostRules.StillHidden(1f, false, false, false) && !UiHostRules.StillHidden(0.5f, false, false, false),
+            "overlay behind: a group the game, a refresh or another mod made seen again is no longer hidden");
+        Check(!UiHostRules.StillHidden(0f, true, false, false) && !UiHostRules.StillHidden(0f, false, true, false),
+            "overlay behind: a group that takes a choice or the pointer again is no longer hidden");
+        Check(UiHostRules.StillHidden(0f, false, true, true) && !UiHostRules.StillHidden(0f, false, false, true),
+            "overlay behind: a backdrop kept for its clicks is hidden while it still blocks, and not hidden once it stopped");
+        Check(!OverlayRules.SweepDue(7, 7, false) && OverlayRules.SweepDue(7, 8, false) && OverlayRules.SweepDue(7, 6, false) && OverlayRules.SweepDue(-1, 7, false) && OverlayRules.SweepDue(7, 7, true),
+            "overlay behind: the box is looked through again when its transforms changed in number, after a card was put away, and at each read, never otherwise");
+
+        // The code: every piece of the game's box is held, wherever it came from, and the box comes back whole.
+        string folder = System.IO.Path.Combine(ModScripts(), "Ui", "Overlays");
+        string cards = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "OverlayCardsLive.cs"));
+        string hide = System.IO.File.Exists(System.IO.Path.Combine(folder, "OverlayCardsLive.Hide.cs")) ? System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "OverlayCardsLive.Hide.cs")) : string.Empty;
+        string conceal = ModSource(@"Ui\Host\UiConceal.cs");
+        string keep = OverlayBetween(hide, "private void KeepHidden(", "// Each button and nested canvas");
+        string sweep = hide.Contains("private static void Sweep(") ? hide.Substring(hide.IndexOf("private static void Sweep(", StringComparison.Ordinal)) : string.Empty;
+        Check(keep.Contains("root.hierarchyCount") && keep.Contains("OverlayRules.SweepDue(") && keep.Contains("Sweep(hide, root)") && keep.Contains("hide.Reassert()")
+              && keep.Contains("_form == Form.Hover") && keep.Contains("_simple.transform") && keep.Contains("_detailed.transform"),
+            "overlay behind: while a card stands, the game's box (small or large) is counted each frame, looked through when it changed, and every group held is hidden again if shown");
+        Check(sweep.Contains("GetComponentsInChildren(true, BoxButtons)") && sweep.Contains("hide.Add(BoxButtons[i].transform)")
+              && sweep.Contains("GetComponentsInChildren(true, BoxCanvases)") && sweep.Contains("hide.Add(BoxCanvases[i].transform)") && sweep.Contains("hide.Prune()"),
+            "overlay behind: every button (the game's, the mod's Work for, another mod's) and every nested canvas under the box gets a group of its own, held with the box's");
+        string frame = OverlayBetween(cards, "public void Frame(UiFrame frame, bool hoverOn, bool clickOn, bool personOn)", "/// <summary>The game's boxes back as they were");
+        int concealAt = frame.IndexOf("Conceal();", StringComparison.Ordinal), keepAt = frame.IndexOf("KeepHidden(read);", StringComparison.Ordinal), shownAt = frame.IndexOf("_view.Root.gameObject.SetActive(true);", StringComparison.Ordinal);
+        Check(concealAt > 0 && keepAt > concealAt && shownAt > keepAt && frame.Contains("bool read = now >= _due || _relay || renaming;"),
+            "overlay behind: the box is held piece by piece before the card is shown, in the frame that shows it, and at every read");
+        Check(conceal.Contains("public int Reassert()") && conceal.Contains("UiHostRules.StillHidden(group.alpha, group.interactable, group.blocksRaycasts, keep)")
+              && conceal.Contains("group.alpha = 0f;") && conceal.Contains("if (!_hiding)"),
+            "overlay behind: a held group is written hidden again only while hiding, and only where it differs");
+        string leave = OverlayBetween(cards, "private void Leave()", "// The game's box under what is drawn over it");
+        string give = OverlayBetween(cards, "public void Give()", "// The card put away");
+        Check(leave.Contains("_simpleHide.Show();") && leave.Contains("_detailHide.Show();") && leave.Contains("_simpleSeen = _detailSeen = -1") && give.Contains("Leave();") && give.Contains("_detailHide.Clear();"),
+            "overlay behind: the game's box comes back as found when the card is put away, and the next card looks through it again");
+        string director = ModSource(@"Ui\UiDirector.cs"), kits = ModSource(@"Ui\World\WorldKits.cs"), world = ModSource(@"Ui\World\WorldHost.cs");
+        Check(OverlayBetween(director, "internal static void LetGoAll(", "private static void Quietly(").Contains("RemoveAll(why)") && director.Contains("case Kit.World: WorldKits.Remove(why); break;")
+              && kits.Contains("WorldHost.Remove(why);") && world.Contains("host._overlays.Give();"),
+            "overlay behind: the interface switched off, a screen's switch off or the guard switching the part off gives the game's box back through the world host");
+        Check(OverlayBetween(cards, "private void Conceal()", "// The game's manager and its two boxes").Contains("_detailHide.Hide();"), "overlay behind: the large card still hides the large box at its root first");
+        string carriers = ModSource(@"Careers\ComputerButtons.cs");
+        Check(carriers.Contains("Transform list = template.transform.parent;") && carriers.Contains("workCopy.transform.SetParent(list, false);"),
+            "overlay behind: the mod's Work for button stands in the game's own list under the box, so the box's walk meets it");
     }
 
     private static string OverlayBetween(string text, string from, string to)

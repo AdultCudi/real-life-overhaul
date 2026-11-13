@@ -276,6 +276,13 @@ namespace RealLifeOverhaul.Ui
             return OverlayAct.None;
         }
 
+        /// <summary>
+        /// True when the game's box under a card must be looked through again for pieces to hide: its transforms changed in number (the
+        /// game made or destroyed a button as it refreshed, or another mod put one in), or the card is read again anyway. A look is a walk
+        /// over the box's own few transforms, never the scene.
+        /// </summary>
+        public static bool SweepDue(int seen, int count, bool read) => seen != count || read;
+
         /// <summary>The list of indexes of a page of a list: first and one past the last.</summary>
         public static void Window(int count, int page, int perPage, out int first, out int end)
         {
