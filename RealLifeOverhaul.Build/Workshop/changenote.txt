@@ -1,6 +1,7 @@
-1.0.6
+1.0.7
+
+New
+- Nothing yet.
 
 Fixed
-- Holding a session at your desk. Clicking the desk now opens the panel at once, where it walked you there first, and it opens on a session you can hold, where it always opened on the first one that had never been held, even when it could not be. Next session now changes the page on the game's own panel, where it changed nothing you could see. Sessions whose premise you lack, such as a power price spike or a product, are no longer listed one by one. A notice now says where your desk is and the game's marker points to it, or says what to buy when every workstation is on the rota. Freeing a workstation in the Rota tab makes it your desk without leaving the office, and a walk to the chair that cannot finish is called off.
-- With the RLO interface on, the game's own buttons could stick out from behind an item's card (a computer's Play, Pass time and Work buttons, for one). The card now keeps every button and panel of the game's own box hidden, also ones the game or another mod adds a moment later, and hides them again if anything shows them. The game's own box comes back whole when the card goes or the interface is switched off.
-- On the RLO interface, the Economy app's price list and its chart showed goods by their code, such as ba itemname_apple, where the name belongs. They show the game's names again.
+- The Economy app's goods chart. On a new save it showed days from before the save began, such as Day -110, and its names ran out of the chart over the price list. It now starts on the first day with prices, its names stay inside it, and the headline above starts with a capital.
