@@ -402,6 +402,10 @@ namespace RealLifeOverhaul.Ui
             {
                 _m.List.Offset = Math.Max(0f, _m.List.Offset + by);
             }
+            else if (clip >= 0 && clip == _m.Talk.ChoiceClip)
+            {
+                _m.Talk.ChoiceOffset = Math.Max(0f, _m.Talk.ChoiceOffset + by);   // the offers, where they outgrow their room
+            }
             else if (clip == _m.TalkClip)
             {
                 _m.Talk.Offset = Math.Max(0f, (_m.Talk.Offset < 0f ? 100000f : _m.Talk.Offset) + by);

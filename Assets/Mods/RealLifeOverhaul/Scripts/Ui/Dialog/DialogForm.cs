@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
     {
         private enum Piece : byte
         {
-            None, Text, Splitter, Spacer, Choice, Amount, Field, Slider, Switch, Radio, Swatch, Button, Group
+            None, Text, Splitter, Spacer, Choice, Amount, Field, Slider, Switch, Radio, Swatch, Button, Group, Picture, Foreign
         }
 
         // What a row presses: the game's widgets behind it.
@@ -53,6 +53,9 @@ namespace RealLifeOverhaul.Ui
         private Transform _form;
         private long _told;        // the read the log last told of this form, so each form's shape is told once and again when it changes
         private string _carried;   // a label the game hung under another one, for the next lone figure
+        private string _picture;   // the game's own picture (an item's icon) seen before the row it belongs to
+        private string _foreign;   // a control of the form that the kit cannot draw or press: its kind, and the form goes back to the game's own panel
+        private Transform _foreignTold;
 
         public UiFormRow[] Rows = new UiFormRow[0];
         public int Count;
@@ -82,6 +85,8 @@ namespace RealLifeOverhaul.Ui
             _rows.Clear();
             _widgets.Clear();
             _carried = null;
+            _picture = null;
+            _foreign = null;
             if (form == null)
             {
                 Publish();
@@ -93,9 +98,21 @@ namespace RealLifeOverhaul.Ui
             }
             int heading = _rows.Count;
             Walk(form, 0);
+            if (_foreign != null)
+            {
+                // A control the kit cannot show or press: the line is answered in the game's own panel, whole, rather than with a hole in it.
+                if (!ReferenceEquals(_foreignTold, form) && UiDirector.Logger != null)
+                {
+                    _foreignTold = form;
+                    UiDirector.Logger.Info("Dialog form (kit): '" + form.name + "' holds " + _foreign + ", which the kit does not draw: the game's own panel answers it.");
+                }
+                Publish();
+                return false;
+            }
             Tidy();
             Contracts(form, talk, heading);
             Loan(form, entry, talk, heading);
+            Hints(form, heading);
             Costs(form, entry, talk, heading);
             bool any = _rows.Count > heading;
             Publish();
@@ -349,10 +366,21 @@ namespace RealLifeOverhaul.Ui
             {
                 return -1;
             }
+            if (_picture != null && row.Kind != UiFormKind.Break && row.Kind != UiFormKind.Heading && row.Kind != UiFormKind.Note)
+            {
+                if (Pictured(row.Kind))
+                {
+                    row.Picture = _picture;   // the icon the game drew beside this line
+                }
+                _picture = null;   // taken by this line, or an ornament of the form (an arrow between two choices) that no line wants
+            }
             _rows.Add(row);
             _widgets.Add(widget);
             return _rows.Count - 1;
         }
+
+        // The rows that carry the game's picture at their left: a line of goods (its amount), a line of a list, a figure.
+        private static bool Pictured(UiFormKind kind) => kind == UiFormKind.Amount || kind == UiFormKind.Figure || kind == UiFormKind.Entry;
 
         // A container's pieces in order. A label waits for the control after it (or the group it opens, as a heading); a
         // text after a control names it when it has no name (a delivery's goods, the vehicle's deliver to). Two texts alone
@@ -376,6 +404,19 @@ namespace RealLifeOverhaul.Ui
                     case Piece.Spacer:
                         Note(ref pending, pendingName);
                         lastControl = -1;
+                        break;
+                    case Piece.Picture:
+                    {
+                        // An icon the game drew beside a line (a delivery's goods): kept for the row that follows, which draws it at its left.
+                        string key = DialogKits.PictureOf(c.GetComponent<Image>().sprite);
+                        if (key != null)
+                        {
+                            _picture = key;
+                        }
+                        break;
+                    }
+                    case Piece.Foreign:
+                        _foreign = _foreign ?? Foreign(c);
                         break;
                     case Piece.Splitter:
                         Note(ref pending, pendingName);
@@ -711,7 +752,19 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Piece.None;   // a figure's steps, taken with its field
                 }
-                return c.GetComponentInChildren<TMP_Text>(false) == null ? Piece.Swatch : Piece.Button;
+                if (c.GetComponentInChildren<TMP_Text>(false) != null)
+                {
+                    return Piece.Button;
+                }
+                // A button with no words: a colour (the game's swatch has its outline to show the choice, or is a plain square), else an
+                // icon button whose meaning only the game's picture tells.
+                Image face = c.GetComponent<Image>();
+                return c.Find("Selected") != null || face == null || face.sprite == null ? Piece.Swatch : Piece.Foreign;
+            }
+            Selectable other = c.GetComponent<Selectable>();
+            if (other != null && !(other is Scrollbar))
+            {
+                return Piece.Foreign;   // a control the walker has no row for (another kind of drop-down, a field of the engine's own)
             }
             TMP_Text words = c.GetComponent<TMP_Text>();
             if (words != null && c.GetComponentInChildren<Selectable>(false) == null)
@@ -726,11 +779,35 @@ namespace RealLifeOverhaul.Ui
             {
                 return Piece.Splitter;
             }
+            if (c.childCount == 0 && !DialogRules.Spacer(c.name))
+            {
+                return Icon(c) ? Piece.Picture : Piece.Spacer;
+            }
             if (c.childCount == 0 || DialogRules.Spacer(c.name))
             {
                 return Piece.Spacer;
             }
             return Piece.Group;
+        }
+
+        // A small, roughly square picture with a sprite that shows: an item's icon, not a background or a hairline.
+        private static bool Icon(Transform c)
+        {
+            Image image = c.GetComponent<Image>();
+            var rect = c as RectTransform;
+            if (image == null || !image.enabled || image.sprite == null || image.color.a < 0.05f || rect == null)
+            {
+                return false;
+            }
+            float w = rect.rect.width, h = rect.rect.height;
+            return w >= 12f && h >= 12f && w <= 160f && h <= 160f && w <= h * 2f && h <= w * 2f;
+        }
+
+        // What of the form the kit cannot draw: its kind, named for the log.
+        private static string Foreign(Transform c)
+        {
+            Selectable selectable = c.GetComponent<Selectable>();
+            return selectable != null ? "a " + selectable.GetType().Name + " ('" + c.name + "')" : "an icon button ('" + c.name + "')";
         }
 
         private static string Words(Transform t)

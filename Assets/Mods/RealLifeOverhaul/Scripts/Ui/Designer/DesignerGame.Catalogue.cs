@@ -397,10 +397,12 @@ namespace RealLifeOverhaul.Ui
         {
             c.DetailCount = 0;
             c.SwatchCount = 0;
+            c.PlaceOff = false;
             if (c.Chosen < 0 || c.Chosen >= c.CardCount)
             {
                 return;
             }
+            c.PlaceOff = View[c.Chosen].onClickItemName == null;   // a tile the game gives no click to (PlaceItem answers it with nothing in hand)
             string name = View[c.Chosen].itemName;
             Item item = ItemsGetter.GetByName(name);
             if (item == null)

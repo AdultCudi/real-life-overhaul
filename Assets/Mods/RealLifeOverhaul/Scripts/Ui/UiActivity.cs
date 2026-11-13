@@ -32,7 +32,6 @@ namespace RealLifeOverhaul.Ui
         public string DurationLabel;                       // "Hours"
         public string DurationValue;                       // "4 hours"
         public float DurationShare;                        // 0 to 1 along the slider
-        public bool DurationHeld;                          // the keys hold it: Left and Right step it
         public string Clock;                               // the game's time now, "14:32"
         public string StateWords;                          // the strip's line: "On your way", "Waiting for the doors to open", "Done"
         public bool CanSkip;                               // the time machine (the game's Special key)
@@ -44,8 +43,6 @@ namespace RealLifeOverhaul.Ui
         public UiGameKey FastKey;
         public bool CanCancel;                             // the way back out while walking to it or before it starts
         public string CancelLabel;
-        public string StartLabel;                          // the card's main button: Start, on the game's Interact
-        public bool StartDisabled;                         // the game will not start it now (no energy): its line says why
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
 
@@ -59,9 +56,8 @@ namespace RealLifeOverhaul.Ui
         public string DurationFrom, DurationTo;            // the slider's ends: "1 h", "8 h"
         public string Finish, Sum;                         // under the slider: "You finish at 15:00", "$228 before tax"
 
-        // The buttons as the game gives them. Set by a host that reads the game: the card's own (its arg the index here,
-        // given back with ButtonCommand) and the strip's (CancelCommand with the index). Left empty, they follow from
-        // CanCancel, StartLabel and CanSkip as the samples set them.
+        // The buttons as the game gives them (Start is its own, greyed as the game greys it): the card's own (its arg the
+        // index here, given back with ButtonCommand) and the strip's (CancelCommand with the index).
         public UiSideButton[] Buttons = new UiSideButton[0];
         public UiSideButton[] StripButtons = new UiSideButton[0];
         public bool Bar = true;                            // the card draws the status bar under it; false over the game's own HUD
@@ -169,26 +165,10 @@ namespace RealLifeOverhaul.Ui
                 Emblem = m.Icon, EmblemTint = m.IconTint == UiRole.None ? UiRole.Gold : m.IconTint, SideName = m.Place, SideLines = m.PlaceLines ?? new string[0],
                 Person = m.Person, PersonLine = m.PersonLine, Kicker = m.Kicker, Title = string.IsNullOrEmpty(m.Title) ? m.Headline : m.Title, Body = m.Body,
                 Rows = m.Lines ?? new UiInfoRow[0], HasSlider = m.HasDuration, SliderLabel = m.DurationLabel, SliderValue = value, SliderNote = note, SliderShare = m.DurationShare,
-                SliderHeld = m.DurationHeld, SliderFrom = m.DurationFrom, SliderTo = m.DurationTo, SumLeft = m.Finish, SumRight = m.Sum, Prompts = m.Prompts,
+                SliderFrom = m.DurationFrom, SliderTo = m.DurationTo, SumLeft = m.Finish, SumRight = m.Sum, Prompts = m.Prompts,
                 PromptCount = m.PromptCount, Bar = m.Bar, ButtonCommand = ButtonCommand, SliderCommand = StepCommand,
             };
-            if (m.Buttons != null && m.Buttons.Length > 0)
-            {
-                c.Buttons = m.Buttons;
-                return c;
-            }
-            // The samples' buttons: Cancel on Back at the left, Start on the game's Interact as F, the time machine on its key.
-            int n = (m.CanCancel ? 1 : 0) + 1 + (m.CanSkip ? 1 : 0), i = 0;
-            c.Buttons = new UiSideButton[n];
-            if (m.CanCancel)
-            {
-                c.Buttons[i++] = new UiSideButton { Label = m.CancelLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Left = true };
-            }
-            c.Buttons[i++] = new UiSideButton { Label = m.StartLabel, Kind = UiButtonKind.Primary, Key = UiAction.Alt, Disabled = m.StartDisabled };
-            if (m.CanSkip)
-            {
-                c.Buttons[i] = new UiSideButton { Label = m.SkipLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Count, GameKey = m.SkipKey };
-            }
+            c.Buttons = m.Buttons ?? new UiSideButton[0];
             return c;
         }
 

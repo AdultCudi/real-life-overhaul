@@ -15,14 +15,13 @@ namespace RealLifeOverhaul.Ui
 
     public static partial class UiConversation
     {
-        /// <summary>A form's height with several fields: a control's row each on one band, a step between them.</summary>
+        /// <summary>A form's height with a few fields: a control's row each on one band, a step between them.</summary>
         private static float FieldsHeight(UiConversationModel m) =>
-            UiTokens.S3 * 2f + m.FieldCount * UiTokens.Control + (m.FieldCount - 1) * UiTokens.S2
-            + (string.IsNullOrEmpty(m.FormHint) ? 0f : UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)));
+            UiTokens.S3 * 2f + m.FieldCount * UiTokens.Control + (m.FieldCount - 1) * UiTokens.S2;
 
         /// <summary>
         /// The form slot with several fields, as the game's salary offer asks for a wage and a signing bonus: one band, each
-        /// field's label at the left and its control at the right on one edge, a quiet hint under them. Each field answers
+        /// field's label at the left and its control at the right on one edge. Each field answers
         /// <see cref="FormCommand"/>, <see cref="FormLess"/> and <see cref="FormMore"/> with its index.
         /// </summary>
         private static void Fields(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
@@ -50,10 +49,6 @@ namespace RealLifeOverhaul.Ui
                         break;
                 }
                 cy += UiTokens.Control + UiTokens.S2;
-            }
-            if (!string.IsNullOrEmpty(m.FormHint))
-            {
-                UiDraw.Text(s, at, x + UiTokens.S3, cy - UiTokens.S2 + UiTokens.S1, w - UiTokens.S3 * 2f, UiStyle.Small, UiRole.Text2, m.FormHint, UiFlags.Truncate);
             }
         }
     }

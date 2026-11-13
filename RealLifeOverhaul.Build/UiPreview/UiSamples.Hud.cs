@@ -412,13 +412,20 @@ internal static partial class UiSamples
                 : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
             CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadRb),
             CanFast = true, Fast = state == UiActivityState.Running, FastLabel = t("playeractivityui_fast_forward", "Fast forward"), FastKey = GameKey(k, "P", UiIcon.PadY),
-            CanCancel = true, CancelLabel = t("common_cancel", "Cancel"), StartLabel = "Start",
+            CanCancel = true, CancelLabel = t("common_cancel", "Cancel"),
             Prompts = new[]
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Back, Label = t("common_cancel", "Cancel") },
             },
         };
         m.PromptCount = m.Prompts.Length;
+        // The card's buttons as the game's panel hands them over: the way back at the left, Start on Interact, the time machine on its key.
+        m.Buttons = new[]
+        {
+            new UiSideButton { Label = m.CancelLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Left = true },
+            new UiSideButton { Label = "Start", Kind = UiButtonKind.Primary, Key = UiAction.Alt },
+            new UiSideButton { Label = m.SkipLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Count, GameKey = m.SkipKey },
+        };
         return m;
     }
 

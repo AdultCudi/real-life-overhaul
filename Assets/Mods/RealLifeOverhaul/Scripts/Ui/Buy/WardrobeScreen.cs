@@ -11,7 +11,7 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>A character screen as the kit's catalogue panel: tabs down its edge, the pieces as tiles, the colours, the buttons.</summary>
-    internal sealed class WardrobeScreen : IUiScreen, IUiStepping, IUiTyping
+    internal sealed class WardrobeScreen : IUiScreen, IUiTyping
     {
         private const float Every = 0.25f;
         private const string ModBand = "RealLifeOverhaul band";   // GridLooks' bands on the mod's tiles: the name, then the corner
@@ -25,7 +25,6 @@ namespace RealLifeOverhaul.Ui
         private readonly List<UiActionModel> _actions = new List<UiActionModel>(4);
         private readonly List<string> _words = new List<string>(2);
         private readonly StringBuilder _sb = new StringBuilder(512);
-        private Slider[] _sliders = new Slider[0];
         private string _seen;
         private float _next;
         private bool _dirty = true;
@@ -120,14 +119,6 @@ namespace RealLifeOverhaul.Ui
                     return Again(true);
                 case UiWardrobe.SwatchCommand:
                     return arg >= 0 && arg < _colours.Count && Again(UiWidgets.Press(_colours[arg].GetComponent<Button>()));
-                case UiWardrobe.SliderCommand:
-                    if (arg < 0 || arg >= _sliders.Length)
-                    {
-                        return false;
-                    }
-                    _m.Held = _m.Held == arg ? -1 : arg;   // pressed, the slider takes Left and Right; pressed again, it lets go
-                    _dirty = true;
-                    return true;
                 case UiWardrobe.ActionCommand:
                     if (arg >= 0 && arg == _resetAt)
                     {
@@ -145,11 +136,6 @@ namespace RealLifeOverhaul.Ui
 
         public void Focused(int command, int arg)
         {
-            if (command != UiWardrobe.SliderCommand && _m.Held >= 0)
-            {
-                _m.Held = -1;   // focus moved off the slider: it lets go
-                _dirty = true;
-            }
         }
 
         // Leave: the game's own close, which asks first when something is not kept (the clothes' question).
@@ -212,19 +198,6 @@ namespace RealLifeOverhaul.Ui
             _search = text ?? string.Empty;
             _m.Grid.Offset = 0f;
             Again(true);
-        }
-
-        public bool Steps(int command) => command == UiWardrobe.SliderCommand && _m.Held >= 0;
-
-        public void Step(int command, int arg, int step)
-        {
-            if (command != UiWardrobe.SliderCommand || arg < 0 || arg >= _sliders.Length || _sliders[arg] == null)
-            {
-                return;
-            }
-            Slider s = _sliders[arg];
-            float range = s.maxValue - s.minValue;
-            Again(UiWidgets.Slide(s, Mathf.Clamp(s.value + step * (s.wholeNumbers ? Mathf.Max(1f, Mathf.Round(range / 20f)) : range / 20f), s.minValue, s.maxValue)));
         }
 
         private bool Again(bool done)

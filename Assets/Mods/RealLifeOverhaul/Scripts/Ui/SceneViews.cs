@@ -104,11 +104,18 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Characters a line under the headline takes and still reads as the card's kicker; a longer one is said in its paragraph.</summary>
         public const int KickerMost = 48;
 
-        /// <summary>Lines an answer's meaning takes under its name, at the most.</summary>
-        public const int MeaningMost = 4;
+        /// <summary>Lines an answer's meaning takes under its name: every one it needs. A card too tall for the screen becomes the conversation, whose answers scroll.</summary>
+        public const int MeaningMost = int.MaxValue;
 
-        /// <summary>Lines the words a player says by an answer (a pitch's) take under its name: said whole, not cut short by an ellipsis.</summary>
-        public const int SaidMost = 8;
+        /// <summary>Lines the words a player says by an answer (a pitch's) take under its name: said whole, never cut short by an ellipsis.</summary>
+        public const int SaidMost = int.MaxValue;
+
+        /// <summary>The answers' scroll in the docked conversation, kept by the screen from one layout to the next.</summary>
+        public sealed class AnswerScroll
+        {
+            public float Offset;
+            public short Clip = -1;
+        }
 
         /// <summary>The room a card keeps clear above and below it: the hint bar over the status bar stays seen under it.</summary>
         public const float Clear = UiTokens.S12;
@@ -153,7 +160,11 @@ namespace RealLifeOverhaul.Ui
         /// The page laid in its look: the decision card for a moment that stands whole on the screen, else the conversation
         /// docked at the right, scrolled to <paramref name="offset"/> (-1 for its newest line). Returns the look laid.
         /// </summary>
-        public static SceneLook Lay(UiScene s, ScenePage page, List<SceneSaid> thread, SceneWords words, float offset, UiFrame frame, bool dark, IUiKeys keys)
+        public static SceneLook Lay(UiScene s, ScenePage page, List<SceneSaid> thread, SceneWords words, float offset, UiFrame frame, bool dark, IUiKeys keys) =>
+            Lay(s, page, thread, words, offset, frame, dark, keys, null);
+
+        /// <summary>As above, with the answers' scroll kept in <paramref name="answers"/> (null for none): the screen's wheel moves it where the answers outgrow their room.</summary>
+        public static SceneLook Lay(UiScene s, ScenePage page, List<SceneSaid> thread, SceneWords words, float offset, UiFrame frame, bool dark, IUiKeys keys, AnswerScroll answers)
         {
             SceneLook look = LookOf(page);
             UiDecisionModel card = look == SceneLook.Decision ? Decision(page, words) : null;
@@ -165,11 +176,21 @@ namespace RealLifeOverhaul.Ui
             {
                 UiConversationModel talk = Talk(page, thread, words, frame.Width);
                 talk.Offset = offset;
+                talk.ChoiceOffset = answers != null ? answers.Offset : 0f;
                 UiConversation.LayDocked(s, talk, frame, dark, keys);
+                if (answers != null)
+                {
+                    answers.Offset = talk.ChoiceOffset;
+                    answers.Clip = talk.ChoiceClip;
+                }
             }
             else
             {
                 UiDecision.Lay(s, card, frame, dark, keys);
+                if (answers != null)
+                {
+                    answers.Clip = -1;
+                }
             }
             return look;
         }

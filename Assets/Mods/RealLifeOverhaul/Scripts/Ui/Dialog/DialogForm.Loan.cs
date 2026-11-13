@@ -117,7 +117,13 @@ namespace RealLifeOverhaul.Ui
                 : new UiFormRow { Kind = UiFormKind.Figure, Label = termLabel, Value = _termWords[_term] }, new Widget { Kit = own ? TermRow : 0 });
             Add(new UiFormRow { Kind = UiFormKind.Break }, default);
             Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("reallife_ui_dialog_loan_rate"), Value = RateWords(rate) }, default);
-            Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("reallife_ui_dialog_loan_payment"), Value = Money(f.PerDay) }, default);
+            // The game's three daily figures for this term and rate, under the game's own words: the interest, what pays the loan off, and both together.
+            Add(new UiFormRow
+            {
+                Kind = UiFormKind.Figure, Label = UiText.Fill("bank_dialog_interest_daily_payment", "rate", RateNumber(rate)), Value = Money(f.Interest)
+            }, default);
+            Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("econoview_loans_daily_payment"), Value = Money(f.Principal) }, default);
+            Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("bank_dialog_total_daily_payment"), Value = Money(f.PerDay), Strong = true }, default);
             Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("reallife_ui_dialog_loan_total"), Value = Money(f.Total), Strong = true }, default);
 
             // What taking it pays and costs, under the line's confirm; the bank's own answers past the game's three.
@@ -324,11 +330,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The rate a year as the game's form says it: the bank's whole per cent times the game's interest multiplier.
-        private static string RateWords(int rate)
-        {
-            float effective = rate * GameLoans.Multiplier;
-            return UiText.Fill("reallife_ui_dialog_loan_rate_value", "rate", effective.ToString("0.#", CultureInfo.CurrentCulture));
-        }
+        private static string RateWords(int rate) => UiText.Fill("reallife_ui_dialog_loan_rate_value", "rate", RateNumber(rate));
+
+        private static string RateNumber(int rate) => (rate * GameLoans.Multiplier).ToString("0.#", CultureInfo.CurrentCulture);
 
         private static string Money(float amount) => UiText.Money(amount);
 
