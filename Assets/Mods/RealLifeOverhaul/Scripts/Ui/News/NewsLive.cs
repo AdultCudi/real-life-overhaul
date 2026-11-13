@@ -361,8 +361,8 @@ namespace RealLifeOverhaul.Ui
 
         private UiChartModel Chart(OutlookBook book, NewsShape shape)
         {
-            int span = NewsRules.Span(_range);
             int end = book != null ? book.LastDay : 0;
+            int span = NewsRules.DaysShown(NewsRules.Span(_range), end);
             Copy(book, OutlookCatalogue.Inflation, end, span, Inflation);
             Copy(book, OutlookCatalogue.Rate, end, span, Rate);
             Copy(book, OutlookCatalogue.Income, end, span, Wages);
@@ -373,7 +373,7 @@ namespace RealLifeOverhaul.Ui
             var whole = new string[span];
             for (int i = 0; i < span; i++)
             {
-                whole[i] = OutlookText.T("reallife_news_axis_day", "day", (end > span ? end - span + 1 + i : i + 1).ToString(Inv));
+                whole[i] = OutlookText.T("reallife_news_axis_day", "day", (Math.Max(1, end - span + 1) + i).ToString(Inv));
             }
             string[] points = NewsText.AxisPoints(whole, NewsText.AxisStep(span));
             UiSeries[] series = SeriesFor(book, shape, end, span);

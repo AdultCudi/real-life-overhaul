@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Ui
             UiAt on = at.In(band);
             float ix = x + UiTokens.S4, iy = y + UiTokens.S3, iw = w - UiTokens.S4 * 2f, ih = h - UiTokens.S3 * 2f;
             Head(s, on, m, ix, iy, iw);
-            float top = iy + HeadHeight;
+            float top = iy + HeadHeight + (LegendBelow(m, iw) ? UiTokens.PairRow : 0f);
             int n = m.Points != null ? m.Points.Length : 0;
             if (n == 0 || !Range(m, out float low, out float high))
             {
@@ -184,12 +184,26 @@ namespace RealLifeOverhaul.Ui
             return Real(close);
         }
 
-        // The title at the left, and for lines a legend of each series' dot and name at the right.
+        // The title at the left, and for lines a legend of each series' dot and name at the right. A legend the title has no room
+        // beside takes the line under it, and there each name gets no more than its share of the width.
         private static void Head(UiScene s, UiAt at, UiChartModel m, float x, float y, float w)
         {
             float h = UiTokens.PairRow;
             float right = x + w;
-            if (m.Kind == UiChartKind.Line && m.Series.Length > 1)
+            if (LegendBelow(m, w))
+            {
+                float most = LegendShare(m, w);
+                float lx = x, ly = y + h;
+                for (int i = 0; i < m.Series.Length; i++)
+                {
+                    UiDraw.Circle(s, at, lx, ly + (h - SwatchSize) / 2f, SwatchSize, SwatchSize, Tint(m, i), UiFlags.Middle | UiFlags.Share);
+                    lx += SwatchSize + UiTokens.S2;
+                    float lw = Math.Min(most, UiTextRules.Width(m.Series[i].Label, UiStyle.Small) + UiTokens.S1);
+                    UiDraw.TextMiddle(s, at, lx, ly, h, lw, UiStyle.Small, UiRole.Text2, m.Series[i].Label, UiFlags.Label | UiFlags.Share | UiFlags.Truncate);
+                    lx += lw + UiTokens.S4;
+                }
+            }
+            else if (LegendWidth(m) > 0f)
             {
                 for (int i = m.Series.Length - 1; i >= 0; i--)
                 {
@@ -202,6 +216,59 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             UiDraw.TextMiddle(s, at, x, y, h, Math.Max(UiTokens.S8, right - x - UiTokens.S2), UiStyle.SectionHeader, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
+        }
+
+        // What a legend takes beside its names: each series' dot, the gap to its name and the gap to the next.
+        private const float LegendPiece = SwatchSize + UiTokens.S2 + UiTokens.S4;
+
+        /// <summary>The width a chart's legend takes with every name whole. 0 for a chart that has none.</summary>
+        public static float LegendWidth(UiChartModel m)
+        {
+            if (m.Kind != UiChartKind.Line || m.Series == null || m.Series.Length < 2)
+            {
+                return 0f;
+            }
+            float sum = 0f;
+            for (int i = 0; i < m.Series.Length; i++)
+            {
+                sum += LegendPiece + UiTextRules.Width(m.Series[i].Label, UiStyle.Small) + UiTokens.S1;
+            }
+            return sum;
+        }
+
+        /// <summary>Whether the legend takes its own line: the title and the legend do not fit one line of this width.</summary>
+        public static bool LegendBelow(UiChartModel m, float w)
+        {
+            float legend = LegendWidth(m);
+            return legend > 0f && legend + UiTokens.S2 + UiTextRules.Width(m.Title, UiStyle.SectionHeader) > w;
+        }
+
+        /// <summary>
+        /// The most a name takes in a legend on its own line of this width. Short names keep their width and the long ones
+        /// share what is left, so the legend never passes the chart's edge.
+        /// </summary>
+        public static float LegendShare(UiChartModel m, float w)
+        {
+            int n = m.Series.Length;
+            float room = Math.Max(0f, w - LegendPiece * n + UiTokens.S4);
+            float most = room / n;
+            for (int pass = 0; pass < n; pass++)
+            {
+                float used = 0f;
+                int over = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    float lw = UiTextRules.Width(m.Series[i].Label, UiStyle.Small) + UiTokens.S1;
+                    used += Math.Min(lw, most);
+                    over += lw > most ? 1 : 0;
+                }
+                if (over == 0 || room - used < 0.5f)
+                {
+                    break;
+                }
+                most += (room - used) / over;
+            }
+            return most;
         }
 
         /// <summary>A series' colour: its own, or the chart's hue in its turn.</summary>

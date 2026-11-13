@@ -1,3 +1,5 @@
+using System;
+
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
@@ -11,6 +13,28 @@ namespace RealLifeOverhaul.Economy
         public const int YearDays = 60;      // one game year
 
         public static int Span(int range) => range <= 0 ? DaysMonth : DaysBook;
+
+        /// <summary>The days of a span a chart can show on this day: a save has no day before its first, so no more than have passed.</summary>
+        public static int DaysShown(int span, int day) => Math.Max(1, Math.Min(span, day));
+
+        /// <summary>A line from its first day that counts on: the days before it hold nothing and are left out. The line itself when all count.</summary>
+        public static float[] From(float[] line, int first)
+        {
+            if (line == null || first <= 0)
+            {
+                return line;
+            }
+            int kept = Math.Max(0, line.Length - first);
+            var tail = new float[kept];
+            Array.Copy(line, line.Length - kept, tail, 0, kept);
+            return tail;
+        }
+
+        /// <summary>A lead that opens a line ("fresh produce led") with its capital, whatever the words put first.</summary>
+        public static string Opening(string words)
+        {
+            return string.IsNullOrEmpty(words) || !char.IsLower(words[0]) ? words : char.ToUpperInvariant(words[0]) + words.Substring(1);
+        }
 
         public static int YearOf(int day) => day < 1 ? 1 : (day - 1) / YearDays + 1;
 

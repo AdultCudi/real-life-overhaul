@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Ui;
 
 // The charts whatever their values (Scripts/Ui/UiChart.cs, Stocks/UiChartDesk*.cs, and UiDraw's sparkline, donut, ring, meters and
@@ -55,6 +56,7 @@ internal static partial class Program
         ChartDeskChecks(cases);
         ChartSparkChecks(cases);
         ChartShareChecks(cases);
+        ChartHeadChecks();
         if (screens)
         {
             ChartScreenChecks(plots);
@@ -62,6 +64,108 @@ internal static partial class Program
         Dictionary<string, string> en = LocaleFile("en");
         Check(WhatsNewHas(en, "EconoView's profit chart drew its bars over the whole window"), "charts: What's new tells of the fix");
         Console.WriteLine("  Charts: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
+    }
+
+    // ---------------------------------------------------------------- the head: a title and a legend
+    // After a player's Economy page of 13 Nov 2026, on day 9 of a save: the goods chart's three long names ran out of the chart's left
+    // edge over the table beside it, its axis read "Day -110", and the lead began with a small letter.
+    private static void ChartHeadChecks()
+    {
+        var s = new UiScene();
+        string[][] names =
+        {
+            new[] { "Classic cheap female clothing", "Cheap jewellery", "Apple" },
+            new[] { "Klassische preiswerte Damenbekleidung", "Limitierte Sonderausgabe eines Buches", "Motivationsbuch fuer Fuehrungskraefte" },
+            new[] { "Fuel", "Food", "Rent" }
+        };
+        float[] widths = { 300f, 424f, 560f, 1000f };
+        string fault = null;
+        int below = 0, beside = 0;
+        foreach (string[] set in names)
+        {
+            foreach (float w in widths)
+            {
+                var m = new UiChartModel
+                {
+                    Kind = UiChartKind.Line, Title = "Index, day 1 = 100", Points = new[] { "Day 1", "", "", "", "", "Day 6", "", "", "" },
+                    Series = new UiSeries[set.Length]
+                };
+                for (int k = 0; k < set.Length; k++)
+                {
+                    m.Series[k] = new UiSeries { Label = set[k], Values = new[] { 100f, 100f, 101f, 102f, 100f, 96f, 100f, 102f, 102f + k } };
+                }
+                s.Begin("chart head, " + set[0] + ", " + w, 1920f, 1080f, true);
+                UiChart.Lay(s, UiAt.Screen, m, 400f, 300f, w, 320f);
+                float left = 400f + UiTokens.S4 - ChartSlack, right = 400f + w - UiTokens.S4 + ChartSlack;
+                bool under = UiChart.LegendBelow(m, w - UiTokens.S4 * 2f);
+                below += under ? 1 : 0;
+                beside += under ? 0 : 1;
+                int title = -1;
+                var legend = new List<int>();
+                for (int i = 0; i < s.ItemCount; i++)
+                {
+                    if (s.Items[i].Text == m.Title && title < 0)
+                    {
+                        title = i;
+                    }
+                    else if (Array.IndexOf(set, s.Items[i].Text) >= 0 && s.Items[i].Y < 300f + UiTokens.S3 + UiChart.HeadHeight + UiTokens.PairRow && legend.Count < set.Length)
+                    {
+                        legend.Add(i);
+                    }
+                }
+                string where = " (" + set[0] + ", " + w + " px)";
+                if (title < 0 || legend.Count != set.Length)
+                {
+                    fault = fault ?? "the head lacks its title or a name" + where;
+                    continue;
+                }
+                UiItem head = s.Items[title];
+                for (int a = 0; a < legend.Count; a++)
+                {
+                    UiItem one = s.Items[legend[a]];
+                    if (one.X < left || one.X + one.W > right)
+                    {
+                        fault = fault ?? "the name " + one.Text + " runs from " + one.X + " to " + (one.X + one.W) + ", outside " + left + " to " + right + where;
+                    }
+                    if (Math.Abs(one.Y - head.Y) < 1f && one.X < head.X + head.W - ChartSlack && head.X < one.X + one.W - ChartSlack)
+                    {
+                        fault = fault ?? "the name " + one.Text + " lies over the title" + where;
+                    }
+                    if (under != (one.Y > head.Y + 1f))
+                    {
+                        fault = fault ?? "the legend is on the wrong line" + where;
+                    }
+                    for (int b = a + 1; b < legend.Count; b++)
+                    {
+                        UiItem two = s.Items[legend[b]];
+                        if (one.X < two.X + two.W - ChartSlack && two.X < one.X + one.W - ChartSlack)
+                        {
+                            fault = fault ?? "the names " + one.Text + " and " + two.Text + " lie over each other" + where;
+                        }
+                    }
+                }
+                if (under && head.W + ChartSlack < Math.Min(w - UiTokens.S4 * 2f, UiTextRules.Width(m.Title, UiStyle.SectionHeader)))
+                {
+                    fault = fault ?? "the title is cut though the legend left its line" + where;
+                }
+            }
+        }
+        Check(fault == null && below > 0 && beside > 0,
+            "charts: a legend stays inside its chart at every width: beside the title where both fit, on its own line where not, no name over another or over the title ("
+            + (fault ?? "held, " + below + " under and " + beside + " beside") + ")");
+        float[] line = { 1f, 2f, 3f, 4f };
+        Check(NewsRules.DaysShown(120, 9) == 9 && NewsRules.DaysShown(30, 9) == 9 && NewsRules.DaysShown(120, 300) == 120 && NewsRules.DaysShown(30, 30) == 30 && NewsRules.DaysShown(120, 0) == 1
+              && ReferenceEquals(NewsRules.From(line, 0), line) && NewsRules.From(line, 3).Length == 1 && NewsRules.From(line, 3)[0] == 4f && NewsRules.From(line, 9).Length == 0
+              && NewsRules.From(null, 2) == null,
+            "charts: the Economy app's charts show no day before the save's first (120 days on day 9 are 9 days, never \"Day -110\"), and a line starts on its first day kept");
+        string prices = ModSource(@"Ui\News\NewsLive.Prices.cs"), news = ModSource(@"Ui\News\NewsLive.cs");
+        Check(prices.Contains("one.Values = NewsRules.From(one.Values, cut);") && prices.Contains("span -= cut;")
+              && news.Contains("int span = NewsRules.DaysShown(NewsRules.Span(_range), end);") && !news.Contains(": i + 1).ToString(Inv)"),
+            "charts: the goods chart begins on the first day a price was kept and the city's chart on the save's first day, each day named as the day it is");
+        Check(NewsRules.Opening("fresh produce and flowers led") == "Fresh produce and flowers led" && NewsRules.Opening("Fuel led") == "Fuel led" && NewsRules.Opening("1 led") == "1 led"
+              && NewsRules.Opening(string.Empty).Length == 0 && NewsRules.Opening(null) == null && prices.Contains("NewsRules.Opening(OutlookText.T(\"reallife_news_chip_led\""),
+            "charts: the prices page's lead opens with a capital, whatever kind of goods led");
+        Check(WhatsNewHas(LocaleFile("en"), "the Economy app's goods chart"), "charts: What's new tells of the Economy chart's fix");
     }
 
     // ---------------------------------------------------------------- the hard cases
