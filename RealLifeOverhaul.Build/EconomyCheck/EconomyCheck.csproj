@@ -229,6 +229,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\MorningNewsRules.cs" Link="Mod\MorningNewsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OptionKeysRules.cs" Link="Mod\OptionKeysRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\UiOffRules.cs" Link="Mod\UiOffRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureGuard.cs" Link="Mod\FeatureGuard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FaultWords.cs" Link="Mod\FaultWords.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ScreenHolds.cs" Link="Mod\ScreenHolds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPieces.cs" Link="Mod\UiPieces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\WakeRules.cs" Link="Mod\WakeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\GuideMarkRules.cs" Link="Mod\GuideMarkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TextBoxRules.cs" Link="Mod\TextBoxRules.cs" />

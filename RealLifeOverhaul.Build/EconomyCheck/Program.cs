@@ -1364,6 +1364,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-guard")
+        {
+            UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -1783,6 +1789,7 @@ internal static partial class Program
         NoticeMuting();     // the mod's notifications by kind: what a switch keeps from popping up, the gate in the maker's place, the list, the cost, the texts (NoticeMuteChecks.cs)
         Graphics();         // Realistic graphics: the table of settings, the Free choice against the switches that start work, every minute of every look in every weather, no jumps, the grey card, the curves, the measurement, the cost, the sources, the texts (GraphicsChecks.cs)
         UiOff();            // the RLO interface off by default: the step that switches a saved "on" off once and never again, who is told, the default and the presets, the order at start, the texts (UiOffChecks.cs)
+        UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
