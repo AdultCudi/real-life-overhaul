@@ -7,8 +7,9 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The player's saved places on the city map: a row of its filters, "Saved places", with a marker on each place, as the mod's other places are (MapPlaces). The place
-    /// card's Save puts a place in the list; this makes the list something the player sees on the map and can switch off. Looked at once a second while the interface is on,
-    /// and only when the list has changed does it do anything: the markers are made again for the places now saved. A fault is one line in the log and the row is left off.
+    /// card's Save puts a place in the list; this makes the list something the player sees on the map and can switch off. Looked at once a second,
+    /// with the interface on or off (a place saved stays on the game's own map), and only when the list has changed does it do anything:
+    /// the markers are made again for the places now saved. A fault is one line in the log and the row is left off.
     /// </summary>
     internal static class MapSavedGame
     {
@@ -17,6 +18,7 @@ namespace RealLifeOverhaul.Ui
 
         private static MapPlaces.Category _row;
         private static int _seen = -1;
+        private static CityManager _city;
         private static bool _broken;
 
         /// <summary>Once a second: the row follows the list of saved places.</summary>
@@ -28,13 +30,19 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
-                int version = MapStoreGame.SavedVersion;
-                if (version == _seen)
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                if (city == null)
                 {
                     return;
                 }
-                CityManager city = InstanceBehavior<CityManager>.Instance;
-                if (city == null)
+                if (!ReferenceEquals(_city, city))
+                {
+                    _city = city;   // a new city's map has none of the last one's markers, with the interface on or off
+                    _row = null;
+                    _seen = -1;
+                }
+                int version = MapStoreGame.SavedVersion;
+                if (version == _seen)
                 {
                     return;
                 }
@@ -83,6 +91,7 @@ namespace RealLifeOverhaul.Ui
         public static void Forget()
         {
             _row = null;
+            _city = null;
             _seen = -1;
             _broken = false;
         }
