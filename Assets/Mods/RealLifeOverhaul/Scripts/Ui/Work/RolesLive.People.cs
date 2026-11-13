@@ -554,18 +554,58 @@ namespace RealLifeOverhaul.Ui
             brief.Foot = Act(Brief, 0, w.T("reallife_hire_button_brief", "Brief the firm"), UiButtonKind.Primary, UiIcon.Search, false,
                 !seats ? TechText.T(TechDirector.SeatRefusal) : r.MostLevel < HiringCatalogue.SearchLeastLevel ? w.T("reallife_work_search_level", "A search finds senior people only.") : null);
             form.Left.Add(brief);
-            // the data centre's crew
-            string crewWhy = d.CrewRefusal(TalentGame.Place(_places[place]));
-            int crew = Math.Max(1, Math.Min(HiringCatalogue.CrewMost, view.Get(3, 4)));
-            t.Amounts.Add(new WorkAmount { Id = 3, Value = crew, Min = 1, Max = HiringCatalogue.CrewMost, Figure = crew.ToString(Inv) });
-            d.CrewQuote(TalentCatalogue.Technician, TalentCatalogue.Mid, crew, out int crewFee, out int crewRetainer, out int each);
+            // the data centre's crew: which centre, which role and level of technician, and how many (what the centre lacks until it is stepped), as the old page asks
             var crewBand = new WorkFormBand { Title = w.T("reallife_work_crew_title", "Data centre crew") };
-            crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_crew_technicians", "Technicians"), Stepper = t.Amounts.Count - 1 });
-            crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_fee", "Fee"),
-                Value = TechText.Cents(crewFee) + ", " + w.F("reallife_work_each_n", "{n} each", "n", TechText.Cents(each)) });
-            crewBand.Foot = Act(BriefCrew, 0, w.T("reallife_hire_button_brief_crew", "Brief a crew search"), UiButtonKind.Secondary,
-                UiIcon.HardDrives, false, crewWhy == null ? null : w.T(crewWhy, "A crew search needs a data centre and headquarters."));
-            form.Left.Add(crewBand);
+            if (!CrewChoice(d, view, out DataCentre centre, out int crewRole, out int crewLevel, out int crew))
+            {
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.T("reallife_crew_no_centres") });
+                form.Left.Add(crewBand);
+            }
+            else
+            {
+                InfraFile infra = d.Infra;
+                var centreNames = new string[infra.Centres.Count];
+                for (int i = 0; i < centreNames.Length; i++)
+                {
+                    centreNames[i] = infra.Centres[i].Name;
+                }
+                var crewRoleNames = new string[HiringCatalogue.CrewRoles.Length];
+                for (int i = 0; i < crewRoleNames.Length; i++)
+                {
+                    crewRoleNames[i] = TechText.Role(HiringCatalogue.CrewRoles[i]);
+                }
+                int crewLeast = HiringRules.CrewLevel(crewRole, HiringCatalogue.CrewLeastLevel), crewMost = HiringRules.CrewLevel(crewRole, HiringCatalogue.CrewMostLevel);
+                var crewLevelNames = new string[crewMost - crewLeast + 1];
+                for (int i = 0; i < crewLevelNames.Length; i++)
+                {
+                    crewLevelNames[i] = TechText.Level(crewLeast + i);
+                }
+                t.Amounts.Add(Choice(4, Array.IndexOf(infra.Centres.ToArray(), centre), centreNames));
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_place", "At"), Stepper = t.Amounts.Count - 1 });
+                t.Amounts.Add(Choice(5, Math.Max(0, Array.IndexOf(HiringCatalogue.CrewRoles, crewRole)), crewRoleNames));
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_role", "Role"), Stepper = t.Amounts.Count - 1 });
+                t.Amounts.Add(Choice(6, crewLevel - crewLeast, crewLevelNames));
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_level", "Level"), Stepper = t.Amounts.Count - 1 });
+                t.Amounts.Add(new WorkAmount { Id = 3, Value = crew, Min = 1, Max = HiringCatalogue.CrewMost, Figure = crew.ToString(Inv) });
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_crew_technicians", "Technicians"), Stepper = t.Amounts.Count - 1 });
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill("reallife_crew_centre", "have", centre.Technicians.ToString(Inv), "need",
+                    InfraRules.TechniciansNeeded(centre).ToString(Inv), "racks", (centre.Racks + centre.GpuRacks).ToString(Inv)) });
+                d.CrewQuote(crewRole, crewLevel, crew, out int crewFee, out int crewRetainer, out int each);
+                crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill("reallife_crew_cost", "each", TechText.Cents(each), "fee", TechText.Cents(crewFee), "retainer",
+                    TechText.Cents(crewRetainer), "count", HiringRules.CrewCandidates(crew).ToString(Inv), "least", HiringCatalogue.CrewDaysLeast.ToString(Inv), "most",
+                    HiringCatalogue.CrewDaysMost.ToString(Inv)) });
+                string crewWhy = d.CrewRefusal(centre.Place);
+                BuildingRegistration hq = HiringGame.Headquarters();
+                if (crewWhy == null && hq != null)
+                {
+                    crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.T("reallife_crew_from_hq", "hq", TalentGame.NameOf(hq)) });
+                }
+                crewBand.Foot = Act(BriefCrew, 0, w.T("reallife_hire_button_brief_crew", "Brief a crew search"), UiButtonKind.Secondary,
+                    UiIcon.HardDrives, false, crewWhy == null ? null : TechText.T(crewWhy));
+                crewBand.Note = TechText.Fill("reallife_crew_about", "least", TechText.Bp(HiringCatalogue.CrewFeeBp[0]),
+                    "most", TechText.Bp(HiringCatalogue.CrewFeeBp[HiringCatalogue.CrewFeeBp.Length - 1]));
+                form.Left.Add(crewBand);
+            }
             var running = new WorkFormBand { Title = w.T("reallife_work_running_searches", "Searches running") };
             for (int i = 0; i < h.Ads.Count; i++)
             {
@@ -830,6 +870,30 @@ namespace RealLifeOverhaul.Ui
                 bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
                 var career = new WorkFormBand { Title = w.T("reallife_work_person_career", "Career") };
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_role", "Role"), Value = TechText.Role(p.Role) + ", " + TechText.Level(p.Level) });
+                // the roles a professional can move to (their game skill's, or the family's roles without one): chosen, then set
+                var moves = new List<int>(4);
+                for (int i = 0; i < TalentCatalogue.Roles.Length; i++)
+                {
+                    RoleDef to = TalentCatalogue.Roles[i];
+                    if (person.Game != null ? to.InGame && to.GameSkill == person.Skill : !to.InGame && to.Family == p.Def.Family || to.Id == p.Role)
+                    {
+                        moves.Add(to.Id);
+                    }
+                }
+                if (moves.Count > 1)
+                {
+                    var moveNames = new string[moves.Count];
+                    for (int i = 0; i < moveNames.Length; i++)
+                    {
+                        moveNames[i] = TechText.Role(moves[i]);
+                    }
+                    int at = Math.Max(0, Math.Min(moves.Count - 1, view.Get(RoleSlot, moves.IndexOf(p.Role))));
+                    t.Amounts.Add(Choice(RoleSlot, at, moveNames));
+                    career.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_move_role", "Move to the role"), Stepper = t.Amounts.Count - 1 });
+                    career.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(SetRole, moves[at],
+                        w.T("reallife_work_set_role", "Set this role"), UiButtonKind.Secondary, UiIcon.Check,
+                        false, moves[at] == p.Role ? w.T("reallife_work_already_set", "It is set so.") : null) });
+                }
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_experience", "Experience"),
                     Value = TechText.Years(p.YearsDays + (day - p.Joined) * 365 / Math.Max(60, year)) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_school", "Schooling"), Value = TechText.School(p.School) });
@@ -1015,6 +1079,7 @@ namespace RealLifeOverhaul.Ui
                 case RefuseRise: d.RefuseRise(key); return true;
                 case Promote: return key != null && d.Promote(key);
                 case SetWork: d.SetWork(key, view.Get(0, person != null ? person.File.Work : 0)); return true;
+                case SetRole: d.SetRole(key, act.Arg); return key != null;
                 case CourseA: return key != null && d.Course(key, 0);
                 case CourseB: return key != null && d.Course(key, 1);
                 case Degree: return key != null && d.SponsorDegree(key);
@@ -1088,15 +1153,30 @@ namespace RealLifeOverhaul.Ui
             return d.StartSearch(TalentGame.Place(_places[Math.Max(0, Math.Min(_places.Count - 1, v.Get(2, 0)))]), r.Id, level);
         }
 
-        private bool BriefCrewSearch(TechDirector d, WorkView v)
+        // The crew search the view has set: the data centre (the centres of the infrastructure, not the businesses), the role and level of technician and the count, which is what the
+        // centre lacks until the player steps it. False with no data centre.
+        private static bool CrewChoice(TechDirector d, WorkView v, out DataCentre centre, out int role, out int level, out int count)
         {
-            TalentGame.Businesses(_places);
-            if (_places.Count == 0)
+            InfraFile infra = d.Infra;
+            centre = null;
+            role = TalentCatalogue.Technician;
+            level = TalentCatalogue.Mid;
+            count = 1;
+            if (infra == null || infra.Centres.Count == 0)
             {
                 return false;
             }
-            return d.StartCrewSearch(TalentGame.Place(_places[Math.Max(0, Math.Min(_places.Count - 1, v.Get(2, 0)))]), TalentCatalogue.Technician,
-                TalentCatalogue.Mid, Math.Max(1, Math.Min(HiringCatalogue.CrewMost, v.Get(3, 4))));
+            centre = infra.Centres[Math.Max(0, Math.Min(infra.Centres.Count - 1, v.Get(4, 0)))];
+            role = HiringCatalogue.CrewRoles[Math.Max(0, Math.Min(HiringCatalogue.CrewRoles.Length - 1, v.Get(5, 0)))];
+            int least = HiringRules.CrewLevel(role, HiringCatalogue.CrewLeastLevel), most = HiringRules.CrewLevel(role, HiringCatalogue.CrewMostLevel);
+            level = Math.Max(least, Math.Min(most, least + v.Get(6, 0)));
+            count = Math.Max(1, Math.Min(HiringCatalogue.CrewMost, v.Get(3, InfraRules.CrewLacking(centre))));
+            return true;
+        }
+
+        private bool BriefCrewSearch(TechDirector d, WorkView v)
+        {
+            return CrewChoice(d, v, out DataCentre centre, out int role, out int level, out int count) && d.StartCrewSearch(centre.Place, role, level, count);
         }
     }
 }

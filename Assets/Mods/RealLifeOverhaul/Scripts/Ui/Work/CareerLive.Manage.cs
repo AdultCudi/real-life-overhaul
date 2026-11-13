@@ -14,7 +14,9 @@ namespace RealLifeOverhaul.Ui
     public sealed partial class CareerLive
     {
         private static readonly string[] RotaKeys = { "reallife_ladder_rota_0", "reallife_ladder_rota_1", "reallife_ladder_rota_2" };
-        private const int TasksShown = 3;
+        private const int TasksShown = 3, StoresShown = 4;
+        // Amount places the lists below use (the picks of the tasks shown take 0 to 2, 15 means none): the store a person is moved to, and the page of each list.
+        private const int StorePageSlot = 11, MoveSlot = 12, StaffPageSlot = 13, TaskPageSlot = 14;
         private readonly List<int> _practices = new List<int>(8);
 
         private WorkTab ManagementTab(CareersDirector d, WorkView view, int day)
@@ -33,12 +35,15 @@ namespace RealLifeOverhaul.Ui
             form.Lead = CareersDirector.LadderTitle(f) + ". " + CareersText.Fill("reallife_ladder_sub", "company", CareersText.Employer(c.Name), "stores", c.Stores.Count.ToString());
             // to decide: each task a tile, the pick it needs and its decisions
             var decide = new WorkFormBand { Title = words.T("reallife_work_group_decide", "To decide"), Count = f.Tasks.Count.ToString(Inv) };
-            for (int i = 0; i < f.Tasks.Count && i < TasksShown; i++)
+            int taskPage = PageOf(t, decide, view, TaskPageSlot, f.Tasks.Count, TasksShown,
+                "reallife_work_tasks_range", "Tasks {from} to {to} of {all}", words.T("reallife_work_tasks_shown", "Tasks shown"));
+            for (int i = taskPage * TasksShown; i < f.Tasks.Count && i < (taskPage + 1) * TasksShown; i++)
             {
                 LadderTask task = f.Tasks[i];
+                int slot = i - taskPage * TasksShown;
                 decide.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = TaskTitle(f, task), Hint = StoreName(c, task.Store), Value = CareersText.Day(task.Lapse), Icon = UiIcon.People });
-                int pick = TaskPick(d, f, task, i, view, t, decide);
-                decide.Rows.Add(TaskButtons(f, task, words, pick >= 0 || pick == -2 ? i : 15, pick));
+                int pick = TaskPick(d, f, task, slot, view, t, decide);
+                decide.Rows.Add(TaskButtons(f, task, words, pick >= 0 || pick == -2 ? slot : 15, pick));
             }
             if (f.Tasks.Count == 0)
             {
@@ -76,39 +81,119 @@ namespace RealLifeOverhaul.Ui
             {
                 form.Right.Add(PolicyBand(f, words));
             }
-            var staff = new WorkFormBand { Title = words.T("reallife_work_group_staff", "Staff") };
-            int people = 0;
-            for (int i = 0; i < c.People.Count && people < StaffShown; i++)
+            // the people of the player's unit, every rung of them, as the old page lists them; a press chooses one, and the band under the list holds what may be done with them
+            var unit = new List<Colleague>(CareerLadderRules.StaffMost);
+            for (int i = 0; i < c.People.Count; i++)
             {
-                Colleague p = c.People[i];
-                if (p.Role != (int)Rung.Frontline)
+                if (CareerLadderRules.InUnit(f, c.People[i].Store))
                 {
-                    continue;
+                    unit.Add(c.People[i]);
                 }
-                people++;
-                staff.Rows.Add(new WorkFormRow { Field = WorkField.Person, Person = new WorkPerson { Name = p.Name, Role = StoreName(c, p.Store) + ", " + CareersText.Rate(Prices.At(p.Wage)),
-                    Right = words.F("reallife_work_morale_n", "Morale {n}", "n", p.Morale.ToString(Inv)), Ring = p.Morale < CareerLadderRules.LowMorale ? UiRole.Warn : UiRole.Ok },
-                    Act = Act(CareerAct.Raise, p.Id, words.T("reallife_work_raise_their_pay", "Raise their pay"), UiButtonKind.Secondary, UiIcon.TrendUp, false,
-                        LadderRanks.Has(f.Rung, RungPower.Raises) ? null : words.T("reallife_work_no_power_raises", "Your rung cannot give raises.")) });
             }
-            staff.Count = people.ToString(Inv);
-            if (people > 0)
+            var staff = new WorkFormBand { Title = words.T("reallife_work_group_staff", "Staff"), Count = unit.Count.ToString(Inv) };
+            int staffPage = PageOf(t, staff, view, StaffPageSlot, unit.Count, StaffShown,
+                "reallife_work_staff_range", "People {from} to {to} of {all}", words.T("reallife_work_people_shown", "People shown"));
+            for (int i = staffPage * StaffShown; i < unit.Count && i < (staffPage + 1) * StaffShown; i++)
+            {
+                Colleague p = unit[i];
+                staff.Rows.Add(new WorkFormRow { Field = WorkField.Person, Person = new WorkPerson { Name = p.Name,
+                    Role = StoreName(c, p.Store) + ", " + CareersText.T(LadderRanks.TitleKey(p.Role, (ExecSeat)p.Seat))
+                    + ", " + CareersText.Rate(Prices.At(p.Wage)),
+                    Right = words.F("reallife_work_morale_n", "Morale {n}", "n", p.Morale.ToString(Inv)), Ring = p.Morale < CareerLadderRules.LowMorale ? UiRole.Warn : UiRole.Ok },
+                    Act = Act(CareerAct.SelectPerson, p.Id, p.Name, UiButtonKind.Secondary, UiIcon.Person, true) });
+            }
+            if (unit.Count > 0)
             {
                 form.Right.Add(staff);
+                Colleague chosen = unit.Find(x => x.Id == view.Aside);
+                if (chosen != null)
+                {
+                    form.Right.Add(PersonBand(d, f, chosen, view, t, words));
+                }
             }
-            var shops = new WorkFormBand { Title = words.T("reallife_work_group_stores", "Stores"), Count = c.Stores.Count.ToString(Inv) };
-            for (int i = 0; i < c.Stores.Count && i < 4; i++)
+            var inUnit = new List<int>(c.Stores.Count);
+            for (int i = 0; i < c.Stores.Count; i++)
             {
+                if (CareerLadderRules.InUnit(f, i))
+                {
+                    inUnit.Add(i);
+                }
+            }
+            var shops = new WorkFormBand { Title = words.T("reallife_work_group_stores", "Stores"), Count = inUnit.Count.ToString(Inv) };
+            int storePage = PageOf(t, shops, view, StorePageSlot, inUnit.Count, StoresShown,
+                "reallife_work_stores_range", "Stores {from} to {to} of {all}", words.T("reallife_work_stores_shown", "Stores shown"));
+            for (int k = storePage * StoresShown; k < inUnit.Count && k < (storePage + 1) * StoresShown; k++)
+            {
+                int i = inUnit[k];
                 Outlet st = c.Stores[i];
                 shops.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = st.Name, Hint = CareersText.T(RotaKeys[TalentCatalogue.Clamp(st.Rota,
                     0, 2)]) + ", " + CareerLadderRules.StaffAt(c, i).ToString(Inv)
                     + " / " + st.Needed.ToString(Inv), Value = words.F("reallife_work_results_n", "Results {n}", "n", st.Results.ToString(Inv)), Icon = UiIcon.Store });
             }
-            if (c.Stores.Count > 0)
+            if (inUnit.Count > 0)
             {
                 form.Right.Add(shops);
             }
             return t;
+        }
+
+        // A list that has more than a page of rows gets a selector of its pages (the amount at the slot), "Tasks 4 to 6 of 16"; returns the page shown.
+        private int PageOf(WorkTab tab, WorkFormBand band, WorkView view, int slot, int total, int per, string key, string english, string label)
+        {
+            int pages = Math.Max(1, (total + per - 1) / per);
+            int page = Math.Max(0, Math.Min(pages - 1, view.Get(slot, 0)));
+            if (pages > 1)
+            {
+                var words = new string[pages];
+                for (int p = 0; p < pages; p++)
+                {
+                    words[p] = W.F(key, english, "from", (p * per + 1).ToString(Inv), "to", Math.Min(total, (p + 1) * per).ToString(Inv), "all", total.ToString(Inv));
+                }
+                tab.Amounts.Add(new WorkAmount { Id = slot, Value = page, Min = 0, Max = pages - 1, Words = words, Figure = words[page] });
+                band.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = label, Stepper = tab.Amounts.Count - 1 });
+            }
+            return page;
+        }
+
+        // The person chosen in the staff list: what they ask for, a raise where the rung may give one, and a move to another store of the unit where it may.
+        private WorkFormBand PersonBand(CareersDirector d, LadderFile f, Colleague p, WorkView view, WorkTab tab, UtilitiesWords words)
+        {
+            CityCompany c = f.Company;
+            var band = new WorkFormBand { Title = p.Name };
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = words.T("reallife_ladder_row_skill_label", "Skill"), Value = p.Skill.ToString(Inv) });
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = words.T("reallife_ladder_row_wants", "Wants"),
+                Value = p.Want == (int)StaffWant.None ? words.T("reallife_work_none_word", "None")
+                : CareersDirector.WantText(p.Want) });
+            if (p.GameId.Length == 0)
+            {
+                band.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T("reallife_ladder_person_ours") });
+            }
+            string cannot = LadderRanks.Has(f.Rung, RungPower.Raises) && p.Store >= 0 ? null : words.T("reallife_work_no_power_raises", "Your rung cannot give raises.");
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(CareerAct.Raise, p.Id, words.T("reallife_work_raise_their_pay", "Raise their pay"),
+                UiButtonKind.Primary, UiIcon.TrendUp, false, cannot) });
+            if (LadderRanks.Has(f.Rung, RungPower.Transfers) && p.Role == (int)Rung.Frontline && p.Store >= 0)
+            {
+                var stores = new List<int>(c.Stores.Count);
+                var names = new List<string>(c.Stores.Count);
+                for (int s = 0; s < c.Stores.Count; s++)
+                {
+                    if (s != p.Store && CareerLadderRules.InUnit(f, s))
+                    {
+                        stores.Add(s);
+                        names.Add(StoreName(c, s));
+                    }
+                }
+                if (stores.Count > 0)
+                {
+                    int at = Math.Max(0, Math.Min(stores.Count - 1, view.Get(MoveSlot, 0)));
+                    tab.Amounts.Add(new WorkAmount { Id = MoveSlot, Value = at, Min = 0, Max = stores.Count - 1, Words = names.ToArray(), Figure = names[at] });
+                    band.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = words.T("reallife_work_move_to", "Move to"), Stepper = tab.Amounts.Count - 1 });
+                    band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(CareerAct.Move, p.Id * 16 + stores[at],
+                        words.T("reallife_ladder_button_move", "Move them"),
+                        UiButtonKind.Secondary, UiIcon.Next) });
+                }
+            }
+            return band;
         }
 
         private static string TaskTitle(LadderFile f, LadderTask t)
@@ -224,8 +309,17 @@ namespace RealLifeOverhaul.Ui
                 On = f.Recommended || !next.Recommend });
             band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_stores", "have", f.Company.Stores.Count.ToString(), "need", next.Stores.ToString()),
                 On = f.Company.Stores.Count >= next.Stores });
+            string why = d.LadderWhyNot(f);
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T(why == null ? "reallife_ladder_next_ready" : why) });
             band.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = words.T("reallife_ladder_aiming", "Put my name forward"), On = f.Aiming,
                 Act = Act(CareerAct.Aiming, f.Aiming ? 0 : 1, words.T("reallife_ladder_aiming", "Put my name forward"), UiButtonKind.Secondary, UiIcon.Check) });
+            if (next.Level == Rung.Executive)
+            {
+                // the seat to aim for, one press to the next of the three
+                ExecSeat after = (ExecSeat)((int)seat % 3 + 1);
+                band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_work_aim_seat", "The seat to aim for"),
+                    Act = Act(CareerAct.AimSeat, (int)after, CareersText.T(LadderRanks.TitleKey((int)Rung.Executive, seat)), UiButtonKind.Secondary, UiIcon.Next) });
+            }
             form.Left.Add(band);
         }
 
@@ -303,6 +397,20 @@ namespace RealLifeOverhaul.Ui
                 cj.MatterText = CareersText.T(CareersText.MatterKey(m));
             }
             cj.CanDeclare = !j.Declared && d.Conflicted(j);
+            // A shift starts at the desk; from here only where no desk could be had, and overtime is worked the same way.
+            cj.DeskLine = d.DeskLine(j);
+            string fallback = d.DeskFallbackWhy(j);
+            if (fallback != null)
+            {
+                string why = d.CanWork(out int _, out bool _);
+                cj.CanStart = true;
+                cj.StartWhy = why != null && (why == "reallife_work_why_not_today" || why == "reallife_work_why_done_today") ? CareersText.T(why) : null;
+                cj.DeskFallback = CareersText.T(fallback);
+                cj.DeskWhy = why != null && cj.StartWhy == null ? CareersText.T(why) : null;
+            }
+            string late = d.CanWorkLate();
+            cj.CanLate = fallback != null;
+            cj.LateWhy = late != null ? CareersText.T(late) : null;
         }
 
         // ------------------------------------------------------------------------------------------------- Own work
@@ -423,6 +531,7 @@ namespace RealLifeOverhaul.Ui
                     else
                     {
                         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T("reallife_own_where_desk") });
+                        due.More.Add(Act(CareerAct.ShowContract, c.Id, words.T("reallife_career_button_map", "Show on map"), UiButtonKind.Secondary, UiIcon.Locate, true));
                     }
                     contracts.Rows.Add(due);
                 }
@@ -596,6 +705,7 @@ namespace RealLifeOverhaul.Ui
                     GameConfirm.Show("reallife_life_confirm_retire_title".Localize(), "reallife_life_confirm_retire_body".Localize(),
                         () => Said(d.Retire(), d), null, null, null, true, true);
                     return true;
+                case CareerAct.ShowContract: return Said(d.ShowContractPlace(arg), d);
                 case CareerAct.PolicyMore: return Said(d.LadderPolicy((PolicyField)arg, 1), d);
                 case CareerAct.PolicyLess: return Said(d.LadderPolicy((PolicyField)arg, -1), d);
                 case CareerAct.AskShiftEarlier: return Said(d.LadderAsk(StaffWant.Shift, -1), d);
@@ -603,6 +713,9 @@ namespace RealLifeOverhaul.Ui
                 case CareerAct.AskEquipment: return Said(d.LadderAsk(StaffWant.Equipment, 0), d);
                 case CareerAct.AskInsurance: return Said(d.LadderAsk(StaffWant.Insurance, 0), d);
                 case CareerAct.Aiming: return Said(d.LadderAiming(arg == 1), d);
+                case CareerAct.AimSeat: return Said(d.LadderAimSeat((ExecSeat)arg), d);
+                case CareerAct.SelectPerson: view.Aside = arg; return true;
+                case CareerAct.Move: return Said(d.LadderMove(arg >> 4, arg & 15), d);
                 case CareerAct.RotaLean: return Said(d.LadderRota(0), d);
                 case CareerAct.RotaStandard: return Said(d.LadderRota(1), d);
                 case CareerAct.RotaFull: return Said(d.LadderRota(2), d);

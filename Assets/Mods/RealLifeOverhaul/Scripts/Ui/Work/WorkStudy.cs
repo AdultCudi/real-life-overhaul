@@ -22,14 +22,27 @@ namespace RealLifeOverhaul.Ui
             int n = t.Rows.Count;
             if (n > 0)
             {
-                float gap = UiTokens.S3, cw = UiDraw.SnapDown((w - gap * (Math.Min(n, 4) - 1)) / Math.Min(n, 4)), ch = CardHeight;
+                float gap = UiTokens.S3, cw = UiDraw.SnapDown((w - gap * (Math.Min(n, 4) - 1)) / Math.Min(n, 4));
+                // A card is as tall as its fullest sibling needs: a fourth figure (the room) and a second or third line of buttons (class, homework, exam, pay, withdraw).
+                int figures = 3, lines = 1;
+                for (int i = 0; i < n && i < 4; i++)
+                {
+                    figures = Math.Max(figures, Math.Min(MostFigures, t.Rows[i].Figures.Count));
+                    lines = Math.Max(lines, ButtonLines(t.Rows[i], actions, cardActs, i, cw - UiTokens.S4 * 2f, keys));
+                }
+                float ch = CardHeight + (figures - 3) * (UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1) + (lines - 1) * (UiTokens.ControlSmall + UiTokens.S2);
                 int firstNode = s.NodeCount;
                 for (int i = 0; i < n && i < 4; i++)
                 {
                     CourseCard(s, at, t.Rows[i], actions, cardActs, i, x + i * (cw + gap), cy, cw, ch, keys);
                 }
-                LinkButtons(s, firstNode);
+                LinkButtons(s, firstNode, x, cw + gap);
                 cy += ch + UiTokens.S4;
+            }
+            if (t.NoteText != null && bottom - cy > WorkPanel.NoteHeight(t.NoteLead, t.NoteText, w) + UiTokens.S12 * 3f)
+            {
+                WorkPanel.Note(s, at, UiIcon.Info, t.NoteLead, t.NoteText, x, cy, w);
+                cy += WorkPanel.NoteHeight(t.NoteLead, t.NoteText, w) + UiTokens.S4;
             }
             if (t.Diary != null)
             {
@@ -39,10 +52,35 @@ namespace RealLifeOverhaul.Ui
         }
 
         public const float CardHeight = 200f;
+        public const int MostFigures = 4, MostActs = 6;   // a card's figures, and the buttons of one card (the page numbers them by this)
+
+        // How many lines a card's buttons take when they wrap from the right edge.
+        private static int ButtonLines(WorkRow r, UiActionModel[] actions, int[] cardActs, int index, float room, IUiKeys keys)
+        {
+            int lines = 1;
+            float used = 0f;
+            for (int k = 0; k < r.Acts.Count && k < MostActs; k++)
+            {
+                int place = cardActs[index * MostActs + k];
+                if (place < 0 || place >= actions.Length)
+                {
+                    continue;
+                }
+                UiActionModel a = actions[place];
+                float bw = Math.Min(room * 0.5f, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys)) + UiTokens.S2;
+                if (used > 0f && used + bw > room + UiTokens.S2)
+                {
+                    lines++;
+                    used = 0f;
+                }
+                used += bw;
+            }
+            return lines;
+        }
 
         // The cards' buttons are one row to the d-pad: left and right go from one to the next, however far apart the cards stand (the
         // diary's cells under them are nearer by the d-pad's reckoning, and would take the move).
-        private static void LinkButtons(UiScene s, int from)
+        private static void LinkButtons(UiScene s, int from, float x, float column)
         {
             int last = -1;
             var order = new List<int>(8);
@@ -53,7 +91,17 @@ namespace RealLifeOverhaul.Ui
                     order.Add(i);
                 }
             }
-            order.Sort((a, b) => s.Nodes[a].X.CompareTo(s.Nodes[b].X));
+            // card by card, and in a card line by line from the left: a card's buttons wrap onto lines, and the walk reads one card before the next
+            order.Sort((a, b) =>
+            {
+                int byCard = ((int)((s.Nodes[a].X - x) / column)).CompareTo((int)((s.Nodes[b].X - x) / column));
+                if (byCard != 0)
+                {
+                    return byCard;
+                }
+                int byLine = s.Nodes[a].Y.CompareTo(s.Nodes[b].Y);
+                return byLine != 0 ? byLine : s.Nodes[a].X.CompareTo(s.Nodes[b].X);
+            });
             for (int k = 0; k < order.Count; k++)
             {
                 if (last >= 0)
@@ -81,24 +129,31 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, at, tx, y + pad, tw - chip - UiTokens.S2, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
             UiDraw.Text(s, at, tx, y + pad + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate);
             float ly = y + pad + tile + UiTokens.S2;
-            for (int i = 0; i < r.Figures.Count && i < 3; i++)
+            for (int i = 0; i < r.Figures.Count && i < MostFigures; i++)
             {
                 UiDraw.Text(s, at, x + pad, ly, iw * 0.5f, UiStyle.Small, UiRole.Text2, r.Figures[i].Key, UiFlags.Truncate);
                 UiDraw.Text(s, at, x + w - pad - iw * 0.5f, ly, iw * 0.5f, UiStyle.SmallStrong, UiRole.Text, r.Figures[i].Value, UiFlags.Right | UiFlags.Truncate);
                 ly += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
             }
             // the card's own buttons stand at its foot, drawn from the page's actions
-            float by = y + h - pad - UiTokens.ControlSmall, right = x + w - pad;
-            for (int k = 0; k < r.Acts.Count; k++)
+            float foot = y + h - pad - UiTokens.ControlSmall, right = x + w - pad;
+            int lines = ButtonLines(r, actions, cardActs, index, iw, keys), line = 0;
+            for (int k = 0; k < r.Acts.Count && k < MostActs; k++)
             {
-                int at2 = cardActs[index * 4 + k];
+                int at2 = cardActs[index * MostActs + k];
                 if (at2 < 0 || at2 >= actions.Length)
                 {
                     continue;
                 }
                 UiActionModel a = actions[at2];
                 float bw = Math.Min(iw * 0.5f, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys));
+                if (right < x + w - pad && right - bw < x + pad)
+                {
+                    line++;
+                    right = x + w - pad;
+                }
                 right -= bw;
+                float by = foot - (lines - 1 - line) * (UiTokens.ControlSmall + UiTokens.S2);
                 UiDraw.Button(s, at, right, by, bw, UiTokens.ControlSmall, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                 right -= UiTokens.S2;
             }

@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Ui
         public int Tiers;            // the tiers reached, 0 to 3
         public int Steam;            // the highest tier reached on Steam, -1 for none
         public string Kind;          // the game's kind of goal (its class: "BankBalanceGoal"), for its glyph
+        public string[] TierTitles;  // what each of the three tiers asks, in the game's words (the tooltip of its box), null where a tier has none
     }
 
     /// <summary>
@@ -505,13 +506,39 @@ namespace RealLifeOverhaul.Ui
                     Cells = steam ? new[] { g.Title, TierWords(t, reached), g.Progress, won ? TierWords(t, g.Steam + 1) : null } : new[] { g.Title, TierWords(t, reached), g.Progress },
                     Values = steam ? new[] { (int)GoalIcon(g.Kind), reached, -1, -1 } : new[] { (int)GoalIcon(g.Kind), reached, -1 },
                     Tones = steam ? new[] { UiRole.None, UiRole.None, UiRole.None, won ? medals[g.Steam] : UiRole.None } : null,
-                    Share = reached < GoalsTiers ? Math.Max(0f, Fraction(g.Progress)) : 0f
+                    Share = reached < GoalsTiers ? Math.Max(0f, Fraction(g.Progress)) : 0f,
+                    Subs = TierSubs(columns.Count, g.TierTitles)
                 };
             }
             table.RowCount = table.Rows.Length;
             table.EmptyIcon = UiIcon.Trophy;
             table.EmptyTitle = t("reallife_ui_persona_no_goals", "No goals to show");
             table.EmptyBody = t("reallife_ui_persona_no_goals_body", "The game's personal goals list here with their three tiers as you reach them.");
+        }
+
+        private static string[] TierSubs(int columns, string[] titles)
+        {
+            var subs = new string[columns];
+            subs[0] = TierLine(titles);
+            return subs;
+        }
+
+        // The three tiers' targets on one line under the goal: what the game says on hover over each tier box.
+        private static string TierLine(string[] titles)
+        {
+            if (titles == null)
+            {
+                return null;
+            }
+            string line = null;
+            for (int i = 0; i < titles.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(titles[i]))
+                {
+                    line = line == null ? titles[i] : line + " / " + titles[i];
+                }
+            }
+            return line;
         }
 
         /// <summary>The courses done.</summary>

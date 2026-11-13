@@ -36,6 +36,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 y += UiTokens.Control + UiTokens.S2;
             }
+            if (j.DeskFallback != null)
+            {
+                // No desk could be had: where it is, why not, and what stops a shift being begun from here.
+                string text = j.DeskLine + " " + j.DeskFallback + (j.DeskWhy != null ? " " + j.DeskWhy : string.Empty);
+                string lead = w.T("reallife_career_desk_title", "Your desk");
+                WorkPanel.Note(s, at, UiIcon.Info, lead, text, x, y, cw);
+                y += WorkPanel.NoteHeight(lead, text, cw) + UiTokens.S3;
+            }
             float lw = UiDraw.SnapDown(cw * LeftShare), rw = cw - lw - UiTokens.S8, rx = x + lw + UiTokens.S8;
             // left: the next shift, the ladder, what the next rung needs, the twelve weeks
             float ly = y;
@@ -56,7 +64,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 ly += UiTokens.S3;
             }
-            if (j.Mine.Length >= 2 && bottom - ly >= UiTokens.S16 * 2f)
+            // the chart's axis labels need their height: with the desk's note above it, which takes some of the column, it is drawn only where there is room for them
+            if (j.Mine.Length >= 2 && bottom - ly >= UiTokens.S16 * (j.DeskFallback != null ? 3f : 2f))
             {
                 UiChart.Lay(s, at, Chart(j, w), x, ly, lw, bottom - ly);
             }

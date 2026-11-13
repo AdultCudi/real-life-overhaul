@@ -212,6 +212,14 @@ namespace RealLifeOverhaul.Ui
                 fact.Kind = "member";
                 fact.Standards = shop.File.Standards;
                 fact.Status = BrandsText.T("reallife_brand_status_member");
+                if (d.Kept(shop))
+                {
+                    // the shop's prices follow the flagship's: by how much they are kept at the local band, and whether a manager of the game's would undo that
+                    fact.KeptNote = b.Local
+                        ? BrandsText.Fill("reallife_brand_member_kept_local", "business", d.ShopName(b.Flagship), "share", BrandsText.Share(d.KeptFactor(shop.Place)))
+                        : BrandsText.T("reallife_brand_member_kept", "business", d.ShopName(b.Flagship));
+                    fact.ManagerNote = d.ManagerWatches(shop) ? BrandsText.T("reallife_brand_kept_manager", "district", BrandsText.District(shop.District)) : null;
+                }
             }
             else if (shop.Chain != null)
             {
@@ -222,6 +230,12 @@ namespace RealLifeOverhaul.Ui
                 fact.ChainExit = d.ChainExit(t);
                 fact.Kept = t.Keep;
                 fact.CanKeep = true;
+                if (t.Keep)
+                {
+                    fact.KeptNote = BrandsText.Fill("reallife_brand_chain_kept", "district", BrandsText.District(shop.District), "least", BrandsText.Share(KeptPrices.Least(t.Chain)),
+                        "most", BrandsText.Share(KeptPrices.Most(t.Chain)));
+                    fact.ManagerNote = d.ManagerWatches(shop) ? BrandsText.T("reallife_brand_kept_manager", "district", BrandsText.District(shop.District)) : null;
+                }
                 fact.Status = t.Breach > 0 ? BrandsText.T("reallife_brand_row_breach_days", "days", t.Breach.ToString(Inv)) : BrandsText.T("reallife_brand_status_chain");
             }
             else

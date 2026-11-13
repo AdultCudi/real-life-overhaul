@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
@@ -27,6 +28,9 @@ namespace RealLifeOverhaul.Economy
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             int waiting = 0, packed = 0, sent = 0, late = 0, pickers = 0, vans = 0;
+            string pickedOrder = Picked(_picked, OrderRow);
+            WebPlace orderPlace = null;
+            WebOrder orderPicked = null;
             List<string> sites = OnlineColumns.Orders.Filters[1].Names;   // the second filter's kinds: the sites by name
             sites.Clear();
             for (int i = 0; i < places.Count; i++)
@@ -42,12 +46,16 @@ namespace RealLifeOverhaul.Economy
                     packed += order.Stage == OrderStage.Picked ? 1 : 0;
                     sent += order.Stage == OrderStage.Out ? 1 : 0;
                     late += overdue ? 1 : 0;
+                    if (pickedOrder != null && order.Id.ToString(CultureInfo.InvariantCulture) == pickedOrder)
+                    {
+                        orderPlace = places[i];
+                        orderPicked = order;
+                    }
                     if (_rows.Count >= RowsMost)
                     {
                         continue;
                     }
                     TableRow row = Row(OrderRow + order.Id);
-                    row.Pick = false;
                     row.Kind = overdue ? OnlineColumns.Late : order.Stage == OrderStage.Waiting ? OnlineColumns.Waiting : order.Stage == OrderStage.Picked ? OnlineColumns.Packed : OnlineColumns.Out;
                     row.Kind2 = i;
                     Count(row, 0, order.Id);
@@ -81,6 +89,11 @@ namespace RealLifeOverhaul.Economy
             if (_rows.Count == 0)
             {
                 Say(OnlineText.T(places.Count == 0 ? "reallife_online_row_no_site" : "reallife_online_row_no_orders"));
+            }
+            if (orderPicked != null)
+            {
+                WriteOrder(box, orderPlace, orderPicked, state, day);
+                return OnlineColumns.Orders;
             }
             _picked = null;
             box.Title(OnlineText.T("reallife_online_tab_orders"));
@@ -240,6 +253,7 @@ namespace RealLifeOverhaul.Economy
                 : OnlineText.T("reallife_online_line_too_dear", "share", OnlineText.Share(OnlineCatalogue.PriceCeiling - 1000)));
             box.Row("reallife_online_line_stock", (index < site.Stock.Length ? site.Stock[index] : 0).ToString());
             box.Row("reallife_online_line_week", OnlineText.T("reallife_online_line_week_value", "sold", line.SoldWeek.ToString(), "missed", line.MissedWeek.ToString()));
+            WriteTitles(box, place, item);
             Transform buttons = box.ButtonRow();
             if (line.On)
             {

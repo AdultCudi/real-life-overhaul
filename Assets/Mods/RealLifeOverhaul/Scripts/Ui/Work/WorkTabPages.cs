@@ -299,16 +299,16 @@ namespace RealLifeOverhaul.Ui
 
         private static WorkPage Diary(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
         {
-            var cardActs = new int[Math.Max(4, t.Rows.Count * 4)];
+            var cardActs = new int[Math.Max(WorkStudy.MostActs, t.Rows.Count * WorkStudy.MostActs)];
             for (int i = 0; i < cardActs.Length; i++)
             {
                 cardActs[i] = -1;
             }
             for (int i = 0; i < t.Rows.Count && i < 4; i++)
             {
-                for (int k = 0; k < t.Rows[i].Acts.Count && k < 4; k++)
+                for (int k = 0; k < t.Rows[i].Acts.Count && k < WorkStudy.MostActs; k++)
                 {
-                    cardActs[i * 4 + k] = b.Act(t.Rows[i].Acts[k], t.Rows[i].Id, 2);
+                    cardActs[i * WorkStudy.MostActs + k] = b.Act(t.Rows[i].Acts[k], t.Rows[i].Id, 2);
                 }
             }
             var pageActs = new List<UiActionModel>(2);
