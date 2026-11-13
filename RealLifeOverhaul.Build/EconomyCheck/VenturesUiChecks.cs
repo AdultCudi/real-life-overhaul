@@ -23,6 +23,7 @@ internal static partial class Program
         BrandsEntryPoints();
         ShopExtraChecks();
         ShopEntryPoints();
+        UiAppsParity();   // (what the kit's apps and the old apps carry over from each other: UiAppsChecks.cs)
     }
 
     // ------------------------------------------------------------------------------------------------- the rules

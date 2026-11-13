@@ -171,6 +171,7 @@ internal static partial class Program
         WorkTermSums();
         WorkVehicleNames();
         WorkOneLife();
+        UiAppsParity();   // (what the kit's apps and the old apps carry over from each other: UiAppsChecks.cs)
     }
 
     // Rows that open a page, links at a row's right, aside rows and an empty page's button: each acts.
