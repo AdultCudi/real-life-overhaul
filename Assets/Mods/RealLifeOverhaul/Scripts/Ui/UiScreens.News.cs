@@ -23,12 +23,6 @@ namespace RealLifeOverhaul.Ui
             screens.Add(new UiScreenDef("ending", UiTemplate.Decision, "EndingScreen", NewsKeys(shared,
                 "reallife_news_end_kicker", "reallife_news_end_load", "reallife_news_end_quit"))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("household", UiTemplate.AppWindow, "HouseholdScreen", NewsKeys(shared,
-                EconomyWords("reallife_news_home_title", "reallife_news_rent_link")))
-                .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("renters", UiTemplate.AppWindow, "RentersScreen", NewsKeys(shared,
-                EconomyWords("reallife_news_rent_link", "reallife_news_people_title")))
-                .Switch(UiScreenSwitches.News));
         }
 
         // The Economy window's own words: its name and its tabs. The pages opened from a tab (the people, the renters, a household) stand in the same window.

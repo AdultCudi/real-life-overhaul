@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Ui
         public bool Note;          // words alone (the figures page's lines)
         public bool Main;          // the shop's one main action (Pay): on the cyan, on F
         public bool Opens;         // the row opens a page of its own (Paint, Finish): a chevron in place of a button, the row the target
+        public bool Chosen;        // the option is the one in the cart: its button's words stand as a chip, the row not pressable
         public bool Back;          // the way back to the shop's first page: its glyph at the left, the row the target
         public string Swatch;      // a paint's colour (UiDraw.SwatchKey, or the game's swatch sprite) on a tile at the left; null for none
     }
@@ -21,7 +22,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Title;
         public UiIcon Icon = UiIcon.Wrench;
-        public string[] Info = new string[0];                  // the money, the bill, what the cart does to the car
+        public string[] Info = new string[0];                  // the money, the bill, what the cart does to the car; each line wraps
         public int InfoCount;
         public UiGarageCard[] Cards = new UiGarageCard[0];
         public int CardCount;
@@ -46,6 +47,8 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands = { CardCommand };
         public const float Width = UiInfoPanel.Width;
         private const float ButtonW = 128f;
+        public const int DetailLines = 8;      // a part's effects run long: its row grows to hold them rather than cut them
+        private const int InfoLines = 4;
 
         public static void Lay(UiScene s, UiGarageStripModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -77,8 +80,30 @@ namespace RealLifeOverhaul.Ui
         public static float CardHeight(ref UiGarageCard c, float w, float bw)
         {
             float tw = TextWidth(ref c, w, bw);
-            float text = UiTextRules.LineHeight(UiStyle.Title) + (string.IsNullOrEmpty(c.Detail) ? 0f : UiTokens.S1 + UiTextRules.WrappedHeight(c.Detail, UiStyle.Small, tw, 4));
+            float text = UiTextRules.LineHeight(UiStyle.Title) + (string.IsNullOrEmpty(c.Detail) ? 0f : UiTokens.S1 + UiTextRules.WrappedHeight(c.Detail, UiStyle.Small, tw, DetailLines));
             return UiDraw.Snap(Math.Max(UiTokens.Row, text + UiTokens.S3 * 2f));
+        }
+
+        /// <summary>One info line's height: the first (the money and the bill) in the strong style, the rest small, each as many lines as its words need.</summary>
+        public static float InfoLineHeight(string line, int index, float w)
+        {
+            UiStyle style = index == 0 ? UiStyle.BodyStrong : UiStyle.Small;
+            return UiDraw.Snap(Math.Max(UiTokens.PairRow, UiTextRules.WrappedHeight(line ?? string.Empty, style, w, InfoLines)));
+        }
+
+        /// <summary>The band under the title: its lines wrapped to the strip's width, with a little air above and below.</summary>
+        public static float InfoHeight(UiGarageStripModel m, float w)
+        {
+            if (m.InfoCount <= 0)
+            {
+                return 0f;
+            }
+            float h = UiTokens.S2 * 2f;
+            for (int i = 0; i < m.InfoCount; i++)
+            {
+                h += InfoLineHeight(m.Info[i], i, w);
+            }
+            return UiDraw.Snap(h);
         }
 
         public static void Draw(UiScene s, UiGarageStripModel m, float x, float y, float h, IUiKeys keys)
@@ -89,7 +114,7 @@ namespace RealLifeOverhaul.Ui
             {
                 rows += CardHeight(ref m.Cards[i], cw, cbw) + UiTokens.S2;
             }
-            float head = UiFrame.Strip + (m.InfoCount > 0 ? UiTokens.S2 * 2f + m.InfoCount * UiTokens.PairRow : 0f);
+            float head = UiFrame.Strip + InfoHeight(m, w - UiTokens.S4 * 2f);
             h = Math.Min(h, UiDraw.Snap(head + UiTokens.S3 + Math.Max(0f, rows - UiTokens.S2) + UiTokens.S3));   // the strip ends under its last row
             int panel = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = UiAt.Screen.In(panel);
@@ -97,12 +122,13 @@ namespace RealLifeOverhaul.Ui
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
             if (m.InfoCount > 0)
             {
-                float bh = UiTokens.S2 * 2f + m.InfoCount * UiTokens.PairRow;
+                float bh = InfoHeight(m, iw), ly = cy + UiTokens.S2;
                 UiDraw.Band(s, on, x, cy, w, bh);
                 for (int i = 0; i < m.InfoCount; i++)
                 {
-                    UiDraw.TextMiddle(s, on, ix, cy + UiTokens.S2 + i * UiTokens.PairRow, UiTokens.PairRow, iw, i == 0 ? UiStyle.BodyStrong : UiStyle.Small, i == 0 ? UiRole.Text : UiRole.Text2,
-                        m.Info[i], UiFlags.Truncate);
+                    float lh = InfoLineHeight(m.Info[i], i, iw);
+                    UiDraw.Text(s, on, ix, ly, iw, i == 0 ? UiStyle.BodyStrong : UiStyle.Small, i == 0 ? UiRole.Text : UiRole.Text2, m.Info[i], UiFlags.Wrap, InfoLines);
+                    ly += lh;
                 }
                 cy += bh;
             }
@@ -197,12 +223,12 @@ namespace RealLifeOverhaul.Ui
             }
             float tx = lx + Lead(ref c), tw = TextWidth(ref c, w, bw);
             bool detail = !string.IsNullOrEmpty(c.Detail);
-            float block = UiTextRules.LineHeight(UiStyle.Title) + (detail ? UiTokens.S1 + UiTextRules.WrappedHeight(c.Detail, UiStyle.Small, tw, 4) : 0f);
+            float block = UiTextRules.LineHeight(UiStyle.Title) + (detail ? UiTokens.S1 + UiTextRules.WrappedHeight(c.Detail, UiStyle.Small, tw, DetailLines) : 0f);
             float ty = y + UiDraw.SnapDown((h - block) / 2f);   // the pair centred on the row, its top on the grid
             UiDraw.Text(s, inside, tx, ty, tw, UiStyle.Title, c.Enabled || c.Note ? UiRole.Text : UiRole.Text2, c.Name, UiFlags.Truncate);
             if (detail)
             {
-                UiDraw.Text(s, inside, tx, ty + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, c.Detail, UiFlags.Wrap | UiFlags.Middle, 4);
+                UiDraw.Text(s, inside, tx, ty + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, c.Detail, UiFlags.Wrap | UiFlags.Middle, DetailLines);
             }
             if (c.Note)
             {
@@ -222,9 +248,9 @@ namespace RealLifeOverhaul.Ui
             }
             else if (!c.Back && !string.IsNullOrEmpty(c.Button))
             {
-                if (!c.Enabled)
+                if (c.Chosen || (!c.Enabled && !string.IsNullOrEmpty(c.Swatch)))
                 {
-                    // The paint on the car says so as a chip, not as a greyed button.
+                    // The option the cart holds says so as a chip, not as a greyed button.
                     float cw = Math.Min(bw, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(c.Button, UiStyle.SmallStrong) + UiTokens.S1));
                     UiDraw.Chip(s, inside, right - cw, y + (h - UiTokens.Badge - UiTokens.S1) / 2f, c.Button, UiRole.Ok, cw);
                 }
@@ -237,9 +263,9 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             int node = UiDraw.Node(s, at, x, y, w, h, CardCommand, index, face, !c.Enabled, list, index);
-            if (!c.Enabled && !string.IsNullOrEmpty(c.Swatch))
+            if (!c.Enabled && (c.Chosen || !string.IsNullOrEmpty(c.Swatch)))
             {
-                return;   // the paint on the car stays in its colour: it is chosen, not refused
+                return;   // the option in the cart stays in its colour: it is chosen, not refused
             }
             if (!c.Enabled)
             {

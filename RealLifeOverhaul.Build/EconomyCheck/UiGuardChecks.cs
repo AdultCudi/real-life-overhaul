@@ -591,7 +591,7 @@ internal static partial class Program
     {
         { "Ui/Buy/ItemPanelKit.cs", "hold:ui" }, { "Ui/Host/UiGameHost.cs", "hold:ui" }, { "Ui/Host/UiOverCanvas.cs", "hold:ui" }, { "Ui/Hud/HudHost.cs", "hold:ui" },
         { "Ui/Life/ViewfinderHost.cs", "hold:ui" }, { "Ui/Phone/PhoneKit.cs", "hold:ui" }, { "Ui/Settings/BugReportBox.cs", "hold:ui" }, { "Ui/Shell/ShellModBox.cs", "hold:ui" },
-        { "Ui/Shell/UiShell.cs", "hold:ui" }, { "Ui/UiDirector.Tests.cs", "hold:ui" }, { "Ui/World/WorldHost.cs", "hold:ui" }, { "Ui/World/WorldPicker.cs", "hold:ui" },
+        { "Ui/Shell/UiShell.cs", "hold:ui" }, { "Ui/UiDirector.Tests.cs", "hold:ui" }, { "Ui/World/WorldHost.cs", "hold:ui" }, { "Ui/World/WorldPicker.cs", "hold:ui" }, { "Ui/Garage/GarageFace.cs", "hold:ui" },
         { "Ui/Tooltips/TooltipHost.cs", "hold:ui" },
         { "Meta/MetaUi.cs", "hold:MetaUi" },
         { "Meta/OptionsLayout.Search.cs", "none:a search box of the options page, which gives the keys back as its typing ends, whatever is off" },

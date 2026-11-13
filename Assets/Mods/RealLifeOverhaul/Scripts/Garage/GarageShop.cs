@@ -62,6 +62,7 @@ namespace RealLifeOverhaul
         private Vector3 _focus;
 
         private readonly List<Action> _acts = new List<Action>(40);   // each entry's button, by the entry's id
+        private readonly List<int> _swatches = new List<int>(40);     // beside _acts: the colour an entry shows on the interface's tile, or -1 for none
         private readonly System.Text.StringBuilder _text = new System.Text.StringBuilder(240);
         private readonly System.Text.StringBuilder _info = new System.Text.StringBuilder(320);
         private readonly Action<int> _onPick;
@@ -349,6 +350,7 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Garage: the shop's list could not be closed cleanly. " + e);
             }
             _acts.Clear();
+            _swatches.Clear();
             if (_dragArea != null)
             {
                 UnityEngine.Object.Destroy(_dragArea);
@@ -382,6 +384,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _acts.Clear();
+            _swatches.Clear();
             string name = _car.vehicleType != null ? _car.vehicleType.vehicleTypeName.GetLocalization() : _car.name;
             list.Begin(GarageText.T("reallife_customshop_title", "car", name), Info());
             if (_page == Page.Main)
@@ -406,11 +409,21 @@ namespace RealLifeOverhaul
             list.Open(_onPick, _onListClosed);
         }
 
-        private void Row(TravelList list, string name, string detail, string button, bool enabled, Action act)
+        private void Row(TravelList list, string name, string detail, string button, bool enabled, Action act, int swatch = -1)
         {
             _acts.Add(act);
+            _swatches.Add(swatch);
             list.Add(_acts.Count - 1, name, detail, button, enabled);
         }
+
+        /// <summary>True while the list shows the shop's first page: its rows open the other pages, where the same button key picks an option.</summary>
+        public bool OnMain => _page == Page.Main;
+
+        /// <summary>The page the list shows, for an interface that keeps its scroll only within a page.</summary>
+        public int PageIndex => (int)_page;
+
+        /// <summary>The colour (0xRRGGBB) an entry shows on a tile beside its name, or -1 for none.</summary>
+        public int SwatchOf(int id) => id >= 0 && id < _swatches.Count ? _swatches[id] : -1;
 
         private void Picked(int id)
         {
@@ -442,6 +455,7 @@ namespace RealLifeOverhaul
             }
             _listClosing = null;
             _acts.Clear();
+            _swatches.Clear();
             if (_open)
             {
                 Close(false);

@@ -1445,6 +1445,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-garage")
+        {
+            UiGarageHostChecks();   // (the Garage's lists as the garage strip: the custom shop, the workshop, My vehicles, a stand's rack: UiGarageHostChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-guard")
         {
             UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
@@ -1652,6 +1658,7 @@ internal static partial class Program
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
+        UiGarageHostChecks();   // the Garage's lists as the garage strip (UiGarageHostChecks.cs)
         UiKit2Checks();      // the kit's second pass: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion (UiKit2Checks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)

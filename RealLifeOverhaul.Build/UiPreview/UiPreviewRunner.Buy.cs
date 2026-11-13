@@ -74,7 +74,7 @@ public static partial class UiPreviewRunner
                 Walk = Moves(sliders ? "DDD" : "RRDDRD")
             });
         }
-        string[] garage = { "13.jpg", "11.jpg", "02.jpg" };
+        string[] garage = { "13.jpg", "11.jpg", "02.jpg", "13.jpg", "11.jpg" };
         for (int i = 0; i < UiSamples.GarageStates.Length; i++)
         {
             string st = UiSamples.GarageStates[i];
