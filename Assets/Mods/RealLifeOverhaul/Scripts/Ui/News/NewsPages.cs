@@ -128,8 +128,35 @@ namespace RealLifeOverhaul.Ui
             y += band + UiTokens.S3;
             if (m.Table != null && bottom - y > UiTokens.S16)
             {
-                UiAt inside = Card(s, at, x, y, w, bottom - y, m.TableTitle, null, out float cy);
-                UiDataTable.Lay(s, inside, m.Table, x + UiTokens.S2, cy, w - UiTokens.S4, bottom - UiTokens.S2 - cy, keys, NewsCommands.District);
+                // Your own businesses and buildings stand under the districts, each in a table of its own; the districts keep what they need, the places the rest.
+                float gap = UiTokens.S3;
+                int places = m.Boards == null ? 0 : m.Boards.Length;
+                float room = bottom - y;
+                float placesH = 0f;
+                for (int i = 0; i < places; i++)
+                {
+                    placesH = Math.Max(placesH, TableNeed(m.Boards[i], 3));
+                }
+                placesH = places > 0 ? Math.Max(Math.Min(placesH, UiDraw.SnapDown(room * 0.5f)), UiTokens.S16 * 3f) : 0f;
+                float mainH = UiDraw.SnapDown(Math.Min(TableNeed(m.Table, 4), room - (places > 0 ? placesH + gap : 0f)));
+                mainH = Math.Max(mainH, Math.Min(room, UiTokens.S16 * 3f));
+                if (places > 0)
+                {
+                    placesH = room - mainH - gap;   // what the districts leave goes to your places
+                }
+                UiAt inside = Card(s, at, x, y, w, mainH, m.TableTitle, null, out float cy);
+                UiDataTable.Lay(s, inside, m.Table, x + UiTokens.S2, cy, w - UiTokens.S4, y + mainH - UiTokens.S2 - cy, keys, NewsCommands.District);
+                if (places > 0 && placesH > UiTokens.S16 * 2f)
+                {
+                    float py = y + mainH + gap;
+                    float cw = UiDraw.SnapDown((w - gap * (places - 1)) / places);
+                    for (int i = 0; i < places; i++)
+                    {
+                        float px = x + i * (cw + gap);
+                        TableCard(s, at, m.Boards[i], m.BoardTitles != null && i < m.BoardTitles.Length ? m.BoardTitles[i] : null, px, py, i == places - 1 ? x + w - px : cw,
+                            bottom - py, keys, UiDataTable.First);
+                    }
+                }
                 return;
             }
             Notice(s, at, m, x, y, w, bottom - y);

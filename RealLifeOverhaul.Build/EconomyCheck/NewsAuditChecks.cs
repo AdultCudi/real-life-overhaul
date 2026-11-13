@@ -20,6 +20,7 @@ internal static partial class Program
         NewsFixChecks();
         NewsJoblessChecks();
         NewsOpeningChecks();
+        NewsParityChecks();
     }
 
     // ---------------------------------------------------------------- the Newsstand's Reading tab

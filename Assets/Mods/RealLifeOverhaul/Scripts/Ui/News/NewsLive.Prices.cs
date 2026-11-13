@@ -153,17 +153,10 @@ namespace RealLifeOverhaul.Ui
                 int week = At(GoodRaw, NewsRules.DaysBook - 8);
                 int month = At(GoodRaw, NewsRules.DaysBook - 1 - NewsRules.DaysMonth);
                 string weekMove = Move(today, week, out int weekWay);
-                string monthMove = Move(today, month == DaySeriesCatalogue.NoValue ? week : month, out int monthWay);
-                var line = new float[NewsRules.DaysBook];
-                float carry = today / 100f;
-                for (int d = 0; d < NewsRules.DaysBook; d++)
-                {
-                    if (GoodRaw[d] != DaySeriesCatalogue.NoValue)
-                    {
-                        carry = GoodRaw[d] / 100f;
-                    }
-                    line[d] = carry;
-                }
+                // A month the book does not hold yet is left blank; the week's change is not put in its place.
+                string monthMove = Move(today, month, out int monthWay);
+                // The line covers the days that have a price, from the first of them: a day before it is no part of the line, never today's price carried back.
+                float[] line = NewsCardRules.Kept(GoodRaw, NewsRules.DaysBook, DaySeriesCatalogue.NoValue, v => v / 100f, out int _);
                 rows.Add(new UiDataRow
                 {
                     Cells = new[] { GoodName(goods[g]), "$" + Cents(today), weekMove, monthMove, string.Empty, YourPrice(series, goods[g], end) },

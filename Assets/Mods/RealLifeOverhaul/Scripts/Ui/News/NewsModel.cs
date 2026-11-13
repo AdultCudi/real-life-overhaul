@@ -110,6 +110,47 @@ namespace RealLifeOverhaul.Ui
         public bool Pass;
     }
 
+    /// <summary>
+    /// One of the overview's headline tiles: what it measures, its figure, how it moved over a week and over a month, and its line. A press on it opens the tab
+    /// that explains it.
+    /// </summary>
+    public struct NewsTile
+    {
+        public string Label;
+        public string Value;
+        public string Short;        // the change over a week in words, "+0.4%  7d", or "-" where the book has not kept so many days
+        public string Long;         // ... over a month
+        public UiRole ShortTone;
+        public UiRole LongTone;
+        public int ShortWay;        // 1 up, -1 down, 0 none
+        public int LongWay;
+        public float[] Line;        // its days, oldest first, or null
+        public int Tab;             // the tab a press leads to
+    }
+
+    /// <summary>One row of a panel: a label and its figure, a meter under them where it has one, and a quiet line.</summary>
+    public struct NewsRow
+    {
+        public string Label;
+        public string Value;
+        public string Detail;       // a quiet line under the row, or null
+        public UiRole Ink;          // the figure's colour
+        public bool Bar;
+        public float Share;         // the meter's fill, 0 to 1
+        public float MidAt;         // where the meter's centre mark stands (0 to 1), or -1 for none
+        public UiRole Fill;         // the meter's colour
+    }
+
+    /// <summary>A card of labelled rows: the old Economy app's Costs, Bank, Wholesale, Books, Departments, Tax and People cards.</summary>
+    public sealed class NewsPanel
+    {
+        public string Title;
+        public string Note;         // a quiet sentence under the title
+        public NewsRow[] Rows = new NewsRow[0];
+        public string Foot;         // a line under the rows
+        public string MoreText;     // "and {n} more", said when the room holds fewer rows than there are
+    }
+
     /// <summary>A run of one cycle phase behind the chart, as a share of the window.</summary>
     public struct NewsBand
     {
@@ -162,9 +203,17 @@ namespace RealLifeOverhaul.Ui
         public string MovesLink;                      // the link under a list of moves, or null
         public int MovesTarget;
         public UiChartModel SideChart;                // a second chart beside the main one (the price index by kind)
+        public NewsTile[] Tiles = new NewsTile[0];    // the overview's tiles beyond the three figures of its band
+        public NewsPanel[] Panels = new NewsPanel[0]; // cards of rows beside a page's charts
+        public UiChartModel[] Charts = new UiChartModel[0];   // charts beside the page's main one
+        public string[] Facts = new string[0];        // the overview's chips: the month, the next rate decision, the busiest district
+        public UiRole[] FactTones;                    // each chip's dot, or null for the quiet default
+        public string FactsNote;                      // ... and the line at their right: what the cycle does to footfall and spending
+        public string AdviceMore;                     // the link under the advice to the Insights tab, or null
         public NewsBar[] Bars = new NewsBar[0];
         public string BarsTitle;
         public string BarsNote;
+        public string BarsMore;                       // "and {n} more", said when the card holds fewer bars than there are
         public string BigValue;                       // the markets page's index level, drawn large above its chart
         public string[] BigChanges = new string[0];
         public bool[] BigGood = new bool[0];
@@ -213,5 +262,6 @@ namespace RealLifeOverhaul.Ui
         public const int ReadDay = 453;    // ... a day of its editions (the day in Arg)
         public const int ReadPrinted = 454;   // ... the edition opened as the printed page
         public const int ToTitles = 455;   // ... the way to the Titles tab, where a paper is taken out
+        public const int Tab = 456;        // a tile or a link that opens another tab of the Economy window (its index in Arg)
     }
 }

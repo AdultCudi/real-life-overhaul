@@ -17,7 +17,6 @@ namespace RealLifeOverhaul.Ui
         private const int Sessions = 5;            // the sessions a sector's return is read over
         private const int IndexDays = 60;          // the sessions of the index's chart
         private const int BoardRows = 4;
-        private const int BarsEach = 4;            // sectors shown from the top and from the bottom of the ranking
 
         private void FillMarkets(NewsModel model)
         {
@@ -28,14 +27,17 @@ namespace RealLifeOverhaul.Ui
             model.Advice = new NewsAdvice[0];
             model.Actions = new UiActionModel[0];
             MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-            if (state == null)
+            if (state == null || !Look.MarketOn)
             {
                 model.Shape = NewsShape.Notice;
-                model.EmptyTitle = OutlookText.T("reallife_news_empty_city");
-                model.EmptyBody = OutlookText.T("reallife_news_empty_city_body");
+                model.EmptyTitle = OutlookText.T(Look.MarketOn || state == null ? "reallife_news_empty_city" : "reallife_econapp_markets_off_title");
+                model.EmptyBody = OutlookText.T(Look.MarketOn || state == null ? "reallife_news_empty_city_body" : "reallife_econapp_markets_off_body");
                 model.EmptyIcon = UiIcon.ChartLineUp;
                 return;
             }
+            // Whether the market is open now, as the old page wrote it in the corner of its chart.
+            model.Facts = new[] { OutlookText.T(Look.MarketOpen ? "reallife_econapp_market_open" : "reallife_econapp_market_closed") };
+            model.FactTones = new[] { Look.MarketOpen ? UiRole.Ok : UiRole.Muted };
             model.Chart = IndexChart(state);
             IndexFigures(state, model);
             Sectors(state, model);
@@ -124,15 +126,10 @@ namespace RealLifeOverhaul.Ui
             {
                 most = Math.Max(most, Math.Abs(returns[order[i]]));
             }
-            var bars = new List<NewsBar>(BarsEach * 2);
+            // Every sector the market has, the best first: the old page gave each a card, so none is left out for the room's sake.
+            var bars = new List<NewsBar>(order.Count);
             for (int i = 0; i < order.Count; i++)
             {
-                bool top = i < BarsEach;
-                bool bottom = i >= order.Count - BarsEach;
-                if (!top && !bottom)
-                {
-                    continue;
-                }
                 int s = order[i];
                 bars.Add(new NewsBar
                 {
@@ -144,6 +141,7 @@ namespace RealLifeOverhaul.Ui
             model.Bars = bars.ToArray();
             model.BarsTitle = OutlookText.T("reallife_news_sectors");
             model.BarsNote = OutlookText.T("reallife_news_five_note");
+            model.BarsMore = OutlookText.T("reallife_econapp_places_more");
         }
 
         private static int SessionBp(List<int> daily, int sessions)
