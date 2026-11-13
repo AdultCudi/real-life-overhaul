@@ -30,6 +30,9 @@ namespace RealLifeOverhaul
 
         public static bool IsOpen => GarageList.OpenFor(Owner);
 
+        /// <summary>True for the owner this list is taken with.</summary>
+        internal static bool IsOwner(object owner) => ReferenceEquals(owner, Owner);
+
         public static void Toggle()
         {
             if (IsOpen || _wanted)

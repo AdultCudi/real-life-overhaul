@@ -275,7 +275,7 @@ EconomyCheck's `UiHudChecks.cs` holds what a machine can check.
 - **Side panels** (`UiSidePanel`), **objectives** (`UiObjectives`), **meter and timing gauge** (`UiDraw.Progress`,
   `UiDraw.Timing`), **picker** (`UiPicker`, with pages and a locked mode), **activity** (`UiActivity`: the card before
   it starts, the strip while it runs, every state of the game's PlayerActivityState), **time skip veil**
-  (`UiTimeSkip`), **map side panel** (`UiMapPanel`) and **tool row** (`UiToolRow`).
+  (`UiTimeSkip`), **tool row** (`UiToolRow`).
 - **The host** (`HudHost` in Scripts/Ui/Hud): a canvas nested in the game's HUD canvas (`Host/UiOverCanvas`), so the
   game's scaler and UI zoom scale it; the layout holds at least `UiHudRules.LeastWidth` wide. The HUD is one view laid
   out only when its model or the pills' signature changes; a world prompt is a follower moved by one projection a frame;

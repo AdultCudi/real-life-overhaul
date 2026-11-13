@@ -24,8 +24,6 @@ namespace RealLifeOverhaul.Ui
         public static readonly NewsLive Stand = new NewsLive(NewsApp.Stand);
         public static readonly NewsLive Paper = new NewsLive(NewsApp.Paper);
         public static readonly NewsLive Ending = new NewsLive(NewsApp.Ending);
-        public static readonly NewsLive Household = new NewsLive(NewsApp.Household);
-        public static readonly NewsLive Renters = new NewsLive(NewsApp.Renters);
 
         public static int WantedTab = -1;
 

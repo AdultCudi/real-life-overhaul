@@ -22,7 +22,7 @@ internal static partial class UiSamples
     };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
-    public static readonly string[] GarageStates = { "main", "paint", "figures" };
+    public static readonly string[] GarageStates = { "main", "paint", "figures", "parts", "stand" };
 
     private static readonly string[] BuyGoods = { "Cupcake", "Croissant", "Ice cream", "Popcorn", "Cheese platter", "Paper bags", "Donut", "Coffee beans" };
     private static readonly string[] GoodsPictures = { "buy:cupcake", "buy:croissant", "buy:icecream", "buy:popcorn", "buy:cheese", "buy:boxes", "buy:cupcake2", "buy:brewed" };
@@ -634,7 +634,7 @@ internal static partial class UiSamples
                 int[] paints = { 0xC0282D, 0x1B2A4A, 0xEDEDE6, 0x3C4045, 0x8BC34A, 0xB87333 };
                 for (int i = 0; i < colours.Length; i++)
                 {
-                    cards.Add(new UiGarageCard { Name = colours[i], Detail = "$900", Button = i == 1 ? t("reallife_garage_list_chosen", "Chosen") : null, Enabled = i != 1, Swatch = UiDraw.SwatchKey(paints[i]) });
+                    cards.Add(new UiGarageCard { Name = colours[i], Detail = "$900", Button = i == 1 ? t("reallife_garage_list_chosen", "Chosen") : null, Enabled = i != 1, Chosen = i == 1, Swatch = UiDraw.SwatchKey(paints[i]) });
                 }
                 break;
             case "figures":
@@ -642,6 +642,26 @@ internal static partial class UiSamples
                 cards.Add(new UiGarageCard { Name = t("reallife_tuning_tab_figures", "Figures"), Detail = "Power 310 hp as standard, 334 hp now. 0 to 100 km/h in 5.4 s, 5.1 s with the cart.", Note = true });
                 cards.Add(new UiGarageCard { Name = "Braking", Detail = "100 to 0 km/h in 36 m as standard, 34 m now.", Note = true });
                 cards.Add(new UiGarageCard { Name = "Weight", Detail = "1,480 kg as standard, 1,452 kg now.", Note = true });
+                break;
+            case "parts":
+                m.Info = new[] { m.Info[0], m.Info[1], "Top speed: 220 km/h, with this build 231 km/h", "Running costs: wears 12% faster, insurance +8%. The exhaust is not street legal.",
+                    t("reallife_garage_sounds_rev", "Hold the throttle key to rev the engine and hear the build.") };
+                m.InfoCount = 5;
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_list_back_name", "Back"), Detail = t("reallife_customshop_total", "This visit: {amount}").Replace("{amount}", "$1,840"), Enabled = true, Back = true });
+                cards.Add(new UiGarageCard { Name = "Engine: Stage 2 tune", Detail = "$2,400. acceleration +12 %, top speed +4 %, braking +0 %, ride -2 cm, wears 12 % faster, insurance +8 %, loud, heard on the throttle key here",
+                    Button = t("reallife_garage_list_next", "Next"), Enabled = true });
+                cards.Add(new UiGarageCard { Name = "Brakes: Standard", Detail = "Fitted", Button = t("reallife_garage_list_next", "Next"), Enabled = true });
+                cards.Add(new UiGarageCard { Name = "Fit: Spoiler", Detail = "A spoiler does not fit this car.", Button = t("reallife_garage_list_fit", "Fit"), Enabled = false });
+                cards.Add(new UiGarageCard { Name = "Wheels: Mesh", Detail = "Fitted", Button = t("reallife_garage_list_chosen", "Chosen"), Enabled = false, Chosen = true });
+                break;
+            case "stand":
+                m.Title = "Motorbikes";
+                m.Info = new[] { "The stand sells motorbikes and a helmet. Ride one with a licence." };
+                m.InfoCount = 1;
+                m.Icon = UiIcon.Store;
+                cards.Add(new UiGarageCard { Name = "Scooter 125", Detail = "$2,900. 0 to 100 km/h in 9.8 s, top 105 km/h", Button = t("reallife_bike_button_buy", "Buy"), Enabled = true });
+                cards.Add(new UiGarageCard { Name = "Helmet", Detail = "$80. Needed to ride a motorbike", Button = t("reallife_bike_button_buy", "Buy"), Enabled = true });
+                cards.Add(new UiGarageCard { Name = "Sell your Scooter 125", Detail = "Sell it here for $1,450.", Button = t("reallife_bike_button_sell", "Sell"), Enabled = true });
                 break;
             default:
                 cards.Add(new UiGarageCard { Name = t("reallife_garage_pay", "Pay {amount}").Replace("{amount}", "$1,840"), Detail = "Paint, wheels and a spoiler", Button = t("reallife_garage_list_pay", "Pay"), Enabled = true, Main = true });
