@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
 
         // The materials as the game lists them, cheapest first: Floors and Walls as tabs with their counts, the search, the tiles with the material's own
         // picture and its price, and the chosen one's detail with its shades and the button that lays it over the whole floor.
-        private static void Materials(UiScene s, UiAt at, UiDesignerMaterials c, float x, float y, float w, float h, IUiKeys keys)
+        private static void Materials(UiScene s, UiAt at, UiDesignerMaterials c, float x, float y, float w, float h, IUiKeys keys, int viewRows)
         {
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
@@ -41,11 +41,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, on, x, body - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
             float detailX = x + w - DetailWidth;
             UiDraw.Box(s, on, detailX, body, UiTokens.Hairline, h - HeaderHeight, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
-            MaterialGrid(s, on, c, x + GridLeft, body + GridTop, detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w);
+            MaterialGrid(s, on, c, x + GridLeft, body + GridTop, detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w, viewRows);
             MaterialDetail(s, on.InRegion(DetailRegion), c, detailX, body, DetailWidth, h - HeaderHeight, keys);
         }
 
-        private static void MaterialGrid(UiScene s, UiAt on, UiDesignerMaterials c, float x, float y, float w, float h, float panelWidth)
+        private static void MaterialGrid(UiScene s, UiAt on, UiDesignerMaterials c, float x, float y, float w, float h, float panelWidth, int viewRows)
         {
             int cols = Columns(panelWidth);
             if (c.CardCount == 0)
@@ -55,13 +55,13 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             int rows = (c.CardCount + cols - 1) / cols;
-            float step = RowStep, view = Rows * step - TileGap, content = rows * step - TileGap;
-            float offset = Scrolled(c.CardCount, cols, c.Scroll);
+            float step = RowStep, view = viewRows * step - TileGap, content = rows * step - TileGap;
+            float offset = Scrolled(c.CardCount, cols, c.Scroll, viewRows);
             c.Scroll = offset;
             short clip = s.AddClip(x, y, w, Math.Min(view, content), offset);
             s.Clips[clip].ContentHeight = content;
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = on.Layer, Order = -1, Region = on.Region };
-            int top = (int)(offset / step + 0.5f), last = Math.Min(rows - 1, top + Rows - 1);
+            int top = (int)(offset / step + 0.5f), last = Math.Min(rows - 1, top + viewRows - 1);
             short list = s.AddList(rows, top, last - top + 1, clip, c.Chosen >= 0 ? c.Chosen / cols : -1);
             for (int r = top; r <= last; r++)
             {
