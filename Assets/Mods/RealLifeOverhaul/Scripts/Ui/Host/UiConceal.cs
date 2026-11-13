@@ -171,6 +171,40 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Held leaves that something else has shown again since <see cref="Hide"/> (the game's own fade, a refresh of its box, another
+        /// mod) hidden once more; a group is written only where it differs. Returns how many it put right. A card calls it each frame
+        /// while it stands, so what the game's box does after the hide never leaves a piece of it under the card. Cost: three reads a held
+        /// leaf, a few leaves; nothing allocated.
+        /// </summary>
+        public int Reassert()
+        {
+            if (!_hiding)
+            {
+                return 0;
+            }
+            int again = 0;
+            for (int i = 0; i < _leaves.Count; i++)
+            {
+                Leaf l = _leaves[i];
+                CanvasGroup group = l.Group;
+                if (group == null)
+                {
+                    continue;
+                }
+                bool keep = l.KeepBlocking && l.Blocks;
+                if (UiHostRules.StillHidden(group.alpha, group.interactable, group.blocksRaycasts, keep))
+                {
+                    continue;
+                }
+                group.alpha = 0f;
+                group.interactable = false;
+                group.blocksRaycasts = keep;
+                again++;
+            }
+            return again;
+        }
+
         /// <summary>Everything held back exactly as it was found.</summary>
         public void Show()
         {

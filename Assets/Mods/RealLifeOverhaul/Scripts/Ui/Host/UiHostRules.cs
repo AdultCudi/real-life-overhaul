@@ -22,6 +22,12 @@ namespace RealLifeOverhaul.Ui
             "Canvas", "Canvases", "AppsContainer", "Topbar", "AppButtons", "AppButtonTemplate", "ItemPanelUI"
         };
 
+        /// <summary>
+        /// True while a group the kit holds hidden still is: unseen, taking no choice, and blocking the pointer only where the hide meant it to
+        /// (a backdrop kept for its clicks). Something else writing the group again (the game's own fade, a refresh, another mod) makes this false.
+        /// </summary>
+        public static bool StillHidden(float alpha, bool interactable, bool blocks, bool keepBlocking) => alpha <= 0f && !interactable && blocks == keepBlocking;
+
         /// <summary>The mod's own objects all start so (RealLife MoreApps, RealLife Folder, RealLife Interface ...), or are its apps' ids.</summary>
         public const string ModPrefix = "RealLife";
 
