@@ -649,8 +649,11 @@ namespace RealLifeOverhaul.Ui
                 ref UiNode n = ref _scene.Nodes[from];
                 int want = n.Index + (dy > 0 ? 1 : -1);
                 int list = n.List;
-                _screen.Reveal(list, want);
-                Layout();
+                if (!RevealChoice(list, want))
+                {
+                    _screen.Reveal(list, want);
+                    Layout();
+                }
                 next = FindRow(list, want);
             }
             if (next < 0)
@@ -673,7 +676,7 @@ namespace RealLifeOverhaul.Ui
             }
             ref UiNode n = ref _scene.Nodes[node];
             int command = n.Command, arg = n.Arg;
-            if (n.List >= 0 && n.Clip >= 0 && !InView(node))
+            if (n.List >= 0 && n.Clip >= 0 && !InView(node) && !RevealChoice(n.List, n.Index))
             {
                 _screen.Reveal(n.List, n.Index);
             }
@@ -1166,6 +1169,10 @@ namespace RealLifeOverhaul.Ui
         private void Wheeled(int clip, float notches)
         {
             using var cost = Measured(UiWork.Pointer);
+            if (notches != 0f && ScrollChoice(clip, -notches * UiChoiceScroll.Notch))
+            {
+                return;   // an open drop-down list takes the wheel itself: the page under it never hears it
+            }
             if (notches != 0f)
             {
                 _screen.Wheel(clip, notches);
@@ -1174,6 +1181,32 @@ namespace RealLifeOverhaul.Ui
                     Layout();
                 }
             }
+        }
+
+        // An open drop-down list's own scroll, held by the scene: moved by px (positive shows later options), the list laid again. False when the region is not one.
+        private bool ScrollChoice(int clip, float px)
+        {
+            if (clip < 0 || clip >= _scene.ClipCount || !_scene.Clips[clip].Choice)
+            {
+                return false;
+            }
+            ref UiClip c = ref _scene.Clips[clip];
+            _scene.Choices.Set(Math.Max(0f, Math.Min(c.Offset + px, Math.Max(0f, c.ContentHeight - c.H))));
+            Layout();
+            return true;
+        }
+
+        // Focus wants a row of an open drop-down list that is not laid: the list scrolls just far enough, for the keys and the pad. False when the list is not one.
+        private bool RevealChoice(int list, int index)
+        {
+            if (list < 0 || list >= _scene.ListCount || _scene.Lists[list].Clip < 0 || !_scene.Clips[_scene.Lists[list].Clip].Choice)
+            {
+                return false;
+            }
+            ref UiClip c = ref _scene.Clips[_scene.Lists[list].Clip];
+            _scene.Choices.Set(UiChoiceScroll.Reveal(c.Offset, index, UiTokens.ControlSmall, c.H));
+            Layout();
+            return true;
         }
 
         // ------------------------------------------------------------------------------------------------- typing

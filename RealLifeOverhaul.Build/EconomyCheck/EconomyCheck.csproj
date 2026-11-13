@@ -1173,6 +1173,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPanRules.cs" Link="Mod\UiPanRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChoiceScroll.cs" Link="Mod\UiChoiceScroll.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFaultCount.cs" Link="Mod\UiFaultCount.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\IUiTabWant.cs" Link="Mod\IUiTabWant.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiClockRules.cs" Link="Mod\UiClockRules.cs" />

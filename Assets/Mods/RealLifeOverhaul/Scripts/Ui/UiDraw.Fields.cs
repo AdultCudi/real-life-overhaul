@@ -87,16 +87,31 @@ namespace RealLifeOverhaul.Ui
         {
             var at = new UiAt { Parent = -1, Clip = -1, Layer = layer, Order = -1, Region = under.Region };
             float rowH = UiTokens.ControlSmall, h = ChoiceListHeight(count);
+            bool scrolls = count > ListRows;
+            // A long option shows whole: the list grows to the widest option, to the right until the scene's edge, then back to the left.
+            float need = UiChoiceScroll.RowsNeed(options, count, scrolls);
+            if (need > w)
+            {
+                float room = Math.Max(w, s.Width - UiTokens.S4);
+                w = Math.Min(need, room);
+                x = Math.Max(UiTokens.S2, Math.Min(x, s.Width - UiTokens.S2 - w));
+            }
             int card = Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             float viewH = h - UiTokens.S1 * 2f;
-            float most = Math.Max(0f, count * rowH - viewH);
-            offset = Math.Max(0f, Math.Min(offset, most));
+            int shown = chosen;
+            for (int i = 0; ticked != null && shown < 0 && i < ticked.Length && i < count; i++)
+            {
+                shown = ticked[i] ? i : -1;
+            }
+            // The scene holds the scroll of the open list, so the wheel, a drag and the keys move it whatever the screen under does; it opens with its option in view.
+            offset = s.Choices.Open(UiChoiceScroll.Key(command, options, count), offset, shown, rowH, viewH, count * rowH);
             short clip = s.AddClip(x + UiTokens.S1, y + UiTokens.S1, w - UiTokens.S2, viewH, offset);
+            s.Clips[clip].Choice = true;
             int first = (int)(offset / rowH), last = Math.Min(count - 1, (int)((offset + viewH - 0.5f) / rowH));
             short list = s.AddList(count, first, Math.Max(0, last - first + 1), clip, chosen);
             s.Clips[clip].ContentHeight = count * rowH;
             var rows = new UiAt { Parent = -1, Clip = clip, Layer = layer, Order = -1, Region = under.Region };
-            float rw = w - UiTokens.S2 - (count > ListRows ? UiTokens.S4 : 0f);   // a list that scrolls keeps its rows and their ring clear of the thumb
+            float rw = w - UiTokens.S2 - (scrolls ? UiTokens.S4 : 0f);   // a list that scrolls keeps its rows and their ring clear of the thumb
             for (int i = first; i <= last; i++)
             {
                 bool on = ticked != null ? i < ticked.Length && ticked[i] : i == chosen;   // a list of several ticks each one stood on
@@ -109,7 +124,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 TextMiddle(s, inside, UiTokens.S3, ry, rowH, rw - UiTokens.S3 * 2f - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text, options[i], UiFlags.Truncate);
                 int node = Node(s, rows, 0f, ry, rw, rowH, command, i, face, false, list, i);
-                if (on)
+                if (on && (ticked == null || i == shown))
                 {
                     s.FocusFirst = node;   // the keys start on the value it holds, as the game's Dropdown opens on it
                 }
