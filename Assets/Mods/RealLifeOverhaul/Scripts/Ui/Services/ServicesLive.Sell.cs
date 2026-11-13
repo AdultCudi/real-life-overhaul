@@ -195,17 +195,24 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 var lines = new List<UiFactLine>(4);
-                for (int i = 0; i < _s.Dues.Count && lines.Count < 3; i++)
+                for (int i = 0; i < _s.Dues.Count; i++)
                 {
                     SaleDue due = _s.Dues[i];
                     lines.Add(UiFactLine.Say(ServicesText.Fill("reallife_svc_row_due", "business", due.Name, "count", due.Left.ToString(Inv), "amount", Money(due.Part),
                         "day", due.NextDay.ToString(Inv))));
                 }
-                for (int i = 0; i < _s.Clauses.Count && lines.Count < 4; i++)
+                for (int i = 0; i < _s.Clauses.Count; i++)
                 {
                     SaleClause c = _s.Clauses[i];
                     lines.Add(UiFactLine.Say(ServicesText.T("reallife_svc_row_clause", "kind", ServicesGame.TypeName(c.Type), "district",
                         ServicesText.District(c.District), "day", c.Until.ToString(Inv))));
+                }
+                if (lines.Count > 4)
+                {
+                    // The card holds four lines: three of them and a last one that says how many more there are.
+                    int more = lines.Count - 3;
+                    lines.RemoveRange(3, lines.Count - 3);
+                    lines.Add(UiFactLine.Say(ServicesText.T("reallife_ui_svc_more_after", "count", more.ToString(Inv)), UiRole.Muted));
                 }
                 p.After = new UiFactCardModel { Title = ServicesText.T("reallife_ui_svc_sec_after"), Heading = true, Lines = lines.ToArray() };
             }

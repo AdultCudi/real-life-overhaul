@@ -149,17 +149,22 @@ namespace RealLifeOverhaul.Ui
                     buildings++;
                     if (!h.Managed)
                     {
-                        rows.Add(BuildingRow(h));
+                        UiDataRow own = BuildingRow(h);
+                        own.Card = BuildingCard(h);
+                        rows.Add(own);
                         keys.Add("own:" + h.Place);
                         units++;
                         continue;
                     }
+                    UiDataCard card = BuildingCard(h);   // the building's own figures, on each of its units' rows
                     for (int n = 0; n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
                         units++;
                         lines.Add(new RollLine { Let = u.Let, RentDay = u.Rent, Arrears = u.Arrears, AskDay = u.Let ? 0 : EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask) });
-                        rows.Add(UnitRow(h, n));
+                        UiDataRow unitRow = UnitRow(h, n);
+                        unitRow.Card = card;
+                        rows.Add(unitRow);
                         keys.Add(EstateDirector.UnitPick(h, n));
                     }
                 }
@@ -167,14 +172,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     HotelFile f = _s.Hotels[i];
                     rows.Add(OtherRow(UiIcon.Building, f.Name, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"),
-                        f.Takings - f.Costs, EstateText.T("reallife_estate_kind_hotel"), f.Takings < f.Costs ? UiRole.Danger : UiRole.None, EstateTables.OwnHotel));
+                        f.Takings - f.Costs, EstateText.T("reallife_estate_kind_hotel"), f.Takings < f.Costs ? UiRole.Danger : UiRole.None, EstateTables.OwnHotel, HotelCard(f)));
                     keys.Add("hot:" + f.Slot);
                 }
                 if (_d.On(EstatePart.Hire) && _s.Hire.Running)
                 {
                     rows.Add(OtherRow(UiIcon.Car, EstateGame.NameOf(_s.Hire.Lot),
                         EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString(Inv), "count", _s.Hire.Cars.Count.ToString(Inv)),
-                        0, EstateText.T("reallife_estate_kind_lot"), UiRole.None, EstateTables.OwnLot));
+                        0, EstateText.T("reallife_estate_kind_lot"), UiRole.None, EstateTables.OwnLot, YearCard(_s.Hire.TakingsYear, _s.Hire.CostsYear, EstateGame.NameOf(_s.Hire.Lot))));
                     keys.Add("lot:");
                 }
                 SpaceHeld(rows, keys);
@@ -198,6 +203,7 @@ namespace RealLifeOverhaul.Ui
                 _m.RowKeys = keys.ToArray();
                 Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind") },
                     null, EstateText.T("reallife_estate_empty_mine"));
+                _m.Notes = new[] { EstateText.T("reallife_estate_mine_what"), EstateText.T("reallife_estate_mine_game") };
                 // What is due is the let flats' rent, so the foot shows it while flats are among the rows shown, and says nothing over hotels, the lot and spaces alone.
                 if (t.RowCount > 0 && (_v.Chosen[0] < 0 || _v.Chosen[0] == EstateTables.OwnBuilding))
                 {
@@ -267,10 +273,40 @@ namespace RealLifeOverhaul.Ui
                 };
             }
 
-            private UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone, int kindAt)
+            // What the old table gave a column each: a building's worth, what was paid, what comes in and the year's takings and costs. Raised by a row's rent cell.
+            private UiDataCard BuildingCard(EstateHolding h)
+            {
+                int value = EstateRules.Value(h, _s.Real, _c.Index);
+                int income = h.Managed ? EstateRules.PayingRent(h) : EstateRules.GameNight(EstateGame.GameRent(h), _c.RentScale);
+                return new UiDataCard
+                {
+                    Column = 3, Title = h.Name,
+                    Labels = new[] { EstateText.T("reallife_estate_col_worth"), EstateText.T("reallife_estate_col_paid"), EstateText.T("reallife_ui_estate_col_rent_month"),
+                        EstateText.T("reallife_estate_col_year_in"), EstateText.T("reallife_estate_col_year_out") },
+                    Values = new[] { Money(value), Money(h.Paid), Month(income), Money(h.RentYear), Money(h.CostYear) }
+                };
+            }
+
+            private UiDataCard HotelCard(HotelFile f) => new UiDataCard
+            {
+                Column = 3, Title = f.Name,
+                Labels = new[] { EstateText.T("reallife_estate_col_paid"), EstateText.T("reallife_ui_estate_col_takings"), EstateText.T("reallife_ui_estate_col_costs"),
+                    EstateText.T("reallife_ui_estate_col_takings_year"), EstateText.T("reallife_ui_estate_col_costs_year") },
+                Values = new[] { Money(f.Paid), Money(f.Takings), Money(f.Costs), Money(f.TakingsYear), Money(f.CostsYear) }
+            };
+
+            private UiDataCard YearCard(int takings, int costs, string title) => new UiDataCard
+            {
+                Column = 3, Title = title,
+                Labels = new[] { EstateText.T("reallife_ui_estate_col_takings_year"), EstateText.T("reallife_ui_estate_col_costs_year") },
+                Values = new[] { Money(takings), Money(costs) }
+            };
+
+            private UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone, int kindAt, UiDataCard card = null)
             {
                 return new UiDataRow
                 {
+                    Card = card,
                     Cells = new[] { name, kind, "-", perDay != 0 ? Month(perDay) : "-", line, string.Empty },
                     Values = new[] { (int)icon, 0, 0, 0, 0, -1 },
                     // A hotel's or a lot's night is not rent that is due, so its figure stands in the muted ink unless it is a loss.
@@ -284,10 +320,10 @@ namespace RealLifeOverhaul.Ui
             private EstateRow[] RepairRows()
             {
                 var rows = new List<EstateRow>(4);
-                for (int i = 0; i < _s.Holdings.Count && rows.Count < 6; i++)
+                for (int i = 0; i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
-                    for (int b = 0; b < h.Services.Count && rows.Count < 6; b++)
+                    for (int b = 0; b < h.Services.Count; b++)
                     {
                         ServiceBooking v = h.Services[b];
                         string pick = "wrk:" + h.Place;
@@ -298,7 +334,7 @@ namespace RealLifeOverhaul.Ui
                             Run = -1
                         });
                     }
-                    for (int n = 0; h.Managed && n < h.Units.Count && rows.Count < 6; n++)
+                    for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
                         if (!u.Let || u.Call <= 0)
@@ -315,8 +351,32 @@ namespace RealLifeOverhaul.Ui
                         });
                     }
                 }
-                rows.Sort((a, b) => 0);
-                return rows.Count > 3 ? rows.GetRange(0, 3).ToArray() : rows.ToArray();
+                if (rows.Count > 3)
+                {
+                    // The list holds three lines: two of them and a last one that says how many there are and opens the Works tab, where all of them are.
+                    int all = rows.Count;
+                    rows = rows.GetRange(0, 2);
+                    rows.Add(MoreRow("reallife_ui_estate_more_repairs", all, () => OpenWorks(null)));
+                }
+                return rows.ToArray();
+            }
+
+            // The last line of a list that shows fewer than there are: how many there are in all, and a press that opens the list that holds them.
+            private EstateRow MoreRow(string key, int count, Action open) => new EstateRow
+            {
+                Icon = UiIcon.Next, Title = EstateText.T(key, "count", count.ToString(Inv)), Run = _runs.Do(() => Show(open))
+            };
+
+            // The tenants' table shown for one building alone (and a state of its rows), as a building's page asks for the flats or the applicants it holds.
+            private void OpenTenants(string place, int state)
+            {
+                _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabTenants);
+                _v.Pick = null;
+                _v.From = null;
+                _v.Offset = 0f;
+                _v.ResetTable();
+                _v.FilterPlace = place;
+                _v.FilterState = state;
             }
 
             private void OpenWorks(string pick)
@@ -333,7 +393,8 @@ namespace RealLifeOverhaul.Ui
                 var rows = new List<EstateRow>(3);
                 var ordered = new List<RentLandlord>(map.Landlords);
                 ordered.Sort((a, b) => b.Units.CompareTo(a.Units));
-                for (int i = 0; i < ordered.Count && rows.Count < 3; i++)
+                int shown = ordered.Count > 3 ? 2 : ordered.Count;   // a last line takes the third place when there are more
+                for (int i = 0; i < shown; i++)
                 {
                     RentLandlord l = ordered[i];
                     int change = RentRingRules.LandlordChange(_s, l.Id);
@@ -345,6 +406,10 @@ namespace RealLifeOverhaul.Ui
                         Amount = change == int.MinValue ? string.Empty : ((change >= 0 ? "+" : string.Empty) + EstateText.Share(change)),
                         AmountInk = change > 0 ? UiRole.OkText : change < 0 ? UiRole.WarnText : UiRole.None, Run = -1
                     });
+                }
+                if (ordered.Count > shown)
+                {
+                    rows.Add(new EstateRow { Title = EstateText.T("reallife_ui_estate_more_landlords", "count", (ordered.Count - shown).ToString(Inv)), Run = -1 });   // a line that only says
                 }
                 return rows.ToArray();
             }

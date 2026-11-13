@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_svc_value_worth", "reallife_svc_van_says_off", "reallife_svc_van_says_on", "reallife_svc_who_chain",
                 "reallife_svc_who_investor", "reallife_svc_who_rival", "reallife_svc_who_staff", "reallife_svc_who_staff_note",
                 "reallife_svc_why_far", "reallife_svc_why_nobody", "reallife_svc_why_time", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
+                "reallife_ui_svc_more_after", "reallife_ui_svc_more_visits",
                 "reallife_ui_prompt_select", "reallife_ui_svc_accept_list_first", "reallife_ui_svc_accept_wait", "reallife_ui_svc_bars_series",
                 "reallife_ui_svc_bars_title", "reallife_ui_svc_building_stays", "reallife_ui_svc_change_to", "reallife_ui_svc_check_repaid",
                 "reallife_ui_svc_check_short", "reallife_ui_svc_chip", "reallife_ui_svc_chip_all", "reallife_ui_svc_chip_contracts",

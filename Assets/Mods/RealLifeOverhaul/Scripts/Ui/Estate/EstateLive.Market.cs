@@ -101,16 +101,23 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_yield"), Kind = UiCellKind.Figure, Width = 88f },
                     new UiDataColumn { Title = string.Empty, Kind = UiCellKind.Action, Width = 56f }
                 };
+                TableChoice districts = Districts(rows, where, "reallife_tab_all_districts");
+                if (_v.FilterDistrict != null)
+                {
+                    _v.Chosen[0] = Array.IndexOf(districts.Options, _v.FilterDistrict);   // a listing's link asked for its district alone
+                    _v.FilterDistrict = null;
+                }
                 // The market's own figures stand over the table, not in a box of sentences beside it.
                 TableShape(UiIcon.Tag, EstateText.T("reallife_estate_tab_market"), EstateText.T("reallife_ui_estate_market_sub", "count", rows.Count.ToString(Inv)),
                     new[] { EstateText.T("reallife_ui_estate_fig_market_level"), EstateText.T("reallife_ui_estate_fig_prices_since"), EstateText.T("reallife_ui_estate_fig_cycle") },
                     new[] { EstateText.Share(_s.Real), EstateText.Share(_c.Index), EstateText.Cycle(_c.Cycle) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_no_market"), EstateText.T("reallife_ui_estate_empty_market_body"),
-                    new[] { Districts(rows, where, "reallife_tab_all_districts"), Choice("reallife_tab_all_kinds", "reallife_estate_use_homes", "reallife_estate_use_shops",
+                    new[] { districts, Choice("reallife_tab_all_kinds", "reallife_estate_use_homes", "reallife_estate_use_shops",
                         "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind") }, new[] { 1 }, EstateText.T("reallife_estate_empty_market"));
                 _m.RowRuns = Ordered(locate);
-                // Where the cycle is heading, under the head's title: a table's page keeps no box of sentences (a side card is drawn only where it holds a button), so the line the old
-                // market page led with stands in the head.
+                // The three sentences the old page ended with: what moves a price, what moves a rent, and how a mortgage is arranged.
+                _m.Notes = new[] { EstateText.T("reallife_estate_market_what"), EstateText.T("reallife_estate_market_rents"), EstateText.T("reallife_estate_market_mortgage") };
+                // Where the cycle is heading, under the head's title: the line the old market page led with stands in the head.
                 _m.HeadSub = EstateText.T("reallife_ui_estate_market_heading", "cycle", EstateText.Cycle(_c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(_c.Cycle, _c.Quarters)));
                 _m.TableLink = EstateText.T("reallife_ui_estate_view_map");
                 _m.TableLinkRun = _runs.Do(() => Show(() => _v.Pick = "rents"));
@@ -175,7 +182,7 @@ namespace RealLifeOverhaul.Ui
                 // The other buildings for sale in the district, as short rows that open their own listing.
                 GameInstance save = SaveGameManager.Current;
                 var others = new List<EstateRow>(3);
-                for (int i = 0; save != null && save.buildingsForSale != null && i < save.buildingsForSale.Count && others.Count < 3; i++)
+                for (int i = 0; save != null && save.buildingsForSale != null && i < save.buildingsForSale.Count; i++)
                 {
                     BuildingForSale f = save.buildingsForSale[i];
                     CityBuilding ob = f != null && f.address != null ? EstateGame.Find(EstateGame.Place(f.address.streetName, f.address.streetNumber)) : null;
@@ -191,8 +198,24 @@ namespace RealLifeOverhaul.Ui
                         Run = _runs.Do(() => Show(() => _v.Pick = "mkt:" + otherPlace))
                     });
                 }
+                int listed = others.Count;
+                if (listed > 3)
+                {
+                    // Three listings and a last line that says how many there are and shows them in the market's table, filtered to the district.
+                    string where = EstateText.District(b.District);
+                    others.RemoveRange(3, listed - 3);
+                    others.Add(MoreRow("reallife_ui_estate_more_listings", listed, () =>
+                    {
+                        _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabMarket);
+                        _v.Pick = null;
+                        _v.From = null;
+                        _v.Offset = 0f;
+                        _v.ResetTable();
+                        _v.FilterDistrict = where;
+                    }));
+                }
                 _m.Related2Title = EstateText.T("reallife_ui_estate_also_in", "district", EstateText.District(b.District));   // across the card, under both columns
-                _m.Related2Count = others.Count > 0 ? others.Count.ToString(Inv) : null;
+                _m.Related2Count = listed > 0 ? listed.ToString(Inv) : null;
                 _m.Related2 = others.ToArray();
                 return true;
             }

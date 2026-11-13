@@ -59,8 +59,15 @@ namespace RealLifeOverhaul.Ui
                     {
                         continue;
                     }
-                    rows.Add(OtherRow(UiIcon.Car, SpaceText.Fill("reallife_space_row_name", "space", SpaceText.Space(h.Slot), "name", p.Name), SpaceText.Tenure(h), 0,
-                        SpaceText.T("reallife_space_kind"), UiRole.None, EstateTables.OwnSpace));
+                    string spaceName = SpaceText.Fill("reallife_space_row_name", "space", SpaceText.Space(h.Slot), "name", p.Name);
+                    // What a held space is worth back and what was paid for it, as the old table's worth and paid columns said (a rented one has neither).
+                    UiDataCard held = h.Rented ? null : new UiDataCard
+                    {
+                        Column = 3, Title = spaceName,
+                        Labels = new[] { EstateText.T("reallife_estate_col_worth"), EstateText.T("reallife_estate_col_paid") },
+                        Values = new[] { SpaceGame.Money(d.BackFor(h)), SpaceGame.Money(h.Paid) }
+                    };
+                    rows.Add(OtherRow(UiIcon.Car, spaceName, SpaceText.Tenure(h), 0, SpaceText.T("reallife_space_kind"), UiRole.None, EstateTables.OwnSpace, held));
                     keys.Add(SpacePick + p.Number.ToString(Inv));
                 }
             }

@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Ui
         public MapStateChip[] Chips = new MapStateChip[0];
         public string DirectionsLabel, SaveLabel, SavedLabel, DestinationLabel;
         public bool Saved;                           // the place is in the player's list
+        public bool SaveFull;                        // the list holds as many places as it can and this one is not in it: Save says so and takes no press
+        public string SaveFullLabel;
         public bool RouteShown;                      // Directions is chosen: the route strip is up
         public bool CanDestination;
         public bool CanBizMan;                       // the game's card offers its business manager for the building
@@ -180,9 +182,10 @@ namespace RealLifeOverhaul.Ui
         private static void Actions(UiScene s, UiAt at, MapPlaceModel m, float x, float y, float w, IUiKeys keys)
         {
             float h = UiTokens.Control, gap = UiTokens.S2, half = UiDraw.SnapDown((w - gap) / 2f);
-            string save = m.Saved ? m.SavedLabel : m.SaveLabel;
+            bool full = m.SaveFull && !m.Saved;
+            string save = m.Saved ? m.SavedLabel : full ? m.SaveFullLabel : m.SaveLabel;
             UiDraw.Button(s, at, x, y, half, h, m.RouteShown ? UiButtonKind.Chip : UiButtonKind.Secondary, m.DirectionsLabel, UiIcon.Navigation, UiAction.Count, null, DirectionsCommand, 0);
-            UiDraw.Button(s, at, x + half + gap, y, w - half - gap, h, m.Saved ? UiButtonKind.Chip : UiButtonKind.Secondary, save, UiIcon.Bookmark, UiAction.Count, null, SaveCommand, 0);
+            UiDraw.Button(s, at, x + half + gap, y, w - half - gap, h, m.Saved ? UiButtonKind.Chip : UiButtonKind.Secondary, save, UiIcon.Bookmark, UiAction.Count, null, SaveCommand, 0, full);
             // With the route strip up, its Go is the screen's one main action (and owns the key): Set destination is a quiet button beside it.
             UiDraw.Button(s, at, x, y + h + gap, w, h, m.RouteShown ? UiButtonKind.Secondary : UiButtonKind.Primary, m.DestinationLabel, UiIcon.None,
                 m.RouteShown ? UiAction.Count : UiAction.Alt, keys, DestinationCommand, 0, !m.CanDestination);

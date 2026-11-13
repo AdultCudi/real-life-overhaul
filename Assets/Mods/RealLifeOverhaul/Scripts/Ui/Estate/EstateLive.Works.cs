@@ -148,6 +148,8 @@ namespace RealLifeOverhaul.Ui
                 var rows = new List<UiDataRow>(24);
                 var keys = new List<string>(24);
                 int let = 0, empty = 0, owed = 0;
+                var places = new List<string>(8);   // the buildings that have rows, for the second filter
+                var buildings = new List<string>(8);
                 for (int i = 0; i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
@@ -155,6 +157,9 @@ namespace RealLifeOverhaul.Ui
                     {
                         continue;
                     }
+                    int building = places.Count;
+                    places.Add(h.Place);
+                    buildings.Add(h.Name);
                     for (int n = 0; n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
@@ -175,7 +180,14 @@ namespace RealLifeOverhaul.Ui
                             Kinds = new[]
                             {
                                 !u.Let ? EstateTables.TenantNone : u.CourtDay > 0 || u.NoticeEnd > 0 ? EstateTables.TenantNotice
-                                    : u.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying
+                                    : u.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying, building
+                            },
+                            // What the old table had a column each for: what the tenant owes and the day the lease runs to.
+                            Card = !u.Let ? null : new UiDataCard
+                            {
+                                Column = 2, Title = EstateText.UnitName(h, n),
+                                Labels = new[] { EstateText.T("reallife_estate_col_owed"), EstateText.T("reallife_ui_estate_lease_ends") },
+                                Values = new[] { Money(u.Arrears), EstateText.T("reallife_estate_row_until", "day", u.Until.ToString(Inv)) }
                             }
                         });
                         keys.Add(EstateDirector.UnitPick(h, n));
@@ -189,7 +201,13 @@ namespace RealLifeOverhaul.Ui
                                 Values = new[] { (int)UseIcon(h.Use), 0, 0, p.Record, 0, -1 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok, UiRole.None },
                                 Subs = new[] { EstateText.District(h.District),
                                     EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString(Inv)), null, null, null, null }, Hue = UiColour.HueOf(EstateText.Tenant(h.Use, p.Kind)),
-                                SortKeys = new[] { N, N, N, p.Record, N, N }, Kinds = new[] { EstateTables.TenantApplies }
+                                SortKeys = new[] { N, N, N, p.Record, N, N }, Kinds = new[] { EstateTables.TenantApplies, building },
+                                Card = new UiDataCard
+                                {
+                                    Column = 2, Title = EstateText.UnitName(h, n),
+                                    Labels = new[] { EstateText.T("reallife_estate_filter_applicants") },
+                                    Values = new[] { EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString(Inv)) }
+                                }
                             });
                             keys.Add("app:" + h.Place + ":" + p.Id);
                         }
@@ -214,26 +232,51 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 int meanHappy = EstateFigures.MeanHappy(happy);
+                TakeFilter(places);
+                TableChoice states = Choice("reallife_estate_filter_all_states", "reallife_estate_filter_paying", "reallife_estate_filter_behind", "reallife_estate_filter_notice",
+                    "reallife_estate_filter_empty", "reallife_estate_filter_applicants");
+                // A second filter picks one building where there are several to pick among.
+                TableChoice[] choices = buildings.Count > 1 ? new[] { states, new TableChoice { All = EstateText.T("reallife_ui_estate_all_buildings"), Options = buildings.ToArray() } }
+                    : new[] { states };
                 TableShape(UiIcon.People, EstateText.T("reallife_estate_tab_tenants"),
                     EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)),
                     new[] { EstateText.T("reallife_ui_estate_fig_let"), EstateText.T("reallife_ui_estate_fig_empty_units"),
                         EstateText.T("reallife_ui_estate_fig_rent_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
                     new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), meanHappy >= 0 ? EstateText.Share(meanHappy) : string.Empty }, cols, rows, keys, null,
                     EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"),
-                    new[] { Choice("reallife_estate_filter_all_states", "reallife_estate_filter_paying", "reallife_estate_filter_behind", "reallife_estate_filter_notice",
-                        "reallife_estate_filter_empty", "reallife_estate_filter_applicants") }, new[] { 2 }, EstateText.T("reallife_estate_empty_tenants"));
+                    choices, new[] { 2 }, EstateText.T("reallife_estate_empty_tenants"));
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
+                _m.Notes = new[]
+                {
+                    EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(Inv), "notice", EstateRules.NoticeLength(_c.RentLever).ToString(Inv),
+                        "court", EstateCatalogue.CourtDays.ToString(Inv)),
+                    EstateText.T("reallife_estate_tenants_what"), EstateText.T("reallife_estate_tenants_rent_what")
+                };
                 NeedsYou();
+            }
+
+            // A link from a building's page asks for the table to show that building alone (and a state): its place becomes a choice of the building filter, once.
+            private void TakeFilter(List<string> places)
+            {
+                if (_v.FilterPlace == null && _v.FilterState < 0)
+                {
+                    return;
+                }
+                int at = _v.FilterPlace != null ? places.IndexOf(_v.FilterPlace) : -1;
+                _v.Chosen[1] = at;
+                _v.Chosen[0] = _v.FilterState;
+                _v.FilterPlace = null;
+                _v.FilterState = -1;
             }
 
             // The tenants who are late with the rent, each with the reminder to send: what needs the landlord now, over the table where the pad reaches it first.
             private void NeedsYou()
             {
                 var needs = new List<EstateRow>(4);
-                for (int i = 0; Duties && i < _s.Holdings.Count && needs.Count < 6; i++)
+                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
-                    for (int n = 0; h.Managed && n < h.Units.Count && needs.Count < 6; n++)
+                    for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
                         if (!u.Let || u.Arrears <= 0)
@@ -258,6 +301,13 @@ namespace RealLifeOverhaul.Ui
                     _m.FootFirst = true;
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_needs_you_list");
                     _m.RelatedCount = needs.Count.ToString(Inv);
+                    if (needs.Count > _m.RelatedRows)
+                    {
+                        // The list holds four lines: three tenants and a last line that says how many are late and shows them in the table, filtered to the late ones.
+                        int late = needs.Count;
+                        needs.RemoveRange(_m.RelatedRows - 1, late - (_m.RelatedRows - 1));
+                        needs.Add(MoreRow("reallife_ui_estate_more_late", late, () => OpenTenants(null, EstateTables.TenantBehind)));
+                    }
                     _m.Related = needs.ToArray();
                 }
             }
@@ -461,6 +511,12 @@ namespace RealLifeOverhaul.Ui
                     new[] { Choice("reallife_estate_filter_all_states", "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none",
                         "reallife_estate_filter_calls") }, new[] { 4 }, EstateText.T("reallife_estate_empty_works"));
                 _m.RowRuns = Ordered(locate);
+                _m.Notes = new[]
+                {
+                    EstateText.T("reallife_estate_works_wear", "poor", EstateText.Level(EstateCatalogue.ConditionPoor), "unfit", EstateText.Level(EstateCatalogue.ConditionUnfit)),
+                    EstateText.T("reallife_estate_works_market", "market", EstateText.Share(_s.Real)),
+                    EstateText.T("reallife_estate_works_what"), EstateText.T("reallife_estate_works_no_new")
+                };
                 // The services booked ahead, the soonest first, and the city's inspections, the nearest first: what is coming, under what is waiting.
                 var ahead = new List<KeyValuePair<EstateHolding, ServiceBooking>>(8);
                 var inspections = new List<EstateHolding>(8);
@@ -488,8 +544,12 @@ namespace RealLifeOverhaul.Ui
                         Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
                     });
                 }
+                if (ahead.Count > visits.Count)
+                {
+                    visits.Add(new EstateRow { Title = EstateText.T("reallife_ui_estate_more_booked", "count", (ahead.Count - visits.Count).ToString(Inv)), Run = -1 });   // a line that only says
+                }
                 _m.RelatedTitle = EstateText.T("reallife_ui_estate_booked_visits");
-                _m.RelatedCount = visits.Count > 0 ? visits.Count.ToString(Inv) : null;
+                _m.RelatedCount = ahead.Count > 0 ? ahead.Count.ToString(Inv) : null;
                 _m.Related = visits.ToArray();
                 var due = new List<EstateRow>(3);
                 for (int i = 0; i < inspections.Count && due.Count < 3; i++)
@@ -502,8 +562,12 @@ namespace RealLifeOverhaul.Ui
                         Chip = EstateText.T("reallife_ui_estate_in_days", "days", Math.Max(0, h.InspectDay - _day).ToString(Inv)), ChipTone = failed ? UiRole.Warn : UiRole.Notice, Run = -1
                     });
                 }
+                if (inspections.Count > due.Count)
+                {
+                    due.Add(new EstateRow { Title = EstateText.T("reallife_ui_estate_more_inspections", "count", (inspections.Count - due.Count).ToString(Inv)), Run = -1 });   // a line that only says
+                }
                 _m.Related2Title = EstateText.T("reallife_ui_estate_inspections");
-                _m.Related2Count = due.Count > 0 ? due.Count.ToString(Inv) : null;
+                _m.Related2Count = inspections.Count > 0 ? inspections.Count.ToString(Inv) : null;
                 _m.Related2 = due.ToArray();
             }
 
