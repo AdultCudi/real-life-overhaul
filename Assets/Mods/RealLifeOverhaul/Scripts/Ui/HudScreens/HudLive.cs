@@ -546,7 +546,9 @@ namespace RealLifeOverhaul.Ui
             catch (Exception e)
             {
                 Guard.Fail(Guarded, e, this);
-                HudLive.Remove("a fault");
+                // Off until the next city (UiPieces), every piece given back: stood up again by the next second's look it met the
+                // same fault again and again, and five of them switched the whole interface off.
+                UiDirector.PieceFailed(UiDirector.HudPiece, e);
             }
         }
     }

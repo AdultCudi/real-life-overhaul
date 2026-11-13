@@ -157,17 +157,19 @@ namespace RealLifeOverhaul
                     {
                         component.enabled = false;
                     }
+                    LetGo(guard.Where);   // a class of the mod's own machinery that stops lets go of what it held (a feature's holds go with the feature)
                     return;
                 }
                 bool now = guard.Count(Time.realtimeSinceStartup);
+                // Each line carries the fault's kind, message and first methods: a player who copies only the mod's own lines sends them.
                 if (guard.Faults <= MostDetailed)
                 {
-                    Logger?.Warn("Guard: " + guard.Where + " failed (" + guard.Faults + "); the feature goes on.");
+                    Logger?.Warn("Guard: " + guard.Where + " failed (" + guard.Faults + "): " + FaultWords.Of(e) + "; the feature goes on.");
                     Logger?.Error(e);
                 }
                 else if (guard.Faults <= MostShort)
                 {
-                    Logger?.Warn("Guard: " + guard.Where + " failed again (" + guard.Faults + "): " + e.GetType().Name + ": " + e.Message
+                    Logger?.Warn("Guard: " + guard.Where + " failed again (" + guard.Faults + "): " + FaultWords.Of(e)
                                  + (guard.Faults == MostShort ? " (Said no more this session.)" : string.Empty));
                 }
                 if (component != null && guard.Off)
@@ -176,7 +178,7 @@ namespace RealLifeOverhaul
                 }
                 if (now)
                 {
-                    SwitchedOff(guard);
+                    SwitchedOff(guard, e);
                 }
             }
             catch (Exception)
@@ -185,7 +187,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static void SwitchedOff(FeatureGuard guard)
+        private static void SwitchedOff(FeatureGuard guard, Exception last)
         {
             string feature = guard.Feature;
             if (feature != null && !FeatureGuards.SwitchOff(feature))
@@ -194,7 +196,8 @@ namespace RealLifeOverhaul
             }
             string name = feature != null ? FeatureName(feature) : "reallife_guard_unnamed".GetLocalization();
             Logger?.Warn("Guard: " + guard.Where + " failed " + FeatureGuard.Most + " times within " + FeatureGuard.Seconds + " seconds; "
-                         + (feature != null ? "the feature '" + feature + "' is" : "it is") + " switched off until the game is loaded again. Its saved data is left as it was.");
+                         + (feature != null ? "the feature '" + feature + "' is" : "it is") + " switched off until the game is started again. Its saved data is left as it was. "
+                         + "The last fault: " + FaultWords.Of(last) + ".");
             if (feature != null)
             {
                 try
@@ -206,7 +209,75 @@ namespace RealLifeOverhaul
                     Logger?.Error(e);
                 }
             }
-            Tell("reallife_guard_notice_fault".GetLocalization().Replace("{feature}", name));
+            LetGo(feature ?? guard.Where);
+            string what = Place(guard.Where);
+            Tell(what != null
+                ? "reallife_guard_notice_fault_at".GetLocalization().Replace("{feature}", name).Replace("{what}", what)
+                : "reallife_guard_notice_fault".GetLocalization().Replace("{feature}", name));
+        }
+
+        // Everything the part still holds over the screen let go (Core/ScreenHolds), after its own clean-up: what would answer a card
+        // or give the keys back is off now, so nothing else would. One line says what was held.
+        private static void LetGo(string part)
+        {
+            try
+            {
+                var released = new System.Collections.Generic.List<string>(4);
+                int asked = ScreenHolds.Release(part, released, (what, e) =>
+                {
+                    Logger?.Warn("Guard: " + what + " could not be let go of (" + FaultWords.Of(e) + ").");
+                });
+                if (asked > 0)
+                {
+                    Logger?.Warn("Guard: '" + part + "' is off, so what it could hold over the screen was let go of: "
+                                 + (released.Count > 0 ? string.Join("; ", released) : "nothing was held") + ".");
+                }
+            }
+            catch (Exception)
+            {
+                // the guard itself must never be the next fault
+            }
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, Func<string>> Places =
+            new System.Collections.Generic.Dictionary<string, Func<string>>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Gives a guard's place its plain words for the notice, in the player's language ("the status bar over the city" for the
+        /// HUD's guard): asked only when that guard switches its feature off. A place nobody named leaves the notice without them.
+        /// </summary>
+        public static void Named(string where, Func<string> words)
+        {
+            if (string.IsNullOrEmpty(where) || words == null)
+            {
+                return;
+            }
+            lock (Places)
+            {
+                Places[where] = words;
+            }
+        }
+
+        // The plain words of a guard's place, or null: none given, none to give now, or they could not be made.
+        private static string Place(string where)
+        {
+            Func<string> words;
+            lock (Places)
+            {
+                if (where == null || !Places.TryGetValue(where, out words))
+                {
+                    return null;
+                }
+            }
+            try
+            {
+                string said = words();
+                return string.IsNullOrEmpty(said) ? null : said;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The options page's test: five faults of an entry point of its own, to see the log lines and the notice.</summary>

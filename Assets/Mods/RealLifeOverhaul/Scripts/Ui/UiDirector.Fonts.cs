@@ -123,7 +123,17 @@ namespace RealLifeOverhaul.Ui
             int given = sample.Length, drawn = 0;
             if (given > 0)
             {
-                drawn = UiFontProbe.Drawn(sample);
+                try
+                {
+                    drawn = UiFontProbe.Drawn(sample);
+                }
+                catch (Exception e)
+                {
+                    // The line is written all the same, and with it the check is said: left unsaid, the probe ran again every second,
+                    // and five faults of it switched the whole interface off.
+                    drawn = -1;
+                    Logger?.Warn("UI: the fonts' check could not draw its line of the language through the kit's own text (" + FaultWords.Of(e) + "); its line says what the fonts hold.");
+                }
                 if (drawn < 0)
                 {
                     given = drawn = 0;   // no face to write with yet: the line says what the fonts hold, and nothing of a drawing

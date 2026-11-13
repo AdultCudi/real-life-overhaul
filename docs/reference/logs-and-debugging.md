@@ -41,8 +41,11 @@ A self-check line says what was measured against what was wanted, then `PASS`, o
 Every entry point the game calls is behind the mod's guard (`Core/Guard.cs`, `Core/FeatureGuard.cs`):
 
 - A fault that says the game lacks a member stops that entry point's class at once, with one line, instead of failing every frame.
-- Any other fault is written in full, the first three of one entry point in full and then a short line each.
-- Five faults within thirty seconds switch the feature off for the rest of the session.
+- Any other fault is written in full, the first three of one entry point in full and then a short line each. Every one of the guard's lines names the fault's kind, its message and the first four methods of its stack (`Guard: HudLive failed (1): NullReferenceException: ..., at HudSides.BuildingPanel < HudLive.Look`), so a log copied by the mod's name alone still says what failed and where (`Core/FaultWords.cs`).
+- Five faults within thirty seconds switch the feature off for the rest of the session, that is until the game is started again. The line that says so carries the last fault, and the notice names what failed where it can.
+- A feature the guard switches off lets go of everything it held over the screen, after its own clean-up: a card, a canvas that takes the pointer, the player's walk, the keys. One line says what was held (`Guard: 'ui' is off, so what it could hold over the screen was let go of: ...`). Whoever raises such a hold registers it in `Core/ScreenHolds.cs`; the RLO interface registers every canvas of its own that takes the pointer in `Ui/Host/UiRoots.cs`. EconomyCheck's `--ui-guard` lists every file that raises a hold from the sources and fails on one that is not accounted for.
+- On the RLO interface one screen's fault is not the whole interface's: the second's look runs each screen in a piece of its own (`Ui/UiPieces.cs`), a piece that fails is the game's own until the next city, and `Player.log` says `UI: <piece> failed (...)` once.
+- To see the whole interface go off as the guard does it, with **Show test tools** on press "Switch the RLO interface off as the guard does" under Options, Tests. The interface stays off until the game is started again. Then press Report a bug: the game's own text box asks, and the screen takes clicks.
 - After a game update, the options page says under **Troubleshooting**, **Diagnostics**, "What a game update switched off". How the guard works is in [After a game update](../contributing/after-a-game-update.md).
 
 If the mod is switched on twice (the Workshop item and a copy in `ModsLocal`), the second copy writes `Real Life Overhaul is switched on twice ...` and does nothing.

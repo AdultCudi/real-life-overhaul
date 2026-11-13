@@ -180,9 +180,10 @@ internal static partial class Program
 
         // UiDirector.On at the shipped values, read from the two sources as they stand.
         string director = ModSource(@"Ui\UiDirector.cs");
-        bool onIsBoth = director.Contains("public static bool On => Settings.LivingPopulation && Settings.UiInterface;");
+        // The player's switch (Wanted) is those two alone; On adds the part running (UiGuardChecks: a part the guard switched off draws nothing).
+        bool onIsBoth = director.Contains("public static bool Wanted => Settings.LivingPopulation && Settings.UiInterface;") && director.Contains("public static bool On => Wanted && !Stopped;");
         bool onAtDefaults = living.Success && shipped.Success && living.Groups[1].Value == "true" && shipped.Groups[1].Value == "true";
-        Check(onIsBoth && living.Success && !onAtDefaults, "interface off: UiDirector.On is Living population and the switch, false at the shipped values");
+        Check(onIsBoth && living.Success && !onAtDefaults, "interface off: UiDirector.On is Living population and the switch and the part running, false at the shipped values");
         Check(StatementsInOrder(Block(director, "if (!On)"), "RemoveAll(\"the switch is off\");", "return;"),
             "interface off: with the switch off the director takes every kit off and installs none");
 

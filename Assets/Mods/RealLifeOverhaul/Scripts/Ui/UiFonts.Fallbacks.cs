@@ -395,7 +395,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 face.fallbackFontAssetTable.Clear();
                 face.fallbackFontAssetTable.AddRange(Chain);
-                face.ReadFontAssetDefinition();
+                try
+                {
+                    face.ReadFontAssetDefinition();
+                }
+                catch (Exception e)
+                {
+                    // Its chain stands all the same: only the characters it once found in an older fallback are not forgotten. In play the
+                    // chain is ordered after each copy, so a throw here came once a copy, a fault a second.
+                    Said?.Invoke("UI: the interface's face '" + face.name + "' could not read its table again after its fallbacks changed (" + e.GetType().Name + ": " + e.Message + ")");
+                }
             }
         }
 

@@ -149,6 +149,25 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Every host there is gives its screen back, each in a try of its own: the interface's part has stopped, and a host whose
+        /// kit was missed by the director's own list must not keep the game's screen hidden under a face nothing answers.
+        /// </summary>
+        internal static void RemoveEvery(string why)
+        {
+            for (int i = Hosts.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    Hosts[i].Remove(why);
+                }
+                catch (Exception e)
+                {
+                    UiDirector.Logger?.Error(e);
+                }
+            }
+        }
+
         /// <summary>Every host's line for Player.log at load.</summary>
         public static string States()
         {
@@ -215,6 +234,7 @@ namespace RealLifeOverhaul.Ui
             _group = _root.AddComponent<CanvasGroup>();
             Sort();
             _root.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_root);
             if (_screen.Kind != UiGameKind.Overlay && _screen.Kind != UiGameKind.Panel)
             {
                 // Takes the clicks no target of the kit's takes: the game's pieces it hides under it stay pressable by alpha alone.

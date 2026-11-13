@@ -45,7 +45,9 @@ namespace RealLifeOverhaul.Ui
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 scaler.matchWidthOrHeight = 1f;
                 _root.AddComponent<GraphicRaycaster>();
+                UiRoots.Take(_root);
                 _host = _root.AddComponent<UiHost>();
+                _host.Failed = e => Hide();   // the camera goes on with its own frame lines and keys: the chrome only shows them
                 if (UiGame.Instance == null)
                 {
                     UnityEngine.Object.Destroy(_root);

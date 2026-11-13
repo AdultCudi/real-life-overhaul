@@ -156,6 +156,33 @@ namespace RealLifeOverhaul.Meta
         // Unity's LogType, by number (Error 0, Assert 1, Warning 2, Log 3, Exception 4): named here so that this file needs no engine.
         public const int TypeError = 0, TypeAssert = 1, TypeWarning = 2, TypeLog = 3, TypeException = 4;
 
+        /// <summary>The ways the report asks for the player's words, in the order they are tried.</summary>
+        public enum Ask
+        {
+            Card,   // the RLO interface's own card
+            Box,    // the game's own text box
+            None    // nothing asks: the report is made with no words
+        }
+
+        /// <summary>
+        /// True when the RLO interface's card may ask for the words: the interface is drawn (its switch on and its part running,
+        /// UiDirector.On), the card's own switch is on and the fonts are in. A card put up on an interface that stopped is laid out
+        /// once and never answers, with its clear picture over the whole screen taking every click (1.0.4).
+        /// </summary>
+        public static bool CardAsks(bool interfaceDrawn, bool cardSwitchOn, bool fontsReady)
+        {
+            return interfaceDrawn && cardSwitchOn && fontsReady;
+        }
+
+        /// <summary>
+        /// Which way asks: the card where it came up, else the game's own text box where the game has one (a city is loaded), else
+        /// none. Whatever part of the mod is off, one of the three is always open, so Report a bug always makes its report.
+        /// </summary>
+        public static Ask AskWay(bool cardUp, bool gameBox)
+        {
+            return cardUp ? Ask.Card : gameBox ? Ask.Box : Ask.None;
+        }
+
         /// <summary>True for a warning or error of the mod's: a line it wrote (either prefix), or an error whose stack passes through its code. No allocation.</summary>
         public static bool Keep(int type, string text, string stack, out BugLineKind kind)
         {

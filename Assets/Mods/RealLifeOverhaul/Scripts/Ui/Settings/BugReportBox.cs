@@ -17,10 +17,16 @@ namespace RealLifeOverhaul.Ui
         private static UiHost _host;
         private static BugReportScreen _screen;
 
-        /// <summary>Shows the card. False when the panel should ask instead.</summary>
+        /// <summary>True while the card is up.</summary>
+        internal static bool Showing => _root != null && _root.activeSelf;
+
+        /// <summary>
+        /// Shows the card. False when the game's own box should ask instead: the interface off or stopped (UiDirector.On), the
+        /// card's switch off, the fonts not in, or the card could not be put up, in which case nothing of it is left standing.
+        /// </summary>
         public static bool TryShow(string where, long bytes)
         {
-            if (!UiDirector.On || !UiScreenSwitches.On(BugReportScreen.ScreenId) || !UiFonts.Ready)
+            if (!BugReportRules.CardAsks(UiDirector.On, UiScreenSwitches.On(BugReportScreen.ScreenId), UiFonts.Ready))
             {
                 return false;
             }
@@ -30,20 +36,30 @@ namespace RealLifeOverhaul.Ui
                 _screen.Prepare(where, bytes);
                 _root.SetActive(true);
                 _host.Show();
-                return true;
+                if (_host.Up)
+                {
+                    return true;
+                }
+                Close();   // its host would not run: no card that nothing answers is left over the screen
+                return false;
             }
             catch (Exception e)
             {
                 UiDirector.Logger?.Error(e);
+                Close();
                 return false;
             }
         }
 
-        private static void Close()
+        /// <summary>The card closed, whoever asks: its own buttons, a fault, the interface's part stopping, the city going. Safe when it is not up.</summary>
+        internal static void Close()
         {
             if (_host != null)
             {
                 _host.Hide();
+            }
+            if (_root != null && _root.activeSelf)
+            {
                 _root.SetActive(false);
             }
         }
@@ -64,6 +80,7 @@ namespace RealLifeOverhaul.Ui
             scaler.referenceResolution = new Vector2(3840f, 2160f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             _root.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_root);
             Image blocker = _root.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);
             _screen = (BugReportScreen)BugReportScreen.Make();

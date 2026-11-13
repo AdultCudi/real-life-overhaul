@@ -87,9 +87,11 @@ namespace RealLifeOverhaul.Ui
             scaler.referenceResolution = new Vector2(3840f, 2160f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             go.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(go);
             var blocker = go.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);   // takes the clicks the game's own screen under it would otherwise get
             var host = go.AddComponent<UiHost>();
+            host.Failed = e => Destroy(go);   // a page that fails goes, with the clear picture that took the clicks; whoever opened it may give its own way out
             host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title, icon);
             host.View.Scale = UiTokens.CanvasPerPx;
             closing(host);
@@ -170,6 +172,7 @@ namespace RealLifeOverhaul.Ui
             scaler.referenceResolution = new Vector2(3840f, 2160f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             _gallery.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_gallery);
             var screen = new UiGalleryScreen(UiText.Words, UiText.Money);
             screen.Close = () =>
             {
@@ -180,6 +183,7 @@ namespace RealLifeOverhaul.Ui
             _galleryHost.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, UiText.T("reallife_ui_gallery_title"),
                 UiIcon.Grid);
             _galleryHost.View.Scale = UiTokens.CanvasPerPx;
+            _galleryHost.Failed = e => screen.Close();
         }
     }
 }

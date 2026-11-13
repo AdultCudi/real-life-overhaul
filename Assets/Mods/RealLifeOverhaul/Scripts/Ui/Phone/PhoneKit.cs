@@ -204,6 +204,7 @@ namespace RealLifeOverhaul.Ui
             _keys.layer = ui >= 0 ? ui : UiLayer;
             _canvas = _root.AddComponent<Canvas>();
             _root.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_root);
             _clip = _root.AddComponent<RectMask2D>();
             PhoneExtras.Phone(_container, _grid, _root.transform, _collapse, _driver, _skip);   // what another mod hung on the phone, which the kit covers, becomes an app of its own
             PhoneItemsGame.Read(pager);

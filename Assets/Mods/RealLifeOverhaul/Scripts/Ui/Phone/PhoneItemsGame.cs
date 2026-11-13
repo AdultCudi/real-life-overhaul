@@ -50,11 +50,24 @@ namespace RealLifeOverhaul.Ui
         internal static bool Read(PhoneGridPager pager)
         {
             _passesSeen = PhoneGridPager.Passes;
+            // Noted before the reading: one that throws is then not made again at every look (once a second while the kit shows),
+            // five of which switched the whole interface off. The reading notes it again as it ends, with what it found on the phone.
+            _extrasSeen = PhoneExtras.Signature();
             Spoilt.Clear();   // read afresh: the places may be other buttons now
             _foldersSeen = PhoneLayoutPrefs.On;
             pager.Arranged(Buttons, Kinds, Places);
             Ids.Clear();
             Froms.Clear();
+            for (int i = Buttons.Count - 1; i >= 0; i--)
+            {
+                if (Buttons[i] == null)
+                {
+                    // A button that went since the pager laid the grid out (another mod took its own away): it is no app any more.
+                    Buttons.RemoveAt(i);
+                    Kinds.RemoveAt(i);
+                    Places.RemoveAt(i);
+                }
+            }
             for (int i = 0; i < Buttons.Count; i++)
             {
                 Ids.Add(Buttons[i].name);

@@ -38,7 +38,11 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
    asked before the cases.
 3. **Make one host** for the screen, once: `new UiGameHost(new MyGameScreen())`, kept in a static field. Call its
    `Install()` from `UiDirector.Slow` while `UiScreenSwitches.On(id)`, `Remove(why)` when the switch is off, and
-   `Rearm()` with the others when the city goes. A call or anything the game must run in its own view:
+   `Rearm()` with the others when the city goes. The director runs each kit as a piece of its own (`UiPieces`): give
+   the kit a number in `UiDirector.Kit`, a line in each of `InstallOne`, `RemoveOne` and `RearmOne`, a place in
+   `RemoveOrder` and a piece in `MakePieces` (its name for Player.log and the key of its name for a notice), so a fault
+   of your screen takes that screen back to the game's own and never the whole interface; EconomyCheck's `--ui-guard`
+   fails while any of them is missing. A call or anything the game must run in its own view:
    `host.StepAside(() => over)`; the kit comes back the moment `over` says so.
 4. **Register and switch**: the screen's entry in `UiScreens.<Area>.cs` with its template, runner and keys, and
    `.Switch(UiScreenSwitches.Apps)` (or `Boxes`, or a section of your own in `UiScreenSwitches.Sections`). Its switch's
@@ -59,6 +63,12 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
 - For an app: follows the full menu's fade, sleeps as the menu closes, steps aside for a box of the game's own, holds its
   keys under a box or All apps the kit draws, and tells the frame (`UiShell`) to take the menu's chrome.
 - A fault in your screen gives the game's screen back for the session, with one warning in Player.log.
+- Lets go of what it raised when the interface's part stops (the guard switched it off after faults): every canvas of the
+  kit that takes the pointer is registered where it is made (`UiRoots.Take`), a host you make on your own object is
+  given its owner's way out (`host.Failed`), and a host whose guard is off shows nothing and switches its object off
+  (`UiHost.Stop`), so a card never lies unseen over the game taking every click. `UiDirector.On` is the one answer to
+  "may a kit screen be drawn": it is false while the part is stopped, whatever the player's switch says. EconomyCheck's
+  `--ui-guard` fails on a canvas or a host that is not accounted for.
 - Counts what your screen costs by its `Name` (`UiCost`): with Developer diagnostics on, one `UI check (...)` line as
   it closes (its frames, its open, its layouts and its presses against 0.5 ms a frame and 8 ms an open or a press) and
   its share in the minute's session line. A screen on its way out (its menu closing) is not laid out.

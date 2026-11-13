@@ -32,6 +32,7 @@ The mod's own words, as the code and these pages use them.
 | prop | One of the mod's modelled objects, from `Bundles/reallife_props` or `Bundles/reallife_props_2`, asked for by id from `Core/PropLibrary`, which looks in both. The list is in [`PropAssets/README.md`](../../PropAssets/README.md). |
 | role | One person's part in a street scene (`People/ActorRole`), safe to use when the pool gave nobody. |
 | scene | One of the large things staged round the player: an accident, a crime, a fire or street event, a rally. One at a time ([`Wiring.Scenes`](wiring.md#one-street-scene-at-a-time-wiringscenes)). |
+| screen hold | Something a part of the mod can leave standing over the game's screen or holding of its input: a canvas that takes the pointer, a card waiting for an answer, the keys, the player's walk. It is registered in `Core/ScreenHolds.cs` so that the guard lets go of it when it switches the part off. |
 | self-check | A log line written once per event that says what was measured against what was wanted, then `PASS` or `FAIL`. |
 | session record | The once-a-minute and long-frame lines of `Diagnostics/SessionWatch` ([Logs and debugging](logs-and-debugging.md#the-session-record)). |
 | Standing | The city's reaction to the player's success: wealth, recognition and reputation (`Scripts/Fame`). |

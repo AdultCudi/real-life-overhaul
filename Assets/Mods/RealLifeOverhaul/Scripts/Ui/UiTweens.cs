@@ -131,9 +131,9 @@ namespace RealLifeOverhaul.Ui
 
         private void Add(ref Entry e)
         {
-            if (_count == Most)
+            if (_count == Most || FrameGuard.Off)
             {
-                Finish(ref e);   // full: it lands at once rather than push another out mid-way
+                Finish(ref e);   // full, or the runner is off and would never move it: it lands at once (an opening left at the start of its fade is a screen nobody sees)
                 return;
             }
             _entries[_count++] = e;
@@ -146,7 +146,8 @@ namespace RealLifeOverhaul.Ui
             using var cost = UiCost.Kit.Time(UiWork.Frame);   // the interface's share of the frame (Host/UiCost)
             if (FrameGuard.Off)
             {
-                enabled = false;   // its feature was switched off after its faults (Core/Guard)
+                Land();            // its feature was switched off after its faults (Core/Guard): nothing is left part way
+                enabled = false;
                 return;
             }
             try
@@ -159,12 +160,45 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Every entry put where it ends, at once: the interface's part has stopped and nothing will move them on. An opening
+        /// left at the start of its fade would be a screen that is there and cannot be seen.
+        /// </summary>
+        public void Land()
+        {
+            for (int i = _count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    Finish(ref _entries[i]);
+                }
+                catch (Exception)
+                {
+                    // its object went with its screen: nothing to land
+                }
+                _entries[i] = default(Entry);
+            }
+            _count = 0;
+        }
+
         private void OnUpdate()
         {
             float now = Time.unscaledTime;
             for (int i = _count - 1; i >= 0; i--)
             {
-                if (!Step(ref _entries[i], now))
+                bool more;
+                try
+                {
+                    more = Step(ref _entries[i], now);
+                }
+                catch (Exception e)
+                {
+                    // One entry's fault costs that entry alone: left in the list it threw every frame, and five frames later
+                    // the guard switched the whole interface off for one row's fade.
+                    more = false;
+                    Dropped(e);
+                }
+                if (!more)
                 {
                     _entries[i] = _entries[--_count];
                     _entries[_count] = default(Entry);
@@ -224,6 +258,19 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             return true;
+        }
+
+        private static bool _droppedSaid;
+
+        // Said once a session: which fault an entry was dropped for.
+        private static void Dropped(Exception e)
+        {
+            if (_droppedSaid)
+            {
+                return;
+            }
+            _droppedSaid = true;
+            UiDirector.Logger?.Warn("UI: a piece of motion was dropped where it stood after a fault (" + FaultWords.Of(e) + "); the screen it moved is drawn in place.");
         }
 
         private static void Finish(ref Entry e)

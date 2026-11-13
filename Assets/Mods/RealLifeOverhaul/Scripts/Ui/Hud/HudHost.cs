@@ -223,8 +223,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A piece that takes the keys while it shows (a picker, an activity's card, the veil), over the HUD; one at a time.</summary>
-        public UiHost Modal(IUiScreen screen, string title, UiIcon icon)
+        public UiHost Modal(IUiScreen screen, string title, UiIcon icon, Action lost = null)
         {
+            _modalLost = lost;
             if (_modalRoot == null)
             {
                 _modalRoot = new GameObject("Modal", typeof(RectTransform));
@@ -237,6 +238,8 @@ namespace RealLifeOverhaul.Ui
                 _modalCanvas = _modalRoot.AddComponent<Canvas>();
                 _modalCanvas.overrideSorting = true;
                 _modalRoot.AddComponent<GraphicRaycaster>();   // a canvas of its own takes the pointer through a raycaster of its own
+                UiRoots.Take(_modalRoot);
+                _modal.Failed = ModalFailed;
             }
             SortModal();
             _modal.Bind(screen, UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title, icon);
@@ -246,6 +249,24 @@ namespace RealLifeOverhaul.Ui
             _screen.Dirty = true;   // the modal piece draws the bar with its own prompts: the HUD's view leaves its own out meanwhile
             return _modal;
         }
+
+        // The modal piece's host failed, or the hosts stopped: the piece ends as it closes, and whoever opened it gives the game's own back.
+        private void ModalFailed(Exception e)
+        {
+            Action lost = _modalLost;
+            _modalLost = null;
+            EndModal();
+            try
+            {
+                lost?.Invoke();
+            }
+            catch (Exception again)
+            {
+                UiDirector.Logger?.Error(again);
+            }
+        }
+
+        private Action _modalLost;   // what the piece on show wants done if its host fails under it; null for a piece that only closes
 
         /// <summary>The modal piece closed: the HUD's own bar back.</summary>
         public void EndModal()
@@ -305,6 +326,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Guard.Fail(FrameGuard, e, this);
                 Remove("a fault");
+                UiDirector.PieceFailed(UiDirector.HudPiece, e);   // off until the next city: the HUD's watch made a new host each second, which met the same fault
             }
         }
 
