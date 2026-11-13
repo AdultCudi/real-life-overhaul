@@ -14,6 +14,7 @@ internal static partial class Program
         UiLists2Buying();
         UiLists2Frame();
         UiLists2Drag();
+        UiLists2Choice();
         UiLists2Sources();
     }
 
@@ -58,8 +59,7 @@ internal static partial class Program
         UiVehicleBuy.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
         Check(ListNodes(s, UiVehicleBuy.WarehouseOptionCommand) >= 8 && ListHas(s, "Warehouse 1") && !ListHas(s, "Warehouse 20"),
             "lists: an open warehouse list shows its first eight and scrolls the rest (twenty warehouses, " + ListNodes(s, UiVehicleBuy.WarehouseOptionCommand) + " rows laid)");
-        car.WarehouseOffset = 20000f;
-        s = new UiScene();
+        s.Choices.Set(20000f);   // the host holds an open list's scroll in the scene, so the same scene is laid again
         UiVehicleBuy.Lay(s, car, frame, true, UiDefaultKeys.Keyboard);
         Check(ListHas(s, "Warehouse 20") && !ListHas(s, "Warehouse 1"), "lists: scrolled to its end the list reaches the last warehouse");
         Check(UiVehicleBuy.Commands.Contains(UiVehicleBuy.WarehouseOptionCommand), "lists: the warehouse option is a command of the screen's own list");
@@ -274,6 +274,98 @@ internal static partial class Program
         Check(press.Up(nodes, 50f, 30f) == -1, "drag: a press that became a drag fires no command when it ends");
         press.Down(nodes, 0);
         Check(press.Up(nodes, 50f, 30f) == 0, "drag: a short press that never moved past the threshold is still a click");
+    }
+
+    // ------------------------------------------------------------------------------------------------- an open drop-down list (14 Nov 2026)
+
+    private static UiScene _choiceScene;
+
+    private static UiScene ChoiceScene(string[] options, int chosen, out short list, bool begin = true)
+    {
+        var s = _choiceScene ??= new UiScene();
+        if (begin)
+        {
+            s.Begin("choice", 600f, 400f, true);
+        }
+        UiDraw.Box(s, UiAt.Screen, 20f, 20f, 300f, 360f, UiRole.Panel, UiRole.None, 0f);
+        list = UiDraw.ChoiceList(s, UiAt.Screen, 40f, 60f, 240f, options, options.Length, chosen, 0f, 9);
+        return s;
+    }
+
+    private static void UiLists2Choice()
+    {
+        var options = new string[40];
+        for (int i = 0; i < options.Length; i++)
+        {
+            options[i] = "Option " + i;
+        }
+        _choiceScene = null;
+        var s = ChoiceScene(options, 0, out short list);
+        int clip = s.Lists[list].Clip;
+        float rowH = UiTokens.ControlSmall, view = s.Clips[clip].H;
+        Check(s.Clips[clip].Choice && s.Clips[clip].ContentHeight == 40 * rowH && s.Lists[list].Shown == 8, "choice list: its rows are one region marked as the host's to scroll, eight in view of forty");
+        Check(s.Clips[clip].Offset == 0f, "choice list: a chosen first option opens at the top");
+
+        // The wheel: the host moves the held offset by notches and lays again; the page behind keeps its own.
+        s.Choices.Set(s.Clips[clip].Offset + UiChoiceScroll.Notch);
+        s = ChoiceScene(options, 0, out list);
+        Check(Math.Abs(s.Clips[s.Lists[list].Clip].Offset - UiChoiceScroll.Notch) < 0.01f && s.Lists[list].First == 2, "choice list: a wheel notch moves it two rows and the rows laid follow");
+        s.Choices.Set(1e6f);
+        s = ChoiceScene(options, 0, out list);
+        clip = s.Lists[list].Clip;
+        float most = 40 * rowH - s.Clips[clip].H;
+        Check(Math.Abs(s.Clips[clip].Offset - most) < 0.01f && s.Lists[list].First + s.Lists[list].Shown == 40, "choice list: the wheel stops at the end and the last option is laid");
+        int last = -1;
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            last = s.Nodes[i].Command == 9 && s.Nodes[i].Arg == 39 ? i : last;
+        }
+        Check(last >= 0 && s.Nodes[last].Y - s.Clips[clip].Offset + s.Nodes[last].H <= s.Clips[clip].H + 0.5f, "choice list: the last option is a target in view, to press");
+
+        // The thumb: its strip is found at the right edge, and a drag of it moves the content in proportion to the thumb's travel.
+        float tx = s.Clips[clip].X + s.Clips[clip].W - 4f, ty = s.Clips[clip].Y + 10f;
+        Check(UiPanRules.ThumbAt(s, tx, ty) == clip && UiPanRules.ThumbAt(s, s.Clips[clip].X + 20f, ty) == -1, "choice list: the thumb strip is the list's right edge, not its rows");
+        float content = 40 * rowH, v = s.Clips[clip].H, thumb = Math.Max(UiTokens.S6, v * v / content);
+        Check(Math.Abs(UiPanRules.ThumbWant(0f, v - thumb, content, v) - (content - v)) < 0.01f && UiPanRules.ThumbWant(50f, -500f, content, v) == 0f,
+            "choice list: dragging the thumb its whole travel reaches the end, and it stops at the top");
+
+        // Dragging the list itself goes through the same region and the host's notch, whatever the screen under it does.
+        s.Choices.Set(100f);
+        s = ChoiceScene(options, 0, out list);
+        Check(UiPanRules.ClipAt(s, s.Clips[s.Lists[list].Clip].X + 20f, s.Clips[s.Lists[list].Clip].Y + 20f, 30f) == s.Lists[list].Clip, "choice list: a drag of the rows takes the list");
+
+        // Keys: a row past the view is revealed just far enough, and a chosen option far down opens in view.
+        Check(UiChoiceScroll.Reveal(0f, 8, rowH, v) == 9 * rowH - v && UiChoiceScroll.Reveal(400f, 3, rowH, v) == 3 * rowH && UiChoiceScroll.Reveal(100f, 5, rowH, v) == 100f,
+            "choice list: the keys scroll only as far as the row needs");
+        _choiceScene = null;
+        s = ChoiceScene(options, 30, out list);
+        clip = s.Lists[list].Clip;
+        float top = 30 * rowH;
+        Check(top >= s.Clips[clip].Offset && top + rowH <= s.Clips[clip].Offset + s.Clips[clip].H + 0.5f && s.FocusFirst >= 0 && s.Nodes[s.FocusFirst].Arg == 30,
+            "choice list: a chosen option far down is in view when the list opens, and the keys start on it");
+
+        // Closing lets it go: the next opening starts on its chosen option again, not where the last one was scrolled.
+        s.Choices.Set(0f);
+        s.Begin("choice", 600f, 400f, true);   // a layout without the list
+        s.Begin("choice", 600f, 400f, true);
+        s = ChoiceScene(options, 30, out list, false);
+        Check(s.Clips[s.Lists[list].Clip].Offset > 0f, "choice list: closed and opened again it opens on its chosen option");
+
+        // A long option shows whole: the list grows to its widest line instead of cutting it.
+        var wide = new[] { "Short", "A long option that would not fit the list's own width at all, shown whole" };
+        var w = new UiScene();
+        w.Begin("wide", 1200f, 400f, true);
+        UiDraw.ChoiceList(w, UiAt.Screen, 40f, 60f, 200f, wide, 2, 0, 0f, 9);
+        float widest = 0f;
+        for (int i = 0; i < w.ItemCount; i++)
+        {
+            widest = Math.Max(widest, w.Items[i].W);
+        }
+        Check(widest > 400f, "choice list: a long option widens the list so it shows whole");
+
+        string host = ModSource(@"Ui\UiHost.cs") + ModSource(@"Ui\UiView.Pointer.cs") + ModSource(@"Ui\Blueprints\UiBlueprints.cs");
+        Check(host.Contains("ScrollChoice(clip,") && host.Contains("RevealChoice(list, want)") && host.Contains("!RevealChoice(n.List, n.Index)") && host.Contains("ThumbAt(") && host.Contains("s.Clips[clip].Choice = true"),
+            "choice list sources: the host scrolls an open list for the wheel, the keys and a drag of its thumb before any screen is asked, and the Blueprints filters' list is one too");
     }
 
     // ------------------------------------------------------------------------------------------------- the sources
