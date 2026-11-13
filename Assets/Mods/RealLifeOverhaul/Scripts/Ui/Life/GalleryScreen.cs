@@ -378,6 +378,14 @@ namespace RealLifeOverhaul.Ui
             GalleryAlbumFill.Fill(_album, _shown, _query, director?.Favourites, director?.Posted, _picked, PhotosGame.Day, _places.Count, _businesses.Count, _days.Count, PhotoThumbCache.Prefix,
                 _texts, true);
             _album.Selecting = _select;
+            if (director != null)
+            {
+                string cap = PhotosText.N(PhotoStoreRules.Cap);
+                _album.StorageFull = PhotoStoreRules.Full(director.Count);
+                _album.StorageLabel = _album.StorageFull
+                    ? _texts.T("reallife_gallery_full_line").Replace("{cap}", cap)
+                    : _texts.T("reallife_gallery_storage").Replace("{count}", PhotosText.N(director.Count)).Replace("{cap}", cap);
+            }
         }
 
         private void FillPhoto(PhotosDirector director)
