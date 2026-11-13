@@ -23,6 +23,16 @@ namespace RealLifeOverhaul.Ui
         void Submitted(string text);
     }
 
+    /// <summary>A typing screen whose field has a suggested completion (the game's own search offers one), taken with Tab as the game's field takes it.</summary>
+    public interface IUiTypingGhost : IUiTyping
+    {
+        /// <summary>The suggested whole text for what is typed, or null.</summary>
+        string Ghost { get; }
+
+        /// <summary>Takes the suggestion; the text the field now holds, or null when there was none.</summary>
+        string Accept();
+    }
+
     /// <summary>
     /// A typing screen that asks for its field to take the keys as a page shows it (the game's own name box for a new business
     /// is focused as it opens). The host asks once with its other reads and opens the field for each yes.

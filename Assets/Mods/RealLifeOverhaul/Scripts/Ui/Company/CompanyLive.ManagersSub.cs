@@ -265,7 +265,7 @@ namespace RealLifeOverhaul.Ui
             var card = new CompanyCard
             {
                 Kicker = mp.Place.Name, Title = CompanyApp.TaskTitle(dec.Task), Icon = TaskIcons[Math.Min(dec.Task, TaskIcons.Length - 1)],
-                Sub = CompanyText.Fill("reallife_mgr_dec_when", "place", mp.Place.Name, "day", dec.Day.ToString(), "hour", dec.Hour.ToString("00"), "name", dec.Who), Back = BackTo(w, back)
+                Sub = CompanyText.Fill("reallife_ui_mgr_dec_when", "place", mp.Place.Name, "day", dec.Day.ToString(), "time", UiClock.At(dec.Hour, 0), "name", dec.Who), Back = BackTo(w, back)
             };
             var chips = new List<string> { CompanyApp.DecisionStateName((int)dec.State) };
             var tones = new List<UiRole> { dec.State == DecisionState.Done ? UiRole.Ok : UiRole.Muted };

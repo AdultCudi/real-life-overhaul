@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Ui
         private OrderLife _life = OrderLife.Day;
         private long _qty = 100;
         private int _sort;
+        private int _column = -1;   // the column the companies are sorted by, or -1 for the desk's own order (the first filter)
+        private bool _down = true;
         private int _sector = -1;
         private int _size = -1;
         private int _rule;
@@ -133,7 +135,8 @@ namespace RealLifeOverhaul.Ui
             // A hover, a pan, a zoom or a tip lays the page out again from the model built: only a change of what it is built from builds it again.
             if (_model == null || _dirty || _sheet.Open || _model.Page != _page)
             {
-                _model = StocksBuild.Page(state, _page, _stock, ChartView, _buy, _type, _life, _qty, _sort, _sector, _size, _rule, _find, Words, _market, _done, _kind, _price, _view, _period);
+                _model = StocksBuild.Page(state, _page, _stock, ChartView, _buy, _type, _life, _qty, _sort, _sector, _size, _rule, _find, Words, _market, _done, _kind, _price, _view,
+                    _period, _column, _down);
                 if (state != null && _sheet.Open)
                 {
                     _model.Sheet = BuildSheet();
@@ -212,7 +215,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == UiDataTable.First + UiDataTable.Head)
             {
-                _sort = (_sort + 1) % 4;
+                // A head sorts the companies by its column, a second press on it turns the order round.
+                UiDataTableModel shown = _model != null ? _model.Table : null;
+                if (shown == null || !UiDataSort.Press(shown.Columns, ref _column, ref _down, arg))
+                {
+                    return false;
+                }
                 _dirty = true;
                 return true;
             }
@@ -244,6 +252,7 @@ namespace RealLifeOverhaul.Ui
                 else if (arg == 0)
                 {
                     _sort = (_sort + 1) % 4;   // the first filter is the order: movers, gainers, losers, most active
+                    _column = -1;
                 }
                 else if (arg == 1)
                 {
@@ -725,6 +734,11 @@ namespace RealLifeOverhaul.Ui
             if (state == null || row < 0)
             {
                 return 0;
+            }
+            UiDataTableModel laid = _model != null ? _model.Table : null;
+            if (laid != null && row < laid.RowCount && row < laid.Rows.Length && laid.Rows[row].Key > 0)
+            {
+                return laid.Rows[row].Key - 1;   // the row as it stands in the table the player sees, whatever column it is sorted by
             }
             var order = new int[state.Stocks.Count];
             int listed = StocksMath.Order(state.Stocks, (MarketSort)_sort, _sector, _size, order);

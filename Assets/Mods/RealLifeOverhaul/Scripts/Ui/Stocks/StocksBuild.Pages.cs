@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
             return Plain(MarketText.Fill(key, "open", Clock(MarketCatalogue.OpenMinute), "close", Clock(MarketCatalogue.CloseMinute)));
         }
 
-        private static string Clock(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+        private static string Clock(int minute) => UiClock.AtMinute(minute);
 
         // ------------------------------------------------------------------------------------------------ bonds
 
@@ -143,6 +143,9 @@ namespace RealLifeOverhaul.Ui
 
         public static long ContractGain(DerivContract c, long worth) => c.Result / 100 + worth;
 
+        // What a futures row is, kept in its Key so the screen opens the right sheet whatever order the rows stand in: the kind times FutureKeyBase plus its id or place.
+        public const int FutureContract = 1, FutureMaterial = 2, FutureCompany = 3, FutureKeyBase = 1000000;
+
         public static void FuturesPage(StocksModel m, MarketDirector d, UiWords w)
         {
             MarketState s = d.State;
@@ -150,7 +153,12 @@ namespace RealLifeOverhaul.Ui
             var days = new int[DerivCatalogue.WeeksAhead];
             int open = 0;
             long worth = 0, gain = 0;
-            var mine = new UiDataRow[book.Contracts.Count];
+            int dayCount = d.ContractDays(days);
+            var stocks = new List<int>(16);
+            OptionStocks(s, stocks);
+            var rows = new UiDataRow[book.Contracts.Count + s.Materials.Count + stocks.Count];
+            int at = 0;
+            // The player's contracts first, then what is on offer: one table, as the old tab lists them, so what is held stands in the same columns as what is not.
             for (int i = 0; i < book.Contracts.Count; i++)
             {
                 DerivContract c = book.Contracts[i];
@@ -162,10 +170,11 @@ namespace RealLifeOverhaul.Ui
                     worth += now;
                     gain += made;
                 }
-                mine[i] = Row(new[] { DerivText.Name(c), c.IsOpen ? DerivText.Kind(c.Kind) : DerivText.End(c.End), c.Qty.ToString("N0"),
-                    c.IsOpen ? Money(now) : string.Empty, DerivText.Signed(made), c.SettleDay.ToString() },
-                    (int)UiIcon.Chart, null, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None,
-                        made > 0 ? UiRole.OkText : made < 0 ? UiRole.DangerText : UiRole.None, UiRole.None });
+                rows[at] = Row(new[] { DerivText.Name(c), c.IsOpen ? DerivText.Kind(c.Kind) : DerivText.End(c.End), DerivText.Unit(c.Price), string.Empty, string.Empty,
+                    MarketText.Fill("reallife_mkt_day", "day", c.SettleDay.ToString()), c.Qty.ToString("N0"), c.IsOpen ? Money(now) : string.Empty, DerivText.Signed(made) },
+                    (int)UiIcon.Chart, null, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None,
+                        made > 0 ? UiRole.OkText : made < 0 ? UiRole.DangerText : UiRole.None });
+                rows[at++].Key = FutureContract * FutureKeyBase + c.Id;
             }
             m.Status = Status(d);
             m.Figures = new[]
@@ -180,52 +189,45 @@ namespace RealLifeOverhaul.Ui
                 m.Actions = new[] { new UiActionModel { Label = w("reallife_mkt_drv_pay_call", "Pay the call"), Kind = UiButtonKind.Primary, Key = UiAction.Alt } };
                 m.Status = Plain(MarketText.Fill("reallife_mkt_drv_box_call", "amount", Money(book.CallAmount), "day", book.CallDay.ToString()));
             }
-            int dayCount = d.ContractDays(days);
             string next = dayCount > 0 ? w("reallife_mkt_drv_col_next", "Next week") : string.Empty;
-            var stocks = new List<int>(16);
-            OptionStocks(s, stocks);
-            var rows = new UiDataRow[s.Materials.Count + stocks.Count];
             for (int i = 0; i < s.Materials.Count; i++)
             {
                 RawMaterial mat = s.Materials[i];
-                int day = MaterialRules.MoveBp(mat, 1);
-                string week = dayCount > 0 ? DerivText.Unit(d.QuoteFuture(mat.Name, days[0], true, 1).Fair) : string.Empty;
+                int day = MaterialRules.MoveBp(mat, 1), week = MaterialRules.MoveBp(mat, 5);
+                string ahead = dayCount > 0 ? DerivText.Unit(d.QuoteFuture(mat.Name, days[0], true, 1).Fair) : string.Empty;
                 string used = d.Uses(mat.Name) ? "  " + MarketText.T("reallife_mkt_drv_row_uses") : string.Empty;
-                rows[i] = Row(new[] { MaterialGame.Name(mat.Name) + used, DerivText.Group(mat.Group), DerivText.Unit(mat.Fix), MarketText.Change(day), week },
+                long units = DerivRules.UnitsOn(book, mat.Name);
+                rows[at] = Row(new[] { MaterialGame.Name(mat.Name) + used, DerivText.Group(mat.Group), DerivText.Unit(mat.Fix), MarketText.Change(day), MarketText.Change(week), ahead,
+                    units > 0 ? units.ToString("N0") : string.Empty, string.Empty, string.Empty },
                     (int)UiIcon.Chart, MarketText.T("reallife_mkt_drv_filter_materials"), new[] { UiRole.None, UiRole.None, UiRole.None,
-                        day > 0 ? UiRole.OkText : day < 0 ? UiRole.DangerText : UiRole.None, UiRole.None });
+                        day > 0 ? UiRole.OkText : day < 0 ? UiRole.DangerText : UiRole.None, week > 0 ? UiRole.OkText : week < 0 ? UiRole.DangerText : UiRole.None,
+                        UiRole.None, UiRole.None, UiRole.None, UiRole.None });
+                rows[at++].Key = FutureMaterial * FutureKeyBase + i;
             }
             for (int i = 0; i < stocks.Count; i++)
             {
                 Stock k = s.Stock(stocks[i]);
                 int move = MarketHistory.DayMoveBp(k);
-                rows[s.Materials.Count + i] = Row(new[] { k.Name, MarketText.Sector(k.Sector), MarketText.Price(k.Last), MarketText.Change(move), string.Empty },
+                long shares = DerivRules.SharesOn(book, k.Id);
+                rows[at] = Row(new[] { k.Name, MarketText.Sector(k.Sector), MarketText.Price(k.Last), MarketText.Change(move), string.Empty, string.Empty,
+                    shares > 0 ? shares.ToString("N0") : string.Empty, string.Empty, string.Empty },
                     (int)UiIcon.Building, k.Ticker, new[] { UiTokens.Chart((int)k.Sector), UiRole.None, UiRole.None,
-                        move > 0 ? UiRole.OkText : move < 0 ? UiRole.DangerText : UiRole.None, UiRole.None });
+                        move > 0 ? UiRole.OkText : move < 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None });
+                rows[at++].Key = FutureCompany * FutureKeyBase + k.Id;
             }
-            m.TableTitle = w("reallife_mkt_bond_filter_offers", "On offer");
-            m.Table2Title = w("reallife_stk_sh_your_contracts", "Your contracts");
+            m.TableTitle = w("reallife_mkt_tab_futures", "Futures");
             m.Table = new UiDataTableModel
             {
                 Columns = new[]
                 {
-                    Col(w("reallife_mkt_drv_col_name", "Material or company"), UiCellKind.Tile), Col(w("reallife_mkt_drv_col_kind", "Group"), UiCellKind.Text, 192f),
-                    Col(w("reallife_mkt_col_price", "Price"), UiCellKind.Figure, 112f), Col(w("reallife_mkt_col_today", "Today"), UiCellKind.Figure, 100f), Col(next, UiCellKind.Figure, 120f)
+                    Col(w("reallife_mkt_drv_col_name", "Material or company"), UiCellKind.Tile), Col(w("reallife_mkt_drv_col_kind", "Group"), UiCellKind.Text, 152f),
+                    Col(w("reallife_mkt_col_price", "Price"), UiCellKind.Figure, 96f), Col(w("reallife_mkt_col_today", "Today"), UiCellKind.Figure, 84f),
+                    Col(w("reallife_mkt_col_week", "5 days"), UiCellKind.Figure, 84f), Col(next, UiCellKind.Figure, 100f),
+                    Col(w("reallife_mkt_drv_col_held", "Under contract"), UiCellKind.Figure, 112f), Col(w("reallife_mkt_col_worth", "Worth"), UiCellKind.Figure, 100f),
+                    Col(w("reallife_mkt_col_gain", "Gain"), UiCellKind.Figure, 100f)
                 },
                 Rows = rows, RowCount = rows.Length, EmptyIcon = UiIcon.Chart,
                 EmptyTitle = w("reallife_stk_fut_offer_empty", "Nothing on offer"), EmptyBody = MarketText.T(d.MaterialsLive ? "reallife_mkt_drv_box_help" : "reallife_mkt_drv_box_no_city")
-            };
-            m.Table2 = new UiDataTableModel
-            {
-                Columns = new[]
-                {
-                    Col(w("reallife_mkt_tab_futures", "Futures"), UiCellKind.Tile), Col(w("reallife_mkt_col_kind", "Kind"), UiCellKind.Text, 152f),
-                        Col(w("reallife_stk_sh_qty", "Size"), UiCellKind.Figure, 100f),
-                    Col(w("reallife_stk_worth", "Worth"), UiCellKind.Figure, 112f), Col(w("reallife_stk_sh_made", "Made so far"), UiCellKind.Figure,
-                        120f), Col(w("reallife_stk_sh_settles", "Settles on day"), UiCellKind.Figure, 112f)
-                },
-                Rows = mine, RowCount = mine.Length, EmptyIcon = UiIcon.Chart,
-                EmptyTitle = w("reallife_stk_fut_empty", "No futures yet"), EmptyBody = w("reallife_stk_fut_empty_body", "A future you open shows here until it settles.")
             };
         }
 
@@ -279,7 +281,8 @@ namespace RealLifeOverhaul.Ui
             {
                 BotFirm f = MarketBots.All[i];
                 Bot b = MarketBots.Hired(s, f.Id);
-                string capital = string.Empty, worthText = string.Empty, gainText = string.Empty;
+                string capital = string.Empty, worthText = string.Empty, gainText = string.Empty, fall = string.Empty, trades = string.Empty;
+                UiRole fallTone = UiRole.None;
                 int chip = -1;
                 UiRole tone = UiRole.Muted;
                 string state = MarketText.T("reallife_mkt_bot_status_free");
@@ -291,12 +294,15 @@ namespace RealLifeOverhaul.Ui
                     capital = Money(b.Capital);
                     worthText = Money(now);
                     gainText = Money(gain);
+                    fall = b.DrawdownBp > 0 ? "-" + MarketText.Percent(b.DrawdownBp) : MarketText.Percent(0);
+                    fallTone = b.DrawdownBp > 0 ? UiRole.DangerText : UiRole.None;
+                    trades = b.Trades.ToString("N0");
                     chip = StocksMath.BotChip(b);
                     state = chips[chip < 0 || chip >= chips.Length ? 0 : chip];
                     tone = ChipTones[chip < 0 || chip >= ChipTones.Length ? 0 : chip];
                 }
-                firms[i] = Row(new[] { f.Name, MarketText.Percent(f.FeeBp), capital, worthText, gainText, state }, (int)UiIcon.Cpu, MarketText.T(StrategyKeys[(int)f.Strategy]),
-                    new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone });
+                firms[i] = Row(new[] { f.Name, MarketText.Percent(f.FeeBp), capital, worthText, gainText, fall, trades, state }, (int)UiIcon.Cpu, MarketText.T(StrategyKeys[(int)f.Strategy]),
+                    new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, fallTone, UiRole.None, tone });
             }
             var order = new List<int>(12);
             RuleOrder(s, order);
@@ -343,7 +349,8 @@ namespace RealLifeOverhaul.Ui
                     Col(w("reallife_mkt_bot_col_firm", "Firm"), UiCellKind.Tile), Col(w("reallife_stk_sh_fee_month", "Fee a month"),
                         UiCellKind.Figure, 112f), Col(w("reallife_mkt_bot_col_capital", "Capital"), UiCellKind.Figure, 112f),
                     Col(w("reallife_mkt_col_worth", "Worth"), UiCellKind.Figure, 112f), Col(w("reallife_mkt_bot_col_profit", "Profit"),
-                        UiCellKind.Figure, 112f), Col(w("reallife_mkt_col_state", "State"), UiCellKind.Chip, 152f)
+                        UiCellKind.Figure, 112f), Col(w("reallife_mkt_bot_col_fall", "Deepest fall"), UiCellKind.Figure, 112f),
+                    Col(w("reallife_mkt_bot_col_trades", "Trades"), UiCellKind.Figure, 88f), Col(w("reallife_mkt_col_state", "State"), UiCellKind.Chip, 152f)
                 },
                 Rows = firms, RowCount = firms.Length, EmptyIcon = UiIcon.Cpu
             };

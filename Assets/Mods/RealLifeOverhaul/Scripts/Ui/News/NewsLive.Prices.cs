@@ -196,6 +196,9 @@ namespace RealLifeOverhaul.Ui
             return index < 0 || index >= values.Length ? DaySeriesCatalogue.NoValue : values[index];
         }
 
+        // Points of the index the goods chart's axis covers at the least (five either side of 100): a young save's one day of small moves is not drawn as a crash.
+        private const float GoodsLeastSpan = 10f;
+
         // The goods that moved most, each rebased to 100 on the first day of the window, as lines.
         private UiChartModel GoodsChart()
         {
@@ -280,6 +283,7 @@ namespace RealLifeOverhaul.Ui
                 Reads = whole,
                 Series = chosen.ToArray(),
                 Format = v => v.ToString("0", Inv),
+                LeastSpan = GoodsLeastSpan,
                 EmptyTitle = OutlookText.T("reallife_news_empty_city"),
                 EmptyBody = OutlookText.T("reallife_news_empty_city_body")
             };

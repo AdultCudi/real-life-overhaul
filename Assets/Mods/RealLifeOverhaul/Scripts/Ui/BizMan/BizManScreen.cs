@@ -304,11 +304,24 @@ namespace RealLifeOverhaul.Ui
                 _m.Chart.Focus = arg;
                 _dirty = true;
             }
+            GoodHover(command, arg);
+        }
+
+        // The goods row whose sales card shows: the one the mouse rests on or the pad has come to, none once either has gone elsewhere.
+        private void GoodHover(int command, int arg)
+        {
+            int row = command == BizManPages.Goods + UiDataTable.Hover ? arg : -1;
+            if (row != _goodHover)
+            {
+                _goodHover = row;
+                _dirty = true;
+            }
         }
 
         public void Pointed(int command, int arg)
         {
             Aim(command, arg);
+            GoodHover(command, arg);
             if (command != UiBoard.LaneCommand && _hoverLane >= 0)
             {
                 _hoverLane = _hoverHour = -1;   // the mouse left the lanes: no + is aimed

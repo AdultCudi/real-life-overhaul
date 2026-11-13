@@ -439,6 +439,7 @@ namespace RealLifeOverhaul.Ui
                 t.Rows[i] = Good(table.data[i], managed);
             }
             t.RowCount = n;
+            t.Hover = _goodHover < n ? _goodHover : -1;
             _m.Goods = t;
             BestSellers(p);
         }
@@ -485,9 +486,50 @@ namespace RealLifeOverhaul.Ui
                     item.HasTag(TagRef.Itemtag.isshoppingcontainer) ? "-" : g.MarketPrice.ToCurrencyFormat(), bag ? "0" : price.ToCurrencyFormat()
                 },
                 Values = new[] { 0, -1, -1, 0, steps },
-                Tones = new[] { UiRole.None, UiRole.None, !service && g.StockCount <= 0 ? UiRole.DangerText : UiRole.None, UiRole.None, mark }
+                Tones = new[] { UiRole.None, UiRole.None, !service && g.StockCount <= 0 ? UiRole.DangerText : UiRole.None, UiRole.None, mark },
+                Card = SoldCard(g)
             };
         }
+
+        // How many sold at each price last week, as the game's tooltip on a goods row lists it (InventoryProductCellView.SetData): up to eight prices,
+        // the sales no price was kept for counted at the price now, and a goods container's use in service. Null for a row with nothing sold.
+        private static UiDataCard SoldCard(InventoryProductCellView.InventoryProductModel g)
+        {
+            if (g.SoldLastWeek <= 0 && (g.amountSoldPerPrice == null || g.amountSoldPerPrice.Count == 0))
+            {
+                return null;
+            }
+            bool container = g.Item.HasTag(TagRef.Itemtag.isshoppingcontainer);
+            var lines = new List<string>(9);
+            int listed = g.amountSoldPerPrice != null ? Math.Min(g.amountSoldPerPrice.Count, SoldPrices) : 0;
+            if (listed == 0)
+            {
+                lines.Add(container ? UiText.Fill("inventory_pricing_sold_breakdown_in_service", "amount", UiText.Whole(g.SoldLastWeek))
+                    : UiText.Fill("inventory_pricing_sold_breakdown", "amount", UiText.Whole(g.SoldLastWeek), "price", g.RetailPriceReference.price.ToCurrencyFormat()));
+            }
+            else
+            {
+                int unpriced = g.SoldLastWeek;
+                for (int i = 0; i < g.amountSoldPerPrice.Count; i++)
+                {
+                    unpriced -= g.amountSoldPerPrice[i].amount;
+                }
+                for (int i = 0; i < listed; i++)
+                {
+                    ItemSoldPerPriceEntry e = g.amountSoldPerPrice[i];
+                    int amount = e.amount + (unpriced > 0 && Math.Abs(g.RetailPriceReference.price - e.price) < 0.01f ? unpriced : 0);
+                    lines.Add(e.price == 0f ? UiText.Fill("inventory_pricing_sold_breakdown_in_service", "amount", UiText.Whole(amount))
+                        : UiText.Fill("inventory_pricing_sold_breakdown", "amount", UiText.Whole(amount), "price", e.price.ToCurrencyFormat()));
+                }
+                if (g.amountSoldPerPrice.Count > SoldPrices)
+                {
+                    lines.Add("...");
+                }
+            }
+            return new UiDataCard { Column = 1, Title = UiText.T("bizman_sold_last_7_days"), Labels = lines.ToArray() };
+        }
+
+        private const int SoldPrices = 8;   // the prices the game's sales tooltip lists
 
         // A figure of the week as the game's left side writes it: the amount, and its change against the week before in the
         // colour the game gives a rise or a fall.

@@ -51,10 +51,10 @@ namespace RealLifeOverhaul.Ui
             switch (m.Panel)
             {
                 case UiDesignerPanelKind.Furniture:
-                    Catalogue(s, UiAt.Screen.InRegion(PanelRegion), m.Catalogue, px, py, pw, ph, keys);
+                    Catalogue(s, UiAt.Screen.InRegion(PanelRegion), m.Catalogue, px, py, pw, ph, keys, RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Materials:
-                    Materials(s, UiAt.Screen.InRegion(PanelRegion), m.Materials, px, py, pw, ph, keys);
+                    Materials(s, UiAt.Screen.InRegion(PanelRegion), m.Materials, px, py, pw, ph, keys, RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Items:
                     Items(s, UiAt.Screen.InRegion(PanelRegion), m.Items, px, py, pw, ph);
@@ -85,11 +85,11 @@ namespace RealLifeOverhaul.Ui
             {
                 case UiDesignerPanelKind.Furniture:
                     w = Math.Min(CatalogueWidth, UiDraw.SnapDown(frame.Width - Margin * 2f));
-                    h = GridPanelHeight(m.Catalogue.CardCount, w, CatalogueDetailNeed(m.Catalogue));
+                    h = GridPanelHeight(m.Catalogue.CardCount, w, CatalogueDetailNeed(m.Catalogue), RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Materials:
                     w = Math.Min(CatalogueWidth, UiDraw.SnapDown(frame.Width - Margin * 2f));
-                    h = GridPanelHeight(m.Materials.CardCount, w, MaterialDetailNeed(m.Materials));
+                    h = GridPanelHeight(m.Materials.CardCount, w, MaterialDetailNeed(m.Materials), RowsFor(frame.Height));
                     break;
                 case UiDesignerPanelKind.Items:
                     w = ItemsWidth;

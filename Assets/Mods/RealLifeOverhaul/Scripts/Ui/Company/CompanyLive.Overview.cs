@@ -282,7 +282,7 @@ namespace RealLifeOverhaul.Ui
             string money = DecisionMoney(dec, w, out tone);
             return new CompanyDone
             {
-                When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", dec.Day.ToString(), "hour", dec.Hour.ToString("00") + ":00"),
+                When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", dec.Day.ToString(), "hour", UiClock.At(dec.Hour, 0)),
                 Text = (string.IsNullOrEmpty(dec.Who) ? string.Empty : dec.Who + ": ") + CompanyApp.DecisionWords(dec), Money = money, Tone = tone,
                 Open = CompanyAct.Of(CompanyDo.Go, "dec:" + dec.Id, CompanyView.Managers, CompanyView.SubDecision)
             };
