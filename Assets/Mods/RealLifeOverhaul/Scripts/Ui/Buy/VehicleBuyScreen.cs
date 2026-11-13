@@ -38,7 +38,8 @@ namespace RealLifeOverhaul.Ui
         private readonly StringBuilder _sb = new StringBuilder(256);
         private string _seen;
         private float _next;
-        private bool _dirty = true;
+        private bool _dirty = true, _warehouseOpen;
+        private float _warehouseOffset;
 
         public VehicleBuyScreen(PurchaseVehicleUI ui)
         {
@@ -90,7 +91,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiVehicleBuy.WarehouseCommand:
                 {
-                    // The game's list cycles; with no warehouse its own notice says why, as a click on its list does.
+                    // The game's list opens under its field; with no warehouse its own notice says why, as a click on its list does.
                     var list = BuyKits.Get<UI.Elements.Dropdown>(GameContract.CarWarehouse, _ui);
                     var options = BuyKits.Get<List<string>>(GameContract.CarWarehouses, _ui);
                     if (list == null)
@@ -102,7 +103,20 @@ namespace RealLifeOverhaul.Ui
                         list.onMiddleBoxClicked?.Invoke();
                         return false;
                     }
-                    list.SelectNextOption();
+                    _warehouseOpen = !_warehouseOpen;
+                    _warehouseOffset = 0f;
+                    return Again(true);
+                }
+                case UiVehicleBuy.WarehouseOptionCommand:
+                {
+                    var list = BuyKits.Get<UI.Elements.Dropdown>(GameContract.CarWarehouse, _ui);
+                    var options = BuyKits.Get<List<string>>(GameContract.CarWarehouses, _ui);
+                    _warehouseOpen = false;
+                    if (list == null || options == null || arg < 0 || arg >= options.Count)
+                    {
+                        return Again(true);
+                    }
+                    list.SelectOption(arg);   // what a click on the game's own option does: its listener prices the delivery
                     return Again(true);
                 }
                 case UiVehicleBuy.BuyCommand:
@@ -119,7 +133,15 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Back() => Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarCancel, _ui)));
+        public bool Back()
+        {
+            if (_warehouseOpen)
+            {
+                _warehouseOpen = false;
+                return Again(true);
+            }
+            return Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarCancel, _ui)));
+        }
 
         public void Tab(int step) => Walk(step);
 
@@ -127,10 +149,22 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            if (_warehouseOpen)
+            {
+                float top = index * UiTokens.ControlSmall;
+                _warehouseOffset = Math.Min(_warehouseOffset, top);
+                _warehouseOffset = Math.Max(_warehouseOffset, top + UiTokens.ControlSmall - UiTokens.ControlSmall * 8f);
+                _dirty = true;
+            }
         }
 
         public void Wheel(int clip, float notches)
         {
+            if (_warehouseOpen)
+            {
+                _warehouseOffset = Math.Max(0f, _warehouseOffset - notches * UiTokens.ControlSmall);
+                _dirty = true;
+            }
         }
 
         private bool Again(bool done)
@@ -217,10 +251,28 @@ namespace RealLifeOverhaul.Ui
             _m.Delivery = delivery != null && delivery.activeSelf;
             _m.DeliveryOn = toggle != null && toggle.isOn;
             string words = UiWidgets.Text(BuyKits.Get<TMP_Text>(GameContract.CarDeliveryPrice, _ui));
-            _m.DeliveryWords = words != null ? words.Replace("\n", " ") : null;
+            int cut = words != null ? words.IndexOf('\n') : -1;
+            _m.DeliveryWords = cut >= 0 ? words.Substring(0, cut) : words;   // the game writes "Deliver to Warehouse" and, under it, "(fee)": two lines, as it shows them
+            _m.DeliveryDetail = cut >= 0 ? words.Substring(cut + 1).Trim() : null;
+            _m.DeliveryState = UiText.T(_m.DeliveryOn ? "reallife_meta_on" : "reallife_meta_off");
             _m.WarehouseChosen = list != null && list.SelectedOptionIndex >= 0;
             _m.Warehouse = _m.WarehouseChosen ? list.SelectedOption : UiText.T("dialog_select_address");
-            _sb.Append(_m.Delivery).Append(_m.DeliveryOn).Append(_m.DeliveryWords).Append(_m.Warehouse).Append('|');
+            var warehouses = BuyKits.Get<List<string>>(GameContract.CarWarehouses, _ui);
+            int count = warehouses != null ? warehouses.Count : 0;
+            if (_m.WarehouseOptions.Length != count)
+            {
+                _m.WarehouseOptions = new string[count];
+            }
+            for (int i = 0; i < count; i++)
+            {
+                _m.WarehouseOptions[i] = warehouses[i];
+            }
+            _m.WarehouseAt = list != null ? list.SelectedOptionIndex : -1;
+            _warehouseOpen &= _m.Delivery && count > 0;   // the list goes with the delivery it belongs to
+            _m.WarehouseOpen = _warehouseOpen;
+            _m.WarehouseOffset = _warehouseOffset;
+            _sb.Append(_m.Delivery).Append(_m.DeliveryOn).Append(_m.DeliveryWords).Append(_m.DeliveryDetail).Append(_m.Warehouse).Append(_m.WarehouseAt).Append(count).Append(_warehouseOpen)
+                .Append(_warehouseOffset).Append('|');
             Button buy = BuyKits.Get<Button>(GameContract.CarBuy, _ui), cancel = BuyKits.Get<Button>(GameContract.CarCancel, _ui);
             _m.Buy = buy != null && buy.gameObject.activeSelf ? BuyKits.Words(buy) : null;
             _m.BuyEnabled = buy != null && buy.interactable;

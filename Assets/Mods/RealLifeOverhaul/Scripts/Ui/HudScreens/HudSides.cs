@@ -488,7 +488,7 @@ namespace RealLifeOverhaul.Ui
                 from = Math.Min(from, today.openingHourSlots[i].startingHour);
                 to = Math.Max(to, today.openingHourSlots[i].endingHour);
             }
-            return UiText.T("contacts_today_opening_hours_open").Replace("{startingHour}", from.GetFormattedTime()).Replace("{endingHour}", to.GetFormattedTime());
+            return UiText.T("contacts_today_opening_hours_open").Replace("{startingHour}", UiClock.At(from, 0)).Replace("{endingHour}", UiClock.At(to, 0));
         }
 
         // The walls' state as the game's own walls button shows it: its picture is the walls standing only while they all stand.

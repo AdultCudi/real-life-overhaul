@@ -509,8 +509,8 @@ internal static partial class Program
         Check(kit.Contains("rect.SetParent(_container, false);") && kit.Contains("window.onStateChange.AddListener(_onCollapse);")
               && kit.Contains("_window.onStateChange.RemoveListener(_onCollapse);"),
             "phone sources: the kit stands inside the game's phone container (it folds and hides with it), and hears the fold once and lets it go");
-        Check(kit.Contains("pager.SteppedAside") && kit.Contains("\"VoogleRoute_PhoneGps\"") && PhoneBody(kit, "private static void StandDown(string why)")?.Contains("_stopped = true;") == true,
-            "phone sources: another pager of the phone or another mod's screen on it has the kit stand down to the classic phone for the session");
+        Check(kit.Contains("pager.SteppedAside") && kit.Contains("\"VoogleRoute_PhoneGps\"") && PhoneBody(kit, "private static void StandDown(string why)")?.Contains("Remove(null);") == true,
+            "phone sources: another pager of the phone or another mod's screen open on it has the kit stand down to the classic phone while that lasts");
         Check(!System.Text.RegularExpressions.Regex.IsMatch(kit, @"\bvoid (Update|LateUpdate|FixedUpdate)\(\)\s*\{(?![^}]*HotSpots)"), "phone sources: its frame is timed (HotSpots)");
         // While the phone holds the keys the game's walking, camera and shortcuts leave them alone, by the game's own path:
         // its keys object selected on the interface's layer (GameManager.HasInputSelected); every way out gives it back.

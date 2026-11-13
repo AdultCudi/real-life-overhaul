@@ -103,7 +103,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (day == today)
             {
-                return start >= 0 ? PlannerText.Clock(start) : "common_today".GetLocalization();
+                return start >= 0 ? UiClock.AtMinute(start) : "common_today".GetLocalization();
             }
             return day == today + 1 ? "common_tomorrow".GetLocalization() : PlannerText.Weekday(day);
         }

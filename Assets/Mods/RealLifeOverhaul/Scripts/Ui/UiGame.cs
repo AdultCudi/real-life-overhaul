@@ -372,7 +372,15 @@ namespace RealLifeOverhaul.Ui
                 UiShellApp a = UiShellApps.Items[i];
                 if (!a.InRow)
                 {
-                    m.AllAppsBadge += a.Badge;
+                    if (a.Kind == UiShellKind.Other)
+                    {
+                        m.OtherLeft++;   // their own tile on the row: the Other mods tab of All apps
+                        m.OtherBadge += a.Badge;
+                    }
+                    else
+                    {
+                        m.AllAppsBadge += a.Badge;
+                    }
                     continue;
                 }
                 m.Apps[at] = a.Icon;

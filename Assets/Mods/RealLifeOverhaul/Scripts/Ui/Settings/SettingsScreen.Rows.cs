@@ -145,8 +145,62 @@ namespace RealLifeOverhaul.Ui
             _indexed = true;
         }
 
+        // A section or an option asked for from outside: its group opens on the list, the search and the other views cleared.
+        private void TakeWanted()
+        {
+            string target = _wanted;
+            _wanted = null;
+            if (target == null)
+            {
+                return;
+            }
+            EnsureGroups();
+            bool section = target.StartsWith("s:", StringComparison.Ordinal);
+            SettingsLine line = section ? OptionsLayout.AppHeading(target.Substring(2)) : OptionsLayout.AppFind(target);
+            SettingsTab[] tabs = OptionsLayout.AppTabs;
+            int group = -1;
+            for (int g = 0; line != null && tabs != null && g < tabs.Length && group < 0; g++)
+            {
+                group = tabs[g].Lines.Contains(line) ? g : -1;
+            }
+            if (group < 0)
+            {
+                return;   // the page has no such place: the screen stays where the player left it
+            }
+            _query = string.Empty;
+            _mode = ModePage;
+            _group = group;
+            _scrollTo = section ? null : line;
+            _scrollToHeading = section ? OptionsLayout.AppLabel(line) : null;
+            _builtGroup = -1;   // filled again for that group
+        }
+
+        // The row asked for, found among the rows just filled and brought to the top of the list.
+        private void ScrollToWanted()
+        {
+            if (_scrollTo == null && _scrollToHeading == null)
+            {
+                return;
+            }
+            float top = 0f;
+            for (int i = 0; i < _used; i++)
+            {
+                bool hit = _scrollTo != null ? _slots[i].Line == _scrollTo : _slots[i].Row.Control == UiSettingControl.None && _slots[i].Row.Name == _scrollToHeading;
+                if (hit)
+                {
+                    float lead = _scrollTo != null && i > 0 && _slots[i - 1].Row.Control == UiSettingControl.None ? UiSettingsList.SectionHeight : 0f;   // its section's band over it
+                    _model.Offset = Math.Max(0f, top - lead);
+                    break;
+                }
+                top += UiSettingsList.RowHeight(ref _slots[i].Row);
+            }
+            _scrollTo = null;
+            _scrollToHeading = null;
+        }
+
         private void Fill()
         {
+            TakeWanted();
             bool view = _builtGroup != _group || _builtMode != _mode || _builtQuery != _query;
             if (view || _builtStamp != _stamp)
             {
@@ -173,6 +227,7 @@ namespace RealLifeOverhaul.Ui
                 _model.Rows[i] = _slots[i].Row;
             }
             _model.RowCount = _used;
+            ScrollToWanted();
             Chrome();
         }
 
@@ -435,12 +490,16 @@ namespace RealLifeOverhaul.Ui
                 bool grey = Grey(slot.Line, slot.Kind);
                 bool held = _held == i;
                 bool listen = Listening(slot);
-                if (value != slot.Value || grey != slot.Row.Greyed || held != slot.Row.Held || listen != slot.Row.Listening || Differs(slot.Line) != slot.Row.Differs)
+                if (value != slot.Value || SwitchMoved(slot, value) || grey != slot.Row.Greyed || held != slot.Row.Held || listen != slot.Row.Listening || Differs(slot.Line) != slot.Row.Differs)
                 {
                     Write(slot, false);
                 }
             }
         }
+
+        // A switch that reads differently from its row: its screen faulted, or came back, since it was written.
+        private static bool SwitchMoved(Slot slot, int value) =>
+            slot.Kind == SlotKind.Switch && slot.Row.On != (value != 0 && !UiScreenSwitches.Faulted(OptionsLayout.AppId(slot.Line)));
 
         private void Write(Slot slot, bool named)
         {
@@ -471,9 +530,10 @@ namespace RealLifeOverhaul.Ui
                 case SlotKind.Switch:
                     slot.Value = OptionsLayout.AppValue(line);
                     row.Control = UiSettingControl.Switch;
-                    row.On = slot.Value != 0;
-                    row.Value = slot.Value != 0 ? T("reallife_meta_on") : T("reallife_meta_off");
-                    row.Tip = Tip(line, row.Greyed);
+                    bool faulted = UiScreenSwitches.Faulted(OptionsLayout.AppId(line));   // the kit faulted on this screen: it reads off, with the words that say why
+                    row.On = slot.Value != 0 && !faulted;
+                    row.Value = row.On ? T("reallife_meta_on") : T("reallife_meta_off");
+                    row.Tip = faulted ? T("reallife_ui_note_fallback") : Tip(line, row.Greyed);
                     break;
                 case SlotKind.Slider:
                     OptionsLayout.AppRange(line, out int min, out int max);
@@ -667,6 +727,13 @@ namespace RealLifeOverhaul.Ui
             }
             if (slot.Kind == SlotKind.Switch)
             {
+                if (slot.Mod == null && UiScreenSwitches.Faulted(OptionsLayout.AppId(slot.Line)))
+                {
+                    UiScreenSwitches.Retry(OptionsLayout.AppId(slot.Line));   // it reads off: pressed it gives the screen another try
+                    UiScreenSwitches.Changed?.Invoke();
+                    _dirty = true;
+                    return true;
+                }
                 if (slot.Mod != null)
                 {
                     try

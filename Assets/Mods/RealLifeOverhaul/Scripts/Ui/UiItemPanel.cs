@@ -39,6 +39,9 @@ namespace RealLifeOverhaul.Ui
         public UiInfoRow[] Facts = new UiInfoRow[0];           // the parking zone, the unpaid total, what the game's panel adds
         public string CargoLabel, CargoValue;
         public UiCatalogueCard[] Cargo = new UiCatalogueCard[0];   // a tile each stack: its picture, its count as the figure
+        public string[][] CargoContents;                       // what a bundle's tile holds, a line a kind with its count, as the game's tooltip on it lists them; null where a tile holds one thing
+        public int CargoHover = -1;                            // the tile the pointer rests on, so its contents show beside it
+        public string CargoContainsLabel;                      // "Contains", the card's heading
         public int CargoSlots;                                 // the slots there are: said as "1 of 10", the empty ones never drawn
         public UiItemAction[] Actions = new UiItemAction[0];
         public string More;                                    // another mod's button in the game's panel: opens the game's own view; null for none
@@ -467,7 +470,33 @@ namespace RealLifeOverhaul.Ui
                 s.Nodes[first].Left = first;
                 s.Nodes[s.NodeCount - 1].Right = s.NodeCount - 1;
             }
+            Contents(s, m, ix, ry, tw, across);
             return y + ch + UiTokens.S1;
+        }
+
+        // The contents of the bundle the pointer rests on, a card over the tile as the game's tooltip hangs on it: above it, its right edge
+        // with the tile's, kept inside the screen's left.
+        private static void Contents(UiScene s, UiItemPanelModel m, float ix, float ry, float tw, int across)
+        {
+            int hover = m.CargoHover;
+            if (m.CargoContents == null || hover < 0 || hover >= m.CargoContents.Length || hover >= m.Cargo.Length || m.CargoContents[hover] == null || m.CargoContents[hover].Length == 0)
+            {
+                return;
+            }
+            var tip = new UiTooltipModel();
+            if (!string.IsNullOrEmpty(m.CargoContainsLabel))
+            {
+                tip.Category(m.CargoContainsLabel);
+            }
+            UiTipBlock list = tip.Rows(UiTipKind.List);
+            for (int i = 0; i < m.CargoContents[hover].Length; i++)
+            {
+                list.Lines.Add(new UiTipLine { Left = m.CargoContents[hover][i] });
+            }
+            float width = UiTooltipCard.Width(tip), height = UiTooltipCard.Height(tip, width);
+            float tx = ix + (hover % across) * (tw + UiTokens.S2), ty = ry + (hover / across) * (CargoTile + UiTokens.S2);
+            var over = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 };
+            UiTooltipCard.Lay(s, over, tip, UiDraw.SnapDown(Math.Max(UiTokens.S2, tx + tw - width)), UiDraw.SnapDown(Math.Max(UiTokens.S1, ty - height - UiTokens.S1)), width);
         }
 
         // How many rows the buttons take: two a row while both their words fit half the width, else one takes the row.

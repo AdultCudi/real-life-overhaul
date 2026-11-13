@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Ui
             WorkShift now = e.GetWorkShiftAssignedInThisMoment();
             if (now != null)
             {
-                return UiText.T("reallife_ui_tip_shift_until").Replace("{time}", now.endingHour.GetFormattedTime());
+                return UiText.T("reallife_ui_tip_shift_until").Replace("{time}", UiClock.At(now.endingHour, 0));
             }
             ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
             int hour = SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0, next = int.MaxValue;
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Ui
                     next = s.startingHour;
                 }
             }
-            return next != int.MaxValue ? UiText.T("reallife_ui_tip_shift_next").Replace("{time}", next.GetFormattedTime()) : UiText.T("reallife_ui_tip_shift_none");
+            return next != int.MaxValue ? UiText.T("reallife_ui_tip_shift_next").Replace("{time}", UiClock.At(next, 0)) : UiText.T("reallife_ui_tip_shift_none");
         }
 
         // The customers this person served of the business's today, or -1 where there is no honest figure to give.

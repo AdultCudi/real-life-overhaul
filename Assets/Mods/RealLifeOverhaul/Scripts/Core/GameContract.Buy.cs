@@ -143,6 +143,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember SlotActionLabel = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "actionButtonLabel", "TextLocalizationComponent");
         public static readonly GameMember SlotDiscard = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "discardButton", "Button");
         public static readonly GameMember SlotSell = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "sellButton", "Button");
+        public static readonly GameMember SlotBundle = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "bundleItemsTooltip", "LocalizedListTooltip");
 
         // Manage cargo (ManageCargoUi): its panel, its stacks' template, Sell all, its contents line and the holder.
         public static readonly GameMember CargoHud = Field(UiManageCargo, Game, "UI.PlayerHUD.PlayerHUD", "manageCargoUI", "ManageCargoUi");

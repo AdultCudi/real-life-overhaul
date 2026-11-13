@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         public int OpenList = -1;                  // the filter whose list is open, or -1
         public string[] Options = new string[0];
         public int OptionChosen = -1;
+        public bool[] OptionTicks;                 // the filter's types that stand on, as the game's panel lets several; null for a list of one
         public float OptionOffset;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public float TableX, TableY;               // written back: where the table's tool row stood
@@ -140,7 +141,7 @@ namespace RealLifeOverhaul.Ui
             }
             float fx = UiDataTable.FilterLeft(m.Table, m.OpenList, m.TableX);
             float fw = Math.Max(UiDataTable.FilterWidthOf(m.Table.Filters[m.OpenList]), UiTokens.S16 * 4f);
-            UiDraw.ChoiceList(s, at, fx, m.TableY + UiTokens.Control + UiTokens.S1, fw, m.Options, m.Options.Length, m.OptionChosen, m.OptionOffset, OptionCommand);
+            UiDraw.ChoiceList(s, at, fx, m.TableY + UiTokens.Control + UiTokens.S1, fw, m.Options, m.Options.Length, m.OptionChosen, m.OptionOffset, OptionCommand, 1, m.OptionTicks);
         }
     }
 }

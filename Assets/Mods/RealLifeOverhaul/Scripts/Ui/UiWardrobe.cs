@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
         public int SliderCount;
         public int Held = -1;                                  // the slider the keys hold, or -1
         public string ChosenName, ChosenDetail;                // the piece chosen, and what it is with its price
-        public string ColourLabel, ColourName;
+        public string ColourLabel;
         public string[] Swatches = new string[0];
         public int SwatchCount, Swatch = -1;
         public UiActionModel[] Actions = new UiActionModel[0]; // the screen's own buttons, the main one last
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.SwatchCount > 0)
             {
-                cy += UiDraw.SectionRow(s, at, ix, cy, iw, m.ColourLabel, m.ColourName, false, -1, 0) + UiTokens.S1;
+                cy += UiDraw.SectionRow(s, at, ix, cy, iw, m.ColourLabel, null, false, -1, 0) + UiTokens.S1;
                 UiDraw.Swatches(s, at, ix, cy, iw, m.Swatches, m.SwatchCount, m.Swatch, SwatchCommand);
             }
         }

@@ -208,6 +208,7 @@ namespace RealLifeOverhaul.Meta
                 string target = _wanted;
                 _wanted = null;
                 _view.Want(target);
+                SettingsScreen.Want(target);   // the same place on the kit's page
                 _app.Open();
                 if (Dev.Verbose)
                 {

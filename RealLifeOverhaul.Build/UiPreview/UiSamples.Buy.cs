@@ -77,8 +77,7 @@ internal static partial class UiSamples
         m.Lines = lines;
         m.Title = t("purchaseui_title_with_amounts", "Purchase ({currentAmount}/{maxAmount} items)").Replace("{currentAmount}", taken.ToString()).Replace("{maxAmount}", "10");
         m.Total = Money(total);
-        m.Page = state == "goods_page2" ? 1 : 0;
-        m.PageWords = t("reallife_ui_buy_page", "Page {page} of {pages}");
+        m.Offset = state == "goods_page2" ? 100000f : 0f;   // scrolled to the end of a long cart
         m.Head = state == "taxes" || state == "ticket" ? null : new UiCheckoutHead
         {
             Mark = UiIcon.Store, Name = "NY Distro Inc", Address = "37 1st Street, Garment District",

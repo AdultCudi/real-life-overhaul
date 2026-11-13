@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Flare
                 if (d != null && _view != null && _app != null)
                 {
                     _view.WantCompose(d.Id);
+                    KitCompose = d.Id;   // the kit's face opens the same sheet when it is shown
                     _app.Open();
                 }
                 Logger?.Info("Flare: a photo is shared to Flare from another feature (" + Path.GetFileName(photoPath) + ").");
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul.Flare
             {
                 _view.WantCompose(d.Id);
             }
+            KitCompose = d.Id;
             Notice(NotificationType.Info, "reallife_flare_note_selfie_ready", _openCompose);
         }
     }

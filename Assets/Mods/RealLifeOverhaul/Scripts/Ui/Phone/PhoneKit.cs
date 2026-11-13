@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Ui
         private static TMP_Text _song, _title, _driverLabel;
         private static CanvasGroup _radio;
         private static UnityEngine.Events.UnityAction<bool> _onCollapse;
-        private static bool _gaveUp, _stopped;
+        private static bool _gaveUp;
         private static string _state = "not looked at yet";
         private static float _nextLook;
         private static int _pressItem = -1;
@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Ui
         private static string _songSeen, _titleSeen;
         private static bool _radioSeen, _driverSeen;
         private static int _shapeSeen;      // the phone's objects (by their ids) when their names were last read
-        private static bool _namedSeen;     // and whether another mod's screen was among them
+        private static Transform _named;    // and another mod's screen among them, or null: the kit phone gives way while it is open, and is back when it closes
         private static readonly int HotShown = HotSpots.Slot("Ui: PhoneKit.Shown");     // run by the game's own showing of its phone
         private static readonly int HotHidden = HotSpots.Slot("Ui: PhoneKit.Hidden");
 
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Ui
                 Remove("its switch is off");
                 return;
             }
-            if (_gaveUp || _stopped || FrameGuard.Off || GameContract.PhoneKitPart.Off)
+            if (_gaveUp || FrameGuard.Off || GameContract.PhoneKitPart.Off)
             {
                 return;
             }
@@ -251,7 +251,7 @@ namespace RealLifeOverhaul.Ui
         // Another pager of the phone, or another mod's screen drawn on it: theirs, and the classic phone with them.
         private static bool Taken(PhoneGridPager pager, Transform phone, out string why)
         {
-            why = pager.SteppedAside ? "another mod pages the phone's apps" : NamedSoon(phone) ? "another mod draws a screen of its own on the phone" : null;
+            why = pager.SteppedAside ? "another mod pages the phone's apps" : NamedSoon(phone) ? "another mod's screen is open on the phone" : null;
             return why != null;
         }
 
@@ -264,9 +264,9 @@ namespace RealLifeOverhaul.Ui
             if (shape != _shapeSeen || _shapeSeen == 0)
             {
                 _shapeSeen = shape == 0 ? 1 : shape;
-                _namedSeen = Named(phone, OtherScreen, 0);
+                _named = Named(phone, OtherScreen, 0);
             }
-            return _namedSeen;
+            return _named != null && _named.gameObject.activeInHierarchy;   // a screen that is there and shut leaves the kit's phone where it is
         }
 
         // The ids of the objects the name walk goes through, in its order and to its depth, folded into one number.
@@ -285,17 +285,22 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A child of that name's beginning anywhere under the phone, without a list made for the search.
-        private static bool Named(Transform under, string start, int depth)
+        private static Transform Named(Transform under, string start, int depth)
         {
             for (int i = 0; i < under.childCount; i++)
             {
                 Transform child = under.GetChild(i);
-                if (child.name.StartsWith(start, StringComparison.Ordinal) || depth < 6 && Named(child, start, depth + 1))
+                if (child.name.StartsWith(start, StringComparison.Ordinal))
                 {
-                    return true;
+                    return child;
+                }
+                Transform deeper = depth < 6 ? Named(child, start, depth + 1) : null;
+                if (deeper != null)
+                {
+                    return deeper;
                 }
             }
-            return false;
+            return null;
         }
 
         private static void StandDownIfTaken()
@@ -312,18 +317,23 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The classic phone while the cause stands, and the kit's again once it is gone: the cause is asked about each second
+        // (Install), and the log hears of it once.
         private static void StandDown(string why)
         {
             Remove(null);
-            _stopped = true;
-            _state = "the classic phone for this session (" + why + ")";
-            UiClone.Fallback("the RLO phone stands down to the classic phone for this session: " + why);
+            string state = "the classic phone while it lasts (" + why + ")";
+            if (_state == state)
+            {
+                return;
+            }
+            _state = state;
+            UiClone.Fallback("the RLO phone stands down to the classic phone while this lasts: " + why);
         }
 
         /// <summary>A new city: a phone that stood down in the last one is looked at again.</summary>
         public static void Rearm()
         {
-            _stopped = false;
             _nextLook = 0f;
             if (!_gaveUp)
             {

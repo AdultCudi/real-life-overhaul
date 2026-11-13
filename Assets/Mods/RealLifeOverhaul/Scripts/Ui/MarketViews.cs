@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Ui
         public int OpenList = -1;
         public string[] Options = new string[0];
         public int OptionChosen = -1;
+        public bool[] OptionTicks;                 // the filter's types that stand on, or null for a list of one
         public float OptionOffset;
         public Func<float, string> Money;
     }
@@ -132,6 +133,7 @@ namespace RealLifeOverhaul.Ui
             m.OpenList = v.OpenList;
             m.Options = v.Options ?? new string[0];
             m.OptionChosen = v.OptionChosen;
+            m.OptionTicks = v.OptionTicks;
             m.OptionOffset = v.OptionOffset;
             m.Prompts = new[]
             {

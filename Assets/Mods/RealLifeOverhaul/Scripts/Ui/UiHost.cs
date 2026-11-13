@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Ui
         private string _title;
         private UiIcon _icon;
         private Vector2 _laidSize;
+        private bool _barCard;   // a card of the bar's clock or money is asked for by the pointer
         private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private int _typeCommand = -1, _typeArg;   // the target that takes the keys while _typing: the scene tells its field to draw the caret
         private IUiTypingFocus _typeFocus;          // the screen's own asks for the keys, if it makes them
@@ -178,6 +179,7 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerPressed = Guard.Wrap<int>(PressedSafe);
                 _view.PointerReport = PressTrace;
                 _view.Wheeled = Guard.Wrap<int, float>(WheeledSafe);
+                _view.DragTaken = () => _dragging || _grip.Moving;   // a slider, a board's shift or a window's grip keeps its drag: no region follows it
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
                 _view.PointerMoved = Guard.Wrap<int, UiDragPoint>(PointerMoved);
                 _view.Tracked = Tracked;
@@ -259,6 +261,7 @@ namespace RealLifeOverhaul.Ui
             EndDrag(true);
             _grip.End();
             _view?.Still();
+            CardGone();
             enabled = false;
             string line = _cost?.Hidden(Time.unscaledTime);
             if (line != null && Meta.Dev.Verbose)
@@ -388,6 +391,7 @@ namespace RealLifeOverhaul.Ui
                     EndDrag(true);
                     _grip.End();
                     _view?.Still();
+                    CardGone();
                     _cost?.Hidden(Time.unscaledTime);
                 }
                 catch (Exception)
@@ -717,6 +721,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (UiDraw.IsBarHover(n.Command))
+            {
+                _pressNote = "a card's target";   // the clock and the money only bring their cards: a press says nothing, as on the game's own bar
+                return;
+            }
             if (UiDraw.IsChrome(n.Command))
             {
                 _pressNote = "frame";
@@ -887,8 +896,30 @@ namespace RealLifeOverhaul.Ui
             if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
                 _view.SetHover(node);
+                BarCard(ref _scene.Nodes[node]);
                 Pointed(_scene.Nodes[node].Command, _scene.Nodes[node].Arg);
             }
+        }
+
+        // The bar's card goes: the pointer left its pill, or the screen did.
+        private void CardGone()
+        {
+            if (_barCard)
+            {
+                _barCard = false;
+                TooltipKit.MoneyOut();
+            }
+        }
+
+        // The pointer on the bar's clock or money in the full menu: the years and days or the net worth card, over the pill as it is on the HUD.
+        private void BarCard(ref UiNode n)
+        {
+            if (!UiDraw.IsBarHover(n.Command) || _laidSize.x <= 0f || _laidSize.y <= 0f)
+            {
+                return;
+            }
+            float x = n.X * _view.Scale / _laidSize.x, y = n.Y * _view.Scale / _laidSize.y, w = n.W * _view.Scale / _laidSize.x;
+            _barCard = n.Command == UiDraw.ClockHoverCommand ? TooltipKit.Years(x, y, w) : TooltipKit.Money(x, y, w);
         }
 
         private void PointerExited(int node)
@@ -897,6 +928,7 @@ namespace RealLifeOverhaul.Ui
             if (_mode.Exited(node))
             {
                 _view.SetHover(-1);
+                CardGone();
                 Pointed(-1, -1);
             }
         }
@@ -934,6 +966,7 @@ namespace RealLifeOverhaul.Ui
         private void PointerPressed(int node)
         {
             using var cost = Measured(UiWork.Press);
+            CardGone();
             _beforeFocus = _view.Focus;
             _beforeNode = NodeName(node);
             _beforeCommand = node >= 0 && node < _scene.NodeCount ? _scene.Nodes[node].Command : -1;

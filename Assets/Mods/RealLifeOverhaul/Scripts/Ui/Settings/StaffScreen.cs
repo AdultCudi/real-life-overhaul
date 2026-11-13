@@ -41,6 +41,18 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The entry on screen, so a report can name it.</summary>
         public static string Place { get; private set; }
 
+        /// <summary>An entry ("b:data_centre", "r:data_engineer") another feature asks the app to open on (StaffApp.Open): shown the next time the screen lays out.</summary>
+        public static void Want(string key)
+        {
+            _wanted = key;
+            if (_one != null)
+            {
+                _one._dirty = true;
+            }
+        }
+
+        private static string _wanted;
+
         public string Id => ScreenId;
 
         public bool Dirty => _dirty;
@@ -61,9 +73,36 @@ namespace RealLifeOverhaul.Ui
             _dirty = true;
         }
 
+        // An entry asked for from outside: the search cleared so it is listed, then its page.
+        private void TakeWanted()
+        {
+            string key = _wanted;
+            _wanted = null;
+            StaffEntry entry = key != null ? StaffIndex.Find(key) : null;
+            if (entry == null)
+            {
+                return;
+            }
+            if (_query.Length > 0)
+            {
+                _query = string.Empty;
+                _ready = false;
+            }
+            Ensure();
+            int at = _all.IndexOf(entry);
+            if (at >= 0)
+            {
+                _at = at;
+                _built = -2;
+                _page.Offset = 0f;
+                _navOffset = 0f;
+            }
+        }
+
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             Ensure();
+            TakeWanted();
             s.Begin("staff", frame.Width, frame.Height, dark);
             frame.Icon = UiIcon.People;
             float offset = _navOffset;
