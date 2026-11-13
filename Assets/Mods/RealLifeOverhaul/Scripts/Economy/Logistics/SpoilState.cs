@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Spoiled = new int[Days];    // pieces spoiled that day
         public readonly int[] Came = new int[Days];       // pieces come in that day
         public readonly int[] Cents = new int[Days];      // what the spoiled pieces had cost
+        public int Pace = SpoilRules.PaceUsual;           // the pace the batches' days were last read at (a change of the option makes the place's batches read again)
         public int Turned = -1;                           // the last day whose turn was looked at (its goods past their life taken out)
         public readonly Dictionary<string, int> Lives = new Dictionary<string, int>(StringComparer.Ordinal);   // days each product keeps here, as last looked at (not saved)
 

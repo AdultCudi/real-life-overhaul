@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Meta;
 
 internal static partial class Program
 {
@@ -14,6 +15,7 @@ internal static partial class Program
         SpoilBatches();
         SpoilLives();
         SpoilSave();
+        SpoilPace();
         SendNowCap();
         LogisticsTexts();
     }
@@ -289,5 +291,97 @@ internal static partial class Program
         Check(en.TryGetValue("reallife_spoil_note", out string note) && note.Length <= 240 && en.TryGetValue("reallife_guide_trips", out string guide)
               && guide.Contains("{spoil_produce}") && guide.Contains("{trips_unload}") && guide.Contains("<b>Delivery trips</b>") && guide.Contains("<b>Food spoilage</b>"),
             "trips and spoilage texts: the notice fits a toast; the Guide's page names both options and the rules' figures");
+    }
+
+    // The food shelf life slider: the usual pace leaves every figure as it was, the ends scale as stated, a change keeps the share
+    // of life used, a place's pace is saved only when it is not the usual, and the option is on both interfaces' tables.
+    private static void SpoilPace()
+    {
+        Func<int> was = SpoilRules.PaceSource;
+        try
+        {
+            SpoilRules.PaceSource = null;
+            bool usual = SpoilRules.Pace == 100 && SpoilRules.Life(SpoilClass.Produce, false) == 6 && SpoilRules.Life(SpoilClass.Produce, true) == 12
+                         && SpoilRules.Life("ba:itemname_milk", false, true) == 14 && SpoilRules.Life(SpoilClass.Frozen, true) == 90 && SpoilRules.Life(SpoilClass.Meat, false) == 3
+                         && SpoilRules.Life(SpoilClass.Packaged, true) == 0 && SpoilRules.Life("ba:itemname_somethingnew", true, false) == 6;
+            SpoilRules.PaceSource = () => 100;
+            usual &= SpoilRules.Life(SpoilClass.Bakery, false) == 4 && SpoilRules.Life(SpoilClass.Dairy, true) == 14 && SpoilRules.Scale(7, 100) == 7
+                     && SpoilRules.OrderCap(2000, SpoilRules.Life(SpoilClass.Bakery, false)) == 8
+                     && SpoilRules.RivalLoss("ba:businesstype_fastfoodrestaurant") == 650 * (SpoilRules.RivalHandlingMille + 0) / 1000;
+            Check(usual, "spoilage pace: the usual pace, set or not, leaves every shelf life, the managers' cap and the rivals' loss as they were");
+            SpoilRules.PaceSource = () => SpoilRules.PaceLeast;
+            bool quick = SpoilRules.Life(SpoilClass.Produce, false) == 2 && SpoilRules.Life(SpoilClass.Dairy, true) == 4 && SpoilRules.Life(SpoilClass.Frozen, true) == 23
+                         && SpoilRules.Life(SpoilClass.Meat, false) == 1 && SpoilRules.Life(SpoilClass.Packaged, false) == 0;
+            SpoilRules.PaceSource = () => SpoilRules.PaceMost;
+            bool slow = SpoilRules.Life(SpoilClass.Produce, false) == 24 && SpoilRules.Life(SpoilClass.Dairy, true) == 56 && SpoilRules.Life(SpoilClass.Frozen, true) == 360
+                        && SpoilRules.Life(SpoilClass.Packaged, true) == 0 && SpoilRules.Life(SpoilClass.Meat, false) == 12;
+            SpoilRules.PaceSource = () => 5000;
+            bool clamped = SpoilRules.Pace == SpoilRules.PaceMost && SpoilRules.ClampPace(-3) == SpoilRules.PaceLeast && SpoilRules.Scale(1, SpoilRules.PaceLeast) == 1 && SpoilRules.Scale(0, 200) == 0;
+            SpoilRules.PaceSource = () => 200;
+            bool twice = SpoilRules.Life("ba:itemname_milk", false, false) == 10 && SpoilRules.OrderCap(1000, SpoilRules.Life(SpoilClass.Bakery, false)) == int.MaxValue;   // eight days is no longer a short life
+            Check(quick && slow && clamped && twice,
+                "spoilage pace: a quarter of the time and four times as long scale every life in whole days, never under one day and never for goods that do not spoil; a value past the ends is held to them");
+        }
+        finally
+        {
+            SpoilRules.PaceSource = was;
+        }
+
+        // Stock five days old of a life of 6 is five sixths through it; at twice the life it is ten days old, still two thirds through.
+        var b = new List<Cohort> { new Cohort(4, 4), new Cohort(7, 2) };
+        SpoilRules.Rebase(b, 6, 100, 200, 9);
+        bool longer = b.Count == 2 && b[0].Day == 9 - 10 && b[1].Day == 9 - 4 && SpoilRules.Expired(b, 12, 9) == 0;
+        var half = new List<Cohort> { new Cohort(6, 5) };
+        SpoilRules.Rebase(half, 6, 100, 200, 9);
+        bool same = half[0].Day == 3 && SpoilRules.Expired(half, 12, 3 + 11) == 0 && SpoilRules.Expired(half, 12, 3 + 12) == 5;
+        SpoilRules.Rebase(half, 6, 200, 100, 9);
+        same &= half.Count == 1 && half[0].Day == 6;
+        Check(longer && same, "spoilage pace: a longer life makes stock last longer from now on and no fresher than it is; changing back gives the age it had");
+        // Shorter: stock near the end of its life is not thrown out by the change itself, and what was already due stays due.
+        int life = SpoilRules.Scale(6, 25);
+        var near = new List<Cohort> { new Cohort(2, 1), new Cohort(4, 3), new Cohort(8, 2) };
+        SpoilRules.Rebase(near, 6, 100, 25, 9);
+        bool kept = SpoilRules.Total(near) == 6 && SpoilRules.Expired(near, life, 9) == 1;
+        var fresh = new List<Cohort> { new Cohort(4, 3), new Cohort(8, 2) };
+        SpoilRules.Rebase(fresh, 6, 100, 25, 9);
+        kept &= SpoilRules.Expired(fresh, life, 9) == 0 && SpoilRules.SpoilsIn(fresh, life, 9) >= 1;
+        var tiny = new List<Cohort> { new Cohort(8, 2) };
+        SpoilRules.Rebase(tiny, 3, 100, 25, 9);
+        Check(kept && SpoilRules.Total(tiny) == 2 && SpoilRules.Expired(tiny, SpoilRules.Scale(3, 25), 9) == 0,
+            "spoilage pace: a shorter life never throws out at once what had not spoiled, keeps every piece, and keeps what had spoiled due");
+        var none = new List<Cohort> { new Cohort(2, 3) };
+        SpoilRules.Rebase(none, 6, 100, 100, 9);
+        SpoilRules.Rebase(none, 0, 100, 300, 9);
+        Check(none.Count == 1 && none[0].Day == 2, "spoilage pace: no change of pace, and goods that never spoil, leave batches as they are");
+
+        var s = new SpoilState();
+        SpoilRules.Add(s.Place("a~1").Of("ba:itemname_milk"), 5, 3);
+        s.Place("b~1").Pace = 150;
+        s.Place("b~1").Turned = 4;
+        string line = SpoilStore.Write(s);
+        SpoilState back = SpoilStore.Read(line);
+        string usualLine = SpoilStore.Write(new SpoilState());
+        string ring = "0,0,0,0,0,0,0";
+        string head = "v=1^P|a|1|" + ring + "|" + ring + "|" + ring + "|" + ring + "|";
+        Check(back != null && SpoilStore.Write(back) == line && back.Places["a~1"].Pace == 100 && back.Places["b~1"].Pace == 150 && line.Contains("|150^")
+              && usualLine == "v=1^N|-1" && SpoilStore.Read(head + "|10") == null && SpoilStore.Read(head + "|x") == null && SpoilStore.Read(head + "|400") != null
+              && SpoilStore.Read(head) != null && SpoilStore.Read(head).Places["a"].Pace == 100,
+            "spoilage pace: a place's pace is saved only when it is not the usual, so a save from before reads at the usual pace and writes the same line as before; a pace out of range reads as none");
+
+        string settings = ModSource(@"Core\Settings.cs"), mod = ModSource(@"Core\RealLifeOverhaulMod.cs"), tree = ModSource(@"Meta\OptionsTree.cs"), guide = ModSource(@"Economy\Logistics\LogisticsGuide.cs");
+        Check(settings.Contains("LivingSpoilagePaceId = \"living_spoilage_pace\"") && settings.Contains("public static int LivingSpoilagePace = 100;")
+              && settings.Contains("LivingSpoilagePace = global::RealLifeOverhaul.Economy.SpoilRules.ClampPace(Int(modId, LivingSpoilagePaceId, LivingSpoilagePace))")
+              && settings.Contains("GoingPublic.InSession ? global::RealLifeOverhaul.Economy.SpoilRules.PaceUsual"),
+            "spoilage pace: the option is saved and read back, held to its range, and is the usual one in a Going Public session so every machine spoils the same");
+        TreeRow row = OptionsTree.Row("living_spoilage_pace");
+        Check(mod.Contains(".AddSlider(Settings.LivingSpoilagePaceId, \"reallife_spoil_pace\", Economy.SpoilRules.PaceLeast, Economy.SpoilRules.PaceMost, Settings.LivingSpoilagePace,")
+              && row != null && !row.IsButton && OptionsTree.SectionOf("living_spoilage_pace").Id == "trips" && Array.IndexOf(row.Needs, "living_spoilage") >= 0
+              && row.TipKey == "reallife_opt_tip_living_spoilage_pace" && tree.Contains(".Opt(\"living_spoilage_pace\"")
+              && guide.Contains("Settings.LivingSpoilagePaceId") && guide.Contains("GoingPublic.SpoilPaceSentence"),
+            "spoilage pace: the slider is on the options page's trips and spoilage section, needs the spoilage switch, has its sentence, and the Guide's feature owns it, so the old pages and the kit's draw it from the same row");
+        Dictionary<string, string> en = LocaleFile("en");
+        Check(en.TryGetValue("reallife_spoil_pace", out string label) && label == "Food shelf life" && en.ContainsKey("reallife_opt_tip_living_spoilage_pace")
+              && en.ContainsKey("reallife_gp_aside_spoil_pace") && en["reallife_guide_trips"].Contains("Food shelf life"),
+            "spoilage pace: its label, sentence, Going Public line and Guide paragraph are in English");
     }
 }

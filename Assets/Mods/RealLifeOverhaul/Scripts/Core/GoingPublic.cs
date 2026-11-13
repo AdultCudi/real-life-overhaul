@@ -361,6 +361,12 @@ namespace RealLifeOverhaul
             return InSession ? "reallife_gp_aside_ownership".GetLocalization() : null;
         }
 
+        /// <summary>For the food spoilage speed's row: why it does nothing just now (every machine of a session spoils at the usual pace), or null.</summary>
+        public static string SpoilPaceSentence()
+        {
+            return InSession ? "reallife_gp_aside_spoil_pace".GetLocalization() : null;
+        }
+
         /// <summary>For Permadeath's row: why it does nothing just now (another player's world is never ended), or null.</summary>
         public static string PermadeathSentence()
         {
