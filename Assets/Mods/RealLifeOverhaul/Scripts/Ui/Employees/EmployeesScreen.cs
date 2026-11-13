@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.InputSystem;
+using Buildings.Office.Headquarters;
 using EnhancedUI.EnhancedScroller;
 using Entities;
+using Helpers;
 using TMPro;
+using UI;
 using UI.Smartphone.Apps.MyEmployees;
 using UnityEngine;
 using UnityEngine.UI;
@@ -128,7 +131,13 @@ namespace RealLifeOverhaul.Ui
                 case UiStaff.OptionCommand:
                     return Option(arg);
                 case UiStaff.PreviewCommand:
-                    return arg == UiStaff.PreviewLink && _previewRow < _rows.Count && OpenPerson(_previewRow);
+                    if (arg == UiStaff.PreviewLink)
+                    {
+                        return _previewRow < _rows.Count && OpenPerson(_previewRow);
+                    }
+                    // A candidate's discard, negotiation or hire from the row beside the table: their page opens as the row's press opens it,
+                    // then the box's own button is pressed, so the game asks and answers as it does for the page.
+                    return Candidates() && arg >= 0 && arg <= 2 && _previewRow < _rows.Count && OpenPerson(_previewRow) && Action(arg);
                 case UiStaff.EmptyCommand:
                     return ShowTab(true);   // nobody hired yet: the way out is the candidates
                 case UiAppWindow.PersonCommand:
@@ -369,9 +378,28 @@ namespace RealLifeOverhaul.Ui
                         : Done(UiWidgets.Press(_bonus), "pay a bonus to " + Who() + ": handed to the game");
                 case 2:
                     return Done(UiWidgets.Press(_positive), (candidate ? "hire " : "manage the schedule of ") + Who() + ": handed to the game");
+                case 3:
+                    return !candidate && HrManager();
                 default:
                     return false;
             }
+        }
+
+        // The HR manager button of the game's row: BizMan opens on its HR managers tab at the plan the employee is under, by the
+        // two calls the row's button makes.
+        private bool HrManager()
+        {
+            EmployeeInstance e = _app.SelectedEmployeeInstance;
+            HrManagerPlan plan = e != null && !string.IsNullOrEmpty(e.assignedHrManagerPlanId) ? HrManagerHelper.GetPlanFromId(e.assignedHrManagerPlanId) : null;
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            var bizMan = uis != null && uis.fullMenu != null ? uis.fullMenu.bizMan : null;
+            if (plan == null || plan.HrManagerInstance == null || bizMan == null || bizMan.business == null)
+            {
+                return Done(false, "show an employee's HR manager plan");
+            }
+            bizMan.Open(plan.headquartersAddress, BizManRules.HrManagers);
+            bizMan.business.hrManagersPlanList.SelectPlan(plan);
+            return Done(true, "open BizMan on the HR manager plan of " + Who() + ": handed to the game");
         }
 
         // The game's own toggle for the job board's candidates, set through itself so its listener saves it and reloads the table.
@@ -544,7 +572,12 @@ namespace RealLifeOverhaul.Ui
         private bool Option(int option)
         {
             int list = _open;
-            _open = -1;
+            // A filter of skills, demands or states stands open for the next pick, as the game's panel lets any number be switched on.
+            bool several = list >= 0 && list < Slots().Length && Slots()[list] != Slot.Business && list != UiStaff.ListAssign && list != UiStaff.ListMass;
+            if (!several)
+            {
+                _open = -1;
+            }
             if (option < 0 || option >= _optionKeys.Count)
             {
                 return false;

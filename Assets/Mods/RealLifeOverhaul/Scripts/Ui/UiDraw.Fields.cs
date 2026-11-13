@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Ui
         /// one list (its index the argument). It opens on the overlay's layer, or on the one given over a sheet that stands
         /// there itself. Returns the list.
         /// </summary>
-        public static short ChoiceList(UiScene s, UiAt under, float x, float y, float w, string[] options, int count, int chosen, float offset, int command, byte layer = 1)
+        public static short ChoiceList(UiScene s, UiAt under, float x, float y, float w, string[] options, int count, int chosen, float offset, int command, byte layer = 1, bool[] ticked = null)
         {
             var at = new UiAt { Parent = -1, Clip = -1, Layer = layer, Order = -1, Region = under.Region };
             float rowH = UiTokens.ControlSmall, h = ChoiceListHeight(count);
@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Ui
             float rw = w - UiTokens.S2 - (count > ListRows ? UiTokens.S4 : 0f);   // a list that scrolls keeps its rows and their ring clear of the thumb
             for (int i = first; i <= last; i++)
             {
-                bool on = i == chosen;
+                bool on = ticked != null ? i < ticked.Length && ticked[i] : i == chosen;   // a list of several ticks each one stood on
                 float ry = i * rowH;
                 int face = Box(s, rows, 0f, ry, rw, rowH, on ? UiRole.RowSel : UiRole.Panel, UiRole.None, UiTokens.RadiusMedium, on ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = rows.In(face);

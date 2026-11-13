@@ -501,12 +501,15 @@ namespace RealLifeOverhaul.Ui
 
         private void Texts(Contact c, List<UiMessageModel> list, List<TalkLine> talk, ref int said)
         {
+            int place = 0;
+            bool removable = !Relayed();
             foreach (TextMessage msg in c.messagesQueue)
             {
                 if (msg == null)
                 {
                     continue;
                 }
+                place++;
                 int minute = Minute(msg);
                 for (; talk != null && said < talk.Count && TalkLogRules.Before(talk[said].Minute, minute); said++)
                 {
@@ -521,6 +524,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     m.Text = Words(msg);
                 }
+                m.Remove = removable ? place : 0;
                 list.Add(m);
                 string offer = OfferLine(msg, out bool open);
                 if (offer != null && !open)   // an open offer's terms stand on its answer instead (OfferChoices)

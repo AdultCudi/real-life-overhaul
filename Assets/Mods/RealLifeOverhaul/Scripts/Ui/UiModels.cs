@@ -115,6 +115,7 @@ namespace RealLifeOverhaul.Ui
         public UiLedgerLine[] Table;   // a table the message carries (the tax office's notice): drawn in the bubble under its words; null for none
         public string TableFoot;       // the words under the table ("Please pay by Day 410"); null for none
         public UiIcon Mood;            // the mood the game shows by their line, a small glyph beside the bubble; None for none
+        public int Remove;             // 1 + the place of this message among the game's own, which the player can delete (a quiet button at the thread's edge); 0 for none
     }
 
     /// <summary>A group or a tab of a sidebar.</summary>

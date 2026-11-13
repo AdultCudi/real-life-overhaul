@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.Ui
         private sealed class QuestionScreen : IUiScreen
         {
             private const float Every = 0.25f;   // seconds between looks at the box's words
+            private const int LongBody = 22;     // lines a body wraps before it ends at a whole word: a card of that height still stands inside the screen
             private readonly HudConfirmUi _box;
             private readonly UiCardModel _m = new UiCardModel();
             private string _seen;
@@ -239,6 +240,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Icon = negative ? UiIcon.Warning : UiIcon.Info;
                 _m.Title = Words(GameContract.AskHeader, _box);
                 _m.Body = Words(GameContract.AskBody, _box);
+                _m.BodyLines = LongBody;
                 Button cancel = GameContract.AskCancel.Field?.GetValue(_box) as Button, confirm = GameContract.AskConfirm.Field?.GetValue(_box) as Button;
                 _m.Buttons = Answers(Words(GameContract.AskCancelLabel, _box), cancel != null && cancel.gameObject.activeSelf, cancel == null || !cancel.interactable,
                     Words(GameContract.AskConfirmLabel, _box), confirm, negative);

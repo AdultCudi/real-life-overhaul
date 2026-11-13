@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Ui
     public struct UiPersonRow
     {
         public string Name;
+        public string Face;                        // the key the face is drawn by; null: the name
         public float Hue;
         public UiIcon RoleIcon;
         public UiRole RoleTint;
@@ -43,6 +44,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiProfileModel
     {
         public string Name;
+        public string Face;                        // the key the face is drawn by where the name alone would tell two people apart; null: the name
         public float Hue;
         public UiRole Ring = UiRole.Ok;
         public UiIcon Glyph = UiIcon.None;         // a glyph on a tile in place of the face, for a post nobody holds
@@ -367,7 +369,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.Portrait(s, at, x + ring, y + ring, face, p.Name, p.Hue, p.Ring);
+                UiDraw.Portrait(s, at, x + ring, y + ring, face, p.Face ?? p.Name, p.Hue, p.Ring);
             }
             float right = Buttons(s, at, actions, x + w, y, keys);
             float tx = x + side + UiTokens.S5;
@@ -667,7 +669,7 @@ namespace RealLifeOverhaul.Ui
                 ref UiPersonRow p = ref people[i];
                 int row = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, PersonRow - UiTokens.S1, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(row);
-                UiDraw.Portrait(s, inside, x, ty + (PersonRow - UiTokens.S1 - face) / 2f, face, p.Name, p.Hue, UiRole.None);
+                UiDraw.Portrait(s, inside, x, ty + (PersonRow - UiTokens.S1 - face) / 2f, face, p.Face ?? p.Name, p.Hue, UiRole.None);
                 float tx = x + face + UiTokens.S3, half = UiDraw.SnapDown((x + w - tx) * 0.46f);
                 float lh = UiTextRules.LineHeight(UiStyle.Title);
                 float top = ty + (PersonRow - UiTokens.S1 - lh - UiTokens.S1 - UiTokens.Icon) / 2f;

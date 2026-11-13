@@ -66,15 +66,17 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < sheet.Lines.Length; i++)
             {
                 StaffSheetLine l = sheet.Lines[i];
+                string face = null;
                 if (l.Id != null && _byId.TryGetValue(l.Id, out EmployeeInstance who))
                 {
-                    FaceSources.Employee(l.Name, who);   // their face from the game: drawn from their own look, never painted
+                    face = FaceSources.Key(l.Name, who);
+                    FaceSources.Employee(l.Name, face, who);   // their face from the game: drawn from their own look, never painted
                 }
                 bool ready = l.State == BatchState.Ready;
                 string why = StaffBatchRules.ReasonKey(l.State);
                 b.Rows[i] = new StaffBatchRow
                 {
-                    Name = l.Name ?? string.Empty, Role = string.IsNullOrEmpty(l.RoleKey) ? null : l.RoleKey.GetLocalization(), Business = l.Business,
+                    Name = l.Name ?? string.Empty, Face = face, Role = string.IsNullOrEmpty(l.RoleKey) ? null : l.RoleKey.GetLocalization(), Business = l.Business,
                     Now = Money(l.Now), After = Money(l.Next), Day = ready && !sheet.Hire ? Money(l.DayNext - l.DayNow) : string.Empty,
                     Result = ready ? UiText.T(sheet.Hire ? "reallife_staff_batch_result_hire" : "reallife_staff_batch_result_raise") : UiText.T(why),
                     Tone = ready ? UiRole.Ok : l.State == BatchState.Failed ? UiRole.Danger : UiRole.Warn

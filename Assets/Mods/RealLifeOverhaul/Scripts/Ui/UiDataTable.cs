@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         public int[] Values;
         public UiRole[] Tones;
         public string Sub;       // a person cell's second line: their role
+        public string Face;      // the key a person cell's face is drawn by where the name alone would tell two people apart; null: the name
         public string[] Subs;    // a cell's own second line where a row holds a tile and a person (a machine and who works it); null: Sub
         public float Hue;
         public UiRole Ring;      // their mood, as every portrait's ring says it
@@ -581,7 +582,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     else if (!nobody)
                     {
-                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
+                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, row.Face ?? words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
                     }
                     float tx = nobody ? cx + UiTokens.S1 : cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);

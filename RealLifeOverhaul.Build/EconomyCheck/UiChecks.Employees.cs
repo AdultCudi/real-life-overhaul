@@ -37,6 +37,7 @@ internal static partial class Program
         {
             _staffChecked = true;
             StaffChecks();
+            PeopleFixChecks();
             GradeOnChosenChecks();
             WindowTitleChecks();
         }

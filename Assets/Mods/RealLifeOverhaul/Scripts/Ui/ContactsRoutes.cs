@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Ui
         Reply,      // a call's reply (the game's confirm or second option)
         HangUp,     // a call's way out (the game's cancel: Hang up, Decline)
         Clear,      // an empty search cleared, the kit's own search box
+        Remove,     // one message of the thread deleted, which the game asks about in its own box
         Waiting     // the foot's count of contacts with unread messages: the list filtered to them, or the one sender opened
     }
 
@@ -52,6 +53,7 @@ namespace RealLifeOverhaul.Ui
                 case UiContacts.SideCommand:
                     return arg == MarkReadArg ? ContactsRoute.MarkRead : arg == DeleteAllArg ? ContactsRoute.DeleteAll
                         : arg == WaitingArg ? ContactsRoute.Waiting : ContactsRoute.None;
+                case UiConversation.DeleteCommand: return ContactsRoute.Remove;
                 case UiConversation.ChoiceCommand: return ContactsRoute.Choice;
                 case UiConversation.FormCommand: return ContactsRoute.Field;
                 case UiConversation.FormLess: return ContactsRoute.Less;

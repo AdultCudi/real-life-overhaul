@@ -182,6 +182,8 @@ namespace RealLifeOverhaul.Ui
                     return arg >= 0 && arg < _choices.Count && Handed(_choices[arg], "a reply", open, "the game's own button");
                 case ContactsRoute.HangUp:
                     return Handed(_hangUp, "hang up", open, "the game's own button");
+                case ContactsRoute.Remove:
+                    return DeleteText(open, arg);
                 case ContactsRoute.Clear:
                     _query = string.Empty;
                     _m.List.Offset = 0f;
@@ -196,6 +198,63 @@ namespace RealLifeOverhaul.Ui
                 default:
                     return Unrouted("a press (command " + command + ", " + arg + ") that no route answers", open);
             }
+        }
+
+        // One text of the open thread deleted: the game's own delete button on its entry, which asks in the game's question box and takes that text
+        // out of the thread. The entries stand in the order of the texts, so the nth text's button is the nth entry that has one; if the entries and the
+        // texts do not agree (another mod added entries, or the game has not drawn them yet) nothing is pressed, since a wrong text must never go.
+        private bool DeleteText(Contact open, int place)
+        {
+            var template = GameContract.TalkTexts.Field?.GetValue(_app) as CanvasGroup;
+            Transform parent = template != null ? template.transform.parent : null;
+            TextMessage target = null;
+            int texts = 0;
+            if (open != null && open.messagesQueue != null)
+            {
+                foreach (TextMessage msg in open.messagesQueue)
+                {
+                    if (msg == null)
+                    {
+                        continue;
+                    }
+                    target = texts == place ? msg : target;
+                    texts++;
+                }
+            }
+            if (parent == null || target == null)
+            {
+                return Done(false, "delete a text of " + Who(open));
+            }
+            Transform entry = null;
+            int entries = 0;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+                Transform button = child.gameObject.activeSelf && child != template.transform ? child.Find("Message/DeleteButton") : null;
+                if (button == null || !button.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                entry = entries == place ? child : entry;
+                entries++;
+            }
+            if (entry == null || entries != texts || !EntryHolds(entry, target))
+            {
+                return Done(false, "delete a text of " + Who(open) + " (the game's entries do not match its texts)");
+            }
+            return Handed(entry.Find("Message/DeleteButton").GetComponent<Button>(), "delete a text of", open, "handed to the game, which asks first");
+        }
+
+        // The entry shows this text, where the game writes it in the entry's own words (a tax notice or a special line has its own parts).
+        private static bool EntryHolds(Transform entry, TextMessage msg)
+        {
+            if (msg.isSpecialMessage || msg.messageKey == "ba:messagetype_taxes" || msg.messageKey == "ba:messagetype_contacts_taxes_repossession_message")
+            {
+                return true;
+            }
+            Transform words = entry.Find("Message/MessageText");
+            TMP_Text label = words != null ? words.GetComponent<TMP_Text>() : null;
+            return label != null && ContactsRules.Plain(label.text).Trim() == Words(msg).Trim();
         }
 
         // The count of contacts waiting is a control: one sender opens as a press on its row does (the game marks it read as it opens),
