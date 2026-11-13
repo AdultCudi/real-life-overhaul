@@ -1,7 +1,7 @@
-1.0.7
+1.0.8
 
 New
 - Nothing yet.
 
 Fixed
-- The Economy app's goods chart. On a new save it showed days from before the save began, such as Day -110, and its names ran out of the chart over the price list. It now starts on the first day with prices, its names stay inside it, and the headline above starts with a capital.
+- On the RLO interface, the button to send a takeover offer for a rival's business read BIZMAN_SEND_OFFER_BUTTON. It reads Send offer again, and the same is mended for any other button of the game's that the mod reads before the game has shown it.
