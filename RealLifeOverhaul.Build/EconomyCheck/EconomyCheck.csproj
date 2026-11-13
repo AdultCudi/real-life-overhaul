@@ -886,6 +886,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorStore.cs" Link="Mod\InteriorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusZoneRules.cs" Link="Mod\BusZoneRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeLaneRules.cs" Link="Mod\BikeLaneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />

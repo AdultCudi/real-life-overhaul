@@ -293,6 +293,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--bike-lanes")
+        {
+            BikeLanes();   // a stand, a rack or a dock never in the lane to a repair bay, a pump, a display spot or a garage door (BikeLaneChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bus-kerb")
         {
             BusKerb();   // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
