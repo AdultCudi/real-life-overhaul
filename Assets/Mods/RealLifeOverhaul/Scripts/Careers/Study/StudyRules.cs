@@ -220,6 +220,39 @@ namespace RealLifeOverhaul.Careers
             return -1;
         }
 
+        /// <summary>The day of a course's last class when it is followed from <paramref name="start"/>: the Sessions-th day of its timetable; -1 for a course without classes.</summary>
+        public static int LastClassDay(CourseDef c, StudyMode mode, int start)
+        {
+            int days = c == null || !c.Timetabled ? 0 : Days(c, mode);
+            if (days == 0)
+            {
+                return -1;
+            }
+            int left = c.Sessions;
+            for (int d = start; d < start + c.Sessions * 7 + 7; d++)
+            {
+                if (On(days, d) && --left == 0)
+                {
+                    return d;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Whether a timetable day belongs in a diary (<paramref name="lastClass"/> is from <see cref="LastClassDay"/>): a class held or still to come,
+        /// and none ahead once the enrolment has left the classes for its exam or ended.
+        /// </summary>
+        public static bool ClassShown(Enrolment e, int day, int today, int lastClass)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null || !c.Timetabled || day < e.Start || day > lastClass)
+            {
+                return false;
+            }
+            return day <= today || e.Stage == (int)EnrolStage.Studying;
+        }
+
         /// <summary>True once a day's class can no longer be joined: it is missed if not attended.</summary>
         public static bool Gone(CourseDef c, StudyMode mode, int day, int today, int minuteOfDay)
         {
