@@ -17,6 +17,9 @@ namespace RealLifeOverhaul
         // while its session runs; the kit shows what the game shows.
         public static readonly GameMember ActivityFade = Field(UiActivityPanel, Game, "PlayerActivity.PlayerActivityUI", "canvasGroup", "CanvasGroup");
 
+        // What an entertaining activity is doing (play, the television, the decks, a book): the panel's glyph says which.
+        public static readonly GameMember ActivityEntertainDevice = Field(UiActivityPanel, Game, "PlayerActivity.EntertainActivity", "_entertainDevice", "EntertainDevice");
+
         // The time machine's goal and its run: the ring fills from the time it set out to the goal, at the pace it keeps.
         public static readonly GameMember SkipGoal = Field(UiTimeSkip, Game, "Timemachine.TimeMachine", "_goal", "Timestamp");
         public static readonly GameMember SkipDistance = Field(UiTimeSkip, Game, "Timemachine.TimeMachine", "_timeDistance", "Single");

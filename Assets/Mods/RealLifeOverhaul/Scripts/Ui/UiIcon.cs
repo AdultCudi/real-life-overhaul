@@ -192,6 +192,10 @@ namespace RealLifeOverhaul.Ui
         Eyedropper, // the designer's eyedropper tool
         Undo, // a step taken back
         Redo, // a step taken back, put forward again
+        Waves, // swimming
+        Ticket, // a paid attraction
+        Golf, // a round of golf
+        TennisBall, // a game of tennis
         Count
     }
 
