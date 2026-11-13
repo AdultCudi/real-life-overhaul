@@ -24,6 +24,7 @@ internal static partial class Program
         AskSaveChecks();
         NoRepeatChecks();
         SiteGroundChecks();
+        RoadLayerChecks();
         PremiseSweep();
         PremiseTexts();
     }
@@ -400,7 +401,7 @@ internal static partial class Program
         Check(read.Contains("_roadMask, QueryTriggerInteraction.Collide)") && MemberText(spots, "private static void Setup()").Contains("_roadMask = LayerMask.GetMask(\"Roads\", \"Crosswalk\") | _parkingMask;")
               && read.Contains("layer == _crosswalkLayer || hit.CompareTag(\"Crosswalk\")") && read.Contains("!hit.isTrigger && hit.GetComponentInParent<EntityController>() == null")
               && read.Contains("RoadMap.NearestLane(spot, out float lane, out _, out _)") && read.Contains("facts.BusZone = BusZones.Holds(spot, Vector3.forward, reach, reach);")
-              && read.Contains("facts.RoadUnder = count >= RoadOverlaps.Length;") && read.Contains("RoadOverlaps[i] = null;") && read.Contains("return SiteGroundRules.Verdict(in facts);")
+              && read.Contains("facts.RoadUnder = count >= RoadOverlaps.Length;") && read.Contains("RoadOverlaps[i] = null;") && read.Contains("StreetGround ground = RoadWatch.Judge(in facts, out bool tripped);") && read.Contains("City life road layer fallback: of ")
               && read.Contains("facts.DoorNear = door && Physics.CheckSphere(spot + Vector3.up, DoorKeepOut, _doorMask") && spots.Contains("string kind, bool setUp = false) => Read(centre, SiteGroundRules.Reach(kind), SiteGroundRules.Kerbside(kind), setUp);"),
             "site ground: the ground is read from the game's own road, crossing and parking layers under the footprint (a street tree on the roads' layer is no road), the traffic system's lanes, the bus zones and, as a site is set up, what the player can use, and judged by the rule");
         string director = ModSource(@"CityLife\CityLifeDirector.cs");
@@ -429,6 +430,87 @@ internal static partial class Program
             }
         }
         Check(loose.Count == 0, "site ground: every activity that finds its own place asks CitySpots for it" + (loose.Count > 0 ? " (not: " + string.Join(", ", loose) + ")" : string.Empty));
+    }
+
+    // The guard against the one reading the game's scenes could not be asked about: pavements on the Roads layer, which would
+    // refuse every place and take the city's street life away. All refused as the road: the layer test is dropped.
+    private static void RoadLayerChecks()
+    {
+        const int min = SiteGroundRules.RoadLayerWatch.MinAsked;
+        var all = new SiteGroundRules.RoadLayerWatch();
+        int trippedAt = 0;
+        for (int i = 1; i <= 300 && trippedAt == 0; i++)
+        {
+            all.Judge(Ground(road: true), out bool tripped);
+            trippedAt = tripped ? i : 0;
+        }
+        Check(trippedAt == min && all.Off && all.Carriageway == min && all.Pavement == 0,
+            "road layer guard: when every place asked is refused as the road and none is pavement, the layer test is dropped at the " + min + "th place (" + trippedAt + ")");
+
+        var few = new SiteGroundRules.RoadLayerWatch();
+        for (int i = 0; i < min - 1; i++)
+        {
+            few.Judge(Ground(road: true), out _);
+        }
+        Check(!few.Off, "road layer guard: " + (min - 1) + " places all refused as the road are too few to judge the layer on");
+
+        // An ordinary street: pavement, crossings, lanes and some road among the places asked, in every order.
+        bool steady = true;
+        for (int seed = 0; seed < 40; seed++)
+        {
+            var mix = new SiteGroundRules.RoadLayerWatch();
+            var rng = new Random(seed);
+            for (int i = 0; i < 2000; i++)
+            {
+                int roll = rng.Next(100);
+                StreetGroundFacts f = roll < 45 ? Ground() : roll < 60 ? Ground(crossing: true) : roll < 75 ? Ground(lane: 0.5f) : Ground(road: true);
+                mix.Judge(f, out bool tripped);
+                steady &= !tripped && !mix.Off;
+            }
+        }
+        Check(steady, "road layer guard: an ordinary mix of pavement, crossings, lanes and road never drops the layer test (40 sessions of 2,000 places)");
+
+        // One pavement ever seen proves the layer says something; a street of road, crossings and lanes with none among the first places is no proof either way.
+        var proven = new SiteGroundRules.RoadLayerWatch();
+        proven.Judge(Ground(), out _);
+        for (int i = 0; i < 500; i++)
+        {
+            proven.Judge(Ground(road: true), out _);
+        }
+        var crossed = new SiteGroundRules.RoadLayerWatch();
+        for (int i = 0; i < 400; i++)
+        {
+            crossed.Judge(i % 4 == 0 ? Ground(crossing: true) : Ground(road: true), out _);
+        }
+        var tenth = new SiteGroundRules.RoadLayerWatch();
+        var nearly = new SiteGroundRules.RoadLayerWatch();
+        for (int i = 0; i < 400; i++)
+        {
+            tenth.Judge(i % 10 == 0 ? Ground(crossing: true) : Ground(road: true), out _);
+            nearly.Judge(i % 25 == 0 ? Ground(crossing: true) : Ground(road: true), out _);
+        }
+        Check(!proven.Off && !crossed.Off && !tenth.Off && nearly.Off,
+            "road layer guard: one pavement seen ever keeps the layer test, so do 25% and 10% of crossings among the refusals, and 4% does not (the 95% line)");
+
+        // With it off the layer no longer decides, and everything else still does.
+        SiteGroundRules.RoadLayerWatch off = all;
+        StreetGround crossing = off.Judge(Ground(crossing: true, road: true), out _);
+        StreetGround lane = off.Judge(Ground(road: true, lane: 0.4f), out _);
+        StreetGround bus = off.Judge(Ground(road: true, bus: true), out _);
+        StreetGround parking = off.Judge(Ground(road: true, parking: true), out _);
+        StreetGround door = off.Judge(Ground(road: true, door: true), out _);
+        StreetGround gone = off.Judge(Ground(walk: false, road: true), out _);
+        StreetGround open = off.Judge(Ground(road: true), out _);
+        StreetGround far = off.Judge(Ground(road: true, lane: 30f), out _);
+        Check(crossing == StreetGround.Crossing && lane == StreetGround.Lane && bus == StreetGround.BusZone && parking == StreetGround.Driveway && door == StreetGround.Doorway
+              && gone == StreetGround.OffWalk && open == StreetGround.Pavement && far == StreetGround.Pavement && off.Asked == min,
+            "road layer guard: with the layer test dropped a crossing, a lane, a bus zone, parking, a doorway and ground nobody walks are still refused, and the counts stop");
+
+        string spots = ModSource(@"CityLife\CitySpots.cs");
+        Check(spots.Contains("private static readonly SiteGroundRules.RoadLayerWatch RoadWatch = new SiteGroundRules.RoadLayerWatch();") && spots.Contains("public static bool RoadLayerFallback => RoadWatch.Off;")
+              && spots.Contains("public static string RoadLayerWords()") && spots.Contains("City life road layer fallback: of ")
+              && ModSource(@"CityLife\CityLifeDirector.Tests.cs").Contains("{CitySpots.RoadLayerWords()}"),
+            "road layer guard: every ground read goes through the watch, the first trip is one log line, and the City life test's print says whether the fallback is on");
     }
 
     // ---------------------------------------------------------------- the sweep: what a sent line takes for granted

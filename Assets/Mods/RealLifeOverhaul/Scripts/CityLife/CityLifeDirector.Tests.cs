@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
                     last = said;
                     lastName = entry.Name;
                     Logger?.Info($"City life test: {entry.Id} not started ({said}) in ten tries near the player: places refused as off the pavement {CitySpots.OffPavement} "
-                                 + $"(of them {CitySpots.InRoad} walking ground that is no pavement: a crossing, a lane, a bus zone or parking), "
+                                 + $"(of them {CitySpots.InRoad} walking ground that is no pavement: a crossing, a lane, a bus zone or parking; {CitySpots.RoadLayerWords()}), "
                                  + $"blocked by something solid {CitySpots.Blocked}, near something the player can use {CitySpots.NearDoor}, no building wall within reach {CitySpots.NoWall}, "
                                  + $"walls seen but none flat with pavement in front {CitySpots.Uneven}.");
                 }
