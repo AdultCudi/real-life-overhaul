@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
 
         public static StocksModel Page(MarketState state, StocksPage page, int stockId, StocksView view, bool buy, OrderType type,
             OrderLife life, long qty, int sort, int sector, int size, int rule, string find, UiWords words,
-            MarketDirector director = null, bool done = false, int kind = 0, int price = 0, int portfolioView = 0, int period = 0)
+            MarketDirector director = null, bool done = false, int kind = 0, int price = 0, int portfolioView = 0, int period = 0, int sortColumn = -1, bool sortDown = true)
         {
             Built++;
             var m = new StocksModel { Title = words("reallife_mkt_app", "Stocks"), Page = page };
@@ -71,9 +71,9 @@ namespace RealLifeOverhaul.Ui
             }
             switch (page)
             {
-                case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find, director); break;
-                case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find, director); break;
-                case StocksPage.Market: Market(m, state, words, sort, sector, size, find, director, portfolioView); OpenOrders(state, m, words); break;
+                case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find, director, sortColumn, sortDown); break;
+                case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find, director, sortColumn, sortDown); break;
+                case StocksPage.Market: Market(m, state, words, sort, sector, size, find, director, portfolioView, sortColumn, sortDown); OpenOrders(state, m, words); break;
                 case StocksPage.Index: IndexPage(m, state, words, period); break;
                 case StocksPage.Company: Company(m, state, stockId, view ?? new StocksView(), buy, life, qty, words, kind, price, director); break;
                 case StocksPage.Ticket: Ticket(m, state, stockId, buy, type, life, qty, words); break;
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Ui
             return m;
         }
 
-        private static void Market(StocksModel m, MarketState state, UiWords words, int sort, int sector, int size, string find, MarketDirector director, int view)
+        private static void Market(StocksModel m, MarketState state, UiWords words, int sort, int sector, int size, string find, MarketDirector director, int view, int sortColumn, bool sortDown)
         {
             StocksMath.Today(state, out int up, out int down, out long turnover);
             m.Figures = new[]
@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Ui
                 m.Table = SectorTable(state, words);
                 return;
             }
-            m.Table = Companies(state, words, false, sort, sector, size, find, director);
+            m.Table = Companies(state, words, false, sort, sector, size, find, director, sortColumn, sortDown);
             if (m.Table.RowCount == 0 && string.IsNullOrWhiteSpace(find))
             {
                 m.Table.EmptyTitle = words("reallife_stk_market_empty", "No companies are listed");
@@ -138,7 +138,8 @@ namespace RealLifeOverhaul.Ui
             return new UiFigureModel { Label = label, Value = value, Change = bp == 0 ? null : MarketText.Change(bp), Good = bp >= 0 };
         }
 
-        private static UiDataTableModel Companies(MarketState state, UiWords words, bool watch, int sort, int sector, int size, string find, MarketDirector director = null)
+        private static UiDataTableModel Companies(MarketState state, UiWords words, bool watch, int sort, int sector, int size, string find, MarketDirector director = null, int sortColumn = -1,
+            bool sortDown = true)
         {
             var table = Head(words);
             table.SortColumn = 3;
@@ -191,11 +192,24 @@ namespace RealLifeOverhaul.Ui
                         UiTokens.Chart((int)s.Sector), UiRole.None, UiRole.None, UiRole.None, rising ? UiRole.Ok : UiRole.Danger, UiRole.None, UiRole.None, UiRole.None, UiRole.None,
                         UiRole.None
                     },
-                    Sub = s.Ticker, Line = spark
+                    Sub = s.Ticker, Line = spark, Key = s.Id + 1,
+                    Sorts = new float[]
+                    {
+                        UiDataSort.None, UiDataSort.None, s.Last, bp, UiDataSort.None, s.DayVolume, (float)worth, double.IsNaN(pe) ? UiDataSort.None : (float)pe,
+                        yield > 0 ? yield : UiDataSort.None, held != 0 ? held : UiDataSort.None
+                    }
                 };
             }
             table.Rows = rows;
             table.RowCount = n;
+            if (sortColumn >= 0)
+            {
+                // A column the player chose: the table's own order is over the desk's four orders, whose first filter says so no more.
+                table.SortColumn = sortColumn;
+                table.SortDown = sortDown;
+                table.Filters[0] = table.Columns[Math.Min(sortColumn, table.Columns.Length - 1)].Title;
+                UiDataSort.Sort(table);
+            }
             table.Query = find;
             bool searching = !string.IsNullOrWhiteSpace(find);
             if (searching)
@@ -272,15 +286,15 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = words("reallife_mkt_col_company", "Company"), Kind = UiCellKind.Tile, Sortable = true },
-                    new UiDataColumn { Title = words("reallife_mkt_col_sector", "Sector"), Kind = UiCellKind.Text, Width = 140f },
+                    new UiDataColumn { Title = words("reallife_mkt_col_sector", "Sector"), Kind = UiCellKind.Text, Width = 140f, Sortable = true },
                     new UiDataColumn { Title = words("reallife_mkt_col_price", "Price"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
                     new UiDataColumn { Title = words("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 120f, Sortable = true },
                     new UiDataColumn { Title = words("reallife_stk_five_days", "5 days"), Kind = UiCellKind.Spark, Width = 100f },
                     new UiDataColumn { Title = words("reallife_mkt_col_volume", "Volume"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
-                    new UiDataColumn { Title = words("reallife_mkt_col_worth", "Worth"), Kind = UiCellKind.Figure, Width = 100f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_pe", "P/E"), Kind = UiCellKind.Figure, Width = 70f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_yield", "Yield"), Kind = UiCellKind.Figure, Width = 80f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_held", "You hold"), Kind = UiCellKind.Figure, Width = 100f }
+                    new UiDataColumn { Title = words("reallife_mkt_col_worth", "Worth"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_pe", "P/E"), Kind = UiCellKind.Figure, Width = 70f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_yield", "Yield"), Kind = UiCellKind.Figure, Width = 80f, Sortable = true },
+                    new UiDataColumn { Title = words("reallife_mkt_col_held", "You hold"), Kind = UiCellKind.Figure, Width = 100f, Sortable = true }
                 },
                 Filters = new[] { words("reallife_stk_sort_movers", "Movers"), words("reallife_stk_filter_all", "All sectors"), words("reallife_stk_all", "All shares") },
                 SearchPlaceholder = words("reallife_stk_search", "Find a company"),

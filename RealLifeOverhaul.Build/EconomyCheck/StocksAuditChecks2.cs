@@ -200,7 +200,7 @@ internal static partial class Program
         ("Second.Row", StocksLay.Second + UiDataTable.Row), ("Second.Clear", StocksLay.Second + UiDataTable.Clear),
         ("Co.Range", StocksCompanyLay.Range), ("Co.Type", StocksCompanyLay.Type), ("Co.Chip", StocksCompanyLay.Chip), ("Co.AddIndicator", StocksCompanyLay.AddIndicator),
         ("Co.Pick", StocksCompanyLay.Pick), ("Co.Big", StocksCompanyLay.Big), ("Co.Side", StocksCompanyLay.Side), ("Co.Kind", StocksCompanyLay.Kind), ("Co.Life", StocksCompanyLay.Life),
-        ("Co.AlertAdd", StocksCompanyLay.AlertAdd), ("Co.PutBack", StocksCompanyLay.PutBack), ("Co.AlertLine", StocksCompanyLay.AlertLine),
+        ("Co.View", StocksCompanyLay.View), ("Co.AlertAdd", StocksCompanyLay.AlertAdd), ("Co.PutBack", StocksCompanyLay.PutBack), ("Co.AlertLine", StocksCompanyLay.AlertLine),
         ("Sheet.Pick", StocksSheetLay.Pick), ("Sheet.Switch", StocksSheetLay.Switch), ("Sheet.Less", StocksSheetLay.Less), ("Sheet.More", StocksSheetLay.More), ("Sheet.Type", StocksSheetLay.Type),
         ("Sheet.Ok", StocksSheetLay.Ok), ("Sheet.Cancel", StocksSheetLay.Cancel), ("Sheet.Extra", StocksSheetLay.Extra), ("Sheet.Plain", StocksSheetLay.Plain)
     };
