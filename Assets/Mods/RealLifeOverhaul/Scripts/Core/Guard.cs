@@ -13,7 +13,7 @@ namespace RealLifeOverhaul
     /// THE CONTRACT: <see cref="Start"/>, once before any feature, resolves <see cref="GameContract"/>, reads the game's
     /// build and checks the mod's compiled code against the running game (Core/ModScan). What the game lacks is logged
     /// once with what stands on it, and those features are switched off before they run; one notice says so
-    /// (Core/GameBuild.Notice), and the options page (<see cref="Note"/>).
+    /// (Core/GameBuild.Notice), naming a few parts and counting the rest, and the options page (<see cref="Note"/>).
     /// FAULTS: every entry point runs in a try with a <see cref="FeatureGuard"/>. A missing member (<see cref="Missing"/>)
     /// stops its class at once; any other fault is logged and the feature goes on, until a run of them switches the
     /// feature off for the session (its Cleanup runs, its save line is left as last written). <see cref="StandsDown"/>
@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             CheckCode();
+            TellOff();
         }
 
         private static string Builds => GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version);
@@ -251,15 +252,24 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The parts the notice names, in the player's language: those off, and with <paramref name="doneWithout"/> (an
-        /// older game) those that work without what it lacks.
+        /// What the notice counts, in the player's language, the most telling first: the features that are off whole (in
+        /// Meta/FeatureList's order), the parts that are off of features that still run (in the contract's), and with
+        /// <paramref name="doneWithout"/> (an older game) the parts that work without what the game lacks. The notice names a
+        /// few of them and counts the rest (Core/BuildNoticeRules).
         /// </summary>
-        public static string PartsNamed(bool doneWithout)
+        public static List<string> OffNames(bool doneWithout)
         {
             var names = new List<string>(8);
+            foreach (string feature in LackingInOrder())
+            {
+                Name(names, FeatureName(feature));
+            }
             foreach (GamePart part in ContractBook.OffParts())
             {
-                Name(names, part.NameKey.GetLocalization());
+                if (part.Feature == null || !Lacking.Contains(part.Feature))
+                {
+                    Name(names, part.NameKey.GetLocalization());
+                }
             }
             if (doneWithout)
             {
@@ -269,20 +279,73 @@ namespace RealLifeOverhaul
                     {
                         foreach (GamePart part in member.Parts)
                         {
-                            Name(names, part.NameKey.GetLocalization());
+                            if (part.Feature == null || !Lacking.Contains(part.Feature))
+                            {
+                                Name(names, part.NameKey.GetLocalization());
+                            }
                         }
                     }
                 }
             }
+            return names;
+        }
+
+        /// <summary>The features that are off whole because this game lacks what they stand on.</summary>
+        public static int FeaturesOff => Lacking.Count;
+
+        /// <summary>The features there are; 0 where the list cannot be read.</summary>
+        public static int FeaturesAll
+        {
+            get
+            {
+                try
+                {
+                    return Meta.Features.All.Count;
+                }
+                catch (Exception)
+                {
+                    return 0;
+                }
+            }
+        }
+
+        // The features off from the start as Meta/FeatureList has them, then any it does not know, by name: the same order at every start.
+        private static List<string> LackingInOrder()
+        {
+            var ordered = new List<string>(Lacking.Count);
+            if (Lacking.Count == 0)
+            {
+                return ordered;   // the usual start: the list of features is not asked for
+            }
+            try
+            {
+                foreach (Meta.Feature feature in Meta.Features.All)
+                {
+                    if (Lacking.Contains(feature.Id) && !ordered.Contains(feature.Id))
+                    {
+                        ordered.Add(feature.Id);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ordered.Clear();
+            }
+            var rest = new List<string>(4);
             foreach (string feature in Lacking)
             {
-                Name(names, FeatureName(feature));
+                if (!ordered.Contains(feature))
+                {
+                    rest.Add(feature);
+                }
             }
-            return string.Join("; ", names);
+            rest.Sort(StringComparer.Ordinal);
+            ordered.AddRange(rest);
+            return ordered;
         }
 
         /// <summary>The names of the parts the pieces stand on, in the player's language, for the notice's test.</summary>
-        public static string PartNames(GameMember[] members)
+        public static List<string> PartNames(GameMember[] members)
         {
             var names = new List<string>(8);
             foreach (GameMember member in members)
@@ -292,7 +355,22 @@ namespace RealLifeOverhaul
                     Name(names, part.NameKey.GetLocalization());
                 }
             }
-            return string.Join("; ", names);
+            return names;
+        }
+
+        /// <summary>Every feature's title and every part's name, in the player's language: the most the notice can be asked to count, for its test.</summary>
+        public static List<string> EveryName()
+        {
+            var names = new List<string>(288);
+            foreach (Meta.Feature feature in Meta.Features.All)
+            {
+                Name(names, feature.TitleKey.GetLocalization());
+            }
+            foreach (GamePart part in ContractBook.Parts)
+            {
+                Name(names, part.NameKey.GetLocalization());
+            }
+            return names;
         }
 
         private static void Name(List<string> names, string name)
@@ -303,15 +381,48 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The parts' names in the player's language, joined for a sentence.</summary>
-        public static string PartNames(List<GamePart> parts)
+        // Every part that is off, in English, once in Player.log: the notice and the options page name a few and count the rest.
+        // The features by their ids in the order of the alphabet: Meta's list of them is not made this early.
+        private static void TellOff()
         {
-            var text = new StringBuilder(64);
-            for (int i = 0; i < parts.Count; i++)
+            try
             {
-                text.Append(i > 0 ? "; " : string.Empty).Append(parts[i].NameKey.GetLocalization());
+                var all = new List<string>(Lacking);
+                all.Sort(StringComparer.Ordinal);
+                for (int i = 0; i < all.Count; i++)
+                {
+                    all[i] = "the feature '" + all[i] + "'";
+                }
+                foreach (GamePart part in ContractBook.OffParts())
+                {
+                    all.Add(part.English);
+                }
+                var without = new List<string>(8);
+                foreach (GameMember member in ContractBook.Problems())
+                {
+                    if (member.Optional && member.Missing)
+                    {
+                        foreach (GamePart part in member.Parts)
+                        {
+                            if (!without.Contains(part.English))
+                            {
+                                without.Add(part.English);
+                            }
+                        }
+                    }
+                }
+                if (all.Count == 0 && without.Count == 0)
+                {
+                    return;
+                }
+                Logger?.Warn("Game contract: the whole list for this game. Off until " + Until + " (" + all.Count + ", " + Lacking.Count + " of them whole features): "
+                             + (all.Count > 0 ? string.Join("; ", all) : "nothing") + ". Working without what the game lacks (" + without.Count + "): "
+                             + (without.Count > 0 ? string.Join("; ", without) : "nothing") + ". " + Builds);
             }
-            return text.ToString();
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         /// <summary>For the options page: a note after a feature's name while a part of it is off; null while all of it runs.</summary>
@@ -331,22 +442,29 @@ namespace RealLifeOverhaul
         /// <summary>For the options page's Diagnostics button: what is off, and the game's build against the mod's.</summary>
         public static string Status()
         {
-            string parts = PartsNamed(GameBuild.Of(GameBuild.Running) == BuildKind.Older);
-            string text = (parts.Length == 0 ? "reallife_guard_status_ok" : "reallife_guard_status_off").GetLocalization()
+            string more = "reallife_guard_list_more".GetLocalization();
+            List<string> names = OffNames(GameBuild.Of(GameBuild.Running) == BuildKind.Older);
+            string parts = BuildNoticeRules.Listed(names, more, out _, out bool cut);
+            string text = (names.Count == 0 ? "reallife_guard_status_ok" : "reallife_guard_status_off").GetLocalization()
                 .Replace("{parts}", parts)
                 .Replace("{build}", GameBuild.Running > 0 ? GameBuild.Running.ToString() : "?")
                 .Replace("{checked}", GameBuild.MadeFor.ToString());
-            var faults = new StringBuilder();
+            if (cut)
+            {
+                text += " " + "reallife_guard_list_log".GetLocalization();
+            }
+            var faults = new List<string>(4);
             foreach (string feature in FeatureGuards.OffList)
             {
                 if (!Lacking.Contains(feature))
                 {
-                    faults.Append(faults.Length > 0 ? "; " : string.Empty).Append(FeatureName(feature));
+                    Name(faults, FeatureName(feature));
                 }
             }
-            if (faults.Length > 0)
+            if (faults.Count > 0)
             {
-                text += "\n\n" + "reallife_guard_status_faults".GetLocalization().Replace("{features}", faults.ToString());
+                faults.Sort(StringComparer.Ordinal);
+                text += "\n\n" + "reallife_guard_status_faults".GetLocalization().Replace("{features}", BuildNoticeRules.Listed(faults, more, out _, out _));
             }
             if (StoodDown.Count > 0)
             {
