@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
     /// opens: the city's card (money, net worth, businesses, employees, the day, the time played) and this city's latest
     /// saves, each loaded or saved over through the game's own calls and questions (<see cref="PauseSaves"/>).
     /// </summary>
-    internal sealed class PauseScreen : IUiScreen, IUiTyping
+    internal sealed class PauseScreen : IUiScreen, IUiTyping, IUiTypingStart
     {
         internal const string SaveButton = "Savegame/SavegameButton";
         private const string CloseButton = "Close", Splitter = "Splitter", Blocker = "RaycastBlocker", SaveRow = "Savegame";
@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Ui
         private bool _dirty = true;
         private string _savedLine, _when;   // the two lines of words, made again only when a minute passes
         private int _savedMinutes = -2, _autosave = -1, _whenMinute = -1;
+        private bool _whenTwelve;   // the clock option the line was written for: the game's Options can change it while the clock stands still
         private static readonly UiWords Words = (key, english) => UiText.T(key);
         private static readonly string[] DayKeys =
         {
@@ -144,6 +145,16 @@ namespace RealLifeOverhaul.Ui
         public int TypingCommand => UiPauseMenu.NameCommand;
 
         public string TypingText => _name != null ? _name.text : string.Empty;
+
+        // The game's own field opens Steam's on-screen keyboard when it is selected in Big Picture mode (MiniMenu.Start adds that
+        // listener then); the kit never selects the game's field, so the same listener is run from here. Without it nothing listens.
+        public void TypingStarted()
+        {
+            if (_name != null)
+            {
+                _name.onSelect.Invoke(_name.text);
+            }
+        }
 
         public void Typed(string text)
         {
@@ -416,10 +427,11 @@ namespace RealLifeOverhaul.Ui
             }
             Timestamp now = TimeHelper.Now();
             int minute = (now.Day * 24 + now.Hour) * 60 + (int)now.Minute;
-            if (_when == null || minute != _whenMinute)
+            if (_when == null || minute != _whenMinute || _whenTwelve != TimeHelper.use12h)
             {
                 _whenMinute = minute;
-                string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
+                _whenTwelve = TimeHelper.use12h;
+                string time = HudClockRules.Format(now.Hour, now.Minute, TimeHelper.use12h);
                 _when = UiText.Fill("reallife_ui_pause_when", "day", now.Day.ToString(CultureInfo.InvariantCulture), "time", time);
             }
             return _when;

@@ -25,6 +25,7 @@ internal static partial class Program
         HudCostChecks();
         KitMarkChecks();
         HudScreensChecks();   // the HUD's live pieces (UiChecks.HudScreens.cs)
+        HudFrameFixChecks();   // the clock, the money card, the full menu's Help and Report bug, the bell, the pause name (UiHudFixChecks.cs)
         Console.WriteLine("  HUD kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -323,8 +324,8 @@ internal static partial class Program
             {
                 elsewhere += UiDraw.IsPill(s.Nodes[i].Command) ? 1 : 0;
             }
-            Check(pills == 7 && elsewhere == 0,
-                "hud: the pause, the play and the fast forward, the needs, the bell, the money and the gear are targets on the HUD's bar (" + pills + ") and pictures on every other bar ("
+            Check(pills == 8 && elsewhere == 0,
+                "hud: the pause, the play, the fast forward and the clock, the needs, the bell, the money and the gear are targets on the HUD's bar (" + pills + ") and pictures on every other bar ("
                 + elsewhere + ")");
         }
         finally

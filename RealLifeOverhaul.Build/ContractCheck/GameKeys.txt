@@ -1050,6 +1050,7 @@ menu_options_reset_windows_button
 menu_options_reset_windows_tip
 menu_options_time_between_auto_saves
 menu_options_ui_zooming
+menu_report_bug_disabled_mods_tooltip
 menu_save
 menu_save_and_exit_to_desktop
 myemployees_age
@@ -1196,6 +1197,7 @@ taxes_back_taxes_pay_item
 taxes_pay_item
 timestamp_full
 topbar_date_format
+topbar_years_tooltip
 total_profit
 transfer_bizman_settings
 tutorial_objectives

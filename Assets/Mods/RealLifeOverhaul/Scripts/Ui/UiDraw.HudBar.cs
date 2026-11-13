@@ -49,8 +49,14 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The time pill's fast forward square, its arg (0 the pause, 1 the play).</summary>
         public const int FastSquare = 2;
 
+        /// <summary>The time pill's clock and day, a hover target of its own (arg 3): its card says the years and days; pressed it does nothing.</summary>
+        public const int ClockArg = 3;
+
         /// <summary>One of the top bar's small buttons in their pill after the place (arg: its index in UiStatusModel.Tools).</summary>
         public const int ToolPillCommand = 9025;
+
+        /// <summary>One of the full menu's Help and Report bug buttons on its bar: a command of the frame (UiDraw.AppRow's range), so the host hands it to the shell.</summary>
+        public const int ShellToolCommand = 9012;
 
         /// <summary>px: a pill's height on the bar, the app tiles' own, so every piece stands on the one centre line.</summary>
         public const float BarPill = UiFrame.Toolbar;
@@ -243,7 +249,7 @@ namespace RealLifeOverhaul.Ui
         private static bool HasSpeed(UiStatusModel m) => m.Speed > 0 || m.Paused;
 
         private static float TimeWidth(UiStatusModel m, bool day) =>
-            string.IsNullOrEmpty(m.Time) ? 0f : Round(HasSpeed(m) ? Squares : 0f, Math.Max(Words(m.Time, UiStyle.Number), day ? DayWidth(m) : 0f));
+            string.IsNullOrEmpty(m.Time) ? 0f : Round(HasSpeed(m) ? Squares : 0f, Math.Max(Math.Max(Words(m.Time, UiStyle.Number), Words(m.TimeWidest, UiStyle.Number)), day ? DayWidth(m) : 0f));
 
         // The day's line: as wide as the widest day of the week in the player's language, so a new day never moves the pills.
         private static float DayWidth(UiStatusModel m) => string.IsNullOrEmpty(m.Day) ? 0f : Math.Max(Words(m.Day, UiStyle.Small), Words(m.DayWidest, UiStyle.Small));
@@ -288,7 +294,7 @@ namespace RealLifeOverhaul.Ui
 
         // The top bar's small buttons: one pill of square glyphs, on the HUD's bar alone.
         private static float ToolsWidth(UiStatusModel m) =>
-            !m.PillsPress || m.Tools == null || m.ToolCount <= 0 ? 0f : PillPad * 2f + m.ToolCount * ToolButton + (m.ToolCount - 1) * UiTokens.S1;
+            (!m.PillsPress && !m.ToolsShell) || m.Tools == null || m.ToolCount <= 0 ? 0f : PillPad * 2f + m.ToolCount * ToolButton + (m.ToolCount - 1) * UiTokens.S1;
 
         private const float ToolButton = UiTokens.Control + UiTokens.S1;   // px: one of the small buttons, square, on the pill's centre line, a grid step from its edges
 
@@ -307,7 +313,7 @@ namespace RealLifeOverhaul.Ui
                 bool chosen = m.ToolsOn != null && i < m.ToolsOn.Length && m.ToolsOn[i];
                 bool off = m.ToolsOff != null && i < m.ToolsOff.Length && m.ToolsOff[i];
                 int first = s.ItemCount;
-                int node = IconButton(s, on, bx, by, ToolButton, m.Tools[i], UiRole.Text, ToolPillCommand, i, chosen);
+                int node = IconButton(s, on, bx, by, ToolButton, m.Tools[i], UiRole.Text, m.PillsPress ? ToolPillCommand : ShellToolCommand, i, chosen);
                 if (off)
                 {
                     Dim(s, first, node);
@@ -474,6 +480,10 @@ namespace RealLifeOverhaul.Ui
                 cx += Squares + PillInner;
             }
             Column(s, inside, cx, y, x + w - PillPad - cx, m.Time, UiStyle.Number, day ? m.Day : null);
+            if (m.PillsPress)
+            {
+                Node(s, inside, cx, y, x + w - PillPad - cx, BarPill, TimePillCommand, ClockArg, face);
+            }
         }
 
         // One square of the speed: its glyph in its own colour on slate, or dark on the cyan when it is in force.

@@ -1113,6 +1113,7 @@ namespace RealLifeOverhaul.Ui
             _field.gameObject.SetActive(true);
             _field.SetTextWithoutNotify(typing.TypingText ?? string.Empty);
             _field.ActivateInputField();
+            (typing as IUiTypingStart)?.TypingStarted();
             if (EventSystem.current != null)
             {
                 EventSystem.current.SetSelectedGameObject(_field.gameObject);   // the game holds its key shortcuts while a field is selected

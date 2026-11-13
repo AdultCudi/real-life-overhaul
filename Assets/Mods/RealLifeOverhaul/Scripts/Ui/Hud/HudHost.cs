@@ -587,6 +587,18 @@ namespace RealLifeOverhaul.Ui
                 {
                     TooltipKit.Money(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x);   // the net worth card over the pill
                 }
+                else if (over.Command == UiDraw.ToolPillCommand && _laidSize.x > 0f && _laidSize.y > 0f)
+                {
+                    string why = HudTopGame.ToolNote(over.Arg);
+                    if (why != null)
+                    {
+                        TooltipKit.Note(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x, why);   // why the game holds the button
+                    }
+                }
+                else if (over.Command == UiDraw.TimePillCommand && over.Arg == UiDraw.ClockArg && _laidSize.x > 0f && _laidSize.y > 0f)
+                {
+                    TooltipKit.Years(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x);   // the years and days, as the game's date says them on hover
+                }
             }
         }
 

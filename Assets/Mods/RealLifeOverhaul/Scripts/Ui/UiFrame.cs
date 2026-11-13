@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Time;           // "14:32"
         public string Day;            // "Tuesday (Day 12)", as the game's top bar writes it
+        public string TimeWidest;     // the widest time of day in the player's clock (12 hour adds AM or PM): the pill keeps one width all day
         public string DayWidest;      // the widest day of the week written the same way: the time pill keeps its width all week
         public bool Paused;
         public int Speed;             // 1 the game's own pace, 3 an activity's fast forward, or 0 while the game has not said
@@ -154,6 +155,7 @@ namespace RealLifeOverhaul.Ui
         public bool[] ToolsOn;        // each one's panel open: its glyph on the chosen tone
         public bool[] ToolsOff;       // each one the game will not answer now (the dances while driving): greyed
         public int ToolCount;
+        public bool ToolsShell;       // the tools stand on this bar as targets though the pills do not: the full menu's Help and Report bug (UiShell)
 
         // Appended with the frames-a-second figure (4 Nov 2026).
         public int Fps;               // the frames a second, shown as a small pill before the needs while the game's show-FPS option is on; 0 for none

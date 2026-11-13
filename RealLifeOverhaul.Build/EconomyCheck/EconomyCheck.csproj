@@ -1070,6 +1070,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudNotice.cs" Link="Mod\UiHudNotice.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudPopup.cs" Link="Mod\UiHudPopup.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\HudScreens\HudNoteRules.cs" Link="Mod\HudNoteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Hud\HudClockRules.cs" Link="Mod\HudClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.EmptyStateHeight.cs" Link="Mod\UiDraw.EmptyStateHeight.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiDragging.cs" Link="Mod\IUiDragging.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDiary.cs" Link="Mod\UiDiary.cs" />
