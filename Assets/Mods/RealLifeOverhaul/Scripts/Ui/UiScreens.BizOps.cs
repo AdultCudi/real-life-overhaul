@@ -127,7 +127,10 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizops_crew_line_chosen", "reallife_ui_bizops_empty_hint", "reallife_ui_bizops_empty_hint_gaps",
                     "reallife_ui_bizops_find_good", "reallife_ui_bizops_find_product", "reallife_ui_bizops_free_all_day",
                     "reallife_ui_bizops_hours_full", "reallife_ui_bizops_hours_left_short", "reallife_ui_bizops_more_goods",
-                    "reallife_ui_bizops_no_match", "reallife_ui_bizops_one_day", "reallife_ui_bizops_view_plan", "reallife_ui_bizops_view_prices"
+                    "reallife_ui_bizops_no_match", "reallife_ui_bizops_one_day", "reallife_ui_bizops_view_plan", "reallife_ui_bizops_view_prices",
+                    "common_required_production_machines", "reallife_ui_bizops_machine_placed", "reallife_ui_bizops_machine_lacking", "marketeventtype_productbackorder",
+                    "marketeventtype_productshortage", "bizman_purchasingagents_products_weekly_limit", "bizman_purchasingagents_products_import_index",
+                    "bizman_purchasingagents_products_ordered_last_week", "bizman_purchasingagents_products_sold_last_week"
                 }).Switch(UiScreenSwitches.Business),
                 new UiScreenDef("uniforms", UiTemplate.InfoPanel, "UniformsScreen", new[]
                 {

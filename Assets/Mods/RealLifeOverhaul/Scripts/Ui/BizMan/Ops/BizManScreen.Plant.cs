@@ -161,6 +161,18 @@ namespace RealLifeOverhaul.Ui
                 o.FormTitle = named != null && named.text.Length > 0 ? named.text : UiText.T("bizman_factory_production_machines");
                 Heading(UiText.T("bizman_factory_inactive_reason_invalid_workstation"));
                 NoteLine(UiText.T("reallife_ui_bizops_machine_missing"));
+                // The game's own panel lists the machines this one needs, each marked placed or missing (BizManFactoryInvalidWorkstationPanel.SetUp).
+                FactoryWorkstationInstance broken = list.activeWorkstationTemplate != null ? Get<FactoryWorkstationInstance>(GameContract.FactoryMachineItem, list.activeWorkstationTemplate) : null;
+                List<string> needed = broken != null && broken.Workstation != null ? broken.Workstation.requiredProductionMachines : null;
+                if (needed != null && needed.Count > 0)
+                {
+                    Heading(UiText.T("common_required_production_machines"));
+                    for (int i = 0; i < needed.Count; i++)
+                    {
+                        bool placed = broken.HasProductionMachine(needed[i]);
+                        InfoLine(UiText.T(needed[i]), UiText.T(placed ? "reallife_ui_bizops_machine_placed" : "reallife_ui_bizops_machine_lacking"), placed ? UiRole.OkText : UiRole.WarnText);
+                    }
+                }
             }
             else if (factory.workstationGroupPanel != null && factory.workstationGroupPanel.gameObject.activeInHierarchy)
             {

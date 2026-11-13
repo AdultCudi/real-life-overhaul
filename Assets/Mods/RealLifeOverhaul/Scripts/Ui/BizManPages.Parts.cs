@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static partial class BizManPages
     {
+        private const int ScrollContracts = 0, ScrollCampaigns = 1, ScrollAgencies = 2, ScrollPlans = 3;   // the slots of the model's scrolling lists
         private const float PhotoAspect = 1.6f; // the building's photo tile, as the game frames it
         private const float ItemRow = 56f;      // px: a contract's or an agency's row, a logo and two lines
         private const float LeastChart = 200f;  // px: the customers' chart at its shortest
@@ -193,6 +194,7 @@ namespace RealLifeOverhaul.Ui
             {
                 float ly = Title(s, at, x, y, half, m.MoreTitle);
                 ly = Facts(s, at, m.More, x, ly, half);
+                ly = Lead(s, at, m.Lead, x, ly + UiTokens.S2, half);   // who holds the prices, where a pricing manager does
                 float ry = y;
                 if (m.Shares.Length > 0)
                 {
@@ -222,7 +224,10 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float half = Half(w), rx = x + half + UiTokens.S8;
-            float ly = Items(s, at, m.ItemsTitle, m.Items, x, y, half, bottom, Item, -1, false, keys) + UiTokens.S5;
+            // The chosen contract's terms, its switch and its buttons keep their room under the list, which scrolls inside what is left.
+            float below = UiTokens.S5 + TitleHeight(m.PartTitle) + Count(m.Facts) * UiTokens.PairRow + (string.IsNullOrEmpty(m.Lead) ? 0f : LeadHeight(m.Lead, half) + UiTokens.S2)
+                          + (m.HasRepeat ? UiTokens.Control + UiTokens.S4 : 0f) + (m.Actions.Length > 0 ? UiTokens.Control : 0f);
+            float ly = Items(s, at, m, ScrollContracts, m.ItemsTitle, m.Items, x, y, half, Math.Max(y + ItemRow * 2f, bottom - below), Item, -1, false, keys) + UiTokens.S5;
             ly = Title(s, at, x, ly, half, m.PartTitle);
             ly = Facts(s, at, m.Facts, x, ly, half);
             ly = Lead(s, at, m.Lead, x, ly + UiTokens.S2, half);
@@ -243,15 +248,90 @@ namespace RealLifeOverhaul.Ui
         // Rows each with its logo on a tile (or, where the game has none, its kind's glyph on the slate tile, as a contact's
         // firm wears it), its name over its line, its value at the right, a chip where the game marks it, and a button for
         // what the row offers (a call); the chosen one in the cyan fifth. Returns the y under them.
-        private static float Items(UiScene s, UiAt at, string title, BizManItem[] items, float x, float y, float w, float bottom, int command, int linkCommand, bool onRow,
-            IUiKeys keys)
+        private static float Items(UiScene s, UiAt at, BizManModel m, int slot, string title, BizManItem[] items, float x, float y, float w, float bottom, int command, int linkCommand,
+            bool onRow, IUiKeys keys)
         {
             y = onRow ? RowTitle(s, at, x, y, w, title) : Title(s, at, x, y, w, title);
+            float step = ItemRow + UiTokens.S1, total = items.Length * step, room = bottom - y;
+            if (total <= room + UiTokens.S1)
+            {
+                for (int i = 0; i < items.Length; i++)
+                {
+                    ItemRowAt(s, at, ref items[i], x, y + i * step, w, command, linkCommand, i, keys, -1);
+                }
+                m.ListClip[slot] = m.ListList[slot] = -1;
+                m.ListOffset[slot] = 0f;
+                return y + total;
+            }
+            // Longer than its room: the rows scroll in a region of their own, each a stop for the pad, so none is dropped and none out of reach.
+            float vh = UiDraw.SnapDown(Math.Max(room, ItemRow));
+            var tops = StopTops(items.Length);
+            for (int i = 0; i < items.Length; i++)
+            {
+                tops[i] = i * step;
+            }
+            UiAt inside = ScrollIn(s, at, m, slot, x - UiTokens.S2, y, w + UiTokens.S4, vh, total, items.Length, tops, ItemRow, out short list);
+            for (int i = 0; i < items.Length; i++)
+            {
+                ItemRowAt(s, inside, ref items[i], UiTokens.S2, i * step, w, command, linkCommand, i, keys, list);
+            }
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, vh, m.ListOffset[slot], total);
+            return y + vh;
+        }
+
+        [ThreadStatic] private static float[] _stopTops;
+
+        // A buffer for the tops of a scrolling list's stops, kept between layouts.
+        private static float[] StopTops(int count)
+        {
+            if (_stopTops == null || _stopTops.Length < count)
+            {
+                _stopTops = new float[Math.Max(count, 32)];
+            }
+            return _stopTops;
+        }
+
+        /// <summary>
+        /// The scroll region of one of the page's lists (a slot of the model): the offset it keeps, brought to the stop the pad asked for, and the list of stops
+        /// its rows join. Returns where the rows are laid (relative to its corner).
+        /// </summary>
+        private static UiAt ScrollIn(UiScene s, UiAt at, BizManModel m, int slot, float x, float y, float w, float h, float total, int stops, float[] tops, float stopH, out short list)
+        {
+            float offset = m.ListOffset[slot];
+            int want = m.ListReveal[slot];
+            if (want >= 0 && want < stops)
+            {
+                offset = Math.Min(offset, tops[want]);
+                offset = Math.Max(offset, tops[want] + stopH - h);
+            }
+            m.ListReveal[slot] = -1;
+            offset = Math.Max(0f, Math.Min(offset, Math.Max(0f, total - h)));
+            m.ListOffset[slot] = offset;
+            short clip = s.AddClip(x, y, w, h, offset);
+            s.Clips[clip].ContentHeight = total;
+            list = s.AddList(stops, 0, stops, clip, -1);
+            m.ListClip[slot] = clip;
+            m.ListList[slot] = list;
+            return new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+        }
+
+        // The node just laid becomes a stop of a scrolling list: its place there, so the pad that steps past the view asks for the next.
+        private static void Joins(UiScene s, short list, int index)
+        {
+            if (list >= 0)
+            {
+                int node = s.NodeCount - 1;
+                s.Nodes[node].List = list;
+                s.Nodes[node].Index = index;
+            }
+        }
+
+        // One row of the list.
+        private static void ItemRowAt(UiScene s, UiAt at, ref BizManItem it, float x, float y, float w, int command, int linkCommand, int i, IUiKeys keys, short list)
+        {
             const bool tiles = true;
             float tile = UiTokens.IconTile;
-            for (int i = 0; i < items.Length && y + ItemRow <= bottom; i++)
             {
-                ref BizManItem it = ref items[i];
                 int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, ItemRow, it.Chosen ? UiRole.RowSel : UiRole.None, UiRole.None,
                     UiTokens.RadiusLarge, it.Chosen ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = at.In(face);
@@ -276,15 +356,18 @@ namespace RealLifeOverhaul.Ui
                 if (command >= 0)
                 {
                     UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, ItemRow, command, i, face);
+                    Joins(s, list, i);
                 }
                 if (linkW > 0f)
                 {
                     UiDraw.Button(s, inside, x + w - linkW, y + (ItemRow - UiTokens.Control) / 2f, linkW, UiTokens.Control, UiButtonKind.Secondary, it.Link, UiIcon.Phone,
                         UiAction.Count, keys, linkCommand, i);
+                    if (command < 0)
+                    {
+                        Joins(s, list, i);
+                    }
                 }
-                y += ItemRow + UiTokens.S1;
             }
-            return y;
         }
 
         // ------------------------------------------------------------------------------------------------- marketing
@@ -322,7 +405,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                Items(s, at, m.OthersTitle, m.Others, rx, top, half, bottom, -1, ItemLink, false, keys);
+                Items(s, at, m, ScrollAgencies, m.OthersTitle, m.Others, rx, top, half, bottom, -1, ItemLink, false, keys);
             }
         }
 
@@ -331,13 +414,48 @@ namespace RealLifeOverhaul.Ui
         private static void Campaigns(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y = Title(s, at, x, y, w, m.ItemsTitle);
+            // What the campaigns take in all, each cancel and each switch a stop: where it is more than the room, it scrolls and none is dropped.
+            float total = 0f, bandH = UiTokens.Control + UiTokens.S2;
+            int stops = 0;
+            float[] tops = StopTops(m.Items.Length + m.Toggles.Length + 1);
+            for (int g = 0; g < m.Items.Length; g++)
+            {
+                if (!string.IsNullOrEmpty(m.Items[g].Link))
+                {
+                    tops[stops++] = total;
+                }
+                total += bandH + UiTokens.S2;
+                for (int i = 0; i < m.Toggles.Length; i++)
+                {
+                    if (m.Toggles[i].Group == g)
+                    {
+                        tops[stops++] = total;
+                        total += UiTokens.Control;
+                    }
+                }
+                total += UiTokens.S4;
+            }
+            float room = bottom - y;
+            if (total <= room)
+            {
+                m.ListClip[ScrollCampaigns] = m.ListList[ScrollCampaigns] = -1;
+                m.ListOffset[ScrollCampaigns] = 0f;
+                CampaignsAt(s, at, m, x, y, w, keys, -1);
+                return;
+            }
+            float vh = UiDraw.SnapDown(Math.Max(room, UiTokens.Control * 3f)), lane = w - UiTokens.S4;
+            UiAt inside = ScrollIn(s, at, m, ScrollCampaigns, x, y, lane, vh, total, stops, tops, UiTokens.Control, out short list);
+            CampaignsAt(s, inside, m, 0f, 0f, lane, keys, list);
+            UiDraw.ScrollThumb(s, at, x + w - UiTokens.S1, y, vh, m.ListOffset[ScrollCampaigns], total);
+        }
+
+        // The campaigns laid from a corner, in a width: each agency's band with its Cancel, then its kinds as switches.
+        private static void CampaignsAt(UiScene s, UiAt at, BizManModel m, float x, float y, float w, IUiKeys keys, short list)
+        {
+            int stop = 0;
             for (int g = 0; g < m.Items.Length; g++)
             {
                 ref BizManItem it = ref m.Items[g];
-                if (y + UiTokens.Control * 2f > bottom)
-                {
-                    break;
-                }
                 float bh = UiTokens.Control + UiTokens.S2;
                 int band = UiDraw.Box(s, at, x, y, w, bh, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
                 UiAt on = at.In(band);
@@ -346,6 +464,7 @@ namespace RealLifeOverhaul.Ui
                 if (bw > 0f)
                 {
                     UiDraw.Button(s, on, x + w - UiTokens.S1 - bw, y + UiTokens.S1, bw, UiTokens.Control, UiButtonKind.Destructive, cancel, UiIcon.Minus, UiAction.Count, keys, Cancel, g);
+                    Joins(s, list, stop++);
                 }
                 float vw = string.IsNullOrEmpty(it.Value) ? 0f : UiDraw.Snap(UiTextRules.Width(it.Value, UiStyle.BodyStrong) + UiTokens.S1);
                 float vx = x + w - UiTokens.S1 - bw - UiTokens.S6 - vw;
@@ -358,12 +477,13 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < m.Toggles.Length; i++)
                 {
                     ref BizManToggle t = ref m.Toggles[i];
-                    if (t.Group != g || y + UiTokens.Control > bottom)
+                    if (t.Group != g)
                     {
                         continue;
                     }
                     UiDraw.TextMiddle(s, at, x + UiTokens.S4, y, UiTokens.Control, w - UiTokens.S16 - UiTokens.S8, UiStyle.Body, UiRole.Text, t.Words, UiFlags.Label | UiFlags.Truncate);
                     UiDraw.Switch(s, at, x + w - UiTokens.S16, y, UiTokens.S16, t.On, null, Toggle, i, t.Disabled);
+                    Joins(s, list, stop++);
                     y += UiTokens.Control;
                 }
                 y += UiTokens.S4;
@@ -452,7 +572,8 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             // The danger at the foot, each the game's own question first.
-            float dx = x;
+            // Each in a column of its own under the sentence the game words for it (what the lease's end gives back, that a shutdown is for good).
+            int danger = 0;
             for (int i = 0; i < m.Actions.Length; i++)
             {
                 ref UiActionModel a = ref m.Actions[i];
@@ -461,8 +582,14 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                UiDraw.Button(s, at, dx, bottom - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, Action, a.Arg, a.Disabled);
-                dx += bw + UiTokens.S3;
+                float dx = danger++ == 0 ? x : rx, by = bottom - UiTokens.Control;
+                string note = a.Arg == DoTerminate ? m.TerminateNote : a.Arg == DoShutdown ? m.ShutdownNote : null;
+                if (!string.IsNullOrEmpty(note))
+                {
+                    float th = UiDraw.Snap(UiTextRules.WrappedHeight(note, UiStyle.Small, half, 3));
+                    UiDraw.Text(s, at, dx, by - UiTokens.S2 - th, half, UiStyle.Small, UiRole.Text2, note, UiFlags.Label | UiFlags.Wrap, 3);
+                }
+                UiDraw.Button(s, at, dx, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, Action, a.Arg, a.Disabled);
             }
             if (m.KindOpen && m.Kinds.Length > 0)
             {
@@ -540,7 +667,13 @@ namespace RealLifeOverhaul.Ui
             if (m.BuildingFacts.Length > 0)
             {
                 ry = Title(s, at, rx, ry, cw, m.FactsTitle);
-                Facts(s, at, m.BuildingFacts, rx, ry, cw);
+                ry = Facts(s, at, m.BuildingFacts, rx, ry, cw) + UiTokens.S4;
+            }
+            // The building's photo, the game's own tab shows it with the address: as tall as the room under the facts leaves it, never past its own shape.
+            float room = bottom - ry;
+            if (!string.IsNullOrEmpty(m.Picture) && room >= UiTokens.S16 * 2f)
+            {
+                Picture(s, at, m.Picture, m.PictureAspect, UiIcon.Image, rx, ry, cw, UiDraw.SnapDown(Math.Min(cw / PhotoAspect, room)));
             }
         }
 

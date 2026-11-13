@@ -280,6 +280,125 @@ namespace RealLifeOverhaul.Ui
             command == BizManPages.Action || command == BizManPages.LineAction || command == UiFirmHead.First + UiFirmHead.Action || command == UiFirmHead.First + UiFirmHead.Switch;
     }
 
+    /// <summary>The start page's rules, game-free: the help page and the words of a kind of business, which kinds list staff, and the name's length.</summary>
+    public static class BizManStartRules
+    {
+        public const int NameLimit = 100;   // the game's own fallback for a name box that sets no limit of its own (its Steam input does the same)
+        private const string TypePrefix = "ba:businesstype_";
+
+        /// <summary>The game's help slug of a kind of business ("ba:businesstype_giftshop" is "businesstypes-giftshop"), or null for a name that is not a kind's.</summary>
+        public static string HelpSlug(string typeName) =>
+            typeName != null && typeName.StartsWith(TypePrefix, StringComparison.Ordinal) && typeName.Length > TypePrefix.Length ? "businesstypes-" + typeName.Substring(TypePrefix.Length) : null;
+
+        /// <summary>The key of the game's help text of a page ("help_" + slug's page + "_content"), for a kind of business.</summary>
+        public static string HelpKey(string typeName) => typeName != null && HelpSlug(typeName) != null ? "help_" + typeName + "_content" : null;
+
+        /// <summary>
+        /// What Enter in a box of BizMan's page does, as the game wires each box (KeyboardInputHelper.Configure): the new business's name starts it, the
+        /// take-over offer and the offer for a building send it, the sale price puts the building up for sale; the action's number, or -1 for a box with no Enter.
+        /// </summary>
+        public static int Entered(bool inField, int field, bool onStart)
+        {
+            if (!inField)
+            {
+                return -1;
+            }
+            switch (field)
+            {
+                case BizManPages.FieldName: return onStart ? BizManPages.DoStartHere : -1;
+                case BizManPages.FieldOffer: return BizManPages.DoTakeover;
+                case BizManPages.FieldBuy: return BizManPages.DoBuy;
+                case BizManPages.FieldSale: return BizManPages.DoMarkSale;
+                default: return -1;
+            }
+        }
+
+        /// <summary>The game's own rule for listing the staff in place of the goods: a headquarters, an office or a warehouse (StartBusinessTypeUI.ShowEmployeesInsteadOfProducts).</summary>
+        public static bool ShowsStaff(bool headquarters, string buildingType) =>
+            headquarters || buildingType == "ba:buildingtype_warehouse" || buildingType == "ba:buildingtype_office";
+
+        /// <summary>
+        /// The words of a help page that say what a kind of business is: its paragraphs up to the first one that opens a list or
+        /// ends in a colon (the furniture it needs, the goods it sells, which the page lists below), the markdown taken out of them
+        /// ("**Gift Shop**" is "Gift Shop", "[Wholesalers](wholesalers-locations)" is "Wholesalers"), at most <paramref name="most"/> of them.
+        /// </summary>
+        public static string[] Describe(string markdown, int most)
+        {
+            var found = new System.Collections.Generic.List<string>(4);
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return found.ToArray();
+            }
+            string[] paragraphs = markdown.Replace("\r", string.Empty).Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < paragraphs.Length && found.Count < most; i++)
+            {
+                string p = paragraphs[i].Trim();
+                if (p.Length == 0)
+                {
+                    continue;
+                }
+                bool list = (p.StartsWith("* ", StringComparison.Ordinal) || p.StartsWith("- ", StringComparison.Ordinal)) || p.StartsWith("#", StringComparison.Ordinal);
+                if (list || p.StartsWith("!", StringComparison.Ordinal) || p.StartsWith("<", StringComparison.Ordinal) || p.EndsWith(":", StringComparison.Ordinal)
+                    || p.EndsWith("：", StringComparison.Ordinal))
+                {
+                    break;
+                }
+                found.Add(Plain(p));
+            }
+            return found.ToArray();
+        }
+
+        /// <summary>Texts of one panel as a passage: a text that does not end its sentence gets a full stop, so a title and the sentence under it read as two; null for none.</summary>
+        public static string Passage(System.Collections.Generic.IList<string> parts)
+        {
+            if (parts == null || parts.Count == 0)
+            {
+                return null;
+            }
+            var b = new System.Text.StringBuilder(96);
+            for (int i = 0; i < parts.Count; i++)
+            {
+                string p = parts[i];
+                b.Append(i > 0 ? " " : string.Empty).Append(p);
+                char last = p[p.Length - 1];
+                if (i < parts.Count - 1 && last != '.' && last != '!' && last != '?' && last != ':' && last != '。')
+                {
+                    b.Append('.');
+                }
+            }
+            return b.ToString();
+        }
+
+        /// <summary>One paragraph without its markdown: bold and italic marks dropped, a link as its words, a line break as a space.</summary>
+        public static string Plain(string text)
+        {
+            var b = new System.Text.StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (c == '*')
+                {
+                    continue;
+                }
+                if (c == '[')
+                {
+                    int close = text.IndexOf("](", i, StringComparison.Ordinal), end = close > 0 ? text.IndexOf(')', close) : -1;
+                    if (close > 0 && end > close)
+                    {
+                        b.Append(text, i + 1, close - i - 1);
+                        i = end;
+                        continue;
+                    }
+                }
+                b.Append(c == '\n' ? ' ' : c);
+            }
+            return b.ToString().Trim();
+        }
+
+        /// <summary>The wide pane's two columns hold the building and the costs beside the rows when both fit: its least width and the least height the side column needs.</summary>
+        public static bool TwoColumns(float width, float height, float sideNeeds) => width >= 620f && height >= sideNeeds;
+    }
+
     /// <summary>How the open switch's press reaches the game's toggle (BizManRules.SwitchWay).</summary>
     public enum BizManSwitchWay : byte
     {

@@ -52,7 +52,8 @@ namespace RealLifeOverhaul.Ui
         private Vector2 _laidSize;
         private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private int _typeCommand = -1, _typeArg;   // the target that takes the keys while _typing: the scene tells its field to draw the caret
-        private bool _caretOn;                      // the caret shows now (the blink's state)
+        private IUiTypingFocus _typeFocus;          // the screen's own asks for the keys, if it makes them
+        private bool _caretOn;                     // the caret shows now (the blink's state)
         private float _blinkAt;                     // the clock time of the blink's next turn
         private UiPad _laidPad;
         private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
@@ -154,6 +155,7 @@ namespace RealLifeOverhaul.Ui
         {
             _icon = icon;
             _screen = screen;
+            _typeFocus = screen as IUiTypingFocus;
             _input = input;
             _sound = sound;
             _dark = dark;
@@ -401,6 +403,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     BeginTyping(box, box.TypingCommand, 0);
                 }
+            }
+            if (_typeFocus != null && !_typing && _typeFocus.TakeFocus())
+            {
+                BeginTyping(_typeFocus, _typeFocus.TypingCommand, 0);
             }
             _input.Read(ref _state);
             if (Exclusive)

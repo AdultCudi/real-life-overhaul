@@ -1122,7 +1122,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Columns = new[]
                 {
-                    new UiDataColumn { Title = UiText.T("bizman_purchasingagents_product"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = UiText.T("bizman_purchasingagents_product"), Kind = UiCellKind.Tile },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_target"), Kind = UiCellKind.Figure, Width = 96f },
                     new UiDataColumn { Title = UiText.T("bizman_purchasingagents_price"), Kind = UiCellKind.Money, Width = 128f },
                     new UiDataColumn { Title = UiText.T("bizman_purchasingagents_warehouse_stock"), Kind = UiCellKind.Figure, Width = 136f },
@@ -1143,8 +1143,10 @@ namespace RealLifeOverhaul.Ui
                         p.ProductName, UiText.Whole(p.Target), p.Price.ToCurrencyFormat(), UiText.Whole(p.WarehouseStock),
                         string.IsNullOrEmpty(p.AssignedWarehouse) ? UiText.T("common_unassigned") : p.AssignedWarehouse
                     },
-                    Values = new[] { 0, 0, 0, 0, 0 }, Picked = p.isSelected,
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, string.IsNullOrEmpty(p.AssignedWarehouse) ? UiRole.WarnText : UiRole.None }
+                    Values = new[] { (int)UiIcon.Package, 0, 0, 0, 0 }, Picked = p.isSelected,
+                    Pictures = new[] { p.productRef != null ? BuyPictures.Item(p.productRef.itemName) : null },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, string.IsNullOrEmpty(p.AssignedWarehouse) ? UiRole.WarnText : UiRole.None },
+                    Sub = ImportNote(p)   // a shortage or backorder, the week's limit, index, last week's order and sales, as the game's open row says them
                 };
             }
             t.RowCount = n;
