@@ -331,7 +331,7 @@ internal static partial class Program
         {
             if (Regex.IsMatch(File.ReadAllText(file), @"\.GetPrimaryInteractable\s*\("))
             {
-                askers.Add(Path.GetFileName(file));
+                askers.Add(System.IO.Path.GetFileName(file));
             }
         }
         string cardClick = ModSource(@"Ui\Overlays\OverlayCardsLive.Click.cs");
