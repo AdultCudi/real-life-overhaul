@@ -211,6 +211,9 @@ namespace RealLifeOverhaul
             return All[(int)action].Label;
         }
 
+        /// <summary>True while a key is being chosen on the options page: no action fires, whatever is pressed (for a log line that says why a key did nothing).</summary>
+        public static bool Capturing => _capturing;
+
         /// <summary>The key itself, for the one place that needs to know it is a mouse button.</summary>
         public static KeyCode Key(KeyAction action)
         {

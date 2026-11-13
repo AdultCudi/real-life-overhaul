@@ -546,6 +546,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--phone-reach")
+        {
+            PhoneReach();   // a folded phone always has a way back: the bar's button, the key, the cause in Player.log (PhoneReachChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--phone-map")
         {
             PhoneMap();
@@ -1670,6 +1676,7 @@ internal static partial class Program
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         ScrollHints();       // the wheel over a list's rows reaches the list, the phone folds with the HUD on, the key chips keep left of the phone (ScrollHintsChecks.cs)
         HudStart();          // the fonts read on past the loading screen's hold, every wait of the HUD's start named in Player.log (HudStartChecks.cs)
+        PhoneReach();        // a folded phone always has a way back: the bar's button, the key, the cause in Player.log (PhoneReachChecks.cs)
         PhoneMap();          // the HUD over the phone after the map, the phone cut at the bar, the fast forward pressed, the help put back a frame later (PhoneMapChecks.cs)
         Work();
         Desks();
