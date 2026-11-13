@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: kaldırdığınız telefon, başka bir mod telefonun uygulamalarını değiştirdiğinde bile, yeni arayüzde çubuktaki bir telefon düğmesiyle ya da Telefon tuşuyla her zaman geri getirilebilir. Düzeltildi: yeni arayüzdeki her açılır liste artık fare tekerleğiyle, kaydırma çubuğunu ya da listeyi sürükleyerek ve tuşlarla ya da kumandayla kayar; seçilen seçenek görünür durumda açılır ve uzun bir seçeneği tamamen gösterir. Düzeltildi: Kampüs günlüğü ve Yaklaşanlar, bir kursun son dersinden sonraki dersleri artık listelemez, kursun yer satırı odayı tekrarlamaz ve Bir dersin nasıl işlediği notu her satırda bir cümle okunur. Düzeltildi: bir kavşağın döngüsünden daha uzun süre sarı kalan trafik ışığı, karşıdan geçen kişiye karşı sayılmaz; bu yüzden polis bunun için uyarmaz ya da ceza kesmez. Mod ayrıca artık bir kavşağın ortasındaki arabayı ele geçirmez, çünkü bu o ışığı sarı tutmuş olabilirdi. Düzeltildi: bir şehirden ayrılmak, müşterileri hesaplanırken Uptown ve Cedar Heights'taki dükkânlar için artık hata kaydetmez.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -37874,5 +37874,7 @@
   "reallife_ui_estate_note_market_rents": "Kiralar mülk piyasasını değil fiyatları izler, bu yüzden bir patlamada aynı kira satın almak için daha pahalıya gelir.",
   "reallife_ui_estate_note_mortgage": "Konut kredisiyle almak için önce bunu Finans uygulamasında ayarlayın, para satın alma için nakit bakiyenizde olur.",
   "reallife_ui_estate_note_hotel_staff": "Personel üç seviyeden birinde sözleşmeyle çalışır, çünkü oyun kendi çalışanlarınızı bir otele yerleştiremez.",
-  "reallife_ui_estate_card_kept_night": "Dün gece tutuldu"
+  "reallife_ui_estate_card_kept_night": "Dün gece tutuldu",
+  "reallife_phone_tool_note": "Telefon. Kaldırmak ya da geri getirmek için buna ya da {key} tuşuna basın.",
+  "reallife_phone_put_away": "Telefonunuz kaldırıldı. Geri getirmek için {key} tuşuna ya da ekranın alt kısmındaki çubuktaki telefon düğmesine basın."
 }
