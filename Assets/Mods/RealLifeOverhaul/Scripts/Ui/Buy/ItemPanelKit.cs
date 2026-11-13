@@ -283,6 +283,8 @@ namespace RealLifeOverhaul.Ui
         private const string SpeedRow = "RealLifeOverhaul Speed";   // the mod's speed, a copy of the condition row in the vehicle panel
         private readonly ItemPanelUI _ui;
         private readonly UiItemPanelModel _m = new UiItemPanelModel();
+        private VehicleInfoPanel _steerPanel;   // the vehicle panel the steering button was found under
+        private Button _steer;
         private readonly List<Button> _buttons = new List<Button>(10);   // the game's button an action presses; null for Manage cargo
         private VehicleController _car;                                  // the vehicle the panel shows, or null
         private bool _mine = true;                                       // the vehicle is the player's own (always, outside a Going Public session)
@@ -760,6 +762,7 @@ namespace RealLifeOverhaul.Ui
                 first.Main = !first.Danger;
                 _actions[0] = first;
             }
+            Steering();
             if (_m.Actions.Length != _actions.Count)
             {
                 _m.Actions = new UiItemAction[_actions.Count];
@@ -771,6 +774,33 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
             }
             _sb.Append(_m.More);
+        }
+
+        // The car's steering assist, which the game's panel shows as an icon that turns on and off by a click on it. The game's own
+        // button is pressed, so its listener flips the setting; the label says which way it stands.
+        private void Steering()
+        {
+            VehicleInfoPanel info = _ui.vehicleInfo;
+            if (!(_car is CarController) || info == null || !info.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            GameObject row = BuyKits.Get<GameObject>(GameContract.InfoSteering, info);
+            if (row == null || !row.activeSelf)
+            {
+                return;
+            }
+            if (_steerPanel != info)
+            {
+                _steerPanel = info;
+                _steer = row.GetComponentInChildren<Button>(true) ?? UiWidgets.Calling(info, "ToggleSteeringAssist");
+            }
+            if (_steer == null)
+            {
+                return;
+            }
+            _buttons.Add(_steer);
+            _actions.Add(new UiItemAction { Label = UiText.T(PlayerPrefSettings.SteeringAssist ? "reallife_ui_buy_steering_on" : "reallife_ui_buy_steering_off"), Disabled = !_steer.interactable });
         }
 
         private void Add(Button b, Component label, UiGameKey key, bool danger)

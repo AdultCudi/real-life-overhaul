@@ -4,7 +4,7 @@ using System.Text;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>What a press on a card does.</summary>
-    public enum OverlayAct : byte { None, Action, Open, Choose, Page, Step }
+    public enum OverlayAct : byte { None, Action, Open, Choose, Page, Step, ActionPage }
 
     /// <summary>How a person's mood reads, from the game's own satisfaction (0 to 100).</summary>
     public enum OverlayMood : byte { Low, Middle, High }
@@ -270,6 +270,8 @@ namespace RealLifeOverhaul.Ui
                     return openChoice >= 0 && openChoice < m.ChoiceCount && arg >= 0 && arg < m.Choices[openChoice].OptionCount ? OverlayAct.Choose : OverlayAct.None;
                 case UiOverlayCard.PageCommand:
                     return openChoice >= 0 && openChoice < m.ChoiceCount && (arg == -1 || arg == 1) ? OverlayAct.Page : OverlayAct.None;
+                case UiOverlayCard.ActionPageCommand:
+                    return ActionPages(m.ActionCount, UiOverlayModel.MostActions) > 1 && (arg == -1 || arg == 1) ? OverlayAct.ActionPage : OverlayAct.None;
                 case UiOverlayCard.StepCommand:
                     return m.Level >= 0 && (arg == -1 || arg == 1) ? OverlayAct.Step : OverlayAct.None;
             }
@@ -282,6 +284,27 @@ namespace RealLifeOverhaul.Ui
         /// over the box's own few transforms, never the scene.
         /// </summary>
         public static bool SweepDue(int seen, int count, bool read) => seen != count || read;
+
+        /// <summary>
+        /// The same, and also when a button looked at last time is gone: the game destroys the buttons of a computer's panel and makes new
+        /// ones in one refresh, which can leave the count of transforms as it was while every button is a new, unhidden one.
+        /// </summary>
+        public static bool SweepDue(int seen, int count, bool read, bool lost) => lost || SweepDue(seen, count, read);
+
+        /// <summary>The pages a card's buttons fall over: one while they all fit, else pages of one fewer than fit, the pager taking the last row.</summary>
+        public static int ActionPages(int count, int fit) => count <= fit ? 1 : (count + fit - 2) / (fit - 1);
+
+        /// <summary>The buttons of a page: first and one past the last (all of them while they fit).</summary>
+        public static void ActionWindow(int count, int page, int fit, out int first, out int end)
+        {
+            if (count <= fit)
+            {
+                first = 0;
+                end = count;
+                return;
+            }
+            Window(count, Math.Max(0, Math.Min(page, ActionPages(count, fit) - 1)), fit - 1, out first, out end);
+        }
 
         /// <summary>The list of indexes of a page of a list: first and one past the last.</summary>
         public static void Window(int count, int page, int perPage, out int first, out int end)

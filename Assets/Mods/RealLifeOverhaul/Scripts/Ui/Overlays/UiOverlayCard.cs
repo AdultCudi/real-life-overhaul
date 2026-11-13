@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed class UiOverlayModel
     {
-        public const int MostRows = 4, MostChecks = 6, MostChoices = 2, MostActions = 8, PerPage = 6, MostNoteLines = 3;
+        public const int MostRows = 8, MostChecks = 12, MostChoices = 2, MostActions = 8, PerPage = 6, MostNoteLines = 3;
 
         public string Title;                                       // "Flour shelf"
         public UiIcon Icon = UiIcon.Package;
@@ -65,8 +65,9 @@ namespace RealLifeOverhaul.Ui
         public int ChoiceCount;
         public int Level = -1;                                     // a volume 0 to 100; -1 for none
         public string LevelLabel;                                  // "Volume"
-        public UiOverlayAction[] Actions = new UiOverlayAction[MostActions];
+        public UiOverlayAction[] Actions = new UiOverlayAction[MostActions];   // grows when a box holds more buttons; the card shows MostActions at a time
         public int ActionCount;
+        public int ActionPage;                                     // the page of buttons shown, when there are more than fit
         public bool Detail;                                        // the click's card: its actions are pressed, its width is wider
 
         /// <summary>Back to an empty card, its arrays kept.</summary>
@@ -79,7 +80,7 @@ namespace RealLifeOverhaul.Ui
             Meter = Level = -1;
             MeterTone = UiRole.Ok;
             NoteTone = UiRole.Text2;
-            RowCount = CheckCount = ChoiceCount = ActionCount = 0;
+            RowCount = CheckCount = ChoiceCount = ActionCount = ActionPage = 0;
             Detail = false;
         }
 
@@ -125,7 +126,7 @@ namespace RealLifeOverhaul.Ui
                         + (int)Actions[i].Icon * 13
                         + Hash(Actions[i].Key.Name) * 17 + (int)Actions[i].Key.Glyph * 19;
                 }
-                return h;
+                return h * 31 + ActionPage * 3 + ActionCount;
             }
         }
 
@@ -133,10 +134,15 @@ namespace RealLifeOverhaul.Ui
 
         public void AddAction(UiOverlayAction action)
         {
-            if (ActionCount < Actions.Length && !string.IsNullOrEmpty(action.Label))
+            if (string.IsNullOrEmpty(action.Label))
             {
-                Actions[ActionCount++] = action;
+                return;
             }
+            if (ActionCount == Actions.Length)
+            {
+                Array.Resize(ref Actions, Actions.Length * 2);   // a fridge or a street cart has a button for every kind it holds
+            }
+            Actions[ActionCount++] = action;
         }
     }
 
@@ -154,7 +160,7 @@ namespace RealLifeOverhaul.Ui
     public static class UiOverlayCard
     {
         // 9620 to 9659 is this job's block of command numbers: nothing else of the kit uses it.
-        public const int ActionCommand = 9620, ChoiceCommand = 9621, OptionCommand = 9622, PageCommand = 9623, StepCommand = 9624;
+        public const int ActionCommand = 9620, ChoiceCommand = 9621, OptionCommand = 9622, PageCommand = 9623, StepCommand = 9624, ActionPageCommand = 9625;
         public const float HoverWidth = 288f;      // px: as wide as the game's box with its longest line
         public const float DetailWidth = 320f;     // px: room for a button's words and a drop-down's choice
         private const float Pad = UiTokens.S4;     // px: the card's inner edge
@@ -204,10 +210,15 @@ namespace RealLifeOverhaul.Ui
 
         private static float ActionsHeight(UiOverlayModel m)
         {
+            OverlayRules.ActionWindow(m.ActionCount, m.ActionPage, UiOverlayModel.MostActions, out int first, out int end);
             float h = 0f;
-            for (int i = 0; i < m.ActionCount; i++)
+            for (int i = first; i < end; i++)
             {
-                h += (m.Actions[i].Hint ? UiTokens.PairRow : ActionRow) + (i < m.ActionCount - 1 ? UiTokens.S1 : 0f);
+                h += (m.Actions[i].Hint ? UiTokens.PairRow : ActionRow) + (i < end - 1 ? UiTokens.S1 : 0f);
+            }
+            if (OverlayRules.ActionPages(m.ActionCount, UiOverlayModel.MostActions) > 1)
+            {
+                h += UiTokens.S1 + ActionRow;
             }
             return h;
         }
@@ -252,13 +263,19 @@ namespace RealLifeOverhaul.Ui
                 cy += Block(UiTokens.PairRow + Field);
             }
             float ay = cy, caps = 0f;
-            for (int i = 0; i < m.ActionCount; i++)
+            OverlayRules.ActionWindow(m.ActionCount, m.ActionPage, UiOverlayModel.MostActions, out int first, out int end);
+            for (int i = first; i < end; i++)
             {
                 caps = m.Actions[i].Hint ? caps : Math.Max(caps, UiDraw.GameKeyWidth(m.Actions[i].Key));
             }
-            for (int i = 0; i < m.ActionCount; i++)
+            for (int i = first; i < end; i++)
             {
                 ay += Action(s, on, m, ref m.Actions[i], i, x + UiTokens.S2, ay, w - UiTokens.S2 * 2f, caps) + UiTokens.S1;
+            }
+            int actionPages = OverlayRules.ActionPages(m.ActionCount, UiOverlayModel.MostActions);
+            if (actionPages > 1)
+            {
+                ActionPager(s, on, m, actionPages, x + UiTokens.S2, ay, w - UiTokens.S2 * 2f);
             }
             return panel;
         }
@@ -371,6 +388,15 @@ namespace RealLifeOverhaul.Ui
                 cy = by + bw;
             }
             return cy - y;
+        }
+
+        // The pager under a card whose box holds more buttons than fit: back, the page, next.
+        private static void ActionPager(UiScene s, UiAt at, UiOverlayModel m, int pages, float x, float y, float w)
+        {
+            float bw = UiTokens.ControlSmall;
+            UiDraw.IconButton(s, at, x, y, bw, UiIcon.Back, UiRole.Text, ActionPageCommand, -1, false, UiAction.Count, false, true);
+            UiDraw.IconButton(s, at, x + w - bw, y, bw, UiIcon.Next, UiRole.Text, ActionPageCommand, 1, false, UiAction.Count, false, true);
+            UiDraw.TextMiddle(s, at, x + bw, y, bw, w - bw * 2f, UiStyle.Small, UiRole.Text2, (m.ActionPage + 1) + " / " + pages, UiFlags.Centre);
         }
 
         // A volume: its label with the figure, and a meter between its two steps.

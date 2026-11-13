@@ -177,7 +177,7 @@ internal static partial class Program
         string radio = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Overlays", "OverlayCardsLive.Click.cs"));
         string at = radio.Substring(radio.IndexOf("private void Radio(", StringComparison.Ordinal));
         at = at.Substring(0, at.IndexOf("// The workstation's name", StringComparison.Ordinal) > 0 ? at.IndexOf("// The workstation's name", StringComparison.Ordinal) : at.Length);
-        Check(at.Contains("GetComponentsInChildren(false, _found)") && at.Contains("b == next || b == toggle") && at.Contains("_buttons[m.ActionCount] = b;"),
+        Check(at.Contains("GetComponentsInChildren(false, _found)") && at.Contains("b == next || b == toggle") && at.Contains("Put(m, new UiOverlayAction { Label = label, Disabled = !b.interactable }, b, null);"),
             "sweep: the radio's card lists a button put in its panel after the game made it (Dance) and presses it as the game's own button");
         string seat = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Activity", "ActivityPanelScreen.cs"));
         string eat = File.ReadAllText(System.IO.Path.Combine(scripts, "Meals", "TakeoutButton.cs"));
