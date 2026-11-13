@@ -132,11 +132,10 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Diary };
         if (state != "studying_none")
         {
-            // against today (412, a Tuesday): barista from day 405, care work from day 380, chef booked for day 440
+            // against today (412, a Tuesday): barista from day 405, care work from day 380
             object[][] live =
             {
-                new object[] { "barista", UiIcon.Coffee, 0, 3, 10, "100%", 421, false }, new object[] { "care_worker", UiIcon.Heart, 1, 3, 9, "91%", 468, false },
-                new object[] { "chef", UiIcon.ForkKnife, 1, 4, 9, null, 0, true }
+                new object[] { "barista", UiIcon.Coffee, 0, 3, 10, "100%", 421, false }, new object[] { "care_worker", UiIcon.Heart, 1, 3, 9, "91%", 468, false }
             };
             for (int i = 0; i < live.Length; i++)
             {
@@ -147,9 +146,25 @@ internal static partial class UiSamples
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"), booked ? SDay(w, 440) + " " + ((int)live[i][4]).ToString("00") + ":00" : SDay(w, 414) + " " + ((int)live[i][4]).ToString("00") + ":00"));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), (string)live[i][5] ?? w.T("reallife_work_not_started", "Not started")));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), booked ? w.T("reallife_work_not_set", "Not set") : SDay(w, (int)live[i][6])));
+                // class, homework and exam: each its own button, dimmed with the director's reason while it cannot be done
+                if (i == 0)
+                {
+                    r.Acts.Add(WkAct(110, w.T("reallife_campus_button_attend", "Attend the class"), UiButtonKind.Secondary, UiIcon.Cap, null, false, r.Id));
+                }
+                r.Acts.Add(WkAct(111, w.T("reallife_campus_button_homework", "Do homework"), UiButtonKind.Secondary, UiIcon.Pencil, null, false, r.Id));
+                if (i == 1)
+                {
+                    // a course with no class to join has no button for one; its exam waits for its hours, and what it owes can be paid
+                    r.Acts.Add(WkAct(112, w.T("reallife_campus_button_sit", "Sit the exam"), UiButtonKind.Secondary, UiIcon.Scales,
+                        w.T("reallife_study_why_exam_hours", "Exams are sat on weekdays between 09:00 and 17:00."), false, r.Id));
+                    r.Acts.Add(WkAct(101, w.T("reallife_campus_button_pay", "Pay what is owed"), UiButtonKind.Secondary, UiIcon.Coin, null, false, r.Id));
+                }
                 r.Acts.Add(WkAct(102, w.T("reallife_campus_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
                 t.Rows.Add(r);
             }
+            t.NoteLead = w.T("reallife_work_study_how_lead", "How a class works.");
+            t.NoteText = w.F("reallife_campus_studying_about", "A class can be joined from {early} minutes before it starts until {late} minutes after, where it is held.",
+                "early", "30", "late", "15");
         }
         // March, the 14th is today (day 412, a Tuesday): the 1st falls on a Wednesday
         var m = new UiDiaryModel

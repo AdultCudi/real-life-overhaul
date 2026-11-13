@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Ui
         public static readonly CampusLive Instance = new CampusLive();
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
-        private const int Enrol = 100, Pay = 101, Withdraw = 102, Graduate = 103, PayChild = 104, DeclineChild = 105, Tutor = 106, ShowSchool = 107, ShowMain = 108, OpenTeacher = 109;
+        private const int Enrol = 100, Pay = 101, Withdraw = 102, Graduate = 103, PayChild = 104, DeclineChild = 105, Tutor = 106, ShowSchool = 107, ShowMain = 108, OpenTeacher = 109,
+            Attend = 110, Homework = 111, Sit = 112;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StudyMode[] Modes = { StudyMode.FullTime, StudyMode.PartTime, StudyMode.Distance };
         private int _local, _wanted = -1, _readGeneration = -1;
@@ -321,8 +322,32 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), w.F("reallife_work_n_of_n", "{n} of {all}",
                     "n", e.Homework.ToString(Inv), "all", StudyRules.HomeworkSet(e).ToString(Inv))));
-                r.Acts.Add(new WorkAct { Kind = Pay, Arg = c.Id, Label = w.T("reallife_campus_button_pay", "Pay what is owed"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin,
-                    Why = e.FeeLate ? null : w.T("reallife_work_nothing_owed", "Nothing is owed.") });
+                if (d.RoomLine(e) != null)
+                {
+                    // where the class is held, under the name of the school
+                    r.Sub += ", " + w.F("reallife_work_room_value", "floor {floor}, room {room}", "floor", CampusRules.FloorOf(c.Id).ToString(Inv), "room", CampusRules.RoomOf(c.Id).ToString(Inv));
+                }
+                // The director says why a class, homework or an exam cannot be done now; a course with no class at all (or no homework, or no exam) has no button for it.
+                string attend = d.CanAttend(e, out int _), homework = d.CanHomework(e), sit = d.CanSit(e);
+                if (attend == null || attend != "reallife_study_why_no_class")
+                {
+                    r.Acts.Add(new WorkAct { Kind = Attend, Arg = c.Id, Label = w.T("reallife_campus_button_attend", "Attend the class"), Style = UiButtonKind.Secondary, Icon = UiIcon.Cap,
+                        Why = attend != null ? CareersText.T(attend) : null });
+                }
+                if (homework == null || homework != "reallife_study_why_no_homework")
+                {
+                    r.Acts.Add(new WorkAct { Kind = Homework, Arg = c.Id, Label = w.T("reallife_campus_button_homework", "Do homework"), Style = UiButtonKind.Secondary, Icon = UiIcon.Pencil,
+                        Why = homework != null ? CareersText.T(homework) : null });
+                }
+                if (sit == null || sit != "reallife_study_why_no_exam")
+                {
+                    r.Acts.Add(new WorkAct { Kind = Sit, Arg = c.Id, Label = w.T("reallife_campus_button_sit", "Sit the exam"), Style = UiButtonKind.Secondary, Icon = UiIcon.Scales,
+                        Why = sit != null ? CareersText.T(sit) : null });
+                }
+                if (e.FeeLate)
+                {
+                    r.Acts.Add(new WorkAct { Kind = Pay, Arg = c.Id, Label = w.T("reallife_campus_button_pay", "Pay what is owed"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin });
+                }
                 r.Acts.Add(new WorkAct { Kind = Withdraw, Arg = c.Id, Label = w.T("reallife_campus_button_withdraw", "Withdraw"), Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
                 t.Rows.Add(r);
             }
@@ -332,6 +357,13 @@ namespace RealLifeOverhaul.Ui
                     Why = day >= f.GraduationDay ? null : w.T("reallife_work_not_yet_graduate", "The ceremony is not yet.") });
             }
             t.Diary = new WorkDiary { Month = DiaryOf(live, day, view) };
+            if (live.Count > 0)
+            {
+                string university = d.UniversityLine();
+                t.NoteLead = w.T("reallife_work_study_how_lead", "How a class works.");
+                t.NoteText = (university != null ? university + " " : string.Empty) + CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(Inv),
+                    "late", StudyCatalogue.LateMinutes.ToString(Inv));
+            }
             return t;
         }
 
@@ -909,6 +941,9 @@ namespace RealLifeOverhaul.Ui
                         break;
                     }
                     case Pay: why = d.PayOwed(act.Arg); break;
+                    case Attend: why = d.Attend(act.Arg); break;
+                    case Homework: why = d.Homework(act.Arg); break;
+                    case Sit: why = d.Sit(act.Arg); break;
                     case Withdraw:
                         GameConfirm.Show("reallife_campus_confirm_withdraw_title".Localize(new { name = CareersText.Course(act.Arg) }), "reallife_campus_confirm_withdraw_body".Localize(),
                             () =>

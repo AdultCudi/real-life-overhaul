@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Ui
             if (_facts.Ready && d != null && save != null)
             {
                 // the tabs that hold choices the player steps are built for the view
+                ChooseBoard(view);
                 _facts.Management = ManagementTab(d, view, save.Day);
                 _facts.Own = OwnTab(d, d.Work, d.Study, view, save.Day);
                 _facts.Cv = CvTab(d, d.Work, d.Study);
@@ -117,8 +118,13 @@ namespace RealLifeOverhaul.Ui
             ReadOpenings(d, w, study, save.Day);
             ReadApplications(w, save.Day);
             ReadProfessions(w, study);
+            if (CareersGame.InsideType(HiringCatalogue.AgencyType))
+            {
+                _facts.Jobs.Acts.Add(Act(CareerAct.Register, 0, words.T("reallife_career_button_register", "Register with the recruitment office"), UiButtonKind.Primary, UiIcon.IdBadge));
+            }
             if (_facts.Job == null)
             {
+                FirstStep(d, w, save.Day);
                 BestFor(words);
                 NewPlayerFoot(words, study);
             }
@@ -525,9 +531,20 @@ namespace RealLifeOverhaul.Ui
                         r.Acts.Add(Act(CareerAct.Withdraw, a.Post.Id, words.T("reallife_career_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close));
                         break;
                     case ApplyStep.Interview:
-                        r.Acts.Add(Act(CareerAct.Interview, a.Post.Id, words.T("reallife_career_button_interview", "Attend the interview"), UiButtonKind.Primary, UiIcon.Check));
+                    {
+                        // where it is held, the early-arrival note, and why it cannot be attended yet: the button is dimmed with that reason
+                        var venue = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_interview", "The interview") };
+                        venue.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_day", "Day"), words.F("reallife_campus_row_next", "{day}, {hour}",
+                            "day", CareersText.Day(a.InterviewDay), "hour", CareersText.Hour(a.InterviewHour))));
+                        venue.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_where", "Where"), director != null ? director.InterviewPlace(a) : string.Empty));
+                        r.Sections.Add(venue);
+                        r.Sections.Add(new WorkSection { Part = WorkPart.Note, Text = words.T("reallife_ibox_interview_early", "Be there half an hour before.") });
+                        string why = director != null ? director.CanInterview(a, out int _) : null;
+                        r.Acts.Add(Act(CareerAct.Interview, a.Post.Id, words.T("reallife_career_button_interview", "Attend the interview"), UiButtonKind.Primary, UiIcon.Check, false,
+                            why != null ? CareersText.T(why) : null));
                         r.Acts.Add(Act(CareerAct.Withdraw, a.Post.Id, words.T("reallife_career_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close));
                         break;
+                    }
                     case ApplyStep.Offered:
                         r.Acts.Add(Act(CareerAct.Accept, a.Post.Id, words.T("reallife_career_button_accept", "Accept"), UiButtonKind.Primary, UiIcon.Check));
                         if (a.Asks < ProRules.AsksMost)
@@ -643,6 +660,7 @@ namespace RealLifeOverhaul.Ui
                 tab.Rows.Add(r);
             }
             ProfessionsFoot(words, study, tab);
+            ReadBoards(tab);
         }
 
         // The posts open now in one profession, each with its employer, its rung and its pay: as many rows as the count says (the list is never shorter than the number over it).
@@ -659,10 +677,31 @@ namespace RealLifeOverhaul.Ui
                         Right = CareersText.Rate(Prices.At(o.Pay)), Icon = UiIcon.Store });
                 }
             }
+            if (open > hiring.People.Count)
+            {
+                // the count over the list is the real number of open posts; the posts past the rows shown are on the Jobs tab
+                hiring.People.Add(new WorkPerson { Name = words.F("reallife_work_and_more_posts", "and {n} more", "n", (open - hiring.People.Count).ToString(Inv)),
+                    Role = words.T("reallife_work_more_on_jobs", "All of them are on the Jobs tab."), Icon = UiIcon.Search });
+            }
             return hiring;
         }
 
         private const int HiringRows = 6;
+
+        // For a player with no job, what to do first, as the old Start tab said it under its list: the vacancies already open to them, else the course or post that is the first step.
+        private void FirstStep(CareersDirector d, WorkFile w, int day)
+        {
+            Candidate template = d.Template();
+            int open = 0;
+            for (int i = 0; i < w.Openings.Count; i++)
+            {
+                open += w.Openings[i].Def != null && w.Openings[i].Open(day) && d.OpenToMe(w.Openings[i], template) ? 1 : 0;
+            }
+            _facts.Professions.NoteText = open > 0 ? CareersText.T("reallife_career_start_apply", "count", open.ToString(Inv))
+                : CareersText.T("reallife_career_start_first", "step",
+                    d.FirstStep(template, out int prof, out int course) ? d.FirstStepLine(prof, course) : CareersText.T("reallife_career_step_none"));
+            _facts.Professions.NoteLead = W.T("reallife_work_first_step_lead", "Where to start.");
+        }
 
         // The Professions list's figures and its foot: the posts open, the professions open to the player, the starting pay, the best paid posts they could take, and the courses a door away.
         private void ProfessionsFoot(UtilitiesWords words, StudyFile study, WorkTab tab)
@@ -764,6 +803,10 @@ namespace RealLifeOverhaul.Ui
                     return Said(d.ShowPost(o ?? (a != null ? a.Post : null)), d);
                 }
                 case CareerAct.ShowDesk: return Said(d.ShowWork(), d);
+                case CareerAct.ShowBoard: return ShowBoardNow(d, view);
+                case CareerAct.Register: return Said(d.Register(), d);
+                case CareerAct.StartWork: return Said(d.StartWorkDay(), d);
+                case CareerAct.WorkLate: return Said(d.WorkLate(), d);
                 case CareerAct.OpenCampus: d.OpenCampus(CareersDirector.TabCourses, null); return true;
                 case CareerAct.Resign:
                     GameConfirm.Show("reallife_career_confirm_resign_title".Localize(new { employer = w != null

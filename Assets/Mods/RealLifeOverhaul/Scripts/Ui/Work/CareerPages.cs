@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
         Resign = 109, WalkOut = 110, AskRise = 111, OpenCampus = 112, TaskYes = 113, TaskNo = 114, TaskUp = 115, TakeContract = 116, DropContract = 117,
         Retire = 118, Aiming = 119, Declare = 120, AnswerA = 121, AnswerB = 122, PolicyMore = 123, PolicyLess = 124, RotaLean = 125, RotaStandard = 126, RotaFull = 127,
         AskShiftEarlier = 128, AskShiftLater = 129, AskEquipment = 130, AskInsurance = 131, Raise = 132, PracticeOpen = 133, PracticeClose = 134, Found = 135, FoundWith = 136,
-        PracticeLeaveAct = 137, BringColleagues = 138, WorkContract = 139
+        PracticeLeaveAct = 137, BringColleagues = 138, WorkContract = 139, StartWork = 140, WorkLate = 141, SelectPerson = 142, Move = 143, AimSeat = 144, ShowBoard = 145,
+        Register = 146, ShowContract = 147
     }
 
     /// <summary>One rung of the profession's ladder at the player's employer.</summary>
@@ -46,6 +47,8 @@ namespace RealLifeOverhaul.Ui
         public string NextRung;
         public string MatterText, MatterA, MatterB;          // an office matter waiting, and its two answers
         public bool CanDeclare, CanAsk = true;
+        public string DeskLine, DeskFallback, DeskWhy, StartWhy, LateWhy;   // where the desk is; why none could be had; why a shift cannot be begun from here; the same for overtime
+        public bool CanStart, CanLate;                       // a shift (or overtime) may be begun from this page, at no desk
         public string AskWhy;
         public readonly List<KeyValuePair<string, string>> Life = new List<KeyValuePair<string, string>>(6);   // the working life: next review, boss, overtime, pension
         public int Burnout = -1;
@@ -217,7 +220,7 @@ namespace RealLifeOverhaul.Ui
             int rise = b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Option,
                 WorkBuilder.Do((int)CareerAct.AskRise, 0, j.CanAsk ? null : j.AskWhy));
             int head = b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Primary, UiIcon.Locate, UiAction.Alt, WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
-            int a = -1, c2 = -1, d = -1;
+            int a = -1, c2 = -1, d = -1, start = -1, late = -1;
             if (j.MatterText != null)
             {
                 a = b.Button(j.MatterA, UiButtonKind.Secondary, UiIcon.Check, UiAction.Count, WorkBuilder.Do((int)CareerAct.AnswerA));
@@ -227,12 +230,21 @@ namespace RealLifeOverhaul.Ui
             {
                 d = b.Button(w.T("reallife_life_button_declare", "Declare the conflict"), UiButtonKind.Secondary, UiIcon.Warning, UiAction.Count, WorkBuilder.Do((int)CareerAct.Declare));
             }
+            if (j.CanStart)
+            {
+                start = b.Button(w.T("reallife_career_button_work", "Start the working day"), UiButtonKind.Secondary, UiIcon.Play, UiAction.Count,
+                    WorkBuilder.Do((int)CareerAct.StartWork, 0, j.StartWhy));
+            }
+            if (j.CanLate)
+            {
+                late = b.Button(w.T("reallife_life_button_late", "Work late"), UiButtonKind.Secondary, UiIcon.Clock, UiAction.Count, WorkBuilder.Do((int)CareerAct.WorkLate, 0, j.LateWhy));
+            }
             int resign = j.Leaving ? -1 : b.Button(w.T("reallife_career_button_resign", "Hand in notice"), UiButtonKind.Destructive, UiIcon.SignOut,
                 UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
             int walk = b.Button(w.T("reallife_career_button_walk_out", "Walk out"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.WalkOut));
             var heads = new List<UiActionModel> { b.ModelAt(head), b.ModelAt(rise) };
             var more = new List<UiActionModel>(4);
-            foreach (int k in new[] { a, c2, d })
+            foreach (int k in new[] { a, c2, d, start, late })
             {
                 if (k >= 0)
                 {
