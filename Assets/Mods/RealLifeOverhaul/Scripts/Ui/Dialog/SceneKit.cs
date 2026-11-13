@@ -194,6 +194,7 @@ namespace RealLifeOverhaul.Ui
         private bool _dirty = true;
         private SceneLook _look;
         private float _offset = -1f;
+        private readonly SceneViews.AnswerScroll _answers = new SceneViews.AnswerScroll();
 
         internal SceneScreen(SceneList list)
         {
@@ -216,8 +217,9 @@ namespace RealLifeOverhaul.Ui
             {
                 _laidPage = page.Stamp;
                 _offset = -1f;   // a new page: the conversation shows its newest line
+                _answers.Offset = 0f;
             }
-            _look = SceneViews.Lay(s, page, List.Thread, words, _offset, frame, dark, keys);
+            _look = SceneViews.Lay(s, page, List.Thread, words, _offset, frame, dark, keys, _answers);
             _stamp = page.Stamp;
             _heard = List.Thread.Count;
             _phone = UiPhone.LeftShare;
@@ -267,7 +269,14 @@ namespace RealLifeOverhaul.Ui
         {
             if (_look == SceneLook.Talk)
             {
-                _offset = System.Math.Max(0f, (_offset < 0f ? 100000f : _offset) - notches * UiTokens.S16);
+                if (clip >= 0 && clip == _answers.Clip)
+                {
+                    _answers.Offset = System.Math.Max(0f, _answers.Offset - notches * UiTokens.S16);   // the answers, where they outgrow their room
+                }
+                else
+                {
+                    _offset = System.Math.Max(0f, (_offset < 0f ? 100000f : _offset) - notches * UiTokens.S16);
+                }
                 _dirty = true;
             }
         }

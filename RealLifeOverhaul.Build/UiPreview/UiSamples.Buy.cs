@@ -21,7 +21,7 @@ internal static partial class UiSamples
         "vehicle_driving_fr", "vehicle_driving_needs", "vehicle_driving_plain", "hand_truck_used", "hand_truck_foreign", "paper_bag_eat"
     };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
-    public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
+    public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
 
     private static readonly string[] BuyGoods = { "Cupcake", "Croissant", "Ice cream", "Popcorn", "Cheese platter", "Paper bags", "Donut", "Coffee beans" };
@@ -490,31 +490,31 @@ internal static partial class UiSamples
         return m;
     }
 
-    // ------------------------------------------------------------------------------------------------- clothes, hair, surgery
+    // ------------------------------------------------------------------------------------------------- clothes and hair
 
     private static readonly string[] Tees = { "Red tee", "Black tee", "Orange tee", "Olive tee", "Charcoal tee", "Dark tee", "Blue hoodie", "Black jacket", "Lime crop top", "Navy blazer", "Red polo", "Red work vest" };
     private static readonly string[] TeePictures = { "buy:cl_red", "buy:cl_black", "buy:cl_orange", "buy:cl_olive", "buy:cl_char", "buy:cl_dark", "buy:cl_hoodie", "buy:cl_jacket", "buy:cl_lime", "buy:cl_blazer", "buy:cl_polo", "buy:cl_p12" };
     private static readonly float[] TeeAspects = { 1.4f, 1.33f, 1.4f, 1.51f, 1.56f, 1.59f, 1.56f, 1.44f, 2.14f, 1.12f, 1.13f, 1.28f };
 
-    /// <summary>The clothes shop at the mod's rack, the wardrobe at home, the hairdresser, and the surgeon's body and face.</summary>
+    /// <summary>The clothes shop at the mod's rack, the wardrobe at home and the hairdresser.</summary>
     public static UiWardrobeModel Wardrobe(UiWords t, string state)
     {
         t = Words(t, state);
-        bool hair = state == "hair", surgery = state.StartsWith("surgery"), shop = state.StartsWith("clothes");
+        bool hair = state == "hair", shop = state.StartsWith("clothes");
         var m = new UiWardrobeModel
         {
             Leave = t("dialog_leave_button", "Leave"), ColourLabel = t("reallife_ui_buy_colour", "Colour"),
             EmptyTitle = t("reallife_ui_buy_empty_grid", "Nothing to try on here"), EmptyBody = t("reallife_ui_buy_empty_grid_body", "Pick another kind at the left."),
             Prompts = Prompts(t), PromptCount = 3
         };
-        UiIcon[] glyphs = surgery ? new[] { UiIcon.Person, UiIcon.Eye, UiIcon.SmileyHappy } : hair ? new[] { UiIcon.Person } : new[] { UiIcon.Person, UiIcon.Tag, UiIcon.ShoppingBag, UiIcon.Star };
+        UiIcon[] glyphs = hair ? new[] { UiIcon.Person } : new[] { UiIcon.Person, UiIcon.Tag, UiIcon.ShoppingBag, UiIcon.Star };
         m.Tabs = new UiEdgeTab[glyphs.Length];
         for (int i = 0; i < glyphs.Length; i++)
         {
             m.Tabs[i] = new UiEdgeTab { Icon = glyphs[i] };
         }
         m.TabCount = glyphs.Length;
-        m.Tab = surgery && state == "surgery_face" ? 1 : hair ? 0 : 1;
+        m.Tab = hair ? 0 : 1;
         if (hair)
         {
             m.Title = t("change_character_hair_title", "Change hair");
@@ -529,41 +529,6 @@ internal static partial class UiSamples
             m.SwatchCount = 6;
             m.Swatch = 1;
             m.Actions = new[] { new UiActionModel { Label = t("change_character_hair_save_button", "Change hair") + " $45", Kind = UiButtonKind.Primary, Key = UiAction.Alt } };
-            return m;
-        }
-        if (surgery)
-        {
-            m.Title = t("plastic_surgery_title", "Plastic Surgery");
-            if (state == "surgery")
-            {
-                m.Sliders = new[]
-                {
-                    new UiSliderRow { Label = t("reallife_ui_buy_strength", "Strength"), Figure = "62", Share = 0.62f },
-                    new UiSliderRow { Label = t("reallife_ui_buy_weight", "Weight"), Figure = "35", Share = 0.35f },
-                    new UiSliderRow { Label = t("character_customization_skin_color", "Skin color"), Figure = "40", Share = 0.4f }
-                };
-                m.SliderCount = 3;
-                m.Held = 0;
-            }
-            else
-            {
-                m.Grid.Cards = new UiCatalogueCard[6];
-                for (int i = 0; i < 6; i++)
-                {
-                    m.Grid.Cards[i] = new UiCatalogueCard { Icon = UiIcon.Eye, Name = t("character_customization_head", "Head") + " " + (i + 1) };
-                }
-                m.Grid.CardCount = 6;
-                m.Grid.Chosen = 1;
-                m.Swatches = new[] { UiDraw.SwatchKey(0x3B6EA8), UiDraw.SwatchKey(0x2F5A43), UiDraw.SwatchKey(0x6B4A2B), UiDraw.SwatchKey(0x8A8A8A) };
-                m.SwatchCount = 4;
-                m.Swatch = 0;
-            }
-            m.Actions = new[]
-            {
-                new UiActionModel { Label = t("intro_tooltip_randomize_appearance", "Randomize appearance"), Kind = UiButtonKind.Secondary, Key = UiAction.Count },
-                new UiActionModel { Label = t("common_revert", "Revert"), Kind = UiButtonKind.Secondary, Key = UiAction.Count },
-                new UiActionModel { Label = t("common_apply_changes", "Apply Changes") + " $2,400", Kind = UiButtonKind.Primary, Key = UiAction.Alt }
-            };
             return m;
         }
         // The clothes: the torso's pieces, the mod's with their prices or Owned, the game's with their pictures alone.
@@ -682,7 +647,7 @@ internal static partial class UiSamples
             { "common_cargo", "Cargaison" }, { "itemoverlay_contents_headline", "Contenu" }, { "bizman_inventory_sell_all", "Tout vendre" },
             { "itempanelui_buttons_place", "Placer" }, { "action_take", "Prendre" }, { "change_character_clothes_title", "Changer de v\u00EAtements" },
             { "change_character_clothes_save_button", "Enregistrer la tenue" }, { "change_character_hair_title", "Changer de coiffure" },
-            { "change_character_hair_save_button", "Changer de coiffure" }, { "plastic_surgery_title", "Chirurgie esth\u00E9tique" }, { "character_customization_torso", "Torse" },
+            { "change_character_hair_save_button", "Changer de coiffure" }, { "character_customization_torso", "Torse" },
             { "character_customization_legs", "Jambes" }, { "character_customization_shoes", "Chaussures" }, { "character_customization_hair", "Cheveux" },
             { "character_customization_head", "T\u00EAte" }, { "character_customization_skin_color", "Couleur de peau" }, { "common_apply_changes", "Appliquer les modifications" },
             { "common_revert", "R\u00E9tablir" }, { "intro_tooltip_randomize_appearance", "Randomiser l'apparence" }, { "dialog_leave_button", "Quitter" },

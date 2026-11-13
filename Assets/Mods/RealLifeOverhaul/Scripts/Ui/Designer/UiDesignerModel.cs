@@ -131,8 +131,7 @@ namespace RealLifeOverhaul.Ui
         public int SwatchCount;
         public string PlaceLabel, FavouriteLabel, FilterNote;  // FilterNote: "Showing what the Storage shelf needs" with a way off (Clear)
         public string ClearLabel;
-        public bool PlaceOff;
-        public UiGameKey PlaceKey;
+        public bool PlaceOff;                                  // the game's tile has no click: Place is greyed
         public bool Filtered;                                  // the catalogue is narrowed to a requirement
     }
 

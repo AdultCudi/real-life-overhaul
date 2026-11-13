@@ -209,6 +209,10 @@ namespace RealLifeOverhaul.Ui
             {
                 pick.Offset = Math.Max(0f, pick.Offset + by);
             }
+            else if (clip >= 0 && clip == _m.ChoiceClip)
+            {
+                _m.ChoiceOffset = Math.Max(0f, _m.ChoiceOffset + by);   // the answers, where they outgrow their room
+            }
             else
             {
                 _m.Offset = Math.Max(0f, (_m.Offset < 0f ? 100000f : _m.Offset) + by);
@@ -458,6 +462,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _shownLines = _lines.Count;
                 _m.Offset = -1f;   // a new line: the thread shows its newest
+                _m.ChoiceOffset = 0f;
             }
             _m.Choices = _made.ToArray();
             _main = DialogRules.Keys(_m.Choices, _leave != null ? _choices.IndexOf(_leave) : -1, out _second);
@@ -555,7 +560,6 @@ namespace RealLifeOverhaul.Ui
         // show, answered in the game's own panel until the line is answered.
         private void Form(CanvasGroup view, DialogEntry e)
         {
-            _m.Form = UiFormKind.None;
             _m.Fields = NoFields;
             _m.FieldCount = 0;
             _m.Rows = _form.Rows;

@@ -60,18 +60,17 @@ public static partial class UiPreviewRunner
                 HoverCommand = st == "empty" ? -1 : UiCargo.CatalogueCommand + UiCatalogue.Card, HoverArg = 2, Walk = Moves(st == "empty" ? "" : "RRDRR")
             });
         }
-        string[] wardrobe = { "00.jpg", "12.jpg", "05.jpg", "03.jpg", "03.jpg", "00.jpg" };
+        string[] wardrobe = { "00.jpg", "12.jpg", "05.jpg", "00.jpg" };
         for (int i = 0; i < UiSamples.WardrobeStates.Length; i++)
         {
             string st = UiSamples.WardrobeStates[i];
-            bool sliders = st == "surgery";
             screens.Add(new Screen
             {
                 Name = "buy_wardrobe_" + st, AppName = "Clothes", Icon = UiIcon.Person, Backdrop = wardrobe[i],
                 Lay = (s, f, d, k) => UiWardrobe.Lay(s, UiSamples.Wardrobe(English, st), f, d, k), Bar = BuyBar(false, wardrobe[i]),
-                FocusCommand = sliders ? UiWardrobe.SliderCommand : UiWardrobe.GridCommand + UiCatalogue.Card, FocusArg = 0,
-                HoverCommand = sliders ? UiWardrobe.ActionCommand : UiWardrobe.GridCommand + UiCatalogue.Card, HoverArg = sliders ? 0 : 2,
-                Walk = Moves(sliders ? "DDD" : "RRDDRD")
+                FocusCommand = UiWardrobe.GridCommand + UiCatalogue.Card, FocusArg = 0,
+                HoverCommand = UiWardrobe.GridCommand + UiCatalogue.Card, HoverArg = 2,
+                Walk = Moves("RRDDRD")
             });
         }
         string[] garage = { "13.jpg", "11.jpg", "02.jpg" };

@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_dialog_import_orders", "reallife_ui_dialog_import_mondays", "reallife_ui_dialog_import_products",
                     "reallife_ui_dialog_import_in_bizman",
                     "reallife_ui_dialog_loan_term", "reallife_ui_dialog_loan_term_years", "reallife_ui_dialog_loan_rate", "reallife_ui_dialog_loan_rate_value",
-                    "reallife_ui_dialog_loan_payment", "reallife_ui_dialog_loan_total", "reallife_ui_dialog_loan_cost_in", "reallife_ui_dialog_loan_cost_out",
+                    "reallife_ui_dialog_loan_total", "reallife_ui_dialog_loan_cost_in", "reallife_ui_dialog_loan_cost_out",
                     "reallife_ui_dialog_loan_lower", "reallife_ui_dialog_loan_lower_yes", "reallife_ui_dialog_loan_lower_rating", "reallife_ui_dialog_loan_line",
                     "reallife_ui_dialog_loan_line_cost", "reallife_econ_kind_overdraft", "reallife_ui_dialog_mood_unsure", "dialog_health_insurance_manager_npc_name",
                     "dialog_health_insurance_negotiation_start", "dialog_health_insurance_player_offer", "dialog_negotiation_acceptable_1",
@@ -66,7 +66,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_travel_desk_pay", "reallife_travel_desk_pay_now", "reallife_travel_desk_pay_deposit", "reallife_ui_dialog_cost_deposit",
                     "dialog_bank_investment_header", "common_amount", "dialog_bank_investment_risk_info", "priority_medium", "common_investment_fund", "common_risk",
                     "econoview_investments_autoinvest", "reallife_ui_dialog_cost_invest", "reallife_ui_dialog_cost_invest_daily", "reallife_ui_dialog_cost_invest_least",
-                    "reallife_ui_dialog_cost_invest_range", "reallife_ui_dialog_cost_invest_short", "reallife_ui_dialog_cost_invest_nofund"
+                    "reallife_ui_dialog_cost_invest_range", "reallife_ui_dialog_cost_invest_short", "reallife_ui_dialog_cost_invest_nofund",
+                    "dialog_bank_investment_risk_info_tooltip", "bank_dialog_interest_daily_payment", "econoview_loans_daily_payment", "bank_dialog_total_daily_payment"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("monologue", UiTemplate.Decision, "MonologueScreen", new[]
                 {

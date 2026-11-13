@@ -470,7 +470,7 @@ internal static partial class UiSamples
                     new UiMessageModel { From = UiFrom.System, Text = "Victor will wait for your answer until Friday." },
                 },
                 MessageCount = 5,
-                Form = UiFormKind.Amount, FormLabel = "Your offer a month", FormValue = "$1,180", FormHint = "Similar flats on Fifth Avenue let for $1,150 to $1,350.",
+                Fields = new[] { new UiFormField { Kind = UiFormKind.Amount, Label = "Your offer a month", Value = "$1,180", CanLess = true, CanMore = true } }, FieldCount = 1,
                 Choices = new[]
                 {
                     new UiDecisionChoice { Name = "Offer $1,180 a month", Lines = new[] { new UiConsequence { Text = "He may say no", Tone = -1 }, new UiConsequence { Text = "Rent $60 a month under his", Tone = 1, Change = -1 } } },
@@ -503,7 +503,7 @@ internal static partial class UiSamples
                 new UiMessageModel { From = UiFrom.Them, Text = "Thanks. It would mean a lot.", Time = "09:21" },
             },
             MessageCount = 10,
-            Form = UiFormKind.Amount, FormLabel = "Hourly wage", FormValue = "$24", FormHint = "She earns $22 an hour now.",
+            Fields = new[] { new UiFormField { Kind = UiFormKind.Amount, Label = "Hourly wage", Value = "$24", CanLess = true, CanMore = true } }, FieldCount = 1,
             Choices = new[]
             {
                 new UiDecisionChoice

@@ -157,10 +157,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember CargoWorth = StaticMethod(UiManageCargo, Game, "ItemHelper", "GetWorth", "Single", "CargoInstance");
         public static readonly GameMember CargoSellsFor = StaticMethod(UiManageCargo, Game, "ItemHelper", "GetSellingPrice", "Single", "CargoInstance");
 
-        // The character screens: the menu of categories, the pieces and colours, the body's sliders, each screen's buttons.
+        // The character screens: the menu of categories, the pieces and colours, each screen's buttons.
         public static readonly GameMember LookClothes = Field(UiWardrobe, Game, "UI.UIs", "changeCharacterClothesUI", "ChangeCharacterClothesUI");
         public static readonly GameMember LookHair = Field(UiWardrobe, Game, "UI.UIs", "changeCharacterHairUI", "ChangeCharacterHairUI");
-        public static readonly GameMember LookSurgery = Field(UiWardrobe, Game, "UI.UIs", "plasticSurgeryUI", "PlasticSurgeryUI");
         public static readonly GameMember LookMenu = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "menu", "MenuVertical");
         public static readonly GameMember LookPicker = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "elementPicker", "ElementPicker");
         public static readonly GameMember LookColours = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "appearanceColorPicker", "AppearanceColorPicker");
@@ -177,13 +176,5 @@ namespace RealLifeOverhaul
         public static readonly GameMember LookHairButton = Field(UiWardrobe, Game, "ChangeCharacterHairUI", "changeHairButton", "Button");
         public static readonly GameMember LookHairLabel = Field(UiWardrobe, Game, "ChangeCharacterHairUI", "changeHairButtonLabel", "TextLocalizationComponent");
         public static readonly GameMember LookHairLeave = Method(UiWardrobe, Game, "ChangeCharacterHairUI", "Hide", "Void");
-        public static readonly GameMember LookBody = Field(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "bodyValues", "BodyValues");
-        public static readonly GameMember LookApply = Field(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "applyButton", "Button");
-        public static readonly GameMember LookApplyLabel = Field(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "applyButtonLabel", "TextLocalizationComponent");
-        public static readonly GameMember LookRandomize = Field(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "randomizeButton", "Button");
-        public static readonly GameMember LookRevert = Field(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "revertButton", "Button");
-        public static readonly GameMember LookSurgeryLeave = Method(UiWardrobe, Game, "Character.Customization.PlasticSurgeryUI", "Hide", "Void", "Boolean");
-        public static readonly GameMember LookStrength = Field(UiWardrobe, Game, "Character.Customization.BodyValues", "strengthSlider", "Slider");
-        public static readonly GameMember LookWeight = Field(UiWardrobe, Game, "Character.Customization.BodyValues", "fatnessSlider", "Slider");
     }
 }

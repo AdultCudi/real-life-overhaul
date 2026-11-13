@@ -34,5 +34,6 @@ namespace RealLifeOverhaul
         // The time of day tool keeps itself and its slider to itself: found, read and moved as its own buttons move it.
         public static readonly GameMember DayToolSelf = StaticField(UiTimeOfDay, Game, "InGameTimeOfDayPanel", "Instance", "InGameTimeOfDayPanel");
         public static readonly GameMember DayToolSlider = Field(UiTimeOfDay, Game, "InGameTimeOfDayPanel", "timeOfDaySlider", "Slider");
+        public static readonly GameMember DayToolText = Field(UiTimeOfDay, Game, "InGameTimeOfDayPanel", "timeOfDayText", "TMP_Text");
     }
 }

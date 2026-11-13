@@ -28,8 +28,9 @@ namespace RealLifeOverhaul.Ui
         public const int FigureMost = 28;                   // characters a read-only figure takes at the right before it reads as a note
         public const int BodyMost = 5;                      // lines a decision card's narrative holds; a longer one is a conversation
         // Rows a form is read into: an order of the game's most (100 things, each a row and a rule) with its address,
-        // its time, its fee and its total. At 48 an order's 21st kind dropped the Add item button and the total.
-        public const int MostRows = 240;
+        // its time, its fee and its total. At 48 an order's 21st kind dropped the Add item button and the total; no form of
+        // the game's comes near this, so no row is ever left out of one.
+        public const int MostRows = 1000;
         public const int MostLines = 30;                    // lines a thread keeps: the game's own panel keeps its last thirty
 
         /// <summary>True for a casino game's dialog, by its class's name.</summary>

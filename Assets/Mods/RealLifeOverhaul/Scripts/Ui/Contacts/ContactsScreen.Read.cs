@@ -437,7 +437,6 @@ namespace RealLifeOverhaul.Ui
             t.Chosen = -1;
             t.Fields = new UiFormField[0];
             t.FieldCount = 0;
-            t.FormHint = null;
             t.Typing = false;
             t.EmptyTitle = UiText.T("reallife_ui_contacts_quiet_title");
             t.EmptyBody = UiText.T("reallife_ui_contacts_quiet_body");

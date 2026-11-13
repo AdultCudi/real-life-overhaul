@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Ui
         {
             _frame = frame;
             DesignerGame.Fill(_m);
-            _m.PromptCount = DesignerHints.Read(_m.Prompts);
+            _m.PromptCount = DesignerHints.Read(ref _m.Prompts);   // grows to every line the game shows, none left out
             frame.Pointer = _m.PromptCount == 0;   // the game's hint lines are chips only while the layout lets the keys lead, as the HUD does for them
             if (_m.Panel != UiDesignerPanelKind.BusinessType)
             {

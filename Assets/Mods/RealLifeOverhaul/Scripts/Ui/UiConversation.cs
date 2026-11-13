@@ -49,17 +49,13 @@ namespace RealLifeOverhaul.Ui
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Chosen = -1;
         public string ChoicesLabel;                    // the CAPS line over the answers ("Your answer"); null for none
-        public UiFormKind Form;
-        public string FormLabel;                       // "Your offer"
-        public string FormValue;                       // the figure, the choice, the words typed
-        public string FormHint;                        // a quiet line under it ("The bank lends up to $40,000"); null for none
-        public UiFormField[] Fields = new UiFormField[0];   // a form of several fields (a wage and a signing bonus) in place of the one above
+        public UiFormField[] Fields = new UiFormField[0];   // a form of a few fields (a wage and a signing bonus)
         public int FieldCount;
-        public UiFormRow[] Rows = new UiFormRow[0];         // a game's whole form (a loan, a campaign, a delivery) in place of both (UiFormRows)
+        public UiFormRow[] Rows = new UiFormRow[0];         // a game's whole form (a loan, a campaign, a delivery) in place of them (UiFormRows)
         public int RowCount;
         public UiFormPick Pick = new UiFormPick();           // that form's open choice, held slider and scroll
-        public bool FormOn;                            // a switch
-        public bool FormCanLess = true, FormCanMore = true;
+        public float ChoiceOffset;                     // px the answers have scrolled, when they are more than their share of the room holds
+        public short ChoiceClip = -1;                  // set as it is laid out: the answers' scroll region, or -1 while they stand whole
         public string EmptyTitle, EmptyBody;           // a thread with nothing in it yet
         public UiPrompt[] Prompts = new UiPrompt[0];   // the docked panel's own prompt bar
         public int PromptCount;
@@ -105,8 +101,30 @@ namespace RealLifeOverhaul.Ui
             float foot = y + h;
             float choicesH = ChoicesHeight(m, w);
             float formH = FormHeight(m, w);
-            float cy = foot - choicesH;
-            Choices(s, at.InRegion(RegionChoices), m, x, cy, w, keys);
+            // The answers take what they need; only where they would fill the whole room, the form too, do they scroll inside the
+            // room that is left, every line whole.
+            float form = formH > 0f ? formH + UiTokens.S3 : 0f;
+            float most = Math.Max(UiTokens.S16 * 2f, h - form - UiTokens.S4);
+            bool scrolls = choicesH > most + 0.5f;
+            float shown = scrolls ? UiDraw.SnapDown(most) : choicesH;
+            float cy = foot - shown;
+            m.ChoiceClip = -1;
+            if (scrolls)
+            {
+                float offset = Math.Max(0f, Math.Min(m.ChoiceOffset, choicesH - shown));
+                m.ChoiceOffset = offset;
+                UiAt region = at.InRegion(RegionChoices);
+                short clip = s.AddClip(x, cy, w, shown, offset);
+                s.Clips[clip].ContentHeight = choicesH;
+                m.ChoiceClip = clip;
+                UiDraw.ScrollThumb(s, region, x + w + UiTokens.S1, cy, shown, offset, choicesH);
+                Choices(s, new UiAt { Parent = -1, Clip = clip, Layer = region.Layer, Order = -1, Region = region.Region }, m, 0f, 0f, w, keys);
+            }
+            else
+            {
+                m.ChoiceOffset = 0f;
+                Choices(s, at.InRegion(RegionChoices), m, x, cy, w, keys);
+            }
             float fy = cy - (formH > 0f ? formH + UiTokens.S3 : 0f);
             if (formH > 0f)
             {
@@ -354,52 +372,19 @@ namespace RealLifeOverhaul.Ui
             {
                 return UiFormRows.Height(m.Rows, m.RowCount, w, m.Pick);
             }
-            if (m.FieldCount > 0)
-            {
-                return FieldsHeight(m);
-            }
-            if (m.Form == UiFormKind.None)
-            {
-                return 0f;
-            }
-            return UiTokens.S3 * 2f + UiTokens.Control + (string.IsNullOrEmpty(m.FormHint) ? 0f : UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)));
+            return m.FieldCount > 0 ? FieldsHeight(m) : 0f;
         }
 
-        // The form slot on a band: its label at the left, its control at the right, a quiet hint under them.
+        // The form slot on a band: the game's whole form, or a few fields.
         private static void Form(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
             if (m.RowCount > 0)
             {
                 UiFormRows.Lay(s, at, m.Rows, m.RowCount, m.Pick, x, y, w);
-                return;
             }
-            if (m.FieldCount > 0)
+            else if (m.FieldCount > 0)
             {
                 Fields(s, at, m, x, y, w);
-                return;
-            }
-            float h = FormHeight(m, w);
-            UiDraw.Band(s, at, x, y, w, h);
-            float cw = Math.Min(FormControl, UiDraw.SnapDown(w / 2f)), cx = x + w - UiTokens.S3 - cw, cy = y + UiTokens.S3;
-            UiDraw.TextMiddle(s, at, x + UiTokens.S3, cy, UiTokens.Control, cx - UiTokens.S4 - x - UiTokens.S3, UiStyle.Title, UiRole.Text, m.FormLabel, UiFlags.Label | UiFlags.Truncate);
-            switch (m.Form)
-            {
-                case UiFormKind.Amount:
-                    UiDraw.Stepper(s, at, cx, cy, cw, m.FormValue, m.FormCanLess, m.FormCanMore, FormLess, FormCommand, FormMore, 0, false);
-                    break;
-                case UiFormKind.Choice:
-                    UiDraw.Choice(s, at, cx, cy, cw, m.FormValue, FormCommand, 0, false);
-                    break;
-                case UiFormKind.Switch:
-                    UiDraw.Switch(s, at, cx, cy, cw, m.FormOn, m.FormValue, FormCommand, 0, false);
-                    break;
-                default:
-                    UiDraw.TextField(s, at, cx, cy, cw, m.FormValue, null, FormCommand, 0, false);
-                    break;
-            }
-            if (!string.IsNullOrEmpty(m.FormHint))
-            {
-                UiDraw.Text(s, at, x + UiTokens.S3, cy + UiTokens.Control + UiTokens.S1, w - UiTokens.S3 * 2f, UiStyle.Small, UiRole.Text2, m.FormHint, UiFlags.Truncate);
             }
         }
     }

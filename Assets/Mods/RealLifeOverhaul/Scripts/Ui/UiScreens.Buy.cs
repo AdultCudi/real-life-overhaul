@@ -54,10 +54,10 @@ namespace RealLifeOverhaul.Ui
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("wardrobe", UiTemplate.InfoPanel, "WardrobeScreen", new[]
                 {
-                    "change_character_clothes_title", "change_character_clothes_save_button", "change_character_hair_title", "change_character_hair_save_button", "plastic_surgery_title",
+                    "change_character_clothes_title", "change_character_clothes_save_button", "change_character_hair_title", "change_character_hair_save_button",
                     "character_customization_torso", "character_customization_legs", "character_customization_shoes", "character_customization_hair", "character_customization_head",
-                    "character_customization_skin_color", "common_apply_changes", "common_revert", "intro_tooltip_randomize_appearance", "dialog_leave_button",
-                    "reallife_clothes_screen_owned", "reallife_creator_tag", "reallife_ui_buy_colour", "reallife_ui_buy_strength", "reallife_ui_buy_weight",
+                    "dialog_leave_button",
+                    "reallife_clothes_screen_owned", "reallife_creator_tag", "reallife_ui_buy_colour",
                     "reallife_ui_buy_empty_grid", "reallife_ui_buy_empty_grid_body", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_ui_buy_filter_all", "reallife_ui_buy_filter_owned", "reallife_ui_buy_filter_rlo", "reallife_ui_buy_filter_new", "reallife_ui_buy_find",
                     "reallife_ui_buy_basket", "reallife_ui_buy_to_pay",
