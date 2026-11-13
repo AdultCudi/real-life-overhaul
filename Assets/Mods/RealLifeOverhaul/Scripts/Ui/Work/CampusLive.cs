@@ -363,11 +363,6 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), w.F("reallife_work_n_of_n", "{n} of {all}",
                     "n", e.Homework.ToString(Inv), "all", StudyRules.HomeworkSet(e).ToString(Inv))));
-                if (d.RoomLine(e) != null)
-                {
-                    // where the class is held, under the name of the school
-                    r.Sub += ", " + w.F("reallife_work_room_value", "floor {floor}, room {room}", "floor", CampusRules.FloorOf(c.Id).ToString(Inv), "room", CampusRules.RoomOf(c.Id).ToString(Inv));
-                }
                 // The director says why a class, homework or an exam cannot be done now; a course with no class at all (or no homework, or no exam) has no button for it.
                 string attend = d.CanAttend(e, out int _), homework = d.CanHomework(e), sit = d.CanSit(e);
                 if (attend == null || attend != "reallife_study_why_no_class")
@@ -402,8 +397,9 @@ namespace RealLifeOverhaul.Ui
             {
                 string university = d.UniversityLine();
                 t.NoteLead = w.T("reallife_work_study_how_lead", "How a class works.");
-                t.NoteText = (university != null ? university + " " : string.Empty) + CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(Inv),
-                    "late", StudyCatalogue.LateMinutes.ToString(Inv));
+                // One sentence to a line: the three of them read as a block across a wide window.
+                t.NoteText = (university != null ? university.Replace(". ", ".\n") + "\n" : string.Empty) + CareersText.T("reallife_campus_studying_about", "early",
+                    StudyCatalogue.ArriveEarlyMinutes.ToString(Inv), "late", StudyCatalogue.LateMinutes.ToString(Inv));
             }
             return t;
         }
@@ -439,10 +435,11 @@ namespace RealLifeOverhaul.Ui
                 var mode = (StudyMode)en.Mode;
                 if (c.Timetabled)
                 {
-                    int days = StudyRules.Days(c, mode), hour = StudyRules.Hour(c, mode), last = en.Start + StudyRules.Length(c, mode) + 14;
+                    // The director's own count: the course's classes end with its last session, and once the exam stage is reached no class is left ahead.
+                    int days = StudyRules.Days(c, mode), hour = StudyRules.Hour(c, mode), last = StudyRules.LastClassDay(c, mode, en.Start);
                     for (int day = Math.Max(from, en.Start); day < from + length && day <= last; day++)
                     {
-                        if (StudyRules.On(days, day))
+                        if (StudyRules.On(days, day) && StudyRules.ClassShown(en, day, today, last))
                         {
                             entries.Add(new UiDiaryEntry { Day = day - from + 1, Icon = WorkGlyphs.Course(c), Title = W.F("reallife_work_diary_class",
                                 "Class: {course}", "course", CareersText.Course(c.Id)), Short = CareersText.Course(c.Id), Value = CareersText.Hour(hour) });

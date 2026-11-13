@@ -64,6 +64,23 @@ internal static partial class Program
               && StudyRules.Held(null, 8, 0, -1) == 0,
             "next class: none at the exam, none for no enrolment");
 
+        // ---------------------------------------------------------------- the diary lists the classes the rule has: none past the last session, none ahead at the exam
+        int lastDay = StudyRules.LastClassDay(fork, StudyMode.FullTime, 2);
+        Check(lastDay == 8 && StudyRules.LastClassDay(cs, StudyMode.FullTime, 1) > 7 * (cs.Sessions / 3 - 1) && StudyRules.LastClassDay(null, StudyMode.FullTime, 1) == -1,
+            "next class: the Mon and Wed course followed from Tuesday day 2 has its second and last class on Monday day 8, as Held reaches the course's sessions");
+        Check(StudyRules.ClassShown(owner, 8, 8, lastDay) && !StudyRules.ClassShown(owner, 10, 8, lastDay) && !StudyRules.ClassShown(owner, 15, 8, lastDay),
+            "next class: a diary lists the last class and none after it, however long the timetable runs");
+        var sat = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Seen = 2, Done = 2, SettledDay = 10, Stage = (int)EnrolStage.Exam, ExamFrom = 11, ExamTo = 18 };
+        Check(StudyRules.ClassShown(sat, 8, 12, lastDay) && !StudyRules.ClassShown(sat, 15, 12, lastDay),
+            "next class: a course at its exam keeps the classes it held in the diary and shows none ahead");
+        var left = new Enrolment { Course = fork.Id, Mode = (int)StudyMode.FullTime, Start = 2, Stage = (int)EnrolStage.Barred };
+        Check(!StudyRules.ClassShown(left, 15, 12, lastDay) && StudyRules.ClassShown(left, 3, 12, lastDay),
+            "next class: a barred enrolment has no class ahead either");
+        string live = ModSource(@"Ui\Work\CampusLive.cs");
+        Check(live.Contains("StudyRules.ClassShown(") && !live.Contains("StudyRules.Length(c, mode) + 14"),
+            "next class: the Campus diary on the new interface lists classes by the director's rule, not by the timetable's length");
+        Check(!live.Contains("reallife_work_room_value"), "next class: the course card's place line is the director's PlaceOf alone (it carries the room), the room is not added again");
+
         // ---------------------------------------------------------------- Persona reads the same rule
         var f = new StudyFile();
         f.Courses.Add(degree);
