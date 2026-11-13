@@ -60,7 +60,54 @@ namespace RealLifeOverhaul.Ui
             return keys;
         }
 
+        // The words of the Economy app's cards (the costs, the bank, the wholesale prices, the books, the departments, the tax, the jobs, the districts and your own places).
+        private static string[] NewsCardKeys()
+        {
+            return new[]
+            {
+                "reallife_econapp_all_insights", "reallife_econapp_bank_cut", "reallife_econapp_bank_held", "reallife_econapp_bank_last",
+                "reallife_econapp_bank_next", "reallife_econapp_bank_next_down", "reallife_econapp_bank_next_up", "reallife_econapp_bank_raised",
+                "reallife_econapp_bank_rate", "reallife_econapp_bank_title", "reallife_econapp_bank_upcoming", "reallife_econapp_books_balance",
+                "reallife_econapp_books_note", "reallife_econapp_books_revenue", "reallife_econapp_books_spending", "reallife_econapp_books_title",
+                "reallife_econapp_chart_inflation", "reallife_econapp_chart_prices", "reallife_econapp_chart_rate",
+                "reallife_econapp_chart_unemployment", "reallife_econapp_chart_vacancies", "reallife_econapp_costs_note",
+                "reallife_econapp_costs_rents", "reallife_econapp_costs_spend", "reallife_econapp_costs_takings", "reallife_econapp_costs_title",
+                "reallife_econapp_costs_usual", "reallife_econapp_costs_you", "reallife_econapp_council_off_body",
+                "reallife_econapp_council_off_title", "reallife_econapp_departments_note", "reallife_econapp_departments_title",
+                "reallife_econapp_dept_living", "reallife_econapp_dept_roads", "reallife_econapp_dept_safety", "reallife_econapp_dept_services",
+                "reallife_econapp_district_bears", "reallife_econapp_district_demand", "reallife_econapp_district_foot",
+                "reallife_econapp_district_income", "reallife_econapp_district_land", "reallife_econapp_district_people",
+                "reallife_econapp_district_pull", "reallife_econapp_district_worth", "reallife_econapp_districts_none_body",
+                "reallife_econapp_districts_none_title", "reallife_econapp_fact_best", "reallife_econapp_fact_decision",
+                "reallife_econapp_fact_decision_one", "reallife_econapp_fact_month", "reallife_econapp_hero_effects", "reallife_econapp_income_note",
+                "reallife_econapp_income_title", "reallife_econapp_insights_note", "reallife_econapp_jobs_off_body",
+                "reallife_econapp_jobs_off_title", "reallife_econapp_market_closed", "reallife_econapp_market_open",
+                "reallife_econapp_markets_off_body", "reallife_econapp_markets_off_title", "reallife_econapp_not_kept",
+                "reallife_econapp_people_hiring", "reallife_econapp_people_hiring_easy", "reallife_econapp_people_hiring_hard",
+                "reallife_econapp_people_hiring_usual", "reallife_econapp_people_layoffs", "reallife_econapp_people_layoffs_none",
+                "reallife_econapp_people_layoffs_value", "reallife_econapp_people_note", "reallife_econapp_people_seekers",
+                "reallife_econapp_people_title", "reallife_econapp_places_estates", "reallife_econapp_places_more", "reallife_econapp_places_shops",
+                "reallife_econapp_tax_bill", "reallife_econapp_tax_due", "reallife_econapp_tax_note", "reallife_econapp_tax_nothing",
+                "reallife_econapp_tax_rate", "reallife_econapp_tax_title", "reallife_econapp_tile_prices", "reallife_econapp_wholesale_note",
+                "reallife_econapp_wholesale_title", "reallife_macro_page_carried", "reallife_macro_shop_customers", "reallife_macro_shop_no_figure",
+                "reallife_macro_shop_none", "reallife_macro_shop_over", "reallife_macro_shop_suit", "reallife_macro_state_recession",
+                "reallife_macro_supply_glut_now", "reallife_macro_supply_glut_tomorrow", "reallife_macro_supply_shortage_now",
+                "reallife_macro_supply_shortage_tomorrow", "reallife_macro_supply_stocked", "reallife_news_col_customers",
+                "reallife_news_col_game_value", "reallife_news_col_going", "reallife_news_col_level", "reallife_news_col_worth_today"
+            };
+        }
+
         private static string[] NewsShared()
+        {
+            string[] cards = NewsCardKeys();
+            string[] main = NewsMainKeys();
+            var all = new string[cards.Length + main.Length];
+            cards.CopyTo(all, 0);
+            main.CopyTo(all, cards.Length);
+            return all;
+        }
+
+        private static string[] NewsMainKeys()
         {
             return new[]
             {

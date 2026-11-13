@@ -114,6 +114,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPath.cs" Link="Mod\News\NewsPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsHost.cs" Link="Mod\News\NewsHost.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPeopleRules.cs" Link="Mod\News\NewsPeopleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsCardRules.cs" Link="Mod\News\NewsCardRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Cards.cs" Link="Mod\News\NewsPages.Cards.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Stand.cs" Link="Mod\News\NewsPages.Stand.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsText.cs" Link="Mod\News\NewsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsReadingPage.cs" Link="Mod\News\NewsReadingPage.cs" />
