@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         public long ChainExit;
         public bool Kept, CanKeep;
         public int Breach;
+        public string KeptNote, ManagerNote;   // how a kept price stands (the band it is kept at), and that a manager of the game's watches the district and would undo it
     }
 
     /// <summary>Somebody who wants to open a shop under a brand.</summary>

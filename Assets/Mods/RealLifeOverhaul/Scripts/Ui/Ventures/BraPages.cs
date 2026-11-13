@@ -333,6 +333,14 @@ namespace RealLifeOverhaul.Ui
             {
                 r.Add(VentBlock.Note(s.Line));
             }
+            if (!string.IsNullOrEmpty(s.KeptNote))
+            {
+                r.Add(VentBlock.Note(s.KeptNote));
+            }
+            if (!string.IsNullOrEmpty(s.ManagerNote))
+            {
+                r.Add(VentBlock.Note(s.ManagerNote, UiRole.Warn));
+            }
             var acts = new List<UiActionModel>(4);
             string place = s.Place;
             if (s.Kind == "member")

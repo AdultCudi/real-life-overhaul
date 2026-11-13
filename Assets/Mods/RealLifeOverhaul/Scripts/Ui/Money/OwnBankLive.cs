@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Ui
             get
             {
                 GameInstance save = SaveGameManager.Current;
-                return DaySeriesDirector.Generation + _local + (save != null ? save.Day * 24 + save.Hour : 0);
+                return DaySeriesDirector.Generation + _local + MoneyStamp.Now + (save != null ? save.Day * 24 + save.Hour : 0);
             }
         }
 
