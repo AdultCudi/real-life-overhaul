@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Ui
             float total = pad + Math.Max(LeadFace, textH) + UiTokens.S4 + choicesH + UiTokens.Control + pad;
             int card = UiDraw.Box(s, at, x, y, width, total, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt inside = at.In(card);
-            UiDraw.Portrait(s, inside, x + pad, y + pad, LeadFace, q.Asker ?? q.Subject ?? string.Empty, q.AskerHue, q.AskerRing);
+            UiDraw.Portrait(s, inside, x + pad, y + pad, LeadFace, (q.Asker != null ? q.AskerFace : q.SubjectFace) ?? q.Asker ?? q.Subject ?? string.Empty, q.AskerHue, q.AskerRing);
             float cy = y + pad;
             UiDraw.TextMiddle(s, inside, tx, cy, kh, tw, UiStyle.SectionHeader, UiRole.Text2, q.Kicker ?? string.Empty, UiFlags.Label | UiFlags.Truncate);
             cy += kh + UiTokens.S1;
@@ -220,7 +220,8 @@ namespace RealLifeOverhaul.Ui
             }
             var m = new UiDecisionModel
             {
-                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Portrait = string.IsNullOrEmpty(hero) ? null : hero, PortraitLines = lines.ToArray(),
+                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Portrait = string.IsNullOrEmpty(hero) ? null : hero,
+                PortraitFace = string.IsNullOrEmpty(q.Subject) ? q.AskerFace : q.SubjectFace, PortraitLines = lines.ToArray(),
                 FactLabels = q.FactLabels, FactValues = q.FactValues, Choices = ChoicesOf(q), Selected = Math.Max(0, Math.Min(q.Choices.Length - 1, v.Choice)), Buttons = actions,
                 ChoiceCmd = Choice, ButtonCmd = Act,
                 Prompts = new[]

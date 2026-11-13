@@ -19,6 +19,19 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The same, told under the key the question draws the face by (FaceSources.Key), so two people of one name keep their own faces; null where nobody is told.
+        internal static string FaceKeyed(string name, string employeeId)
+        {
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(employeeId))
+            {
+                return null;
+            }
+            var e = CompanyGame.Employee(employeeId);
+            string key = FaceSources.Key(name, e);
+            FaceSources.Employee(name, key, e);
+            return key;
+        }
+
         /// <summary>
         /// A question waiting on the owner (an escalation), as a card or the Lead: who asks, about whom, what it is, what can be done with the consequences of each, from the
         /// escalation's own figures and the model behind it (the pay asked, the manager's limit, the lease's offer). Every choice is an answer the director already takes.
@@ -39,7 +52,7 @@ namespace RealLifeOverhaul.Ui
                 q.AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks");
                 q.AskerHue = UiColour.HueOf(manager.Name);
                 q.AskerRing = UiRole.Warn;
-                Face(manager.Name, manager.Id);
+                q.AskerFace = FaceKeyed(manager.Name, manager.Id);
                 q.OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", FirstName(manager.Name));
                 q.Open = CompanyAct.Of(CompanyDo.Go, "mgr:" + e.Place, CompanyView.Managers);
             }
@@ -92,7 +105,7 @@ namespace RealLifeOverhaul.Ui
             {
                 q.Subject = f.Name;
                 q.SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", CompanyGame.SkillName(f.Id), "days", Math.Max(0, d.Today - f.AskDay).ToString());
-                Face(f.Name, f.Id);
+                q.SubjectFace = FaceKeyed(f.Name, f.Id);
             }
             q.Title = w.T(offer ? "reallife_co_q_offer_title" : "reallife_co_q_raise_title", offer ? "A rival's offer above my limit" : "A raise above my limit");
             int now = f != null ? f.Paid : 0;

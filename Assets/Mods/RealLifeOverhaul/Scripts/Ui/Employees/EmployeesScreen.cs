@@ -135,6 +135,11 @@ namespace RealLifeOverhaul.Ui
                     {
                         return _previewRow < _rows.Count && OpenPerson(_previewRow);
                     }
+                    if (arg == UiStaff.PreviewAssign)
+                    {
+                        // The candidate's business: their page opens as a press on the row opens it, with the game's own drop-down of businesses open over it.
+                        return Candidates() && _previewRow < _rows.Count && OpenPerson(_previewRow) && Open(UiStaff.ListAssign);
+                    }
                     // A candidate's discard, negotiation or hire from the row beside the table: their page opens as the row's press opens it,
                     // then the box's own button is pressed, so the game asks and answers as it does for the page.
                     return Candidates() && arg >= 0 && arg <= 2 && _previewRow < _rows.Count && OpenPerson(_previewRow) && Action(arg);

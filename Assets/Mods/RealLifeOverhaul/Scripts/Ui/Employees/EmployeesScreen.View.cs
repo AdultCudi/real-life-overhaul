@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Ui
                         Name = e.employeeName, Face = face, Age = TimeHelper.GetYearsByDays(e.ageInDays), Hours = e.hoursPerWeek,
                         Role = e.primarySkillName.GetLocalization(), Business = e.currentBusinessName,
                         Skill = e.primarySkillPercentage, Wage = paid.ToCurrencyFormat(), Satisfaction = Mathf.RoundToInt(e.satisfaction),
-                        Task = TaskWords(e.task), TaskTone = TaskTone(e.task, e.isAbsent), Picked = on
+                        Task = e.isAbsent ? UiText.T(AbsentTask) : TaskWords(e.task), TaskTone = TaskTone(e.task, e.isAbsent), Picked = on
                     };
                     _rows.Add(e.employeeInstance);
                     _dataIndex.Add(i);
@@ -668,6 +668,7 @@ namespace RealLifeOverhaul.Ui
             p.Satisfaction = Mathf.RoundToInt(e.satisfaction);
             p.Level = string.IsNullOrEmpty(primary) ? 0 : Mathf.RoundToInt(e.GetSkillValue(primary));
             p.Age = e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0;
+            p.Gender = e.characterData != null ? e.characterData.gender.GetLocalization() : null;
             p.Wage = PaidMoney(e).ToCurrencyFormat();
             p.Positive = Shown(_positive) ? UiWidgets.Label(_positive) : null;
             p.PositiveOn = UiWidgets.Shows(_positive);
@@ -840,12 +841,19 @@ namespace RealLifeOverhaul.Ui
                 bool fulfilled = !candidate && d != null && d.Fulfilled(e, null);
                 rows[i] = new UiStaffDemand
                 {
-                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = DaysNote(e, d, candidate),   // the hours worked stand once, in the work's rows
+                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = DaysNote(e, d, candidate), About = About(key),   // the hours worked stand once, in the work's rows
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
                 };
             }
             return rows;
+        }
+
+        // The words the game's tooltip on a demand shows under its name (the demand's key and "_description"); null for a demand it has none for.
+        private static string About(string demand)
+        {
+            string key = demand + "_description";
+            return LocalizorManager.IsLocalizedKey(key) ? key.GetLocalization() : null;
         }
 
         // The days a hired person is scheduled and has worked, under the demand that asks for days, in the words the game's box writes it in.

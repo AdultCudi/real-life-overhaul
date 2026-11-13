@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // a business's or a place's icon on a tile in its family's colour, in place of a person's face
         public UiRole Tint;
         public string Picture;   // the business's own picture (its logo, a UiPictures key) on the tile in place of the icon; null for the icon
+        public string Face;      // the key the person's face is drawn by where the name is not theirs alone; null: the name
     }
 
     /// <summary>A service or an action with its price, as a detail's side column lists them.</summary>

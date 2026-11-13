@@ -13,22 +13,36 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class ContactsScreen
     {
+        private readonly Dictionary<string, string> _keys = new Dictionary<string, string>(System.StringComparer.Ordinal);   // a contact's id: the key its face is told under, where it is not the name
         private readonly HashSet<string> _faced = new HashSet<string>(System.StringComparer.Ordinal);   // contacts told to UiFaces, or found to have no game picture
 
         // Told while the screen reads the game's contacts; a person already told costs one set read.
-        private void Face(Contact c)
+        // Answers the key the contact's face is drawn by: an employee or candidate by their own id behind the name, anybody else by the name.
+        private string Face(Contact c)
         {
-            if (c == null || string.IsNullOrEmpty(c.id) || !_faced.Add(c.id) || !Person(c))
+            if (c == null || string.IsNullOrEmpty(c.id))
             {
-                return;
+                return null;
+            }
+            if (!_faced.Add(c.id))
+            {
+                return _keys.TryGetValue(c.id, out string known) ? known : null;
+            }
+            if (!Person(c))
+            {
+                return null;
             }
             string name = Name(c);
             if (c.IsEmployeeContact)
             {
-                FaceSources.Employee(name, EmployeeOf(c.id, out bool _));
-                return;
+                EmployeeInstance who = EmployeeOf(c.id, out bool _);
+                string key = FaceSources.Key(name, who);
+                FaceSources.Employee(name, key, who);
+                _keys[c.id] = key;
+                return key;
             }
             ContactFaces.Tell(name, c.id);
+            return null;
         }
 
         // A firm's contact (a bank, a shop, a rival's business, an agency): the game's own picture for it, as the game's
