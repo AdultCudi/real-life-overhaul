@@ -30,7 +30,9 @@ namespace RealLifeOverhaul
     /// Where two-wheelers are hired and sold, worked out once a city load by rule and in a fixed order, so a save always
     /// has them in the same spots: docks beside the game's scooter stands, racks outside supermarkets, motorbike stands
     /// outside car dealerships (repairing garages where the city has none), each wholly on level pavement off crossings
-    /// (<see cref="Grounded"/>). A place is a few renderers with no collider, built within 90 m; a second's tick.
+    /// (<see cref="Grounded"/>) and out of every lane a vehicle drives or parks in (<see cref="InTheWay"/>). The dressing is a few
+    /// renderers with no collider, built within 90 m; a second's tick. What a vehicle can hit is a hired or bought bike, a real
+    /// scooter with a collider that is stood beside the place (<see cref="HandOverSpot"/>), so that spot keeps out of the lanes too.
     /// </summary>
     public sealed class BikePlaces
     {
@@ -57,6 +59,10 @@ namespace RealLifeOverhaul
         private Search _search;   // the places being found, a slice a frame
         private const double SliceMs = 1.5;   // milliseconds of the search a frame: a stand's docks or a building's rack is one item
         private static int _refused;   // refused by BikeSpotRules this city load, for the log
+        private static int _inWay;     // refused as in a vehicle's way this city load, for the log
+        private static readonly List<BikeLaneRules.Lane> Lanes = new List<BikeLaneRules.Lane>(64);   // where vehicles drive or park, this city
+        private static readonly List<Vector3> Displays = new List<Vector3>(32);   // the spawners that are not scooter stands: a dealership's display spots
+        private static int _parkMask;
 
         public BikePlaces(Transform owner)
         {
@@ -88,11 +94,20 @@ namespace RealLifeOverhaul
         private static List<Transform> Stands()
         {
             var stands = new List<Transform>();
+            Displays.Clear();
             foreach (VehicleSpawnerController spawner in SceneFinds.All<VehicleSpawnerController>("garage: the city's scooter stands being looked for (a search of the whole scene, once a city)"))
             {
-                if (spawner != null && spawner.vehicleType == TwoWheelers.ScooterType && spawner.gameObject.activeInHierarchy)
+                if (spawner == null || !spawner.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                if (spawner.vehicleType == TwoWheelers.ScooterType)
                 {
                     stands.Add(spawner.transform);
+                }
+                else
+                {
+                    Displays.Add(spawner.transform.position);   // a car shown for sale is driven out from where it stands
                 }
             }
             return stands;
@@ -107,6 +122,8 @@ namespace RealLifeOverhaul
         {
             _found = true;
             _refused = 0;
+            _inWay = 0;
+            Lanes.Clear();
             _search = null;
             var city = InstanceBehavior<CityManager>.Instance;
             if (city == null || city.cityBuildingControllers == null)
@@ -126,6 +143,7 @@ namespace RealLifeOverhaul
                 buildings.RemoveAll(b => b == null || b.buildingRegistration == null);
                 search.Buildings = Keyed(buildings);
                 search.Buildings.Sort(ByKey);
+                search.Stage = LaneStage;
                 _search = search;
             }
             catch (Exception e)
@@ -139,14 +157,17 @@ namespace RealLifeOverhaul
         public bool Finding => _search != null;
 
         // What the search keeps between its slices: the stands and the buildings in the city's fixed order, and how far each pass has got.
+        private const int LaneStage = 5;
+
         private sealed class Search
         {
             public List<AtPlace<Transform>> Stands;
             public List<AtPlace<CityBuildingController>> Buildings;
             public int Step;        // stands between two docks tried
-            public int Stage;       // 0 the docks, 1 the racks and the stands, 2 garages that repair (only if no dealership), 3 said
+            public int Stage;       // 5 the lanes vehicles use (first), 0 the docks, 1 the racks and the stands, 2 garages that repair (only if no dealership), 3 said
             public int Next;        // the next stand or building of the stage
             public int Docks, Shops, Motor;
+            public bool Begun;      // the display spots are in Lanes
         }
 
         // A thing and where it stands in whole metres, so that sorting them asks the engine for nothing (x first, then z).
@@ -195,6 +216,33 @@ namespace RealLifeOverhaul
             try
             {
                 WorkSlice slice = WorkSlice.Of(SliceMs, 1);
+                while (s.Stage == LaneStage)
+                {
+                    if (!s.Begun)
+                    {
+                        s.Begun = true;
+                        for (int i = 0; i < Displays.Count; i++)
+                        {
+                            Lanes.Add(BikeLaneRules.Disc(Displays[i].x, Displays[i].z, BikeLaneRules.DiscRadius));
+                        }
+                    }
+                    if (s.Next >= s.Buildings.Count)
+                    {
+                        s.Stage = 0;
+                        s.Next = 0;
+                        break;
+                    }
+                    if (!slice.More())
+                    {
+                        return;
+                    }
+                    CityBuildingController building = s.Buildings[s.Next++].Item;
+                    var station = building != null ? building.GetComponent<GasStationController>() : null;
+                    if (station != null)
+                    {
+                        AddLanes(station);
+                    }
+                }
                 while (s.Stage == 0)
                 {
                     if (s.Next >= s.Stands.Count || s.Docks >= MaxDocks)
@@ -273,7 +321,8 @@ namespace RealLifeOverhaul
                 }
                 _search = null;
                 Logger?.Info("Two-wheelers: " + s.Docks + " bike-share docks (of " + s.Stands.Count + " scooter stands), " + s.Shops + " bicycle racks outside supermarkets, "
-                             + s.Motor + " motorbike stands; " + _refused + " place(s) tried were refused as not wholly on level pavement or on a crossing.");
+                             + s.Motor + " motorbike stands; " + _refused + " place(s) tried were refused as not wholly on level pavement or on a crossing, and "
+                             + _inWay + " as in a vehicle's way (" + Lanes.Count + " lanes of bays, pumps, display spots and garage doors).");
             }
             catch (Exception e)
             {
@@ -293,7 +342,7 @@ namespace RealLifeOverhaul
                 for (int side = 0; side < 4; side++)
                 {
                     Vector3 way = side == 0 ? right : side == 1 ? -right : side == 2 ? forward : -forward;
-                    if (CitySpots.Pavement(from + way * out_, 1.2f, out spot) && Grounded(ref spot, facing, DockHalf) && Fits(spot, facing, DockHalf, 0.05f)
+                    if (CitySpots.Pavement(from + way * out_, 1.2f, out spot) && !InTheWay(spot, facing, DockHalf) && Grounded(ref spot, facing, DockHalf) && Fits(spot, facing, DockHalf, 0.05f)
                         && !Physics.CheckSphere(spot + Vector3.up, 1.6f, UsableMask, QueryTriggerInteraction.Collide))
                     {
                         return true;
@@ -321,15 +370,80 @@ namespace RealLifeOverhaul
             }
             along.Normalize();
             facing = Quaternion.LookRotation(along);
-            for (int i = 0; i < 6; i++)
+            // Against the building's wall first, then out on the pavement: the wall side is out of every lane.
+            Vector3 inward = building.transform.position - front;
+            inward.y = 0f;
+            inward = inward.sqrMagnitude < 0.01f ? Vector3.zero : inward.normalized;
+            for (int i = 0; i < 8; i++)
             {
                 float out_ = (4f + i / 2 * 2.5f) * (i % 2 == 0 ? 1f : -1f);
-                if (CitySpots.Pavement(front + along * out_, 1.5f, out spot) && Grounded(ref spot, facing, half) && CitySpots.ClearQuietly(spot, 1.2f) && Fits(spot, facing, half, 0f))
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    return true;
+                    if (pass == 0 && inward == Vector3.zero)
+                    {
+                        continue;
+                    }
+                    Vector3 want = front + along * out_ + (pass == 0 ? inward * WallPull : Vector3.zero);
+                    if (CitySpots.Pavement(want, 1.5f, out spot) && !InTheWay(spot, facing, half) && Grounded(ref spot, facing, half)
+                        && CitySpots.ClearQuietly(spot, 1.2f) && Fits(spot, facing, half, 0f))
+                    {
+                        return true;
+                    }
                 }
             }
+            spot = default;
             return false;
+        }
+
+        private const float WallPull = 2.5f;   // m from the shopfront's door point towards the building: the first try, against the wall
+
+        /// <summary>
+        /// True if a vehicle drives or parks where a place of this size would stand: in a lane (<see cref="BikeLaneRules"/>) or on one of
+        /// the game's parking zones. A refusal is counted for the log.
+        /// </summary>
+        public static bool InTheWay(Vector3 spot, Quaternion facing, Vector3 half)
+        {
+            bool way = BikeLaneRules.InTheWay(Lanes, spot.x, spot.z, BikeLaneRules.Radius(half.x, half.z));
+            if (!way)
+            {
+                if (_parkMask == 0)
+                {
+                    _parkMask = LayerMask.GetMask("AutoParkSpots", "ParkingArea");
+                }
+                var room = new Vector3(half.x + BikeLaneRules.Margin, 1f, half.z + BikeLaneRules.Margin);
+                way = _parkMask != 0 && Physics.CheckBox(spot + Vector3.up * 0.5f, room, facing, _parkMask, QueryTriggerInteraction.Collide);
+            }
+            if (way)
+            {
+                _inWay++;
+            }
+            return way;
+        }
+
+        // The ways vehicles drive to a gas station's repair bays and pumps, and the discs round its garage door.
+        private static void AddLanes(GasStationController station)
+        {
+            AddTriggers(station.repairStationTriggers);
+            AddTriggers(station.gasStationTriggers);
+            if (station.gasStationRepairGarageDoor != null)
+            {
+                Vector3 door = station.gasStationRepairGarageDoor.transform.position;
+                Lanes.Add(BikeLaneRules.Disc(door.x, door.z, BikeLaneRules.DiscRadius));
+            }
+        }
+
+        private static void AddTriggers(GasStationTrigger[] triggers)
+        {
+            for (int i = 0; triggers != null && i < triggers.Length; i++)
+            {
+                Collider area = triggers[i] != null ? triggers[i].stationCollider : null;
+                if (area == null)
+                {
+                    continue;
+                }
+                Bounds box = area.bounds;
+                BikeLaneRules.Approach(box.center.x, box.center.z, box.extents.x, box.extents.z, Lanes);
+            }
         }
 
         /// <summary>True if the whole place stands on level pavement off crossings; the spot then goes on the ground.</summary>
@@ -627,7 +741,8 @@ namespace RealLifeOverhaul
                     }
                     spot = new Vector3(at.x, height, at.z);
                     // Looked along above head height, so whoever stands there is not a wall. Never on a crossing.
-                    if (Fits(spot, place.Rotation, BikeHalf, 0f) && Seen(place.Position, spot, 2.1f)
+                    if (!BikeLaneRules.InTheWay(Lanes, spot.x, spot.z, BikeLaneRules.Radius(BikeHalf.x, BikeHalf.z) - BikeLaneRules.Margin)
+                        && Fits(spot, place.Rotation, BikeHalf, 0f) && Seen(place.Position, spot, 2.1f)
                         && CitySpots.ClearOfCrossings(spot + Vector3.up * 0.5f, new Vector3(BikeHalf.x, 1f, BikeHalf.z), place.Rotation, out _))
                     {
                         return true;
@@ -648,6 +763,7 @@ namespace RealLifeOverhaul
                 }
             }
             _places.Clear();
+            Lanes.Clear();
             _stands = null;
             _search = null;
             _found = false;
