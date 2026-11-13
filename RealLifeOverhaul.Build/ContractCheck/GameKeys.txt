@@ -748,6 +748,7 @@ custom_game_presets_tooltip_paste
 daily_summary
 daily_summary_businesses
 daily_summary_details
+delivery_job_summary
 dialog_accept_button
 dialog_bank_amount_to_loan
 dialog_bank_investment_header
@@ -889,6 +890,7 @@ employee_types
 ferris_wheel
 filebrowser_delete
 food_delivery_job_title
+food_delivery_summary
 furniture_delivery_dialog_add_item
 furniture_delivery_dialog_order
 furniture_delivery_item
