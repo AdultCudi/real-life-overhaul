@@ -1,8 +1,8 @@
-1.0.11
+1.0.12
 
 Fixed
-- The city's people (its districts, renters and households, and every district, building, household and person) and a tech firm's whole page now show on the game's own screens too, in the Economy app's People tab and from a firm's page in the Tech app. The switches on the Mods page read off for a screen that has stepped aside.
-- The garage shop, the workshop list, My vehicles and the bike stands now have their own strip on the RLO interface, with every row, price and button of the old list.
-- The Property and Services pages on the RLO interface now carry the old pages' explanations, every year figure of your buildings and hotels, and a last line on a short list that opens the rest. The map's Save button says when your list of saved places is full.
-- Your own trading rules now count the trades they have closed and their deepest fall, in the Bots tab on both interfaces.
-- The dialogue forms show every line of a long note, entry or answer and scroll when they outgrow the screen, a delivery's pictures and the investment's risk note show, the loan shows the game's three daily figures, and the interior designer's hints are no longer cut at nine.
+- A phone you put away can always be brought back in the new interface, by a phone button in the bar or the Phone key, also when another mod pages the phone's apps. Chinese, Korean and other non Latin text is no longer left blank when a screen first opens.
+- Every drop-down list in the new interface now scrolls with the mouse wheel, by dragging its scroll bar or the list, and with the keys or the pad, opens with the chosen option in view, and shows a long option whole.
+- The Campus diary and Coming up no longer list classes after a course's last one, a course's place line no longer repeats its room, and the How a class works note reads one sentence to a line.
+- A traffic light that stays on yellow for longer than a junction's cycle no longer counts against a person crossing, so the police do not warn or fine them for it. The mod also no longer takes over a car that is in the middle of a junction, which could have kept that light yellow.
+- Leaving a city no longer logs errors for shops in Uptown and Cedar Heights while their customers were being worked out.
