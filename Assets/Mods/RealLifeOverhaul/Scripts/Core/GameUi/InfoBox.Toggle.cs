@@ -20,6 +20,17 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A switch row with its label and a short line under it (none when empty). False without the game's row.</summary>
         public bool Toggle(string labelKey, string note, bool on, Action<bool> changed)
         {
+            return ToggleRow(labelKey, false, note, on, changed);
+        }
+
+        /// <summary>The same switch row for a label that is words already (a district's name), not a key.</summary>
+        public bool ToggleWords(string label, string note, bool on, Action<bool> changed)
+        {
+            return ToggleRow(label, true, note, on, changed);
+        }
+
+        private bool ToggleRow(string label, bool asWords, string note, bool on, Action<bool> changed)
+        {
             using var own = Timed();
             if (!_toggleTried)
             {
@@ -32,7 +43,14 @@ namespace RealLifeOverhaul.GameUi
             GameObject row = Add(_toggleT);
             TMP_Text[] words = row.transform.Find("Labels").GetComponentsInChildren<TMP_Text>(true);   // the name, then the line under it, as OptionRows.Make finds them
             TMP_Text line = words.Length > 1 ? words[1] : null;
-            UiClone.Key(words[0], labelKey);
+            if (asWords)
+            {
+                UiClone.Words(words[0], label);
+            }
+            else
+            {
+                UiClone.Key(words[0], label);
+            }
             bool noted = !string.IsNullOrEmpty(note);
             if (line != null)
             {

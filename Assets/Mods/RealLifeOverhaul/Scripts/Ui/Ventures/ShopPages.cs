@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Ui
     public static class ShopPages
     {
         public const int TabSites = 0, TabOrders = 1, TabCatalogue = 2, TabStore = 3;
-        public const string SiteKey = "site:", LineKey = "line:", OrderKey = "ord:", ProductKey = "prod:", RivalKey = "rival:", BasketKey = "basket";
+        public const string OpenKey = "open", SiteKey = "site:", LineKey = "line:", OrderKey = "ord:", ProductKey = "prod:", RivalKey = "rival:", BasketKey = "basket";
         private const long FeeStep = 50, FreeStep = 500;   // cents
 
         public static void Fill(VentModel m, VentView v, ShopFacts f, IShopActions act, VentWords w)
@@ -42,27 +42,51 @@ namespace RealLifeOverhaul.Ui
             }
             if (f.Sites.Length == 0)
             {
-                m.Empty = w.T("reallife_ui_shop_none", "You have no site yet. Open one for a shop or a warehouse and customers can order from it.");
+                if (f.Candidates.Length > 0 && m.Tab == TabSites)
+                {
+                    OpenPage(m, v, f, act, w, runs);
+                    m.Runs = runs.ToArray();
+                    return;
+                }
+                m.Empty = f.Candidates.Length > 0 ? w.T("reallife_ui_shop_none", "You have no site yet. Open one for a shop or a warehouse and customers can order from it.")
+                    : w.T("reallife_ui_shop_none_places", "You have no site yet, and no shop or warehouse of yours to run one from. A site needs a place that stocks goods.");
                 m.Runs = runs.ToArray();
                 return;
+            }
+            if (m.Tab == TabSites && v.Pick == OpenKey)
+            {
+                if (f.Candidates.Length > 0)
+                {
+                    OpenPage(m, v, f, act, w, runs);
+                    m.Runs = runs.ToArray();
+                    return;
+                }
+                v.Pick = null;
             }
             ShopSiteFact site = f.Sites[0];
             for (int i = 0; i < f.Sites.Length; i++)
             {
                 site = v.S1 == f.Sites[i].Key ? f.Sites[i] : site;
             }
+            var head = new List<UiActionModel>(2);
             if (f.Sites.Length > 1 && m.Tab != TabStore)
             {
                 int at = Array.IndexOf(f.Sites, site);
-                m.HeadActions = new[]
+                head.Add(new UiActionModel
                 {
-                    new UiActionModel
-                    {
-                        Label = w.F("reallife_ui_shop_site_n", "Site: {name}", "name", site.Name), Kind = UiButtonKind.Secondary, Icon = UiIcon.Store, Command = UiAppWindow.ActionCommand,
-                        Arg = runs.Add(() => { v.S1 = f.Sites[(at + 1) % f.Sites.Length].Key; v.Pick = null; return true; })
-                    }
-                };
+                    Label = w.F("reallife_ui_shop_site_n", "Site: {name}", "name", site.Name), Kind = UiButtonKind.Secondary, Icon = UiIcon.Store, Command = UiAppWindow.ActionCommand,
+                    Arg = runs.Add(() => { v.S1 = f.Sites[(at + 1) % f.Sites.Length].Key; v.Pick = null; return true; })
+                });
             }
+            if (m.Tab == TabSites && f.Candidates.Length > 0 && f.Sites.Length < f.SitesMost)
+            {
+                head.Add(new UiActionModel
+                {
+                    Label = w.T("reallife_ui_shop_open_site", "Open a site"), Kind = UiButtonKind.Primary, Icon = UiIcon.Plus, Command = UiAppWindow.ActionCommand,
+                    Arg = runs.Add(() => { v.From = null; v.Pick = OpenKey; v.S2 = null; return true; })
+                });
+            }
+            m.HeadActions = head.ToArray();
             switch (m.Tab)
             {
                 case TabOrders: Orders(m, v, site, act, w, runs); break;
@@ -137,7 +161,23 @@ namespace RealLifeOverhaul.Ui
                 acts.Add(new UiActionModel { Label = w.T("reallife_ui_shop_advertise", "Advertise"), Kind = UiButtonKind.Primary, Icon = UiIcon.Megaphone, Key = UiAction.Alt,
                     Arg = runs.Add(() => { act.Advertise(place); return true; }) });
             }
+            if (s.CanBetter)
+            {
+                acts.Add(new UiActionModel { Label = w.T("reallife_online_button_better", "Build a better site"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Up,
+                    Arg = runs.Add(() => { act.Better(place); return true; }) });
+            }
             left.Add(VentBlock.Buttons(acts.ToArray()));
+            if (s.CanBetter)
+            {
+                left.Add(VentBlock.Note(w.F("reallife_online_set_better", "{quality}: {amount} now, then {hosting} a month.", "quality", s.BetterName, "amount", Cents(w, s.BetterSetUpCents),
+                    "hosting", Cents(w, s.BetterHostingCents))));
+            }
+            right.Add(VentBlock.Section(w.T("reallife_ui_shop_delivery_sec", "Delivery")));
+            int way = s.Way, promise = s.Promise;
+            right.Add(VentBlock.Choice(w.T("reallife_ui_shop_way", "Delivered by"), WayName(w, way), runs.Add(() => { act.Way(place, (way + 1) % 2); return true; })));
+            right.Add(VentBlock.Note(way == 0 ? w.F("reallife_ui_shop_vans_ready", "{count} vans of yours are ready to deliver.", "count", s.ReadyVans.ToString())
+                : w.T("reallife_ui_shop_courier_note", "A courier collects each packed order and is paid for the trip."), way == 0 && s.ReadyVans == 0 ? UiRole.Warn : UiRole.None));
+            right.Add(VentBlock.Choice(w.T("reallife_ui_shop_promise", "Delivery promise"), PromiseName(w, promise), runs.Add(() => { act.Promise(place, (promise + 1) % 2); return true; })));
             right.Add(VentBlock.Section(w.T("reallife_ui_shop_settings", "Settings customers see")));
             int fee = s.FeeCents, free = s.FreeOverCents;
             right.Add(VentBlock.Stepper(w.T("reallife_ui_shop_fee", "Delivery fee"), s.FeeCents > 0 ? Cents(w, s.FeeCents) : w.T("reallife_ui_shop_free", "Free"),
@@ -163,6 +203,95 @@ namespace RealLifeOverhaul.Ui
             {
                 right.Add(VentBlock.Note(s.HostingLine, s.Offline ? UiRole.Warn : UiRole.None));
             }
+            m.Left = left.ToArray();
+            m.Right = right.ToArray();
+        }
+
+        private static string WayName(VentWords w, int way) => way == 0 ? w.T("reallife_ui_shop_way_vans", "Your own vans") : w.T("reallife_ui_shop_way_courier", "A courier");
+
+        private static string PromiseName(VentWords w, int promise) => promise == 0 ? w.T("reallife_ui_shop_promise_same", "Same day") : w.T("reallife_ui_shop_promise_next", "Next day");
+
+        // The page that opens a site for a shop or warehouse with none: which place, the quality, the way and the promise, what it costs and brings, and the one button.
+        private static void OpenPage(VentModel m, VentView v, ShopFacts f, IShopActions act, VentWords w, VentRuns runs)
+        {
+            ShopCandidateFact c = f.Candidates[0];
+            bool known = false;
+            for (int i = 0; i < f.Candidates.Length; i++)
+            {
+                if (f.Candidates[i].Key == v.S2)
+                {
+                    c = f.Candidates[i];
+                    known = true;
+                }
+            }
+            if (!known)
+            {
+                v.S2 = c.Key;
+                v.A = Math.Min(1, f.Quotes.Length - 1);
+                v.B = 1;
+                v.C = 1;
+            }
+            int quality = Math.Max(0, Math.Min(f.Quotes.Length - 1, v.A)), way = Math.Max(0, Math.Min(1, v.B)), promise = Math.Max(0, Math.Min(1, v.C));
+            ShopQuoteFact q = f.Quotes[quality];
+            m.Sub = f.Sites.Length > 0;
+            m.Next = w.F("reallife_online_open_title", "{business}: open an online shop", "business", c.Name);
+            if (f.Sites.Length > 0)
+            {
+                m.HeadActions = new[]
+                {
+                    new UiActionModel { Label = w.T("reallife_online_button_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Key = UiAction.Back, Command = UiAppWindow.ActionCommand,
+                        Arg = VentFace.BackArg }
+                };
+            }
+            m.HeroFigures = new[]
+            {
+                new UiFigureModel { Label = w.T("reallife_ui_shop_setup_label", "Set-up"), Value = Cents(w, q.SetUpCents) },
+                new UiFigureModel { Label = w.T("reallife_ui_shop_hosting_month", "Hosting a month"), Value = Cents(w, q.HostingCents) },
+                new UiFigureModel { Label = w.T("reallife_ui_shop_orders_day", "Orders a day"), Value = q.PerDay.ToString() }
+            };
+            var left = new List<VentBlock>(8);
+            var right = new List<VentBlock>(8);
+            left.Add(VentBlock.Section(w.T("reallife_ui_shop_site_sec", "The site")));
+            if (f.Candidates.Length > 1)
+            {
+                int at = Array.IndexOf(f.Candidates, c);
+                left.Add(VentBlock.Choice(w.T("reallife_ui_shop_open_for", "Open it for"), c.Name + " (" + c.Type + ")",
+                    runs.Add(() => { v.S2 = f.Candidates[(at + 1) % f.Candidates.Length].Key; return true; })));
+            }
+            else
+            {
+                left.Add(VentBlock.Row(w.T("reallife_ui_shop_open_for", "Open it for"), c.Name + " (" + c.Type + ")"));
+            }
+            left.Add(VentBlock.Choice(w.T("reallife_ui_shop_quality", "Quality"), q.Name, runs.Add(() => { v.A = (quality + 1) % f.Quotes.Length; return true; })));
+            left.Add(VentBlock.Section(w.T("reallife_ui_shop_delivery_sec", "Delivery")));
+            left.Add(VentBlock.Choice(w.T("reallife_ui_shop_way", "Delivered by"), WayName(w, way), runs.Add(() => { v.B = (way + 1) % 2; return true; })));
+            left.Add(VentBlock.Choice(w.T("reallife_ui_shop_promise", "Delivery promise"), PromiseName(w, promise), runs.Add(() => { v.C = (promise + 1) % 2; return true; })));
+            right.Add(VentBlock.Section(w.T("reallife_ui_shop_open_cost", "What it costs and brings")));
+            right.Add(VentBlock.Row(w.T("reallife_ui_shop_setup_label", "Set-up"), Cents(w, q.SetUpCents)));
+            if (f.InHouse)
+            {
+                right.Add(VentBlock.Note(w.F("reallife_online_open_agency", "Your own web development agency builds it: {share} off.", "share", f.AgencyShare)));
+            }
+            right.Add(VentBlock.Row(w.T("reallife_ui_shop_hosting_label", "Hosting"), w.F("reallife_online_open_hosting_value", "{amount} every {days} days",
+                "amount", Cents(w, q.HostingCents), "days", f.MonthDays.ToString())));
+            right.Add(VentBlock.Row(w.T("reallife_ui_shop_orders_day", "Orders a day"), w.F("reallife_online_open_orders_value", "about {orders}, {most} at most",
+                "orders", q.PerDay.ToString(), "most", q.Most.ToString())));
+            if (c.Mbps == 0)
+            {
+                right.Add(VentBlock.Note(w.F("reallife_online_open_net_none", "{business} has no internet connection: a shop there takes no orders until it has one. Buy a plan in the Utilities app.",
+                    "business", c.Name), UiRole.Warn));
+            }
+            else if (c.Mbps > 0)
+            {
+                right.Add(VentBlock.Note(w.F("reallife_online_open_net", "Its connection, {mbps} Mbps, allows up to {most} orders a day.", "mbps", c.Mbps.ToString(), "most",
+                    (quality < c.NetMost.Length ? c.NetMost[quality] : q.Most).ToString())));
+            }
+            bool full = f.Sites.Length >= f.SitesMost;
+            right.Add(VentBlock.Note(full ? w.T("reallife_online_open_full", "You already have as many online shops as you can run. Close one first.")
+                : w.T("reallife_online_open_note", "Everything the place stocks goes on the shop at its own prices. Change that on the Catalogue tab."), full ? UiRole.Warn : UiRole.None));
+            string key = c.Key;
+            right.Add(VentBlock.Buttons(new UiActionModel { Label = w.T("reallife_online_button_open", "Open an online shop"), Kind = UiButtonKind.Primary, Icon = UiIcon.Plus, Key = UiAction.Alt,
+                Disabled = full, Arg = runs.Add(() => { act.OpenSite(key, quality, way, promise); return true; }) }));
             m.Left = left.ToArray();
             m.Right = right.ToArray();
         }

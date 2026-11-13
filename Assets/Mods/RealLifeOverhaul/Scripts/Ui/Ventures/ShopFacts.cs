@@ -107,6 +107,26 @@ namespace RealLifeOverhaul.Ui
         public ShopRivalFact[] Rivals = new ShopRivalFact[0];
         public ShopBasketFact Basket;
         public bool CanAdvertise, CanPay;
+        public int Way, Promise, QualityIndex, ReadyVans;
+        public bool CanBetter;
+        public string BetterName;
+        public long BetterSetUpCents, BetterHostingCents, HostingCents;
+    }
+
+    /// <summary>What a site of one quality would cost and bring: the set-up, a month of hosting, the orders a day and, over a building's connection, the most it could take.</summary>
+    public struct ShopQuoteFact
+    {
+        public string Name;
+        public long SetUpCents, HostingCents;
+        public int PerDay, Most;
+    }
+
+    /// <summary>A shop or warehouse of the player with no site yet: where one could be opened.</summary>
+    public sealed class ShopCandidateFact
+    {
+        public string Key, Name, Type;
+        public int Mbps;
+        public int[] NetMost = new int[0];
     }
 
     /// <summary>Everything the Web shop pages read, plain.</summary>
@@ -116,6 +136,11 @@ namespace RealLifeOverhaul.Ui
         public string OffTitle, OffBody;
         public ShopSiteFact[] Sites = new ShopSiteFact[0];
         public string[] OpenBusinesses = new string[0];
+        public ShopCandidateFact[] Candidates = new ShopCandidateFact[0];
+        public ShopQuoteFact[] Quotes = new ShopQuoteFact[0];
+        public bool InHouse;
+        public int MonthDays, SitesMost;
+        public string AgencyShare;
     }
 
     /// <summary>What a button on the Web shop pages does in the game.</summary>
@@ -137,5 +162,9 @@ namespace RealLifeOverhaul.Ui
         void Reply(string place, int note);
         void Refund(string place, int order);
         void Courier(string place, int order);
+        void OpenSite(string place, int quality, int way, int promise);
+        void Way(string place, int way);
+        void Promise(string place, int promise);
+        void Better(string place);
     }
 }

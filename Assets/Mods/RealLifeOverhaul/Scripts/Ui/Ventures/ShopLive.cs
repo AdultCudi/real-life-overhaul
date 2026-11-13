@@ -84,17 +84,34 @@ namespace RealLifeOverhaul.Ui
             ShopPages.Fill(m, v, f, this, _words);
         }
 
-        private ShopFacts Facts(OnlineDirector d)
+        /// <summary>One site as the pages read it, for the old app's page of the shop as a customer sees it; null while the shops do not run or the site is gone.</summary>
+        public static ShopSiteFact Site(string place)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            if (d == null || !d.Running || d.State == null || SaveGameManager.Current == null)
+            {
+                return null;
+            }
+            ShopFacts f = Instance.Facts(d, place);
+            return f.Sites.Length > 0 ? f.Sites[0] : null;
+        }
+
+        private ShopFacts Facts(OnlineDirector d, string only = null)
         {
             OnlineState state = d.State;
             int day = SaveGameManager.Current.Day;
             int now = day * 24 + SaveGameManager.Current.Hour;
             IReadOnlyList<WebPlace> places = d.Places;
-            var sites = new ShopSiteFact[places.Count];
+            var sites = new ShopSiteFact[only == null ? places.Count : 1];
+            int made = 0;
             var week = new DayBook();
-            for (int i = 0; i < sites.Length; i++)
+            for (int i = 0; i < places.Count; i++)
             {
                 WebPlace p = places[i];
+                if (only != null && p.Shop.Place != only)
+                {
+                    continue;
+                }
                 WebShop shop = p.Shop;
                 ShopExtra x = d.Extra.Of(shop.Place, true);
                 shop.WeekInto(week, day);
@@ -155,7 +172,8 @@ namespace RealLifeOverhaul.Ui
                             Late = fo.Late, Returned = fo.Returned
                     };
                 }
-                sites[i] = new ShopSiteFact
+                int at = made++;
+                sites[at] = new ShopSiteFact
                 {
                     Key = shop.Place, Name = shop.Name, Business = p.Business, Quality = OnlineText.Quality(shop.Quality), Orders = shop.Today.Orders,
                         Queue = shop.Orders.Count, Overdue = shop.Overdue(now),
@@ -166,11 +184,71 @@ namespace RealLifeOverhaul.Ui
                     ShowStock = x.ShowStock, StoreName = shop.Name, Areas = areas, Sales30 = sales, SalesDays = names, Lines = lines, Open = open.ToArray(), Done = done,
                         CanPay = shop.Offline,
                         CanAdvertise = shop.AdEnd <= 0,
-                    HostingLine = shop.Offline ? OnlineText.T("reallife_online_row_offline") : null
+                    HostingLine = shop.Offline ? OnlineText.T("reallife_online_row_offline") : null,
+                    Way = shop.Way, Promise = shop.Promise, QualityIndex = shop.Quality
                 };
-                StoreFacts(d, state, p, x, sites[i], now);
+                SiteFacts(d, state, shop, sites[at]);
+                StoreFacts(d, state, p, x, sites[at], now);
             }
-            return new ShopFacts { Sites = sites };
+            if (made < sites.Length)
+            {
+                Array.Resize(ref sites, made);
+            }
+            var facts = new ShopFacts { Sites = sites };
+            OpenFacts(d, state, facts);
+            return facts;
+        }
+
+        // What it takes to open a site: the places with none, what each quality costs and brings, and how many the player may run.
+        private static void OpenFacts(OnlineDirector d, OnlineState state, ShopFacts f)
+        {
+            var regs = new List<BuildingRegistration>(8);
+            d.Candidates(regs);
+            var quotes = new ShopQuoteFact[OnlineCatalogue.Qualities];
+            for (int q = 0; q < quotes.Length; q++)
+            {
+                d.Quote(q, out int setUp, out int hosting, out bool inHouse);
+                quotes[q] = new ShopQuoteFact { Name = OnlineText.Quality(q), SetUpCents = setUp * 100L, HostingCents = hosting * 100L, PerDay = OnlineCatalogue.OrdersADay[q],
+                    Most = OnlineCatalogue.OrdersMost[q] };
+                f.InHouse = inHouse;
+            }
+            var places = new ShopCandidateFact[regs.Count];
+            for (int i = 0; i < places.Length; i++)
+            {
+                int mbps = OnlineDirector.PlanMbps(regs[i]);
+                var net = new int[quotes.Length];
+                for (int q = 0; q < net.Length; q++)
+                {
+                    net[q] = mbps > 0 ? OnlineRules.Most(q, mbps) : -1;
+                }
+                places[i] = new ShopCandidateFact { Key = d.KeyOf(regs[i]), Name = d.NameOf(regs[i]), Type = d.TypeOf(regs[i]), Mbps = mbps, NetMost = net };
+            }
+            f.Candidates = places;
+            f.Quotes = quotes;
+            f.MonthDays = d.MonthDays;
+            f.SitesMost = OnlineCatalogue.ShopsMost;
+            f.AgencyShare = OnlineText.Share(OnlineCatalogue.AgencyDiscount);
+        }
+
+        // The hosting and the better site a site could have, and the vans that could deliver for it.
+        private static void SiteFacts(OnlineDirector d, OnlineState state, WebShop shop, ShopSiteFact site)
+        {
+            d.Quote(shop.Quality, out int setUp, out int hosting, out bool inHouse);
+            site.HostingCents = hosting * 100L;
+            site.HostingLine = shop.Offline ? site.HostingLine : OnlineText.Fill("reallife_online_set_hosting_value", "quality", OnlineText.Quality(shop.Quality),
+                "amount", OnlineText.Money(hosting * 100), "day", shop.HostDue.ToString(CultureInfo.InvariantCulture));
+            site.CanBetter = !shop.Offline && shop.Quality < OnlineCatalogue.Qualities - 1;
+            if (site.CanBetter)
+            {
+                d.Quote(shop.Quality + 1, out int nextSetUp, out int nextHosting, out inHouse);
+                site.BetterName = OnlineText.Quality(shop.Quality + 1);
+                site.BetterSetUpCents = Math.Max(0, nextSetUp - setUp) * 100L;
+                site.BetterHostingCents = nextHosting * 100L;
+            }
+            for (int v = 0; v < state.Vans.Count; v++)
+            {
+                site.ReadyVans += state.Vans[v].Ready ? 1 : 0;
+            }
         }
 
         // A customer is a person of the shared people pool, the one the order chose (OnlineDirector.CustomerOf); a saved person number from before the pool is taken modulo its size,
@@ -442,6 +520,63 @@ namespace RealLifeOverhaul.Ui
                 d.SendCourier(place, order);
                 Done();
             }), null, null, null, true, false);
+        }
+
+        public void OpenSite(string place, int quality, int way, int promise)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            BuildingRegistration reg = d != null ? OnlineGame.Find(place) : null;
+            if (reg == null)
+            {
+                return;
+            }
+            quality = OnlineCatalogue.Quality(quality);
+            d.Quote(quality, out int setUp, out int hosting, out bool inHouse);
+            string name = d.NameOf(reg);
+            GameConfirm.Show("reallife_online_confirm_open_title".Localize(new { business = name }),
+                "reallife_online_confirm_open_body".Localize(new { quality = OnlineText.Quality(quality), amount = OnlineText.Money(setUp * 100), hosting = OnlineText.Money(hosting * 100) }),
+                Guard.Wrap(() =>
+                {
+                    if (d.OpenShop(place, quality, way, promise, false) != null)
+                    {
+                        _view.S1 = place;
+                        _view.Pick = null;
+                        _view.From = null;
+                    }
+                    Done();
+                }), null, null, null, true, false);
+        }
+
+        public void Way(string place, int way)
+        {
+            OnlineDirector.Instance?.SetWay(place, way);
+            Done();
+        }
+
+        public void Promise(string place, int promise)
+        {
+            OnlineDirector.Instance?.SetPromise(place, promise);
+            Done();
+        }
+
+        public void Better(string place)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            WebPlace p = d != null ? d.PlaceAt(place) : null;
+            if (p == null || p.Shop.Quality >= OnlineCatalogue.Qualities - 1)
+            {
+                return;
+            }
+            int next = p.Shop.Quality + 1;
+            d.Quote(p.Shop.Quality, out int setUp, out int hosting, out bool inHouse);
+            d.Quote(next, out int nextSetUp, out int nextHosting, out inHouse);
+            GameConfirm.Show("reallife_online_confirm_better_title".Localize(new { quality = OnlineText.Quality(next) }),
+                "reallife_online_confirm_better_body".Localize(new { amount = OnlineText.Money(Math.Max(0, nextSetUp - setUp) * 100), hosting = OnlineText.Money(nextHosting * 100) }),
+                Guard.Wrap(() =>
+                {
+                    d.Upgrade(place, next);
+                    Done();
+                }), null, null, null, true, false);
         }
 
         public void Close(string place)

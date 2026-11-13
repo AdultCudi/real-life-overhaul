@@ -5,7 +5,7 @@ using RealLifeOverhaul.Ui;
 // The Web shop's samples: a bakery site and a warehouse site with orders, a catalogue and thirty days of sales. Names are placeholders and never ship.
 internal static partial class UiSamples
 {
-    public static readonly string[] ShopStates = { "hub", "hub_offline", "orders", "orders_pick", "orders_empty", "catalogue", "catalogue_pick", "store", "store_search", "store_product", "store_rival", "store_basket", "empty", "off" };
+    public static readonly string[] ShopStates = { "hub", "hub_offline", "orders", "orders_pick", "orders_empty", "catalogue", "catalogue_pick", "store", "store_search", "store_product", "store_rival", "store_basket", "open", "open_more", "empty", "off" };
 
     /// <summary>A recording stand-in for the director: each press says which action it was.</summary>
     public sealed class ShopStub : IShopActions
@@ -35,6 +35,10 @@ internal static partial class UiSamples
         public void Reply(string place, int note) => Did("reply");
         public void Refund(string place, int order) => Did("refund");
         public void Courier(string place, int order) => Did("courier");
+        public void OpenSite(string place, int quality, int way, int promise) => Did("open_site");
+        public void Way(string place, int way) => Did("way");
+        public void Promise(string place, int promise) => Did("promise");
+        public void Better(string place) => Did("better");
     }
 
     public static VentModel Shop(UiWords t, string state, VentView view = null, IShopActions act = null)
@@ -54,6 +58,7 @@ internal static partial class UiSamples
             case "store_rival": view.Tab = ShopPages.TabStore; view.Pick = ShopPages.RivalKey + 0; break;
             case "store_basket": view.Tab = ShopPages.TabStore; view.Pick = ShopPages.BasketKey; break;
             case "catalogue_pick": view.Tab = ShopPages.TabCatalogue; view.Pick = ShopPages.LineKey + "Sourdough loaf"; break;
+            case "open_more": view.Tab = ShopPages.TabSites; view.Pick = ShopPages.OpenKey; break;
         }
         var m = new VentModel();
         ShopPages.Fill(m, view, f, act ?? new ShopStub(), w);
@@ -69,6 +74,21 @@ internal static partial class UiSamples
         if (state == "empty")
         {
             return new ShopFacts();
+        }
+        var quotes = new[]
+        {
+            new ShopQuoteFact { Name = "Basic site", SetUpCents = 150000, HostingCents = 30000, PerDay = 6, Most = 12 },
+            new ShopQuoteFact { Name = "Standard site", SetUpCents = 420000, HostingCents = 60000, PerDay = 14, Most = 30 },
+            new ShopQuoteFact { Name = "Professional site", SetUpCents = 980000, HostingCents = 120000, PerDay = 30, Most = 70 }
+        };
+        var places = new[]
+        {
+            new ShopCandidateFact { Key = "12 Mott Street", Name = "Mott Street Grocery", Type = "Grocery store", Mbps = 100, NetMost = new[] { 12, 30, 70 } },
+            new ShopCandidateFact { Key = "40 Pier Road", Name = "Pier Road Warehouse", Type = "Warehouse", Mbps = 0, NetMost = new[] { -1, -1, -1 } }
+        };
+        if (state == "open")
+        {
+            return new ShopFacts { Candidates = places, Quotes = quotes, MonthDays = 30, SitesMost = 4, InHouse = true, AgencyShare = "25%" };
         }
         var sales = new long[30];
         var days = new string[30];
@@ -110,9 +130,10 @@ internal static partial class UiSamples
                 Subtotal = 1660, Fee = 450, FreeOver = 5000, ToFree = 3340, Total = 2110
             },
             Sales30 = sales, SalesDays = days, Lines = lines, Open = state == "orders_empty" ? new ShopOrderFact[0] : open, Done = state == "orders_empty" ? new ShopOrderFact[0] : done,
-            CanPay = state == "hub_offline", CanAdvertise = state != "hub_offline", HostingLine = state == "hub_offline" ? "Hosting is unpaid: no orders come in until it is paid." : null
+            CanPay = state == "hub_offline", CanAdvertise = state != "hub_offline", HostingLine = state == "hub_offline" ? "Hosting is unpaid: no orders come in until it is paid." : null,
+            Way = 1, Promise = 1, QualityIndex = 1, ReadyVans = 0, CanBetter = state != "hub_offline", BetterName = "Professional site", BetterSetUpCents = 560000, BetterHostingCents = 120000
         };
-        return new ShopFacts { Sites = new[] { site } };
+        return new ShopFacts { Sites = new[] { site }, Candidates = state == "open_more" ? places : new ShopCandidateFact[0], Quotes = quotes, MonthDays = 30, SitesMost = 4 };
     }
 
     private static ShopProductFact[] Products(ShopLineFact[] lines)
