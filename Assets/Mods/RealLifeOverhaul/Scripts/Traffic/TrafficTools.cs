@@ -102,6 +102,21 @@ namespace RealLifeOverhaul
                    && TrafficManager.Instance.IsVehicleIgnored(car.GetIndex());
         }
 
+        /// <summary>
+        /// True while a traffic car is heading into or through a junction. The game's light counts the cars between a junction's stop line
+        /// and its exit and holds its amber until they are gone, but a car taken out of the traffic system stops being counted out, so one
+        /// taken there would keep the light amber for as long as the mod holds it. Nothing takes a car in that state.
+        /// </summary>
+        public static bool InJunction(VehicleComponent car)
+        {
+            if (car == null || !TrafficManager.HasInstance)
+            {
+                return false;
+            }
+            Waypoint target = TrafficManager.Instance.GetTargetWaypoint(car.GetIndex());
+            return target != null && (target.IsInIntersection() || !TrafficManager.IsNotIntersection(target));
+        }
+
         private static readonly List<Collider> BodyScratch = new List<Collider>(16);
 
         /// <summary>The ground a vehicle really covers, from its colliders: its body's middle, the way it points, half its length and width.</summary>

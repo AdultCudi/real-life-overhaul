@@ -238,6 +238,11 @@ namespace RealLifeOverhaul
                 Rest(position, now);
                 return Offence.None;
             }
+            // Every look, officer or none, so that a light that has stood still while the player waited at the kerb is known for it.
+            if (on.CrossRed && Crossings.Ensure())
+            {
+                Crossings.Watch(position, now);
+            }
             Witness = OfficerNear(position, OfficerSight);
             // Waiting at the kerb or standing at a car door is no offence.
             bool walking = Flat(position - _lastFoot) > 0.3f * 0.3f;
@@ -262,8 +267,10 @@ namespace RealLifeOverhaul
                 }
                 crossing = true;
                 var link = hit.GetComponent<CrosswalkToTrafficLightLink>();
-                // The game's own rule for its pedestrians: walk while the cars' red lamp is lit.
-                mayWalk = link == null || link.redTrafficLight == null || link.redTrafficLight.activeSelf;
+                // The game's own rule for its pedestrians: walk while the cars' red lamp is lit. The game's junction holds its amber
+                // until every car has left it, so a light that has not changed for longer than a cycle is stuck, and is no offence.
+                mayWalk = link == null || link.redTrafficLight == null || link.redTrafficLight.activeSelf
+                          || Crossings.LightStuck(link.redTrafficLight, now);
             }
             if (crossing)
             {
