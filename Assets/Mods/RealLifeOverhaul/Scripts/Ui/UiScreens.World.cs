@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     "ba:private_driver", "ba:private_driver_waiting", "ba:private_driver_no_vehicles", "ba:private_driver_type_premium", "reallife_ui_world_driver_state_riding",
                     "reallife_ui_world_driver_state_waiting", "reallife_ui_world_driver_state_coming", "reallife_ui_world_driver_riding_line", "reallife_ui_world_driver_waiting_line",
-                    "reallife_ui_world_driver_coming_line", "reallife_ui_world_driver_riding", "reallife_ui_world_driver_coming", "reallife_ui_world_driver_dismiss",
+                    "reallife_ui_world_driver_coming_line", "reallife_ui_world_driver_more", "reallife_ui_world_driver_riding", "reallife_ui_world_driver_coming", "reallife_ui_world_driver_dismiss",
                     "reallife_ui_world_driver_state_cars", "reallife_ui_world_driver_contract", "reallife_ui_world_driver_ready", "reallife_ui_world_driver_call",
                     "reallife_ui_world_driver_fee_due", "reallife_ui_world_driver_fee_paid", "reallife_ui_world_driver_state_none", "reallife_ui_world_driver_state_no_cars",
                     "reallife_ui_world_driver_none", "reallife_ui_world_driver_locate", "reallife_ui_prompt_move", "input_key_menu"

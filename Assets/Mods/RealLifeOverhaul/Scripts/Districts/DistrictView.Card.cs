@@ -287,8 +287,16 @@ namespace RealLifeOverhaul.Districts
             {
                 words = words.Replace(c, Bold(vc));
             }
+            if (_notes != null)
+            {
+                _notes.Add(words.Replace("<b>", string.Empty).Replace("</b>", string.Empty));   // the kit's own text draw takes plain words
+                return;
+            }
             _panel.Line(words);
         }
+
+        // The card's sentences as the kit's district block takes them, while it collects them (null the rest of the time).
+        private List<string> _notes;
 
         private static string Bold(string value)
         {

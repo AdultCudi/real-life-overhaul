@@ -37,6 +37,13 @@ namespace RealLifeOverhaul.Ui
         {
             s.Begin("services", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, true, keys, out float x, out float y, out float w, out float bottom);
+            if (!string.IsNullOrEmpty(m.Guide) && m.Shape != ServicesShape.Off)
+            {
+                // The Guide's page that explains the screen, quiet under every page of the window; the page keeps the room above it.
+                float line = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+                UiDraw.Text(s, at, x, bottom - line, w, UiStyle.Small, UiRole.Muted, m.Guide, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                bottom -= line + UiTokens.S2;
+            }
             switch (m.Shape)
             {
                 case ServicesShape.Table:

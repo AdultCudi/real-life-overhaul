@@ -103,6 +103,18 @@ namespace RealLifeOverhaul.Ui
                 _view.Offset = 0f;
                 return true;
             }
+            if (command == ServicesFace.TableBase + UiDataTable.Head)
+            {
+                UiDataTableModel table = Table(_m);
+                if (table == null || arg < 0 || arg >= table.Columns.Length || !table.Columns[arg].Sortable)
+                {
+                    return false;
+                }
+                _view.SortDown = _view.SortColumn == arg && !_view.SortDown;   // lowest first, then highest first, then lowest again
+                _view.SortColumn = arg;
+                _view.Offset = 0f;
+                return true;
+            }
             if (command == ServicesFace.ActionCommand || command == ServicesFace.StepLess)
             {
                 return Run(arg);
@@ -133,6 +145,8 @@ namespace RealLifeOverhaul.Ui
                     return false;
                 }
                 _view.SellView = arg;
+                _view.SortColumn = -1;   // the other view's table has other columns
+                _view.SortDown = false;
                 _view.Pick = null;
                 _view.Offset = 0f;
                 return true;
@@ -182,6 +196,8 @@ namespace RealLifeOverhaul.Ui
             _view.Tab = tab;
             _view.Pick = null;
             _view.Filter = 0;
+            _view.SortColumn = -1;
+            _view.SortDown = false;
             _view.SellView = 0;
             _view.PickerOpen = false;
             _view.Offset = 0f;

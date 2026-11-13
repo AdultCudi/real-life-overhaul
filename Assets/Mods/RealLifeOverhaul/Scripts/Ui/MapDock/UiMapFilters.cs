@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Ui
         public bool CanDetails;             // a place card stands behind the block's name
         public bool CanBizMan;              // the game's card offers its business manager for the building
         public string BizManLabel;
+        public bool Hover;                  // the building under the pointer, not picked: its facts only, with no way to clear it and no button
     }
 
     /// <summary>
@@ -106,6 +107,7 @@ namespace RealLifeOverhaul.Ui
         public string SearchPlaceholder, Search;
         public MapResult[] Results = new MapResult[0];      // the places the typed words found, at most five
         public string ResultsNone;                          // the sentence when the words found nothing, or null while nothing is typed
+        public string ResultsMore;                          // "and 14 more": under the first matches when the words name more places than are listed, or null
         public MapChip[] Chips = new MapChip[0];
         public bool ShowAll;                                // the master switch is drawn (the filters page only)
         public string ShowAllLabel, ShowAllCount;           // "Show all", "47 of 52 on"
@@ -269,7 +271,7 @@ namespace RealLifeOverhaul.Ui
             }
             cy += UiTokens.Control + UiTokens.S2;
             int results = Math.Min(ResultsMost, m.Results.Length);
-            cy += results > 0 ? results * ResultRow + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
+            cy += results > 0 ? results * ResultRow + MoreHeight(m) + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
             float picked = m.Picked ? PickedHeight(m, keys) + UiTokens.S2 : 0f;
             float foot = !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 + UiTokens.S2 : 0f;
             float stepTail = m.ShowAll ? UiTokens.Control + UiTokens.S1 : 0f;
@@ -305,7 +307,7 @@ namespace RealLifeOverhaul.Ui
             }
             need += UiTokens.Control + UiTokens.S2;
             int results = Math.Min(ResultsMost, m.Results.Length);
-            need += results > 0 ? results * ResultRow + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
+            need += results > 0 ? results * ResultRow + MoreHeight(m) + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
             if (m.Chips.Length > 0)
             {
                 need += ChipsHeight(m, iw) + UiTokens.S2;
@@ -381,8 +383,15 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, inside, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, m.Results[i].Address, UiFlags.Truncate | UiFlags.Middle);
                 UiDraw.Node(s, at, x, ry, w, ResultRow, ResultCommand, i, face);
             }
-            return y + n * ResultRow + UiTokens.S2;
+            if (!string.IsNullOrEmpty(m.ResultsMore))
+            {
+                UiDraw.Text(s, at, x + UiTokens.S4, y + n * ResultRow + UiTokens.S1, w - UiTokens.S4 * 2f, UiStyle.Small, UiRole.Muted, m.ResultsMore, UiFlags.Label | UiFlags.Truncate);
+            }
+            return y + n * ResultRow + MoreHeight(m) + UiTokens.S2;
         }
+
+        // The line under the listed matches that says how many more the words name: they are narrowed by typing on, as the game's own drop-down is by its scroll.
+        private static float MoreHeight(MapPanelModel m) => string.IsNullOrEmpty(m.ResultsMore) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
 
         private static float ChipsHeight(MapPanelModel m, float w)
         {
@@ -621,6 +630,10 @@ namespace RealLifeOverhaul.Ui
         {
             bool chips = m.Place.Chips != null && m.Place.Chips.Length > 0;
             float chipRows = chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f;
+            if (m.Place.Hover)
+            {
+                return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3;
+            }
             float more = m.Place.CanBizMan ? UiTokens.S2 + UiTokens.Control : 0f;
             return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + PickedRow(m, keys) + more + UiTokens.S3;
         }
@@ -639,12 +652,15 @@ namespace RealLifeOverhaul.Ui
             float h = PickedHeight(m, keys);
             UiDraw.Band(s, at, px, y, Width, h);
             float cy = y + UiTokens.S3;
-            float clear = UiDraw.Snap(UiTextRules.Width(p.ClearLabel, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
+            float clear = p.Hover ? 0f : UiDraw.Snap(UiTextRules.Width(p.ClearLabel, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
             UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw - clear, UiStyle.SectionHeader, UiRole.Text, p.BlockLabel, UiFlags.Label | UiFlags.Truncate);
-            int link = UiDraw.Box(s, at, ix + iw - clear + UiTokens.S3, cy, clear - UiTokens.S3, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiDraw.TextMiddle(s, at.In(link), ix + iw - clear + UiTokens.S3, cy, UiTokens.PairRow, clear - UiTokens.S3, UiStyle.SmallStrong, UiRole.AccentText, p.ClearLabel,
-                UiFlags.Label | UiFlags.Right);
-            UiDraw.Node(s, at, ix + iw - clear, cy, clear, UiTokens.PairRow, PickedClearCommand, 0, link);
+            if (!p.Hover)
+            {
+                int link = UiDraw.Box(s, at, ix + iw - clear + UiTokens.S3, cy, clear - UiTokens.S3, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                UiDraw.TextMiddle(s, at.In(link), ix + iw - clear + UiTokens.S3, cy, UiTokens.PairRow, clear - UiTokens.S3, UiStyle.SmallStrong, UiRole.AccentText, p.ClearLabel,
+                    UiFlags.Label | UiFlags.Right);
+                UiDraw.Node(s, at, ix + iw - clear, cy, clear, UiTokens.PairRow, PickedClearCommand, 0, link);
+            }
             cy += UiTokens.PairRow + UiTokens.S1;
             // The picture's place: the type's glyph on the type's colour until the game or the mod holds a picture of the place.
             int body = UiDraw.Box(s, at, ix, cy, iw, PickedTile, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
@@ -683,6 +699,10 @@ namespace RealLifeOverhaul.Ui
             {
                 cy += UiTokens.S2;
                 cy += UiMapPlace.Chips(s, at, p.Chips, ix, cy, iw);
+            }
+            if (p.Hover)
+            {
+                return;   // the building under the pointer is read, not acted on: the block has its facts and no button
             }
             cy += UiTokens.S3;
             float half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f), row = PickedRow(m, keys);   // both buttons of the row as tall as the taxi's words need

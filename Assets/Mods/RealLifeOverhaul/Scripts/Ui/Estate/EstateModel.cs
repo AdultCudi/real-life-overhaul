@@ -104,6 +104,8 @@ namespace RealLifeOverhaul.Ui
         public int TenantOpenRun = -1;
         public string[] MeterLabels = new string[0];
         public int[] MeterValues = new int[0];
+        public string[] Feeling = new string[0];                 // what stands behind the meters in words: where the mood is heading and why, complaints so far, the day they leave, the payment plan
+        public UiRole[] FeelingInks = new UiRole[0];             // by line: its ink
         public string YearTitle, YearKept, YearKeptLabel;
         public string[] YearLabels = new string[0], YearValues = new string[0];
         public string NeedKicker, NeedHead, NeedBody;    // "NEEDS YOU, RENT LATE", the headline, what to know
@@ -158,6 +160,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon OffIcon = UiIcon.Home;   // the glyph of the page that says the feature is off: the app's own
         public UiPrompt[] Prompts = new UiPrompt[0];
         public string DayWords;                      // "Mon, Day 214" at the strip's right is the host's; kept for the head's sub line
+        public string Guide;                         // "Guide: Real estate", a quiet line at the page's foot naming the Guide's page that explains it, or null
 
         // The head of a page with a table: a glyph, a title, a line and up to four figures at the right.
         public UiIcon HeadIcon = UiIcon.Home;
@@ -168,6 +171,7 @@ namespace RealLifeOverhaul.Ui
 
         public UiDataTableModel Table;
         public string[] RowKeys = new string[0];     // by row of the table: what a press picks
+        public TableChoice[] Choices = new TableChoice[0];   // the table's filters, by the field's index: what a press on one steps through
         public UiFactCardModel Side;                 // beside the table: what the tab is, or its summary
         public string TableLink;                     // a link over the table's right ("View on the map")
         public int TableLinkRun = -1;
@@ -262,5 +266,17 @@ namespace RealLifeOverhaul.Ui
         public string ReportPlace;      // the showroom the reports are of; null for all of them
         public int Filter;              // the stock shown: all, new, used, in the workshop
         public int Sort;                // ...and its order: by bay, by price, by days on the lot
+        public int SortColumn = -1;     // the column the open table is ordered by (-1: as written) and its direction; both go with the tab
+        public bool SortDown;
+        public readonly int[] Chosen = { -1, -1 };   // the table's filters' choices (-1: all); they go with the tab
+
+        /// <summary>The table's own order and filters back to as written, as a tab opens.</summary>
+        public void ResetTable()
+        {
+            SortColumn = -1;
+            SortDown = false;
+            Chosen[0] = -1;
+            Chosen[1] = -1;
+        }
     }
 }

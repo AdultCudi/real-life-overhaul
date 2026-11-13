@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Ui
             v.Tab = Math.Max(0, Math.Min(TabKeys.Length - 1, _wantTab));
             v.Pick = _wantPick;
             v.Filter = 0;
+            v.SortColumn = -1;
+            v.SortDown = false;
             v.PickerOpen = false;
             v.Offset = 0f;
             v.Step = -1;
@@ -130,6 +132,9 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             m.Runs = runs.ToArray();
+            string label = ServicesText.T("reallife_guide_app");
+            m.Guide = label + GameUi.LookRules.Colon(label)
+                + ServicesText.T(v.Tab == ServicesDirector.TabSale ? "reallife_meta_title_economy_sale" : "reallife_meta_title_economy_cleaning");
         }
 
         /// <summary>The state of one page's writing: the director, the state, the view and the model being filled, with what every part of it shares.</summary>

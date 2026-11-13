@@ -52,6 +52,8 @@ namespace RealLifeOverhaul.Ui
         public float Share;      // a steps cell's way through the step after those reached, 0 to 1
         public string[] Pictures;   // by column, a tile cell's picture of the game's (a good, a machine) by its UiPictures key, over its glyph; null: the glyph
         public float[] Line;        // a spark column's values, oldest first, or null
+        public long[] SortKeys;     // by column, the figure a sorting screen orders it by where the cell's words cannot say it (money, a day); the screen's own, not drawn; null: the words
+        public int[] Kinds;         // by filter, the choice the row answers to (an index into that filter's options); the screen's own, not drawn; null: every filter shows it
     }
 
     /// <summary>

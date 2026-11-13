@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
             view.Tab = nav < 0 ? 0 : nav;
             view.Pick = _wantPick;
             view.From = null;
+            view.ResetTable();
             _wantTab = -1;
             _wantPick = null;
         }
@@ -116,6 +117,18 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             m.Runs = runs.ToArray();
+            m.Guide = GuideNote(tab, v.Pick);
+        }
+
+        // The Guide's page for what shows, as the old app's pages named it at their foot: the car parks', the landlord's duties (tenants, works, a unit, a call, an applicant), or the app's.
+        private static string GuideNote(int tab, string pick)
+        {
+            string key = pick != null && pick.StartsWith("spc:", StringComparison.Ordinal) ? "reallife_meta_title_parking_spaces"
+                : tab == EstateDirector.TabTenants || tab == EstateDirector.TabWorks || (pick != null && (pick.StartsWith("unt:", StringComparison.Ordinal)
+                    || pick.StartsWith("cal:", StringComparison.Ordinal) || pick.StartsWith("app:", StringComparison.Ordinal) || pick.StartsWith("wrk:", StringComparison.Ordinal)))
+                    ? "reallife_meta_title_economy_estate_duties" : "reallife_meta_title_economy_estate";
+            string label = EstateText.T("reallife_guide_app");
+            return label + GameUi.LookRules.Colon(label) + EstateText.T(key);
         }
 
         private static bool PartOn(EstateDirector d, int tab)

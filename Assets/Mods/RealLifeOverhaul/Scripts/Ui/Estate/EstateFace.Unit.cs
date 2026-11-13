@@ -181,6 +181,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.GradeBar(s, at, x, y, w, u.MeterLabels[i], u.MeterValues[i], lw2, "%");
                 y += UiTokens.PairRow;
             }
+            y += UiTokens.S1;
+            for (int i = 0; i < u.Feeling.Length; i++)
+            {
+                int lines = UiTextRules.Lines(u.Feeling[i], UiStyle.Body, w, 3, out float widest);
+                float lineH = UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Body));
+                if (y + lineH > bottom)
+                {
+                    break;
+                }
+                UiDraw.Text(s, at, x, y, w, UiStyle.Body, i < u.FeelingInks.Length ? u.FeelingInks[i] : UiRole.Text2, u.Feeling[i], UiFlags.Wrap | UiFlags.Label, lines);
+                y += lineH + UiTokens.S1;
+            }
             return y + Gap(UiTokens.S3);
         }
 
