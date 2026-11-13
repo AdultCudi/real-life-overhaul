@@ -41,6 +41,7 @@
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
+       And (HoldMeetingChecks.cs, the hold-meeting flag, "table" after it prints the sessions table) holding a meeting at the owner's desk: every kind of desk session with its premise, every state of what a firm can lack (SessionRules.Series, FirstPage, NextPage and Buttons from the sources linked above), a save stuck on a kind held on a day to come, the panel drawn again after each change, the walk to the chair, and the texts.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

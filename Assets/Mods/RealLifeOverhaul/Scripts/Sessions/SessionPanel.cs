@@ -75,23 +75,26 @@ namespace RealLifeOverhaul.Sessions
                     }
                     : new[] { DeskGame.Label(SessionText.T(def.AboutKey), 0), DeskGame.Label(status, colour) };
                 bool work = SessionBridges.WorkHereNow(_station);   // the owner's own work at this desk, when it is the firm's only free one (Tech's own desk)
-                int n = 1 + (can ? 1 : 0) + (_defs.Length > 1 ? 1 : 0) + (hand != 0 ? 1 : 0) + (work ? 1 : 0), k = 0;
+                SessionRules.PageButtons pb = SessionRules.Buttons(can, _defs.Length, hand, work);
+                int n = 1 + (pb.Begin ? 1 : 0) + (pb.Next ? 1 : 0) + (pb.Hand ? 1 : 0) + (pb.Work ? 1 : 0), k = 0;
                 _buttons = new ButtonInfo[n];
                 _buttons[k++] = new ButtonInfo("CancelRealLifeSession", "common_cancel", "gray", Guard.Way(Cancel), PlayerAction.Cancel);
-                if (can)
+                SessionDirector.Note("page " + (_at + 1) + " of " + _defs.Length + ": " + def.Id + ", "
+                                     + (can ? "can be held now" : "cannot be held: " + status) + (pb.Next ? ", skip offered" : string.Empty));
+                if (pb.Begin)
                 {
                     // named Start: in a Going Public session the panel is hidden and only a button so named is pressed (Careers/Study/ClassPlayRules.SessionPick)
                     _buttons[k++] = new ButtonInfo("StartRealLifeSession", "reallife_session_button_begin", "blue", Guard.Wrap(Begin), PlayerAction.Confirm);
                 }
-                if (_defs.Length > 1)
+                if (pb.Next)
                 {
                     _buttons[k++] = new ButtonInfo("NextRealLifeSession", "reallife_session_button_next", "gray", Guard.Wrap(Next), PlayerAction.SecondaryInteract);
                 }
-                if (hand != 0)
+                if (pb.Hand)
                 {
                     _buttons[k++] = new ButtonInfo("HandRealLifeSession", hand > 0 ? "reallife_session_button_hand" : "reallife_session_button_take", "gray", Guard.Wrap(Hand), PlayerAction.Interact);
                 }
-                if (work)
+                if (pb.Work)
                 {
                     _buttons[k] = new ButtonInfo("WorkRealLifeSessionDesk", "reallife_session_button_work", "gray", Guard.Wrap(Work), PlayerAction.SpecialInteract);
                 }
@@ -112,14 +115,23 @@ namespace RealLifeOverhaul.Sessions
             }
         }
 
+        // A page changed while the panel is up: built again, and drawn again by the game's panel, which reads a page only when it opens.
+        private void Repage()
+        {
+            Page();
+            SessionGame.Redraw(this);
+        }
+
         private void Next()
         {
             if (_state != PlayerActivityState.NotStarted || _pressed || _defs.Length < 2)
             {
                 return;
             }
-            _at = (_at + 1) % _defs.Length;
-            Page();
+            int from = _at;
+            _at = SessionRules.NextPage(_at, _defs.Length);
+            SessionDirector.Note("skip: from session " + (from + 1) + " to " + (_at + 1) + " of " + _defs.Length);
+            Repage();
         }
 
         private void Hand()
@@ -129,7 +141,7 @@ namespace RealLifeOverhaul.Sessions
                 return;
             }
             _director.Hand(Def);
-            Page();
+            Repage();
         }
 
         // The owner's own work at this desk instead: nothing of a session begun, the panel let go, and the work offered once it has gone.
@@ -156,7 +168,7 @@ namespace RealLifeOverhaul.Sessions
                 return;
             }
             _step = 0;
-            Page();
+            Repage();
         }
 
         private void Choose(int pick)
@@ -169,7 +181,7 @@ namespace RealLifeOverhaul.Sessions
             if (_step + 1 < Def.Steps.Length)
             {
                 _step++;
-                Page();
+                Repage();
                 return;
             }
             Start();
@@ -182,8 +194,9 @@ namespace RealLifeOverhaul.Sessions
             if (why != null)
             {
                 SessionGame.Tell(UI.Notification.NotificationType.Warning, why, null, 8f);
+                SessionDirector.Note("refused to begin " + Def.Id + ": " + why);
                 _step = -1;
-                Page();
+                Repage();
                 return;
             }
             if (SaveGameManager.Current == null || SaveGameManager.Current.Energy <= 0f)
@@ -195,8 +208,11 @@ namespace RealLifeOverhaul.Sessions
             _length = Math.Max(1, minutes);
             _done = 0;
             _running = _director.Summary(Def, _choices);
+            SessionDirector.Note("begin " + Def.Id + " with the choices " + string.Join(",", new ArraySegment<int>(_choices, 0, Def.Steps.Length)) + ": " + _length + " game minutes at the desk");
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
+
+        private const float WalkSeconds = 40f;   // real seconds the walk to the chair may take before it is called off: the game's goal call says nothing when the way is gone
 
         // Set off as the game's activities are: a frame for the panel to see it, a frame more, then the walk to the chair.
         private IEnumerator Walk()
@@ -204,6 +220,16 @@ namespace RealLifeOverhaul.Sessions
             yield return null;
             if (_state != PlayerActivityState.NotStarted)
             {
+                yield break;
+            }
+            if (!DeskGame.Reaches(_station))
+            {
+                // the game would say it cannot reach the desk and never call back: the page comes back, nothing spent
+                SessionGame.Tell(UI.Notification.NotificationType.Warning, "reallife_session_note_no_way", null, 10f);
+                SessionDirector.Note("the desk cannot be walked to from here: back to the page");
+                _pressed = false;
+                _step = -1;
+                Repage();
                 yield break;
             }
             _state = PlayerActivityState.MovingTowardsActivity;
@@ -214,6 +240,19 @@ namespace RealLifeOverhaul.Sessions
             }
             if (!DeskGame.WalkTo(_station, Arrived))
             {
+                SessionDirector.Note("the walk to the desk could not be set off");
+                End(false, true);
+                yield break;
+            }
+            float until = Time.unscaledTime + WalkSeconds;
+            while (_state == PlayerActivityState.MovingTowardsActivity && Time.unscaledTime < until)
+            {
+                yield return null;
+            }
+            if (_state == PlayerActivityState.MovingTowardsActivity)
+            {
+                SessionGame.Tell(UI.Notification.NotificationType.Warning, "reallife_session_note_no_way", null, 10f);
+                SessionDirector.Note("the walk to the desk took over " + WalkSeconds + " s and is called off: nothing held, the session stays due");
                 End(false, true);
             }
         }

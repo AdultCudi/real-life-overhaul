@@ -58,6 +58,18 @@ namespace RealLifeOverhaul.DaySeries
 
         public static string Fortune(int index) => FortunePrefix + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+        /// <summary>The game's item name behind a cleaned one. Clean takes the colon out of "ba:itemname_apple", and the game
+        /// knows the item only with it, so the first gap of a name with no other gap is read as that colon.</summary>
+        public static string ItemName(string clean)
+        {
+            if (string.IsNullOrEmpty(clean))
+            {
+                return string.Empty;
+            }
+            int gap = clean.IndexOf(' ');
+            return gap <= 0 || gap == clean.Length - 1 || clean.IndexOf(' ', gap + 1) >= 0 ? clean : clean.Substring(0, gap) + ":" + clean.Substring(gap + 1);
+        }
+
         /// <summary>A name safe in the save line: the separators are dropped, and an empty name is refused.</summary>
         public static string Clean(string name)
         {
