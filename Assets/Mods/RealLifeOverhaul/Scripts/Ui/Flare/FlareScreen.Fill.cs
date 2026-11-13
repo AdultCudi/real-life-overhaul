@@ -1241,7 +1241,7 @@ namespace RealLifeOverhaul.Ui
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = words ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i, Liked = _flare.IsReplyLiked(p.Id, i)
+                        Text = words ?? _flare.FriendLine(p, index, people[k]), Seed = p.Seed + i, Slot = i, Liked = _flare.IsReplyLiked(p.Id, i)
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);
                     _synthetic.Add(reply);

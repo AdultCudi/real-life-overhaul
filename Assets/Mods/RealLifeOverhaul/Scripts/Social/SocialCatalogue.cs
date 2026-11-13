@@ -851,6 +851,7 @@ namespace RealLifeOverhaul
     public static class SocialLines
     {
         private static readonly Dictionary<string[], int> Last = new Dictionary<string[], int>(64);
+        private static readonly Dictionary<string, string[]> Pools = new Dictionary<string, string[]>(256, StringComparer.Ordinal);   // each line picked, with its pool
         private static readonly Random Dice = new Random();
         private static readonly Func<float> Random01 = () => (float)Dice.NextDouble();   // made once: handed to every pick
 
@@ -867,8 +868,21 @@ namespace RealLifeOverhaul
                 return null;
             }
             Last[pool] = index;
+            Pools[pool[index]] = pool;
             return pool[index];
         }
+
+        /// <summary>
+        /// The line somebody sends given the key of the one they sent last (SocialAskRules.Next): the line picked, another of
+        /// its pool when it is the one they sent last, or null when it would only repeat them. A line that reports something
+        /// that happened (<paramref name="must"/>) is sent again when it has no other.
+        /// </summary>
+        public static string After(string last, string key, bool must)
+        {
+            return SocialAskRules.Next(last, key, key != null && Pools.TryGetValue(key, out string[] pool) ? pool : null, must, Dice.Next(), Fits);
+        }
+
+        private static readonly Func<string, bool> Fits = LineNeeds.Fits;   // made once
 
         public static void Forget()
         {

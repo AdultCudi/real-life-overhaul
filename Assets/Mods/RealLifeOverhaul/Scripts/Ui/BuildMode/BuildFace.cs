@@ -69,6 +69,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Build mode left, as its leave button does (the interface going away under it).</summary>
         internal static void Leave() => _current?._calls.Leave?.Invoke();
 
+        // The face's piece failed under it: Build mode is left as when the interface goes, and opens on its old panels until the next city.
+        private static void Lost() => UiDirector.PieceLost(UiDirector.BuildPiece, "its face failed");
+
         public string Id => ScreenId;
 
         public bool Dirty => _dirty;
@@ -229,7 +232,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _squaresUp = true;   // before the first layout, which the modal makes at once
                 Pictures();
-                _host = hud.Modal(this, UiText.T("reallife_bld_mode_title"), UiIcon.Building);
+                _host = hud.Modal(this, UiText.T("reallife_bld_mode_title"), UiIcon.Building, Lost);
                 _host.PointerOnly = true;
                 HudStatusGame.ToolRow = _m.Tools;
                 _current = this;

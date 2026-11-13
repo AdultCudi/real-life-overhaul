@@ -84,6 +84,29 @@ namespace RealLifeOverhaul.Meta
             gameObject.AddComponent<GraphicRaycaster>();
             _canvas.enabled = false;
             enabled = false;
+            // Its dimmer takes every click and its panels hold the player's walk and the mod's keys: let go of if its guard stops it (Core/ScreenHolds).
+            ScreenHolds.Add(FrameGuard.Where, "the mod's own panels, with the player's walk and the mod's keys they hold", LetGo, () => AnyOpen);
+        }
+
+        // Every panel closed and the canvas off, whatever its Update's guard says: the canvas is switched off even if a panel's own close fails.
+        private static void LetGo()
+        {
+            MetaUi ui = _instance;
+            if (ui == null)
+            {
+                return;
+            }
+            try
+            {
+                ui.CloseAll();
+            }
+            finally
+            {
+                ui._open.Clear();
+                ui._canvas.enabled = false;
+                ui.enabled = false;
+                ui.Hold(false);
+            }
         }
 
         private void OnDestroy()

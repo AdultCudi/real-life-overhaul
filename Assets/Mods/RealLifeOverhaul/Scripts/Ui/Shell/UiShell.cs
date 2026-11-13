@@ -359,6 +359,7 @@ namespace RealLifeOverhaul.Ui
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             _appsCanvas = _appsRoot.AddComponent<Canvas>();
             _appsRoot.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_appsRoot);
             var blocker = _appsRoot.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);   // a click beside the panel lands here, not on the window under it
             _apps = new AllAppsScreen { Close = CloseApps, Opening = ShellApps.Press };

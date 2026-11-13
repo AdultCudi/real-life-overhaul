@@ -382,6 +382,13 @@ namespace RealLifeOverhaul.Flare
                 return false;
             }
             long now = Now;
+            // An answer to a rival that ran a business of theirs down goes up for the city to see as well (a careful one eases
+            // the talk), from the phone's Flare as from the kit's: looked up before the answer itself ends the attack.
+            string attacked = AttackedPlace(with);
+            if (attacked != null)
+            {
+                AnswerRival(attacked, text);
+            }
             FlareLiveRules.Dm(_file.Net, with, AccountName(with), now, true, text, null, null);
             if (with.StartsWith("p:", StringComparison.Ordinal))
             {

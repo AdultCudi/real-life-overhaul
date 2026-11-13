@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using BAModAPI;
 using Localizor;
@@ -11,9 +13,14 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The game-touching part of the build check, and the one notice of what this game lacks, in the game's question
     /// box: a Player.log line at game start; for an older game, the notice in the main menu once its start screen is
-    /// free; else once a session in a city when a part of the mod is off.
+    /// free; else in a city when a part of the mod is off. Once a start, wherever it was shown.
+    /// WHAT IT SAYS is short whatever is off (Core/BuildNoticeRules): the box grows with its text without limit, and the
+    /// list of every part that was off on Build 3670 put its heading and buttons off the screen and locked a player out
+    /// of the main menu. In the main menu the game reads no key for its question box, so Esc and Enter close the notice
+    /// from here.
     /// COST: nothing once the notice has shown, or while the build is right and nothing is off; a half-second timer
-    /// while it waits in the main menu.
+    /// while it waits in the main menu, and three key reads a frame while it is up there (none while a text field has the
+    /// keyboard, Core/TypingNow).
     /// </summary>
     public static partial class GameBuild
     {
@@ -21,15 +28,22 @@ namespace RealLifeOverhaul
 
         private const string TitleKey = "reallife_build_old_title";
         private const string BodyKey = "reallife_build_old_body";
-        private const string PartsKey = "reallife_build_old_parts";
+        private const string OffKey = "reallife_build_old_off";
+        private const string ShortKey = "reallife_build_old_short";
+        private const string OldPartsKey = "reallife_build_old_parts";
         private const string ModTitleKey = "reallife_guard_title_mod";
         private const string NewerKey = "reallife_guard_notice_update";
-        private const string OffKey = "reallife_guard_notice_parts";
+        private const string PartsKey = "reallife_guard_notice_parts";
+        private const string PartsShortKey = "reallife_guard_notice_short";
+        private const string MoreKey = "reallife_guard_list_more";
+        private const string LogKey = "reallife_guard_list_log";
         private const string OkKey = "reallife_opt_ok";
         private const string TextKey = "reallife_opt_text";   // "{text}": the notice put together here
 
         private static int _running = -1;
-        private static bool _started, _menuShown, _cityShown;
+        private static bool _started, _shown;
+        private static bool _up;   // the notice is up in the main menu: its keys are read here
+        private static readonly Action Closed = () => _up = false;
 
         /// <summary>The running game's build, read once; 0 when it could not be read.</summary>
         public static int Running
@@ -91,18 +105,21 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while the notice is still due in a city this session: an older game, or a part of the mod off.</summary>
-        public static bool CityDue => !_cityShown && (Of(Running) == BuildKind.Older || Guard.PartsOff);
+        /// <summary>True while the notice is still due this start: an older game, or a part of the mod off, and not shown yet in the main menu or a city.</summary>
+        public static bool CityDue => !_shown && (Of(Running) == BuildKind.Older || Guard.PartsOff);
 
-        /// <summary>For a bug report: whether the notice has shown this session.</summary>
-        public static bool NoticeShown => _menuShown || _cityShown;
+        /// <summary>For a bug report: whether the notice has shown this start.</summary>
+        public static bool NoticeShown => _shown;
 
-        /// <summary>From Meta/MetaCity once the city is ready and quiet: the notice, once a session.</summary>
+        /// <summary>From Meta/MetaCity once the city is ready and quiet: the notice, unless the main menu showed it.</summary>
         public static void ShowInCity()
         {
-            _cityShown = true;
-            _menuShown = true;   // not shown again back in the main menu
-            Show("a save was loaded");
+            if (_shown)
+            {
+                return;
+            }
+            _shown = true;
+            Show("a save was loaded", true);
         }
 
         // Once the start screen is up with nothing of the game's over it; a save loaded first gets it in the city.
@@ -110,7 +127,7 @@ namespace RealLifeOverhaul
         {
             var wait = new WaitForSecondsRealtime(0.5f);
             float earliest = Time.realtimeSinceStartup + 2f;
-            while (!_menuShown)
+            while (!_shown)
             {
                 yield return wait;
                 if (InCity())
@@ -121,9 +138,28 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                _menuShown = true;
-                Show("the main menu");
+                _shown = true;
+                _up = Show("the main menu", false);
             }
+            if (!_up)
+            {
+                yield break;
+            }
+            // The start screen reads no key for the question box (only the load screen does, Scenes.MainMenu/LoadGame.Update), and
+            // the game clears the selection as the box opens: so Esc and Enter close the notice here, and its button is selected.
+            yield return null;
+            GameConfirm.SelectConfirm();
+            while (_up && !GameConfirm.KnownClosed && !InCity())
+            {
+                if (!TypingNow.Now && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+                {
+                    bool closed = GameConfirm.Confirm();
+                    Logger?.Info("Game build: the notice in the main menu was " + (closed ? "closed with a key." : "not closed by its key: this game gives the mod no way to press its button."));
+                    break;
+                }
+                yield return null;
+            }
+            _up = false;
         }
 
         private static bool InCity()
@@ -170,16 +206,28 @@ namespace RealLifeOverhaul
             return menu != null && menu.startView != null && menu.startView.activeInHierarchy;
         }
 
-        /// <summary>Options > Tests: the notice as Build 3675 would show it, with the parts the contract would name there.</summary>
+        private static bool _testAll;   // the test shows its two notices in turn
+
+        /// <summary>
+        /// Options > Tests, two notices in turn: as Build 3675 would show it, with the parts the contract would name there;
+        /// then with every feature and every part off, the most there is to count, as Build 3670 had nearly all of them.
+        /// </summary>
         public static void TestNotice()
         {
             try
             {
-                int example = Math.Min(3675, MadeFor - 1);
-                string body = Older(example) + "\n\n" + PartsKey.GetLocalization().Replace("{parts}", Guard.PartNames(GameContract.LackedBy3675));
-                bool shown = GameConfirm.TryShow(TitleKey.Localize(), TextKey.Localize(new { text = body }), null, null, OkKey, null, false, false);
-                Logger?.Info("Game build check (test, notice): the notice an older game gets, as Build " + example + " would show it: "
-                             + (shown ? "PASS." : "not shown, this game has no question box the mod can call."));
+                bool all = _testAll;
+                _testAll = !_testAll;
+                int example = Math.Min(all ? 3670 : 3675, MadeFor - 1);
+                List<string> names = all ? Guard.EveryName() : Guard.PartNames(GameContract.LackedBy3675);
+                int features = Guard.FeaturesAll;
+                BuildNotice notice = BuildNoticeRules.Compose(BuildKind.Older, example, Meta.Changelog.Version, names, all ? features : 0, features, Words(), GameConfirm.Zoom,
+                    GameConfirm.MenuBoxToo);
+                bool shown = GameConfirm.TryShow(TitleKey.Localize(), TextKey.Localize(new { text = notice.Body }), null, null, OkKey, null, false, false);
+                Logger?.Info("Game build check (test, notice): the notice an older game gets, "
+                             + (all ? "with every feature and every part off (" + names.Count + " counted)" : "as Build " + example + " would show it") + " (form " + notice.Form + ", "
+                             + notice.Named + " part(s) named, " + notice.Body.Length + " characters): " + (shown ? "PASS." : "not shown, this game has no question box the mod can call.")
+                             + " Press again for " + (all ? "the notice as Build 3675 would show it." : "the notice with everything off."));
             }
             catch (Exception e)
             {
@@ -187,44 +235,50 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static string Older(int build)
+        private static BuildNoticeWords Words()
         {
-            return BodyKey.GetLocalization().Replace("{version}", Meta.Changelog.Version).Replace("{made}", MadeFor.ToString()).Replace("{build}", build.ToString());
+            return new BuildNoticeWords
+            {
+                OldBody = BodyKey.GetLocalization(),
+                OldOff = OffKey.GetLocalization(),
+                OldShort = ShortKey.GetLocalization(),
+                OldParts = OldPartsKey.GetLocalization(),
+                Update = NewerKey.GetLocalization(),
+                Parts = PartsKey.GetLocalization(),
+                Short = PartsShortKey.GetLocalization(),
+                More = MoreKey.GetLocalization(),
+                Log = LogKey.GetLocalization()
+            };
         }
 
-        private static void Show(string where)
+        // True when the box went up. In the main menu its two buttons say so when they close it, for the keys' wait.
+        private static bool Show(string where, bool inCity)
         {
             try
             {
-                bool older = Of(Running) == BuildKind.Older;
-                string body;
-                if (older)
+                BuildKind kind = Of(Running);
+                bool older = kind == BuildKind.Older;
+                List<string> names = Guard.OffNames(older);
+                float zoom = GameConfirm.Zoom;
+                BuildNotice notice = BuildNoticeRules.Compose(kind, Running, Meta.Changelog.Version, names, Guard.FeaturesOff, Guard.FeaturesAll, Words(), zoom,
+                    inCity || GameConfirm.MenuBoxToo);
+                string what = older ? "that the game needs updating" : "of the parts of the mod that are off";
+                Action closed = inCity ? null : Closed;
+                if (GameConfirm.TryShow((older ? TitleKey : ModTitleKey).Localize(), TextKey.Localize(new { text = notice.Body }), closed, closed, OkKey, null, false, false))
                 {
-                    body = Older(Running);
-                    string parts = Guard.PartsNamed(true);
-                    if (parts.Length > 0)
-                    {
-                        body += "\n\n" + PartsKey.GetLocalization().Replace("{parts}", parts);
-                    }
+                    Logger?.Info("Game build: the notice " + what + " was shown (" + where + "): " + names.Count + " part(s) counted, " + notice.Named + " named, form " + notice.Form
+                                 + ", " + notice.Body.Length + " characters at a UI zoom of " + zoom.ToString("0.##", CultureInfo.InvariantCulture) + "; " + Guard.FeaturesOff
+                                 + " of " + Guard.FeaturesAll
+                                 + " features are off whole. The whole list is in the line 'Game contract: the whole list for this game' above.");
+                    return true;
                 }
-                else
-                {
-                    body = (Of(Running) == BuildKind.Newer ? NewerKey : OffKey).GetLocalization().Replace("{parts}", Guard.PartsNamed(false));
-                }
-                if (GameConfirm.TryShow((older ? TitleKey : ModTitleKey).Localize(), TextKey.Localize(new { text = body }), null, null, OkKey, null, false, false))
-                {
-                    Logger?.Info("Game build: the notice " + (older ? "that the game needs updating" : "of the parts of the mod that are off") + " was shown (" + where + ").");
-                }
-                else
-                {
-                    Logger?.Warn("Game build: the notice " + (older ? "that the game needs updating" : "of the parts of the mod that are off") + " could not be shown (" + where
-                                 + "): this game has no question box the mod can call.");
-                }
+                Logger?.Warn("Game build: the notice " + what + " could not be shown (" + where + "): this game has no question box the mod can call.");
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
             }
+            return false;
         }
     }
 }

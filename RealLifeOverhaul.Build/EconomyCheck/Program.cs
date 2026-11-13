@@ -118,6 +118,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--premises")
+        {
+            PremiseChecks();   // nothing told or asked without what it speaks of, no line twice running, sites on pavement only (PremiseChecks.cs)
+            LineNeedRule();    // the rule its lines' needs go through (LineNeedChecks.cs)
+            ChessFixes();      // the crossing test the chess scenes share (ChessFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--flare-msg")
         {
             FlareMsgChecks();   // Flare's messages in words and its contact faces (FlareMsgChecks.cs)
@@ -1364,6 +1372,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--old-build")
+        {
+            OldBuild();   // (the notice of the game's build and the room of the game's question box, alone: OldBuildChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui-guard")
+        {
+            UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -1687,6 +1707,7 @@ internal static partial class Program
         NeedsPanel();   // the bars of hygiene, stress and home stand whenever the game's top bar does, wherever the player is and however they are; the home bar waits for a home (NeedsPanelChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
         LineNeedRule(); // random lines only when what they take for granted is the player's: a fridge, a flat, a landlord, a car; every random line's English read for it (LineNeedChecks.cs)
+        PremiseChecks(); // no notice of a rival's attack or ask for a tour without a business, no line twice running from one person, standing sites on pavement only, every sent line's premise (PremiseChecks.cs)
         VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
@@ -1783,6 +1804,8 @@ internal static partial class Program
         NoticeMuting();     // the mod's notifications by kind: what a switch keeps from popping up, the gate in the maker's place, the list, the cost, the texts (NoticeMuteChecks.cs)
         Graphics();         // Realistic graphics: the table of settings, the Free choice against the switches that start work, every minute of every look in every weather, no jumps, the grey card, the curves, the measurement, the cost, the sources, the texts (GraphicsChecks.cs)
         UiOff();            // the RLO interface off by default: the step that switches a saved "on" off once and never again, who is told, the default and the presets, the order at start, the texts (UiOffChecks.cs)
+        OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
+        UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

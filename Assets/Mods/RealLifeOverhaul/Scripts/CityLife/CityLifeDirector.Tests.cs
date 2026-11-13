@@ -55,7 +55,7 @@ namespace RealLifeOverhaul
                 for (int step = 0; step < count; step++)
                 {
                     CityEntry entry = Nth(family, (_testNext[(int)family] + step) % count);
-                    CitySpots.OffPavement = CitySpots.Blocked = CitySpots.NearDoor = CitySpots.NoWall = CitySpots.Uneven = 0;
+                    CitySpots.OffPavement = CitySpots.Blocked = CitySpots.NearDoor = CitySpots.NoWall = CitySpots.Uneven = CitySpots.InRoad = 0;
                     CityRefusal said = CityRefusal.None;
                     for (int attempt = 0; attempt < 10; attempt++)
                     {
@@ -79,7 +79,8 @@ namespace RealLifeOverhaul
                     }
                     last = said;
                     lastName = entry.Name;
-                    Logger?.Info($"City life test: {entry.Id} not started ({said}) in ten tries near the player: places refused as off the pavement {CitySpots.OffPavement}, "
+                    Logger?.Info($"City life test: {entry.Id} not started ({said}) in ten tries near the player: places refused as off the pavement {CitySpots.OffPavement} "
+                                 + $"(of them {CitySpots.InRoad} walking ground that is no pavement: a crossing, a lane, a bus zone or parking; {CitySpots.RoadLayerWords()}), "
                                  + $"blocked by something solid {CitySpots.Blocked}, near something the player can use {CitySpots.NearDoor}, no building wall within reach {CitySpots.NoWall}, "
                                  + $"walls seen but none flat with pavement in front {CitySpots.Uneven}.");
                 }

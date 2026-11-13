@@ -59,6 +59,9 @@ An ad (Business, Run an ad) is shown each day to so many residents of its target
 
 The four hundred people of the feed ("c0" to "c399") are residents drawn from the city's adults, the young and students more likely; their age, sex, district and manner (a student, a pensioner, a parent of a child at home, or by their household's tastes) are their resident's, and their name is rolled from the city's seed, the slot and the resident (`FlareLiveRules.ResidentCitizen`). A voice whose resident died or left is somebody new.
 
+## A rival's attack and the warning of fallen reviews
+A rival's day (`FlareDirector.RivalDay`) is played once. When its roll is an attack it draws one business of its own district, never itself and never another player's (`FlareUseRules.RivalTarget`), by the same rule for the player's businesses as for the city's. An attack on a business of the player's that is theirs today goes up as the rival's post naming it (`FlareText.Live`, `reallife_flare_biz_post_7`) and a message that the player answers there (`FlareLiveRules.RivalDmKey`, `Attacked`); only then is the notice told, naming the rival and the business, opening the messages. An attack on any other business sours that business's reputation in the rival's district and says nothing to the player; with nobody to run down the move is an ordinary post. A fall of reviews warns the player (`FlareUseRules.WarnsPlayer`) only of a business of their own, once, while it is still theirs.
+
 ## The player's name
 
 Each day 2.5% of the player's followers in the city hear of each of the player's businesses because they follow its founder, so a big following lifts them all; while an arrest that trended this week has no honest post answering it, 40% of them hear of it against each business.

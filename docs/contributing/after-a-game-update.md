@@ -28,9 +28,11 @@ The game contract and its guard are the mod's one answer to a game that is not t
 
     A member named only in a small method of the mod's own that is never inlined, whose caller catches its absence and does without it (`Core/GameMembers`, `Core/GameConfirm`, an app's first steps in `Core/GameUi/PhoneApps`), switches nothing off.
 
-- **One notice**, the game's own question box (`Core/GameBuild.Notice.cs`): for an older game, in the main menu and once a session when a save is loaded, that the mod needs the current game, how to update it in Steam (Betas set to None, then Verify integrity of game files) and which parts are off or work without what it lacks.
+- **One notice**, the game's own question box (`Core/GameBuild.Notice.cs`), once each time the game starts: for an older game, in the main menu (in the first city only if the menu never showed it), that the mod needs the current game, how to update it in Steam (Betas set to None, then Verify integrity of game files) and which parts are off or work without what it lacks.
 
-  For any other game on which a part is off, once a session in the city, that the mod waits for an update and which parts.
+  For any other game on which a part is off, once in the city, that the mod waits for an update and which parts.
+
+  The notice is short whatever is off (`Core/BuildNoticeRules.cs`): it names three parts at most and counts the rest, and where three quarters of the features are off it says the mod is switched off and lists nothing. Player.log has every one in the line that begins "Game contract: the whole list for this game". The game's box is as tall as its text, with no limit, and a text too long puts its heading and buttons off the screen while it takes every click: on Build 3670 the list of every part locked a player out of the main menu. So every text for the box is measured first (`Core/BoxFitRules.cs`, with the game's own sums and UI zoom), and `Core/GameConfirm` cuts one the box has no room for. In the main menu the game reads no key for its box, so the notice closes with Esc and Enter from the mod. `EconomyCheck --old-build` holds all of it.
   The options page says it under Troubleshooting, Diagnostics, "What a game update switched off", and after the name of each feature hit.
 
 - **A member found missing only when it is first used**: every entry point the engine or the game calls runs inside a try with a `FeatureGuard` (Update, LateUpdate, FixedUpdate and OnGUI through each class's FrameGuard, coroutines through `Guard.Routine`, handlers on the game's events through `Guard.Wrap`, clicks through `UiClone.Safe`, the economy's ticks through `Guard.Each`, the steps of the start through `Guard.Step`).
@@ -51,7 +53,7 @@ The game contract and its guard are the mod's one answer to a game that is not t
 - **Going Public**: a session refuses a player whose game build differs from the host's, so every machine meets the same game, finds the same pieces missing and switches off the same parts; nothing of this is sent over the network.
 
 In Player.log, read the lines that begin `Game build:` and `Game contract:` (warnings: written whether or not the developer diagnostics are on).
-Options > Tests > Diagnostics shows the guard's five faults, the notice an older game gets, and a question asked the way the mod asks on an older game.
+Options > Tests > Diagnostics shows the guard's five faults, the notice an older game gets (pressed again, the notice with every feature and part off, which says the mod is switched off), and a question asked the way the mod asks on an older game.
 
 ## What to do after a game update
 

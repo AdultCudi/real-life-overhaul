@@ -247,12 +247,20 @@ namespace RealLifeOverhaul.Flare
             }
             if (CityOn && _city != null && !string.IsNullOrEmpty(_city.WarnKey) && _file.ReviewWarnDay != day)
             {
-                _file.ReviewWarnDay = day;
-                Tell(NotificationType.Warning, "reallife_flare_use_turn", _openBusinessTab);
+                // Told once for a fall, of a business they still have; the next fall sets the mark again.
+                string warned = PlaceOfKey(_city.WarnKey);
+                _city.WarnKey = null;
+                if (FlareGame.Business(warned) != null)
+                {
+                    _file.ReviewWarnDay = day;
+                    Notice(NotificationType.Warning, "reallife_flare_use_turn", _openBusinessTab);
+                }
             }
         }
 
-        // A rival posts, promotes or attacks, by the same dry run. Another player's business is never the target.
+        // A rival posts, promotes or attacks, by the same dry run. An attack is on a business of the rival's own district, the
+        // player's or the city's alike (FlareUseRules.RivalTarget), never another player's; with nobody to run down the day's
+        // move is an ordinary post, and the player hears of an attack only when it is on a business they have now.
         private void RivalDay(int day, int hour)
         {
             if (!CityOn || _city == null || _city.RivalDay == day)
@@ -265,7 +273,7 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             _city.RivalDay = day;
-            int move = FlareUseRules.RivalMove(_city.Seed, day);
+            int rolled = FlareUseRules.RivalMove(_city.Seed, day);
             int actor = -1;
             int guard = 0;
             while (actor < 0 && guard < 8)
@@ -283,6 +291,12 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             string place = s.Businesses.Key[actor];
+            int target = rolled == FlareUseRules.RivalAttack
+                ? FlareUseRules.RivalTarget(_city.Seed, day, actor, s.Businesses.Owner, s.Businesses.District, s.Businesses.Key, s.Businesses.Count) : -1;
+            bool players = target >= 0 && s.Businesses.Owner[target] == (byte)Owner.Player;
+            FlareShop mine = default(FlareShop);
+            bool owned = players && ShopOfSlot(target, out mine);   // the business as it is theirs today; not once it is sold or shut
+            int move = FlareUseRules.RivalMoveFor(rolled, target >= 0 && (!players || owned));
             int followers = 400 + FlareRules.Roll(_city.Seed, day, 81) % 4000;
             FlareInfluencer hired = null;
             if (move == 1 && _file != null && _file.Influencers.Count > 0)
@@ -302,22 +316,17 @@ namespace RealLifeOverhaul.Flare
                 Seed = hired != null ? hired.Seed : _city.Seed, RollKey = hired != null ? hired.Id : day
             };
             FlareExpect ex = FlareUseRules.Expect(in brief);
-            if (move == 2)
+            if (move == FlareUseRules.RivalAttack)
             {
-                string mine = PlayerPlace();
-                if (mine != null)
+                if (owned)
                 {
-                    FlareRules.AddBuzz(_file, mine, -2, day, 2);
-                    int b = _cityPass.BusinessOfPlace(mine);
-                    if (b >= 0 && b < _city.BusinessCount)
-                    {
-                        int n = _city.Districts;
-                        int d = s.Businesses.District[actor];
-                        if (d >= 0 && d < n)
-                        {
-                            _city.Sour[b * n + d] += 2000;
-                        }
-                    }
+                    FlareRules.AddBuzz(_file, mine.Place, -2, day, 2);
+                }
+                int n = _city.Districts;
+                int d = s.Businesses.District[actor];
+                if (target < _city.BusinessCount && d >= 0 && d < n)
+                {
+                    _city.Sour[target * n + d] += FlareUseRules.RivalSour;
                 }
             }
             else if (_city.RivalBoosts.Count < 16)
@@ -333,41 +342,70 @@ namespace RealLifeOverhaul.Flare
                     hired.BookedBy = place;
                 }
             }
-            if (move == 2)
+            bool posted = RivalSeen(s, actor, move, owned, mine, day, hour);
+            if (FlareUseRules.RivalTold(move, owned, posted))
             {
-                Tell(NotificationType.Warning, "reallife_flare_use_attack", _openFeed);
+                Notice(NotificationType.Warning, "reallife_flare_use_attack", _openMessages, "rival", FlareCityGame.NameOf(place), "business", mine.Name);
             }
-            RivalSeen(s, actor, move, day, hour);
+            if (Meta.Dev.Verbose && rolled == FlareUseRules.RivalAttack)
+            {
+                Logger?.Info("Flare check (rival's attack): day " + day + ", the roll was an attack by " + place + "; its target: "
+                             + (target < 0 ? "none in its district" : players ? (owned ? "the player's " + mine.Name : "a business the player no longer has") : s.Businesses.Key[target])
+                             + "; " + (move != FlareUseRules.RivalAttack ? "an ordinary post instead, nobody told"
+                                 : !owned ? "the city's business soured, the player not told" : posted ? "its post, message and notice name the business" : "no post could go up, so no notice")
+                             + ": PASS");
+            }
             NpcAnswers(s, day);
         }
 
-        // What the city sees of the rival's move: its post, promoted when it bought reach, or its post against the player's business.
-        private void RivalSeen(PopulationState s, int actor, int move, int day, int hour)
+        // What the city sees of the rival's move: its post, promoted when it bought reach, or its post against the player's
+        // business, named in it. True when a post against a business of the player's went up with its message.
+        private bool RivalSeen(PopulationState s, int actor, int move, bool owned, FlareShop mine, int day, int hour)
         {
             string key = s.Businesses.Key[actor];
             BuildingRegistration reg = FlareCityGame.Registration(key);
             string name = FlareCityGame.NameOf(key);
             int d = s.Businesses.District[actor];
             string district = d >= 0 && d < s.Districts.Count ? s.Districts[d].Id : null;
-            if (move == 2)
+            if (move == FlareUseRules.RivalAttack)
             {
-                string mine = PlayerPlace();
-                if (mine != null)
-                {
-                    RivalAttack(name, district, mine, day, hour);
-                }
-                return;
+                return owned && RivalAttack(name, district, mine, day, hour);
             }
             RivalPromo(reg != null ? FlareGame.Place(reg) : null, name, district, day, hour, move == 1);
+            return false;
         }
 
-        private string PlayerPlace()
+        // The business of the player's that stands in a slot of the population's table, as it is theirs now (the game's own
+        // registrations, another player's never among them); false when none does. The account's list of shops it has ever
+        // seen is no answer here: a business sold or shut stays in it.
+        private bool ShopOfSlot(int slot, out FlareShop shop)
         {
-            if (_file == null || _file.Shops.Count == 0)
+            List<FlareShop> shops = MyShops();
+            for (int i = 0; i < shops.Count; i++)
             {
-                return null;
+                if (_cityPass.BusinessOfPlace(shops[i].Place) == slot)
+                {
+                    shop = shops[i];
+                    return true;
+                }
             }
-            return _file.Shops[0].Place;
+            shop = default(FlareShop);
+            return false;
+        }
+
+        // The business of the player's a rival's message names, as it is theirs now: what an answer to it speaks for.
+        private string AttackedPlace(string with)
+        {
+            string named = FlareLiveRules.AttackedBusiness(_file.Net, with);
+            List<FlareShop> shops = named != null ? MyShops() : null;
+            for (int i = 0; shops != null && i < shops.Count; i++)
+            {
+                if (Clean(shops[i].Name) == named)
+                {
+                    return shops[i].Place;
+                }
+            }
+            return null;
         }
 
         /// <summary>The player answers one review. A careful answer softens it.</summary>
@@ -394,9 +432,9 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A public answer to a rival. The talk about the player's business eases when the answer is careful.</summary>
         public bool AnswerRival(string place, string text)
         {
-            if (!Running || string.IsNullOrEmpty(text))
+            if (!Running || string.IsNullOrEmpty(text) || FlareGame.Business(place) == null)
             {
-                return false;
+                return false;   // (an answer is for a business they still have)
             }
             var c = new FlareCompose { Kind = FlareSource.Life, Text = text, Place = place, Tone = FlareTone.Honest, ToneChosen = true };
             if (!Compose(c, out _))

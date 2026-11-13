@@ -9,8 +9,11 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Where the living city's people may stand, always found and never assumed: on the pedestrians' navigation mesh at
     /// ground height, clear of vehicles, street furniture, walls and people, away from doors, and for shopfront work at a
-    /// measured distance from a real wall. Asked only while a site is chosen (a few physics queries every few seconds), but
-    /// for <see cref="Ground"/>, which the cameras ask once a frame while they swing low (one ray). Nothing allocates.
+    /// measured distance from a real wall. That mesh runs over every crossing, so while a standing site of the living city
+    /// finds its places (<see cref="ForSite"/>) each one must be pavement by SiteGroundRules as well: never a crossing, a
+    /// road, a lane, a bus zone or parking. Asked only while a site is chosen (a few physics queries every few seconds)
+    /// and every twenty seconds for a site that is out, but for <see cref="Ground"/>, which the cameras ask once a frame
+    /// while they swing low (one ray). Nothing allocates.
     /// </summary>
     public static class CitySpots
     {
@@ -32,6 +35,50 @@ namespace RealLifeOverhaul
 
         /// <summary>Why places were refused since the counts were last cleared, for the log to say why a test found no room.</summary>
         public static int OffPavement, Blocked, NearDoor, NoWall, Uneven;
+
+        /// <summary>Places on walking ground refused as in the road (a crossing, the carriageway, a lane, a bus zone, parking) since the counts were last cleared.</summary>
+        public static int InRoad;
+
+        private const float RoadDip = 0.3f;   // metres above and below the street the footprint is looked through: a road's collider lies at its surface
+        private static readonly Collider[] RoadOverlaps = new Collider[32];   // one buffer: ground reads run one at a time, on the main thread
+        private static int _roadsLayer;      // the game's road surfaces, and what puts itself there when it wakes (a street tree: ViewBlockingEntity)
+        private static int _parkingMask;     // the game's parking boxes and car parks
+        private static int _roadMask;        // all a footprint is looked through for
+        private static bool _roadLogged;     // the first place refused as in the road has been written to the log this session
+        private static int _forSite;         // sites finding their places now: counted, so one scope inside another is no fault
+        private static bool _kerbside;       // the site finding its places stands at the kerb's edge by its nature (SiteGroundRules.Kerbside)
+        private static readonly SiteGroundRules.RoadLayerWatch RoadWatch = new SiteGroundRules.RoadLayerWatch();   // the session's verdicts: the Roads layer dropped if it refuses every place
+
+        /// <summary>True when the Roads layer was judged unreliable this session and no longer decides (SiteGroundRules.RoadLayerWatch).</summary>
+        public static bool RoadLayerFallback => RoadWatch.Off;
+
+        /// <summary>The watch's counts for the City life test's print: places asked, refused as the carriageway, found pavement.</summary>
+        public static string RoadLayerWords() =>
+            (RoadWatch.Off ? "road layer test OFF (fallback: judged unreliable, lanes, crossings, bus zones, parking and doorways decide)" : "road layer test on")
+            + " (" + RoadWatch.Asked + " places asked, " + RoadWatch.Carriageway + " refused as the road, " + RoadWatch.Pavement + " pavement)";
+
+        /// <summary>
+        /// Held while a standing site of the living city finds and takes its places (CityLifeDirector.Open, the chess table):
+        /// every place it asks for is then pavement by SiteGroundRules too, each person's and each prop's. Other features
+        /// ask of the walking ground alone, as they always did: a kerb's edge, a bus stop's riders and a works' dressing
+        /// stand where their own rules put them. A struct, so nothing is allocated.
+        /// </summary>
+        public static SiteScope ForSite(string kind)
+        {
+            _forSite++;
+            _kerbside = SiteGroundRules.Kerbside(kind);
+            return default(SiteScope);
+        }
+
+        /// <summary>The scope <see cref="ForSite"/> opens, closed by its using.</summary>
+        public readonly struct SiteScope : System.IDisposable
+        {
+            public void Dispose()
+            {
+                _forSite = _forSite > 0 ? _forSite - 1 : 0;
+                _kerbside = false;
+            }
+        }
 
         private static NavMeshQueryFilter _pavement;
         private static NavMeshPath _path;   // one, reused: asking for a path allocates nothing after the first
@@ -55,12 +102,44 @@ namespace RealLifeOverhaul
             _doorMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             _wallMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls");
             _crosswalkLayer = LayerMask.NameToLayer("Crosswalk");
+            _roadsLayer = LayerMask.NameToLayer("Roads");
+            _parkingMask = LayerMask.GetMask("ParkingArea", "AutoParkSpots");
+            _roadMask = LayerMask.GetMask("Roads", "Crosswalk") | _parkingMask;
             // Everything a person could stand in: all layers but the ground and the zones.
             _solidMask = ~(_groundMask | LayerMask.GetMask("UI", "Ignore Raycast", "AutoParkSpots", "ParkingArea", "TransparentFX", "Water"));
         }
 
-        /// <summary>The nearest point of pavement to a place, at street level; false if there is none within the radius.</summary>
+        /// <summary>
+        /// The nearest point of pavement to a place, at street level; false if there is none within the radius. For a site of
+        /// the living city (<see cref="ForSite"/>) the nearest walking ground may be a crossing: then the pavement to either
+        /// side of the place is looked for, half the radius out.
+        /// </summary>
         public static bool Pavement(Vector3 near, float radius, out Vector3 spot)
+        {
+            if (!Walkable(near, radius, out spot))
+            {
+                return false;
+            }
+            if (_forSite == 0 || Stands(spot, SiteGroundRules.StandReach))
+            {
+                return true;
+            }
+            float step = Mathf.Max(1f, radius * 0.5f);
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 aside = near + new Vector3(i == 0 ? step : i == 1 ? -step : 0f, 0f, i == 2 ? step : i == 3 ? -step : 0f);
+                if (Walkable(aside, radius, out Vector3 other) && Flat(other - near) <= radius * radius && Stands(other, SiteGroundRules.StandReach))
+                {
+                    spot = other;
+                    return true;
+                }
+            }
+            spot = default;
+            return false;
+        }
+
+        // The nearest point of the pedestrians' walking ground at street level: pavement, a square, or a crossing.
+        private static bool Walkable(Vector3 near, float radius, out Vector3 spot)
         {
             Setup();
             bool grounded = Ground(near, out float ground);
@@ -77,13 +156,90 @@ namespace RealLifeOverhaul
         /// <summary>Whether a place is pavement exactly there, within a step, so what is put there stands on it.</summary>
         public static bool OnPavement(Vector3 place, out Vector3 spot)
         {
-            if (Pavement(place, 0.35f, out spot) && Flat(spot - place) < 0.35f * 0.35f)
+            if (Walkable(place, 0.35f, out spot) && Flat(spot - place) < 0.35f * 0.35f && (_forSite == 0 || Stands(spot, SiteGroundRules.StandReach)))
             {
                 return true;
             }
             OffPavement++;
             return false;
         }
+
+        /// <summary>
+        /// What the ground is at a point of walking ground, for something that reaches <paramref name="reach"/> metres from it
+        /// (SiteGroundRules.Verdict): one box query through the street's surface for a road, a crossing or parking under it, the
+        /// traffic system's nearest lane point, the bus stops' zones, and with <paramref name="door"/> what the player can use.
+        /// </summary>
+        public static StreetGround Read(Vector3 spot, float reach, bool kerbside, bool door = false)
+        {
+            Setup();
+            var facts = new StreetGroundFacts { Walkable = true, Reach = reach, Kerbside = kerbside };
+            int count = Physics.OverlapBoxNonAlloc(spot, new Vector3(reach, RoadDip, reach), RoadOverlaps, Quaternion.identity, _roadMask, QueryTriggerInteraction.Collide);
+            facts.RoadUnder = count >= RoadOverlaps.Length;   // more than the query holds: refused, in case one left out is the road
+            for (int i = 0; i < count; i++)
+            {
+                Collider hit = RoadOverlaps[i];
+                RoadOverlaps[i] = null;   // no collider is held past the query
+                if (hit == null)
+                {
+                    continue;
+                }
+                int layer = hit.gameObject.layer;
+                if (layer == _crosswalkLayer || hit.CompareTag("Crosswalk"))
+                {
+                    facts.CrossingUnder = true;
+                }
+                else if (layer == _roadsLayer)
+                {
+                    // A street tree puts itself on the roads' layer when it wakes (the game's ViewBlockingEntity): no road.
+                    facts.RoadUnder |= !hit.isTrigger && hit.GetComponentInParent<EntityController>() == null;
+                }
+                else if (((1 << layer) & _parkingMask) != 0)
+                {
+                    facts.ParkingUnder = true;
+                }
+            }
+            if (TrafficTools.Street && RoadMap.Ensure() && RoadMap.NearestLane(spot, out float lane, out _, out _))
+            {
+                facts.LaneKnown = true;
+                facts.LaneDistance = lane;
+            }
+            facts.BusZone = BusZones.Holds(spot, Vector3.forward, reach, reach);
+            facts.DoorNear = door && Physics.CheckSphere(spot + Vector3.up, DoorKeepOut, _doorMask, QueryTriggerInteraction.Collide);
+            StreetGround ground = RoadWatch.Judge(in facts, out bool tripped);
+            if (tripped)
+            {
+                CityLifeDirector.Logger?.Info("City life road layer fallback: of " + RoadWatch.Asked + " places asked on walking ground " + RoadWatch.Carriageway
+                                              + " were refused as the road's own surface and none was pavement, so the Roads layer is judged unreliable for this game build and is not used again "
+                                              + "this session; crossings, traffic lanes, bus zones, parking and doorways still decide.");
+            }
+            return ground;
+        }
+
+        /// <summary>True if a point of walking ground is pavement for something that reaches so far from it; a refusal is counted, and the first of a session logged.</summary>
+        public static bool Stands(Vector3 spot, float reach)
+        {
+            StreetGround ground = Read(spot, reach, _kerbside);
+            if (ground == StreetGround.Pavement)
+            {
+                return true;
+            }
+            InRoad++;
+            if (!_roadLogged)
+            {
+                _roadLogged = true;
+                CityLifeDirector.Logger?.Info("City life: a place on the walking ground at " + spot.ToString("F0") + " is " + SiteGroundRules.Words(ground)
+                                              + ", not pavement: nothing is stood there (said for the first such place of a session).");
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// What the ground under a site is, its kind's body round its middle (SiteGroundRules.Reach): asked as it is chosen
+        /// (<paramref name="setUp"/>: nothing of the site is out yet, so what the player can use within the keep-out is a
+        /// doorway) and every <see cref="SiteGroundRules.RecheckSeconds"/> while it is out, since a bus zone or new ground can
+        /// come under it (then its own props, a chess table the player sits at among them, are no doorway).
+        /// </summary>
+        public static StreetGround Site(Vector3 centre, string kind, bool setUp = false) => Read(centre, SiteGroundRules.Reach(kind), SiteGroundRules.Kerbside(kind), setUp);
 
         /// <summary>The height of the street under a point (road, pavement or open ground); false where there is none.</summary>
         public static bool Ground(Vector3 near, out float height)
@@ -175,10 +331,11 @@ namespace RealLifeOverhaul
             return !crossing && !full;
         }
 
-        /// <summary>Whether the whole chess setup, its approaches and onlookers included, misses crossings.</summary>
+        /// <summary>Whether the whole chess setup, its approaches and onlookers included, misses crossings, and its table and stools stand on pavement.</summary>
         public static bool ChessClear(Vector3 table, Vector3 along)
         {
-            bool clear = ClearOfCrossings(table + Vector3.up * 0.5f, ChessHalf, Quaternion.LookRotation(along), out bool full);
+            bool clear = ClearOfCrossings(table + Vector3.up * 0.5f, ChessHalf, Quaternion.LookRotation(along), out bool full)
+                         && Site(table, SiteGroundRules.LeisureChess, true) == StreetGround.Pavement;
             if (Meta.Dev.Verbose)
             {
                 CityLifeDirector.Logger?.Info(clear ? "Chess check (crossing clearance): no crossing under the table, stools, approaches or onlookers: PASS"

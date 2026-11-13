@@ -558,20 +558,7 @@ namespace RealLifeOverhaul.Ui
         private string[] QuickWords() => _quick.ToArray();
 
         // Whether a business of the city ran the player's down in this conversation, unanswered.
-        private static bool Attacked(FlareFile file, string with)
-        {
-            bool attacked = false;
-            for (int i = 0; i < file.Net.Dms.Count; i++)
-            {
-                FlareDm d = file.Net.Dms[i];
-                if (d.With != with)
-                {
-                    continue;
-                }
-                attacked = d.Mine ? false : d.Key == "reallife_flare_dm_rival" || attacked;
-            }
-            return attacked;
-        }
+        private static bool Attacked(FlareFile file, string with) => FlareLiveRules.Attacked(file.Net, with);
 
         private bool Quick(int i)
         {
@@ -584,14 +571,7 @@ namespace RealLifeOverhaul.Ui
             {
                 case "accept": return _flare.TakeOffer(FlareLiveRules.OfferOf(_with));
                 case "decline": return _flare.DeclineOffer(FlareLiveRules.OfferOf(_with));
-                case "reallife_flare_kit_rival_calm":
-                case "reallife_flare_kit_rival_back":
-                    // The answer goes up for the city to see (a careful one eases the talk), and into the conversation.
-                    List<FlareShop> shops = _flare.MyShops();
-                    string words = FlareText.T(key);
-                    bool posted = _flare.AnswerRival(shops.Count > 0 ? shops[0].Place : null, words);
-                    return _flare.SendDm(_with, words) || posted;
-                default:
+                default:   // (an answer to a rival goes up for the city too: the director's SendDm does it for every face)
                     return _flare.SendDm(_with, FlareText.T(key));
             }
         }

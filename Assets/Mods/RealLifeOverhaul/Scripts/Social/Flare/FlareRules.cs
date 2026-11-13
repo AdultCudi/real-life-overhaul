@@ -314,6 +314,20 @@ namespace RealLifeOverhaul.Flare
             return money ? ReplyKind.Proud : (p.Taste & FlareTaste.Cheers) != 0 ? ReplyKind.Cheer : ReplyKind.Plain;
         }
 
+        /// <summary>The roll that picks a friend's line of a reply kind under a post: the post's and the friend's own.</summary>
+        public static int ReplyRoll(int postSeed, int person) => Roll(postSeed + person * 7919, 3, 11);
+
+        /// <summary>
+        /// Which of a reply kind's <paramref name="count"/> lines (0 up) a friend writes: the one the roll picks, else the next
+        /// one along when that is the line they wrote under the player's post before (<paramref name="last"/>, -1 for none),
+        /// so nobody comments the same words twice running. Walked in order by FlareDirector.FriendLine.
+        /// </summary>
+        public static int ReplyLine(int roll, int count, int last)
+        {
+            int at = count > 0 ? (roll & int.MaxValue) % count : 0;
+            return count > 1 && at == last ? (at + 1) % count : at;
+        }
+
         private static bool AboutMoney(FlarePost post)
         {
             return post.Source == FlareSource.Promotion || post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay;

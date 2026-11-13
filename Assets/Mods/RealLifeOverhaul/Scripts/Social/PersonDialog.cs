@@ -464,6 +464,8 @@ namespace RealLifeOverhaul
             return entry;
         }
 
+        private const float TourReach = 100000f;   // metres: anywhere in the city
+
         private DialogEntry Asked()
         {
             SocialOffer offer = SocialState.Offer;
@@ -571,7 +573,9 @@ namespace RealLifeOverhaul
             PlanFind found = PlanFind.NoPlace;
             if (Settings.SocialOutings)
             {
-                found = SocialLife.PlaceAndHour(_p, kind, player, 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);
+                // The tour they asked for is of the player's own business, near or far, and of the one they ring from too.
+                bool tour = kind == PlanKind.Business;
+                found = SocialLife.PlaceAndHour(_p, kind, player, tour ? 0f : 40f, tour ? TourReach : 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);
             }
             if (found != PlanFind.Found)
             {

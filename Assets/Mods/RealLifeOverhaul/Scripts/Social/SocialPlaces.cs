@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
 using Extensions;
 using Helpers;
@@ -446,6 +447,33 @@ namespace RealLifeOverhaul
             venue.Door = pavement;
             venue.Name = StreetAt(around);
             return true;
+        }
+
+        private static readonly List<BuildingRegistration> Own = new List<BuildingRegistration>(8);
+
+        /// <summary>
+        /// How many days the player has had the business they have had longest; -1 with no business of their own (the test
+        /// Finance counts them by: theirs in a Going Public session, started, of a kind that takes money). A business whose
+        /// first day is not known counts as long had. Asked when somebody gets in touch and once a day, never per frame.
+        /// </summary>
+        public static int BusinessHeldDays(int day)
+        {
+            int held = -1;
+            try
+            {
+                Economy.Books.Businesses(Own);
+                for (int i = 0; i < Own.Count; i++)
+                {
+                    int since = FoundingGame.Of(Own[i]);
+                    held = Mathf.Max(held, since > 0 ? Mathf.Max(0, day - since) : SocialAskRules.TourHeardDays);
+                }
+                Own.Clear();
+            }
+            catch (Exception)
+            {
+                held = -1;   // what cannot be read is not there: nobody asks about it
+            }
+            return held;
         }
 
         /// <summary>Pavement 30 to 55 m away that can be walked to, out of view if there is any.</summary>

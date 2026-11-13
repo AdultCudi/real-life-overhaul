@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 _pickerScreen = new MapLive(picker);
-                UiHost host = hud.Modal(_pickerScreen, picker.TitleText, UiIcon.MapPin);
+                UiHost host = hud.Modal(_pickerScreen, picker.TitleText, UiIcon.MapPin, PickerLost);
                 host.PointerOnly = true;
                 _pickerShown = picker;
                 return true;
@@ -130,6 +130,17 @@ namespace RealLifeOverhaul.Ui
                 UiDirector.Logger?.Error(e);
                 UiDirector.Logger?.Warn("UI: the city map's choice of a place could not be drawn on the RLO interface (above); the game's own window is used for it.");
                 return false;
+            }
+        }
+
+        // The choice's piece failed under it: the choice goes on in the game's own window.
+        private static void PickerLost()
+        {
+            MapPicker open = _pickerShown;
+            if (open != null)
+            {
+                PickerHide(open);
+                open.KitGiveBack();
             }
         }
 
