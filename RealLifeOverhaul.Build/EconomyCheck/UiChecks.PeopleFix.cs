@@ -117,7 +117,7 @@ internal static partial class Program
         }
         Check(deletes == 2 && args.Contains(0) && args.Contains(1), "people: each text of the game's own in a thread has a delete button of its own, a line said in a call has none (" + deletes + ")");
         Check(ContactsRoutes.Route(UiConversation.DeleteCommand, 0, null) == ContactsRoute.Remove, "people: a delete press is a route of its own");
-        int[] others = { UiConversation.ChoiceCommand, UiConversation.FormCommand, UiConversation.FormLess, UiConversation.FormMore, UiConversation.ComposeCommand, UiConversation.SendCommand,
+        int[] others = { UiConversation.ChoiceCommand, UiConversation.FormCommand, UiConversation.FormLess, UiConversation.FormMore,
             UiFormRows.OptionCommand, UiFormRows.RowCommand, UiFormRows.SwatchCommand, UiFormRows.RemoveCommand, UiMessageList.RowCommand, UiMessageList.SearchCommand, UiMessageList.ClearCommand };
         bool clear = true;
         foreach (int other in others)

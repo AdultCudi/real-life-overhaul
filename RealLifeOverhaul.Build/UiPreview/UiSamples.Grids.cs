@@ -612,7 +612,7 @@ internal static partial class UiSamples
                 new UiMessageModel { From = UiFrom.Them, Text = "Loved the opening. The cinnamon buns were gone by ten.", Time = "11:10" },
                 new UiMessageModel { From = UiFrom.Them, Text = "Can I tag you in my review?", Time = "11:12" },
             },
-            MessageCount = 6, Typing = true, Composer = true, ComposerPlaceholder = "Write a message", Draft = "Of course, thank you for coming", SendLabel = t("reallife_ui_contacts_send", "Send"),
+            MessageCount = 6, Typing = true,
         };
         UiConversation.Lay(s, at.InRegion(5), talk, cx, y, x + w - cx, h, k);
         UiDraw.JoinColumns(s, x, cx - UiTokens.S3, x + w);

@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
         public string SkillKey;      // the game's name for their skill, for its glyph
         public int Age;
         public string Wage;          // what they would ask an hour, at the city's prices
+        public string Face;          // the key the face is drawn by (FaceSources.Key); null: the name
     }
 
     /// <summary>The chosen one of a rival's staff, as the game would offer them: what the row has no room for.</summary>
@@ -125,6 +126,7 @@ namespace RealLifeOverhaul.Ui
         public int Satisfaction = -1;
         public int Level;                          // the primary skill, for the rating
         public int Age;
+        public string Gender;                      // the game's word for their gender; null for none
         public string Wage;
         public int DaysHired;
         public int WeeklyHours, WorkedHours;
@@ -394,6 +396,8 @@ namespace RealLifeOverhaul.Ui
                 p.RowValues = new[] { Whole(v.Age), v.Wage, v.Schedule, v.Source };
                 p.BarLabels = new[] { t("myemployees_jobtype", "Skill") };
                 p.BarValues = new[] { v.Skill };
+                p.AssignLabel = t("myemployees_assignbusiness", "Assign Business");   // the game's row holds this choice on a candidate
+                p.AssignValue = string.IsNullOrEmpty(v.Business) ? t("common_unassigned", "Unassigned") : v.Business;
                 // The actions the game's candidate row carries (discard, negotiate, hire), in the box's own order: the danger first, the main one last.
                 p.Actions = new[]
                 {
@@ -570,8 +574,8 @@ namespace RealLifeOverhaul.Ui
             {
                 p.WorkTitle = t("ba:myemployees_candidateinfo_header", "Candidate info");
                 p.Satisfaction = -1;
-                p.RowLabels = new[] { t("myemployees_recruitmentsource", "Recruitment Source") };
-                p.RowValues = new[] { v.Source };
+                p.RowLabels = new[] { t("myemployees_recruitmentsource", "Recruitment Source"), LabelOf(t("common_gender", "Gender: <b>{gender}</b>"), "gender") };
+                p.RowValues = new[] { v.Source, v.Gender };
             }
             else
             {
@@ -589,6 +593,8 @@ namespace RealLifeOverhaul.Ui
                 values.Add(Fill(t("reallife_ui_staff_week_hours", "{worked} of {scheduled} hours"), "worked", Whole(v.WorkedHours), "scheduled", Whole(v.WeeklyHours)));
                 labels.Add(t("myemployees_configure_pay_bonus_tooltip_title", "Bonus"));
                 values.Add(!string.IsNullOrEmpty(v.Cooldown) ? v.Cooldown : t("reallife_ui_staff_bonus_ready", "Ready to pay"));
+                labels.Add(LabelOf(t("common_gender", "Gender: <b>{gender}</b>"), "gender"));
+                values.Add(v.Gender);
                 if (!string.IsNullOrEmpty(v.HrManager))
                 {
                     labels.Add(t("myemployees_hrmanager", "HR Manager"));
@@ -794,7 +800,7 @@ namespace RealLifeOverhaul.Ui
             RivalChosenView o = offer ?? new RivalChosenView();
             m.Preview = !any ? null : new UiStaffPreview
             {
-                Name = c.Name, Hue = UiColour.HueOf(c.Name ?? string.Empty), Role = c.Skill, RoleIcon = SkillIcon(c.SkillKey),
+                Name = c.Name, Face = c.Face, Hue = UiColour.HueOf(c.Name ?? string.Empty), Role = c.Skill, RoleIcon = SkillIcon(c.SkillKey),
                 Status = c.Talking ? t("reallife_ui_staff_rival_talks", "In talks") : c.Poached ? t("reallife_ui_staff_rival_former", "Former staff") : null,
                 StatusTone = c.Talking ? UiRole.Accent : UiRole.Warn,
                 DemandsTitle = t("myemployees_wants_and_demands", "Wants & Demands"), Demands = o.Demands ?? new UiStaffDemand[0],
@@ -822,7 +828,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[] { r.Name, Whole(r.Age), Whole(r.Level), r.Wage, Whole(r.Hours), state }, Values = new[] { -1, -1, r.Level, -1, -1, -1 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Talking ? UiRole.Accent : UiRole.Warn }, Sub = r.Skill,
-                    Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
+                    Face = r.Face, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
                 };
             }
             table.RowCount = rows.Length;

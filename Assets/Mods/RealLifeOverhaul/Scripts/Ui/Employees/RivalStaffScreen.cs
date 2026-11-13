@@ -171,20 +171,24 @@ namespace RealLifeOverhaul.Ui
             if (!_asks.TryGetValue(data.id, out Ask ask))
             {
                 EmployeeInstance e = data.GetEmployeeInstance();
-                FaceSources.Employee(row.Name, e);   // made from a name, a sex and an age: painted from those, since there is no look to draw
+                string face = FaceSources.Key(row.Name, e);
+                FaceSources.Employee(row.Name, face, e);   // made from a name, a sex and an age: painted from those, since there is no look to draw
                 ask = new Ask
                 {
+                    Face = face,
                     Age = e != null && e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0,
                     Wage = e != null ? PaidWage.NowMoney(e.hourlyWage, e.id).ToCurrencyFormat() : null
                 };
                 _asks[data.id] = ask;
             }
+            row.Face = ask.Face;
             row.Age = ask.Age;
             row.Wage = ask.Wage;
         }
 
         private struct Ask
         {
+            public string Face;
             public int Age;
             public string Wage;
         }

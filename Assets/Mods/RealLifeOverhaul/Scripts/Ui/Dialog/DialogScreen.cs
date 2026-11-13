@@ -489,7 +489,6 @@ namespace RealLifeOverhaul.Ui
             _m.ThreadStart = null;
             _m.EmptyTitle = null;
             _m.EmptyBody = null;
-            _m.Composer = false;
         }
 
         // The line now: its form, then its buttons as numbered choices (the confirm first, the second option, the dialog's own

@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         public string[] FactValues = new string[0];
         public UiRole[] FactInks;                   // a fact's figure in its own ink (a margin in green); null or None for the main ink
         public string Portrait;                     // one person's portrait large in the side, in place of the emblem and the faces, with their name under it
+        public string PortraitFace;                 // the key their face is drawn by; null: the name
         public string[] PortraitLines = new string[0];   // under the name, in the quiet grey: "Aged 38", "Founder of Speedy Bites"
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Selected = -1;
@@ -240,7 +241,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(m.Portrait))
             {
                 float px = x + UiDraw.SnapDown((Side - Hero) / 2f);
-                UiDraw.Portrait(s, at, px, top, Hero, m.Portrait, UiColour.HueOf(m.Portrait), UiRole.None);
+                UiDraw.Portrait(s, at, px, top, Hero, m.PortraitFace ?? m.Portrait, UiColour.HueOf(m.Portrait), UiRole.None);
                 float ny = top + Hero + UiTokens.S4;
                 UiDraw.Text(s, at, x + UiTokens.S5, ny, Side - UiTokens.S5 * 2f, UiStyle.Title, UiRole.Text, m.Portrait, UiFlags.Centre | UiFlags.Truncate);
                 ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;

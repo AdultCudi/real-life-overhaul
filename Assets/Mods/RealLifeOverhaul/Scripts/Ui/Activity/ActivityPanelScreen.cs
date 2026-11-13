@@ -213,6 +213,12 @@ namespace RealLifeOverhaul.Ui
             _m.CancelLabel = UiText.T("common_cancel");
             Buttons(a, state);
             ActivityFacts.Fill(a, _m);   // what the mod knows of its own activities beyond the game's panel (a working day's place and sums)
+            if (_m.HasDuration)
+            {
+                // The keys the game prints by the slider's two ends (SliderLeft, SliderRight), at the end each moves it towards.
+                _m.DurationFrom = ActivityRead.Capped(ActivityRead.Key(PlayerAction.SliderLeft).Name, _m.DurationFrom, false);
+                _m.DurationTo = ActivityRead.Capped(ActivityRead.Key(PlayerAction.SliderRight).Name, _m.DurationTo, true);
+            }
         }
 
         // The panel's buttons on the card (the way back at the left, the blue one the main one, the time machine beside it)

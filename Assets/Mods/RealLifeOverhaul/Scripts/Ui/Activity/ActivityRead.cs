@@ -38,6 +38,19 @@ namespace RealLifeOverhaul.Ui
         public static string Words(ButtonInfo b) => b == null || string.IsNullOrEmpty(b.key) ? string.Empty : LocalizorManager.GetLocalization(b.key, b.arguments);
 
         /// <summary>
+        /// A slider end's words with the key that moves the slider there beside them (the key's name before the left end's,
+        /// after the right's); the words alone where there is no name.
+        /// </summary>
+        public static string Capped(string key, string words, bool after)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return words;
+            }
+            return string.IsNullOrEmpty(words) ? key : after ? words + "  " + key : key + "  " + words;
+        }
+
+        /// <summary>
         /// The game's key for an action on a cap: a pad's glyph for the four the pad's face buttons are while a pad leads,
         /// the key's name as the game's own labels print it otherwise.
         /// </summary>

@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;
         public string Name;
         public string Note;        // a line under the name (the hours scheduled and worked); null for none
+        public string About;       // what the demand means, the words the game's tooltip on the demand gives; null for none
         public string Priority;    // "Critical"
         public UiRole PriorityTone;
         public int Met;            // 1 met, 0 not met, -1 not asked (a candidate's: nothing to meet yet)
@@ -77,6 +78,7 @@ namespace RealLifeOverhaul.Ui
         public bool NoteMet;
         public string DemandsTitle;
         public UiStaffDemand[] Demands = new UiStaffDemand[0];   // their wants and demands, compact: how much each matters and whether met
+        public string AssignLabel, AssignValue;    // a candidate's business as the game's row holds it as a choice (its value); null label for none
         public string Link;                        // the way to their page; null for none
         public UiActionModel[] Actions = new UiActionModel[0];   // the row's own action (negotiate), full width at the foot
     }
@@ -129,6 +131,7 @@ namespace RealLifeOverhaul.Ui
         public const int SwitchCommand = 200, AssignCommand = 201, TrainCommand = 202, OptionCommand = 203, PreviewCommand = 204, EmptyCommand = 205;
         public const int HeldCommand = 206;                 // a page's target while a card stands over it: it answers nothing until the card goes
         private const float PersonGridRow = 60f;            // px: a person with a face and two bars, as the window's people
+        public const int PreviewAssign = -2;                // PreviewCommand's argument for the business choice
         public const int PreviewLink = -1;                  // PreviewCommand's argument for the link to the page; an action's index otherwise
         public const float PreviewLeast = 1360f;            // px: the narrowest page that takes the preview beside its table
         private const float PreviewShare = 0.24f;           // of the page's width, the preview's
@@ -260,7 +263,8 @@ namespace RealLifeOverhaul.Ui
             float face = UiTokens.AvatarHero, ring = UiTokens.S1;
             float content = UiTokens.S4 + face + ring * 2f + UiTokens.S4 + p.RowLabels.Length * UiTokens.PairRow
                             + (p.BarLabels.Length > 0 ? UiTokens.S3 + p.BarLabels.Length * UiTokens.PairRow : 0f)
-                            + (string.IsNullOrEmpty(p.Note) ? 0f : UiTokens.S3 + UiTokens.PairRow) + (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control)
+                            + (string.IsNullOrEmpty(p.Note) ? 0f : UiTokens.S3 + UiTokens.PairRow) + (string.IsNullOrEmpty(p.AssignLabel) ? 0f : UiTokens.S3 + UiTokens.PairRow + UiTokens.Control)
+                            + (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control)
                             + (p.Demands.Length > 0 ? UiTokens.S6 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + p.Demands.Length * UiTokens.ControlSmall : 0f)
                             + (p.Actions.Length > 0 ? UiTokens.S4 + p.Actions.Length * (UiTokens.Control + UiTokens.S2) - UiTokens.S2 : 0f) + UiTokens.S4;
             float ph = UiDraw.Snap(Math.Min(h, content));
@@ -300,6 +304,14 @@ namespace RealLifeOverhaul.Ui
             {
                 py += UiTokens.S3;
                 py += UiDraw.CheckLine(s, on, ix, py, inner, p.Note, p.NoteMet);
+            }
+            if (!string.IsNullOrEmpty(p.AssignLabel))
+            {
+                py += UiTokens.S3;
+                UiDraw.TextMiddle(s, on, ix, py, UiTokens.PairRow, inner, UiStyle.Small, UiRole.Text2, p.AssignLabel, UiFlags.Label | UiFlags.Truncate);
+                py += UiTokens.PairRow;
+                UiDraw.Choice(s, on, ix, py, inner, p.AssignValue, PreviewCommand, PreviewAssign, false);
+                py += UiTokens.Control;
             }
             if (p.Demands.Length > 0)
             {
@@ -616,7 +628,8 @@ namespace RealLifeOverhaul.Ui
                     right -= UiTokens.S3;
                 }
                 float tx = x + tile + UiTokens.S3, tw = right - tx;
-                if (string.IsNullOrEmpty(d.Note))
+                string under = string.IsNullOrEmpty(d.Note) ? d.About : string.IsNullOrEmpty(d.About) ? d.Note : d.Note + " · " + d.About;
+                if (string.IsNullOrEmpty(under))
                 {
                     UiDraw.TextMiddle(s, at, tx, y, DemandRow, tw, UiStyle.Title, UiRole.Text, d.Name, UiFlags.Truncate);
                 }
@@ -625,7 +638,7 @@ namespace RealLifeOverhaul.Ui
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
                     float top = y + (DemandRow - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, d.Name, UiFlags.Truncate | UiFlags.Middle);
-                    UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, d.Note, UiFlags.Truncate | UiFlags.Middle);
+                    UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, under, UiFlags.Truncate | UiFlags.Middle);
                 }
                 y += DemandRow;
             }
