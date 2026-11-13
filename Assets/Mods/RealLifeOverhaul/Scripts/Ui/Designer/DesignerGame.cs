@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
 
         private static InteriorDesignerUI _ui;
         private static ToolButton[] _buttons = new ToolButton[0];
+        private static readonly List<ToolButton> Extras = new List<ToolButton>(2);   // toolbar buttons the kit's row has no tile for: another mod's tools
         private static bool _hooked, _opened;
         private static readonly UnityAction<bool> OnToggle = Guard.Listener<bool>(Toggled);
         private static readonly Action<double> OnBalance = Guard.Wrap<double>(Balance);
@@ -99,10 +100,37 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             GameObject toolbar = Toolbar();
-            conceal.Add(toolbar != null ? toolbar.transform : null);
-            conceal.Add(Part(GameContract.DesignerInfoPanels, ui));
-            conceal.Add(Part(GameContract.DesignerActionPanels, ui));
+            conceal.Add(toolbar != null ? toolbar.transform : null);   // another mod's tools get a tile in the kit's own row (Extras)
+            ConcealPanels(conceal, Part(GameContract.DesignerInfoPanels, ui), GameContract.DesignerInfoList);
+            ConcealPanels(conceal, Part(GameContract.DesignerActionPanels, ui), GameContract.DesignerPanelList);
             ConcealMore();
+        }
+
+        // A panel manager's own panels hidden one by one, so a panel another mod put in its list stays as the game shows it: the kit draws nothing for a tool it does not know,
+        // and hiding the whole manager would leave that tool with no panel at all. Where the list cannot be read the whole manager is hidden, as before.
+        private static void ConcealPanels(UiConceal conceal, Transform manager, GameMember list)
+        {
+            if (manager == null)
+            {
+                return;
+            }
+            Component owner = manager.GetComponent<MonoBehaviour>();
+            var panels = list.Field != null && owner != null ? list.Field.GetValue(owner) as System.Collections.IEnumerable : null;
+            if (panels == null)
+            {
+                conceal.Add(manager);
+                return;
+            }
+            conceal.Shared(manager);
+            string game = typeof(InteriorDesignerUI).Assembly.GetName().Name, own = typeof(DesignerGame).Assembly.GetName().Name;
+            foreach (object panel in panels)
+            {
+                var part = panel as Component;
+                if (part != null && !DesignerRules.Foreign(part.GetType().Assembly.GetName().Name, game, own))
+                {
+                    conceal.Add(part.transform);
+                }
+            }
         }
 
         // The box of the blueprint (it may stand outside the action panels) and the game's question box, as soon as the game has built them.
@@ -171,6 +199,7 @@ namespace RealLifeOverhaul.Ui
             _ui = null;
             _conceal = null;
             _buttons = new ToolButton[0];
+            Extras.Clear();
             _opened = false;
             DesignerPanes.Forget();
             ForgetEdit();
@@ -204,6 +233,7 @@ namespace RealLifeOverhaul.Ui
         private static void Begin()
         {
             _buttons = Toolbar() != null ? Toolbar().GetComponentsInChildren<ToolButton>(true) : new ToolButton[0];
+            ReadExtras();
             DesignerPanes.Look(Ui);
             BeginEdit();
             BeginCatalogue();
@@ -246,7 +276,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------ the tools and the steps on the bar
 
-        /// <summary>The tool in hand as the row's index, or -1 for none.</summary>
+        /// <summary>The tool in hand as the row's index (another mod's tool after the kit's own), or -1 for none.</summary>
         public static int ToolInHand()
         {
             ToolName now = InteriorDesignerController.CurrentToolName;
@@ -257,8 +287,46 @@ namespace RealLifeOverhaul.Ui
                     return i;
                 }
             }
+            for (int i = 0; i < Extras.Count; i++)
+            {
+                if (Extras[i] != null && Extras[i].toolName == now)
+                {
+                    return Tools.Length + i;
+                }
+            }
             return -1;
         }
+
+        // The toolbar's buttons whose tool the kit's row does not know: another mod's. Read as the designer opens, with the buttons.
+        private static void ReadExtras()
+        {
+            Extras.Clear();
+            for (int i = 0; i < _buttons.Length; i++)
+            {
+                if (_buttons[i] != null && Array.IndexOf(Tools, _buttons[i].toolName) < 0 && _buttons[i].toolName != ToolName.None)
+                {
+                    Extras.Add(_buttons[i]);
+                }
+            }
+        }
+
+        /// <summary>How many tools of other mods the toolbar holds.</summary>
+        public static int ExtraCount => Extras.Count;
+
+        /// <summary>One of those tools' names as its button says it (its words, else its object's name).</summary>
+        public static string ExtraName(int i)
+        {
+            ToolButton b = i >= 0 && i < Extras.Count ? Extras[i] : null;
+            if (b == null)
+            {
+                return string.Empty;
+            }
+            string label = UiWidgets.Label(b);
+            return string.IsNullOrWhiteSpace(label) ? b.gameObject.name : label;
+        }
+
+        /// <summary>True when the game does not offer that tool here (its button is off).</summary>
+        public static bool ExtraOff(int i) => i < 0 || i >= Extras.Count || Extras[i] == null || !Extras[i].gameObject.activeSelf;
 
         /// <summary>True when the game offers this tool in this business (its toolbar button is there).</summary>
         public static bool Offers(int tool)
@@ -281,13 +349,14 @@ namespace RealLifeOverhaul.Ui
         public static bool Tool(int tool)
         {
             InteriorDesignerUI ui = Ui;
-            if (ui == null || !Open || tool < 0 || tool >= Tools.Length || !Offers(tool))
+            int extra = tool - Tools.Length;
+            if (ui == null || !Open || tool < 0 || (extra < 0 ? !Offers(tool) : ExtraOff(extra)))
             {
                 return false;
             }
             IInteriorDesignerTool.toolToOpenAfterUsage = ToolName.None;
             IInteriorDesignerTool.toolToOpenAfterUsageArguments = null;
-            ui.ToggleTool(Tools[tool]);
+            ui.ToggleTool(extra < 0 ? Tools[tool] : Extras[extra].toolName);
             return true;
         }
 

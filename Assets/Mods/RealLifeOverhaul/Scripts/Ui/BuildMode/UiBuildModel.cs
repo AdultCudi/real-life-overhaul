@@ -78,6 +78,9 @@ namespace RealLifeOverhaul.Ui
         public string Context;                 // for which squares
         public string[] Tabs = new string[0];  // each with its count
         public int Tab;                        // the use shown
+        public string[] Filters = new string[0];   // Fits here, Corner buildings, City designs, each with its count: BuildModeCatalogue's filters
+        public int Filter;                     // the filter shown
+        public string PickLine;                // what to do while no card is chosen or the chosen one is not among those shown
         public string SearchPlaceholder;
         public string Search = string.Empty;
         public string FavouritesLabel;
@@ -125,6 +128,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon SheetIcon = UiIcon.Info;
         public UiBuildLine[] Lines = new UiBuildLine[LinesMost];
         public int LineCount;
+        public float SheetScroll;              // px the tool panel's lines are scrolled while they are taller than the room
         public string LeaveLabel;
         public UiBuildCatalogueModel Catalogue;   // null while the window is shut
         public UiBuildTourModel Tour;             // null while no tip shows

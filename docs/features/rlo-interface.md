@@ -106,6 +106,16 @@ Ui/                         game-free unless named: the offline checks and the p
   days' takings with their line, its games and the games market's newest, its team by group with the groups it lacks,
   and its sales and support. Another firm's shows its products or work, the rivals in its markets, its team and its
   markets' shares. They draw inside the window on the older page shapes until they are converted to the new templates.
+- **Building and decorating**: the interior designer's bar holds the game's tools in the kit's order, with a tile after
+  them for each tool another mod adds (pressed through the game's own toggle), and a panel another mod adds to the
+  designer is left showing as the game draws it. The designer, the design window of Build mode ("Choose a building") and
+  the blueprints window have a few things only the interface has: the designer's "Lay the whole floor", shade picker,
+  "RLO fit-out" tab, narrowing the catalogue to a need, cost lines by cause and the capacity and score against where they
+  began; Build mode's use tabs, search, favourites, WANTED badge, rent, planning and build time on the design cards (the
+  Fits here, Corner buildings and City designs filters are on both sides, and a tab counts the cards it opens on). With
+  the interface off the design window cannot change the use, and the designer has none of these. A sign's saved
+  colours are removed with the "Remove a saved colour" button in the sign editor (the game's right click, which a pad
+  has no equal of).
 - **The gallery**: every component on seven pages, the last an icon style sheet.
 - **Every script**: the face, Overpass, holds Latin and Cyrillic letters. Korean, Chinese, Japanese and Greek, and a
   name typed in any script the game can write, are drawn by the game's own fonts at the face's line height, each

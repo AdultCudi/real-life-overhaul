@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Construction
     /// <summary>What the kit's face asks of Build mode: each press comes back as the same row ids the old panels used.</summary>
     internal sealed class BuildFaceCalls
     {
-        public System.Action<int> Tool, View, Row, Card, Use, Favourite;
+        public System.Action<int> Tool, View, Row, Card, Use, Filter, Favourite;
         public System.Action Leave, Back, Place;
     }
 

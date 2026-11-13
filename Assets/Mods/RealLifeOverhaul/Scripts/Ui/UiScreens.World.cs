@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Ui
                 new UiScreenDef("world_sign", UiTemplate.Hud, "SignAppearanceScreen", new[]
                 {
                     "sign_appearance", "sign_appearance_sign_type", "sign_appearance_sign_light_color", "sign_appearance_sign_bulb_color", "sign_type", "common_select_type",
-                    "reallife_ui_prompt_move", "input_key_menu"
+                    "reallife_ui_prompt_move", "input_key_menu", "reallife_ui_sign_remove", "reallife_ui_sign_remove_on"
                 }).Switch(UiScreenSwitches.Tools),
                 new UiScreenDef("world_preview_terminal", UiTemplate.Hud, "PreviewTerminalScreen", new[]
                 {

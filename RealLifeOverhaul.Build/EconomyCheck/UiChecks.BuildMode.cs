@@ -33,6 +33,7 @@ internal static partial class Program
         BuildModeCardChecks();
         BuildModePlaceChecks();
         BuildModeWiringChecks();
+        BuildModeFilterChecks();
     }
 
     // What the layout checks found, said for one state at one frame: BM_DEBUG=<state> shows each rule's findings.
@@ -137,6 +138,61 @@ internal static partial class Program
     }
 
     private static readonly UiWords BmWords = (key, english) => english;
+
+    // The design window's filters (Fits here, Corner buildings, City designs), a tab's count that matches its cards, a design hidden by the search never placed, and the tool panel scrolling
+    // when it is taller than the room instead of running under the bar.
+    private static void BuildModeFilterChecks()
+    {
+        UiBuildCatalogueModel c = UiSamples.BuildMode(BmWords, "catalogue").Catalogue;
+        UiFrame f = UiFrame.FullMenu(16f / 9f, "Build mode");
+        UiBuildPanels.CatalogueBox(c, f, 600f, out _, out _, out _, out float withFilters);
+        var bare = new UiBuildCatalogueModel();
+        UiBuildPanels.CatalogueBox(bare, f, 600f, out _, out _, out _, out float without);
+        Check(c.Filters.Length == BuildModeCatalogue.FilterCount && withFilters > without, "build mode kit filters: the window has a row for the three filters and grows by it");
+        var scene = new UiScene();
+        UiBuildPanels.Lay(scene, UiSamples.BuildMode(BmWords, "catalogue"), f, true, UiDefaultKeys.Keyboard);
+        int pressed = 0;
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            pressed += scene.Nodes[i].Command == UiBuildPanels.FilterCommand ? 1 : 0;
+        }
+        Check(pressed == BuildModeCatalogue.FilterCount && Array.IndexOf(UiBuildPanels.Commands, UiBuildPanels.FilterCommand) >= 0, "build mode kit filters: each filter is a target the window answers");
+        // The chosen design the search has hidden is not offered: nothing to place, and the pick line replaces the summary of a design out of sight.
+        c.Search = "zzz-no-such-design";
+        Check(UiBuildPanels.ChosenShown(c) < 0, "build mode kit filters: a chosen design the search hides is not among those shown");
+        c.Search = string.Empty;
+        Check(UiBuildPanels.ChosenShown(c) >= 0, "build mode kit filters: with no search the chosen design is shown");
+        string face = ModSource(@"Ui\BuildMode\BuildFace.cs"), parts = ModSource(@"Ui\BuildMode\BuildFace.Parts.cs"), mode = ModSource(@"Construction\BuildMode.cs");
+        string window = ModSource(@"Construction\BuildMode.Window.cs");
+        Check(MethodText(face, "public bool Press(").Contains("_calls.Filter?.Invoke(arg)") && MethodText(face, "public bool Press(").Contains("UiBuildPanels.ChosenShown(_m.Catalogue) < 0")
+              && mode.Contains("Filter = FilterPicked") && parts.Contains("Array.Copy(filterNames, c.Filters"), "build mode kit filters: a filter pressed reaches BuildMode's own FilterPicked, and Place refuses a design out of sight");
+        Check(MethodText(window, "private void FilterPicked(int filter)").Contains("_card = -1;"), "build mode kit filters: a filter that hides the chosen design lets it go");
+        string counts = MethodText(window, "private void ReadUseCounts()");
+        Check(counts.Contains("BuildModeCatalogue.Count(BuildModeCatalogue.First(") && !counts.Contains("_useCount[u] = _designs.Count;") && window.IndexOf("ReadDesignFacts();", StringComparison.Ordinal) < window.IndexOf("ReadUseCounts();", StringComparison.Ordinal),
+            "build mode kit filters: a use's tab counts the cards it opens on, not every design of the use");
+        Check(BuildModeCatalogue.Count(BuildModeCatalogue.First(new[] { false, true }, new[] { false, false }, 2), new[] { false, true }, new[] { false, false }, 2) == 1
+              && BuildModeCatalogue.Count(BuildModeCatalogue.Fits, new[] { false, true, false }, new[] { true, false, true }, 3) == 2, "build mode kit filters: a tab opens on the first filter that shows anything, and counts it");
+        // The tool panel: past the room it scrolls, and its lines are never cut.
+        UiBuildModel tall = UiSamples.BuildMode(BmWords, "zone");
+        int need = 0;
+        while (UiBuildPanels.SheetHeight(tall) <= f.BandY && need++ < 200)
+        {
+            if (tall.LineCount == tall.Lines.Length)
+            {
+                Array.Resize(ref tall.Lines, tall.Lines.Length * 2);
+            }
+            tall.Lines[tall.LineCount++] = new UiBuildLine { Kind = UiBuildLineKind.Fact, Label = "a", Value = "b", Rgb = -1 };
+        }
+        var tallScene = new UiScene();
+        UiBuildPanels.Lay(tallScene, tall, f, true, UiDefaultKeys.Keyboard);
+        bool inside = true;
+        for (int i = 0; i < tallScene.ClipCount; i++)
+        {
+            inside &= tallScene.Clips[i].Y + tallScene.Clips[i].H <= f.BandY;
+        }
+        Check(tallScene.ClipCount > 0 && inside && UiBuildPanels.SheetRoom(f, 100f) < f.BandY, "build mode kit panel: a tool panel taller than the room scrolls in a clip that ends above the bar");
+        Check(MethodText(parts, "private ref UiBuildLine Next(").Contains("Array.Resize(ref m.Lines") && !parts.Contains("Math.Min(m.LineCount, m.Lines.Length - 1)"), "build mode kit panel: a panel with many lines grows its list instead of writing over the last line");
+    }
 
     // The panels' places at every frame the game gives: the left panel, the tool panel, the design window and the tour's card, none over another, all on the screen.
     private static void BuildModePlaceChecks()

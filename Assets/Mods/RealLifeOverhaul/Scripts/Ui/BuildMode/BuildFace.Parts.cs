@@ -40,7 +40,11 @@ namespace RealLifeOverhaul.Ui
             private ref UiBuildLine Next(UiBuildLineKind kind)
             {
                 UiBuildModel m = _f._m;
-                int i = Math.Min(m.LineCount, m.Lines.Length - 1);
+                if (m.LineCount == m.Lines.Length)
+                {
+                    Array.Resize(ref m.Lines, m.Lines.Length * 2);   // a panel that grows is scrolled, never cut
+                }
+                int i = m.LineCount;
                 m.Lines[i] = new UiBuildLine { Kind = kind, Rgb = -1, Chosen = -1, Tone = UiRole.Text2 };
                 m.LineCount = i + 1;
                 return ref m.Lines[i];
@@ -222,6 +226,13 @@ namespace RealLifeOverhaul.Ui
                 c.Tabs[u] = ConstructionText.T(BuildCatalogue.UseKeys[u]) + " " + _counts[u];
             }
             c.Tab = _use;
+            if (c.Filters.Length != filterNames.Length)
+            {
+                c.Filters = new string[filterNames.Length];
+            }
+            Array.Copy(filterNames, c.Filters, filterNames.Length);
+            c.Filter = chosen;
+            c.PickLine = ConstructionText.T("reallife_bld_cat_pick");
             c.CardCount = 0;
         }
 

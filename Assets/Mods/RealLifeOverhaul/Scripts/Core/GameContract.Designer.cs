@@ -58,6 +58,9 @@ namespace RealLifeOverhaul
         // The action panels' own list (the furniture panel, the materials, the item lists, the time of day, the blueprint), found once as the designer opens.
         public static readonly GameMember DesignerPanelList = Field(UiDesigner, Game, "UI.InteriorDesigner.InteriorDesignerActionPanelUI", "actionPanels", "List<ActionPanelUI>");
 
+        // The info panels' own list (cost, score, capacity, requirements), read so a panel another mod added to it can be left showing.
+        public static readonly GameMember DesignerInfoList = Field(UiDesigner, Game, "UI.InteriorDesigner.InteriorDesignerInfoPanelUI", "infoPanels", "List<InfoPanelUI>");
+
         // The furniture panel's pieces the face mirrors and presses: its table of tiles, its search, its All and Favourites switches, and a category's own switch.
         public static readonly GameMember DesignerScroller = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "scrollingController", "IDItemTemplateScrollingController");
         public static readonly GameMember DesignerSearch = Field(UiDesigner, Game, "UI.InteriorDesigner.FurnitureActionPanelUi", "searchField", "InputField");

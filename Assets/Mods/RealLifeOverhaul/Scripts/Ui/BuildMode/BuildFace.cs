@@ -114,6 +114,9 @@ namespace RealLifeOverhaul.Ui
                 case UiBuildPanels.TabCommand:
                     _calls.Use?.Invoke(arg);
                     return true;
+                case UiBuildPanels.FilterCommand:
+                    _calls.Filter?.Invoke(arg);
+                    return true;
                 case UiBuildPanels.FavouritesCommand:
                     if (_m.Catalogue != null)
                     {
@@ -129,6 +132,10 @@ namespace RealLifeOverhaul.Ui
                     _calls.Favourite?.Invoke(arg);
                     return true;
                 case UiBuildPanels.PlaceCommand:
+                    if (_m.Catalogue != null && UiBuildPanels.ChosenShown(_m.Catalogue) < 0)
+                    {
+                        return true;   // the design picked is hidden by the search or the favourites: nothing shown to place
+                    }
                     _calls.Place?.Invoke();
                     return true;
                 case UiBuildPanels.BackCommand:
@@ -184,6 +191,8 @@ namespace RealLifeOverhaul.Ui
         {
             if (_m.Catalogue == null)
             {
+                _m.SheetScroll = Math.Max(0f, _m.SheetScroll - notches * UiTokens.PairRow * 2f);   // the tool panel, while it is taller than the room
+                _dirty = true;
                 return;
             }
             float step = UiBuildPanels.CardHeight + UiTokens.S2;
