@@ -105,7 +105,7 @@ Ui/                         game-free unless named: the offline checks and the p
   with its choices. A tech firm's whole page is a dashboard too. A studio's shows its games out, copies and last 30
   days' takings with their line, its games and the games market's newest, its team by group with the groups it lacks,
   and its sales and support. Another firm's shows its products or work, the rivals in its markets, its team and its
-  markets' shares. They draw inside the window on the older page shapes until they are converted to the new templates.
+  markets' shares. They draw inside the window on the older page shapes until they are converted to the new templates. The same two pages show on the game's own widgets with the interface off: the city's people as the Economy app's People tab, and a tech firm's whole page as its own app, opened from the firm's page in the Tech app (the same page, figures, tables and buttons, pressed through the same director call).
 - **Building and decorating**: the interior designer's bar holds the game's tools in the kit's order, with a tile after
   them for each tool another mod adds (pressed through the game's own toggle), and a panel another mod adds to the
   designer is left showing as the game draws it. The designer, the design window of Build mode ("Choose a building") and

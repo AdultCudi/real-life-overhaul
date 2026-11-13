@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
         private const int Tables = 4;
 
         private readonly List<ViewAction> _acts = new List<ViewAction>(StudioPages.MostOthers + 1);
-        private readonly UiStudioWords _words = new UiStudioWords();
+        private readonly TechApp.StudioWords _words = new TechApp.StudioWords();
         private readonly float[] _offset = new float[Tables];
         private readonly int[] _reveal = { -1, -1, -1, -1 };
         private readonly string _place;   // the firm's place, or null for the labelled sample studio
@@ -174,36 +174,12 @@ namespace RealLifeOverhaul.Ui
         private bool Do(int act, int value)
         {
             TechDirector d = TechDirector.Instance;
-            FirmPlace firm = d != null ? d.FirmOf(_place) : null;
-            if (firm == null)
-            {
-                return false;
-            }
-            if (StudioPages.Opens(act))
-            {
-                // The firm's own screen of the Tech app for this act, the same place the Tech app's button goes to.
-                d.OpenTech(act == SectorAct.Contracts ? TechDirector.TabContracts : TechDirector.TabProducts, act == SectorAct.Contracts ? null : TechApp.NewProductRow + _place);
-            }
-            else if (d.StudioRuns(firm.File.K))
-            {
-                d.StudioDo(act, _place, 0, value);
-            }
-            else if (!d.SectorDo(act, _place, value))
+            if (d == null || !d.PageAct(_place, act, value))
             {
                 return false;
             }
             _dirty = true;
             return true;
-        }
-
-        // The figures as the Tech app writes them: money at today's prices, numbers, shares, days and the mod's texts.
-        private sealed class UiStudioWords : IStudioFormat
-        {
-            public string Money(long cents) => TechText.Cents(cents * Prices.Level / 1000);
-            public string Whole(long n) => TechText.Whole(n);
-            public string Mille(int thousandths) => TechText.Mille(thousandths);
-            public string Day(int day) => TechText.Day(day);
-            public string Text(string key) => TechText.T(key);
         }
     }
 }

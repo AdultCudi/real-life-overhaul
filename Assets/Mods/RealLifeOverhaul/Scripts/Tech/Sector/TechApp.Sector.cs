@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(more, InfoBox.Positive, "reallife_tech_button_register", () => Do(() => _director.Register(place)));
             }
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_firmpage_open", () => Do(() => _director.OpenFirmPage(place)));   // the whole page of the firm, as the kit draws it
             Meta.Guide.Point(box, SectorGuideTitle);
             return true;
         }
