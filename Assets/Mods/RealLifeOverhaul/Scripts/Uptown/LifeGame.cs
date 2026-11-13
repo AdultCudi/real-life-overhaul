@@ -76,6 +76,16 @@ namespace RealLifeOverhaul.Uptown
             return true;
         }
 
+        /// <summary>
+        /// True when the game's lookup of districts holds this id, the one NeighborhoodHelper.GetData reads (a building with no district
+        /// reads the game's global one); true too when the lookup cannot be reached, so the game's own call tells.
+        /// </summary>
+        public static bool GameKnows(string id)
+        {
+            var lookup = GameContract.DistrictLookup.Field?.GetValue(null) as Dictionary<string, NeighborhoodData>;
+            return lookup == null || lookup.ContainsKey(string.IsNullOrEmpty(id) ? "ba:neighborhood_global" : id);
+        }
+
         /// <summary>True when every district of the band is in the game's list of districts.</summary>
         public static bool Listed()
         {
@@ -288,10 +298,13 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The city goes: what lasts a run is given back as the game had it (each type's targets, the districts' rows in the run-long
-        /// tables), the districts out of the game's lookup, list and array of districts (which the game makes again when the
-        /// next save is read), and the records destroyed.
+        /// tables), the districts out of the game's list and array of districts, and, unless <paramref name="cityEnds"/>, out of its
+        /// lookup with the records destroyed. When the city ends the lookup keeps them: the features that stand down as it goes put
+        /// the businesses' figures back and the game draws their customers again, which reads the district's record by name
+        /// (NeighborhoodHelper.GetData throws for an id it does not hold). The game makes the lookup again when the next save is read,
+        /// and the next load's <c>Begin</c> gives the records back (a full <c>Unload</c>) before it makes new ones.
         /// </summary>
-        public static void Unload()
+        public static void Unload(bool cityEnds = false)
         {
             SideWalls.Clear();
             DropFillers();
@@ -324,7 +337,7 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             Unlist();   // nothing of the districts left in the game's lists until the next load makes them again
-            for (int d = 0; d < DistrictSplit.Count; d++)
+            for (int d = 0; d < DistrictSplit.Count && !cityEnds; d++)
             {
                 if (lookup != null && lookup.TryGetValue(DistrictSplit.Ids[d], out NeighborhoodData there) && there == Records[d])
                 {

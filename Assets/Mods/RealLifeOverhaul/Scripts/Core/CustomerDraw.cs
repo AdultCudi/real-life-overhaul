@@ -8,6 +8,7 @@ using BAModAPI;
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
+using Localizor;
 using UI;
 using UI.Load;
 using UnityEngine;
@@ -47,6 +48,7 @@ namespace RealLifeOverhaul
         private static bool _looked;
         private static readonly List<CustomerEntry> Kept = new List<CustomerEntry>(32);
         private static readonly HashSet<CustomerEntry> KeptSet = new HashSet<CustomerEntry>();
+        private static readonly HashSet<string> Unknown = new HashSet<string>();   // districts already said to be unknown
         private static CustomerDrawPace _pace;
         private static int _held;          // batches of writes under way (Hold)
         private static int _morningDay = -1;
@@ -371,7 +373,7 @@ namespace RealLifeOverhaul
         // Drawn with the figure it was asked with, put on its promotion for the draw; the figure standing is put back after.
         private static void Draw(BuildingRegistration reg, int figure, int hour)
         {
-            if (reg == null)
+            if (reg == null || !DistrictKnown(reg))
             {
                 return;
             }
@@ -417,6 +419,30 @@ namespace RealLifeOverhaul
                 }
             }
             Queue.Drew(reg, swap ? figure : stood, Print(List(reg)));
+        }
+
+        /// <summary>
+        /// False, with one log line a district a run, when the game's lookup of districts does not hold the business's: the game's
+        /// own draw reads the district's figures by name and throws for one it does not know (NeighborhoodHelper.GetData), as it did
+        /// for the mod's own districts after a city's end took them out (a player's log, 14 Nov 2026). Nothing is drawn then.
+        /// A lookup the mod cannot reach is taken as knowing every district.
+        /// </summary>
+        private static bool DistrictKnown(BuildingRegistration reg)
+        {
+            string id = GameRegistrations.District(reg);   // null for a registration whose building the city lacks
+            if (RealLifeOverhaul.Uptown.LifeGame.GameKnows(id))
+            {
+                return true;
+            }
+            if (string.IsNullOrEmpty(id))
+            {
+                id = "ba:neighborhood_global";
+            }
+            if (Unknown.Add(id))
+            {
+                Logger?.Warn("Customers: the game does not know the district " + id + " (" + id.GetLocalization() + "); its businesses' customers are not drawn again until it does.");
+            }
+            return false;
         }
 
         private static void Draw(BuildingRegistration reg, DayOfWeekOrdered day)
