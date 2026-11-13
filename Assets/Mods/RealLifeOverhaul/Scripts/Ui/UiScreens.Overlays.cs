@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_overlay_security", "reallife_ui_overlay_needs", "reallife_ui_overlay_recipe", "reallife_ui_overlay_per_hour", "reallife_ui_overlay_nobody",
                 "reallife_ui_overlay_pallets", "reallife_ui_overlay_seats", "reallife_ui_overlay_taken", "reallife_ui_overlay_queue", "reallife_ui_overlay_mood",
                 "reallife_ui_overlay_mood_low", "reallife_ui_overlay_mood_middle", "reallife_ui_overlay_mood_high", "reallife_ui_overlay_until", "reallife_ui_overlay_off_shift",
-                "reallife_ui_overlay_no_shift"
+                "reallife_ui_overlay_no_shift", "reallife_ui_overlay_more"
             };
             screens.AddRange(new[]
             {

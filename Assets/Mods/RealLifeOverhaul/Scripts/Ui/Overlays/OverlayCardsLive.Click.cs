@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Ui
         private EditableWorkstationHeader _renameHeader;
         private TMP_InputField _rename;
         private EmployeeOverlay _person;
-        private int _openChoice = -1, _page;
+        private int _openChoice = -1, _page, _actionPage;
 
         private bool FindClick()
         {
@@ -48,11 +48,8 @@ namespace RealLifeOverhaul.Ui
             m.Icon = IconOf(entity);
             string title = Plain(_headerOfDetailed.GetValue(_detailed) as TMP_Text);
             m.Title = renaming ? _rename.text + "|" : title;
-            for (int i = 0; i < _buttons.Length; i++)
-            {
-                _buttons[i] = null;
-                _does[i] = null;
-            }
+            Array.Clear(_buttons, 0, _buttons.Length);
+            Array.Clear(_does, 0, _does.Length);
             _slider = null;
             for (int i = 0; i < _drops.Length; i++)
             {
@@ -110,6 +107,8 @@ namespace RealLifeOverhaul.Ui
             {
                 _openChoice = -1;
             }
+            m.ActionPage = Math.Min(_actionPage, OverlayRules.ActionPages(m.ActionCount, UiOverlayModel.MostActions) - 1);
+            _actionPage = m.ActionPage;
             if (m.ActionCount > 0 && !m.Actions[0].Disabled)
             {
                 m.Actions[0].Main = true;
@@ -145,7 +144,7 @@ namespace RealLifeOverhaul.Ui
         {
             _found.Clear();
             part.GetComponentsInChildren(false, _found);
-            for (int i = 0; i < _found.Count && m.ActionCount < UiOverlayModel.MostActions; i++)
+            for (int i = 0; i < _found.Count; i++)
             {
                 Button b = _found[i];
                 if (b == null || !b.gameObject.activeInHierarchy || b.GetComponentInParent<UI.Elements.Dropdown>(false) != null)
@@ -157,8 +156,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                _buttons[m.ActionCount] = b;
-                m.AddAction(new UiOverlayAction { Label = label, Disabled = !b.interactable });
+                Put(m, new UiOverlayAction { Label = label, Disabled = !b.interactable }, b, null);
             }
         }
 
@@ -234,19 +232,17 @@ namespace RealLifeOverhaul.Ui
             Button toggle = UiWidgets.Calling(r, "ToggleRadio");
             if (next != null)
             {
-                _buttons[m.ActionCount] = next;
-                m.AddAction(new UiOverlayAction { Label = UiText.T("reallife_ui_overlay_next_station"), Icon = UiIcon.SkipForward, Disabled = !next.interactable });
+                Put(m, new UiOverlayAction { Label = UiText.T("reallife_ui_overlay_next_station"), Icon = UiIcon.SkipForward, Disabled = !next.interactable }, next, null);
             }
             if (toggle != null)
             {
-                _buttons[m.ActionCount] = toggle;
-                m.AddAction(new UiOverlayAction { Label = UiText.T(playing ? "reallife_ui_overlay_mute" : "reallife_ui_overlay_unmute"),
-                    Icon = playing ? UiIcon.Pause : UiIcon.Play, Disabled = !toggle.interactable });
+                Put(m, new UiOverlayAction { Label = UiText.T(playing ? "reallife_ui_overlay_mute" : "reallife_ui_overlay_unmute"),
+                    Icon = playing ? UiIcon.Pause : UiIcon.Play, Disabled = !toggle.interactable }, toggle, null);
             }
             // A button put in the panel after the game made it (Dance) is the panel's own to the game, so it stands on the card too.
             _found.Clear();
             r.GetComponentsInChildren(false, _found);
-            for (int i = 0; i < _found.Count && m.ActionCount < UiOverlayModel.MostActions; i++)
+            for (int i = 0; i < _found.Count; i++)
             {
                 Button b = _found[i];
                 if (b == null || b == next || b == toggle || !b.gameObject.activeInHierarchy)
@@ -256,8 +252,7 @@ namespace RealLifeOverhaul.Ui
                 string label = Plain(UiWidgets.Label(b));
                 if (!string.IsNullOrEmpty(label))
                 {
-                    _buttons[m.ActionCount] = b;
-                    m.AddAction(new UiOverlayAction { Label = label, Disabled = !b.interactable });
+                    Put(m, new UiOverlayAction { Label = label, Disabled = !b.interactable }, b, null);
                 }
             }
         }
@@ -265,12 +260,22 @@ namespace RealLifeOverhaul.Ui
         // The workstation's name: renamed through the game's own text field, focused here and mirrored in the strip while it is typed in.
         private void Rename(UiOverlayModel m)
         {
-            if (m.ActionCount >= UiOverlayModel.MostActions)
+            Put(m, new UiOverlayAction { Label = UiText.T("reallife_ui_overlay_rename"), Icon = UiIcon.Pencil }, null, FocusRename);
+        }
+
+        // One button of the card with what a press of it does: the game's own button, or a handler of the mod's. The lists grow with
+        // the box: a fridge has a button for every kind of food it holds.
+        private void Put(UiOverlayModel m, UiOverlayAction action, Button button, Action does)
+        {
+            int at = m.ActionCount;
+            if (at >= _buttons.Length)
             {
-                return;
+                Array.Resize(ref _buttons, _buttons.Length * 2);
+                Array.Resize(ref _does, _does.Length * 2);
             }
-            _does[m.ActionCount] = FocusRename;
-            m.AddAction(new UiOverlayAction { Label = UiText.T("reallife_ui_overlay_rename"), Icon = UiIcon.Pencil });
+            _buttons[at] = button;
+            _does[at] = does;
+            m.AddAction(action);
         }
 
         private void FocusRename()

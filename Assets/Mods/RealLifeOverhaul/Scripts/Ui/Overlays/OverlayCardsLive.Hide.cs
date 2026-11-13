@@ -22,6 +22,8 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Button> BoxButtons = new List<Button>(16);
         private static readonly List<Canvas> BoxCanvases = new List<Canvas>(4);
         private int _simpleSeen = -1, _detailSeen = -1, _shownAgain;
+        private Button _simpleLast, _detailLast;           // the last button of each box when it was looked through: a destroyed one means the game rebuilt its buttons
+        private bool _simpleSwept, _detailSwept;
 
         // After the card is up: the pieces of the game's box held hidden, and any shown again since hidden once more.
         private void KeepHidden(bool read)
@@ -30,9 +32,20 @@ namespace RealLifeOverhaul.Ui
             UiConceal hide = hover ? _simpleHide : _detailHide;
             Transform root = hover ? _simple.transform : _detailed.transform;
             int count = root.hierarchyCount;
-            if (OverlayRules.SweepDue(hover ? _simpleSeen : _detailSeen, count, read))
+            Button last = hover ? _simpleLast : _detailLast;
+            if (OverlayRules.SweepDue(hover ? _simpleSeen : _detailSeen, count, read, last == null && (hover ? _simpleSwept : _detailSwept)))
             {
-                Sweep(hide, root);
+                Button now = Sweep(hide, root);
+                if (hover)
+                {
+                    _simpleLast = now;
+                    _simpleSwept = now != null;
+                }
+                else
+                {
+                    _detailLast = now;
+                    _detailSwept = now != null;
+                }
                 if (hover)
                 {
                     _simpleSeen = count;
@@ -52,7 +65,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // Each button and nested canvas under the box a group of its own, held with the root's; what the game destroyed since is forgotten.
-        private static void Sweep(UiConceal hide, Transform root)
+        private static Button Sweep(UiConceal hide, Transform root)
         {
             hide.Prune();
             BoxButtons.Clear();
@@ -61,6 +74,7 @@ namespace RealLifeOverhaul.Ui
             {
                 hide.Add(BoxButtons[i].transform);
             }
+            Button last = BoxButtons.Count > 0 ? BoxButtons[BoxButtons.Count - 1] : null;
             BoxButtons.Clear();
             BoxCanvases.Clear();
             root.GetComponentsInChildren(true, BoxCanvases);
@@ -72,6 +86,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             BoxCanvases.Clear();
+            return last;
         }
     }
 }

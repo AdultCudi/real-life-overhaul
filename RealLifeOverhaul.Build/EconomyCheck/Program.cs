@@ -323,6 +323,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui-items")
+        {
+            ItemsFixChecks();   // (the buying, items and overlays fixes: pages of a card buttons, steering assist, the surgeon, the caps, stale fields: UiChecks.ItemsFix.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--overlay-behind")
         {
             OverlayBehindChecks();   // (the game's box held hidden piece by piece behind an item's card, and given back whole: UiChecks.Overlays.cs)
