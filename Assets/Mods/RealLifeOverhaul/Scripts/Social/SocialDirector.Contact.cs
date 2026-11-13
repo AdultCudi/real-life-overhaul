@@ -226,10 +226,12 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Only what they have a free hour for in the days ahead (the call that answers it looks again, PersonDialog.Asked).
+        // Only what they have a free hour for in the days ahead (the call that answers it looks again, PersonDialog.Asked). The
+        // tour of the player's business only of a player who has one, once, and not again for a long time (SocialAskRules):
+        // somebody whose wish it is asks for a coffee meanwhile.
         private void Invite(SocialPerson person, float real)
         {
-            PlanKind kind = person.Wants;
+            var kind = (PlanKind)SocialAskRules.InviteKind((int)person.Wants, MayAskTour(person));
             OutingDef def = SocialCatalogue.Outing(kind);
             if (person.Stage < def.Needs && !person.IsFamily)
             {
@@ -245,6 +247,11 @@ namespace RealLifeOverhaul
             offer.Kind = (int)kind;
             offer.Amount = 0;
             offer.Expires = SocialLife.Now + 36f * 60f;
+            int askedBefore = person.TourAskDay;
+            if (kind == PlanKind.Business)
+            {
+                person.TourAskDay = SocialLife.Day;
+            }
             // Somebody close may ring; a text is answered by calling them.
             if (person.Closeness >= 40 && Random.value < 0.3f && StartRing(person, real))
             {
@@ -253,7 +260,23 @@ namespace RealLifeOverhaul
             if (!SocialLife.SendText(person, def.Invite, SocialLife.Data(person)))
             {
                 offer.Clear();
+                person.TourAskDay = askedBefore;   // (never heard: not an ask)
             }
+        }
+
+        // Whether this person may ask to be shown round the player's business today: there is one, theirs long enough for word
+        // of it to have got round, and they have neither been shown round nor asked lately.
+        private static bool MayAskTour(SocialPerson person)
+        {
+            int held = SocialPlaces.BusinessHeldDays(SocialLife.Day);
+            bool may = SocialAskRules.MayAskTour(held >= 0, held, person.TourAskDay, person.TourDay, SocialLife.Day);
+            if (Meta.Dev.Verbose && person.Wants == PlanKind.Business)
+            {
+                Logger?.Info("Social check (the tour): " + person.Name + " would like the tour; the player " + (held < 0 ? "has no business" : "has had a business for " + held + " day(s)")
+                             + ", they last asked on day " + person.TourAskDay + " and were shown round on day " + person.TourDay + " (0: never); "
+                             + (may ? "they ask for it" : "they ask for a coffee instead") + ": PASS");
+            }
+            return may;
         }
 
         // Money or help moving only of a friend. which: 0 a lift, 1 a loan, 2 a move, -1 at random.
@@ -319,6 +342,7 @@ namespace RealLifeOverhaul
             SocialState.Day = day;
             SocialPerson mom = SocialState.ByOrigin(SocialOrigin.Family);
             bool reminded = false;
+            bool business = SocialPlaces.BusinessHeldDays(day) >= 0;   // nobody wishes for the tour of a business that is not there
             ISocialLaw law = SocialLinks.Law;
             int bar = CircleBar();
             for (int i = 0; i < SocialState.Count; i++)
@@ -346,7 +370,7 @@ namespace RealLifeOverhaul
                     for (int k = 0; k <= (int)PlanKind.Business; k++)
                     {
                         var kind = (PlanKind)k;
-                        if (kind == p.Wants || p.Stage < SocialCatalogue.Outing(kind).Needs)
+                        if (kind == p.Wants || p.Stage < SocialCatalogue.Outing(kind).Needs || !SocialAskRules.MayWish(k, business))
                         {
                             continue;
                         }

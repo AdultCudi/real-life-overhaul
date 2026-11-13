@@ -795,6 +795,60 @@ namespace RealLifeOverhaul.Flare
         /// <summary>What a rival does today: 0 a post, 1 a promotion, 2 an attack on a reputation. The same rules as the player.</summary>
         public static int RivalMove(int seed, int day) => FlareRules.Roll(seed, day, 77) % 3;
 
+        public const int RivalAttack = 2;      // RivalMove's attack on a reputation
+        public const int RivalSour = 2000;     // thousandths of a resident of the attacker's district who think worse of the business run down
+        public const byte GuestOwner = (byte)Owner.Guest;   // another player's business in a Going Public session: never anybody's target here
+
+        /// <summary>
+        /// The business a rival runs down on the day of its attack: one of its own district, never itself and never another
+        /// player's, by the day's roll; -1 when it has no such neighbour. The player's businesses are drawn like anybody's, so
+        /// the city's businesses are run down by the rule the player's are. A player once got the attack's notice every third
+        /// day with no business at all: the attack was aimed at nobody and told anyway.
+        /// </summary>
+        public static int RivalTarget(int seed, int day, int actor, byte[] owner, byte[] district, string[] key, int count)
+        {
+            if (owner == null || district == null || key == null || actor < 0 || actor >= count)
+            {
+                return -1;
+            }
+            int near = 0;
+            for (int i = 0; i < count; i++)
+            {
+                near += RivalNear(i, actor, owner, district, key) ? 1 : 0;
+            }
+            if (near == 0)
+            {
+                return -1;
+            }
+            int nth = FlareRules.Roll(seed, day, 88) % near;
+            for (int i = 0; i < count; i++)
+            {
+                if (RivalNear(i, actor, owner, district, key) && nth-- == 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool RivalNear(int i, int actor, byte[] owner, byte[] district, string[] key)
+        {
+            return i != actor && key[i] != null && owner[i] != GuestOwner && district[i] == district[actor];
+        }
+
+        /// <summary>
+        /// What the day's move comes to once its target is known: an attack with nobody to run down (no neighbour, or a business
+        /// of the player's that is theirs no longer) is an ordinary post, so no post, message or notice speaks of a business
+        /// that is not there.
+        /// </summary>
+        public static int RivalMoveFor(int move, bool target) => move == RivalAttack && !target ? 0 : move;
+
+        /// <summary>Whether a business's fallen reviews are the player's to be warned of: only a business of their own, never the city's, a rival's or another player's.</summary>
+        public static bool WarnsPlayer(byte owner) => owner == (byte)Owner.Player;
+
+        /// <summary>Whether the player is told of the attack: it is on a business of theirs, and its post and message are up for them to answer.</summary>
+        public static bool RivalTold(int move, bool mine, bool posted) => move == RivalAttack && mine && posted;
+
         public static int MaskCount(int mask)
         {
             int n = 0;

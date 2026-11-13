@@ -98,8 +98,14 @@ namespace RealLifeOverhaul
             Row("reallife_family_glad_stop_2", LineNeed.Flat),
             Row("reallife_family_argue_6", LineNeed.Bed),                // a wet towel on the bed
             Row("reallife_family_inlaws_ask_lift", LineNeed.Car),        // the in-laws ask for a lift
+            Row("reallife_family_grown_call_2", LineNeed.Business),      // a grown child saw one of your shops
 
             // People (Scripts/Social), the street (Scripts/Crime), the roommate and household staff (Scripts/Home).
+            Row("reallife_social_invite_business", LineNeed.Business),   // when do I get the tour of your business (SocialAskRules)
+            Row("reallife_social_follow_fr09", LineNeed.Business),       // a call taken up on the friend's text about your business
+            Row("reallife_social_follow_fm04", LineNeed.Business),       // ...and on Mom's
+            Row("reallife_street_open_famous_3", LineNeed.Business),     // a stranger whose friend talks about your businesses
+            Row("reallife_season_turn", LineNeed.Business),              // what sells more at your businesses this season
             Row("reallife_social_text_home_2", LineNeed.Flat),
             Row("reallife_social_text_lift_1", LineNeed.Car),
             Row("reallife_social_text_lift_2", LineNeed.Car),

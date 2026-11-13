@@ -296,8 +296,14 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A friend's reply to a post, in a kind picked by the rules and a variant by the post and the friend.</summary>
         public static string Reply(FlareRules.ReplyKind kind, FlarePost p, int person)
         {
+            return T(ReplyKey(kind, p, person, null));
+        }
+
+        /// <summary>The key of that reply, never <paramref name="last"/>, the key of the one the friend wrote before (FlareRules.ReplyLine); null for none.</summary>
+        public static string ReplyKey(FlareRules.ReplyKind kind, FlarePost p, int person, string last)
+        {
             string[] keys = ReplyKeys[FlareRules.Clamp((int)kind, 0, ReplyKeys.Length - 1)];
-            return T(keys[Pick(p.Seed + person * 7919, 3, keys.Length) - 1]);
+            return keys[FlareRules.ReplyLine(FlareRules.ReplyRoll(p.Seed, person), keys.Length, last == null ? -1 : System.Array.IndexOf(keys, last))];
         }
 
         public static Dictionary<string, string> Data(params string[] pairs)

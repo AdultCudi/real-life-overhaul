@@ -177,7 +177,9 @@ namespace RealLifeOverhaul.Flare
                 int priceScore = price >= 1000 ? 100 : price / 10;
                 int why = (int)FlareUseRules.Reason(priceScore, bt.Quality[b], FlareUseRules.WaitScore(bt.Visits[b], bt.Room[b]), bt.Content[b]);
                 AddReview(c, b, s.People.Id[p], stars, day);
-                if (FlareUseRules.NoteReview(c.ReviewNotes, c.StarRows, bt.Key[b], s.People.Id[p], stars, day, why))
+                // The warning is the player's alone: every business of the city is reviewed here, and theirs are the only ones
+                // whose fall they are told of (it once named any business "a business of yours", every day from then on).
+                if (FlareUseRules.NoteReview(c.ReviewNotes, c.StarRows, bt.Key[b], s.People.Id[p], stars, day, why) && FlareUseRules.WarnsPlayer(bt.Owner[b]))
                 {
                     c.WarnKey = bt.Key[b];
                 }

@@ -41,6 +41,7 @@ namespace RealLifeOverhaul
             public CityEntry Entry;
             public float EndsAt;
             public bool Test;   // put out by a test button: the weather and the family switches do not take it in
+            public float GroundAt;   // when the ground under it is looked at next (SiteGroundRules.RecheckSeconds)
         }
 
         // Something to do at a moment inside a clip: put a cup in a hand, stand a box on the ground.
@@ -440,11 +441,21 @@ namespace RealLifeOverhaul
                 ICityActivity activity = running.Entry.Activity;
                 bool alive = activity.Tick(now);
                 float sqr = CitySpots.Flat(activity.Centre - origin);
+                StreetGround under = StreetGround.Pavement;
+                if (alive && now >= running.GroundAt)
+                {
+                    // The street can change under a site that is out (a bus zone made, ground laid): looked at again, and taken in.
+                    running.GroundAt = now + SiteGroundRules.RecheckSeconds;
+                    _running[i] = running;
+                    under = CitySpots.Site(activity.Centre, running.Entry.Id);
+                    alive = under == StreetGround.Pavement;
+                }
                 bool weather = !running.Test && ((raining && !running.Entry.Rain) || (!raining && running.Entry.RainOnly));
                 bool stale = now >= running.EndsAt || weather || (!running.Test && !CityCatalogue.Enabled(running.Entry.Family));
                 if (!alive || sqr > TooFar * TooFar || (stale && !CitySpots.InView(activity.Centre)))
                 {
-                    string ended = !alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up";
+                    string ended = under != StreetGround.Pavement ? "its place is " + SiteGroundRules.Words(under) + " now, not pavement"
+                        : !alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up";
                     Logger?.Info($"City life: {running.Entry.Id} cleared ({ended}, {Mathf.Sqrt(sqr):F0} m away).");
                     activity.End();
                     _running.RemoveAt(i);
@@ -562,6 +573,7 @@ namespace RealLifeOverhaul
         private bool Open(CityEntry entry, Vector3 anchor, Vector3 origin, float now, bool raining, bool test)
         {
             using var piece = SessionWatch.Piece("city life: a site being set up");
+            using CitySpots.SiteScope places = CitySpots.ForSite(entry.Id);   // every place it finds and takes is pavement by SiteGroundRules
             ICityActivity activity = entry.Activity;
             _site.Anchor = anchor;
             _site.Test = test;
@@ -576,6 +588,17 @@ namespace RealLifeOverhaul
                 return false;
             }
             Vector3 centre = activity.Centre;
+            // The site as a whole on pavement, whatever each of its places found: never a crossing, a lane, a bus zone or a driveway.
+            StreetGround ground = CitySpots.Site(centre, entry.Id, true);
+            if (ground != StreetGround.Pavement)
+            {
+                _site.Refusal = CityRefusal.OffPavement;
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info($"City life check (ground): {entry.Id} at {centre:F0} would stand on {SiteGroundRules.Words(ground)}, the place refused: PASS");
+                }
+                return false;
+            }
             if (!test && CitySpots.InView(centre))
             {
                 return false;   // room was found, but somewhere the camera can see
@@ -603,7 +626,10 @@ namespace RealLifeOverhaul
                 }
                 return false;
             }
-            _running.Add(new Running { Entry = entry, Test = test, EndsAt = now + Random.Range(entry.MinMinutes, entry.MaxMinutes) * 60f });
+            _running.Add(new Running
+            {
+                Entry = entry, Test = test, EndsAt = now + Random.Range(entry.MinMinutes, entry.MaxMinutes) * 60f, GroundAt = now + SiteGroundRules.RecheckSeconds
+            });
             _recent.Add(entry.Id);
             while (_recent.Count > RecentMemory)
             {

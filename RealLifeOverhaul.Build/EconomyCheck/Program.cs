@@ -118,6 +118,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--premises")
+        {
+            PremiseChecks();   // nothing told or asked without what it speaks of, no line twice running, sites on pavement only (PremiseChecks.cs)
+            LineNeedRule();    // the rule its lines' needs go through (LineNeedChecks.cs)
+            ChessFixes();      // the crossing test the chess scenes share (ChessFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--flare-msg")
         {
             FlareMsgChecks();   // Flare's messages in words and its contact faces (FlareMsgChecks.cs)
@@ -1687,6 +1695,7 @@ internal static partial class Program
         NeedsPanel();   // the bars of hygiene, stress and home stand whenever the game's top bar does, wherever the player is and however they are; the home bar waits for a home (NeedsPanelChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
         LineNeedRule(); // random lines only when what they take for granted is the player's: a fridge, a flat, a landlord, a car; every random line's English read for it (LineNeedChecks.cs)
+        PremiseChecks(); // no notice of a rival's attack or ask for a tour without a business, no line twice running from one person, standing sites on pavement only, every sent line's premise (PremiseChecks.cs)
         VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)

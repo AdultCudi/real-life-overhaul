@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Flare
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = words ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
+                        Text = words ?? _director.FriendLine(p, index, people[k]), Seed = p.Seed + i, Slot = i,
                         Liked = _director.IsReplyLiked(p.Id, i)
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);

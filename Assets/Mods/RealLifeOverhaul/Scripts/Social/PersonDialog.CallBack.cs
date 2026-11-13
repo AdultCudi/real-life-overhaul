@@ -40,6 +40,10 @@ namespace RealLifeOverhaul
             }
             _p.FollowedAt = pick.Minute;   // (spent now: never again, even after a load)
             SocialTopic topic = pick.Subject.Talk;
+            if (!LineNeeds.Fits(topic.Open[0]))
+            {
+                return null;   // "still talking about your business", and the business has gone since their text: the call opens as it always did
+            }
             Dictionary<string, string> data = SocialFollowRules.Filled(pick.Data, SocialLife.Data(_p));
             DialogEntry entry = Line(topic.Open[0], data);
             string shown;

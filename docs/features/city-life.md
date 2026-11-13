@@ -38,6 +38,15 @@ People at work and about their day on the pavements near the player: sweepers, w
   includes triggers tagged Crosswalk or on the Crosswalk layer, regardless of the lights or traffic options. A full query buffer refuses the candidate too. The check runs only when choosing a place;
   normal walking can still cross roads. Developer diagnostics report the clearance result for each queried candidate.
   The Crosswalk layer is in `GameContract.Layers`, so the mod names it in Player.log if a game update drops it; the tag still finds crossings then.
+- For a standing site, pavement is not the walking mesh alone. The pedestrians' mesh runs over every crossing, so while a site
+  finds its places (`CitySpots.ForSite`, held by `CityLifeDirector.Open` and Leisure's `ChessCorner.PutOut`) every place `CitySpots`
+  hands it (`Pavement`, `OnPavement`, `Stand`) is walking ground that `SiteGroundRules.Verdict` calls pavement: no crossing, no road
+  collider (the game's Roads layer, a street tree put there left out), no traffic lane within a lane's half width and the
+  footprint's reach, no bus zone and no parking under it (`CitySpots.Read`, one box query, the road map and the bus zones' table).
+  The site is asked for as a whole too when it is chosen, and every twenty seconds while it is out: one whose place is no longer
+  pavement is taken in, with one log line. Sites are never saved, so a load starts with none. `SiteGroundRules.Kinds` lists every
+  kind covered; EconomyCheck fails on a catalogue entry without one. Other features that ask `CitySpots` for the walking ground
+  (a works' dressing at the kerb, a bus stop's riders, the vendor job's cart) keep their own rules.
 
 ## Rules the living city keeps
 

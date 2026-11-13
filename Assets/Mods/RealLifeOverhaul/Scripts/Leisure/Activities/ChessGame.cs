@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Leisure
         private CityPerson _coming;                // taken from the pool in the frame before, not yet at their clip
         private Transform _table;
         private float _nextTry;
+        private float _groundAt;                   // when the ground under the table is looked at next (SiteGroundRules.RecheckSeconds)
         private float _cheerEnds;                  // while the onlooker cheers, when it ends; 0 otherwise
         private bool _turnLogged;                  // the opponent found turned off the board has been written to the log, once a table
         private SetUp _pending;                    // what goes out in the next frame
@@ -107,6 +108,19 @@ namespace RealLifeOverhaul.Leisure
                 {
                     TakeIn();
                     _nextTry = now + 45f;
+                    return;
+                }
+                if (now >= _groundAt)
+                {
+                    // The street can change under a table that is out (a bus zone made, ground laid): looked at again, and taken in.
+                    _groundAt = now + SiteGroundRules.RecheckSeconds;
+                    StreetGround under = CitySpots.Site(Table, SiteGroundRules.LeisureChess);
+                    if (under != StreetGround.Pavement)
+                    {
+                        LeisureDirector.Logger?.Info("Leisure: the chess table at " + Table.ToString("F0") + " is taken in: its place is " + SiteGroundRules.Words(under) + " now, not pavement.");
+                        TakeIn();
+                        _nextTry = now + 45f;
+                    }
                 }
                 return;
             }
@@ -128,6 +142,7 @@ namespace RealLifeOverhaul.Leisure
         /// <summary>Stands the table and seats the opponent; false with the reason, nothing left out, if not.</summary>
         public bool PutOut(Vector3 anchor, Vector3 player, out TestRefusal why)
         {
+            using CitySpots.SiteScope places = CitySpots.ForSite(SiteGroundRules.LeisureChess);   // the table, the stools and the approaches on pavement by SiteGroundRules
             why = TestRefusal.NothingFits;
             CityLifeDirector city = CityLifeDirector.Instance;
             if (city == null || Out)
@@ -331,6 +346,7 @@ namespace RealLifeOverhaul.Leisure
                 return null;
             }
             Vector3 across = Vector3.Cross(Vector3.up, along);
+            using CitySpots.SiteScope places = CitySpots.ForSite(SiteGroundRules.LeisureChess);   // the onlooker stands on pavement by SiteGroundRules, as the table does
             for (int side = -1; side <= 1; side += 2)
             {
                 Vector3 wanted = table + across * (side * WatcherOut);

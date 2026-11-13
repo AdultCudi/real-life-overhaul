@@ -83,6 +83,34 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
+        /// <summary>
+        /// Whether the friend or partner with this number replied to the post whose reactors line this is ("R:f3:95", "R:p0:7"),
+        /// read in place: no allocation, for a walk over a player's posts when a thread is drawn.
+        /// </summary>
+        public static bool Replied(string line, int index)
+        {
+            for (int start = 0; !string.IsNullOrEmpty(line) && index >= 0 && start < line.Length;)
+            {
+                int end = line.IndexOf(';', start);
+                end = end < 0 ? line.Length : end;
+                if (end - start > 4 && line[start] == 'R' && line[start + 1] == ':' && (line[start + 2] == 'f' || line[start + 2] == 'p'))
+                {
+                    int at = start + 3, number = 0;
+                    while (at < end && at < start + 9 && line[at] >= '0' && line[at] <= '9')
+                    {
+                        number = number * 10 + (line[at] - '0');
+                        at++;
+                    }
+                    if (at > start + 3 && at < end && line[at] == ':' && number == index)
+                    {
+                        return true;
+                    }
+                }
+                start = end + 1;
+            }
+            return false;
+        }
+
         /// <summary>The reactions of a post's line, into <paramref name="into"/>; none for a line that does not read.</summary>
         public static void ReadReactors(string line, List<FlareReaction> into)
         {
@@ -451,6 +479,55 @@ namespace RealLifeOverhaul.Flare
         public static string Opener(FlareFile f, long at)
         {
             return PostedBefore(f, at) ? "chat" : "hello";
+        }
+
+        public const string RivalDmKey = "reallife_flare_dm_rival";   // a rival's message that it ran a business of the player's down
+
+        /// <summary>Whether a business of the city ran the player's down in this conversation, unanswered.</summary>
+        public static bool Attacked(FlareNet net, string with) => AttackedBusiness(net, with) != null;
+
+        /// <summary>The business the newest unanswered attack in a conversation names ("business=" in its data); null with none.</summary>
+        public static string AttackedBusiness(FlareNet net, string with)
+        {
+            string named = null;
+            for (int i = 0; net != null && with != null && i < net.Dms.Count; i++)
+            {
+                FlareDm d = net.Dms[i];
+                if (d.With != with)
+                {
+                    continue;
+                }
+                if (d.Mine)
+                {
+                    named = null;   // answered
+                }
+                else if (d.Key == RivalDmKey)
+                {
+                    named = Value(d.Data, "business") ?? string.Empty;
+                }
+            }
+            return named;
+        }
+
+        // One value of a message's data ("name=value" each, separated by '~'); null when it holds none of the name.
+        private static string Value(string data, string name)
+        {
+            if (string.IsNullOrEmpty(data))
+            {
+                return null;
+            }
+            int at = 0;
+            while (at < data.Length)
+            {
+                int end = data.IndexOf('~', at);
+                end = end < 0 ? data.Length : end;
+                if (end - at > name.Length && data[at + name.Length] == '=' && string.CompareOrdinal(data, at, name, 0, name.Length) == 0)
+                {
+                    return data.Substring(at + name.Length + 1, end - at - name.Length - 1);
+                }
+                at = end + 1;
+            }
+            return null;
         }
 
         /// <summary>A message added, the oldest going past the most.</summary>

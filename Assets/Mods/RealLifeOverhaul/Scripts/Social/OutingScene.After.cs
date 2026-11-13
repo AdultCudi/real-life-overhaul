@@ -240,6 +240,10 @@ namespace RealLifeOverhaul
                     _who.Dates++;
                 }
                 SocialLife.Remember(_who, _def.Memory);
+                if (_kind == PlanKind.Business)
+                {
+                    _who.TourDay = SocialLife.Day;   // shown round: they do not ask when they get the tour again (SocialAskRules)
+                }
                 _who.Wants = (PlanKind)(((int)_who.Wants + 1 + Random.Range(0, 3)) % ((int)PlanKind.Walk + 1));
                 _who.WantsDay = SocialLife.Day;
                 SocialLife.Change(_who, familiarity, affection, trust);

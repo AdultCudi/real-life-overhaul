@@ -478,8 +478,15 @@ namespace RealLifeOverhaul
             }
             try
             {
+                // Nobody sends the line they sent last: another of its pool goes instead, or nothing (SocialAskRules.Next).
+                key = SocialLines.After(person.LastLine, key, must);
+                if (key == null)
+                {
+                    return false;
+                }
                 if (must && (!Settings.Social || !Settings.SocialTexts))
                 {
+                    person.LastLine = key;
                     Said(person, key, data);
                     Toast(NotificationType.Info, key, data, 10f);
                     return true;
@@ -500,6 +507,7 @@ namespace RealLifeOverhaul
                 NewTextDay();
                 SocialState.TextsToday++;
                 person.LastTextDay = Day;
+                person.LastLine = key;
                 Said(person, key, data);
                 return true;
             }

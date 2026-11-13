@@ -127,6 +127,8 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_biz_post_5", "reallife_flare_biz_post_6"
         };
 
+        private const string RivalAttackKey = "reallife_flare_biz_post_7";   // a rival's post against a business of the player's, named in it
+
         // A business's offer (a post's Arg from FlareLiveRules.OfferFirst): twelve ways to say it, named for the business and its district.
         private static readonly string[] BusinessOfferKeys =
         {
@@ -287,6 +289,10 @@ namespace RealLifeOverhaul.Flare
                     if (p.Arg >= FlareLiveRules.OfferFirst && p.Arg < FlareLiveRules.OfferFirst + FlareLiveRules.OfferKinds)
                     {
                         return Fill(BusinessOfferKeys[p.Arg - FlareLiveRules.OfferFirst], "name", p.Name, "district", district);
+                    }
+                    if (p.Arg == FlareDirector.RivalAttackArg && !string.IsNullOrEmpty(p.Text))
+                    {
+                        return Fill(RivalAttackKey, "name", p.Name, "business", p.Text, "district", district);   // (one from before it named the business reads as a boast, below)
                     }
                     return Fill(Of(BusinessPostKeys, p.Arg), "name", p.Name, "district", district);
                 case FlareSource.Invite:
