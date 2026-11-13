@@ -55,6 +55,50 @@ namespace RealLifeOverhaul.Ui
             m.ToolCount = _toolCount;
         }
 
+        private static readonly UiIcon[] ShellTools = new UiIcon[2];
+        private static readonly bool[] ShellOff = new bool[2];
+        private static readonly bool[] ShellOn = new bool[2];
+        private static readonly Button[] ShellButtons = new Button[2];
+
+        /// <summary>
+        /// The full menu's own Help and Report bug (its bottom left buttons, which the kit's frame no longer draws) as the two tools
+        /// of the kit bar there; a button the game keeps off or holds is left out or greyed as on the HUD.
+        /// </summary>
+        public static void FillShell(UiStatusModel m)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            UI.Smartphone.FullMenu menu = uis != null ? uis.fullMenu : null;
+            int count = 0;
+            if (menu != null)
+            {
+                if (UiWidgets.There(menu.bottomBarHelpButton))
+                {
+                    ShellButtons[count] = menu.bottomBarHelpButton;
+                    ShellTools[count] = UiIcon.Info;
+                    ShellOff[count] = !menu.bottomBarHelpButton.interactable;
+                    count++;
+                }
+                if (UiWidgets.There(menu.bottomBarSubmitBugButton))
+                {
+                    ShellButtons[count] = menu.bottomBarSubmitBugButton;
+                    ShellTools[count] = UiIcon.Bug;
+                    ShellOff[count] = !menu.bottomBarSubmitBugButton.interactable;
+                    count++;
+                }
+            }
+            if (count > 0)
+            {
+                m.Tools = ShellTools;
+                m.ToolsOn = ShellOn;
+                m.ToolsOff = ShellOff;
+                m.ToolCount = count;
+                m.ToolsShell = true;
+            }
+        }
+
+        /// <summary>One of the full menu's tools pressed: the game's own button, which opens its Help or its bug report.</summary>
+        public static bool PressShellTool(int index) => index >= 0 && index < ShellButtons.Length && UiWidgets.Press(ShellButtons[index]);
+
         /// <summary>The game's top bar hidden by leaf; false while it is not built yet.</summary>
         public static bool Begin(UIs uis)
         {
@@ -180,9 +224,9 @@ namespace RealLifeOverhaul.Ui
             {
                 Tool(Help, UiIcon.Info, false, !_help.interactable);
             }
-            if (UiWidgets.Shows(_bug))
+            if (UiWidgets.There(_bug))
             {
-                Tool(Bug, UiIcon.Bug, false, false);   // only while the game (or Going Public) offers it
+                Tool(Bug, UiIcon.Bug, false, !_bug.interactable);   // there while the game offers it; held, with its reason on hover, in a modded save
             }
             int sig = _toolCount;
             for (int i = 0; i < _toolCount; i++)
@@ -220,6 +264,12 @@ namespace RealLifeOverhaul.Ui
             }
             return -1;
         }
+
+        /// <summary>The words a held tool gives on hover: the game's reason the report button is held in a modded save (ReportBugButton); null for any other.</summary>
+        public static string ToolNote(int index) =>
+            index >= 0 && index < _toolCount && ToolKind[index] == Bug && ToolsOff[index] ? Localizor.LocalizorManager.GetLocalization(BugHeldKey) : null;
+
+        private const string BugHeldKey = "menu_report_bug_disabled_mods_tooltip";
 
         /// <summary>A tool of the bar's pill pressed: the game's own button or method, as its top bar's own does.</summary>
         public static bool PressTool(int index)

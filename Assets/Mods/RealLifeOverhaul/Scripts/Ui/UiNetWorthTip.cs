@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Ui
     public static class UiNetWorthTip
     {
         /// <summary>The card's words for a summary; <paramref name="line"/> holds <see cref="WorthSummary.Points"/> values, oldest first.</summary>
-        public static UiTooltipModel Model(UiWords t, WorthSummary s, int today, float[] line, Func<long, string> shortMoney)
+        public static UiTooltipModel Model(UiWords t, WorthSummary s, int today, float[] line, Func<long, string> shortMoney, string cash = null, string yesterday = null, int yesterdaySign = 0)
         {
             var m = new UiTooltipModel();
             int span0 = Math.Max(1, today - s.FromDay + 1);
@@ -25,6 +25,19 @@ namespace RealLifeOverhaul.Ui
             }
             UiTipBlock rows = m.Rows();
             rows.Lines.Add(new UiTipLine { Left = t("reallife_ui_tip_worth_now", "Now"), Right = shortMoney(s.Now) });
+            // What the game's own money tooltip says (topbar_money_tooltip): the money in hand and yesterday's result.
+            if (cash != null)
+            {
+                rows.Lines.Add(new UiTipLine { Left = t("reallife_ui_tip_money_total", "Cash"), Right = cash });
+            }
+            if (yesterday != null)
+            {
+                rows.Lines.Add(new UiTipLine
+                {
+                    Left = t("reallife_ui_tip_money_yesterday", "Yesterday"), Right = yesterday,
+                    Ink = yesterdaySign > 0 ? UiRole.OkText : yesterdaySign < 0 ? UiRole.DangerText : UiRole.None
+                });
+            }
             if (s.Has)
             {
                 rows.Lines.Add(new UiTipLine { Left = t("reallife_ui_tip_worth_high", "Highest"), Right = On(t, shortMoney(s.High), s.HighDay) });

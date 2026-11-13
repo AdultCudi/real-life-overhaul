@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_notice_road", "reallife_ui_notice_police", "reallife_ui_notice_health", "reallife_ui_notice_money",
                     "reallife_ui_notice_property",
                     "reallife_ui_notice_work", "reallife_ui_notice_business", "reallife_ui_notice_tech", "reallife_ui_notice_news", "reallife_ui_notice_people",
-                    "reallife_ui_notice_other", "reallife_ui_notice_done", "reallife_ui_notice_warning", "reallife_ui_notice_info"
+                    "reallife_ui_notice_other", "reallife_ui_notice_done", "reallife_ui_notice_warning", "reallife_ui_notice_error", "reallife_ui_notice_info", "reallife_ui_notice_more"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("notice_list", UiTemplate.InfoPanel, "NoticeListScreen", new[]
                 {
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_notice_road", "reallife_ui_notice_police", "reallife_ui_notice_health", "reallife_ui_notice_money",
                     "reallife_ui_notice_property",
                     "reallife_ui_notice_work", "reallife_ui_notice_business", "reallife_ui_notice_tech", "reallife_ui_notice_news", "reallife_ui_notice_people",
-                    "reallife_ui_notice_other", "reallife_ui_notice_done", "reallife_ui_notice_warning", "reallife_ui_notice_info"
+                    "reallife_ui_notice_other", "reallife_ui_notice_done", "reallife_ui_notice_warning", "reallife_ui_notice_error", "reallife_ui_notice_info"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("shell_frame", UiTemplate.AppWindow, null, new[]
                 {

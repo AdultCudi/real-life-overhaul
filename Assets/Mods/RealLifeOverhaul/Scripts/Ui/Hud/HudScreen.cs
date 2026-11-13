@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiDraw.TimePillCommand:
-                    return arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0);
+                    return arg == UiDraw.ClockArg || (arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0));   // the clock is only there to hover
                 case UiDraw.MoneyPillCommand:
                     return TopBar(true);
                 case UiDraw.NeedsPillCommand:
@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             uis.notificationsListUI.Toggle(true);
+            HudStatusGame.NoticesRead();
             return true;
         }
 

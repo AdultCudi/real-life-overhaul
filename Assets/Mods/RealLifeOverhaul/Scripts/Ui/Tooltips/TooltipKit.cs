@@ -98,6 +98,28 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        /// <summary>The pointer rests on the time pill's clock: its box as fractions of the screen, and the years and days card shows after a moment.</summary>
+        public static bool Years(float x, float y, float w)
+        {
+            if (_host == null)
+            {
+                return false;
+            }
+            _host.YearsIn(x, y, w);
+            return true;
+        }
+
+        /// <summary>The pointer rests on a held button of the bar: its box as fractions of the screen, and its reason shows in a card after a moment.</summary>
+        public static bool Note(float x, float y, float w, string words)
+        {
+            if (_host == null)
+            {
+                return false;
+            }
+            _host.NoteIn(x, y, w, words);
+            return true;
+        }
+
         /// <summary>The pointer left the money pill or pressed it: the net worth card goes.</summary>
         public static void MoneyOut()
         {

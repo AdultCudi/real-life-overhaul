@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_tip_mood", "reallife_ui_tip_mood_low", "reallife_ui_tip_mood_fair", "reallife_ui_tip_mood_good", "reallife_ui_tip_today",
                 "reallife_ui_tip_served", "reallife_ui_tip_shift_until", "reallife_ui_tip_shift_next", "reallife_ui_tip_shift_none", "reallife_ui_tip_shift_away",
                 "reallife_ui_tip_day", "reallife_ui_tip_worth_title", "reallife_ui_tip_worth_span", "reallife_ui_tip_worth_now", "reallife_ui_tip_worth_high",
-                "reallife_ui_tip_worth_low", "reallife_ui_tip_worth_change", "reallife_ui_tip_worth_on_day", "reallife_ui_tip_worth_early"
+                "reallife_ui_tip_worth_low", "reallife_ui_tip_worth_change", "reallife_ui_tip_worth_on_day", "reallife_ui_tip_worth_early",
+                "reallife_ui_tip_money_total", "reallife_ui_tip_money_yesterday"
             }).Switch(UiScreenSwitches.Pause));
         }
     }

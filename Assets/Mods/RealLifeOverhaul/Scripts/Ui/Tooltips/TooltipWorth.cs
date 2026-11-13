@@ -1,4 +1,5 @@
 using System;
+using Entities;
 using Extensions;
 using RealLifeOverhaul.Economy;
 
@@ -38,9 +39,39 @@ namespace RealLifeOverhaul.Ui
                 s = new WorthSummary { Now = now, High = now, Low = now, HighDay = today, LowDay = today, FromDay = today, Points = 1 };
             }
             float[] line = s.Points >= 2 ? Fit(_line, s.Points) : null;
-            UiTooltipModel made = UiNetWorthTip.Model(UiText.Words, s, today, line, Short);
+            FinancialSummary yesterday = save.financialSummaries != null ? save.financialSummaries.Find(x => x.dayNumber == today - 1) : null;   // as Topbar.SetMoneyChangeValue finds it
+            float result = yesterday != null ? yesterday.totalProfit : 0f;
+            UiTooltipModel made = UiNetWorthTip.Model(UiText.Words, s, today, line, Short, save.Money.ToShortCurrencyFormat(),
+                result.ToShortCurrencyFormat(), result > 0f ? 1 : result < 0f ? -1 : 0);
             into.Clear();
             into.Blocks.AddRange(made.Blocks);
+            return true;
+        }
+
+        /// <summary>The time pill's card: the years and days the save has run, in the game's own words (topbar_years_tooltip), as the top bar's date says them on hover.</summary>
+        internal static bool MakeYears(UiTooltipModel into)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return false;
+            }
+            int years = TimeHelper.GetYearsByDays(save.Day);
+            int days = save.Day - TimeHelper.GetDaysByYears(years);
+            into.Clear();
+            into.Text(Localizor.LocalizorManager.GetLocalization("topbar_years_tooltip", new { yearsAmount = years, daysAmount = days }), UiRole.Text, false, true);
+            return true;
+        }
+
+        /// <summary>A plain card of one line of words (a held button's reason).</summary>
+        internal static bool MakeNote(UiTooltipModel into, string words)
+        {
+            if (string.IsNullOrEmpty(words))
+            {
+                return false;
+            }
+            into.Clear();
+            into.Text(words, UiRole.Text, false, true);
             return true;
         }
 

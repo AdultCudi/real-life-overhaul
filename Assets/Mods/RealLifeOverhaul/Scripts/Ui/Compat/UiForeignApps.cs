@@ -35,7 +35,13 @@ namespace RealLifeOverhaul.Ui
         /// mod's button (a mod that puts one app on the grid and on the full menu's row names the two apart and words them alike).
         /// <paramref name="titles"/> holds words for other mods' buttons alone, null for the rest.
         /// </summary>
-        public static bool Listed(string name, string title, IList<string> names, IList<string> titles, int count)
+        public static bool Listed(string name, string title, IList<string> names, IList<string> titles, int count) => Listed(name, title, names, titles, count, null, null);
+
+        /// <summary>
+        /// As above, where two buttons worded alike are one app only if one mod owns both: another mod's app with the same words as
+        /// a different mod's is its own app and keeps its tile. An owner not known (null on either side) counts as the same.
+        /// </summary>
+        public static bool Listed(string name, string title, IList<string> names, IList<string> titles, int count, string owner, IList<string> owners)
         {
             string words = string.IsNullOrEmpty(title) ? null : title.Trim();
             for (int i = 0; i < count; i++)
@@ -44,7 +50,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     return true;
                 }
-                if (words != null && titles[i] != null && string.Equals(titles[i].Trim(), words, StringComparison.OrdinalIgnoreCase))
+                if (words != null && titles[i] != null && string.Equals(titles[i].Trim(), words, StringComparison.OrdinalIgnoreCase)
+                    && (owner == null || owners == null || owners[i] == null || string.Equals(owners[i], owner, StringComparison.Ordinal)))
                 {
                     return true;
                 }

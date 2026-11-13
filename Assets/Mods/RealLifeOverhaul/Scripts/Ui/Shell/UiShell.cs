@@ -196,6 +196,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     return OpenRow(arg);
                 }
+                if (command == UiDraw.ShellToolCommand)
+                {
+                    return HudTopGame.PressShellTool(arg);
+                }
                 return false;
             }
             catch (Exception e)

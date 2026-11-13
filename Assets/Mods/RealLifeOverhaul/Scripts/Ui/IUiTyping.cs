@@ -27,4 +27,11 @@ namespace RealLifeOverhaul.Ui
     public interface IUiTypingQuiet
     {
     }
+
+    /// <summary>A typing screen that hears the field open, to run what the game's own field does when it is selected (Steam's on-screen keyboard on a pad).</summary>
+    public interface IUiTypingStart
+    {
+        /// <summary>Typing has just started on the typing target.</summary>
+        void TypingStarted();
+    }
 }
