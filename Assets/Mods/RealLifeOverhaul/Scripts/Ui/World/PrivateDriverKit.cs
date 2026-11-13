@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BigAmbitions.SaveSystem;
 using Buildings;
@@ -67,7 +68,8 @@ namespace RealLifeOverhaul.Ui
 
         private readonly SmartphonePrivateDriverUI _ui;
         private readonly int[] _carAt = new int[UiToolPanel.MostLines];   // a line's car in the save's list, or -1
-        private int _dismissLine = -1, _locateLine = -1;
+        private int _dismissLine = -1, _locateLine = -1, _moreLine = -1;
+        private int _page;   // which run of cars the list shows when the contract has more than the panel's lines hold
 
         public PrivateDriverScreen(SmartphonePrivateDriverUI ui)
         {
@@ -87,6 +89,7 @@ namespace RealLifeOverhaul.Ui
             List<VehicleInstance> cars = SaveGameManager.Current != null ? SaveGameManager.Current.privateDriverVehicleInstances : null;
             long seen = car != null ? car.GetInstanceID() : 0;
             seen = Mix(seen, cars != null ? cars.Count : -1);
+            seen = Mix(seen, _page);
             seen = Mix(seen, SaveGameManager.Current != null && SaveGameManager.Current.activePrivateDriverContractUnpaid ? 1 : 0);
             seen = Mix(seen, SaveGameManager.Current != null && SaveGameManager.Current.activePrivateDriverContract != null ? SaveGameManager.Current.activePrivateDriverContract.GetHashCode() : 0);
             seen = Mix(seen, Riding() ? 1 : 0);
@@ -101,7 +104,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _carAt[i] = -1;
             }
-            _dismissLine = _locateLine = -1;
+            _dismissLine = _locateLine = _moreLine = -1;
             M.Title = UiText.T("ba:private_driver");
             M.Icon = UiIcon.Car;
             M.Close = false;
@@ -160,7 +163,12 @@ namespace RealLifeOverhaul.Ui
                 head.Icon = UiIcon.Person;
             }
             bool riding = Riding();
-            for (int i = 0; i < cars.Count && i < MostCars; i++)
+            // A contract with more cars than the panel has lines shows them a run at a time: the last line steps to the next run, never a car left out of reach.
+            int run = cars.Count > MostCars ? MostCars - 1 : MostCars;
+            int pages = (cars.Count + run - 1) / run;
+            _page = Math.Max(0, Math.Min(_page, pages - 1));
+            int first = _page * run, last = Math.Min(cars.Count, first + run);
+            for (int i = first; i < last; i++)
             {
                 VehicleInstance v = cars[i];
                 if (v == null)
@@ -176,6 +184,12 @@ namespace RealLifeOverhaul.Ui
                 row.Action = UiText.T("reallife_ui_world_driver_call");
                 row.Main = i == 0;
                 row.Disabled = riding;
+            }
+            if (pages > 1)
+            {
+                _moreLine = M.LineCount;
+                ref UiToolLine more = ref Add(UiToolKind.Link);
+                more.Label = UiText.Fill("reallife_ui_world_driver_more", "from", UiText.Whole(first + 1), "to", UiText.Whole(last), "total", UiText.Whole(cars.Count));
             }
             if (contract != null)
             {
@@ -235,6 +249,12 @@ namespace RealLifeOverhaul.Ui
             if (line == _locateLine)
             {
                 return Locate();
+            }
+            if (line == _moreLine)
+            {
+                _page++;   // past the last run it comes round to the first
+                Touch();
+                return true;
             }
             int car = line >= 0 && line < _carAt.Length ? _carAt[line] : -1;
             List<VehicleInstance> cars = SaveGameManager.Current != null ? SaveGameManager.Current.privateDriverVehicleInstances : null;
