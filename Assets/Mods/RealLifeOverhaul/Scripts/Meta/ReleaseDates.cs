@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Meta
             100070, 2026, 11, 13,
             100080, 2026, 11, 13,
             100090, 2026, 11, 13,
+            100100, 2026, 11, 13,
         };
 
         /// <summary>The year, month and day a version went out, or false when that row has no day.</summary>
