@@ -63,7 +63,8 @@ namespace RealLifeOverhaul.Ui
                         Values = new[] { (int)UiIcon.Building, HotelRules.Stars(f.Rating) * 2, f.Clean / 10, staffShare, soldShare, 0, 0, 0, place != null ? (int)UiIcon.Locate : 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, f.Takings < f.Costs ? UiRole.DangerText : UiRole.None,
                             left > 0 ? UiRole.Ok : UiRole.Muted, UiRole.None },
-                        Subs = new[] { EstateText.District(HotelDistrict(f.Slot)), null, null, null, null, null, null, null, null }
+                        Subs = new[] { EstateText.District(HotelDistrict(f.Slot)), null, null, null, null, null, null, null, null },
+                        SortKeys = new[] { N, HotelRules.Stars(f.Rating) * 2, f.Clean / 10, staffShare, soldShare, f.Takings, f.Costs, left, N }
                     });
                     keys.Add("hot:" + f.Slot);
                     // Your rate for each kind of room against the going rate, and how much of it sold.
@@ -93,8 +94,8 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Building, EstateText.T("reallife_estate_tab_hotel"),
                     EstateText.T("reallife_ui_estate_hotels_sub", "count", _s.Hotels.Count.ToString(Inv)), null, null, cols, rows, keys, null,
-                    EstateText.T("reallife_estate_row_no_hotel"), EstateText.T("reallife_ui_estate_empty_hotel_body"));
-                _m.RowRuns = locate.ToArray();
+                    EstateText.T("reallife_estate_row_no_hotel"), EstateText.T("reallife_ui_estate_empty_hotel_body"), null, new[] { 5, 6 });
+                _m.RowRuns = Ordered(locate);
                 if (_s.Hotels.Count > 0)
                 {
                     _m.Strip = new[]
@@ -242,7 +243,9 @@ namespace RealLifeOverhaul.Ui
                         Values = new[] { (int)CarClass.Glyph(kind), 0, 0, 0, 0, 0 },
                             Tones = new[] { CarClass.Tint(kind, car.Price), car.State == (int)HireState.Waiting ? UiRole.Warn : car.State == (int)HireState.Out
                             ? UiRole.Ok : UiRole.Notice, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.CarClass(carClass), null, null, null, null, null }
+                        Subs = new[] { EstateText.CarClass(carClass), null, null, null, null, null },
+                        SortKeys = new[] { N, N, rate, car.Hires, car.Takings, car.State == (int)HireState.Out ? car.Day : N },
+                        Kinds = new[] { carClass, HireRules.Away(car.State) ? EstateTables.CarOut : EstateTables.CarIn }
                     });
                     keys.Add("car:" + car.Id);
                 }
@@ -279,7 +282,13 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Car, EstateText.T("reallife_estate_tab_hire"), hire.Running ? EstateGame.NameOf(hire.Lot)
                     : EstateText.T("reallife_estate_row_no_lot"), null, null, cols, rows, keys, HireSide(hire),
-                    EstateText.T(hire.Running ? "reallife_estate_row_no_cars" : "reallife_estate_row_no_lot"), EstateText.T("reallife_estate_hire_what"));
+                    EstateText.T(hire.Running ? "reallife_estate_row_no_cars" : "reallife_estate_row_no_lot"), EstateText.T("reallife_estate_hire_what"),
+                    new[]
+                    {
+                        Choice("reallife_estate_filter_all_classes", EstateText.ClassKeys),
+                        Choice("reallife_estate_filter_all_places", "reallife_estate_filter_out", "reallife_estate_filter_in")
+                    },
+                    new[] { 4 }, EstateText.T("reallife_estate_empty_hire"));
                 if (hire.Running)
                 {
                     // The fleet's rating as the kit's stars before the line that says what it is.
@@ -343,6 +352,7 @@ namespace RealLifeOverhaul.Ui
                     // The lot's own meters stand in the cover's card: the spaces its cars take and the cars out on hire.
                     lines.Add(UiFactLine.Bar(EstateText.T("reallife_ibox_spaces"), hire.Spaces > 0 ? hire.Cars.Count * 100 / hire.Spaces : 0));
                     lines.Add(UiFactLine.Bar(EstateText.T("reallife_ui_estate_sh_in_hire"), hire.Cars.Count > 0 ? hire.Count(HireState.Out) * 100 / hire.Cars.Count : 0));
+                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_how", "metres", EstateCatalogue.HireLotMetres.ToString(Inv)), UiRole.Muted));
                     if (hire.Count(HireState.Out) + hire.Count(HireState.Waiting) == 0)
                     {
                         actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_close_lot"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.SetLot(null))));

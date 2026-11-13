@@ -155,6 +155,7 @@ namespace RealLifeOverhaul.Ui
                     EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
                 };
                 p.MeterValues = new[] { u.Happy < 0 ? 50 : u.Happy / 10, repairs, value, condition };
+                Feeling(h, n, u, p);
                 YearOf(h, p);
                 NeedCard(h, n, u, p, who);
                 // The rent record: the running month if they owe, then the last months.
@@ -166,6 +167,47 @@ namespace RealLifeOverhaul.Ui
                 var works = WorkRows(h, n, u);
                 p.Works = works.ToArray();
                 p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
+            }
+
+            // What the meters do not say, as the old tenancy page said it: where the tenant's mood is heading and what about, complaints so far, the day they will leave,
+            // the payment plan in place or the reminder sent.
+            private void Feeling(EstateHolding h, int n, EstateUnit u, EstateUnitPage p)
+            {
+                if (!Duties)
+                {
+                    return;
+                }
+                var lines = new List<string>(4);
+                var inks = new List<UiRole>(4);
+                if (u.Happy >= 0)
+                {
+                    int target = EstateRules.HappyTarget(h, n, _day, _c);
+                    lines.Add(EstateText.T(target >= u.Happy ? "reallife_ui_estate_ten_happy_up" : "reallife_ui_estate_ten_happy_down", "level", EstateText.Level(target),
+                        "about", EstateText.Complaint(EstateRules.Grievance(h, n, _day, _c))));
+                    inks.Add(UiRole.Text2);
+                }
+                if (u.Moans > 0)
+                {
+                    lines.Add(EstateText.T("reallife_ui_estate_ten_moans", "count", u.Moans.ToString(Inv), "most", EstateCatalogue.ComplaintsToCity.ToString(Inv)));
+                    inks.Add(UiRole.WarnText);
+                }
+                if (u.QuitDay > 0)
+                {
+                    lines.Add(EstateText.T("reallife_estate_ten_quitting", "day", u.QuitDay.ToString(Inv), "level", EstateText.Level(EstateCatalogue.QuitBelow + EstateCatalogue.StayAbove)));
+                    inks.Add(UiRole.DangerText);
+                }
+                if (u.OnPlan)
+                {
+                    lines.Add(EstateText.T("reallife_ui_estate_ten_plan", "amount", Money(u.PlanEach), "owed", Money(u.Arrears)));
+                    inks.Add(UiRole.OkText);
+                }
+                else if (u.Arrears > 0 && u.Reminded)
+                {
+                    lines.Add(EstateText.T("reallife_ui_estate_ten_reminded"));
+                    inks.Add(UiRole.Text2);
+                }
+                p.Feeling = lines.ToArray();
+                p.FeelingInks = inks.ToArray();
             }
 
             // The year of this flat: its share of the building's year, rent against works and what it kept.

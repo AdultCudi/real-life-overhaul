@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         public UiChartModel Chart;                          // under the table: a series over time, or null
         public UiFigureModel[] Strip = new UiFigureModel[0];   // a band of figures over the table
         public string Back;                                 // the way back's words while a row is picked
+        public string Guide;                                // "Guide: Cleaning service", a quiet line at the page's foot naming the Guide's page that explains it, or null
 
         public ServicesSell Sell;
         public Func<bool>[] Runs = new Func<bool>[0];
@@ -77,6 +78,8 @@ namespace RealLifeOverhaul.Ui
         public int Step = -1;           // the asking price's step shown on the Sell tab; -1 for the listing's own or the default
         public bool PickerOpen;
         public int Filter;              // the chip chosen over a table
+        public int SortColumn = -1;     // the column the open table is ordered by (-1: as written), and whether the highest comes first
+        public bool SortDown;
         public int SellView;            // 0 the offers on the business, 1 the rivals' listings
         public float Offset;
         public int Reveal = -1;

@@ -124,6 +124,27 @@ namespace RealLifeOverhaul.Ui
                 _view.Offset = 0f;
                 return true;
             }
+            if (command == EstateFace.TableBase + UiDataTable.Head)
+            {
+                if (_m.Table == null || arg < 0 || arg >= _m.Table.Columns.Length || !_m.Table.Columns[arg].Sortable)
+                {
+                    return false;
+                }
+                _view.SortDown = _view.SortColumn == arg && !_view.SortDown;   // lowest first, then highest first, then lowest again
+                _view.SortColumn = arg;
+                _view.Offset = 0f;
+                return true;
+            }
+            if (command == EstateFace.TableBase + UiDataTable.Filter)
+            {
+                if (_m.Table == null || arg < 0 || arg >= _m.Choices.Length || arg >= _view.Chosen.Length)
+                {
+                    return false;
+                }
+                _view.Chosen[arg] = TableRules.Next(_view.Chosen[arg], _m.Choices[arg].Options.Length);   // each kind in turn, then all again
+                _view.Offset = 0f;
+                return true;
+            }
             if (command == EstateFace.TableBase + UiDataTable.Act)
             {
                 // A row's own button (Locate): the run the row's source gave it.
@@ -178,6 +199,7 @@ namespace RealLifeOverhaul.Ui
             _view.From = null;
             _view.Offset = 0f;
             _view.Selected = -1;
+            _view.ResetTable();
         }
 
         public void Focused(int command, int arg)

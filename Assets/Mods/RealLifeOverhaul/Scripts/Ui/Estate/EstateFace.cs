@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Ui
             }
             s.Begin("estate", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
+            bottom = GuideNote(s, at, m.Guide, m.Shape, x, w, bottom);
             switch (m.Shape)
             {
                 case EstateShape.Roll:
@@ -92,6 +93,18 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, frame, keys);
+        }
+
+        // The Guide's page that explains the screen, as a quiet line under every page of the window (the old app wrote it at the foot of each): the page keeps the room above it.
+        public static float GuideNote(UiScene s, UiAt at, string note, EstateShape shape, float x, float w, float bottom)
+        {
+            if (string.IsNullOrEmpty(note) || shape == EstateShape.Off || shape == EstateShape.Empty)
+            {
+                return bottom;
+            }
+            float line = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            UiDraw.Text(s, at, x, bottom - line, w, UiStyle.Small, UiRole.Muted, note, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+            return bottom - line - UiTokens.S2;
         }
 
         private static short ClipOf(UiScene s, short list) => list >= 0 && list < s.ListCount ? s.Lists[list].Clip : (short)-1;

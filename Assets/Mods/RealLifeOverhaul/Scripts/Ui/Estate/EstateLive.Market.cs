@@ -44,8 +44,9 @@ namespace RealLifeOverhaul.Ui
                 var rows = new List<UiDataRow>(64);
                 var keys = new List<string>(64);
                 var locate = new List<int>(64);
+                var where = new List<string>(64);   // each row's district, for the first filter
                 bool property = _d.On(EstatePart.Property);
-                for (int i = 0; property && save.buildingsForSale != null && i < save.buildingsForSale.Count && rows.Count < 400; i++)
+                for (int i = 0; property && save.buildingsForSale != null && i < save.buildingsForSale.Count; i++)
                 {
                     BuildingForSale f = save.buildingsForSale[i];
                     CityBuilding b = f != null && f.address != null ? EstateGame.Find(EstateGame.Place(f.address.streetName, f.address.streetNumber)) : null;
@@ -55,15 +56,19 @@ namespace RealLifeOverhaul.Ui
                     }
                     int cond = EstateRules.StreetCondition(_s.Seed, b.Key), use = EstateGame.UseOf(b.B.BuildingType);
                     int rent = EstateRules.MarketRent(b.Base, use, Math.Max(0, (int)Math.Round(CityEconomy.DistrictIncome(b.District) * 10f)), cond, 0, _c);
-                    string yield = rent > 0 && f.buildingPrice > 0f ? YieldOne((int)((long)rent * _c.DaysPerYear * 10000 / (long)f.buildingPrice)) : string.Empty;
-                    string where = b.Place;
-                    locate.Add(_runs.Do(() => EstateGame.Locate(where)));
+                    int yieldHundredths = rent > 0 && f.buildingPrice > 0f ? (int)((long)rent * _c.DaysPerYear * 10000 / (long)f.buildingPrice) : -1;
+                    string yield = yieldHundredths >= 0 ? YieldOne(yieldHundredths) : string.Empty;
+                    string at = b.Place;
+                    locate.Add(_runs.Do(() => EstateGame.Locate(at)));
+                    where.Add(EstateText.District(b.District));
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { f.address.ToFormattedString(), Money((int)Math.Min(int.MaxValue / 2, f.buildingPrice)),
                             (cond / 10).ToString(Inv), rent > 0 ? Month(rent) : string.Empty, yield, string.Empty },
                         Values = new[] { (int)UseIcon(use), 0, cond / 10, 0, 0, (int)UiIcon.Locate }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Pair(EstateText.Use(use), EstateText.District(b.District)), null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.Use(use), EstateText.District(b.District)), null, null, null, null, null },
+                        SortKeys = new[] { N, (long)Math.Min(int.MaxValue / 2, f.buildingPrice), cond / 10, rent > 0 ? (long)rent * _monthDays : N, yieldHundredths >= 0 ? yieldHundredths : N, N },
+                        Kinds = new[] { 0, use }
                     });
                     keys.Add("mkt:" + b.Place);
                 }
@@ -76,15 +81,17 @@ namespace RealLifeOverhaul.Ui
                     }
                     int price = EstateGame.HotelPrice(hs, _s.Real, _c.DaysPerYear);
                     locate.Add(-1);   // a hotel for sale has no building of the game's to move the camera to
+                    where.Add(EstateText.District(hs.Neighbourhood));
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { EstateGame.HotelName(hs), Money(price), string.Empty, string.Empty, EstateText.T("reallife_estate_row_going_concern"), string.Empty },
                         Values = new[] { (int)UiIcon.Building, 0, -1, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Pair(EstateText.T("reallife_estate_row_hotel"), EstateText.District(hs.Neighbourhood)), null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.T("reallife_estate_row_hotel"), EstateText.District(hs.Neighbourhood)), null, null, null, null, null },
+                        SortKeys = new[] { N, price, N, N, N, N }, Kinds = new[] { 0, EstateTables.IsHotel }
                     });
                     keys.Add("htl:" + hs.Id);
                 }
-                SpaceRows(rows, keys, locate);
+                SpaceRows(rows, keys, locate, where);
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_building"), Kind = UiCellKind.Tile, Width = 0f },
@@ -98,8 +105,13 @@ namespace RealLifeOverhaul.Ui
                 TableShape(UiIcon.Tag, EstateText.T("reallife_estate_tab_market"), EstateText.T("reallife_ui_estate_market_sub", "count", rows.Count.ToString(Inv)),
                     new[] { EstateText.T("reallife_ui_estate_fig_market_level"), EstateText.T("reallife_ui_estate_fig_prices_since"), EstateText.T("reallife_ui_estate_fig_cycle") },
                     new[] { EstateText.Share(_s.Real), EstateText.Share(_c.Index), EstateText.Cycle(_c.Cycle) }, cols, rows, keys, null,
-                    EstateText.T("reallife_estate_row_no_market"), EstateText.T("reallife_ui_estate_empty_market_body"));
-                _m.RowRuns = locate.ToArray();
+                    EstateText.T("reallife_estate_row_no_market"), EstateText.T("reallife_ui_estate_empty_market_body"),
+                    new[] { Districts(rows, where, "reallife_tab_all_districts"), Choice("reallife_tab_all_kinds", "reallife_estate_use_homes", "reallife_estate_use_shops",
+                        "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind") }, new[] { 1 }, EstateText.T("reallife_estate_empty_market"));
+                _m.RowRuns = Ordered(locate);
+                // Where the cycle is heading, under the head's title: a table's page keeps no box of sentences (a side card is drawn only where it holds a button), so the line the old
+                // market page led with stands in the head.
+                _m.HeadSub = EstateText.T("reallife_ui_estate_market_heading", "cycle", EstateText.Cycle(_c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(_c.Cycle, _c.Quarters)));
                 _m.TableLink = EstateText.T("reallife_ui_estate_view_map");
                 _m.TableLinkRun = _runs.Do(() => Show(() => _v.Pick = "rents"));
             }
@@ -143,6 +155,12 @@ namespace RealLifeOverhaul.Ui
                 {
                     letting.Add(UiFactLine.Say(EstateText.T("reallife_estate_listing_unfit")));
                 }
+                // What a run down building will cost to bring to new, and how much of its value its condition keeps: the old listing page said both under the price.
+                bool runDown = EstateRules.RunDown(cond);
+                letting.Add(UiFactLine.Say(EstateText.T(runDown ? "reallife_ui_estate_listing_run_down" : "reallife_ui_estate_listing_kept", "condition", EstateText.Level(cond),
+                    "share", EstateText.Share(EstateRules.ConditionValue(cond)), "amount", Money(EstateRules.RepairCost(b.Base, cond, _c.Index))), runDown ? UiRole.WarnText : UiRole.None));
+                letting.Add(UiFactLine.Say(EstateText.T("reallife_ui_estate_listing_how"), UiRole.Muted));
+                letting.Add(UiFactLine.Say(GuideNote(EstateDirector.TabMarket, null), UiRole.Muted));   // a decision card has no free foot to hold the window's guide line
                 _m.Left = new[]
                 {
                     new UiFactCardModel
@@ -250,7 +268,8 @@ namespace RealLifeOverhaul.Ui
                         Values = new[] { (int)(n.Sale ? UiIcon.Tag : UiIcon.Key), 0, 0, 0, 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, n.Stage == (int)InstructionStage.Offered ? UiRole.Warn
                             : n.Stage == (int)InstructionStage.Completing ? UiRole.Ok : UiRole.Notice, UiRole.None },
-                        Subs = new[] { EstateText.T(n.Sale ? "reallife_estate_filter_sales" : "reallife_estate_filter_lettings"), null, null, null, null, null }
+                        Subs = new[] { EstateText.T(n.Sale ? "reallife_estate_filter_sales" : "reallife_estate_filter_lettings"), null, null, null, null, null },
+                        SortKeys = new[] { N, n.Value, pays, n.Hours - n.Done, N, n.Day }, Kinds = new[] { n.Sale ? EstateTables.IsSale : EstateTables.IsLetting, n.Stage }
                     });
                     keys.Add("ins:" + n.Id);
                 }
@@ -274,7 +293,10 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), EstateGame.NameOf(agency.Office), null, null, cols, rows, keys, AgencySide(agency),
-                    EstateText.T("reallife_estate_row_no_instructions"), EstateText.T("reallife_estate_agency_open_what"));
+                    EstateText.T("reallife_estate_row_no_instructions"), EstateText.T("reallife_estate_agency_open_what"),
+                    new[] { Choice("reallife_tab_all_kinds", "reallife_estate_filter_lettings", "reallife_estate_filter_sales"),
+                        Choice("reallife_tab_all_stages", "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing") }, new[] { 1, 2 },
+                    EstateText.T("reallife_estate_empty_agency"));
                 int pending = 0;
                 for (int i = 0; i < agency.Open.Count; i++)
                 {

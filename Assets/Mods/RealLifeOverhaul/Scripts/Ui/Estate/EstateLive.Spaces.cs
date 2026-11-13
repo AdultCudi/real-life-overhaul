@@ -27,14 +27,18 @@ namespace RealLifeOverhaul.Ui
             }
 
             // The Market tab's rows: a row a car park, with its price and how many spaces nobody holds.
-            private void SpaceRows(List<UiDataRow> rows, List<string> keys, List<int> locate)
+            private void SpaceRows(List<UiDataRow> rows, List<string> keys, List<int> locate, List<string> where)
             {
                 SpaceDirector d = SpacesNow;
                 IReadOnlyList<SpacePark> parks = d != null ? d.Open() : null;   // read again as the page is built
                 for (int i = 0; parks != null && i < parks.Count; i++)
                 {
                     locate.Add(-1);
-                    rows.Add(SpacePages.MarketRow(SpaceText.Words, d.State, parks[i], _day, SpaceGame.Money));
+                    UiDataRow row = SpacePages.MarketRow(SpaceText.Words, d.State, parks[i], _day, SpaceGame.Money);
+                    row.SortKeys = new[] { N, parks[i].Price, N, N, N, N };
+                    row.Kinds = new[] { 0, EstateTables.IsSpace };
+                    where.Add(parks[i].District);
+                    rows.Add(row);
                     keys.Add(SpacePick + parks[i].Number.ToString(Inv));
                 }
             }
@@ -56,7 +60,7 @@ namespace RealLifeOverhaul.Ui
                         continue;
                     }
                     rows.Add(OtherRow(UiIcon.Car, SpaceText.Fill("reallife_space_row_name", "space", SpaceText.Space(h.Slot), "name", p.Name), SpaceText.Tenure(h), 0,
-                        SpaceText.T("reallife_space_kind"), UiRole.None));
+                        SpaceText.T("reallife_space_kind"), UiRole.None, EstateTables.OwnSpace));
                     keys.Add(SpacePick + p.Number.ToString(Inv));
                 }
             }

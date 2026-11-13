@@ -167,14 +167,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     HotelFile f = _s.Hotels[i];
                     rows.Add(OtherRow(UiIcon.Building, f.Name, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"),
-                        f.Takings - f.Costs, EstateText.T("reallife_estate_kind_hotel"), f.Takings < f.Costs ? UiRole.Danger : UiRole.None));
+                        f.Takings - f.Costs, EstateText.T("reallife_estate_kind_hotel"), f.Takings < f.Costs ? UiRole.Danger : UiRole.None, EstateTables.OwnHotel));
                     keys.Add("hot:" + f.Slot);
                 }
                 if (_d.On(EstatePart.Hire) && _s.Hire.Running)
                 {
                     rows.Add(OtherRow(UiIcon.Car, EstateGame.NameOf(_s.Hire.Lot),
                         EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString(Inv), "count", _s.Hire.Cars.Count.ToString(Inv)),
-                        0, EstateText.T("reallife_estate_kind_lot"), UiRole.None));
+                        0, EstateText.T("reallife_estate_kind_lot"), UiRole.None, EstateTables.OwnLot));
                     keys.Add("lot:");
                 }
                 SpaceHeld(rows, keys);
@@ -190,21 +190,20 @@ namespace RealLifeOverhaul.Ui
                     EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
                 _m.FigValues = new[] { Cash(due), Cash(roll.Collected), Cash(owed), Cash(empty) };
                 _m.FigInks = new[] { UiRole.None, UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None };
-                var t = new UiDataTableModel { Columns = RollColumns(), Rows = rows.ToArray(), RowCount = rows.Count };
-                for (int i = 0; i < t.Rows.Length; i++)
-                {
-                    t.Selected = -1;
-                }
-                if (rows.Count > 0)
-                {
-                    t.TotalsLabel = EstateText.T("reallife_ui_estate_total_let", "count", let.ToString(Inv));
-                    t.Totals = new[] { string.Empty, string.Empty, string.Empty, Cash(due), string.Empty, string.Empty };   // the collected figure is the head's: said once
-                }
+                var t = new UiDataTableModel { Columns = RollColumns(), Rows = rows.ToArray(), RowCount = rows.Count, Selected = -1 };
                 t.EmptyTitle = EstateText.T("reallife_estate_row_nothing_owned");
                 t.EmptyBody = EstateText.T("reallife_ui_estate_empty_roll_body");
                 t.EmptyIcon = UiIcon.Home;
                 _m.Table = t;
                 _m.RowKeys = keys.ToArray();
+                Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind") },
+                    null, EstateText.T("reallife_estate_empty_mine"));
+                // What is due is the let flats' rent, so the foot shows it while flats are among the rows shown, and says nothing over hotels, the lot and spaces alone.
+                if (t.RowCount > 0 && (_v.Chosen[0] < 0 || _v.Chosen[0] == EstateTables.OwnBuilding))
+                {
+                    t.TotalsLabel = EstateText.T("reallife_ui_estate_total_let", "count", let.ToString(Inv));
+                    t.Totals = new[] { string.Empty, string.Empty, string.Empty, Cash(due), string.Empty, string.Empty };   // the collected figure is the head's: said once
+                }
                 // The two lists under it: what is due for repair, and the other landlords of the city.
                 _m.ListATitle = EstateText.T("reallife_ui_estate_due_repair");
                 _m.ListAEmpty = EstateText.T("reallife_ui_estate_no_repairs");
@@ -242,7 +241,13 @@ namespace RealLifeOverhaul.Ui
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, u.Let ? UiRole.None : UiRole.Muted, tone, UiRole.None },
                     Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : EstateText.T("reallife_ui_estate_asking_note"), null, null, null, null },
                     Hue = who.Hue,
-                    Ring = u.Let ? HappyRing(u.Happy) : UiRole.None
+                    Ring = u.Let ? HappyRing(u.Happy) : UiRole.None,
+                    SortKeys = new[]
+                    {
+                        N, N, u.Let ? u.Until : N, (long)(u.Let ? u.Rent : EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask)) * _monthDays, N,
+                        u.Let && u.Happy >= 0 ? u.Happy / 10 : N
+                    },
+                    Kinds = new[] { EstateTables.OwnBuilding }
                 };
                 return row;
             }
@@ -257,11 +262,12 @@ namespace RealLifeOverhaul.Ui
                     Cells = new[] { h.Name, EstateText.T("reallife_estate_kind_building"), "-", Month(income), chip, string.Empty },
                     Values = new[] { (int)UseIcon(h.Use), 0, 0, 0, 0, -1 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, h.Busy ? UiRole.Warn : UiRole.None, UiRole.None },
-                    Subs = new[] { EstateText.District(h.District), EstateText.Use(h.Use), null, null, null, null }
+                    Subs = new[] { EstateText.District(h.District), EstateText.Use(h.Use), null, null, null, null },
+                    SortKeys = new[] { N, N, N, (long)income * _monthDays, N, N }, Kinds = new[] { EstateTables.OwnBuilding }
                 };
             }
 
-            private UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone)
+            private UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone, int kindAt)
             {
                 return new UiDataRow
                 {
@@ -269,7 +275,8 @@ namespace RealLifeOverhaul.Ui
                     Values = new[] { (int)icon, 0, 0, 0, 0, -1 },
                     // A hotel's or a lot's night is not rent that is due, so its figure stands in the muted ink unless it is a loss.
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone == UiRole.None ? UiRole.Muted : tone, UiRole.None, UiRole.None },
-                    Subs = new[] { kind, string.Empty, null, null, null, null }
+                    Subs = new[] { kind, string.Empty, null, null, null, null },
+                    SortKeys = new[] { N, N, N, perDay != 0 ? (long)perDay * _monthDays : N, N, N }, Kinds = new[] { kindAt }
                 };
             }
 

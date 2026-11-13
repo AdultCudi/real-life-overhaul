@@ -28,10 +28,10 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
 
-            // A table's page: a head, the table, and a card beside it.
+            // A table's page: a head, the table, and a card beside it. The choices are the old app's filters and the sums its money columns' totals row.
             private void TableShape(UiIcon icon, string title, string sub, string[] figLabels, string[] figValues, UiDataColumn[] columns,
                 List<UiDataRow> rows, List<string> keys, UiFactCardModel side,
-                string emptyTitle, string emptyBody)
+                string emptyTitle, string emptyBody, TableChoice[] choices = null, int[] sums = null, string filteredBody = null)
             {
                 _m.Shape = EstateShape.Table;
                 _m.HeadIcon = icon;
@@ -41,11 +41,94 @@ namespace RealLifeOverhaul.Ui
                 _m.FigValues = figValues ?? new string[0];
                 _m.Table = new UiDataTableModel { Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, EmptyTitle = emptyTitle, EmptyBody = emptyBody, EmptyIcon = icon };
                 _m.RowKeys = keys.ToArray();
+                Present(_m.Table, keys, choices, sums, filteredBody);
                 _m.Side = side;
                 if (side != null)
                 {
                     side.Title = null;
                 }
+            }
+
+            // The rows in the order the table is asked to show them (the written order where no column is chosen), the kinds the filters let through, and the sums over what is shown.
+            // Written in the model's own lists too, so a row's key and its Locate run stay with it.
+            private int[] _order;
+            private const long N = TableRules.None;   // a sort key for a cell with nothing to order by
+
+            private void Present(UiDataTableModel t, List<string> keys, TableChoice[] choices, int[] sums, string filteredBody)
+            {
+                for (int c = 0; c < t.Columns.Length; c++)
+                {
+                    t.Columns[c].Sortable = t.Columns[c].Kind != UiCellKind.Action && !string.IsNullOrEmpty(t.Columns[c].Title);
+                }
+                choices = choices ?? new TableChoice[0];
+                _m.Choices = choices;
+                t.Filters = new string[choices.Length];
+                for (int f = 0; f < _v.Chosen.Length; f++)
+                {
+                    _v.Chosen[f] = f < choices.Length ? TableRules.Held(_v.Chosen[f], choices[f].Options.Length) : -1;
+                }
+                for (int f = 0; f < choices.Length; f++)
+                {
+                    t.Filters[f] = choices[f].Words(_v.Chosen[f]);
+                }
+                int sort = _v.SortColumn >= 0 && _v.SortColumn < t.Columns.Length && t.Columns[_v.SortColumn].Sortable ? _v.SortColumn : -1;
+                t.SortColumn = sort;
+                t.SortDown = sort >= 0 && _v.SortDown;
+                UiDataRow[] written = t.Rows;
+                _order = TableRules.Order(written, sort, t.SortDown, _v.Chosen);
+                bool kept = _order.Length == written.Length;
+                if (sort >= 0 || !kept)
+                {
+                    t.Rows = TableRules.Take(written, _order);
+                    t.RowCount = t.Rows.Length;
+                    _m.RowKeys = TableRules.Take(keys, _order);
+                }
+                if (written.Length > 0 && t.RowCount == 0 && filteredBody != null)
+                {
+                    t.EmptyTitle = EstateText.T("reallife_ui_shop_no_results");
+                    t.EmptyBody = filteredBody;
+                }
+                if (sums != null && t.RowCount > 0)
+                {
+                    t.Totals = new string[t.Columns.Length];
+                    t.TotalsLabel = EstateText.T("reallife_table_total");
+                    for (int i = 0; i < sums.Length; i++)
+                    {
+                        t.Totals[sums[i]] = Cash(TableRules.Sum(written, _order, sums[i]));
+                    }
+                }
+            }
+
+            // A list kept by the written order (the Locate runs), put in the order the table now shows.
+            private int[] Ordered(List<int> written) => _order != null ? TableRules.Take(written, _order) : written.ToArray();
+
+            // The first filter of the market and the lists like it: the districts the rows stand in, in the order of their names, and each row's index among them.
+            private static TableChoice Districts(List<UiDataRow> rows, List<string> names, string all)
+            {
+                var distinct = new List<string>(16);
+                for (int i = 0; i < names.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(names[i]) && !distinct.Contains(names[i]))
+                    {
+                        distinct.Add(names[i]);
+                    }
+                }
+                distinct.Sort(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < rows.Count && i < names.Count; i++)
+                {
+                    rows[i].Kinds[0] = distinct.IndexOf(names[i]);
+                }
+                return new TableChoice { All = EstateText.T(all), Options = distinct.ToArray() };
+            }
+
+            private static TableChoice Choice(string all, params string[] options)
+            {
+                var texts = new string[options.Length];
+                for (int i = 0; i < texts.Length; i++)
+                {
+                    texts[i] = EstateText.T(options[i]);
+                }
+                return new TableChoice { All = EstateText.T(all), Options = texts };
             }
 
             // ------------------------------------------------------------------------------------------------- tenants
@@ -87,7 +170,13 @@ namespace RealLifeOverhaul.Ui
                                 u.Let && u.Happy >= 0 ? (u.Happy / 10).ToString(Inv) : string.Empty },
                             Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.GlyphFace(UiIcon.People), 0, u.Let ? u.Record : -1, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
                             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None },
-                            Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : null, null, null, null, null }, Hue = who.Hue, Ring = u.Let ? HappyRing(u.Happy) : UiRole.None
+                            Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : null, null, null, null, null }, Hue = who.Hue, Ring = u.Let ? HappyRing(u.Happy) : UiRole.None,
+                            SortKeys = new[] { N, N, u.Let ? (long)u.Rent * _monthDays : N, u.Let ? u.Record : N, N, u.Let && u.Happy >= 0 ? u.Happy / 10 : N },
+                            Kinds = new[]
+                            {
+                                !u.Let ? EstateTables.TenantNone : u.CourtDay > 0 || u.NoticeEnd > 0 ? EstateTables.TenantNotice
+                                    : u.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying
+                            }
                         });
                         keys.Add(EstateDirector.UnitPick(h, n));
                         for (int a = 0; a < u.Applicants.Count; a++)
@@ -99,7 +188,8 @@ namespace RealLifeOverhaul.Ui
                                     EstateText.Record(p.Record), EstateText.T("reallife_estate_filter_applicants"), string.Empty },
                                 Values = new[] { (int)UseIcon(h.Use), 0, 0, p.Record, 0, -1 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok, UiRole.None },
                                 Subs = new[] { EstateText.District(h.District),
-                                    EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString(Inv)), null, null, null, null }, Hue = UiColour.HueOf(EstateText.Tenant(h.Use, p.Kind))
+                                    EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString(Inv)), null, null, null, null }, Hue = UiColour.HueOf(EstateText.Tenant(h.Use, p.Kind)),
+                                SortKeys = new[] { N, N, N, p.Record, N, N }, Kinds = new[] { EstateTables.TenantApplies }
                             });
                             keys.Add("app:" + h.Place + ":" + p.Id);
                         }
@@ -129,7 +219,9 @@ namespace RealLifeOverhaul.Ui
                     new[] { EstateText.T("reallife_ui_estate_fig_let"), EstateText.T("reallife_ui_estate_fig_empty_units"),
                         EstateText.T("reallife_ui_estate_fig_rent_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
                     new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), meanHappy >= 0 ? EstateText.Share(meanHappy) : string.Empty }, cols, rows, keys, null,
-                    EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"));
+                    EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"),
+                    new[] { Choice("reallife_estate_filter_all_states", "reallife_estate_filter_paying", "reallife_estate_filter_behind", "reallife_estate_filter_notice",
+                        "reallife_estate_filter_empty", "reallife_estate_filter_applicants") }, new[] { 2 }, EstateText.T("reallife_estate_empty_tenants"));
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
                 NeedsYou();
             }
@@ -306,7 +398,8 @@ namespace RealLifeOverhaul.Ui
                                 Money(u.CallCost), EstateText.T("reallife_estate_row_since", "day", u.CallDay.ToString(Inv)), string.Empty },
                             Values = new[] { (int)UiIcon.Wrench, 0, -1, 0, 0, 0, (int)UiIcon.Locate },
                             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, booked ? UiRole.Ok : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
-                            Subs = new[] { EstateText.District(h.District), null, null, null, null, null, null }
+                            Subs = new[] { EstateText.District(h.District), null, null, null, null, null, null },
+                            SortKeys = new[] { N, N, N, N, u.CallCost, u.CallDay, N }, Kinds = new[] { EstateTables.WorksCall }
                         });
                         keys.Add(EstateDirector.CallPick(h, n));
                     }
@@ -327,7 +420,9 @@ namespace RealLifeOverhaul.Ui
                             h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString(Inv)) : "-", string.Empty },
                         Values = new[] { (int)UseIcon(h.Use), 0, h.Cond / 10, 0, 0, 0, (int)UiIcon.Locate },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Pair(EstateText.Use(h.Use), EstateText.District(h.District)), null, null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.Use(h.Use), EstateText.District(h.District)), null, null, null, null, null, null },
+                        SortKeys = new[] { N, N, h.Cond / 10, N, repair > 0 ? repair : N, h.Busy ? h.WorkEnd : N, N },
+                        Kinds = new[] { h.Busy ? EstateTables.WorksOn : h.Cond < EstateCatalogue.ConditionPoor ? EstateTables.WorksNeeded : EstateTables.WorksNone }
                     });
                     keys.Add("wrk:" + h.Place);
                 }
@@ -362,8 +457,10 @@ namespace RealLifeOverhaul.Ui
                     new[] { EstateText.T("reallife_ui_estate_fig_open_calls"), EstateText.T("reallife_ui_estate_fig_booked"),
                         EstateText.T("reallife_ui_estate_fig_unfit"), EstateText.T("reallife_ui_estate_fig_calls_cost") },
                     new[] { open.ToString(Inv), bookedCalls.ToString(Inv), unfit.ToString(Inv), Money(callsCost) }, cols, rows, keys, null,
-                    EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"));
-                _m.RowRuns = locate.ToArray();
+                    EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"),
+                    new[] { Choice("reallife_estate_filter_all_states", "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none",
+                        "reallife_estate_filter_calls") }, new[] { 4 }, EstateText.T("reallife_estate_empty_works"));
+                _m.RowRuns = Ordered(locate);
                 // The services booked ahead, the soonest first, and the city's inspections, the nearest first: what is coming, under what is waiting.
                 var ahead = new List<KeyValuePair<EstateHolding, ServiceBooking>>(8);
                 var inspections = new List<EstateHolding>(8);
