@@ -1,4 +1,8 @@
-1.0.10
+1.0.11
 
 Fixed
-- The What's new notes of versions 1.0.7, 1.0.8 and 1.0.9 began with the words of an empty list before their own lines.
+- The city's people (its districts, renters and households, and every district, building, household and person) and a tech firm's whole page now show on the game's own screens too, in the Economy app's People tab and from a firm's page in the Tech app. The switches on the Mods page read off for a screen that has stepped aside.
+- The garage shop, the workshop list, My vehicles and the bike stands now have their own strip on the RLO interface, with every row, price and button of the old list.
+- The Property and Services pages on the RLO interface now carry the old pages' explanations, every year figure of your buildings and hotels, and a last line on a short list that opens the rest. The map's Save button says when your list of saved places is full.
+- Your own trading rules now count the trades they have closed and their deepest fall, in the Bots tab on both interfaces.
+- The dialogue forms show every line of a long note, entry or answer and scroll when they outgrow the screen, a delivery's pictures and the investment's risk note show, the loan shows the game's three daily figures, and the interior designer's hints are no longer cut at nine.
