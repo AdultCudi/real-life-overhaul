@@ -88,7 +88,7 @@ internal static partial class Program
               && targets.Contains("Target(district, MixRules.HomeType, MixRules.ToLetShare)") && DistrictSplit.Figures(0).EmptyOffices == MixRules.ToLetShare && DistrictSplit.Figures(0).EmptyShops == MixRules.ToLetShare
               && DistrictSplit.Figures(1).EmptyOffices == MixRules.ToLetShare && DistrictSplit.Figures(1).EmptyShops == MixRules.ToLetShare,
             "uptown mix: the district's own targets keep a third of its offices, shops and homes to let, for the generator and the game's daily swaps");
-        Check(MemberText(game, "public static void Unload()").Contains("was.Key.idealAvailableBuildingsInNeighborhood = was.Value"),
+        Check(MemberText(game, "public static void Unload(bool cityEnds = false)").Contains("was.Key.idealAvailableBuildingsInNeighborhood = was.Value"),
             "uptown mix: every type's targets are given back as the game had them when the city goes");
         string firstLife = MemberText(director, "private static bool FirstLife()");
         Check(firstLife.IndexOf("LifeGame.Mix(Standing, Standing, Another, save", StringComparison.Ordinal) > firstLife.IndexOf("Leases(save, out int renamed)", StringComparison.Ordinal)
