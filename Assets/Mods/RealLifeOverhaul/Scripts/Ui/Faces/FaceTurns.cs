@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Ui
 
         private const float RestSeconds = 0.35f;   // real seconds between two faces, the screen being open and its player looking at it
         private const float Timeout = 15f;         // seconds to wait for the camera's read-back before asking again
+        private const float FaultRestSeconds = 10f;   // seconds the next face waits after a fault: four of them in the guard's 30 s at most, never five
         private const int TriesMost = 3;
 
         private static FaceTurns _instance;
@@ -133,6 +134,7 @@ namespace RealLifeOverhaul.Ui
             catch (System.Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
+                _next = Time.realtimeSinceStartup + FaultRestSeconds;   // the faces behind this one are not asked at once: each would meet the same fault
             }
         }
 
@@ -170,7 +172,17 @@ namespace RealLifeOverhaul.Ui
                 ask.Queued = false;   // drawn late by an answer that came after its wait ran out
                 return;
             }
-            Sprite held = ask.Held();   // the game made it meanwhile (it draws the rival it chooses itself)
+            Sprite held;
+            try
+            {
+                held = ask.Held();   // the game made it meanwhile (it draws the rival it chooses itself)
+            }
+            catch (Exception)
+            {
+                ask.Queued = false;   // the game's person went with their scene: this face is let go, the screen's next look asks again
+                ask.Tries = TriesMost;
+                throw;
+            }
             if (held != null)
             {
                 ask.Queued = false;
@@ -186,7 +198,23 @@ namespace RealLifeOverhaul.Ui
             }
             _drawing = ask;
             _since = now;
-            if (!ask.Start(ask.Back))
+            bool started;
+            try
+            {
+                started = ask.Start(ask.Back);
+            }
+            catch (Exception)
+            {
+                // The camera's turn given back and the face let go before the fault is counted: left as the one being drawn it
+                // held the turn for its whole wait, and every other face behind it.
+                _drawing = null;
+                PortraitTurn.Give(this, now, 0f);
+                ask.Queued = false;
+                ask.Tries = TriesMost;
+                _next = now + RestSeconds;
+                throw;
+            }
+            if (!started)
             {
                 _drawing = null;
                 PortraitTurn.Give(this, now, 0f);

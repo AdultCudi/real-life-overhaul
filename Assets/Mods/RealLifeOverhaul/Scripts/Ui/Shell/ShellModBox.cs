@@ -39,20 +39,30 @@ namespace RealLifeOverhaul.Ui
                 _screen.Set(title, body, buttons, danger);
                 _root.SetActive(true);
                 _host.Show();
-                return true;
+                if (_host.Up)
+                {
+                    return true;
+                }
+                Close();   // its host would not run: the mod's own panel says it instead
+                return false;
             }
             catch (Exception e)
             {
                 UiDirector.Logger?.Error(e);
+                Close();
                 return false;
             }
         }
 
-        private static void Close()
+        /// <summary>The card closed, whoever asks: a button, a fault, the interface's part stopping, the city going. Safe when it is not up.</summary>
+        internal static void Close()
         {
             if (_host != null)
             {
                 _host.Hide();
+            }
+            if (_root != null && _root.activeSelf)
+            {
                 _root.SetActive(false);
             }
         }
@@ -73,6 +83,7 @@ namespace RealLifeOverhaul.Ui
             scaler.referenceResolution = new Vector2(3840f, 2160f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             _root.AddComponent<GraphicRaycaster>();
+            UiRoots.Take(_root);
             var blocker = _root.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);   // the page under the card takes no click while it asks
             _screen = new ModBoxScreen { Closing = Close };

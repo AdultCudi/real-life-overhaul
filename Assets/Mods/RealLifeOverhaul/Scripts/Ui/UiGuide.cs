@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_guide", () => UiDirector.Instance?.TestGuide())
                 .Test("reallife_ui_test_staff", () => UiDirector.Instance?.TestStaff())
                 .Test("reallife_ui_test_bug", () => UiDirector.Instance?.TestBugReport())
+                .Test("reallife_ui_test_guard", () => UiDirector.Instance?.TestGuardOff())
                 .Test("reallife_ui_test_save", () => UiDirector.Instance?.TestSaveTools())
                 .Test("reallife_ui_test_settings_switch", () => UiDirector.Instance?.TestSettingsSwitch())
                 .Test("reallife_ui_test_dialog_bank", "reallife_ui_test_dialog_wholesale", "reallife_ui_test_dialog_import", "reallife_ui_test_dialog_desk", "reallife_ui_test_dialog_court",

@@ -96,8 +96,26 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Called every frame the window is held by its strip: the game file tells the game's own mouse and map camera that a window is being dragged.</summary>
         public Action WindowHeld;
 
-        /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
+        /// <summary>
+        /// Told once when the host stops after a fault, so its owner gives the game's own screen back; with no fault (null) when the
+        /// hosts themselves cannot run any more (<see cref="Stopped"/>).
+        /// </summary>
         public Action<Exception> Failed;
+
+        /// <summary>
+        /// True once no host can run: their guard is off, because the interface's part was switched off after its faults or the game
+        /// lacks a member a host names. Whoever would draw a kit screen asks first (UiDirector.On): a screen shown then would be
+        /// laid out once and answer nothing, with its clear picture over the whole screen taking every click.
+        /// </summary>
+        public static bool Stopped => FrameGuard.Off;
+
+        /// <summary>The id of the screen whose fault a host last counted against the guard, for the guard's notice; null for none.</summary>
+        public static string LastFault { get; private set; }
+
+        /// <summary>True while the host runs its screen: shown, and not stopped.</summary>
+        public bool Up => enabled && !_gone;
+
+        private bool _gone;   // the host stopped because the hosts cannot run: said to its owner once
 
         /// <summary>The screen's id in UiScreens, which another mod's fault is blamed on and its breaker opened for; null for a piece of the frame.</summary>
         public string ScreenId;
@@ -191,6 +209,12 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            if (FrameGuard.Off)
+            {
+                Stop();   // a host that cannot run never shows: nothing is laid out that nothing could answer
+                return;
+            }
+            _gone = false;
             _cost?.Shown(Time.unscaledTime);
             using var cost = Measured(UiWork.Open);
             _arrive = true;
@@ -278,7 +302,7 @@ namespace RealLifeOverhaul.Ui
             using var cost = Measured(UiWork.Frame);
             if (FrameGuard.Off)
             {
-                enabled = false;   // its feature was switched off after its faults (Core/Guard)
+                Stop();   // its feature was switched off after its faults (Core/Guard): the screen goes with it
                 return;
             }
             try
@@ -291,8 +315,55 @@ namespace RealLifeOverhaul.Ui
             }
             catch (Exception e)
             {
+                LastFault = ScreenId ?? (_screen != null ? _screen.Id : null);
                 Guard.Fail(FrameGuard, e, this);
-                Failed?.Invoke(e);
+                if (Failed != null)
+                {
+                    Failed(e);
+                }
+                else
+                {
+                    Stop();   // nobody to give the game's screen back: the host's own canvas goes, so a screen that failed never stays up over the game
+                }
+            }
+        }
+
+        // The host cannot go on (the hosts' guard is off, or its screen failed with no owner to tell): it sleeps, lets go of the keys
+        // and the pointer, tells its owner once, and what it stands on takes no click any more. Without this a screen shown after the
+        // interface's part was switched off lay unseen over the whole screen: its opening never faded in (the tweens were off too),
+        // its keys were never read, its presses were refused, and its clear picture went on taking every click.
+        private void Stop()
+        {
+            enabled = false;
+            if (!_gone)
+            {
+                _gone = true;
+                try
+                {
+                    EndTyping();
+                    EndDrag(true);
+                    _grip.End();
+                    _view?.Still();
+                    _cost?.Hidden(Time.unscaledTime);
+                }
+                catch (Exception)
+                {
+                    // its objects went with their screen: nothing to end
+                }
+                try
+                {
+                    Failed?.Invoke(null);
+                }
+                catch (Exception e)
+                {
+                    UiDirector.Logger?.Error(e);
+                }
+            }
+            // Every time, not only the first: an owner that switches its canvas on again for a host that cannot run has it
+            // switched off again, so it never lies unseen over the game.
+            if (this != null && gameObject.activeSelf)
+            {
+                gameObject.SetActive(false);
             }
         }
 

@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Guard.Fail(FrameGuard, e, this);
                 Remove("a fault");
+                UiDirector.PieceFailed(UiDirector.WorldPiece, e);   // off until the next city: the next second's look made a new host, which met the same fault
             }
         }
 
@@ -183,6 +184,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Guard.Fail(FrameGuard, e, this);
                 Remove("a fault");
+                UiDirector.PieceFailed(UiDirector.WorldPiece, e);
             }
         }
 
