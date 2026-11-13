@@ -271,6 +271,7 @@ namespace RealLifeOverhaul.Ui
         public CompanyItem[] Tools = new CompanyItem[0];
         // Property tax.
         public string PropertyTitle, PropertyNote;
+        public string GameNote;                                         // how the game's own yearly tax works and what it deducts, said once under the property tax
         public CompanyStatementLine[] Property = new CompanyStatementLine[0];
         public CompanyCard Card;                                        // a sub page's card (the return, the accountant, a business's cash, a licence)
     }

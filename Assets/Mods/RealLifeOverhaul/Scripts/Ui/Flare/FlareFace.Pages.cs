@@ -264,15 +264,28 @@ namespace RealLifeOverhaul.Ui
             s.Items[ring].Flags |= UiFlags.Overflow;
             Face(s, at.In(ring), ax + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarHero, p.Name, p.Hue, p.Person, p.Ring, false);
             float cy = y + BannerHeight + UiTokens.S3;
+            float pillRight = x + w - UiTokens.S4;
             if (!string.IsNullOrEmpty(p.Follow))
             {
                 float fw = PillWidth(p.Follow);
-                Pill(s, at, x + w - UiTokens.S4 - fw, cy, fw, p.Follow, p.Following ? PillKind.Quiet : PillKind.Cyan, ProfileFollowCommand, 0);
+                Pill(s, at, pillRight - fw, cy, fw, p.Follow, p.Following ? PillKind.Quiet : PillKind.Cyan, ProfileFollowCommand, 0);
+                pillRight -= fw + UiTokens.S2;
             }
             else if (!string.IsNullOrEmpty(p.Edit))
             {
                 float ew = IconPillWidth(p.Edit);
-                Pill(s, at, x + w - UiTokens.S4 - ew, cy, ew, p.Edit, PillKind.Line, EditCommand, 0, UiIcon.Pencil);
+                Pill(s, at, pillRight - ew, cy, ew, p.Edit, PillKind.Line, EditCommand, 0, UiIcon.Pencil);
+            }
+            // The further buttons of another's account (Message, Mute, Hide) stand left of Follow, as many as the banner's width holds.
+            for (int i = 0; i < p.Pills.Length && i < p.PillActs.Length; i++)
+            {
+                float bw = PillWidth(p.Pills[i]);
+                if (pillRight - bw < ax + UiTokens.AvatarHero + UiTokens.S4)
+                {
+                    break;
+                }
+                Pill(s, at, pillRight - bw, cy, bw, p.Pills[i], PillKind.Line, ProfileActCommand, p.PillActs[i]);
+                pillRight -= bw + UiTokens.S2;
             }
             cy = ay + UiTokens.AvatarHero + UiTokens.S2 + UiTokens.S3;
             float tx = x + UiTokens.S4, tw = w - UiTokens.S8;

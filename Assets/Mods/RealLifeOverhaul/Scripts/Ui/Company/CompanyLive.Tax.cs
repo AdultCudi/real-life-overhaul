@@ -99,7 +99,17 @@ namespace RealLifeOverhaul.Ui
             CompanyDays.Quarter span = CompanyDays.Quarter.Of(tf.QuarterFrom, d.QuarterDays, day, CompanyCatalogue.ReturnDays);
             t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", tf.Quarter.ToString(), "from", tf.QuarterFrom.ToString(), "to", span.Last.ToString());
             bool noTakings = day <= tf.QuarterFrom;
-            var lines = new List<CompanyStatementLine>(8);
+            var lines = new List<CompanyStatementLine>(12);
+            if (tf.Owed > 0)
+            {
+                // Back tax after an audit: the old tab's red row, first because it is what needs the owner most.
+                lines.Add(new CompanyStatementLine { Label = CompanyText.Label("reallife_co_tax_owed"), Value = CompanyText.Money(tf.Owed), Strong = true, Tone = UiRole.DangerText });
+            }
+            if (day < tf.QuietUntil)
+            {
+                // A tax case settled with the city: the inspector comes at half the chance until then.
+                lines.Add(new CompanyStatementLine { Label = CompanyText.Label("reallife_co_tax_quiet"), Value = CompanyText.T("reallife_co_tax_quiet_value", "day", tf.QuietUntil.ToString()) });
+            }
             if (!noTakings)
             {
                 lines.Add(new CompanyStatementLine { Label = w.T("reallife_co_q_takings", "Takings"), Value = CompanyText.Money(q.Takings) });
@@ -116,7 +126,17 @@ namespace RealLifeOverhaul.Ui
                 lines.Add(new CompanyStatementLine { Label = w.T("reallife_co_q_still", "Still to set aside"), Value = CompanyText.Money(q.Still), Strong = true, Tone = q.Still > 0 ? UiRole.WarnText
                     : UiRole.OkText });
             }
+            if (Settings.EconomyCompanyHide)
+            {
+                lines.Add(new CompanyStatementLine { Label = CompanyText.Label("reallife_co_tax_risk"), Value = CompanyText.Share(TaxRules.AuditChance(tf, d.Today) / 10) });
+            }
+            long estate = EconomyBridges.EstateTax != null ? EconomyBridges.EstateTax() : -1L;   // the estate statement is the Legacy app's (Scripts/Dynasty)
+            if (estate >= 0)
+            {
+                lines.Add(new CompanyStatementLine { Label = CompanyText.Label("reallife_dynasty_tax_row"), Value = CompanyText.Money(estate) });
+            }
             t.Quarter = lines.ToArray();
+            t.GameNote = CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()) + " " + CompanyText.T("reallife_co_tax_deduct");
             t.QuarterLen = d.QuarterDays;
             t.QuarterDay = span.Day;
             t.QuarterDayText = w.F("reallife_co_quarter_day", "Day {day} of {days}", "day", t.QuarterDay.ToString(), "days", d.QuarterDays.ToString());

@@ -260,6 +260,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.NicheCommand: return KitPress(command, arg);
                 case FlareFace.PromoteCommand: return OpenAd(arg);
                 case FlareFace.EditCommand: return OpenEdit();
+                case FlareFace.ProfileActCommand: return ProfileAct(arg);
                 default: return false;
             }
         }
@@ -453,6 +454,40 @@ namespace RealLifeOverhaul.Ui
             _post = p.ReplyTo >= 0 && file.Post(p.ReplyTo) != null ? p.ReplyTo : post;   // a reply opens the thread of the post it answers
             _reply = string.Empty;
             Show(FlareFace.Thread);
+            return true;
+        }
+
+        // A further button of another's profile, as the old profile does it: a message opens the conversation; muting and hiding a player of the session go through the director.
+        private bool ProfileAct(int act)
+        {
+            FlareFile file = _flare != null ? _flare.File : null;
+            string key = _profile;
+            if (file == null || string.IsNullOrEmpty(key) || key == "me" || key == _flare.MeKey)
+            {
+                return false;
+            }
+            if (act == FlareFace.ActMessage)
+            {
+                return FlareScreenRules.CanMessage(key) && OpenConversation(key);
+            }
+            if (!FlareScreenRules.IsPlayer(key))
+            {
+                return false;
+            }
+            string player = key.Substring(2);
+            if (act == FlareFace.ActMute)
+            {
+                _flare.Mute(player, !file.Net.IsMuted(player));
+            }
+            else if (act == FlareFace.ActHide)
+            {
+                _flare.Hide(player, !file.Net.IsHidden(player));
+            }
+            else
+            {
+                return false;
+            }
+            _dirty = true;
             return true;
         }
 

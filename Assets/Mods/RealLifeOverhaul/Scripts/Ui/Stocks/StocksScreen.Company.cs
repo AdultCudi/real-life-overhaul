@@ -156,6 +156,10 @@ namespace RealLifeOverhaul.Ui
 
         private bool ToggleBig()
         {
+            if (ChartView.Figures)
+            {
+                return false;   // the figures have no big form
+            }
             Did(_ctl.ToggleBig());
             return true;
         }
@@ -180,6 +184,19 @@ namespace RealLifeOverhaul.Ui
             if (command == StocksCompanyLay.AddIndicator)
             {
                 Did(_ctl.TogglePicker(!ChartView.PickOpen));
+                return true;
+            }
+            if (command == StocksCompanyLay.View)
+            {
+                if (co == null)
+                {
+                    done = false;
+                    return true;
+                }
+                ChartView.Figures = Segment(command, co.ViewEdges, co.Views.Length, co.View) == 1;
+                ChartView.Big = false;   // the big chart is the chart's; leaving it for the figures leaves it for good
+                ChartView.PickOpen = false;
+                _dirty = true;
                 return true;
             }
             if (command == StocksCompanyLay.Big)

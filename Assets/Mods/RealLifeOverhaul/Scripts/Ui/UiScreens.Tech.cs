@@ -177,7 +177,10 @@ namespace RealLifeOverhaul.Ui
                 "reallife_rival_bake_won_line", "reallife_rival_bake_lost_line", "reallife_rival_bake_missed_line",
                 "reallife_rival_bake_about", "reallife_tech_desk_bake_c0", "reallife_tech_desk_bake_c1", "reallife_tech_desk_bake_c2",
                 "reallife_tech_product_build_wait", "reallife_tech_mkt_product_build_wait", "reallife_tech_product_training_days", "reallife_tech_product_training_off",
-                "reallife_tech_product_off_sale_ready", "reallife_tech_product_off_sale_short", "reallife_tech_mkt_product_deals_full"
+                "reallife_tech_product_off_sale_ready", "reallife_tech_product_off_sale_short", "reallife_tech_mkt_product_deals_full",
+                // Added with the parity fixes: the old firm page crew, connection and risk lines.
+                "reallife_tech_firm_crew", "reallife_tech_firm_net", "reallife_tech_firm_net_grace", "reallife_tech_firm_net_lift",
+                "reallife_tech_firm_net_none", "reallife_tech_firm_net_top", "reallife_tech_firm_risks", "reallife_tech_firm_spare", "reallife_ui_tech_relief"
                 // KEYS END
             }, TechExitKeys())).Switch(UiScreenSwitches.Tech));
         }

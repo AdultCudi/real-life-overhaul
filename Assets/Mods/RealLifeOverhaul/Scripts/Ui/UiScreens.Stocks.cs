@@ -103,7 +103,23 @@ namespace RealLifeOverhaul.Ui
                 "reallife_stx_split_yours", "reallife_stx_split_all", "reallife_stx_split_stake", "reallife_stx_split_ratio", "reallife_stx_split_price", "reallife_stx_split_mine",
                 "reallife_stx_split_notice", "reallife_stx_split_about", "reallife_stx_split_ask", "reallife_stx_bank", "reallife_stx_bank_raised", "reallife_stx_bank_others",
                 "reallife_stx_bank_listed_about", "reallife_lst_withdraw", "reallife_stx_bank_priced", "reallife_stx_bank_new", "reallife_stx_bank_fees", "reallife_stx_bank_way_about",
-                "reallife_stx_bank_worth", "reallife_stx_bank_float", "reallife_stx_bank_retainer", "reallife_stx_bank_days", "reallife_stx_bank_about", "reallife_lst_engage"
+                "reallife_stx_bank_worth", "reallife_stx_bank_float", "reallife_stx_bank_retainer", "reallife_stx_bank_days", "reallife_stx_bank_about", "reallife_lst_engage",
+                // Added with the parity fixes: the old pages words the kit now carries.
+                "reallife_ibox_ask", "reallife_ibox_bid", "reallife_ledger_sectors", "reallife_mkt_back", "reallife_mkt_box_index_about",
+                "reallife_mkt_box_news", "reallife_mkt_box_no_news", "reallife_mkt_box_rate", "reallife_mkt_col_cost", "reallife_mkt_col_held",
+                "reallife_mkt_col_hundred", "reallife_mkt_col_income", "reallife_mkt_col_level", "reallife_mkt_col_month",
+                "reallife_mkt_col_next_pay", "reallife_mkt_col_quarter", "reallife_mkt_col_sector", "reallife_mkt_col_week", "reallife_mkt_fig_beta",
+                "reallife_mkt_fig_book", "reallife_mkt_fig_debt", "reallife_mkt_fig_declared", "reallife_mkt_fig_declared_value",
+                "reallife_mkt_fig_distress", "reallife_mkt_fig_distress_high", "reallife_mkt_fig_distress_none", "reallife_mkt_fig_distress_some",
+                "reallife_mkt_fig_dividend", "reallife_mkt_fig_eps", "reallife_mkt_fig_margin", "reallife_mkt_fig_none",
+                "reallife_mkt_fig_of_turnover", "reallife_mkt_fig_payout", "reallife_mkt_fig_pb", "reallife_mkt_fig_pe", "reallife_mkt_fig_profit",
+                "reallife_mkt_fig_range_day", "reallife_mkt_fig_range_days", "reallife_mkt_fig_results", "reallife_mkt_fig_shares",
+                "reallife_mkt_fig_turnover", "reallife_mkt_fig_volume", "reallife_mkt_fig_worth", "reallife_mkt_index", "reallife_mkt_next_pay",
+                "reallife_mkt_range", "reallife_mkt_res_day", "reallife_mkt_res_dividend", "reallife_mkt_res_eps", "reallife_mkt_res_expected",
+                "reallife_mkt_res_profit", "reallife_mkt_res_quarter", "reallife_mkt_res_quarter_value", "reallife_mkt_res_turnover",
+                "reallife_mkt_status_bid", "reallife_mkt_status_results", "reallife_mkt_ticket_impact", "reallife_mkt_ticket_trust",
+                "reallife_mkt_ticket_trust_none", "reallife_mkt_trust_every_three", "reallife_mkt_trust_every_week", "reallife_mkt_view_chart",
+                "reallife_mkt_view_figures", "reallife_stk_market_empty", "reallife_stk_market_empty_body", "reallife_stk_weight"
             }).Switch(UiScreenSwitches.Market));
         }
     }

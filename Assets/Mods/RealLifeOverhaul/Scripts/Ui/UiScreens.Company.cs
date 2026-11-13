@@ -220,7 +220,10 @@ namespace RealLifeOverhaul.Ui
                 "reallife_wage_row_game",
                 "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday",
                 "reallife_co_cover_liability", "reallife_pol_unit_day", "reallife_co_post_state", "reallife_co_post_questions", "reallife_talent_role_hr_manager",
-                "reallife_talent_role_recruiter", "reallife_hier_seat_what_chro", "reallife_co_lead_return", "reallife_party_co_link", "reallife_party_co_open"
+                "reallife_talent_role_recruiter", "reallife_hier_seat_what_chro", "reallife_co_lead_return", "reallife_party_co_link", "reallife_party_co_open",
+                // Added with the parity fixes: the old pages words the kit now carries.
+                "reallife_co_tax_deduct", "reallife_co_tax_game", "reallife_co_tax_owed", "reallife_co_tax_quiet", "reallife_co_tax_quiet_value",
+                "reallife_co_tax_risk", "reallife_dynasty_tax_row", "reallife_hier_exec_cost"
                 // KEYS END
             }).Switch(UiScreenSwitches.Company));
         }

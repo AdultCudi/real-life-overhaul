@@ -57,6 +57,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     return _typeOn == StocksLay.PricePlain && _kind > 0 ? StocksLay.PricePlain : StocksLay.Shares;
                 }
+                if (_page == StocksPage.Market && _view == StocksBuild.MarketSectors)
+                {
+                    return -1;   // the sector table has no search
+                }
                 if (_page == StocksPage.Market || _page == StocksPage.Companies || _page == StocksPage.Watch)
                 {
                     return UiDataTable.First + UiDataTable.Search;
@@ -242,6 +246,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return did;
             }
+            if (command == UiDataTable.First + UiDataTable.Row && _page == StocksPage.Market && _view == StocksBuild.MarketSectors)
+            {
+                return SectorRow(arg);
+            }
             if (command == UiDataTable.First + UiDataTable.Row && _page != StocksPage.Company)
             {
                 if (RowPressed(false, arg))
@@ -341,6 +349,21 @@ namespace RealLifeOverhaul.Ui
             if (_page == StocksPage.Ticket)
             {
                 _page = StocksPage.Company;
+                _dirty = true;
+                return true;
+            }
+            if (_page == StocksPage.Index)
+            {
+                _page = StocksPage.Market;   // the index page is opened from the sector table: back to it
+                _view = StocksBuild.MarketSectors;
+                _offsetOne = 0f;
+                _dirty = true;
+                return true;
+            }
+            if (_page == StocksPage.Market && _view != StocksBuild.MarketCompanies)
+            {
+                _view = StocksBuild.MarketCompanies;
+                _offsetOne = 0f;
                 _dirty = true;
                 return true;
             }
@@ -444,11 +467,45 @@ namespace RealLifeOverhaul.Ui
         // The Portfolio's view chosen: where the pointer went down along the control, or the next one when a key pressed it.
         private bool SetView()
         {
-            if (_page != StocksPage.Portfolio || _model == null || _model.ViewLabels.Length < 2)
+            bool known = _page == StocksPage.Portfolio || _page == StocksPage.Market || _page == StocksPage.Index;
+            if (!known || _model == null || _model.ViewLabels.Length < 2)
             {
                 return false;
             }
+            if (_page == StocksPage.Index)
+            {
+                _period = Segment(StocksLay.View, _model.ViewEdges, _model.ViewLabels.Length, _period);   // the index chart's period
+                _dirty = true;
+                return true;
+            }
             _view = Segment(StocksLay.View, _model.ViewEdges, _model.ViewLabels.Length, _view);
+            _offsetOne = 0f;
+            _dirty = true;
+            return true;
+        }
+
+        // A row of the sector table: the index row opens the index page; a sector row shows that sector's companies, as its name in the sector filter does.
+        private bool SectorRow(int arg)
+        {
+            MarketState book = _market != null ? _market.State : null;
+            if (book == null || arg < 0)
+            {
+                return false;
+            }
+            int sector = StocksBuild.SectorAt(book, arg);
+            if (sector == -2)
+            {
+                return false;
+            }
+            if (sector == -1)
+            {
+                _page = StocksPage.Index;
+            }
+            else
+            {
+                _sector = sector;
+                _view = StocksBuild.MarketCompanies;
+            }
             _offsetOne = 0f;
             _dirty = true;
             return true;
