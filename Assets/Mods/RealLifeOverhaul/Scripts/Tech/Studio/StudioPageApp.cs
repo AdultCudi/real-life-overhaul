@@ -51,9 +51,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The page among the game's apps, with no button of its own (the Tech app's firm page opens it). Once the Tech app is on the phone.</summary>
         public void Install()
         {
-            if (_app != null || _gaveUp || !PhoneApp.PhoneUp)
+            if (_app != null || _gaveUp)
             {
                 return;
+            }
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // nothing is made for the phone before it can take an app
             }
             var def = new PhoneAppDef
             {

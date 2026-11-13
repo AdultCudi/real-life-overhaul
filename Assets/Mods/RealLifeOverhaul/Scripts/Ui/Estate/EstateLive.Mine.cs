@@ -356,15 +356,15 @@ namespace RealLifeOverhaul.Ui
                     // The list holds three lines: two of them and a last one that says how many there are and opens the Works tab, where all of them are.
                     int all = rows.Count;
                     rows = rows.GetRange(0, 2);
-                    rows.Add(MoreRow("reallife_ui_estate_more_repairs", all, () => OpenWorks(null)));
+                    rows.Add(MoreRow("reallife_ui_estate_more_repairs", all, _runs.Do(() => Show(() => OpenWorks(null)))));
                 }
                 return rows.ToArray();
             }
 
             // The last line of a list that shows fewer than there are: how many there are in all, and a press that opens the list that holds them.
-            private EstateRow MoreRow(string key, int count, Action open) => new EstateRow
+            private EstateRow MoreRow(string key, int count, int run) => new EstateRow
             {
-                Icon = UiIcon.Next, Title = EstateText.T(key, "count", count.ToString(Inv)), Run = _runs.Do(() => Show(open))
+                Icon = UiIcon.Next, Title = EstateText.T(key, "count", count.ToString(Inv)), Run = run
             };
 
             // The tenants' table shown for one building alone (and a state of its rows), as a building's page asks for the flats or the applicants it holds.

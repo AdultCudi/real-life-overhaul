@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (h.Units.Count > flatsShown)
                     {
-                        flats.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, () => OpenTenants(place, -1)));
+                        flats.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, _runs.Do(() => Show(() => OpenTenants(place, -1)))));
                     }
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_rel_let_to");
                     _m.RelatedCount = EstateText.T("reallife_ui_estate_units_n", "count", h.Units.Count.ToString(Inv));
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (h.Services.Count > serviceCap)
                     {
-                        works.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, () => OpenWorks("wrk:" + place)));
+                        works.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, _runs.Do(() => Show(() => OpenWorks("wrk:" + place)))));
                     }
                     if (h.InspectDay > 0 && works.Count < 4)
                     {

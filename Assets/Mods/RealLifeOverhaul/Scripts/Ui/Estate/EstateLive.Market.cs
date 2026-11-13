@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Ui
                     // Three listings and a last line that says how many there are and shows them in the market's table, filtered to the district.
                     string where = EstateText.District(b.District);
                     others.RemoveRange(3, listed - 3);
-                    others.Add(MoreRow("reallife_ui_estate_more_listings", listed, () =>
+                    others.Add(MoreRow("reallife_ui_estate_more_listings", listed, _runs.Do(() => Show(() =>
                     {
                         _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabMarket);
                         _v.Pick = null;
@@ -212,7 +212,7 @@ namespace RealLifeOverhaul.Ui
                         _v.Offset = 0f;
                         _v.ResetTable();
                         _v.FilterDistrict = where;
-                    }));
+                    }))));
                 }
                 _m.Related2Title = EstateText.T("reallife_ui_estate_also_in", "district", EstateText.District(b.District));   // across the card, under both columns
                 _m.Related2Count = listed > 0 ? listed.ToString(Inv) : null;

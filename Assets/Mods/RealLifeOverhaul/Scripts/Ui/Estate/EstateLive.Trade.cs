@@ -353,13 +353,13 @@ namespace RealLifeOverhaul.Ui
                         // The list holds eight lines: seven cars and a last line that says how many there are and shows them in the table, filtered to the cars not on hire.
                         int all = could.Count;
                         could.RemoveRange(_m.RelatedRows - 1, all - (_m.RelatedRows - 1));
-                        could.Add(MoreRow("reallife_ui_estate_more_cars", all, () =>
+                        could.Add(MoreRow("reallife_ui_estate_more_cars", all, _runs.Do(() => Show(() =>
                         {
                             _v.Pick = null;
                             _v.Offset = 0f;
                             _v.ResetTable();
                             _v.Chosen[1] = EstateTables.CarNotOnHire;
-                        }));
+                        }))));
                     }
                     _m.Related = could.ToArray();
                 }

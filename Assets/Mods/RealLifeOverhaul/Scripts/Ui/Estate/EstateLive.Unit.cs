@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (h.Units.Count - 1 > othersShown)
                 {
-                    others.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, () => OpenTenants(place, -1)));
+                    others.Add(MoreRow("reallife_ui_estate_more_flats", h.Units.Count, _runs.Do(() => Show(() => OpenTenants(place, -1)))));
                 }
                 p.OthersTitle = EstateText.T("reallife_ui_estate_other_units");
                 p.OthersCount = h.Units.Count > 1 ? (h.Units.Count - 1).ToString(Inv) : null;
@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (h.Services.Count > serviceCap)
                 {
-                    rows.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, () => OpenWorks("wrk:" + place)));
+                    rows.Add(MoreRow("reallife_ui_estate_more_visits", h.Services.Count, _runs.Do(() => Show(() => OpenWorks("wrk:" + place)))));
                 }
                 if (u.Call > 0)
                 {
@@ -408,7 +408,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         all += h.Units[k].Applicants.Count;
                     }
-                    waiting.Add(MoreRow("reallife_ui_estate_more_applicants", all, () => OpenTenants(place, EstateTables.TenantApplies)));
+                    waiting.Add(MoreRow("reallife_ui_estate_more_applicants", all, _runs.Do(() => Show(() => OpenTenants(place, EstateTables.TenantApplies)))));
                 }
                 p.ApplicantsTitle = EstateText.T("reallife_ui_estate_applicants_title");
                 p.ApplicantsCount = waiting.Count > 0 ? u.Applicants.Count.ToString(Inv) : null;

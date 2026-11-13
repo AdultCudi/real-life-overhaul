@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.Ui
                         // The list holds four lines: three tenants and a last line that says how many are late and shows them in the table, filtered to the late ones.
                         int late = needs.Count;
                         needs.RemoveRange(_m.RelatedRows - 1, late - (_m.RelatedRows - 1));
-                        needs.Add(MoreRow("reallife_ui_estate_more_late", late, () => OpenTenants(null, EstateTables.TenantBehind)));
+                        needs.Add(MoreRow("reallife_ui_estate_more_late", late, _runs.Do(() => Show(() => OpenTenants(null, EstateTables.TenantBehind)))));
                     }
                     _m.Related = needs.ToArray();
                 }
