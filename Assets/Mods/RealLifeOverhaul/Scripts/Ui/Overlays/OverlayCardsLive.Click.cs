@@ -117,8 +117,26 @@ namespace RealLifeOverhaul.Ui
             _anchor = null;
             for (int i = 0; i < _parts.Count && _anchor == null; i++)
             {
-                _anchor = _parts[i] != null && _parts[i].gameObject.activeSelf ? _parts[i].GetPrimaryInteractable() : null;
+                _anchor = _parts[i] != null && _parts[i].gameObject.activeSelf ? FirstShown(_parts[i].interactablePriority) : null;
             }
+        }
+
+        // The game's own GetPrimaryInteractable throws on a part whose list is not set or holds a destroyed entry, which
+        // another mod's item can bring. That fault came every frame and switched the whole interface off.
+        private static Transform FirstShown(List<Transform> list)
+        {
+            if (list == null)
+            {
+                return null;
+            }
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && list[i].gameObject.activeSelf)
+                {
+                    return list[i];
+                }
+            }
+            return null;
         }
 
         // The game's buttons under a kind that are shown: each an action pressed through its own button; the buttons inside a

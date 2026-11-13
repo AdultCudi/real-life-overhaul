@@ -325,6 +325,19 @@ internal static partial class Program
         Check(director.Contains("public static bool Wanted => Settings.LivingPopulation && Settings.UiInterface;") && director.Contains("public static bool Stopped => FrameGuard.Off || UiHost.Stopped;")
               && director.Contains("public static bool On => Wanted && !Stopped;") && host.Contains("public static bool Stopped => FrameGuard.Off;"),
             "guard sources: the interface is drawn only while its switch is on and its part runs: the guard's switch-off and hosts that cannot run both stop it (UiDirector.On)");
+        // The game's method throws on an unset list or a destroyed entry, and the item card asked it every frame.
+        var askers = new List<string>();
+        foreach (string file in Directory.GetFiles(ModScripts(), "*.cs", SearchOption.AllDirectories))
+        {
+            if (Regex.IsMatch(File.ReadAllText(file), @"\.GetPrimaryInteractable\s*\("))
+            {
+                askers.Add(Path.GetFileName(file));
+            }
+        }
+        string cardClick = ModSource(@"Ui\Overlays\OverlayCardsLive.Click.cs");
+        Check(askers.Count == 0 && cardClick.Contains("FirstShown(_parts[i].interactablePriority)") && cardClick.Contains("list[i] != null && list[i].gameObject.activeSelf"),
+            "guard sources: the item card finds a part's first shown piece itself and no source asks the game's GetPrimaryInteractable, which throws on an unset list or a destroyed entry ("
+            + string.Join(", ", askers) + ")");
         var readers = new List<string>();
         foreach (string file in Directory.GetFiles(ModScripts(), "*.cs", SearchOption.AllDirectories))
         {
