@@ -40,6 +40,15 @@ namespace RealLifeOverhaul.Economy
         public const int ShortLife = 7;              // days: goods that keep no longer than this are short-lived (smaller, more frequent orders)
         public const int RivalStockDays = 4;         // days of stock a rival shop holds between its deliveries
         public const int RivalHandlingMille = 30;    // thousandths of fresh goods a rival loses to handling whatever its stock
+        public const int PaceLeast = 25;             // per cent of the usual shelf life: a quarter of the time
+        public const int PaceUsual = 100;            // the shelf lives above, as a save from before kept them
+        public const int PaceMost = 400;             // four times as long
+
+        /// <summary>
+        /// Where the shelf life's pace comes from (the option, the usual in a Going Public session); set once by Settings. Null reads as the
+        /// usual, so a check or a page that runs before it still gets the figures above.
+        /// </summary>
+        public static Func<int> PaceSource;
 
         // Shelf life in days by SpoilClass: out of cold storage, and in a fridge or a freezer.
         private static readonly int[] Ambient = { 0, 6, 5, 4, 3, 4, 3 };
@@ -87,10 +96,28 @@ namespace RealLifeOverhaul.Economy
             return weighed ? SpoilClass.Produce : SpoilClass.Packaged;
         }
 
-        /// <summary>Days a class keeps, out of or in cold storage; 0 for never spoils.</summary>
-        public static int Life(SpoilClass c, bool cold) => (cold ? Cold : Ambient)[(int)c];
+        public static int ClampPace(int percent) => Math.Max(PaceLeast, Math.Min(PaceMost, percent));
 
-        /// <summary>Days a product keeps; 0 for never.</summary>
+        /// <summary>The pace now, per cent of the usual shelf life.</summary>
+        public static int Pace => PaceSource != null ? ClampPace(PaceSource()) : PaceUsual;
+
+        /// <summary>
+        /// A shelf life at a pace: whole days, rounded to the nearest and never under one while the goods spoil at all; the usual
+        /// pace gives the life as it is. The one place the option is applied, so every reader of a life (the places, the managers'
+        /// orders, the trips, the rivals' loss, the pages) agrees.
+        /// </summary>
+        public static int Scale(int usual, int pace) => usual <= 0 ? 0 : Math.Max(1, (int)(((long)usual * ClampPace(pace) + 50) / 100));
+
+        /// <summary>Days a class keeps at the usual pace, out of or in cold storage; 0 for never spoils.</summary>
+        public static int UsualLife(SpoilClass c, bool cold) => (cold ? Cold : Ambient)[(int)c];
+
+        /// <summary>Days a product keeps at the usual pace; 0 for never.</summary>
+        public static int UsualLife(string item, bool weighed, bool cold) => UsualLife(Of(item, weighed), cold);
+
+        /// <summary>Days a class keeps now, out of or in cold storage; 0 for never spoils.</summary>
+        public static int Life(SpoilClass c, bool cold) => Scale(UsualLife(c, cold), Pace);
+
+        /// <summary>Days a product keeps now; 0 for never.</summary>
         public static int Life(string item, bool weighed, bool cold) => Life(Of(item, weighed), cold);
 
         /// <summary>Furniture that keeps goods cold: a fridge or a freezer of any kind.</summary>
@@ -176,6 +203,31 @@ namespace RealLifeOverhaul.Economy
             }
             Add(batches, today, onSite - have);
             return onSite - have;
+        }
+
+        /// <summary>
+        /// Makes batches kept at one pace read at another, for goods whose usual life is <paramref name="usual"/> days: each batch keeps the
+        /// share of its life it has used (so a change never throws stock out at once and never makes it fresh again), and from now on spoils
+        /// at the new pace. A batch not yet due stays not due until the next day at the soonest; one already due stays due.
+        /// </summary>
+        public static void Rebase(List<Cohort> batches, int usual, int from, int to, int today)
+        {
+            from = ClampPace(from);
+            to = ClampPace(to);
+            if (from == to || usual <= 0 || batches.Count == 0)
+            {
+                return;
+            }
+            int was = Scale(usual, from), now = Scale(usual, to);
+            Cohort[] old = batches.ToArray();
+            batches.Clear();
+            for (int i = 0; i < old.Length; i++)
+            {
+                long age = Math.Max(0, today - old[i].Day);
+                long aged = (2 * age * now + was) / (2L * was);
+                aged = age < was ? Math.Min(aged, now - 1) : Math.Max(aged, now);
+                Add(batches, today - (int)aged, old[i].Count);
+            }
         }
 
         /// <summary>The pieces past their life at the turn into <paramref name="today"/> (stocked on or before today minus the life); 0 when it never spoils.</summary>

@@ -8,6 +8,7 @@ Under the living economy's master option **Living population**, with **Delivery 
 
 - Folder: [`Scripts/Economy/Logistics`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Logistics/); the pages in `Scripts/Ui/BizMan/Ops/BizManScreen.Trips.cs` (with lines in `BizManScreen.Managers.cs` and `BizManScreen.Plant.cs`); the roads in `Scripts/Wiring/Wiring.LogisticsLinks.cs`; the game's pieces in `Scripts/Core/GameContract.Logistics.cs`; the managers' smaller orders in `Scripts/Economy/Company/CompanyDirector.ManagerDecisions.cs`.
 - Options: "Delivery trips" (`living_trips`) and "Food spoilage" (`living_spoilage`), both under "Living population" (`living_population`), both on by default. Off, the game runs every route at once at 02:00 and nothing spoils, as before.
+- Option: "Food shelf life (% of the usual time)" (`living_spoilage_pace`, `Settings.LivingSpoilagePace`), a slider from 25 to 400 per cent, 100 by default, on the same section of the options page as the two switches and greyed with "Food spoilage" (the old pages and the kit draw the one row of `Meta/OptionsTree.cs`). There is no second way to switch spoilage off.
 
 ```
 Economy/Logistics/              the first six are game-free and compiled by EconomyCheck (LogisticsChecks.cs)
@@ -41,8 +42,17 @@ Economy/Logistics/              the first six are game-free and compiled by Econ
 ## Spoilage
 
 1. **Kinds and lives** (days out of and in a fridge or a freezer): fruit, vegetables and flowers 6 and 12, dairy 5 and 14, bakery 4 and 7, meat 3 and 8, made food 4 and 8, frozen 3 and 90, by the product's name; any product the game weighs at the till is produce. Packaged goods, drinks and the rest never spoil. A place keeps a product as long as its coldest holder (any furniture named a fridge or a freezer).
+   These are the usual lives. The slider scales them all at one place, `SpoilRules.Life` (through `SpoilRules.Scale`): the usual life times the pace, rounded to whole days and never under one day for goods that spoil, so a quarter of the time keeps fruit 2 days and a fridge's frozen food 23, four times as long keeps fruit 24 days. Every reader of a life goes through it: the places' turn of a day, the managers' orders and their short-lived routes, the trips, the rivals' loss, and the stock and buy pages. The managers' cap and the short-lived test read the scaled life, so goods that keep a week or less at the usual pace may not at a slow one. The Guide's figures are the usual lives.
 2. **Batches.** Each place keeps each product as batches by the day they came in, at most six (the two oldest folded at their mean day). Once a second one place is matched to what it holds by the game's own count: less is taken from the oldest (sold, used or moved), more came in today. A trip's goods take their batches to the stop. A save from before, or a place first seen, takes all it holds as stocked that day.
 3. **The turn of a day.** A place first looked at after midnight throws out what is past its life by the game's own calls (storage first, then the shelves, a warehouse's record of goods out saying so), its cost noted. One notice a day sums it. The stock page shows **Spoils in** and what spoiled today; a factory's page shows the week's share of what came in that spoiled.
+
+### Changing the slider in a save
+
+A batch is stored as the day it came in, so a shorter or longer life alone would throw stock out at once or make old stock fresh. Each place therefore remembers the pace its batches were last read at (`SpoilPlace.Pace`, saved as an optional last field of the place's record only when it is not 100, so a save from before reads as 100 and writes the same line) and, at its next look, `SpoilRules.Rebase` moves each batch's day so that it keeps the share of its life it has used: half way through stays half way through, at the new life. A batch not yet due is held at least one day from due, one already due stays due, and every piece is kept. Changing back gives the age it had, to the day's rounding. Goods moved by a trip between places read at different paces are rebased to the place they arrive at.
+
+### Going Public
+
+In a session (host or guest) the pace is 100 whatever the slider says (`Settings.SpoilPaceNow`), so every machine spoils the same and nothing is sent over the network. The slider's row says it waits (`GoingPublic.SpoilPaceSentence`). When the session ends the places rebase to the player's own setting by the rule above.
 
 ## The player's managers and the rivals
 
@@ -55,6 +65,9 @@ Economy/Logistics/              the first six are game-free and compiled by Econ
 - Options > Tests > **Load each route as its next run would, nothing moved**: each route as its next departure would load it, nothing moved or paid, one line each with PASS or FAIL.
 - Options > Tests > **Count the fresh batches at every place now**: a whole round of the places at once, each product's batches against what is held.
 - Self-check lines with Verbose on: `Trips check (the night's run)`, `Trips check (a departure ...)`, `Trips check (a stop ...)`.
+
+- Options > "Food shelf life": at 100 nothing differs; move it in a save with fresh stock and the stock page's "Spoils in" changes while nothing is thrown out at once.
+- Offline: `--logistics` in EconomyCheck (`LogisticsChecks.cs`, `SpoilPace`).
 
 ## Known limits
 
