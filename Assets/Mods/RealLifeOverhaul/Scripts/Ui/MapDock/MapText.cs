@@ -57,6 +57,29 @@ namespace RealLifeOverhaul.Ui
         public static string OneLine(string raw) => Lines(Plain(raw), Join);
 
         /// <summary>
+        /// Whether words have the shape of a text key ("bizman_send_offer_button") and not of words: one run of letters,
+        /// digits, underscores and colons with an underscore in it. The game leaves a label as its key until the label first shows.
+        /// </summary>
+        public static bool KeyShaped(string words)
+        {
+            if (string.IsNullOrEmpty(words) || words.Length < 3)
+            {
+                return false;
+            }
+            bool under = false;
+            for (int i = 0; i < words.Length; i++)
+            {
+                char c = words[i];
+                under |= c == '_';
+                if (!(c == '_' || c == ':' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+                {
+                    return false;
+                }
+            }
+            return under && words[0] != '_' && words[words.Length - 1] != '_';
+        }
+
+        /// <summary>
         /// The taxi button's words as the game writes them on its own button (BuildingResume.SetClickLabels): "Travel here" over the minutes and the fare in brackets,
         /// on the game's two lines, each kept whole; <paramref name="none"/> when the game wrote none. A button draws the lines one over the other.
         /// </summary>

@@ -20,6 +20,19 @@ internal static partial class Program
         Check(!BizManRules.SendHeld(false, false) && !BizManRules.SendHeld(false, true) && !BizManRules.SendHeld(true, true) && BizManRules.SendHeld(true, false),
             "bizman offer: a Send is held only while it shows and the game will not take the press, never for a Send the game keeps shut");
 
+        // A player's picture of 13 Nov 2026: the takeover's Send read BIZMAN_SEND_OFFER_BUTTON. The game's button is shut until an offer is
+        // begun, so its label was never put into words and still held its key; the kit read the key as the button's words.
+        Check(MapText.KeyShaped("bizman_send_offer_button") && MapText.KeyShaped("BIZMAN_SEND_OFFER_BUTTON") && MapText.KeyShaped("ba:itemname_apple")
+              && !MapText.KeyShaped("Send offer") && !MapText.KeyShaped("Send") && !MapText.KeyShaped("$22,600") && !MapText.KeyShaped("OK") && !MapText.KeyShaped("_") && !MapText.KeyShaped("a_")
+              && !MapText.KeyShaped("Elva's_shop") && !MapText.KeyShaped("12:30") && !MapText.KeyShaped(string.Empty) && !MapText.KeyShaped(null),
+            "bizman offer: a label still holding its key is told from words (one run of letters, digits, underscores and colons with an underscore inside)");
+        string widgets = ModSource(@"Ui\Host\UiWidgets.cs");
+        string worded = MemberText(widgets, "private static string Worded(");
+        Check(worded.Contains("MapText.KeyShaped(words)") && worded.Contains("LocalizorManager.IsLocalizedKey(words)") && worded.Contains("words.ToLowerInvariant()") && worded.Contains(": words;")
+              && widgets.Contains("return Worded(MapText.OneLine(Texts[i].text));") && widgets.Contains("Worded(MapText.Plain(t.text))"),
+            "bizman offer: a game label read while it still holds its key is given the key's own words, on every screen that reads a label, and a text that is no key stays as it is");
+        Check(WhatsNewHas(LocaleFile("en"), "BIZMAN_SEND_OFFER_BUTTON"), "bizman offer: What's new tells of the Send button's fix");
+
         string parts = ModSource(@"Ui\BizMan\BizManScreen.Parts.cs");
         string press = ModSource(@"Ui\BizMan\BizManScreen.Press.cs");
         string contract = ModSource(@"Core\GameContract.BizMan.cs");

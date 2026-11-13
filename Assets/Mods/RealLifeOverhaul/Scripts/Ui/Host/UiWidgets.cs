@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Extensions;
+using Localizor;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -40,7 +42,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     if (!string.IsNullOrEmpty(Texts[i].text))
                     {
-                        return MapText.OneLine(Texts[i].text);
+                        return Worded(MapText.OneLine(Texts[i].text));
                     }
                 }
             }
@@ -51,12 +53,28 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
+        // A label the game has not shown yet still holds its key (the takeover's Send, shut until an offer is begun, read
+        // "bizman_send_offer_button"). The key's own words stand for it; anything that is no key of the game's stays as it is.
+        private static string Worded(string words)
+        {
+            if (!MapText.KeyShaped(words))
+            {
+                return words;
+            }
+            if (LocalizorManager.IsLocalizedKey(words))
+            {
+                return words.GetLocalization();
+            }
+            string small = words.ToLowerInvariant();
+            return LocalizorManager.IsLocalizedKey(small) ? small.GetLocalization() : words;
+        }
+
         /// <summary>A text's words with the game's rich text taken off: the kit sets its own type.</summary>
         public static string Text(TMP_Text t)
         {
             try
             {
-                return t != null ? MapText.Plain(t.text) : null;
+                return t != null ? Worded(MapText.Plain(t.text)) : null;
             }
             catch (Exception e) when (UiForeignGame.Spoilt(e, t))
             {
