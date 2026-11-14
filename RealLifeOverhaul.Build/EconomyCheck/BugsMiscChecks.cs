@@ -210,8 +210,8 @@ internal static partial class Program
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
         Check(en["reallife_school_no_hours"].Contains("{from}") && en["reallife_school_no_hours"].Contains("{to}") && !en["reallife_school_no_hours"].Contains("7:00"), "school hours: the closed text takes the school's hours");
         string school = ModSource(@"Licences\Driving\DrivingSchool.cs"), desk = ModSource(@"Licences\SchoolDesk.cs");
-        Check(school.Contains("Licences.T(reasonKey, \"from\", Hour(OpensAt), \"to\", Hour(ClosesAt))") && school.Contains("status = DrivingSchool.ReasonText(reason);")
-              && desk.Contains("DrivingSchool.ReasonText(reason)") && desk.Contains("DrivingSchool.Hour(DrivingSchool.OpensAt)"), "school hours: every place that shows a reason fills them in from the constants");
+        Check(school.Contains("Licences.T(key, \"from\", Hour(OpensAt), \"to\", Hour(ClosesAt))") && school.Contains("status = DrivingSchool.ReasonText(reason, service);")
+              && desk.Contains("DrivingSchool.ReasonText(reason, service)") && desk.Contains("DrivingSchool.Hour(DrivingSchool.OpensAt)"), "school hours: every place that shows a reason fills them in from the constants");
     }
 
     // The undo text names the button; the Guide's three old texts are gone.

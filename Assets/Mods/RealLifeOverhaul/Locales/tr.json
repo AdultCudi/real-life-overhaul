@@ -16017,13 +16017,13 @@
   "reallife_study_skip_exam": "Sınav: {course}, geçmek için 100 üzerinden {pass}",
   "reallife_study_skip_retake": "Bütünleme: {course}, geçmek için 100 üzerinden {pass}",
   "reallife_study_note_class_soon": "{course}: bugün {hour} saatinde dersiniz var, {place}.",
-  "reallife_study_note_enrolled": "{course} dersine kaydoldunuz. İlk ders {day} günü saat {hour}'da, {place} adresinde.",
+  "reallife_study_note_enrolled": "{course} dersine kaydoldunuz. İlk ders {day} saat {hour}'da, {place} adresinde.",
   "reallife_study_note_enrolled_home": "{course} dersine kaydoldunuz. Evde çalışın, sonra {where} yerinde sınava girin.",
   "reallife_study_note_fee_owed": "{course}: {amount} tutarındaki taksit ödenemedi. Dersler ödeme yapılana kadar bekletiliyor.",
   "reallife_study_note_withdrawn": "{course} kursundan kaydınızı sildirdiniz.",
   "reallife_study_note_stressed": "Bu hafta {hours} saatten fazla çalıştınız: streslisiniz.",
   "reallife_study_note_left_early": "{course}: derse katılım sayılması için çok erken ayrıldınız.",
-  "reallife_study_note_exam_open": "{course}: dersler bitti. Sınava {where} yerinde, hafta içi {opens} ile {closes} arasında, {day} gününe kadar girin.",
+  "reallife_study_note_exam_open": "{course}: dersler bitti. Sınava {where} yerinde, hafta içi {opens} ile {closes} arasında, {day} tarihine kadar girin.",
   "reallife_study_note_exam_left": "{course}: sınavdan ayrıldınız. Süresi dolana kadar tekrar girilebilir.",
   "reallife_study_note_barred": "{course}: çok fazla ders kaçırıldı (gerekli oran: {share}). Sınava giremezsiniz.",
   "reallife_study_note_passed": "{course} kursunu {grade} ile geçtiniz (100 üzerinden {score}).",
@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Ödevler evde bilgisayarda yapılır. Sınav okulun içindeki bir çalışma masasında yapılır.",
   "reallife_work_exam_days": "{from} ile {to} arası",
   "reallife_school_short_money": "{fee} ücretini ödeyemezsiniz: sizde {have} var.",
-  "reallife_social_obj_moving_pick": "{first} yanındaki bir kutuyu alın, sonra {to} yerine taşıyın: {goal} içinden {count}"
+  "reallife_social_obj_moving_pick": "{first} yanındaki bir kutuyu alın, sonra {to} yerine taşıyın: {goal} içinden {count}",
+  "reallife_transaction_tech_refund_label": "Teknoloji güncelleme iadesi"
 }

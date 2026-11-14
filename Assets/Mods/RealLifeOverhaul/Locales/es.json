@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Los trabajos se hacen en el ordenador de casa. El examen se hace en un escritorio de estudio dentro de la escuela.",
   "reallife_work_exam_days": "del {from} al {to}",
   "reallife_school_short_money": "No puedes pagar la tasa de {fee}: tienes {have}.",
-  "reallife_social_obj_moving_pick": "Recoge una caja junto a {first}, luego llévala a {to}: {count} de {goal}"
+  "reallife_social_obj_moving_pick": "Recoge una caja junto a {first}, luego llévala a {to}: {count} de {goal}",
+  "reallife_transaction_tech_refund_label": "Reembolso por actualización tecnológica"
 }

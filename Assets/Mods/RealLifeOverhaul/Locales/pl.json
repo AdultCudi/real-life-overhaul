@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Zadania domowe robi się na komputerze w domu. Egzamin zdaje się przy stanowisku do nauki w szkole.",
   "reallife_work_exam_days": "od {from} do {to}",
   "reallife_school_short_money": "Nie stać cię na opłatę {fee}: masz {have}.",
-  "reallife_social_obj_moving_pick": "Weź pudło obok {first}, potem zanieś je do {to}: {count} z {goal}"
+  "reallife_social_obj_moving_pick": "Weź pudło obok {first}, potem zanieś je do {to}: {count} z {goal}",
+  "reallife_transaction_tech_refund_label": "Zwrot po aktualizacji technologii"
 }

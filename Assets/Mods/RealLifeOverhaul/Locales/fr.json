@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Les devoirs se font sur l'ordinateur à la maison. L'examen se passe à un poste d'étude à l'intérieur de l'école.",
   "reallife_work_exam_days": "du {from} au {to}",
   "reallife_school_short_money": "Vous ne pouvez pas payer les frais de {fee} : vous avez {have}.",
-  "reallife_social_obj_moving_pick": "Prenez une caisse à côté de {first}, puis portez-la jusqu'à {to} : {count} sur {goal}"
+  "reallife_social_obj_moving_pick": "Prenez une caisse à côté de {first}, puis portez-la jusqu'à {to} : {count} sur {goal}",
+  "reallife_transaction_tech_refund_label": "Remboursement de la mise à jour tech"
 }

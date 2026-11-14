@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Het huiswerk wordt op de computer thuis gemaakt. Het examen wordt gemaakt aan een studeerbureau op de school.",
   "reallife_work_exam_days": "{from} tot {to}",
   "reallife_school_short_money": "Je kunt het tarief van {fee} niet betalen: je hebt {have}.",
-  "reallife_social_obj_moving_pick": "Pak een doos naast {first}, draag die dan naar {to}: {count} van {goal}"
+  "reallife_social_obj_moving_pick": "Pak een doos naast {first}, draag die dan naar {to}: {count} van {goal}",
+  "reallife_transaction_tech_refund_label": "Terugbetaling tech-update"
 }

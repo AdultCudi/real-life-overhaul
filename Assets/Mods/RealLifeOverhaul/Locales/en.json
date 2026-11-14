@@ -37982,5 +37982,6 @@
   "reallife_work_cert_home_line": "The homework is done at the computer at home. The exam is sat at a study desk inside the school.",
   "reallife_work_exam_days": "{from} to {to}",
   "reallife_school_short_money": "You cannot afford the fee of {fee}: you have {have}.",
-  "reallife_social_obj_moving_pick": "Pick up a box beside {first}, then carry it to {to}: {count} of {goal}"
+  "reallife_social_obj_moving_pick": "Pick up a box beside {first}, then carry it to {to}: {count} of {goal}",
+  "reallife_transaction_tech_refund_label": "Tech update refund"
 }

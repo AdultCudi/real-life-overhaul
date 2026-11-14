@@ -37982,5 +37982,6 @@
   "reallife_work_cert_home_line": "作业在家中的电脑上完成。考试在学校内的学习桌进行。",
   "reallife_work_exam_days": "{from} 至 {to}",
   "reallife_school_short_money": "你付不起 {fee} 的费用：你有 {have}。",
-  "reallife_social_obj_moving_pick": "拿起 {first} 旁边的一个箱子，然后搬到 {to}：{count}/{goal}"
+  "reallife_social_obj_moving_pick": "拿起 {first} 旁边的一个箱子，然后搬到 {to}：{count}/{goal}",
+  "reallife_transaction_tech_refund_label": "科技更新退款"
 }

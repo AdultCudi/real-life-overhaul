@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Die Hausaufgaben erledigst du am Computer zu Hause. Die Prüfung wird an einem Lernplatz in der Schule abgelegt.",
   "reallife_work_exam_days": "{from} bis {to}",
   "reallife_school_short_money": "Du kannst die Gebühr von {fee} nicht bezahlen: Du hast {have}.",
-  "reallife_social_obj_moving_pick": "Nimm eine Kiste neben {first} und trag sie dann zu {to}: {count} von {goal}"
+  "reallife_social_obj_moving_pick": "Nimm eine Kiste neben {first} und trag sie dann zu {to}: {count} von {goal}",
+  "reallife_transaction_tech_refund_label": "Erstattung nach Tech-Update"
 }

@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "과제는 집에서 컴퓨터로 합니다. 시험은 학교 안의 학습 책상에서 치릅니다.",
   "reallife_work_exam_days": "{from}부터 {to}까지",
   "reallife_school_short_money": "{fee} 수수료를 감당할 수 없습니다: 현재 {have}만 있습니다.",
-  "reallife_social_obj_moving_pick": "{first} 옆의 상자를 하나 집은 뒤 {to}(으)로 옮기세요: 목표 {goal} 중 {count}"
+  "reallife_social_obj_moving_pick": "{first} 옆의 상자를 하나 집은 뒤 {to}(으)로 옮기세요: 목표 {goal} 중 {count}",
+  "reallife_transaction_tech_refund_label": "기술 업데이트 환불"
 }

@@ -16017,7 +16017,7 @@
   "reallife_study_skip_exam": "Prova: {course}, {pass} de 100 para passar",
   "reallife_study_skip_retake": "Nova prova: {course}, {pass} de 100 para passar",
   "reallife_study_note_class_soon": "{course}: aula às {hour} hoje, {place}.",
-  "reallife_study_note_enrolled": "Matriculado em {course}. A primeira aula é no dia {day} às {hour}, {place}.",
+  "reallife_study_note_enrolled": "Matriculado em {course}. A primeira aula é em {day} às {hour}, {place}.",
   "reallife_study_note_enrolled_home": "Matriculado em {course}. Estude em casa e depois faça a prova em {where}.",
   "reallife_study_note_fee_owed": "{course}: uma parcela de {amount} não pôde ser paga. As aulas esperam o pagamento.",
   "reallife_study_note_withdrawn": "Você desistiu de {course}.",
@@ -37982,5 +37982,6 @@
   "reallife_work_cert_home_line": "O dever de casa é feito no computador de casa. A prova é feita em uma mesa de estudo dentro da escola.",
   "reallife_work_exam_days": "de {from} a {to}",
   "reallife_school_short_money": "Você não pode pagar a taxa de {fee}: você tem {have}.",
-  "reallife_social_obj_moving_pick": "Pegue uma caixa ao lado de {first}, depois leve até {to}: {count} de {goal}"
+  "reallife_social_obj_moving_pick": "Pegue uma caixa ao lado de {first}, depois leve até {to}: {count} de {goal}",
+  "reallife_transaction_tech_refund_label": "Reembolso da atualização de tecnologia"
 }

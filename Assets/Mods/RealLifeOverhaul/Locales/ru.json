@@ -37958,5 +37958,6 @@
   "reallife_work_cert_home_line": "Домашние задания делаются за компьютером дома. Экзамен сдаётся за учебным столом в школе.",
   "reallife_work_exam_days": "с {from} по {to}",
   "reallife_school_short_money": "Вы не можете позволить себе сбор {fee}: у вас {have}.",
-  "reallife_social_obj_moving_pick": "Возьмите коробку рядом с {first}, затем отнесите её в {to}: {count} из {goal}"
+  "reallife_social_obj_moving_pick": "Возьмите коробку рядом с {first}, затем отнесите её в {to}: {count} из {goal}",
+  "reallife_transaction_tech_refund_label": "Возврат за обновление технологий"
 }

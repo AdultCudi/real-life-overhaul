@@ -155,22 +155,33 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>The key of a reason's words and of its advice for the player (the mod's texts).</summary>
-        public static string ReasonKey(TripWhy one) => "reallife_trips_why_" + Name(one);
-
-        public static string AdviceKey(TripWhy one) => "reallife_trips_fix_" + Name(one);
-
-        private static string Name(TripWhy one)
+        public static string ReasonKey(TripWhy one)
         {
             switch (one)
             {
-                case TripWhy.Full: return "full";
-                case TripWhy.NoStock: return "stock";
-                case TripWhy.ShelvesFull: return "shelves";
-                case TripWhy.StopGone: return "stop";
-                case TripWhy.NoDriver: return "driver";
-                case TripWhy.NoManager: return "manager";
-                case TripWhy.Stale: return "stale";
-                default: return "lost";
+                case TripWhy.Full: return "reallife_trips_why_full";
+                case TripWhy.NoStock: return "reallife_trips_why_stock";
+                case TripWhy.ShelvesFull: return "reallife_trips_why_shelves";
+                case TripWhy.StopGone: return "reallife_trips_why_stop";
+                case TripWhy.NoDriver: return "reallife_trips_why_driver";
+                case TripWhy.NoManager: return "reallife_trips_why_manager";
+                case TripWhy.Stale: return "reallife_trips_why_stale";
+                default: return "reallife_trips_why_lost";
+            }
+        }
+
+        public static string AdviceKey(TripWhy one)
+        {
+            switch (one)
+            {
+                case TripWhy.Full: return "reallife_trips_fix_full";
+                case TripWhy.NoStock: return "reallife_trips_fix_stock";
+                case TripWhy.ShelvesFull: return "reallife_trips_fix_shelves";
+                case TripWhy.StopGone: return "reallife_trips_fix_stop";
+                case TripWhy.NoDriver: return "reallife_trips_fix_driver";
+                case TripWhy.NoManager: return "reallife_trips_fix_manager";
+                case TripWhy.Stale: return "reallife_trips_fix_stale";
+                default: return "reallife_trips_fix_lost";
             }
         }
     }
