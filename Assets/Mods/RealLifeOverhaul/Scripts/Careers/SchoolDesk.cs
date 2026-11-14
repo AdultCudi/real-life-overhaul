@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Careers
             string why = sitting != null ? _director.HoldTest(sitting, this) : _director.DeskSitting(_offer.Course, _offer.Kind, this, out sitting);
             if (why != null)
             {
-                Notifications.Show(NotificationType.Warning, why, null, 8f);
+                CareersDirector.Say(NotificationType.Warning, why);
                 return;
             }
             _mine = true;

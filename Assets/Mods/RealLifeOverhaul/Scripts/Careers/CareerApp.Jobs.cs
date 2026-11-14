@@ -91,9 +91,10 @@ namespace RealLifeOverhaul.Careers
             box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(o.Employer), "place", WorkGame.Address(o.Street, o.Number)));
             box.Chip(CareersText.T(StateKey(applied, qualified, eligible)),
                 applied ? CellTone.Green : !qualified ? CellTone.Red : eligible ? CellTone.Plain : CellTone.Yellow);
-            if (!qualified)
+            string cannot = applied ? null : _director.ApplyWhy(o, template);   // what is not held or too low, with the figures and what raises it
+            if (cannot != null)
             {
-                box.Line(CareersText.T("reallife_career_post_unqualified"), CellTone.Red);
+                box.Line(CareersText.T(cannot), CellTone.Red);
             }
             Application turned = applied ? null : w.TurnedDown(o, day);
             if (turned != null)
@@ -164,7 +165,11 @@ namespace RealLifeOverhaul.Careers
             int id = o.Id;
             if (!applied && turned == null)
             {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_apply", () => Do(() => _director.Apply(id)));
+                UnityEngine.UI.Button apply = InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_apply", () => Do(() => _director.Apply(id)));
+                if (apply != null && cannot != null)
+                {
+                    apply.interactable = false;   // the line above says why
+                }
             }
             MapButton(buttons, () => _director.ShowPost(o));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);

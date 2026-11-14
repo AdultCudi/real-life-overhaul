@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (e.FeeLate)
             {
-                return "reallife_study_why_fee_owed";
+                return OwedWhy(e);
             }
             StudyMode mode = (StudyMode)e.Mode;
             if (e.SettledDay >= Save.Day || !StudyRules.Joinable(c, mode, Save.Day, CareersGame.MinuteOfDay, out minutes))
@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Careers
         {
             CourseDef c = e.Def;
             return new Sitting(this, SittingKind.Exam, c.Id, StudyCatalogue.ExamHours * 60, CareersText.Course(c.Id), true,
-                CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()));
+                CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString(), "course", CareersText.Course(c.Id)));
         }
 
         public string CanHomework(Enrolment e)
@@ -212,18 +212,25 @@ namespace RealLifeOverhaul.Careers
         public string CanSit(Enrolment e)
         {
             CourseDef c = e != null ? e.Def : null;
-            if (c == null || !StudyRules.ExamDay(e, Save.Day))
+            if (c == null)
             {
                 return "reallife_study_why_no_exam";
+            }
+            if (!StudyRules.ExamDay(e, Save.Day))
+            {
+                int next = StudyNeedRules.ExamOpen(e, Save.Day) ? StudyNeedRules.ExamNextDay(e, Save.Day) : -1;   // an exam open, not today (a weekend)
+                return next < 0 ? "reallife_study_why_no_exam"
+                    : CareersWhy.With("reallife_study_why_exam_day", "from", CareersText.Day(next), "to", CareersText.Day(e.ExamTo));
             }
             int hour = Save.Hour;
             if (hour < StudyCatalogue.ExamOpens || hour >= StudyCatalogue.ExamCloses)
             {
-                return "reallife_study_why_exam_hours";
+                return CareersWhy.With("reallife_study_why_exam_hours", "opens", CareersText.Hour(StudyCatalogue.ExamOpens), "closes", CareersText.Hour(StudyCatalogue.ExamCloses),
+                    "now", CareersText.TimeOfDay(CareersGame.MinuteOfDay));
             }
             if (e.Stage == (int)EnrolStage.Retake && e.FeeLate)
             {
-                return "reallife_study_why_fee_owed";
+                return OwedWhy(e);
             }
             return AtExam(c, (StudyMode)e.Mode);
         }
@@ -300,8 +307,7 @@ namespace RealLifeOverhaul.Careers
                     Teach(c.SkillB, StudyRules.HomeworkGain(c, false, StudyRules.Points(_study, c.SkillB), learning), day);
                     if (!c.Timetabled && StudyRules.Advance(e, day))
                     {
-                        Tell(NotificationType.Success, "reallife_study_note_exam_open", Data("course", CareersText.Course(c.Id), "day", CareersText.Day(e.ExamTo)),
-                            TabStudying, CampusApp.CourseRow + c.Id);
+                        TellExam("reallife_study_note_exam_open_home", e);   // the homework is done: where the exam is sat, and by when
                     }
                     break;
                 case SittingKind.Exam:
@@ -356,7 +362,7 @@ namespace RealLifeOverhaul.Careers
                 Examine(e, day);   // a short course's assessment is its last class
                 return true;
             }
-            Tell(NotificationType.Info, "reallife_study_note_exam_open", Data("course", name, "day", CareersText.Day(e.ExamTo)), TabStudying, CampusApp.CourseRow + c.Id);
+            TellExam("reallife_study_note_exam_open", e);   // the classes are over: where the exam is sat, and by when
             return true;
         }
 

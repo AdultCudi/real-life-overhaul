@@ -20,13 +20,17 @@ namespace RealLifeOverhaul.Careers
         private static readonly Dictionary<WarningIconType, (Sprite icon, Sprite background, bool pointer)> Pictures = new Dictionary<WarningIconType, (Sprite, Sprite, bool)>(4);
 
         private readonly IModLogger _logger;
-        private readonly ItemController[] _doors = new ItemController[CampusRules.RoomsPerFloor];
-        private readonly ItemWarningIcon[] _icons = new ItemWarningIcon[CampusRules.RoomsPerFloor];
-        private readonly WarningIconType[] _types = new WarningIconType[CampusRules.RoomsPerFloor];
+        private readonly ItemController[] _doors;
+        private readonly ItemWarningIcon[] _icons;
+        private readonly WarningIconType[] _types;
 
-        public CampusMarks(IModLogger logger)
+        /// <param name="slots">How many doors it marks at once: a floor's rooms, or the school's study desks.</param>
+        public CampusMarks(IModLogger logger, int slots = CampusRules.RoomsPerFloor)
         {
             _logger = logger;
+            _doors = new ItemController[slots];
+            _icons = new ItemWarningIcon[slots];
+            _types = new WarningIconType[slots];
         }
 
         /// <summary>The game's icon for a mark of a room.</summary>

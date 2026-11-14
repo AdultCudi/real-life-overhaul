@@ -276,7 +276,7 @@ namespace RealLifeOverhaul.Careers
             string why = OfferStint(c, desk, TalentGame.Place(reg));
             if (why != null)
             {
-                Notifications.Show(NotificationType.Warning, why, null, 8f);
+                CareersDirector.Say(NotificationType.Warning, why);
             }
         }
 

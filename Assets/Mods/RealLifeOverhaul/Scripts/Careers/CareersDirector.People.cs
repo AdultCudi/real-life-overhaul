@@ -259,17 +259,6 @@ namespace RealLifeOverhaul.Careers
             return PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? r.TutorOf(c.Id) : RosterRules.TutorFor(r, c.Id);
         }
 
-        /// <summary>Why a course cannot be enrolled in for the campus's own reasons (a skill floor, no seat), a reason key, or null.</summary>
-        private string CampusWhy(CourseDef c)
-        {
-            if (RosterRules.Floor(c, out int skill, out int need) && Points(skill) < need)
-            {
-                return "reallife_study_why_floor";
-            }
-            Intake i = IntakeOf(c);
-            return i != null && !RosterRules.CanJoin(i) ? "reallife_study_why_seats" : null;
-        }
-
         // The player has a seat, and an employee of theirs may follow the same course.
         private void CampusEnrolled(CourseDef c, int day)
         {

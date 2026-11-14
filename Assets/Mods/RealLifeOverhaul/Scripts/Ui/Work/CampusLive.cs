@@ -178,7 +178,6 @@ namespace RealLifeOverhaul.Ui
             var t = new WorkTab { Shape = WorkShape.Cards, Search = w.T("reallife_work_search_courses", "Search courses"), AllWord = w.T("reallife_work_filter_all_word", "All"),
                 Chips = new[] { SubjectName(w, 0), SubjectName(w, 1), SubjectName(w, 2), SubjectName(w, 3), SubjectName(w, 4) },
                 EmptyTitle = w.T("reallife_work_empty_courses_title", "No course matches"), EmptyBody = w.T("reallife_work_empty_courses", "Another subject, or a shorter search, may show one.") };
-            long cash = HustleCashOf();
             RealLifeOverhaul.Careers.Job job = d.Work != null ? d.Work.Job : null;
             for (int i = 0; i < StudyCatalogue.All.Length; i++)
             {
@@ -190,11 +189,16 @@ namespace RealLifeOverhaul.Ui
                 Intake intake = d.IntakeOf(c);
                 int fee = Prices.At(StudyRules.Fee(c, d.GrantFor(c)));
                 string feeWords = CareersText.Money(fee);
-                bool live = f.Live(c.Id) != null;
-                int skillNow = SkillPoints(d, c);
-                string why = live ? w.T("reallife_study_why_already", "You are on that course already.") : f.Holds(c.Id) ? w.T("reallife_study_why_passed", "You have passed that course already.")
-                    : !RosterRules.FloorMet(c, skillNow) ? w.T("reallife_study_why_floor", "A skill the course asks for is under its floor.") : intake != null
-                        && !RosterRules.CanJoin(intake) ? w.T("reallife_study_why_seats", "Every seat of this course is taken.") : null;
+                // What the course asks, each with the player's own level; why Enrol is dimmed names every one that is short and what raises it.
+                var asks = new List<Ask>(6);
+                string whyKey = d.EnrolWhy(c, StudyMode.FullTime, false, asks);
+                if (asks.Count == 0)
+                {
+                    d.EnrolAsks(c, StudyMode.FullTime, false, asks);
+                }
+                string why = whyKey != null ? CareersText.T(whyKey) : null;
+                string loanKey = c.Loanable && CareersDirector.UniversityOpen ? d.EnrolWhy(c, StudyMode.FullTime, true, new List<Ask>(6)) : null;
+                string loanWhy = loanKey != null ? CareersText.T(loanKey) : null;
                 int seatsLeft = intake != null ? RosterRules.Left(intake) : -1;
                 string tag = CareersText.Kind(c.Kind);
                 var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, StudyMode.FullTime),
@@ -224,8 +228,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 r.Sections.Add(learn);
                 var before = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_before_enrol", "Before you enrol") };
-                before.Checks.Add(new WorkNeed { Words = w.F("reallife_work_you_have_fee", "You have the {fee} fee", "fee", feeWords), Met = cash >= fee,
-                    Have = cash >= fee ? null : w.F("reallife_work_short_by_n", "short by {n}", "n", CareersText.Money(fee - cash)) });
+                for (int a = 0; a < asks.Count; a++)
+                {
+                    d.AskWords(c, asks[a], out string askWords, out string askHave);
+                    before.Checks.Add(new WorkNeed { Words = askWords, Met = asks[a].Met, Have = askHave });
+                }
                 if (job != null && c.Timetabled)
                 {
                     WorkFit fit = StudyRules.Fit(c, StudyMode.FullTime, job.Def, out int _, out int _);
@@ -233,13 +240,9 @@ namespace RealLifeOverhaul.Ui
                         "Your shifts clash with the classes") : w.T("reallife_work_evenings_free", "Your evenings are free"),
                         Met = fit != WorkFit.Clash });
                 }
-                if (RosterRules.Floor(c, out int fs, out int fn))
-                {
-                    before.Checks.Add(new WorkNeed { Words = w.F("reallife_work_skill_floor", "{skill} {have}, the course asks for {need}", "skill",
-                        CareersText.Skill(fs), "have", skillNow.ToString(Inv), "need", fn.ToString(Inv)),
-                        Met = skillNow >= fn });
-                }
                 r.Sections.Add(before);
+                r.Sections.Add(new WorkSection { Part = WorkPart.Note, NoteIcon = UiIcon.Scales, Lead = w.T("reallife_work_exam_where_lead", "Where the exam is sat"),
+                    Text = d.ExamLine(c, StudyMode.FullTime, null) });
                 if (intake != null)
                 {
                     for (int s = 0; s < intake.Students.Count; s++)
@@ -266,8 +269,16 @@ namespace RealLifeOverhaul.Ui
                             Icon = UiIcon.Person, Opens = true });
                     }
                 }
-                r.HintLead = w.T("reallife_work_classes_desk_lead", "Classes start at your desk.");
-                r.Hint = w.T("reallife_work_classes_desk_line", "Click it in the classroom when the bell rings, in the game's own work panel.");
+                if (c.Timetabled)
+                {
+                    r.HintLead = w.T("reallife_work_classes_desk_lead", "Classes start at your desk.");
+                    r.Hint = w.T("reallife_work_classes_desk_line", "Click it in the classroom when the bell rings, in the game's own work panel.");
+                }
+                else
+                {
+                    r.HintLead = w.T("reallife_work_cert_home_lead", "Study at home.");
+                    r.Hint = w.T("reallife_work_cert_home_line", "The homework is done at the computer at home. The exam is sat at a study desk inside the school.");
+                }
                 r.HintIcon = UiIcon.Person;
                 r.Acts.Add(new WorkAct { Kind = Enrol, Arg = c.Id * 8, Label = seatsLeft == 0 && why != null ? w.T("reallife_work_full",
                     "Full") : w.F("reallife_work_enrol_for", "Enrol, {fee}", "fee", feeWords),
@@ -275,18 +286,23 @@ namespace RealLifeOverhaul.Ui
                 if (c.Loanable && CareersDirector.UniversityOpen)
                 {
                     r.Acts.Add(new WorkAct { Kind = Enrol, Arg = c.Id * 8 + 4, Label = w.T("reallife_campus_button_loan", "Enrol on a student loan"),
-                        Style = UiButtonKind.Secondary, Icon = UiIcon.Bank, Why = why });
+                        Style = UiButtonKind.Secondary, Icon = UiIcon.Bank, Why = loanWhy });
                 }
-                r.Acts.Add(new WorkAct { Kind = ShowSchool, Arg = (int)c.Campus, Label = w.T("reallife_work_show_school", "Show school"),
-                    Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true,
-                    Why = c.Campus == Campus.Online || c.Campus == Campus.Hospital ? w.T("reallife_work_no_school_place",
-                        "This course is taught online, or on a ward, so there is no school to show.") : null });
+                r.Acts.Add(ShowOnMap(w, c, StudyMode.FullTime));
                 t.Rows.Add(r);
             }
             ChooseMode(d, f, t, view, w);
             CampusBands.Picks(w, t.Below, t.Rows);
             t.Bands = (into, rows) => CampusBands.Picks(w, into, rows);
             return t;
+        }
+
+        // Show on map for the place a course's exam is sat: the course is in the argument and the kind of place beside it (a course 0 is never 0 in it).
+        private static WorkAct ShowOnMap(UtilitiesWords w, CourseDef c, StudyMode mode)
+        {
+            ExamPlace place = StudyNeedRules.ExamPlaceOf(c, mode);
+            return new WorkAct { Kind = ShowSchool, Arg = (c.Id + 1) * 4 + (int)place, Label = w.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary,
+                Icon = UiIcon.Locate, Opens = true, Why = place == ExamPlace.Ward ? CareersText.T("reallife_study_why_no_ward_place") : null };
         }
 
         // The timetable the player may follow the chosen course on (full time, part time, at a distance): a selector in its detail, and the mode in its Enrol buttons.
@@ -332,10 +348,6 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static long HustleCashOf() => RealLifeOverhaul.Hustles.HustleGame.Cash;
-
-        private static int SkillPoints(CareersDirector d, CourseDef c) => RosterRules.Floor(c, out int skill, out int _) ? StudyRules.Points(d.Study, skill) : 0;
-
         // ------------------------------------------------------------------------------------------------- Studying
 
         private WorkTab Studying(CareersDirector d, StudyFile f, int day, WorkView view)
@@ -363,6 +375,14 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), w.F("reallife_work_n_of_n", "{n} of {all}",
                     "n", e.Homework.ToString(Inv), "all", StudyRules.HomeworkSet(e).ToString(Inv))));
+                if (examOpen)
+                {
+                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), w.F("reallife_work_exam_days", "{from} to {to}",
+                        "from", CareersText.Day(e.ExamFrom), "to", CareersText.Day(e.ExamTo))));
+                }
+                // Where the exam is sat and by when, in the same words as the notice that opened it; Show on map goes to the place.
+                r.Sections.Add(new WorkSection { Part = WorkPart.Note, NoteIcon = UiIcon.Scales, Lead = w.T("reallife_work_exam_where_lead", "Where the exam is sat"),
+                    Text = d.ExamLine(c, (StudyMode)e.Mode, e) });
                 // The director says why a class, homework or an exam cannot be done now; a course with no class at all (or no homework, or no exam) has no button for it.
                 string attend = d.CanAttend(e, out int _), homework = d.CanHomework(e), sit = d.CanSit(e);
                 if (attend == null || attend != "reallife_study_why_no_class")
@@ -379,6 +399,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     r.Acts.Add(new WorkAct { Kind = Sit, Arg = c.Id, Label = w.T("reallife_campus_button_sit", "Sit the exam"), Style = UiButtonKind.Secondary, Icon = UiIcon.Scales,
                         Why = sit != null ? CareersText.T(sit) : null });
+                }
+                if (examOpen)
+                {
+                    r.Acts.Add(ShowOnMap(w, c, (StudyMode)e.Mode));
                 }
                 if (e.FeeLate)
                 {
@@ -994,14 +1018,14 @@ namespace RealLifeOverhaul.Ui
                     case Tutor: why = d.Tutor(); break;
                     case PayChild: why = d.PayChild(ChildName(d, act.Arg)); break;
                     case DeclineChild: why = d.DeclineChild(ChildName(d, act.Arg)); break;
-                    case ShowSchool: why = d.ShowCampus((Campus)act.Arg); break;
+                    case ShowSchool: why = d.ShowCourse(act.Arg / 4 - 1, act.Arg % 4); break;
                     case OpenTeacher: why = RealLifeOverhaul.Careers.PeoplePoolGame.Open(act.Arg) ? null : "reallife_career_why_route"; break;
                     case ShowMain: why = RealLifeOverhaul.Schools.SchoolsGame.Guide() ? null : "reallife_career_why_route"; break;
                     default: return false;
                 }
                 if (why != null)
                 {
-                    Notifications.Show(NotificationType.Error, why, d.TakeWhyData(), 8f);
+                    CareersDirector.Say(NotificationType.Error, why);
                     return false;
                 }
                 _local++;

@@ -308,7 +308,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (why != null)
             {
-                Notifications.Show(NotificationType.Warning, why, null, 8f);
+                CareersDirector.Say(NotificationType.Warning, why);
             }
         }
     }
