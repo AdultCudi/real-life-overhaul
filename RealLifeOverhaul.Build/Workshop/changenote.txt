@@ -1,8 +1,9 @@
-1.0.12
+1.0.13
 
 Fixed
-- A phone you put away can always be brought back in the new interface, by a phone button in the bar or the Phone key, also when another mod pages the phone's apps. Chinese, Korean and other non Latin text is no longer left blank when a screen first opens.
-- Every drop-down list in the new interface now scrolls with the mouse wheel, by dragging its scroll bar or the list, and with the keys or the pad, opens with the chosen option in view, and shows a long option whole.
-- The Campus diary and Coming up no longer list classes after a course's last one, a course's place line no longer repeats its room, and the How a class works note reads one sentence to a line.
-- A traffic light that stays on yellow for longer than a junction's cycle no longer counts against a person crossing, so the police do not warn or fine them for it. The mod also no longer takes over a car that is in the middle of a junction, which could have kept that light yellow.
-- Leaving a city no longer logs errors for shops in Uptown and Cedar Heights while their customers were being worked out.
+- The Mods page in Options gave way to the game's own screen when another mod had a drop-down option. Drop-down options from other mods now show on the page.
+- Updating the mod no longer costs a tech firm its products. A firm whose business cannot be read for a moment is left alone, a copy of your tech state is kept in the save, and a save that was already hit is put right once.
+- The desk session card no longer stays up empty after Work here, a cancel or the walk to the desk, Esc always closes it and gives the keys back, and the status bar's clock now keeps the same time as the phone's.
+- Delivery trips now share a full vehicle between all the stops of a route instead of filling the first stops only, say on the route's page where the goods are, and tell you once a day when and why goods did not reach a shop. Food thrown out for age no longer shows as sent from a warehouse.
+- Campus now says where each exam is sat and by which day, with a Show on map button, the school's study desks are marked while an exam of yours is open, and a refused course, job or promotion names what is short, what it needs and what you have.
+- The police no longer fine or warn you for walking in the road while you are helping someone, at an accident, a scene, a street event on a closed road, a job's marker or your own car at the kerb, nor in the moments after you get up from being knocked down. Walking in the road elsewhere is still jaywalking. Helping a friend move now tells you to pick up a box beside them first, and the marker points at the boxes until you carry one.
