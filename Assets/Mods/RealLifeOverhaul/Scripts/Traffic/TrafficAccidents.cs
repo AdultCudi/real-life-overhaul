@@ -84,6 +84,22 @@ namespace RealLifeOverhaul
             return a != null && a.HasActiveAccident && a._thanksForStopping && !a._playerHelped;
         }
 
+        /// <summary>
+        /// True while an accident scene is on the street and the point is at it or inside its taped road: the player is there
+        /// because the scene calls them, whoever caused it and whoever has helped (PlayerCalls).
+        /// </summary>
+        internal static bool Calls(Vector3 point)
+        {
+            TrafficAccidents a = Instance;
+            if (a == null || !a.HasActiveAccident)
+            {
+                return false;
+            }
+            Vector3 offset = point - a._scene;
+            return CallRules.Near(offset.x, offset.z, CallRules.SceneReach)
+                   || (a._cordon != null && a._cordon.Closed && a._cordon.Inside(point, -CallRules.TapeMargin));
+        }
+
         private readonly HashSet<Rigidbody> _involved = new HashSet<Rigidbody>();
         private readonly List<Wreck> _wrecks = new List<Wreck>();
         private readonly List<VehicleComponent> _others = new List<VehicleComponent>();
