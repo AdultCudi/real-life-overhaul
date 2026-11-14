@@ -21,7 +21,7 @@ namespace RealLifeOverhaul
 
         private static int Main(string[] args)
         {
-            string src = args.Length > 0 ? args[0] : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul"));
+            string src = args.Length > 0 ? args[0] : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Assets", "Mods", "RealLifeOverhaul"));
             string localePath = Path.Combine(src, "Locales", "en.json");
             Console.WriteLine("Mod source: " + src);
 
@@ -306,6 +306,7 @@ namespace RealLifeOverhaul
             SavedShiftCheck.Run(Fail, locale, src);
             JobOfficeCheck.Run(Fail, src);
             OptionsCheck.Run(Fail, locale, src);
+            ModRowCheck.Run(Fail, src);
             NoticeCheck.Run(Fail, locale, src);
             TypeNameCheck.Run(Fail, locale, src);
 

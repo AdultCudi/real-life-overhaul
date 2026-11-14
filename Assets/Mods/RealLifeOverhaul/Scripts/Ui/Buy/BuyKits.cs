@@ -121,12 +121,12 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<TMP_Text> Texts = new List<TMP_Text>(8);
 
         /// <summary>A field of the game's read from its contract line; null when this version lacks it.</summary>
-        internal static T Get<T>(GameMember member, object owner) where T : class => owner != null && member.Field != null ? member.Field.GetValue(owner) as T : null;
+        internal static T Get<T>(GameMember member, object owner) where T : class => OptionsRules.Read(member.Field, owner) as T;
 
         /// <summary>A value field of the game's read from its contract line, or the fallback when this version lacks it.</summary>
         internal static T Value<T>(GameMember member, object owner, T fallback) where T : struct
         {
-            object v = owner != null && member.Field != null ? member.Field.GetValue(owner) : null;
+            object v = OptionsRules.Read(member.Field, owner);
             return v is T t ? t : fallback;
         }
 
