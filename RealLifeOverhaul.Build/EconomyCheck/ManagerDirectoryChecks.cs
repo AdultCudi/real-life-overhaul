@@ -241,9 +241,20 @@ internal static partial class Program
             "managers: who could be a regional manager says who already is one of another district, and appointing them says that district is left with none");
         Check(MemberText(app, "partial void WriteManagers(").Contains("ManagerRules.Has(ManagerRules.Kinds(mp.Kind), (ManagerTask)task)"),
             "managers: a kind's page for a kind its place no longer has opens the manager's panel instead of a switch that does nothing");
-        Check(MemberText(rota, "public static void ReadPlaces(").Contains("LeftOut++") && MemberText(groups, "private void WriteDirectory(").Contains("RotaGame.LeftOut"),
+        Check(MemberText(rota, "public static void ReadPlaces(List<RotaPlace> into, List<RotaPlace> pool, int most)").Contains("LeftOut++")
+              && MemberText(groups, "private void WriteDirectory(").Contains("_director.ManagerLeftOut"),
             "managers: places past the most the company follows are counted and the tab says so (were left out without a word)");
-        Check(MemberText(rota, "public static void ReadPlaces(").Contains("!GoingPublic.Mine(reg)") && !directory.Contains("BuildingRegistrations") && !directory.Contains("EmployeeInstances")
+        // A car showroom founded after the company's first 64 places was never read, so it had no row, no open post and no manager to fill its standing order.
+        string live = ModSource(@"Ui\Company\CompanyLive.Managers.cs");
+        Check(CompanyCatalogue.PlacesMost > CompanyCatalogue.ShopsMost && CompanyCatalogue.PlacesMost >= 4 * CompanyCatalogue.ShopsMost
+              && MemberText(managers, "internal void ManagerRead()").Contains("RotaGame.ReadPlaces(_mgrPlaces, _mgrPlacePool, CompanyCatalogue.PlacesMost)")
+              && MemberText(managers, "internal void ManagerRead()").Contains("ManagerLeftOut = RotaGame.LeftOut")
+              && MemberText(rota, "public static void ReadPlaces(List<RotaPlace> into, List<RotaPlace> pool)").Contains("CompanyCatalogue.ShopsMost")
+              && ModSource(@"Economy\Company\CompanyDirector.Rota.cs").Contains("RotaGame.ReadPlaces(_rotaPlaces, _rotaPool);"),
+            "managers: the managers read the player's places up to PlacesMost, not the 64 the books follow, so a car showroom past them can have a manager (the rota planner keeps its 64)");
+        Check(MemberText(live, "private void BuildTree(").Contains("d.ManagerLeftOut > 0") && MemberText(live, "private void BuildTree(").Contains("reallife_mgr_left_out"),
+            "managers: the Company app's tree on the kit says how many places are not listed, as the old directory does (was silent)");
+        Check(MemberText(rota, "public static void ReadPlaces(List<RotaPlace> into, List<RotaPlace> pool, int most)").Contains("!GoingPublic.Mine(reg)") && !directory.Contains("BuildingRegistrations") && !directory.Contains("EmployeeInstances")
               && MemberText(directory, "internal void ManagerLook(").Contains("_managed") && MemberText(tests, "public void TestManagerFill()").Contains("GoingPublic.Mine(mp.Place.Reg)")
               && !groups.Contains("BuildingRegistrations") && !groups.Contains("EmployeeInstances"),
             "managers directory: only the player's own places are listed or changed (Going Public: another player's never)");

@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         public const int ShopsMost = 64;
+        public const int PlacesMost = 256;          // places a manager can be put over: one past ShopsMost has no books of its own
         public const int StaffMost = 400;
         public const int ClaimsMost = 24;
         public const int ReportsKept = 8;
