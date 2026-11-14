@@ -134,9 +134,9 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Note(CompanyText.T("reallife_co_over_more", "count", (needs - listed).ToString()));
             }
-            if (RotaGame.LeftOut > 0)
+            if (_director.ManagerLeftOut > 0)
             {
-                box.Note(CompanyText.T("reallife_mgr_left_out", "count", RotaGame.LeftOut.ToString(), "most", CompanyCatalogue.ShopsMost.ToString()));
+                box.Note(CompanyText.T("reallife_mgr_left_out", "count", _director.ManagerLeftOut.ToString(), "most", CompanyCatalogue.PlacesMost.ToString()));
             }
             box.Note(CompanyText.T("reallife_mgr_dir_what"));
             HierarchyBox(box);

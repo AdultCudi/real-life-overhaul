@@ -83,7 +83,7 @@ A player asked for the managers not to be one growing list. The tab opens on a d
 - A manager's panel showed the chance of a mistake from the manager's own skill on a day the regional manager stood in, said the regional manager stood in when they were off sick too, and a regional manager's row always said in post.
 - The list of who could be a regional manager did not say who already was one of another district, and appointing them emptied it without a word.
 - A kind's page stayed open for a kind its place no longer had (a business become a factory), with a switch that did nothing.
-- Places past the most the company follows (`CompanyCatalogue.ShopsMost`) were left out without a word; `RotaGame.LeftOut` counts them and the directory says so.
+- Places past the most the managers read (`CompanyCatalogue.PlacesMost`, 256; the books and the rota planner follow `ShopsMost`, 64) are left out; `RotaGame.LeftOut` counts them, `CompanyDirector.ManagerLeftOut` keeps the count of the managers' read, and the directory and the kit's tree say so. A place past the 64 has no books of its own, so it is managed as a place of works: stock, rota, hiring and leases. A Car Showroom founded late needs this, since its manager's Stock orders are the only way its standing order for new cars is filled.
 
 ## A switch for each task
 

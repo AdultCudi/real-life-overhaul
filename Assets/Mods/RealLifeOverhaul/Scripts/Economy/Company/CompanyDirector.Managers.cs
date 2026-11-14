@@ -46,6 +46,9 @@ namespace RealLifeOverhaul.Economy
         internal IReadOnlyList<ManagedPlace> Managed => _managed;
         internal IReadOnlyList<RotaPlace> ManagerPlaces => _mgrPlaces;
 
+        /// <summary>The places of the player's past CompanyCatalogue.PlacesMost on the last read of the managers' places: not listed.</summary>
+        internal int ManagerLeftOut { get; private set; }
+
         /// <summary>The districts the player has places in, each once, in the order first met.</summary>
         internal IReadOnlyList<string> ManagerDistricts => _districts;
 
@@ -111,7 +114,8 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerStop();
             RotaGame.Logger = Logger;
-            RotaGame.ReadPlaces(_mgrPlaces, _mgrPlacePool);
+            RotaGame.ReadPlaces(_mgrPlaces, _mgrPlacePool, CompanyCatalogue.PlacesMost);   // more than the books follow: a car showroom past them still needs its manager
+            ManagerLeftOut = RotaGame.LeftOut;
             for (int i = 0; i < _mgrPlaces.Count; i++)
             {
                 RotaPlace p = _mgrPlaces[i];

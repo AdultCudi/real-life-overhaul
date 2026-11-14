@@ -151,13 +151,19 @@ namespace RealLifeOverhaul.Ui
                     ids.Add("post:" + posts[i]);
                 }
             }
+            if (d.ManagerLeftOut > 0)
+            {
+                // As the old directory says it: a place past the most the company reads has no row and no open post here, so a player would look for it in vain.
+                nodes.Add(Caption(CompanyText.T("reallife_mgr_left_out", "count", d.ManagerLeftOut.ToString(), "most", CompanyCatalogue.PlacesMost.ToString())));
+                ids.Add("cap:left");
+            }
             m.Tree = nodes.ToArray();
             m.TreeIds = ids.ToArray();
             TreeFilters(m, d, h);
         }
 
         // What the tree's two filters read, one entry for each row: the district of a place, a region or an open post by its name, and whether something at the place waits for the owner.
-        // The districts are those of every place the company has (the cap of the company is CompanyCatalogue.ShopsMost), in order of first appearance.
+        // The districts are those of every place the company has (the most it reads is CompanyCatalogue.PlacesMost), in order of first appearance.
         private static void TreeFilters(CompanyManagersFacts m, CompanyDirector d, HierarchyState h)
         {
             int n = m.TreeIds.Length;
