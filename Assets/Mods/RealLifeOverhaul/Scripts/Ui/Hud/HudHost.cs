@@ -143,6 +143,12 @@ namespace RealLifeOverhaul.Ui
             _changeGroup.alpha = 0f;
             _screen.AllApps = () => OpenAllApps(-1);   // pressed from the guarded pointer handler
             _screen.OtherApps = () => OpenAllApps(UiShellApps.Other);
+            UiShellApps.Rearranged += Rearranged;   // the bar's apps chosen again in All apps: its row is laid out at once
+        }
+
+        private void Rearranged()
+        {
+            _screen.Dirty = true;
         }
 
         private Canvas _canvas;
@@ -653,6 +659,7 @@ namespace RealLifeOverhaul.Ui
 
         private void OnDestroy()
         {
+            UiShellApps.Rearranged -= Rearranged;
             if (Instance == this)
             {
                 Instance = null;

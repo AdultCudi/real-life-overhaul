@@ -3,7 +3,11 @@ using RealLifeOverhaul.Ui;
 
 internal static partial class Program
 {
-    private static readonly int[] AllAppsCommands = { UiAllApps.TabCommand, UiAllApps.RowCommand };
+    private static readonly int[] AllAppsCommands =
+    {
+        UiAllApps.TabCommand, UiAllApps.RowCommand, UiAllApps.StarCommand, UiAllApps.EarlierCommand, UiAllApps.LaterCommand, UiAllApps.PinCommand, UiAllApps.EditCommand,
+        UiAllApps.ResetCommand
+    };
     private static readonly int[] CardCommands = { UiCard.ButtonCommand, UiCard.CheckCommand, UiCard.FieldCommand };
     private static readonly int[] NoticeCommands = { UiNotices.CardCommand, UiNotices.ClearCommand };
 
@@ -21,6 +25,12 @@ internal static partial class Program
                     cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (folder " + f + ")", Title = "All apps", Commands = AllAppsCommands,
                         Lay = (s, fr, dark, k, t) => WithRow(UiSamples.RowContacts, true, () => UiAllApps.Lay(s, UiSamples.AllApps(t, f), fr, dark, k)) });
                 }
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (favourites)", Title = "All apps", Commands = AllAppsCommands,
+                    Lay = (s, fr, dark, k, t) => WithRow(UiSamples.RowContacts, true, () => UiAllApps.Lay(s, UiSamples.AllAppsFavourites(t, false), fr, dark, k)) });
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (no favourites)", Title = "All apps", Commands = AllAppsCommands,
+                    Lay = (s, fr, dark, k, t) => WithRow(UiSamples.RowContacts, true, () => UiAllApps.Lay(s, UiSamples.AllAppsFavourites(t, true), fr, dark, k)) });
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (the bar's page)", Title = "All apps", Commands = AllAppsCommands,
+                    Lay = (s, fr, dark, k, t) => WithRow(UiSamples.RowContacts, true, () => UiAllApps.Lay(s, UiSamples.AllAppsBar(t), fr, dark, k)) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (no other mods)", Title = "All apps", Commands = AllAppsCommands,
                     Lay = (s, fr, dark, k, t) => WithRow(UiSamples.RowContacts, true, () => UiAllApps.Lay(s, UiSamples.AllApps(t, UiShellApps.Other, false), fr, dark, k)) });
                 return;

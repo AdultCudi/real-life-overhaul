@@ -14,7 +14,9 @@ namespace RealLifeOverhaul.Ui
         public int Badge;
         public UiShellKind Kind;
         public int Folder;         // its All apps tab: UiShellApps.Money .. Setup, or Other for another mod's
-        public bool InRow;         // on the phone's first home page: the app row shows it
+        public bool InRow;         // on the app row: the player's bar (UiAppDeck), else the phone's first home page
+        public bool DefaultRow;    // on the phone's first home page, as the source gave it: what the row is until the player chooses
+        public bool Favourite;     // the player marked it in All apps (UiAppDeck)
         public int Picture;        // another mod's own app picture (UiDraw.PictureKey), shown instead of the glyph; 0 for none
         public PhoneItemFrom From; // where its own button stands: the phone's grid, or the full menu's row or the phone itself for another mod's
     }
@@ -64,6 +66,17 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The fill's version: the frame lays the row out again only when it moved.</summary>
         public static int Version { get; private set; } = -1;
 
+        /// <summary>The apps' indexes in the order the row shows them (the player's bar, else the phone's first page), as last filled.</summary>
+        public static readonly List<int> Row = new List<int>(16);
+
+        /// <summary>How many of the row's apps stood on the strip when it was last laid out: the strip's room may cut the bar shorter than the player chose. 0 until a bar has been laid.</summary>
+        public static int RowShown;
+
+        /// <summary>The player changed the bar or the favourites: whatever draws the row lays it out again.</summary>
+        public static event Action Rearranged;
+
+        private static int _source;
+
         /// <summary>Asks the source again; true when anything changed.</summary>
         public static bool Refresh()
         {
@@ -72,11 +85,35 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             Items.Clear();
-            int version = Source(Items);
+            _source = Source(Items);
+            for (int i = 0; i < Items.Count; i++)
+            {
+                UiShellApp a = Items[i];
+                a.DefaultRow = a.InRow;
+                Items[i] = a;
+            }
+            UiAppDeck.Current.Apply(Items, Row);
+            int version = Mixed();
             bool changed = version != Version;
             Version = version;
             return changed;
         }
+
+        /// <summary>
+        /// The deck changed: its flags and the row's order put on the apps again without asking the source, the version moved,
+        /// and (unless a drag is still going) whatever draws the row told to lay it out again.
+        /// </summary>
+        public static void Rearrange(bool tell = true)
+        {
+            UiAppDeck.Current.Apply(Items, Row);
+            Version = Mixed();
+            if (tell)
+            {
+                Rearranged?.Invoke();
+            }
+        }
+
+        private static int Mixed() => unchecked(_source * 31 + UiAppDeck.Current.Revision);
 
         private static int[] _home = new int[64];
         private static int[] _inFolder = new int[64];
@@ -125,7 +162,7 @@ namespace RealLifeOverhaul.Ui
             UiIcon icon = it.Icon != UiIcon.None ? it.Icon : PhoneLooks.OtherMods;
             into.Add(new UiShellApp
             {
-                Id = it.Id, Title = it.Title, Icon = icon, Tint = it.Tint != UiRole.None ? it.Tint : UiIconTints.Of(icon), Badge = it.Badge, Kind = kind, InRow = inRow,
+                Id = it.Id, Title = it.Title, Icon = icon, Tint = it.Tint != UiRole.None ? it.Tint : UiIconTints.Of(icon), Badge = it.Badge, Kind = kind, InRow = inRow, DefaultRow = inRow,
                 Folder = FolderOf(it.Id, kind, it.Folder, PhoneLayoutRules.DefaultOf(it.Id)), Picture = it.Picture, From = it.From
             });
         }
