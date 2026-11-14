@@ -39,6 +39,10 @@ namespace RealLifeOverhaul.Tech
         private readonly List<int> _taken = new List<int>(2), _behind = new List<int>(4);   // contracts to tell of after the day's notes
         private FirmsFile _firmsFile;
         private bool _firmsOn;
+        private GameInstance _loadedOf;                       // the save _loaded was read from
+        private Dictionary<string, string> _loaded;         // its firms', markets' and studio's lines as read at the first start
+        private readonly HashSet<string> _held = new HashSet<string>(StringComparer.Ordinal), _heldTold = new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<Product> _running = new List<Product>(16);
 
         /// <summary>The firms' file; null while the part is off.</summary>
         public FirmsFile Firms => _firmsOn ? _firmsFile : null;
@@ -58,8 +62,14 @@ namespace RealLifeOverhaul.Tech
             NameOldProducts();
             _ownHours = OwnDeskRules.HoursFrom(save.modData != null && save.modData.TryGetValue(OwnDeskRules.HoursKey, out string hours) ? hours : null);   // a save without the line: a working day
             _firmsOn = true;
+            if (!ReferenceEquals(_loadedOf, save))
+            {
+                _loadedOf = save;
+                _loaded = FirmsKeep.Lines(save.modData);   // the lines as this save held them, before anything of the session is written: the copy kept at the next save
+            }
             CatchUpMoves(MoveRules.PartFirms);
             ReadFirms(save.Day);
+            RepairFirms(save);
             StartInfra();
             Logger?.Info("Tech: firms " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _firms.Count + " firm(s), " + _firmsFile.Products.Count
                          + " product(s), " + _firmsFile.Contracts.Count + " contract(s).");
@@ -95,6 +105,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (_firmsFile != null && data != null)
             {
+                KeepCopy(data);
                 data[FirmsStore.Key] = FirmsStore.Write(_firmsFile);
                 if (_ownHours != OwnDeskRules.DefaultHours)
                 {
@@ -104,6 +115,67 @@ namespace RealLifeOverhaul.Tech
                 {
                     data.Remove(OwnDeskRules.HoursKey);
                 }
+            }
+        }
+
+        // The copy of the last good read goes into the save with the lines (FirmsKeep.Refresh): a poorer read never writes over a richer copy for 45 days.
+        private void KeepCopy(Dictionary<string, string> data)
+        {
+            if (_loaded == null || !ReferenceEquals(_loadedOf, Save))
+            {
+                return;
+            }
+            data.TryGetValue(FirmsKeep.BackupKey, out string held);
+            string next = FirmsKeep.Refresh(held, _loaded, Save.Day);
+            if (next != null)
+            {
+                data[FirmsKeep.BackupKey] = next;
+            }
+        }
+
+        // Once for a save, at its first load on a version that has it: a firm whose record was made again after an update's loss is put right, money
+        // paid back, the player told once. Logs every step; nothing for a save whose firms were never made again.
+        private void RepairFirms(GameInstance save)
+        {
+            if (save.modData == null || (save.modData.TryGetValue(FirmsRepair.Key, out string mark) && FirmsRepair.Done(mark)))
+            {
+                return;
+            }
+            FirmsFile copy = null;
+            Dictionary<string, string> lines = FirmsKeep.ReadBackup(save.modData.TryGetValue(FirmsKeep.BackupKey, out string held) ? held : null, out _);
+            if (lines != null && lines.TryGetValue(FirmsStore.Key, out string firms))
+            {
+                try
+                {
+                    copy = FirmsStore.Read(firms, out _);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Tech repair: the copy of the firms could not be read (" + e.GetType().Name + "); the repair goes by what the save holds.");
+                }
+            }
+            var standing = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < _firms.Count; i++)
+            {
+                standing.Add(_firms[i].File.Place);
+            }
+            RepairReport rep = FirmsRepair.Run(_firmsFile, copy, _talent, standing, FirmsGame.RentSince);
+            for (int i = 0; i < rep.Steps.Count; i++)
+            {
+                Logger?.Info("Tech repair: " + rep.Steps[i]);
+            }
+            if (rep.RefundCents > 0)
+            {
+                FirmsGame.Refund(rep.RefundCents, TechText.T("reallife_tech_repair_name"));
+            }
+            save.modData[FirmsRepair.Key] = FirmsRepair.Mark(rep, save.Day);
+            Logger?.Info("Tech repair: " + (rep.Any ? rep.Firms + " firm(s) put right, " + rep.Products + " product(s) put back, " + rep.RefundCents + " cents paid back."
+                : "no firm of this save was made again; nothing changed.") + (copy != null ? string.Empty : " No copy of an earlier read is kept in this save."));
+            if (rep.Any)
+            {
+                TellTech(NotificationType.Success, "reallife_tech_repair_note",
+                    Data("firms", rep.Firms.ToString(CultureInfo.InvariantCulture), "products", rep.Products.ToString(CultureInfo.InvariantCulture), "refund", TechText.Cents(rep.RefundCents)),
+                    TabFirms, null);
             }
         }
 
@@ -136,16 +208,41 @@ namespace RealLifeOverhaul.Tech
                 f.Name = TalentGame.NameOf(reg);
                 _firms.Add(new FirmPlace { File = f, Reg = reg });
             }
-            for (int i = _firmsFile.Firms.Count - 1; i >= 0; i--)
+            // Closed only when the game shows its business is gone: a business not read this time (a registration not back yet, a building
+            // the city has not made, a stand-down) leaves the firm, its products and its work in the file untouched until it is read again.
+            FirmsKeep.Sweep(_firmsFile, day, FirmsGame.Reading, _held, (place, fate, products) =>
             {
-                Firm f = _firmsFile.Firms[i];
-                if (f.Seen)
+                if (fate == PlaceFate.Gone)
                 {
-                    continue;
+                    _heldTold.Remove(place);
+                    Logger?.Info("Tech: the firm at " + Where(place) + " has no business of the player's there any more and no move took it elsewhere; closed with " + products + " product(s).");
                 }
-                int products = FirmsRules.Close(_firmsFile, f, day);
-                Logger?.Info("Tech: the firm at " + Where(f.Place) + " has no business of the player's there any more and no move took it elsewhere; closed with " + products + " product(s).");
+                else if (_heldTold.Add(place))
+                {
+                    Logger?.Info("Tech: the firm at " + Where(place) + " is held as it is: its business was not read this time, so nothing of it is closed or lost.");
+                }
+            });
+        }
+
+        /// <summary>The places of firms held this session for want of a reading of their business.</summary>
+        internal bool Held(string place) => _held.Contains(place);
+
+        // The products of the firms that run: a firm held is left out, so its model neither trains nor is paid for while its business is not read.
+        private IList<Product> RunningProducts()
+        {
+            if (_held.Count == 0)
+            {
+                return _firmsFile.Products;
             }
+            _running.Clear();
+            for (int i = 0; i < _firmsFile.Products.Count; i++)
+            {
+                if (!_held.Contains(_firmsFile.Products[i].Place))
+                {
+                    _running.Add(_firmsFile.Products[i]);
+                }
+            }
+            return _running;
         }
 
         internal FirmPlace FirmOf(string place)
