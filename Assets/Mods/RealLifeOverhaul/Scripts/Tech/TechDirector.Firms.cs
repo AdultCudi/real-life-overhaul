@@ -133,14 +133,22 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // Once for a save, at its first load on a version that has it: a firm whose record was made again after an update's loss is put right, money
-        // paid back, the player told once. Logs every step; nothing for a save whose firms were never made again.
+        // Once for a save, at its first load on a version that has it: a firm whose record was made again after an update's loss is put right (the
+        // first pass: founding day, products and the rent the statement shows), then what its models and games cost again is paid back by the rules'
+        // prices (FirmsCredit), the player told once. A save the first pass already marked (1.0.13) gets only the credit. Logs every step; nothing for
+        // a save whose firms were never made again.
         private void RepairFirms(GameInstance save)
         {
-            if (save.modData == null || (save.modData.TryGetValue(FirmsRepair.Key, out string mark) && FirmsRepair.Done(mark)))
+            if (save.modData == null)
             {
                 return;
             }
+            save.modData.TryGetValue(FirmsRepair.Key, out string mark);
+            if (FirmsRepair.Done(mark))
+            {
+                return;
+            }
+            bool first = !FirmsRepair.FirstDone(mark);
             FirmsFile copy = null;
             Dictionary<string, string> lines = FirmsKeep.ReadBackup(save.modData.TryGetValue(FirmsKeep.BackupKey, out string held) ? held : null, out _);
             if (lines != null && lines.TryGetValue(FirmsStore.Key, out string firms))
@@ -159,23 +167,59 @@ namespace RealLifeOverhaul.Tech
             {
                 standing.Add(_firms[i].File.Place);
             }
-            RepairReport rep = FirmsRepair.Run(_firmsFile, copy, _talent, standing, FirmsGame.RentSince);
-            for (int i = 0; i < rep.Steps.Count; i++)
+            // The studio starts after the firms: its line is read here only to see the games' costs, never written.
+            StudioFile studio = _studio;
+            if (studio == null && save.modData.TryGetValue(StudioStore.Key, out string studioLine))
             {
-                Logger?.Info("Tech repair: " + rep.Steps[i]);
+                try
+                {
+                    studio = StudioStore.Read(studioLine, out _);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Tech repair: the studio's games could not be read (" + e.GetType().Name + "); no game is credited.");
+                }
             }
-            if (rep.RefundCents > 0)
+            var rep = new RepairReport();
+            if (!first)
             {
-                FirmsGame.Refund(rep.RefundCents, TechText.T("reallife_tech_repair_name"));
+                FirmsRepair.ReadMark(mark, rep);
             }
-            save.modData[FirmsRepair.Key] = FirmsRepair.Mark(rep, save.Day);
-            Logger?.Info("Tech repair: " + (rep.Any ? rep.Firms + " firm(s) put right, " + rep.Products + " product(s) put back, " + rep.RefundCents + " cents paid back."
-                : "no firm of this save was made again; nothing changed.") + (copy != null ? string.Empty : " No copy of an earlier read is kept in this save."));
-            if (rep.Any)
+            CreditReport credit = FirmsCredit.Review(_firmsFile, studio, _talent, standing, Prices.Level, !first, rep.Firms, rep.Products, copy);   // before the first pass changes anything
+            if (first)
             {
-                TellTech(NotificationType.Success, "reallife_tech_repair_note",
-                    Data("firms", rep.Firms.ToString(CultureInfo.InvariantCulture), "products", rep.Products.ToString(CultureInfo.InvariantCulture), "refund", TechText.Cents(rep.RefundCents)),
-                    TabFirms, null);
+                rep = FirmsRepair.Run(_firmsFile, copy, _talent, standing, FirmsGame.RentSince);
+                FirmsCredit.Net(credit, rep.PaidAt);
+                for (int i = 0; i < rep.Steps.Count; i++)
+                {
+                    Logger?.Info("Tech repair: " + rep.Steps[i]);
+                }
+                if (rep.RefundCents > 0)
+                {
+                    FirmsGame.Refund(rep.RefundCents, TechText.T("reallife_tech_repair_name"));
+                }
+                Logger?.Info("Tech repair: " + (rep.Any ? rep.Firms + " firm(s) put right, " + rep.Products + " product(s) put back, " + rep.RefundCents + " cents paid back."
+                    : "no firm of this save was made again; nothing changed.") + (copy != null ? string.Empty : " No copy of an earlier read is kept in this save."));
+                if (rep.Any)
+                {
+                    TellTech(NotificationType.Success, "reallife_tech_repair_note",
+                        Data("firms", rep.Firms.ToString(CultureInfo.InvariantCulture), "products", rep.Products.ToString(CultureInfo.InvariantCulture), "refund", TechText.Cents(rep.RefundCents)),
+                        TabFirms, null);
+                }
+            }
+            for (int i = 0; i < credit.Steps.Count; i++)
+            {
+                Logger?.Info("Tech repair: " + credit.Steps[i]);
+            }
+            long owed = credit.Cents;
+            save.modData[FirmsRepair.Key] = FirmsRepair.Mark(rep, save.Day, owed);
+            Logger?.Info("Tech repair: " + (owed > 0 ? credit.Lines.Count + " firm(s) credited, " + owed + " cents paid back for training and work done again." : "no credit for retraining is due.")
+                         + " The repair is marked done in this save.");
+            if (owed > 0)
+            {
+                FirmsGame.Refund(owed, TechText.T("reallife_tech_repair_name"));
+                TellTech(NotificationType.Success, credit.Lines.Count == 1 ? "reallife_tech_credit_note" : "reallife_tech_credit_note_many",
+                    Data("firm", FirmsCredit.Named(credit.Lines[0]), "firms", credit.Lines.Count.ToString(CultureInfo.InvariantCulture), "amount", TechText.Cents(owed)), TabFirms, null);
             }
         }
 
