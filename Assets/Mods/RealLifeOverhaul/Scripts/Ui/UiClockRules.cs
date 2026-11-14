@@ -21,6 +21,16 @@ namespace RealLifeOverhaul.Ui
             return shown.ToString("00", inv) + ":" + m.ToString("00", inv) + (h >= 12 ? " PM" : " AM");
         }
 
+        /// <summary>
+        /// One number for the game's minute and the clock option: two layouts that drew a clock show the same time when their stamps
+        /// are equal, and a screen that drew one is laid again when the stamp moves (UiHost). Game-free.
+        /// </summary>
+        public static int Stamp(int day, int hour, int minute, bool twelveHour)
+        {
+            int m = minute < 0 ? 0 : minute > 59 ? 59 : minute;
+            return (day * 1440 + hour * 60 + m) * 2 + (twelveHour ? 1 : 0);
+        }
+
         /// <summary>The same for minutes since midnight.</summary>
         public static string Format(int minuteOfDay, bool twelveHour)
         {

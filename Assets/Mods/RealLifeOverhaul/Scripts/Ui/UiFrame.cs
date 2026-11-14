@@ -172,5 +172,8 @@ namespace RealLifeOverhaul.Ui
     {
         public static Func<string> Status;
         public static Func<UiStatusModel> Bar;
+
+        /// <summary>The game's minute and clock option as one number (UiClock.Stamp), which a layout that drew the bar keeps and the host compares; null while no game is read.</summary>
+        public static Func<int> Stamp;
     }
 }

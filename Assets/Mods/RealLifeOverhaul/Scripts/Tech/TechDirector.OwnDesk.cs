@@ -139,8 +139,16 @@ namespace RealLifeOverhaul.Tech
         {
             if (WorksAt(desk))
             {
+                string rides = TechBridges.ContractClientAt(desk) != null ? "a contract of the player's rides on it, so the choice box asks which" : "the firm's own work";
+                Logger?.Info("Sessions: work here is offered at the owner's desk: " + rides);
                 DeskClicked(desk);
+                return;
             }
+            // pressed on the sessions' panel, but the work cannot be offered at this desk now (a stint began, the firms stood down, somebody sat down): said, never silent
+            bool shared = desk != null && ReferenceEquals(desk, _sharedDesk);
+            Logger?.Info("Sessions: work here was pressed, but the work cannot be offered at this desk now (firms " + (_firmsOn ? "on" : "off") + ", a stint "
+                         + (_stint != null ? "is on" : "is not on") + ", the desk " + (shared ? "is still the shared one" : "is no longer the shared one") + ").");
+            Notifications.Show(NotificationType.Warning, "reallife_session_note_work_lost", null, 10f);
         }
 
         // A click on the desk: the contract of the player's that Careers would have them work here (paid work for a client) and the firm's own work are told apart by
