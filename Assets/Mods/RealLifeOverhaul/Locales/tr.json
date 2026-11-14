@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: Modun kendi tasarımındaki ekranlarda bir işletmenin Ayarlar sayfasında artık rol ve üniforma listeleri var, böylece bir üniforma ön ayarı bir role verilebilir ve personele ulaşır; ayrıca bir ön ayarın adı, Enter tuşuna basıldığında olduğu gibi imleci başka yere taşıdığınızda da korunur. Bir araba galerisi ya da şirketin ilk 64 yerinden sonraki herhangi bir yer artık Şirket uygulamasının Yöneticiler sekmesinde bir yöneticiye verilebilir; böylece yönetici galerinin yeni arabalar için günlük stok siparişini doldurabilir ve modun ekranları listelenmeyen yerlerin sayısını gösterir.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -37973,5 +37973,6 @@
   "reallife_apps_reset": "Uygulama çubuğunu ve favorileri sıfırla (RLO arayüzü)",
   "reallife_ui_apps_reset_done": "Uygulama çubuğu ve favorileriniz varsayılana döndü.",
   "reallife_tech_credit_note": "Bir güncelleme {firm} işini yeniden yaptı, bu yüzden yaptığı şeyi eğitmek için ikinci kez ödeme yaptınız. {amount} Teknoloji güncelleme iadesi olarak geri ödendi, banka ekstrenize bakın.",
-  "reallife_tech_credit_note_many": "Bir güncelleme teknoloji firmalarınızdan {firms} işini yeniden yaptı, bu yüzden yaptıkları işi eğitmek ve kurmak için ikinci kez ödeme yaptınız. Toplam {amount} geri ödendi, banka ekstrenize bakın."
+  "reallife_tech_credit_note_many": "Bir güncelleme teknoloji firmalarınızdan {firms} işini yeniden yaptı, bu yüzden yaptıkları işi eğitmek ve kurmak için ikinci kez ödeme yaptınız. Toplam {amount} geri ödendi, banka ekstrenize bakın.",
+  "reallife_ui_bizman_uniform_role": "Rol"
 }

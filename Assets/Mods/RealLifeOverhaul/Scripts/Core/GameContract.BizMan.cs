@@ -98,6 +98,11 @@ namespace RealLifeOverhaul
         public static readonly GameMember SetKind = Optional(Field(BizManKitPart, Game, "BizManSettings", "businessTypeDropdown", "Dropdown"));
         public static readonly GameMember SetLogo = Optional(Field(BizManKitPart, Game, "BizManSettings", "logoCustomizer", "LogoCustomizer"));
         public static readonly GameMember SetUniforms = Optional(Field(BizManKitPart, Game, "BizManSettings", "setUpUniformsWindow", "SetUpUniformsWindow"));
+        // The window under Settings that gives each role of the business a preset (the game's SetUpUniformsWindow): its two drop-downs, and what it shows in place of them without a uniform locker.
+        public static readonly GameMember UniformWindowOn = Optional(Field(BizManKitPart, Game, "SetUpUniformsWindow", "content", "GameObject"));
+        public static readonly GameMember UniformWindowOff = Optional(Field(BizManKitPart, Game, "SetUpUniformsWindow", "noUniformsWarning", "GameObject"));
+        public static readonly GameMember UniformRole = Optional(Field(BizManKitPart, Game, "SetUpUniformsWindow", "skillNameDropdown", "Dropdown"));
+        public static readonly GameMember UniformSet = Optional(Field(BizManKitPart, Game, "SetUpUniformsWindow", "uniformDropdown", "Dropdown"));
         public static readonly GameMember LogoSave = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "saveLogoChangesButton", "Button"));
         public static readonly GameMember LogoFont = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "fontDropdown", "Dropdown"));
         // The logo editor's pieces: the customizer's lists of shapes and colours (whose buttons the kit presses, so the game's own handlers run), its

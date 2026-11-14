@@ -565,6 +565,12 @@ internal static partial class UiSamples
         m.Kinds = new[] { t("ba:businesstype_coffeeshop", "Coffee Shop"), t("ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant"), t("ba:businesstype_giftshop", "Gift Shop") };
         m.KindChosen = 0;
         m.Uniforms = t("bizman_set_up_uniforms", "Set up uniforms");
+        m.UniformRoleLabel = t("reallife_ui_bizman_uniform_role", "Role");
+        m.UniformSetLabel = t("myemployees_uniform", "Uniform");
+        m.UniformRoles = new[] { "Customer Service", "Cooking" };
+        m.UniformRoleChosen = 0;
+        m.UniformSets = new[] { t("common_unassigned", "Unassigned"), "Preset 1", "Crew red" };
+        m.UniformSetChosen = 2;
         m.LogoTitle = t("bizman_settings_sign_appearance_info", "Sign appearance");
         m.LogoLabel = t("reallife_ui_bizman_logo", "Logo");
         m.Picture = m.Head.Picture;

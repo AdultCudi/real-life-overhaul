@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test mislukt: een ronde langs de bedrijven van de stad struikelde over een record zonder gebouw. Het logboek zegt welke.",
   "reallife_hire_test_orphan_off": "Laad eerst een savegame. Deze test draait niet in een sessie van Going Public.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: in de schermen in het eigen ontwerp van de mod heeft de pagina Instellingen van een bedrijf nu de lijsten met rollen en uniformen, zodat een uniformvoorinstelling aan een rol kan worden gegeven en het personeel bereikt, en de naam van een voorinstelling blijft bewaard wanneer je ergens anders klikt en niet alleen bij Enter. Een autoshowroom, of elke plek na de eerste 64 van het bedrijf, kan nu een manager krijgen op het tabblad Managers van de app Bedrijf, zodat een manager de dagelijkse voorraadbestelling van nieuwe auto's voor de showroom kan vullen, en de schermen van de mod tonen hoeveel plekken er niet in de lijst staan.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Opgelost: als alle gebouwen die het nutsbedrijf kunnen huisvesten van jou zijn, vraag je stroom- en wateraansluitingen aan en laat je ze weer aansluiten in de Nutsvoorzieningen-app, telefonisch, voor dezelfde prijzen, en de meldingen zeggen dat; zodra een gebouw vrij is, gaat het kantoor weer open en zegt de app waar. Opgelost: na het intrekken van een sollicitatie en opnieuw solliciteren op dezelfde functie opende de Carrière-app de ingetrokken sollicitatie en was het gesprek niet te bereiken. Elke sollicitatie heeft nu een eigen regel, en het gesprek, het aanbod en het intrekken gaan naar de lopende. Opgelost: een opslag met een bedrijfsrecord waarvan de stad het gebouw niet heeft (een andere mod kan er een achterlaten) zet de techsector niet meer bij elke keer laden uit. De mod slaat zo'n record nu over overal waar hij de bedrijven van de stad leest, noemt het adres één keer in het logboek en verandert er niets aan.",
   "reallife_co_mass_raise": "Een loonsverhoging geven",
@@ -37973,5 +37973,6 @@
   "reallife_apps_reset": "De app-balk en favorieten terugzetten (RLO-interface)",
   "reallife_ui_apps_reset_done": "De app-balk en je favorieten staan weer op de standaard.",
   "reallife_tech_credit_note": "Een update heeft {firm} opnieuw gemaakt, dus je hebt voor het trainen van wat er was gebouwd een tweede keer betaald. {amount} is terugbetaald als Terugbetaling tech-update, zie je bankafschrift.",
-  "reallife_tech_credit_note_many": "Een update heeft {firms} van je tech-bedrijven opnieuw gemaakt, dus je hebt voor het trainen en bouwen van wat zij hadden gedaan een tweede keer betaald. In totaal is {amount} terugbetaald, zie je bankafschrift."
+  "reallife_tech_credit_note_many": "Een update heeft {firms} van je tech-bedrijven opnieuw gemaakt, dus je hebt voor het trainen en bouwen van wat zij hadden gedaan een tweede keer betaald. In totaal is {amount} terugbetaald, zie je bankafschrift.",
+  "reallife_ui_bizman_uniform_role": "Rol"
 }

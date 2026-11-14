@@ -498,7 +498,7 @@ namespace RealLifeOverhaul.Ui
         private static void SettingsPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             float half = Half(w), rx = x + half + UiTokens.S8;
-            float labelW = UiDraw.SnapDown(Math.Min(UiDraw.LabelColumn(half * 0.6f, m.NameLabel, m.KindLabel, m.FontLabel), half * 0.4f));
+            float labelW = UiDraw.SnapDown(Math.Min(UiDraw.LabelColumn(half * 0.6f, m.NameLabel, m.KindLabel, m.FontLabel, m.UniformRoleLabel, m.UniformSetLabel), half * 0.4f));
             float fx = x + labelW + UiTokens.S4, fw = half - labelW - UiTokens.S4;
             float ly = Title(s, at, x, y, half, m.PartTitle);
             int random = Find(m.Actions, DoRandom);
@@ -517,6 +517,27 @@ namespace RealLifeOverhaul.Ui
                 Label(s, at, x, ly, labelW, m.KindLabel);
                 UiDraw.Choice(s, at, fx, ly, fw, m.KindChosen >= 0 && m.KindChosen < m.Kinds.Length ? m.Kinds[m.KindChosen] : null, Kind, 0, m.Kinds.Length < 2);
                 ly += UiTokens.Control + UiTokens.S3;
+            }
+            // Which preset each role wears: the game's own two lists under Settings, a preset chosen for a role the game's own way.
+            float roleY = -1f, setY = -1f;
+            if (m.UniformRoles.Length > 0)
+            {
+                roleY = ly;
+                Label(s, at, x, ly, labelW, m.UniformRoleLabel);
+                UiDraw.Choice(s, at, fx, ly, fw, m.UniformRoleChosen >= 0 && m.UniformRoleChosen < m.UniformRoles.Length ? m.UniformRoles[m.UniformRoleChosen] : null,
+                    UniformRole, 0, m.UniformRoles.Length < 2);
+                ly += UiTokens.Control + UiTokens.S3;
+                setY = ly;
+                Label(s, at, x, ly, labelW, m.UniformSetLabel);
+                UiDraw.Choice(s, at, fx, ly, fw, m.UniformSetChosen >= 0 && m.UniformSetChosen < m.UniformSets.Length ? m.UniformSets[m.UniformSetChosen] : null,
+                    UniformSet, 0, m.UniformSets.Length < 2);
+                ly += UiTokens.Control + UiTokens.S3;
+            }
+            if (!string.IsNullOrEmpty(m.UniformsNote))
+            {
+                float th = UiDraw.Snap(UiTextRules.WrappedHeight(m.UniformsNote, UiStyle.Small, fw, 3));
+                UiDraw.Text(s, at, fx, ly, fw, UiStyle.Small, UiRole.Text2, m.UniformsNote, UiFlags.Label | UiFlags.Wrap, 3);
+                ly += th + UiTokens.S3;
             }
             if (!string.IsNullOrEmpty(m.Uniforms))
             {
@@ -595,6 +616,16 @@ namespace RealLifeOverhaul.Ui
             {
                 Behind(s, x, y, w, bottom);
                 UiDraw.ChoiceList(s, at, fx, kindY + UiTokens.Control + UiTokens.S1, fw, m.Kinds, m.Kinds.Length, m.KindChosen, 0f, KindOption);
+            }
+            else if (m.UniformRoleOpen && m.UniformRoles.Length > 0 && roleY >= 0f)
+            {
+                Behind(s, x, y, w, bottom);
+                UiDraw.ChoiceList(s, at, fx, roleY + UiTokens.Control + UiTokens.S1, fw, m.UniformRoles, m.UniformRoles.Length, m.UniformRoleChosen, 0f, UniformRoleOption);
+            }
+            else if (m.UniformSetOpen && m.UniformSets.Length > 0 && setY >= 0f)
+            {
+                Behind(s, x, y, w, bottom);
+                UiDraw.ChoiceList(s, at, fx, setY + UiTokens.Control + UiTokens.S1, fw, m.UniformSets, m.UniformSets.Length, m.UniformSetChosen, 0f, UniformSetOption);
             }
             else if (m.FontOpen && m.Fonts.Length > 0 && fontY >= 0f)
             {
