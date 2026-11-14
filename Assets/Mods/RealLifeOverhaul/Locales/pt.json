@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Na interface RLO, agora você pode escolher quais apps ficam na barra na parte de baixo da tela e em que ordem, e marcar seus apps favoritos em Todos os apps. Corrigido: uma empresa de tecnologia que uma atualização tinha refeito agora é devolvido o que você pagou duas vezes pelo treinamento e pelo trabalho.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -37999,5 +37999,7 @@
   "reallife_apps_reset": "Redefinir a barra de apps e os favoritos (Interface RLO)",
   "reallife_ui_apps_reset_done": "A barra de apps e seus favoritos voltaram ao padrão.",
   "reallife_tech_credit_note": "Uma atualização fez {firm} de novo, então você pagou uma segunda vez para treinar o que ela tinha construído. {amount} foi devolvido como Reembolso da atualização de tecnologia, veja seu extrato bancário.",
-  "reallife_tech_credit_note_many": "Uma atualização refez {firms} das suas empresas de tecnologia, então você pagou uma segunda vez para treinar e construir o que elas tinham feito. {amount} foi devolvido no total, veja seu extrato bancário."
+  "reallife_tech_credit_note_many": "Uma atualização refez {firms} das suas empresas de tecnologia, então você pagou uma segunda vez para treinar e construir o que elas tinham feito. {amount} foi devolvido no total, veja seu extrato bancário.",
+  "reallife_changes_100_14_title": "1.0.14",
+  "reallife_changes_100_14": "Na interface RLO, agora você pode escolher quais apps ficam na barra na parte de baixo da tela e em que ordem, e marcar seus apps favoritos em Todos os apps. Corrigido: uma empresa de tecnologia que uma atualização tinha refeito agora é devolvido o que você pagou duas vezes pelo treinamento e pelo trabalho."
 }
