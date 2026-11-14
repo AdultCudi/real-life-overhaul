@@ -47,6 +47,22 @@ namespace RealLifeOverhaul.Events
             return on;
         }
 
+        /// <summary>
+        /// True while a fire or a street event is on and the point is at it or inside its taped road. A street event shuts the road
+        /// along its length, so people walk and stand in it (PlayerCalls).
+        /// </summary>
+        internal static bool Calls(Vector3 point)
+        {
+            EventDirector director = Instance;
+            if (director == null || director._scene == null)
+            {
+                return false;
+            }
+            Vector3 offset = point - director._scene.Focus;
+            return CallRules.Near(offset.x, offset.z, director._scene == director._street ? CallRules.EventReach : CallRules.SceneReach)
+                   || (director.Cordon != null && director.Cordon.Closed && director.Cordon.Inside(point, -CallRules.TapeMargin));
+        }
+
         /// <summary>True while something is burning that a 911 call can bring the engine to.</summary>
         public static bool FireBurning => Instance != null && Instance._scene != null && Instance._scene == Instance._fire;
 

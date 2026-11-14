@@ -45,6 +45,18 @@ namespace RealLifeOverhaul
             return scene != null && scene.Active && scene.ShowsMarker && !scene.Indoors && (scene.Id == "assault" || scene.Id == "mugging" || scene.Id == "snatch");
         }
 
+        /// <summary>True while a crime scene or its arrest is on and the point is within reach of where it plays (PlayerCalls).</summary>
+        internal static bool Calls(Vector3 point)
+        {
+            ICrimeScene scene = Instance != null ? Instance._scene : null;
+            if (scene == null || !scene.Active || scene.Indoors)
+            {
+                return false;
+            }
+            Vector3 offset = point - scene.Focus;
+            return CallRules.Near(offset.x, offset.z, CallRules.SceneReach);
+        }
+
         /// <summary>The patrol car the scenes share: the one that collects an arrested suspect, or chases a car.</summary>
         internal static ResponseUnit Patrol => Instance != null ? Instance._patrol : null;
 

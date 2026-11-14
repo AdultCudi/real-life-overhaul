@@ -37,6 +37,7 @@ namespace RealLifeOverhaul
         private Vector3 _lastFoot;
         private float _footAt = -1f;     // when _lastFoot was taken; negative if there was no look since a reset
         private bool _carried;           // the last foot look found the player carried
+        private readonly CallLedger _calls = new CallLedger();   // when something of the mod's last called the player to where they walked
 
         /// <summary>The officer who saw the last offence on foot, to be given a line.</summary>
         public StreetActor Witness { get; private set; }
@@ -55,6 +56,7 @@ namespace RealLifeOverhaul
             _roadSince = -1f;
             _footAt = -1f;
             _carried = false;
+            _calls.Reset();
             Witness = null;
         }
 
@@ -251,6 +253,15 @@ namespace RealLifeOverhaul
             if (Witness == null || !walking || !RoadMap.Ensure())
             {
                 _roadSince = -1f;
+                return Offence.None;
+            }
+
+            // Walking where the mod's own scene, job or vehicle calls the player, or just up from a knockdown, is no offence, and the
+            // officer who sees it has nothing to shout about. The excuse lasts a while after the call ends (CallRules.Linger).
+            if (_calls.Hold(PlayerCalls.Within(position), now) || CallRules.JustRisen(PlayerKnockdown.RisenAt, now))
+            {
+                _roadSince = -1f;
+                Witness = null;
                 return Offence.None;
             }
 

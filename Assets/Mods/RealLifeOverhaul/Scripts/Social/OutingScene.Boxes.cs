@@ -58,7 +58,6 @@ namespace RealLifeOverhaul
                 Wrap(now, false);
                 return;
             }
-            Mark(_drop, _to.Name);
             ShowBoxes();
             Go(Step.Boxes, now, 480f);
         }
@@ -68,7 +67,18 @@ namespace RealLifeOverhaul
             Dictionary<string, string> data = SocialLife.Data(_who, "to", _to.Name);
             data["count"] = _boxesDone.ToString();
             data["goal"] = _boxCount.ToString();
-            Line = SocialLife.T("reallife_social_obj_moving", data);
+            // The boxes stand beside the friend at the old door: until one is in the arms the line and the marker say so, and only then
+            // do they point at the new door, where nothing is to be done with empty hands.
+            bool carrying = _carrying >= 0;
+            Line = SocialLife.T(carrying ? "reallife_social_obj_moving" : "reallife_social_obj_moving_pick", data);
+            if (carrying)
+            {
+                Mark(_drop, _to.Name);
+            }
+            else
+            {
+                Mark(_spot, _venue.Name);
+            }
         }
 
         private void Boxes(float now)
@@ -85,6 +95,7 @@ namespace RealLifeOverhaul
                 if (!D.OnFoot || D.Body.OverName != CarryClip)
                 {
                     PutBack();   // into a car with a box in the arms, or the clip was lost
+                    ShowBoxes();
                     Prompt = null;
                     return;
                 }
@@ -152,6 +163,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _carrying = box;
+                ShowBoxes();
                 Prompt = null;
                 if (_boxesDone == 0 && _friend != null && !_friend.Lost && SocialPlaces.Standing(_drop + (_drop - _spot).normalized * 1.6f, out Vector3 beside))
                 {
