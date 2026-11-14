@@ -172,7 +172,10 @@ namespace RealLifeOverhaul.Tech
             }
             for (int i = 0; i < products.Count; i++)
             {
-                SectorRules.Count(_sector, products[i]);
+                if (!_held.Contains(products[i].Place))   // a firm held for want of a reading of its business sells into no market meanwhile
+                {
+                    SectorRules.Count(_sector, products[i]);
+                }
             }
             RivalryPrepare(day);
             SectorRules.Attract(_sector);

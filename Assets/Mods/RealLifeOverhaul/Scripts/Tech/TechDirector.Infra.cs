@@ -64,6 +64,10 @@ namespace RealLifeOverhaul.Tech
                 BuildingRegistration reg = TalentGame.Find(d.Place);
                 if (reg == null)
                 {
+                    if (FirmsKeep.Fate(FirmsGame.Reading(d.Place)) != PlaceFate.Gone)
+                    {
+                        continue;   // its warehouse was not read this time, which is no sign it is gone: the racks stay as they were saved
+                    }
                     _infra.Centres.RemoveAt(i);
                     continue;
                 }
@@ -473,7 +477,7 @@ namespace RealLifeOverhaul.Tech
             // the AI labs train and run their models on the player's own AI racks first, a cloud or not, then on rented accelerators, by the one
             // rule their pages and the desk's training runs read too (InfraRules.ModelsDay): a model's training past what it may rent is kept for
             // it on the racks, the rest of the racks go in the products' order, and its customers' use is always served
-            IList<Product> products = _firmsOn ? _firmsFile.Products : null;
+            IList<Product> products = _firmsOn ? RunningProducts() : null;   // a firm held for want of a reading of its business trains and pays for nothing meanwhile
             long left = InfraRules.ModelsDay(products, Math.Max(0, gpu), _cloudDay);
             InfraRules.Train(products, _cloudDay);
             for (int i = 0; products != null && i < products.Count && i < _cloudDay.Count; i++)
