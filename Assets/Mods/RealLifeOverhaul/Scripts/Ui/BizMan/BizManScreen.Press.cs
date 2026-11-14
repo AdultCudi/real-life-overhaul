@@ -137,18 +137,32 @@ namespace RealLifeOverhaul.Ui
                 }
                 case BizManPages.Kind:
                     _kindOpen = !_kindOpen;
-                    _fontOpen = false;
+                    _fontOpen = _roleOpen = _setOpen = false;
                     return true;
                 case BizManPages.KindOption:
                     _kindOpen = false;
                     return Pick(Get<UI.Elements.Dropdown>(GameContract.SetKind, b.bizManSettings), arg);
                 case BizManPages.Font:
                     _fontOpen = !_fontOpen;
-                    _kindOpen = false;
+                    _kindOpen = _roleOpen = _setOpen = false;
                     return true;
                 case BizManPages.FontOption:
                     _fontOpen = false;
                     return Pick(Get<UI.Elements.Dropdown>(GameContract.LogoFont, Get<LogoCustomizer>(GameContract.SetLogo, b.bizManSettings)), arg);
+                case BizManPages.UniformRole:
+                    _roleOpen = !_roleOpen;
+                    _setOpen = _kindOpen = _fontOpen = false;
+                    return true;
+                case BizManPages.UniformRoleOption:
+                    _roleOpen = false;
+                    return Pick(UniformList(b, GameContract.UniformRole), arg);   // the game re-lists the presets for that role
+                case BizManPages.UniformSet:
+                    _setOpen = !_setOpen;
+                    _roleOpen = _kindOpen = _fontOpen = false;
+                    return true;
+                case BizManPages.UniformSetOption:
+                    _setOpen = false;
+                    return Pick(UniformList(b, GameContract.UniformSet), arg);   // the game's own listener gives the role the preset
                 case BizManPages.Uniforms:
                     // The uniforms' editor is a canvas of the game's over the full menu (on the kit too, UniformsKit): BizMan's own
                     // view stands under it while it is open, and the kit comes back once it closes.
@@ -450,6 +464,10 @@ namespace RealLifeOverhaul.Ui
 
         private BizManContractSettings Contract(BizManBusiness b) => Get<BizManContractSettings>(GameContract.DealSettings, PageOf<BizManDeliveries>(b, BizManRules.Deliveries));
 
+        // One of the two lists of the game's window that gives a role its uniform preset.
+        private static UI.Elements.Dropdown UniformList(BizManBusiness b, GameMember list) =>
+            Get<UI.Elements.Dropdown>(list, Get<SetUpUniformsWindow>(GameContract.SetUniforms, b.bizManSettings));
+
         private static bool Pick(UI.Elements.Dropdown d, int option)
         {
             if (d == null)
@@ -581,9 +599,9 @@ namespace RealLifeOverhaul.Ui
 
         private bool CloseLists()
         {
-            bool any = _filterOpen >= 0 || _listOpen || _todoOpen || _kindOpen || _fontOpen || _sliderHeld || _pagesOpen || _logoEdit;
+            bool any = _filterOpen >= 0 || _listOpen || _todoOpen || _kindOpen || _fontOpen || _roleOpen || _setOpen || _sliderHeld || _pagesOpen || _logoEdit;
             _filterOpen = -1;
-            _listOpen = _todoOpen = _kindOpen = _fontOpen = _sliderHeld = _pagesOpen = _logoEdit = false;   // Back from the logo editor lands on the settings
+            _listOpen = _todoOpen = _kindOpen = _fontOpen = _roleOpen = _setOpen = _sliderHeld = _pagesOpen = _logoEdit = false;   // Back from the logo editor lands on the settings
             return any;
         }
 
