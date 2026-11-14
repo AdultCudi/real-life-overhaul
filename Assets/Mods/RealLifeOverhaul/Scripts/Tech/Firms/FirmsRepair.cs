@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Tech
         public int Products;        // products put back, or put back on sale
         public long RefundCents;    // compute rent booked after the loss, for the generation the copy shows was already trained
         public readonly List<string> Steps = new List<string>(8);
+        public readonly Dictionary<string, long> PaidAt = new Dictionary<string, long>(4, StringComparer.Ordinal);   // the rent paid back, by firm: the credit that follows takes it off
 
         public bool Any => Firms > 0 || Products > 0 || RefundCents > 0;
     }
@@ -29,11 +30,36 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Days a record's founding may follow the first professional's joining before it counts as made again: the record is made at the day's read.</summary>
         public const int Margin = 3;
 
-        public static bool Done(string line) => !string.IsNullOrEmpty(line) && line.StartsWith("v=1", StringComparison.Ordinal);
+        /// <summary>The whole repair is done: the first pass (founding days, products, rent) and the credit for what a made again firm trained anew.</summary>
+        public static bool Done(string line) => !string.IsNullOrEmpty(line) && line.StartsWith("v=2", StringComparison.Ordinal);
 
-        public static string Mark(RepairReport r, int day) =>
-            "v=1|" + day.ToString(CultureInfo.InvariantCulture) + "|" + r.Firms.ToString(CultureInfo.InvariantCulture) + "|" + r.Products.ToString(CultureInfo.InvariantCulture)
-            + "|" + r.RefundCents.ToString(CultureInfo.InvariantCulture);
+        /// <summary>The first pass ran (a save marked by 1.0.13 or by this version): only the credit is left to do.</summary>
+        public static bool FirstDone(string line) => !string.IsNullOrEmpty(line) && (line.StartsWith("v=1", StringComparison.Ordinal) || Done(line));
+
+        public static string Mark(RepairReport r, int day, long creditCents) =>
+            "v=2|" + day.ToString(CultureInfo.InvariantCulture) + "|" + r.Firms.ToString(CultureInfo.InvariantCulture) + "|" + r.Products.ToString(CultureInfo.InvariantCulture)
+            + "|" + r.RefundCents.ToString(CultureInfo.InvariantCulture) + "|" + creditCents.ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>What the first pass left in a mark ("v=1|day|firms|products|refundCents"), put back into a report; false for a line that is not one.</summary>
+        public static bool ReadMark(string line, RepairReport into)
+        {
+            if (!FirstDone(line))
+            {
+                return false;
+            }
+            string[] f = line.Split('|');
+            long firms = 0, products = 0, refund = 0;
+            if (f.Length >= 5)
+            {
+                long.TryParse(f[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out firms);
+                long.TryParse(f[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out products);
+                long.TryParse(f[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out refund);
+            }
+            into.Firms = (int)Math.Min(int.MaxValue, firms);
+            into.Products = (int)Math.Min(int.MaxValue, products);
+            into.RefundCents = refund;
+            return true;
+        }
 
         /// <summary>
         /// The first day a professional of the place joined, when most of them (two at least) joined before <paramref name="founded"/> less the margin: a firm's
@@ -132,6 +158,7 @@ namespace RealLifeOverhaul.Tech
                 if (rent > 0)
                 {
                     rep.RefundCents += rent;
+                    rep.PaidAt[f.Place] = rent;
                     rep.Steps.Add("  compute rent booked since day " + made + " paid back: " + rent + " cents");
                 }
             }

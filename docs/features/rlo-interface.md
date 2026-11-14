@@ -171,6 +171,45 @@ asks the text engine itself, in the game's Unity: the fault made again, then the
 whole pages in Korean and Chinese. Only the game can show the look of the copies' letters and the `Fonts check` line
 of a Korean and a Chinese session.
 
+## Your apps: the bar and the favourites
+
+The player chooses which apps stand on the status bar's row and in what order, and marks favourites in All apps
+(14 Nov 2026, a player's suggestion "Favourite apps"). Two lists, because they do two jobs: the bar is a few apps one press away
+at all times and is cut by the strip's room (at most 16, `UiAppDeck.BarMost`; `UiDraw.PlanPills` shows as many as fit, never
+fewer than four where the strip allows, and the rest wait in All apps), while a favourite is a mark that costs nothing and
+has no limit. Putting both in one list would have made every star take a tile from the bar, or the bar's room limit
+silently cut the favourites.
+
+- **Where.** All apps has a Favourites tab first (the star), the phone's folders, Other mods, and an App bar page last (the
+  sliders). Every row has a star. The Edit the bar button on a folder's band opens the App bar page, which lists every app
+  with the bar's apps first in their order, a pin each, and Reset the bar. The row itself carries no extra tile: a player who
+  never touches it sees exactly today's row (the phone's first home page, with the first two apps other mods put on the
+  full menu's row), and the All apps tile or the pad's View is the way in.
+- **Mouse, keys, pad.** Stars, pins and the up and down buttons are targets chained to their row, so Left and Right (the
+  d-pad) walk to them. F marks the app in focus a favourite and P puts it on the bar or takes it off, from any tab, as the
+  prompt bar says. In the Favourites tab and on the App bar page a row also drags up or down (`IUiDragging`; Back cancels the
+  drag). The arrow buttons step past apps that are not here.
+- **An app that is not here** (its feature off, its mod gone, not unlocked yet) keeps its place in the stored lists and is
+  skipped when drawn, so it returns where it was. An app that appears later and is not in a chosen bar stays off the bar,
+  reachable in All apps; Reset the bar gives the default row, which has it if the phone's first page does.
+- **Stored** as one line with the game's settings on this computer (PlayerPrefs `reallife.apps.deck`, `UiGameDeckPrefs`), never in the
+  save, as the windows' places (`UiGameWindowPrefs`) and the phone's layout (`PhoneLayoutPrefs`) are: it is the person's
+  layout and holds across saves, and each Going Public player has their own. Nothing is sent. The line is
+  `1|bar=Persona,Contacts|fav=BizMan` (no `bar` part is the default row); a line of another version or a damaged one
+  reads as the default, and a part is cut to its limits (32 ids on the bar, 64 favourites, 64 characters an id). The options page has
+  Reset the app bar and favourites.
+- **Code.** `Ui/UiAppDeck.cs` (rules and the line, game-free), `Ui/UiShellApps.cs` (the frame's list takes the deck in `Refresh`
+  and `Rearrange`; `Row` is the bar's order), `Ui/UiAllApps.cs` (layout), `Ui/Shell/AllAppsScreen.cs` (presses, keys, drag),
+  `Ui/UiGame.cs` and the HUD's and the full menu's row presses (all follow `UiShellApps.Row`), `UiDraw.AppRow.cs` (`AppsMost`).
+- **The old interface.** The game's own phone and menu are the game's, and Aluna's Phone Pages already orders and hides apps
+  there; none of this touches them, and the option's text says it is the RLO interface's. The small equal would be the mod's
+  own apps' order in `PhoneApps` (its grid order within a folder, which `PhoneLayoutPrefs` moves between folders only).
+- **Checks.** EconomyCheck `--app-deck` (`AppDeckChecks.cs`): the default row, add, remove, move, drag, reset, a row longer than
+  its room, an absent app, the stored line and damaged lines, favourites and their order, the frame's list, and what the
+  sources must hold. The screen's layouts at every frame and language are in `--ui-screens` (`all_apps` cases for the
+  favourites, none and the bar's page).
+
 ## Save and Going Public
 
-Nothing is saved, and nothing is shared: the kit only draws.
+Nothing is saved in the save, and nothing is shared: the kit only draws. The player's bar and favourites are kept with the
+game's settings on this computer, never sent.

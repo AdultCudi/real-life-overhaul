@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
                 .Fact("phone_folder_count", () => Whole(GameUi.PhoneLayoutRules.FolderCount))
                 .Fact("phone_banks_most", () => Whole(RealLifeOverhaul.Economy.BankRules.AppsMost))
-                .Rows("reallife_phone_layout_reset", "reallife_windows_reset")   // every app back in its folder, every moved window back: the player's, not a test
+                .Rows("reallife_phone_layout_reset", "reallife_windows_reset", "reallife_apps_reset")   // every app back in its folder, every moved window back: the player's, not a test
                 .Test("reallife_phone_test_check", "reallife_phone_test_folder", "reallife_leftpane_test");
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")

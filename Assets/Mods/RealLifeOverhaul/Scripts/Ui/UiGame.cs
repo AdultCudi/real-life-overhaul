@@ -356,11 +356,8 @@ namespace RealLifeOverhaul.Ui
         // with the news of the apps the row leaves out.
         private static void Row(UiStatusModel m)
         {
-            int count = 0;
-            for (int i = 0; i < UiShellApps.Items.Count; i++)
-            {
-                count += UiShellApps.Items[i].InRow ? 1 : 0;
-            }
+            int count = UiShellApps.Row.Count;
+            m.AppsMost = UiAppDeck.Current.Custom ? UiAppDeck.BarMost : 0;
             m.Apps = new UiIcon[count];
             m.AppTints = new UiRole[count];
             m.AppBadges = new int[count];
@@ -381,8 +378,11 @@ namespace RealLifeOverhaul.Ui
                     {
                         m.AllAppsBadge += a.Badge;
                     }
-                    continue;
                 }
+            }
+            for (int r = 0; r < count; r++)
+            {
+                UiShellApp a = UiShellApps.Items[UiShellApps.Row[r]];   // in the order the row shows them: the player's bar, else the phone's first page
                 m.Apps[at] = a.Icon;
                 m.AppTints[at] = a.Tint;
                 m.AppBadges[at] = a.Badge;

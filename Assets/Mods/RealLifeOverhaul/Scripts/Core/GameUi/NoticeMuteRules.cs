@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.GameUi
             "phone_layout_reset_done",   // the phone's apps put back in their places (the options page)
             "phone_moved",               // an app moved on the phone's home screen
             "windows_reset_done",        // the windows put back where they were (the options page)
+            "ui_apps_reset_done",        // the app bar and the favourites put back (the options page)
             "meta_welcome_note_",        // the welcome on the first run and after an update, which opens What's new
             "beta_note",                 // the same on the beta
             "ui_note_interface_off",     // the word, once, to a player whose RLO interface 1.0.3 switched off: their screens changed unasked

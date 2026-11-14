@@ -50,6 +50,18 @@ namespace RealLifeOverhaul.Ui
             UiGameHost.Chrome = Press;
             UiShellApps.Source = ShellApps.FromPhone;
             UiShellApps.Status = Line;
+            UiGameDeckPrefs.Start();
+            UiShellApps.Rearranged -= RowChanged;
+            UiShellApps.Rearranged += RowChanged;
+        }
+
+        // The player chose other apps for the bar (or marked a favourite): the frame's row is laid out again at once.
+        private static void RowChanged()
+        {
+            if (_taken)
+            {
+                UiGameHost.AgainAll();
+            }
         }
 
         // The line an app gives on All apps: the game's Contacts its unread messages, as its badge counts them.
@@ -216,20 +228,12 @@ namespace RealLifeOverhaul.Ui
         // The row's arg-th app: its own button pressed (a folder's entry opens All apps there).
         private static bool OpenRow(int index)
         {
-            int seen = 0;
-            for (int i = 0; i < UiShellApps.Items.Count; i++)
+            if (index < 0 || index >= UiShellApps.Row.Count)
             {
-                if (!UiShellApps.Items[i].InRow)
-                {
-                    continue;
-                }
-                if (seen++ == index)
-                {
-                    CloseApps();
-                    return ShellApps.Press(UiShellApps.Items[i].Id);
-                }
+                return false;
             }
-            return false;
+            CloseApps();
+            return ShellApps.Press(UiShellApps.Items[UiShellApps.Row[index]].Id);
         }
 
         // The game's own close: its BizMan question about unsaved changes is kept.

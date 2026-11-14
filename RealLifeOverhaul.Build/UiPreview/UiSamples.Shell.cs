@@ -96,10 +96,28 @@ internal static partial class UiSamples
     }
 
     /// <summary>All apps on a folder (0 Money .. 4 Settings, 5 Other mods), Contacts open; without other mods, Other mods stands empty.</summary>
-    public static UiAllAppsModel AllApps(UiWords t, int folder, bool others = true)
+    public static UiAllAppsModel AllApps(UiWords t, int folder, bool others = true) => AllAppsOn(t, folder + 1, others);
+
+    /// <summary>All apps on its Favourites tab: the player's three, in their order, or none (the empty state).</summary>
+    public static UiAllAppsModel AllAppsFavourites(UiWords t, bool none) => AllAppsOn(t, 0, true, none);
+
+    /// <summary>All apps on the bar's page: the row's apps in the bar's order with their places, the last without room, then the rest.</summary>
+    public static UiAllAppsModel AllAppsBar(UiWords t) => AllAppsOn(t, UiShellApps.Folders + 1, true);
+
+    // Slot 0 the favourites, 1 to Folders a folder, Folders + 1 the bar's page: the tabs as AllAppsScreen stands them.
+    private static UiAllAppsModel AllAppsOn(UiWords t, int slot, bool others, bool noFavourites = false)
     {
-        var m = new UiAllAppsModel { Title = t("reallife_ui_shell_all_apps", "All apps"), Tab = folder, Tabs = new UiAllAppsTab[UiShellApps.Folders] };
+        int slots = UiShellApps.Folders + 2, barSlot = UiShellApps.Folders + 1;
+        var m = new UiAllAppsModel { Title = t("reallife_ui_shell_all_apps", "All apps"), Tab = slot, Tabs = new UiAllAppsTab[slots] };
         List<UiShellApp> apps = ShellApps(t, others);
+        string[] favourites = noFavourites ? new string[0] : new[] { "Contacts", "RealLifePlanner", "BizMan" };
+        for (int i = 0; i < apps.Count; i++)
+        {
+            UiShellApp a = apps[i];
+            a.Favourite = System.Array.IndexOf(favourites, a.Id) >= 0;
+            apps[i] = a;
+        }
+        m.Tabs[0] = new UiAllAppsTab { Icon = UiIcon.Star, Tint = UiIconTints.Of(UiIcon.Star), Label = t("reallife_ui_apps_favourites", "Favourites") };
         for (int f = 0; f < UiShellApps.Folders; f++)
         {
             int badge = 0;
@@ -108,26 +126,60 @@ internal static partial class UiSamples
                 badge += a.Folder == f ? a.Badge : 0;
             }
             UiIcon icon = UiShellApps.FolderIcon(f);
-            m.Tabs[f] = new UiAllAppsTab { Icon = icon, Tint = UiIconTints.Of(icon), Label = FolderName(t, f), Badge = badge };
+            m.Tabs[f + 1] = new UiAllAppsTab { Icon = icon, Tint = UiIconTints.Of(icon), Label = FolderName(t, f), Badge = badge };
         }
-        List<UiShellApp> rows = apps.FindAll(a => a.Folder == folder);
+        m.Tabs[barSlot] = new UiAllAppsTab { Icon = UiIcon.Sliders, Tint = UiIconTints.Of(UiIcon.Sliders), Label = t("reallife_ui_apps_bar", "App bar") };
+        var rows = new List<UiShellApp>();
+        if (slot == 0)
+        {
+            foreach (string id in favourites)
+            {
+                rows.Add(apps.Find(a => a.Id == id));
+            }
+        }
+        else if (slot == barSlot)
+        {
+            foreach (string id in RowIds)
+            {
+                rows.Add(apps.Find(a => a.Id == id));
+            }
+            rows.AddRange(apps.FindAll(a => !a.InRow));
+        }
+        else
+        {
+            rows = apps.FindAll(a => a.Folder == slot - 1);
+        }
+        m.Mode = slot == 0 ? UiAllApps.Favourites : slot == barSlot ? UiAllApps.Bar : UiAllApps.Folder;
+        m.EditLabel = t("reallife_ui_apps_edit", "Edit the app bar");
+        m.ResetLabel = t("reallife_ui_apps_reset", "Reset the bar");
         m.Rows = new UiAllAppsRow[rows.Count];
         for (int i = 0; i < rows.Count; i++)
         {
             UiShellApp a = rows[i];
+            string status = a.Id == "Contacts" && slot != barSlot ? t("reallife_ui_shell_status_unread", "{count} unread").Replace("{count}", a.Badge.ToString()) : null;
+            if (slot == barSlot)
+            {
+                status = !a.InRow ? t("reallife_ui_apps_not_on_bar", "Not on the bar")
+                    : i == RowIds.Length - 1 ? t("reallife_ui_apps_no_room", "No room on the bar at this size")
+                    : t("reallife_ui_apps_bar_place", "On the bar, number {place}").Replace("{place}", (i + 1).ToString());
+            }
             m.Rows[i] = new UiAllAppsRow
             {
-                Icon = a.Icon, Tint = a.Tint, Title = a.Title, Badge = a.Badge, Open = a.Id == "Contacts", Picture = a.Picture,
-                Status = a.Id == "Contacts" ? t("reallife_ui_shell_status_unread", "{count} unread").Replace("{count}", a.Badge.ToString()) : null
+                Icon = a.Icon, Tint = a.Tint, Title = a.Title, Badge = a.Badge, Open = a.Id == "Contacts" && slot != barSlot, Picture = a.Picture, Status = status,
+                Fav = a.Favourite, OnBar = a.InRow
             };
         }
         m.RowCount = rows.Count;
-        m.Empty = folder == UiShellApps.Other ? t("reallife_ui_shell_none_other", "No other mod has put an app on the phone. Apps of other mods show here.") : t("reallife_ui_shell_none", "No apps in this folder yet. Apps you put in it on the phone show here.");
+        m.Empty = slot == 0 ? t("reallife_ui_apps_none_fav", "No favourites yet. Press the star on an app to keep it here.")
+            : slot == UiShellApps.Other + 1 ? t("reallife_ui_shell_none_other", "No other mod has put an app on the phone. Apps of other mods show here.")
+            : t("reallife_ui_shell_none", "No apps in this folder yet. Apps you put in it on the phone show here.");
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
             new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
             new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_shell_prompt_folder", "Folder") },
+            new UiPrompt { Action = UiAction.Alt, Label = t("reallife_ui_apps_prompt_favourite", "Favourite") },
+            new UiPrompt { Action = UiAction.Option, Label = t("reallife_ui_apps_prompt_bar", "On the bar") },
             new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
         };
         m.PromptCount = m.Prompts.Length;

@@ -588,6 +588,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--app-deck")
+        {
+            AppDeckChecks();   // the player's bar and favourites in All apps: the rules, the stored line, the frame's list and the sources (AppDeckChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--hud-start")
         {
             HudStart();
@@ -1705,6 +1711,7 @@ internal static partial class Program
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         ScrollHints();       // the wheel over a list's rows reaches the list, the phone folds with the HUD on, the key chips keep left of the phone (ScrollHintsChecks.cs)
+        AppDeckChecks();     // the player's bar and favourites: rules, stored line, frame's list, sources (AppDeckChecks.cs)
         HudStart();          // the fonts read on past the loading screen's hold, every wait of the HUD's start named in Player.log (HudStartChecks.cs)
         PhoneReach();        // a folded phone always has a way back: the bar's button, the key, the cause in Player.log (PhoneReachChecks.cs)
         GlyphAtlases();      // a text's characters are in an atlas before it is built, and built again if they come late (GlyphChecks.cs)

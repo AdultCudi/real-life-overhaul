@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Meta
             { "reallife_texts_status", "reallife_opt_caption_check" },
             { "reallife_phone_layout_reset", "reallife_opt_caption_reset" },
             { "reallife_windows_reset", "reallife_opt_caption_reset" },
+            { "reallife_apps_reset", "reallife_opt_caption_reset" },
             { "reallife_textsai_key", "reallife_opt_caption_enter" },
             { "reallife_textsai_chatgpt", "reallife_opt_caption_sign_in" },
             { "reallife_textsai_model", CaptionChange },
