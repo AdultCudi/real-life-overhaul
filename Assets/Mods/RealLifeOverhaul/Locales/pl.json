@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: w ekranach modu we własnym stylu strona Ustawienia firmy ma teraz listy ról i strojów, więc preset stroju można przypisać roli i dotrze on do personelu, a nazwa presetu zostaje zachowana także wtedy, gdy kliknięciem opuścisz pole, a nie tylko po Enter. Showroom samochodowy albo dowolne miejsce poza pierwszymi 64 firmy może teraz dostać managera na karcie Managerowie w aplikacji Firma, dzięki czemu manager może uzupełniać dzienne zamówienie nowych samochodów dla showroomu, a ekrany modu informują, ile miejsc nie jest wypisanych.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -37973,5 +37973,6 @@
   "reallife_apps_reset": "Zresetuj pasek aplikacji i ulubione (interfejs RLO)",
   "reallife_ui_apps_reset_done": "Pasek aplikacji i twoje ulubione wróciły do ustawień domyślnych.",
   "reallife_tech_credit_note": "Aktualizacja ponownie zrobiła {firm}, więc za szkolenie tego, co zostało zbudowane, zapłacono drugi raz. {amount} zwrócono jako Zwrot po aktualizacji technologii, sprawdź wyciąg bankowy.",
-  "reallife_tech_credit_note_many": "Aktualizacja ponownie zrobiła {firms} z twoich firm technologicznych, więc za szkolenie i budowę tego, co zrobiły, zapłacono drugi raz. Łącznie zwrócono {amount}, sprawdź wyciąg bankowy."
+  "reallife_tech_credit_note_many": "Aktualizacja ponownie zrobiła {firms} z twoich firm technologicznych, więc za szkolenie i budowę tego, co zrobiły, zapłacono drugi raz. Łącznie zwrócono {amount}, sprawdź wyciąg bankowy.",
+  "reallife_ui_bizman_uniform_role": "Rola"
 }
