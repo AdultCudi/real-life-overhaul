@@ -271,7 +271,7 @@ namespace RealLifeOverhaul.Ui
                 _ownOpened = false;
             }
             _logoEdit = true;
-            _kindOpen = _fontOpen = false;
+            _kindOpen = _fontOpen = _roleOpen = _setOpen = false;
             _logoTab = 0;
             _m.ShapesOffset = 0f;
             _m.ShapesReveal = -1;

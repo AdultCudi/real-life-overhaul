@@ -21,8 +21,9 @@ namespace RealLifeOverhaul.Ui
         public const int FactSuppliers = 1;           // a fact's link that opens the Suppliers app at the business, its argument
         public const int SecondColumn = 1000;         // a heading of the right column: its argument from here, the left's from 0
 
-        // The logo editor's commands (this job's block 9600 to 9619; used 9600 to 9603 and 9610 to 9612).
+        // The logo editor's commands (this job's block 9600 to 9619; used 9600 to 9607 and 9610 to 9612).
         public const int LogoShape = 9600, LogoOwn = 9601, LogoColourAdd = 9602, LogoTab = 9603, LogoColour = 9610;   // a colour row's swatches: LogoColour plus the row (0 to 2)
+        public const int UniformRole = 9604, UniformRoleOption = 9605, UniformSet = 9606, UniformSetOption = 9607;   // the settings page's two lists that give a role its uniform preset
 
         // What an action does, its argument: the game's side presses the game's own button for each. Every one stands in Actions
         // and has its own case in the screen's dispatch, with nothing asked before the cases: a button of a page written as lines
@@ -49,7 +50,8 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands =
         {
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
-            Classic, Cancel, Page, Heading, Pages, Suppliers, LineAction, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
+            UniformRole, UniformRoleOption, UniformSet, UniformSetOption, Classic, Cancel, Page, Heading, Pages, Suppliers, LineAction,
+            LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
             UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action, UiFirmHead.First + UiFirmHead.Help, StartHelp,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,

@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Ui
         private string _shown, _gameTab;
         private global::Address _shownFor;
         private int _goodHover = -1;   // the goods row whose sales card shows
-        private bool _openedByKit, _listOpen, _todoOpen, _kindOpen, _fontOpen, _sliderHeld, _pagesOpen;
+        private bool _openedByKit, _listOpen, _todoOpen, _kindOpen, _fontOpen, _roleOpen, _setOpen, _sliderHeld, _pagesOpen;
 
         private Transform Menu(BizManBusiness b) => Get<Transform>(GameContract.BizMenu, b);
 
@@ -432,7 +432,8 @@ namespace RealLifeOverhaul.Ui
 
         private long PageSignature(BizManBusiness b)
         {
-            long sig = (_listOpen ? 1 : 0) + (_todoOpen ? 2 : 0) + (_kindOpen ? 4 : 0) + (_fontOpen ? 8 : 0) + (_sliderHeld ? 16 : 0) + (_pagesOpen ? 32 : 0);
+            long sig = (_listOpen ? 1 : 0) + (_todoOpen ? 2 : 0) + (_kindOpen ? 4 : 0) + (_fontOpen ? 8 : 0) + (_sliderHeld ? 16 : 0) + (_pagesOpen ? 32 : 0)
+                       + (_roleOpen ? 64 : 0) + (_setOpen ? 128 : 0);
             UI.Elements.Dropdown names = Get<UI.Elements.Dropdown>(GameContract.BizSwitch, b);
             Toggle closed = Get<Toggle>(GameContract.BizClosed, b);
             Transform need = Get<Transform>(GameContract.BizNeed, b), alert = Get<Transform>(GameContract.BizAlert, b);
@@ -491,6 +492,12 @@ namespace RealLifeOverhaul.Ui
                     LogoCustomizer logo = Get<LogoCustomizer>(GameContract.SetLogo, b.bizManSettings);
                     Button saveLogo = Get<Button>(GameContract.LogoSave, logo);
                     UI.Elements.Dropdown kind = Get<UI.Elements.Dropdown>(GameContract.SetKind, b.bizManSettings), font = Get<UI.Elements.Dropdown>(GameContract.LogoFont, logo);
+                    SetUpUniformsWindow uniforms = Get<SetUpUniformsWindow>(GameContract.SetUniforms, b.bizManSettings);
+                    UI.Elements.Dropdown role = Get<UI.Elements.Dropdown>(GameContract.UniformRole, uniforms), preset = Get<UI.Elements.Dropdown>(GameContract.UniformSet, uniforms);
+                    GameObject locker = Get<GameObject>(GameContract.UniformWindowOn, uniforms);
+                    sig = sig * 31 + (role != null ? role.SelectedOptionIndex + 2 : 0) * 17 + (preset != null ? preset.SelectedOptionIndex + 2 : 0)
+                          + (locker != null && locker.activeInHierarchy ? 1 : 0)
+                          + (OptionsHash(preset) * 3 + OptionsHash(role)) * 7;   // a preset made, renamed or deleted in the editor changes the list
                     return sig * 31 + Hash(name != null ? name.text : null) + (save != null && save.interactable ? 1 : 0) + (saveLogo != null && saveLogo.interactable ? 2 : 0)
                            + (kind != null ? kind.SelectedOptionIndex * 7 : 0) + (font != null ? font.SelectedOptionIndex * 131 : 0) + LogoSignature(logo) * 1009;
                 }
@@ -571,6 +578,9 @@ namespace RealLifeOverhaul.Ui
             _m.HasRepeat = false;
             _m.Kinds = _m.Fonts = new string[0];
             _m.KindOpen = _m.FontOpen = false;
+            _m.UniformRoles = _m.UniformSets = new string[0];
+            _m.UniformRoleOpen = _m.UniformSetOpen = false;
+            _m.UniformRoleLabel = _m.UniformSetLabel = _m.UniformsNote = null;
             _m.Uniforms = _m.LogoTitle = _m.NameLabel = _m.NameText = _m.NamePlaceholder = null;
             _m.TerminateNote = _m.ShutdownNote = null;
             _m.LogoEdit = false;

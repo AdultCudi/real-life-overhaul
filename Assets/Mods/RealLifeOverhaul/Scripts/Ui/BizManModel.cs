@@ -273,6 +273,14 @@ namespace RealLifeOverhaul.Ui
         public string LogoLabel;
         public string TerminateNote, ShutdownNote;      // the game's sentences by the lease's end and the shutdown (what is given back, that it cannot be undone), or null
         public string Uniforms;                       // the link that opens the uniforms' editor, or null
+        public string UniformsNote;                   // the game's line where the business has no uniform locker (no way to give a role a preset), or null
+        public string UniformRoleLabel, UniformSetLabel;
+        public string[] UniformRoles = new string[0];   // the business's roles, each of which wears a preset (the game's own window's first list)
+        public int UniformRoleChosen = -1;
+        public bool UniformRoleOpen;
+        public string[] UniformSets = new string[0];    // Unassigned and each preset by its name, for the role chosen
+        public int UniformSetChosen = -1;
+        public bool UniformSetOpen;
 
         // The logo's shape and colours, where the settings page gives way to the editor
         public bool LogoEdit;

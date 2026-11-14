@@ -780,6 +780,7 @@ namespace RealLifeOverhaul.Ui
             _m.KindChosen = kind != null ? kind.SelectedOptionIndex : -1;
             _m.KindOpen = _kindOpen && _m.Kinds.Length > 1;
             _m.Uniforms = Calling(page, "OnConfigureUniformPresetsButtonClick") != null ? UiText.T("bizman_set_up_uniforms") : null;
+            Uniforms(set);
             LogoCustomizer logo = Get<LogoCustomizer>(GameContract.SetLogo, set);
             _actions.Clear();
             Offer(_actions, Calling(set, "RandomizeBusinessName"), BizManPages.DoRandom, UiButtonKind.Secondary, UiIcon.Spark, UiAction.Count, "reallife_ui_bizman_randomise");
@@ -824,6 +825,43 @@ namespace RealLifeOverhaul.Ui
                 _m.ShutdownNote = _m.Actions[i].Arg == BizManPages.DoShutdown ? UiText.T("bizman_shutdown_business_description") : _m.ShutdownNote;
             }
             _m.Lead = set != null && set.HasUnsavedChanges ? UiText.T("reallife_ui_bizman_unsaved") : null;
+        }
+
+        // The game's own window that gives each role of the business a preset: its two lists, read as the game filled them, or the game's line where
+        // the business has no uniform locker. Without it no preset reaches the staff, so the page must offer it as the game's page does.
+        private void Uniforms(BizManSettings set)
+        {
+            SetUpUniformsWindow window = Get<SetUpUniformsWindow>(GameContract.SetUniforms, set);
+            GameObject on = Get<GameObject>(GameContract.UniformWindowOn, window), off = Get<GameObject>(GameContract.UniformWindowOff, window);
+            _m.UniformRoles = _m.UniformSets = new string[0];
+            _m.UniformRoleChosen = _m.UniformSetChosen = -1;
+            _m.UniformsNote = off != null && off.activeInHierarchy ? UiText.T("bizman_settings_need_uniform_locker") : null;
+            if (on == null || !on.activeInHierarchy)
+            {
+                _roleOpen = _setOpen = false;
+                return;
+            }
+            UI.Elements.Dropdown role = Get<UI.Elements.Dropdown>(GameContract.UniformRole, window), preset = Get<UI.Elements.Dropdown>(GameContract.UniformSet, window);
+            _m.UniformRoleLabel = UiText.T("reallife_ui_bizman_uniform_role");
+            _m.UniformSetLabel = UiText.T("myemployees_uniform");
+            _m.UniformRoles = Options(role);
+            _m.UniformRoleChosen = role != null ? role.SelectedOptionIndex : -1;
+            _m.UniformSets = Options(preset);
+            _m.UniformSetChosen = preset != null ? preset.SelectedOptionIndex : -1;
+            _m.UniformRoleOpen = _roleOpen && _m.UniformRoles.Length > 1;
+            _m.UniformSetOpen = _setOpen && _m.UniformSets.Length > 1;
+        }
+
+        // One figure for a drop-down's options as the game holds them, read without making a string.
+        private static int OptionsHash(UI.Elements.Dropdown d)
+        {
+            List<string> options = Get<List<string>>(GameContract.BizOptions, d);
+            int h = options != null ? options.Count : 0;
+            for (int i = 0; options != null && i < options.Count; i++)
+            {
+                h = h * 31 + (options[i] != null ? options[i].GetHashCode() : 0);
+            }
+            return h;
         }
 
         // A drop-down's options in its own words, as it shows them.

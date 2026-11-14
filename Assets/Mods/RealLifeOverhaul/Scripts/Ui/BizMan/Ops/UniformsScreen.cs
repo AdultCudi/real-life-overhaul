@@ -396,16 +396,29 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The game names a preset when its field's editing ends (EmployeePresetCustomizer.AddPresetEntry), which in the game's own field
+        // is a click away, Tab or Enter. The kit's field ends without telling the screen unless Enter is pressed, so a name typed and
+        // left by a click would never reach the preset: each word typed ends the game's field here, as BizMan's own name fields do.
         public void Typed(string text)
         {
+            if (!string.IsNullOrEmpty(text))
+            {
+                Name(text, false);
+            }
         }
 
         // The name goes into the game's own field and is ended there, which names the preset as the game's own typing does.
-        public void Submitted(string text)
+        public void Submitted(string text) => Name(text, true);
+
+        private void Name(string text, bool submit)
         {
             TMP_InputField f = NameOf(_m.Preset >= 0 && _m.Preset < _presets.Count ? _presets[_m.Preset] : null);
-            if (f != null && !f.readOnly && UiWidgets.Type(f, text, true))
+            if (f != null && !f.readOnly && UiWidgets.Type(f, text, submit))
             {
+                if (!submit)
+                {
+                    f.onEndEdit?.Invoke(f.text);
+                }
                 _dirty = true;
                 return;
             }
