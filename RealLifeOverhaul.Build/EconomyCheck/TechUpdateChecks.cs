@@ -20,6 +20,7 @@ internal static partial class Program
         UpCopy();
         UpRepair();
         UpClean();
+        UpCredit();
         UpSources();
     }
 
@@ -189,7 +190,131 @@ internal static partial class Program
         // a firm whose business is not standing is not touched
         RepairReport held = FirmsRepair.Run(clean, UpFirms(1, 1, 6), UpStaff(UpA, 1, 2, 3), new HashSet<string>(), (p, s) => 1000L);
         Check(!held.Any, "tech update repair: a firm held for want of a reading is left alone");
-        Check(FirmsRepair.Done(FirmsRepair.Mark(rep, 60)) && !FirmsRepair.Done(null) && !FirmsRepair.Done(string.Empty), "tech update repair: the mark in the save says it ran");
+        Check(FirmsRepair.Done(FirmsRepair.Mark(rep, 60, 0)) && !FirmsRepair.Done(null) && !FirmsRepair.Done(string.Empty) && !FirmsRepair.Done("v=1|60|1|0|0") && FirmsRepair.FirstDone("v=1|60|1|0|0"),
+            "tech update repair: the mark in the save says it ran, and the first version's mark leaves the credit still to do");
+    }
+
+    // The report: "whenever you update ... all the tech business became unknown and you gotta launch your AI version again of like 1 mil dollar". A save hit before the copy
+    // existed got only its founding day back from the first repair; the second pass credits what the made again firm trained anew, by the rules' prices.
+    private const long UpUnit = 5200;   // cents a unit-day of AI compute rented: 4000 * 1300 / 1000
+
+    private static long UpTrained(int generations, long banked)
+    {
+        long units = banked;
+        long[] need = { 400, 400, 800, 800, 1600, 1600, 3200, 3200, 6400, 6400, 12800, 12800 };
+        for (int g = 0; g < generations; g++)
+        {
+            units += need[g];
+        }
+        return units;
+    }
+
+    // A firm the first pass already put right: its founding day is the day its first professional joined.
+    private static FirmsFile UpMended(int generations, long banked)
+    {
+        var f = new FirmsFile { Seed = 9, NextId = 1, LastDay = 60 };
+        f.Firms.Add(new Firm { Place = UpA, Kind = (int)FirmKind.AiLab, Founded = 12, Name = "Atlas Labs" });
+        f.Products.Add(new Product { Id = f.Next(), Place = UpA, Name = "Atlas", Kind = (int)ProductKind.Model, Stage = 1, Features = generations, Compute = banked, Launched = 40 });
+        return f;
+    }
+
+    private static void UpCredit()
+    {
+        var standing = new HashSet<string> { UpA };
+        TalentFile staff = UpStaff(UpA, 12, 15, 20);
+        // each generation built is the rules' training at the rented price; nothing more
+        bool each = true;
+        for (int g = 1; g <= 10; g++)
+        {
+            FirmsFile f = UpMended(g, 0);
+            CreditReport r = FirmsCredit.Review(f, null, staff, standing, 1000, true, 1, 0, null);
+            each &= r.Lines.Count == 1 && r.Cents == UpTrained(g, 0) * UpUnit && FirmsCredit.ModelCents(f.Products[0], 1000) == UpTrained(g, 0) * UpUnit;
+        }
+        Check(each, "tech update credit: a model built to each generation from 1 to 10 is paid back that many generations' training at the rules' rented price, no more");
+        Check(FirmsCredit.Units(10, 0) == 24800 && InfraRules.TrainNeed(0) == 400 && InfraRules.TrainNeed(9) == 6400 && InfraRules.RentCost(1) == UpUnit,
+            "tech update credit: the table rests on the rules' own figures: 400 units for the first generation, doubling every second one, 52 a unit-day rented");
+        Check(FirmsCredit.Units(4, 700) == 2400 + 700 && FirmsCredit.ModelCents(new Product { Kind = (int)ProductKind.Model, Stage = 1, Features = 4, Compute = 700 }, 1500) == 3100 * UpUnit * 1500 / 1000,
+            "tech update credit: training banked towards the next generation is paid too, and the price level scales it");
+        Check(FirmsCredit.ModelCents(new Product { Kind = (int)ProductKind.Model, Stage = 2, Features = 6 }, 1000) == 0 && FirmsCredit.ModelCents(new Product { Kind = (int)ProductKind.Saas, Stage = 1, Features = 6 }, 1000) == 0,
+            "tech update credit: a withdrawn model and a product that is no model cost nothing to retrain");
+
+        // a v=1 save with a flagged firm and no copy gets the computed credit, once
+        FirmsFile hit = UpMended(6, 4200);
+        hit.Products.Add(new Product { Id = hit.Next(), Place = UpA, Name = "Beacon", Kind = (int)ProductKind.Saas, Stage = 1, Features = 4, Launched = 25 });
+        CreditReport credit = FirmsCredit.Review(hit, null, staff, standing, 1000, true, 1, 0, null);
+        Check(credit.Lines.Count == 1 && credit.Lines[0].Models == 1 && credit.Cents == UpTrained(6, 4200) * UpUnit && credit.Lines[0].Place == UpA,
+            "tech update credit: a save the first repair marked, with a firm it found and no copy, is credited the retraining of its model by the rules");
+        Check(credit.Steps.Exists(t => t.Contains("is flagged")) && credit.Steps.Exists(t => t.Contains("Atlas")), "tech update credit: every step is told for Player.log");
+        string mark = FirmsRepair.Mark(new RepairReport { Firms = 1 }, 61, credit.Cents);
+        Check(FirmsRepair.Done(mark) && mark.EndsWith("|" + credit.Cents), "tech update credit: the mark is version 2 and holds the cents paid, so a second load pays nothing");
+        var back = new RepairReport();
+        Check(FirmsRepair.ReadMark("v=1|50|2|3|777", back) && back.Firms == 2 && back.Products == 3 && back.RefundCents == 777 && !FirmsRepair.ReadMark("nothing", back),
+            "tech update credit: the first version's mark is read back for the figures it holds");
+
+        // a game in the studio: engine fee, trailer, expo, certification and campaign in cash, the team's pay not
+        var studio = new StudioFile();
+        var game = new GameDev { Id = 2, Place = UpA, Scope = 1, Engine = (int)GameEngine.Licensed, Started = 30, LastTrailer = 35, LastExpo = -1000, CampaignSpent = 100000L };
+        studio.Games.Add(game);
+        long gameCents = StudioCatalogue.EngineFee[1] + StudioCatalogue.TrailerCost[1] + 100000L;
+        Check(FirmsCredit.GameCents(game, 1000) == gameCents && FirmsCredit.GameCents(game, 2000) == gameCents * 2, "tech update credit: a game in development is paid its engine fee, its trailer and its campaign, and not the team's pay");
+        FirmsFile withGame = UpMended(0, 0);
+        withGame.Products.Add(new Product { Id = 2, Place = UpA, Name = "Pixel", Kind = (int)ProductKind.Game, Stage = 0 });
+        CreditReport gameCredit = FirmsCredit.Review(withGame, studio, staff, standing, 1000, true, 1, 0, null);
+        Check(gameCredit.Cents == gameCents && gameCredit.Lines[0].Games == 1, "tech update credit: a made again studio's game is credited with its cash costs");
+
+        // the same save before the first pass: the record's own founding day shows it, and a game begun before the record was made is not counted
+        FirmsFile unmarked = UpMended(4, 0);
+        unmarked.Firms[0].Founded = 44;
+        CreditReport early = FirmsCredit.Review(unmarked, studio, staff, standing, 1000, false, 0, 0, null);
+        Check(early.Lines.Count == 1 && early.Cents == UpTrained(4, 0) * UpUnit, "tech update credit: before the first pass the record's founding day is the sign, and a game begun before it is not the retraining of this firm");
+
+        // clean saves, a firm closed on purpose, a firm held, a first pass that found nothing
+        FirmsFile clean = UpMended(6, 0);
+        clean.Firms[0].Founded = 10;
+        CreditReport none = FirmsCredit.Review(clean, studio, UpStaff(UpA, 10, 11, 14), standing, 1000, false, 0, 0, null);
+        Check(none.Lines.Count == 0 && none.Steps.Exists(t => t.Contains("not credited") && t.Contains("0 of its 3")), "tech update credit: a clean save is paid nothing, and the log says why for the firm");
+        FirmsFile purpose = UpMended(6, 0);
+        purpose.Firms[0].Founded = 44;
+        Check(FirmsCredit.Review(purpose, studio, UpStaff(UpA, 45, 46, 47), standing, 1000, false, 0, 0, null).Lines.Count == 0
+              && FirmsCredit.Review(purpose, studio, UpStaff(UpA, 45, 46, 47), standing, 1000, true, 1, 0, null).Lines.Count == 0,
+            "tech update credit: a firm closed on purpose and founded again with new staff gets nothing");
+        FirmsFile one = UpMended(6, 0);
+        one.Firms[0].Founded = 44;
+        Check(FirmsCredit.Review(one, studio, UpStaff(UpA, 2, 45, 46), standing, 1000, false, 0, 0, null).Lines.Count == 0, "tech update credit: one professional who joined long ago is no sign");
+        CreditReport noFirm = FirmsCredit.Review(UpMended(6, 0), studio, staff, standing, 1000, true, 0, 0, null);
+        Check(noFirm.Lines.Count == 0 && noFirm.Steps.Count == 1, "tech update credit: a save whose first repair found no firm is paid nothing, one line says so");
+        CreditReport held = FirmsCredit.Review(UpMended(6, 0), studio, staff, new HashSet<string>(), 1000, true, 1, 0, null);
+        Check(held.Lines.Count == 0 && held.Steps[0].Contains("not read today"), "tech update credit: a firm held for want of a reading is paid nothing, and the log says so");
+        FirmsFile elsewhere = UpMended(6, 0);
+        elsewhere.Firms[0].Founded = 15;
+        Check(FirmsCredit.Review(elsewhere, studio, staff, standing, 1000, true, 1, 0, null).Steps[0].Contains("not the day its first professional joined"), "tech update credit: a firm whose founding day is not the first joining day says why it is not credited");
+
+        // a firm already refunded from a copy: the first pass put its products back, so nothing is paid again; before the first pass its rent is taken off
+        FirmsFile copy = UpFirms(10, 1, 6);
+        Check(FirmsCredit.Review(UpMended(6, 0), studio, staff, standing, 1000, true, 1, 2, copy).Lines.Count == 0, "tech update credit: a firm the first repair put back from a copy is not paid again");
+        FirmsFile live = UpMended(4, 0);
+        live.Firms[0].Founded = 44;
+        CreditReport net = FirmsCredit.Review(live, studio, staff, standing, 1000, false, 0, 0, copy);
+        long owed = net.Cents;
+        FirmsCredit.Net(net, new Dictionary<string, long> { { UpA, 1000000L } });
+        Check(net.Cents == owed - 1000000L && owed == UpTrained(4, 0) * UpUnit, "tech update credit: the rent the first pass paid back is taken off, so nothing is paid twice");
+        FirmsCredit.Net(net, new Dictionary<string, long> { { UpA, long.MaxValue / 4 } });
+        Check(net.Lines.Count == 0, "tech update credit: a credit the first pass already covered is dropped");
+
+        // texts: the notices fit
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
+        string a = en != null && en.TryGetValue("reallife_tech_credit_note", out string t1) ? t1 : null, b = en != null && en.TryGetValue("reallife_tech_credit_note_many", out string t2) ? t2 : null;
+        if (a != null && b != null)
+        {
+            string long40 = new string('W', 40);
+            Check(a.Replace("{firm}", long40).Replace("{amount}", "$1,289,600.00").Length <= 240 && b.Replace("{firms}", "10").Replace("{amount}", "$12,289,600.00").Length <= 240
+                  && a.Contains("bank statement") && b.Contains("bank statement") && FirmsCredit.Named(new CreditLine { Name = new string('x', 90) }).Length <= 40,
+                "tech update credit: the notice fits 240 characters with a long firm name and a large sum, and points to the bank statement");
+        }
+        else
+        {
+            Check(true, "tech update credit: the notice texts are not in the locale yet (the texts file is applied with the release)");
+        }
     }
 
     private static void UpSources()
@@ -204,5 +329,9 @@ internal static partial class Program
         Check(MemberText(infra, "private void ReadInfra()").Contains("FirmsKeep.Fate("), "tech update: a data centre whose warehouse was not read keeps its racks");
         string game = ModSource(@"Tech\Firms\FirmsGame.cs");
         Check(game.Contains("RefundKey") && game.Contains("RentSince"), "tech update: the refund is a line of its own in the bank statement, read from the ledger");
+        string repair = MemberText(firms, "private void RepairFirms(GameInstance save)");
+        Check(repair.Contains("FirmsRepair.Done(mark)") && repair.Contains("FirmsCredit.Review(") && repair.Contains("FirmsGame.Refund(owed") && repair.Contains("FirmsRepair.Mark(rep, save.Day, owed)")
+              && repair.IndexOf("FirmsCredit.Review(", StringComparison.Ordinal) < repair.IndexOf("FirmsRepair.Run(", StringComparison.Ordinal) && repair.Contains("Tech repair: "),
+            "tech update credit: the repair pays the credit once through the refund line, marks it, logs it, and reads the firms before the first pass changes them");
     }
 }
