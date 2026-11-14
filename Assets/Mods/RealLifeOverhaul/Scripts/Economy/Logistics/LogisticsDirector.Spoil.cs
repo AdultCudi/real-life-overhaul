@@ -187,21 +187,9 @@ namespace RealLifeOverhaul.Economy
             }
             if (_taken.Count > 0 && fromPace != to.Pace)
             {
-                // The two places last read their batches at different paces: the goods arrive aged as the place they come to reads age.
-                var arriving = new List<Cohort>(_taken.Count);
-                for (int i = 0; i < _taken.Count; i++)
-                {
-                    arriving.Add(_taken[i]);
-                }
-                _taken.Clear();
-                var scratch = new List<Cohort>(SpoilRules.CohortsMost + 1);
-                for (int i = 0; i < arriving.Count; i++)
-                {
-                    scratch.Clear();
-                    scratch.Add(arriving[i]);
-                    SpoilRules.Rebase(scratch, SpoilRules.UsualLife(item, LogisticsGame.Weighed(item), true), fromPace, to.Pace, LogisticsGame.Day);
-                    _taken.Add(new Cohort(scratch[0].Day, arriving[i].Count));
-                }
+                // The two places last read their batches at different paces: the goods arrive aged as the place they come to reads age,
+                // by that place's own life of the product, so goods not yet due where they were are not due when they come.
+                SpoilRules.Arrive(_taken, DestinationLife(toKey, item), fromPace, to.Pace, LogisticsGame.Day);
             }
             List<Cohort> into = to.Of(item);
             for (int i = 0; i < _taken.Count; i++)
@@ -209,6 +197,22 @@ namespace RealLifeOverhaul.Economy
                 SpoilRules.Add(into, _taken[i].Day, _taken[i].Count);
             }
             to.Note(LogisticsGame.Day, 0, count, 0);
+        }
+
+        // Days a product keeps at the usual pace at the place it came to: by its coldest holder there, as the place's own look reads it.
+        private int DestinationLife(string toKey, string item)
+        {
+            BuildingRegistration reg = LogisticsGame.Reg(toKey);
+            if (reg != null)
+            {
+                LogisticsGame.Spoilable(reg, _spoilItems, _spoilLives);
+                int at = _spoilItems.IndexOf(item);
+                if (at >= 0)
+                {
+                    return _spoilLives[at];
+                }
+            }
+            return SpoilRules.UsualLife(item, LogisticsGame.Weighed(item), false);
         }
 
         // ------------------------------------------------------------------------------------------------- what the pages read

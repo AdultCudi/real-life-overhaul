@@ -10,6 +10,7 @@ using UnityEngine;
 using TripsDirector = RealLifeOverhaul.Economy.LogisticsDirector;
 using RouteTimes = RealLifeOverhaul.Economy.RouteTimes;
 using TripRun = RealLifeOverhaul.Economy.Trip;
+using TripStopRun = RealLifeOverhaul.Economy.TripStop;
 using TripLog = RealLifeOverhaul.Economy.TripLog;
 using TripRules = RealLifeOverhaul.Economy.TripRules;
 
@@ -75,7 +76,35 @@ namespace RealLifeOverhaul.Ui
             _right = false;
             Vehicles(trips, from, route);
             NoteLine(_routeRuns.Count > 0 ? LastRun(_routeRuns[0]) : next >= 0 ? UiText.Fill("reallife_trips_none_yet", "time", When(next)) : null);
+            NoteLine(_routeRuns.Count > 0 ? LastOutcome(_routeRuns[0]) : null);
+            NoteLine(NotSent(trips, route));
             NoteLine(UiText.T("reallife_trips_note"));
+        }
+
+        // What the last run came to: what the stops took of what was loaded, and what stayed behind and why.
+        private static string LastOutcome(TripLog e)
+        {
+            if (e.Loaded <= 0 && e.Left <= 0)
+            {
+                return null;
+            }
+            int back = Math.Max(0, e.Loaded - e.Pieces), behind = back + Math.Max(0, e.Left);
+            string words = UiText.Fill("reallife_trips_last_moved", "count", UiText.Whole(e.Pieces), "loaded", UiText.Whole(e.Loaded));
+            return behind <= 0 ? words : words + " " + UiText.Fill("reallife_trips_last_left", "count", UiText.Whole(behind), "reason", Reason(e.Why));
+        }
+
+        // What today's trips of the route left behind, with the reason; null when nothing went wrong today.
+        private static string NotSent(TripsDirector trips, LogisticsManagerPlan route)
+        {
+            return route != null && trips.NotSentToday(route.id, out int pieces, out Economy.TripWhy why)
+                ? UiText.Fill("reallife_trips_today_left", "count", UiText.Whole(pieces), "reason", Reason((int)why)) : null;
+        }
+
+        // The most telling reason that holds, in words that follow "because".
+        private static string Reason(int why)
+        {
+            Economy.TripWhy first = Economy.TripTally.First((Economy.TripWhy)why);
+            return first == Economy.TripWhy.None ? UiText.T("reallife_trips_why_unknown") : UiText.T(Economy.TripTally.ReasonKey(first));
         }
 
         // The warehouse's vehicles that drive the route: each with its driver, where it is, and its load on the road.
@@ -115,13 +144,13 @@ namespace RealLifeOverhaul.Ui
         {
             if (t != null && t.Out)
             {
-                return UiText.Fill("reallife_trips_on_route", "time", When(t.Back));
+                return UiText.Fill("reallife_trips_on_route_load", "count", UiText.Whole(t.Carried()), "time", When(t.Back));
             }
             if (t != null)
             {
                 return UiText.Fill("reallife_trips_waiting", "time", When(t.Depart));
             }
-            return UiText.T(driver == null ? "reallife_trips_no_driver" : "reallife_trips_parked");
+            return UiText.T(driver == null ? "reallife_trips_no_driver" : driver.IsEmployeeAvailable() ? "reallife_trips_parked" : "reallife_trips_parked_away");
         }
 
         // A trip on the road, stop by stop: each stop's place and the time it arrives, and the time it is back.
@@ -130,11 +159,15 @@ namespace RealLifeOverhaul.Ui
             var words = new System.Text.StringBuilder(96);
             for (int k = 0; k < t.Stops.Count && k < StopsNamedMost; k++)
             {
-                BuildingRegistration stop = Economy.LogisticsDirector.Instance != null ? PlaceOf(t.Stops[k].Place) : null;
-                words.Append(k > 0 ? ", " : string.Empty).Append(UiText.Fill(t.Stops[k].Done ? "reallife_trips_stop_done" : "reallife_trips_stop_at",
-                    "name", stop != null ? stop.BusinessName : UiText.T("common_unassigned"), "time", When(t.Stops[k].Arrive)));
+                TripStopRun st = t.Stops[k];
+                BuildingRegistration stop = Economy.LogisticsDirector.Instance != null ? PlaceOf(st.Place) : null;
+                string name = stop != null ? stop.BusinessName : UiText.T("common_unassigned");
+                bool short_ = st.Done && st.Loaded > st.Total();
+                words.Append(k > 0 ? ", " : string.Empty).Append(short_
+                    ? UiText.Fill("reallife_trips_stop_short", "name", name, "count", UiText.Whole(st.Total()), "most", UiText.Whole(st.Loaded))
+                    : UiText.Fill(st.Done ? "reallife_trips_stop_done" : "reallife_trips_stop_at", "name", name, "time", When(st.Arrive)));
             }
-            return UiText.Fill("reallife_trips_road", "stops", words.ToString(), "time", When(t.Back));
+            return UiText.Fill("reallife_trips_road_carry", "count", UiText.Whole(t.Carried()), "stops", words.ToString(), "time", When(t.Back));
         }
 
         private static BuildingRegistration PlaceOf(string key)
@@ -230,7 +263,8 @@ namespace RealLifeOverhaul.Ui
         private static string SlotTrip(Warehouse warehouse, int slot)
         {
             TripRun t = TripsShown ? TripsDirector.Instance.OnRoad(warehouse, slot) : null;
-            return t == null ? null : t.Out ? UiText.Fill("reallife_trips_on_route", "time", When(t.Back)) : UiText.Fill("reallife_trips_waiting", "time", When(t.Depart));
+            return t == null ? null : t.Out ? UiText.Fill("reallife_trips_on_route_load", "count", UiText.Whole(t.Carried()), "time", When(t.Back))
+                : UiText.Fill("reallife_trips_waiting", "time", When(t.Depart));
         }
 
         // When the oldest of a product at a place spoils, for the stock table: tonight, in so many days, or "-" for never.
