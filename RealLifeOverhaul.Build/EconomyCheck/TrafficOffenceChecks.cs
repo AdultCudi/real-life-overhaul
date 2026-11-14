@@ -52,6 +52,9 @@ internal static partial class Program
         OffenceBodyPins();
         StuckLightRules();
         StuckLightPins();
+        JaywalkHelpRules();
+        JaywalkHelpPins();
+        MovingRequestWords();
     }
 
     // The player's car can be destroyed between the police's slow lookups: a destroyed body is dropped before anything reads it.
@@ -978,6 +981,98 @@ internal static partial class Program
             lamps.See(1000 + i, false, 10f);
         }
         Check(lamps.Count <= 128, "stuck light: the ledger stays small");
+    }
+
+    // A player went to help a downed citizen and was fined for jaywalking. The mod's own calls on the player (a scene, a person
+    // lying in the road, a job's mark, a car at the kerb, a taped road, a knockdown) excuse a walk in the road, and real jaywalking
+    // stays as it was.
+    private static void JaywalkHelpRules()
+    {
+        Check(CallRules.Near(30f, 0f, CallRules.SceneReach) && !CallRules.Near(46f, 0f, CallRules.SceneReach) && CallRules.Near(3f, 4f, 5f) && !CallRules.Near(3f, 4f, 4.9f),
+            "jaywalk help: a point is within reach by its distance on the ground, edge included");
+        var ledger = new CallLedger();
+        Check(!ledger.Hold(false, 100f), "jaywalk help: with no call ever seen, nothing is excused");
+        Check(ledger.Hold(true, 100f), "jaywalk help: a call within reach excuses the walk");
+        Check(ledger.Hold(false, 100f + CallRules.Linger - 1f), "jaywalk help: the excuse lasts a while after the call ends");
+        Check(!ledger.Hold(false, 100f + CallRules.Linger), "jaywalk help: and then ends, so a later walk in the road is still an offence");
+        ledger.Hold(true, 500f);
+        ledger.Reset();
+        Check(!ledger.Hold(false, 501f), "jaywalk help: the excuse is forgotten when the watch is reset");
+        Check(!ledger.Hold(false, 50f), "jaywalk help: a clock that went back never excuses");
+        Check(!CallRules.JustRisen(-1f, 10f), "jaywalk help: someone never knocked down is not just risen");
+        Check(CallRules.JustRisen(10f, 10f) && CallRules.JustRisen(10f, 10f + CallRules.RiseSeconds - 0.1f) && !CallRules.JustRisen(10f, 10f + CallRules.RiseSeconds),
+            "jaywalk help: nothing on foot is counted for a few seconds after the player gets up");
+        Check(CallRules.SceneReach >= 30f && CallRules.EventReach > CallRules.SceneReach && CallRules.CarReach >= 4f && CallRules.CarReach <= 12f && CallRules.Linger >= 10f && CallRules.Linger <= 60f,
+            "jaywalk help: the reaches are those of a scene, a street event's closed road, a car at the kerb and a short while after");
+    }
+
+    private static void JaywalkHelpPins()
+    {
+        string offences = ModSource(@"Crime\PlayerOffences.cs"), calls = ModSource(@"Crime\PlayerCalls.cs"), knock = ModSource(@"Ragdoll\PlayerKnockdown.cs");
+        string accidents = ModSource(@"Traffic\TrafficAccidents.cs");
+        string foot = MemberText(offences, "public Offence OnFoot(PlayerController player, float now, OffenceSwitches on)");
+        int gate = foot.IndexOf("if (Witness == null || !walking", StringComparison.Ordinal);
+        int excuse = foot.IndexOf("_calls.Hold(PlayerCalls.Within(position), now)", StringComparison.Ordinal);
+        int query = foot.IndexOf("Physics.OverlapSphereNonAlloc", StringComparison.Ordinal);
+        Check(gate > 0 && excuse > gate && query > excuse, "jaywalk help: the foot look asks whether the mod calls the player after the cheap gates and before the physics query, for walking in the road and for crossing on red alike");
+        Check(foot.Contains("CallRules.JustRisen(PlayerKnockdown.RisenAt, now)") && foot.Contains("Witness = null;"),
+            "jaywalk help: nothing is counted just after a knockdown, and an officer who sees the player helping has no witness to shout");
+        Check(foot.Contains("bool onRoad = on.Jaywalk && !NavMesh.SamplePosition(position, out _, 0.4f, StreetSpots.Pavement)") && foot.Contains("return Offence.Jaywalk;") && foot.Contains("return Offence.CrossOnRed;"),
+            "jaywalk help: real jaywalking and crossing on red are looked for as before");
+        Check(MemberText(offences, "public void Reset()").Contains("_calls.Reset();"), "jaywalk help: a reset forgets the excuse");
+
+        string accident = MemberText(accidents, "internal static bool Calls(Vector3 point)");
+        Check(calls.Contains("TrafficAccidents.Calls(point)") && accident.Contains("a._cordon.Closed && a._cordon.Inside(point, -CallRules.TapeMargin)") && !accident.Contains("_playerHelped"),
+            "jaywalk help: an accident, a rescue, first aid and the person hit by a car are within the accident scene and its taped road, whoever caused it and whoever has helped");
+        Check(calls.Contains("PedestrianIncidents.LyingNear(point, CallRules.SceneReach)") && MemberText(ModSource(@"Ragdoll\PedestrianIncidents.cs"), "internal static bool LyingNear(Vector3 point, float reach)").Contains("casualty.Present"),
+            "jaywalk help: a person lying in the road is a call before their scene has started");
+        Check(calls.Contains("CrimeDirector.Calls(point)") && MemberText(ModSource(@"Crime\CrimeDirector.cs"), "internal static bool Calls(Vector3 point)").Contains("scene.Active"),
+            "jaywalk help: a police scene the player is part of, an arrest and a crime in progress, is within reach of where it plays");
+        string events = MemberText(ModSource(@"Events\EventDirector.cs"), "internal static bool Calls(Vector3 point)");
+        Check(calls.Contains("Events.EventDirector.Calls(point)") && events.Contains("CallRules.EventReach") && events.Contains("director.Cordon.Closed && director.Cordon.Inside(point, -CallRules.TapeMargin)"),
+            "jaywalk help: a street event on a closed road and a fire are within reach of their middle and inside their taped road");
+        Check(calls.Contains("guiders.jobDestinationGuider") && calls.Contains("guiders.mainQuestGuider") && calls.Contains("guiders.sideQuestGuider") && calls.Contains("guiders.privateDriverGuider")
+              && !calls.Contains("guiders.destinationGuider"),
+            "jaywalk help: a job, a delivery, a tow, a quest, a cab pickup or a private driver's meeting is a mark on one of the game's mission guiders, and the player's own pin is not");
+        Check(calls.Contains("VehicleHelper.AllPlayerVehicles") && calls.Contains("CallRules.CarReach"),
+            "jaywalk help: getting in or out of a car at the kerb, loading it, and wheeling a hand truck to it, are within reach of one of the player's own vehicles");
+        Check(MemberText(knock, "private void Restore(bool stand)").Contains("RisenAt = Time.time;") && ModSource(@"Crime\PlayerRide.cs").Contains("player.NavigationDisabled"),
+            "jaywalk help: a player knocked down is carried (walking blocked) while down, and just risen after, so a knockdown into the road is never a jaywalk");
+        Check(!calls.Contains("Update(") && !calls.Contains("new List") && !calls.Contains("FindObject") && !calls.Contains("Physics."),
+            "jaywalk help: the calls are read with no search, no allocation and no frame of their own");
+    }
+
+    // A player asked to help someone move did not know what to do. Every request that sends the player somewhere says what to do.
+    private static void MovingRequestWords()
+    {
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(LocalesFolder(), "en.json"));
+        if (en == null)
+        {
+            Check(false, "moving request: en.json is where the checks look for it (" + LocalesFolder() + ")");
+            return;
+        }
+        string lacking = string.Empty;
+        string[] keys =
+        {
+            "reallife_social_text_moving_1", "reallife_social_text_moving_2", "reallife_social_offer_moving", "reallife_social_moving_agreed", "reallife_social_obj_meet",
+            "reallife_social_btn_lets_start", "reallife_social_obj_moving", "reallife_social_obj_moving_pick", "reallife_social_moving_pick", "reallife_social_moving_drop",
+            "reallife_social_text_lift_1", "reallife_social_text_lift_2", "reallife_social_obj_lift"
+        };
+        foreach (string key in keys)
+        {
+            lacking += en.TryGetValue(key, out string text) && text.Trim().Length > 10 ? string.Empty : " " + key;
+        }
+        Check(lacking.Length == 0, "moving request: the ask, the offer, the meeting, the objective and the prompts of a move and of a lift each have words:" + lacking);
+        Check(en.TryGetValue("reallife_social_obj_moving_pick", out string pick) && pick.Contains("{first}") && pick.Contains("{to}") && pick.Contains("{count}") && pick.Contains("{goal}")
+              && pick.StartsWith("Pick up a box", StringComparison.Ordinal) && !pick.Contains("!") && !pick.Contains("—") && !pick.Contains("–"),
+            "moving request: before a box is in the arms the objective tells the player to pick one up beside their friend, and says how far the job is");
+        string boxes = ModSource(@"Social\OutingScene.Boxes.cs");
+        string show = MemberText(boxes, "private void ShowBoxes()");
+        Check(show.Contains("carrying ? \"reallife_social_obj_moving\" : \"reallife_social_obj_moving_pick\"") && show.Contains("Mark(_drop, _to.Name);") && show.Contains("Mark(_spot, _venue.Name);"),
+            "moving request: the line and the marker point at the boxes at the old door until one is carried, and at the new door after");
+        Check(MemberText(boxes, "private void StartBoxes(float now)").Contains("ShowBoxes();") && MemberText(boxes, "private void BoxKey(float now)").Contains("_carrying = box;")
+              && Between(MemberText(boxes, "private void BoxKey(float now)"), "_carrying = box;", "Prompt = null;").Contains("ShowBoxes();"),
+            "moving request: the line is set when the boxes are put out and again when one is lifted");
     }
 
     private static void StuckLightPins()
