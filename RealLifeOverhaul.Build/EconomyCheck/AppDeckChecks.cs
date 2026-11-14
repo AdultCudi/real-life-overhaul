@@ -49,7 +49,8 @@ internal static partial class Program
         int wide = UiDraw.AppsShown(model, 1920f), narrow = UiDraw.AppsShown(model, 960f), tiny = UiDraw.AppsShown(model, 640f);
         Check(wide > home.Length && wide <= UiAppDeck.BarMost && narrow < wide && narrow >= 4 && tiny >= 1,
             "app deck: a long bar shows as many apps as the strip's room allows (" + wide + " at 1920, " + narrow + " at 960, " + tiny + " at 640) and the rest wait in All apps");
-        UiStatusModel plain = RowModel(apps, apps.Select((a, i) => i).Where(i => apps[i].InRow).ToList());
+        new UiAppDeck().Apply(apps, row);   // the sixteen above are still marked on the apps: an untouched deck puts the default row back first
+        UiStatusModel plain = RowModel(apps, row);
         int plainShown = UiDraw.AppsShown(plain, 1920f);
         Check(plainShown == home.Length && plain.AppsMost == 0, "app deck: the default row is laid as it was, ten tiles at most (" + plainShown + " of " + home.Length + ")");
 
