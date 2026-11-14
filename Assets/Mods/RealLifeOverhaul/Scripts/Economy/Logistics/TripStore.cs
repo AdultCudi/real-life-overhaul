@@ -7,9 +7,10 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// The delivery trips' line in the save: "v=1", then '^' and one record each, its fields split by '|': R a route's departures,
-    /// T a trip waiting or on the road (its stops split by '/', a stop's goods by ';', an item and its pieces by '='), L a run
-    /// of the log, D the day the rivals' books were last charged. Routes sorted by id, trips and runs in their order, so a
-    /// state always writes the same line. A save from before has no line: no trips on the road. Game-free.
+    /// T a trip waiting or on the road (its stops split by '/', a stop's goods by ';', an item and its pieces by '=', and after a ','
+    /// the pieces loaded for the stop), L a run of the log (a run's pieces loaded, left behind and the reasons come last, and a line
+    /// without them reads as none), D the day the rivals' books were last charged. Routes sorted by id, trips and runs in their
+    /// order, so a state always writes the same line. A save from before has no line: no trips on the road. Game-free.
     /// </summary>
     public static class TripStore
     {
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         t.Append(g > 0 ? ";" : string.Empty).Append(Escape(st.Items[g])).Append('=').Append(N(st.Pieces[g]));
                     }
+                    t.Append(',').Append(N(st.Loaded));
                 }
             }
             for (int i = 0; i < s.Log.Count; i++)
@@ -52,7 +54,8 @@ namespace RealLifeOverhaul.Economy
                 TripLog e = s.Log[i];
                 t.Append("^L|").Append(N(e.Day)).Append('|').Append(N(e.Minute)).Append('|').Append(Escape(e.Plan)).Append('|').Append(N(e.Slot))
                     .Append('|').Append(N(e.Stops)).Append('|').Append(N(e.Pieces)).Append('|').Append(N(e.Boxes)).Append('|').Append(N(e.Room))
-                    .Append('|').Append(N(e.Metres)).Append('|').Append(N(e.Minutes)).Append('|').Append(N(e.FuelCents)).Append('|').Append(N(e.WageCents));
+                    .Append('|').Append(N(e.Metres)).Append('|').Append(N(e.Minutes)).Append('|').Append(N(e.FuelCents)).Append('|').Append(N(e.WageCents))
+                    .Append('|').Append(N(e.Loaded)).Append('|').Append(N(e.Left)).Append('|').Append(N(e.Why));
             }
             t.Append("^D|").Append(N(s.RivalDay));
             return t.ToString();
@@ -136,7 +139,7 @@ namespace RealLifeOverhaul.Economy
         {
             string[] f = text.Split(',');
             var st = new TripStop();
-            if (f.Length != 4 || !I(f[1], out st.Arrive) || (f[2] != "0" && f[2] != "1"))
+            if ((f.Length != 4 && f.Length != 5) || !I(f[1], out st.Arrive) || (f[2] != "0" && f[2] != "1") || (f.Length == 5 && !I(f[4], out st.Loaded)))
             {
                 return false;
             }
@@ -163,9 +166,9 @@ namespace RealLifeOverhaul.Economy
         private static bool LogOf(string[] c, TripState s)
         {
             var e = new TripLog();
-            if (c.Length != 13 || !I(c[1], out e.Day) || !I(c[2], out e.Minute) || !I(c[4], out e.Slot) || !I(c[5], out e.Stops) || !I(c[6], out e.Pieces)
+            if ((c.Length != 13 && c.Length != 16) || !I(c[1], out e.Day) || !I(c[2], out e.Minute) || !I(c[4], out e.Slot) || !I(c[5], out e.Stops) || !I(c[6], out e.Pieces)
                 || !I(c[7], out e.Boxes) || !I(c[8], out e.Room) || !I(c[9], out e.Metres) || !I(c[10], out e.Minutes) || !I(c[11], out e.FuelCents)
-                || !I(c[12], out e.WageCents))
+                || !I(c[12], out e.WageCents) || (c.Length == 16 && (!I(c[13], out e.Loaded) || !I(c[14], out e.Left) || !I(c[15], out e.Why))))
             {
                 return false;
             }

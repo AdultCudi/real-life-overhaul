@@ -17,6 +17,7 @@ internal static partial class Program
         SpoilSave();
         SpoilPace();
         SendNowCap();
+        StockSent();
         LogisticsTexts();
     }
 

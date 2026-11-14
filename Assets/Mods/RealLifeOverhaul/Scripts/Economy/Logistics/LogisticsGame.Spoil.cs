@@ -10,8 +10,6 @@ namespace RealLifeOverhaul.Economy
 {
     internal static partial class LogisticsGame
     {
-        private const int DeliveriesKept = 60;   // as the game keeps a warehouse's record of goods moved (LogisticsManagerPlanDestination.Deliver)
-
         private static readonly List<ItemInstance> Holders = new List<ItemInstance>(64);
         private static readonly List<ItemInstance> Emptied = new List<ItemInstance>(8);
 
@@ -97,7 +95,8 @@ namespace RealLifeOverhaul.Economy
         /// <summary>
         /// Throws out spoiled pieces of a product by the game's own calls: from storage first (ItemInstance.ReduceFromCargo), then
         /// from the shelves (SubtractFromStock, which refills an emptied shelf as a sale does). Returns the pieces thrown out and
-        /// what they had cost, cents; a warehouse's record of goods out says so as the game's own movements do.
+        /// what they had cost, cents. A warehouse's record of goods out is not written: that record is what its page and its route's page
+        /// count as goods sent, and thrown-out stock is not sent to anybody.
         /// </summary>
         public static int Discard(BuildingRegistration reg, string item, int wanted, out int cents)
         {
@@ -174,17 +173,6 @@ namespace RealLifeOverhaul.Economy
             Emptied.Clear();
             Holders.Clear();
             cents = Mathf.RoundToInt(paid * 100f);
-            var warehouse = reg as Warehouse;
-            if (got > 0 && warehouse != null && warehouse.deliveryTransactions != null)
-            {
-                var record = new DeliveryTransaction();
-                record.SetItems(new List<DeliveryItem>(1) { new DeliveryItem(item, -got) });
-                warehouse.deliveryTransactions.Add(record);
-                if (warehouse.deliveryTransactions.Count > DeliveriesKept)
-                {
-                    warehouse.deliveryTransactions.RemoveRange(0, warehouse.deliveryTransactions.Count - DeliveriesKept);
-                }
-            }
             if (got > 0 && InstanceBehavior<GameManager>.Instance != null)
             {
                 InstanceBehavior<GameManager>.Instance.shouldUpdateAfterDeliveries = true;   // the game's pages and shelves read it again

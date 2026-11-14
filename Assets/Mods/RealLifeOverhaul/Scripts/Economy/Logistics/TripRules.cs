@@ -122,6 +122,78 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// What became of one product's load at a stop: <paramref name="moved"/> pieces left the warehouse (never more than the load), of
+        /// which the stop's own count rose by <paramref name="credited"/>; the rest of the load never left and is handed back, with the reason
+        /// (the warehouse held less than the load, else the stop had no room); what left and the stop did not count is lost. So the load is
+        /// always delivered plus handed back plus lost.
+        /// </summary>
+        public static TripWhy Settle(int load, int held, int moved, int credited, out int delivered, out int back, out int lost)
+        {
+            load = Math.Max(0, load);
+            moved = Math.Min(load, Math.Max(0, moved));
+            delivered = Math.Min(moved, Math.Max(0, credited));
+            lost = moved - delivered;
+            back = load - moved;
+            TripWhy why = TripWhy.None;
+            if (back > 0)
+            {
+                why |= held < load ? TripWhy.NoStock : TripWhy.ShelvesFull;
+            }
+            if (lost > 0)
+            {
+                why |= TripWhy.Lost;
+            }
+            return why;
+        }
+
+        /// <summary>
+        /// Hands a vehicle's boxes out over the stops one box at a time, a round of the stops after another from the stop at
+        /// <paramref name="start"/>, each stop taking its next wanted product in turn, so that a full vehicle never leaves the last
+        /// stops of a route with nothing while the first take everything. Each box carries at most its box size, what the stop still
+        /// wants and what the warehouse still holds of that product (<paramref name="pool"/>, shared by the stops, taken down as it goes).
+        /// Entries are listed in the order of their stops. Returns the boxes used; the pieces each entry gets go into <paramref name="pieces"/>.
+        /// </summary>
+        public static int Allot(int entries, int[] stopOf, int[] poolOf, int[] wanted, int[] size, int stops, int start, int room, int[] pool, int[] pieces)
+        {
+            for (int e = 0; e < entries; e++)
+            {
+                pieces[e] = 0;
+            }
+            if (stops <= 0 || room <= 0)
+            {
+                return 0;
+            }
+            var cursor = new int[stops];
+            int used = 0, first = ((start % stops) + stops) % stops;
+            bool moved = true;
+            while (room > 0 && moved)
+            {
+                moved = false;
+                for (int j = 0; j < stops && room > 0; j++)
+                {
+                    int s = (first + j) % stops;
+                    for (int n = 0; n < entries; n++)
+                    {
+                        int e = (cursor[s] + n) % entries;
+                        if (stopOf[e] != s || pieces[e] >= wanted[e] || pool[poolOf[e]] <= 0)
+                        {
+                            continue;
+                        }
+                        int give = Math.Min(Math.Max(1, size[e]), Math.Min(wanted[e] - pieces[e], pool[poolOf[e]]));
+                        pieces[e] += give;
+                        pool[poolOf[e]] -= give;
+                        room--;
+                        used++;
+                        cursor[s] = e + 1;
+                        moved = true;
+                        break;
+                    }
+                }
+            }
+            return used;
+        }
+
+        /// <summary>
         /// Each slot's stops of a route: its vehicle's own number of stops, and what the manager's skill adds over them handed out one
         /// at a time from the first slot that drives; never more than the route's most. Returns the stops given.
         /// </summary>

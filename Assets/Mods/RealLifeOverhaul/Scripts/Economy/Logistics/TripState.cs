@@ -18,7 +18,9 @@ namespace RealLifeOverhaul.Economy
     {
         public string Place;     // the stop's address key (CompanyGame's form: street~number)
         public int Arrive;       // the absolute game minute it arrives
-        public bool Done;        // delivered
+        public bool Done;        // reached: what the stop took is in Pieces
+        public int Loaded;       // pieces taken onto the vehicle for it (Pieces is what it took, once Done); not saved
+        public TripWhy Why;      // why some of what it was meant to get did not arrive; not saved
         public readonly List<string> Items = new List<string>(4);
         public readonly List<int> Pieces = new List<int>(4);
 
@@ -56,6 +58,8 @@ namespace RealLifeOverhaul.Economy
         public int Boxes, Room;       // boxes loaded, the vehicle's room
         public int FuelCents, WageCents;
         public TripVehicle Kind;
+        public int Left;              // pieces the stops wanted that were not loaded; not saved
+        public TripWhy Why;           // why, and why loaded goods came back; not saved
         public readonly List<TripStop> Stops = new List<TripStop>(4);
 
         public int Pieces()
@@ -67,6 +71,28 @@ namespace RealLifeOverhaul.Economy
             }
             return n;
         }
+
+        /// <summary>Pieces on the vehicle for stops not yet reached.</summary>
+        public int Carried()
+        {
+            int n = 0;
+            for (int i = 0; Out && i < Stops.Count; i++)
+            {
+                n += Stops[i].Done ? 0 : Stops[i].Total();
+            }
+            return n;
+        }
+
+        /// <summary>Pieces taken onto the vehicle when it left (what the stops took, for a stop reached, is counted by what was loaded for it).</summary>
+        public int LoadedPieces()
+        {
+            int n = 0;
+            for (int i = 0; i < Stops.Count; i++)
+            {
+                n += Stops[i].Loaded > 0 ? Stops[i].Loaded : Stops[i].Total();
+            }
+            return n;
+        }
     }
 
     /// <summary>One run of the log: what it moved, how far and for how long, and its fuel and wages.</summary>
@@ -75,6 +101,9 @@ namespace RealLifeOverhaul.Economy
         public int Day, Minute;      // when it left: the game's day and the minute of that day
         public string Plan;
         public int Slot, Stops, Pieces, Boxes, Room, Metres, Minutes, FuelCents, WageCents;
+        public int Loaded;           // pieces taken onto the vehicle (Pieces is what the stops took); 0 in a log written before it was kept
+        public int Left;             // pieces the stops wanted that were not loaded
+        public int Why;              // TripWhy of the run
     }
 
     /// <summary>

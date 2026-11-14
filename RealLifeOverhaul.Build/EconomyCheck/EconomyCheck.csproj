@@ -499,6 +499,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Parties\PartyPages.cs" Link="Mod\Parties\PartyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripRules.cs" Link="Mod\TripRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripState.cs" Link="Mod\TripState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripTally.cs" Link="Mod\TripTally.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripStore.cs" Link="Mod\TripStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SendNowLimit.cs" Link="Mod\SendNowLimit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SpoilRules.cs" Link="Mod\SpoilRules.cs" />

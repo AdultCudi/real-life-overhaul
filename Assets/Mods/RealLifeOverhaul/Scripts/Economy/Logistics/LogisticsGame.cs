@@ -256,12 +256,16 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// Delivers a trip's stop by the game's own call: each of its products' targets set for the moment to what the stop holds and
-        /// the trip's load (an exporter's to the load), any other to none, then put back. Returns the pieces each product moved out
-        /// of the warehouse into <paramref name="moved"/>, in the stop's order; false when the stop is no longer on the route.
+        /// the trip's load (an exporter's to the load), any other to none, then put back. Returns, in the stop's order, the pieces each
+        /// product moved out of the warehouse (<paramref name="moved"/>), the pieces the stop's own count of that product rose by
+        /// (<paramref name="credited"/>: an exporter sells what it takes, so its count is the moved) and what the warehouse held of it
+        /// before (<paramref name="held"/>); false when the stop is no longer on the route.
         /// </summary>
-        public static bool Deliver(LogisticsManagerPlan plan, Warehouse from, TripStop stop, List<int> moved)
+        public static bool Deliver(LogisticsManagerPlan plan, Warehouse from, TripStop stop, List<int> moved, List<int> credited, List<int> held)
         {
             moved.Clear();
+            credited.Clear();
+            held.Clear();
             LogisticsManagerPlanDestination d = null;
             for (int i = 0; plan.destinations != null && i < plan.destinations.Count && d == null; i++)
             {
@@ -280,9 +284,11 @@ namespace RealLifeOverhaul.Economy
                 Kept.Add(t != null ? t.targetAmount : 0);
             }
             var before = new int[stop.Items.Count];
+            var there = new int[stop.Items.Count];
             for (int g = 0; g < stop.Items.Count; g++)
             {
                 before[g] = InStock(from, stop.Items[g]);
+                there[g] = BuildingHelper.CountTotalResourcesInStock(d.deliveryTargetAddress, stop.Items[g]);
             }
             try
             {
@@ -312,7 +318,11 @@ namespace RealLifeOverhaul.Economy
             }
             for (int g = 0; g < stop.Items.Count; g++)
             {
-                moved.Add(Math.Max(0, before[g] - InStock(from, stop.Items[g])));
+                int gone = Math.Max(0, before[g] - InStock(from, stop.Items[g]));
+                moved.Add(gone);
+                held.Add(before[g]);
+                int rose = BuildingHelper.CountTotalResourcesInStock(d.deliveryTargetAddress, stop.Items[g]) - there[g];
+                credited.Add(exporter ? gone : Math.Max(0, Math.Min(gone, rose)));
             }
             if (!GameBusy)
             {
