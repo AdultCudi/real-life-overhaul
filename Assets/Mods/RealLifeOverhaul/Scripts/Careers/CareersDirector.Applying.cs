@@ -138,17 +138,10 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_work_why_many";
             }
             Profession p = o.Def;
-            if (!ProRules.Qualified(_study, p, o.Rank))
+            string cannot = ApplyWhy(o);   // what is not held or too low, with the figures and what raises it
+            if (cannot != null)
             {
-                return "reallife_work_why_unqualified";
-            }
-            if (!ProRules.Eligible(_study, p, o.Rank))
-            {
-                return "reallife_work_why_skills";
-            }
-            if (o.Via != (int)Via.Headhunter && !ProPath.CanBeOffered(ProRules.HireScore(CandidateFor(o))))
-            {
-                return "reallife_work_why_no_chance";   // not even the best luck at both steps would do
+                return cannot;
             }
             var a = new Application { Day = day, Stage = (int)ApplyStep.Sent };
             o.CopyTo(a.Post);

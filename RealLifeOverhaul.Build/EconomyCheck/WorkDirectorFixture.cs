@@ -67,7 +67,16 @@ namespace RealLifeOverhaul.Careers
         public bool RunStandingDecides(Job j, int day) => StandingDecides(j, day);
         public string RunOtherGotIt(Application a) => OtherGotIt(a);
         public void RunCampusEnrolled(CourseDef c, int day) => CampusEnrolled(c, day);
-        public string RunCampusWhy(CourseDef c) => CampusWhy(c);
+        // What the campus itself asks before a seat (a skill floor, a seat in the cohort): the two asks CareersDirector.EnrolAsks makes of it, from the same rules.
+        public string RunCampusWhy(CourseDef c)
+        {
+            if (RosterRules.Floor(c, out int skill, out int need) && StudyRules.Points(_study, skill) < need)
+            {
+                return "floor";
+            }
+            Intake i = IntakeOf(c);
+            return i != null && !RosterRules.CanJoin(i) ? "seats" : null;
+        }
         public void RunPeopleWrite(Dictionary<string, string> data) => PeopleWrite(data);
         public void RunPeopleForget() => PeopleForget();
     }

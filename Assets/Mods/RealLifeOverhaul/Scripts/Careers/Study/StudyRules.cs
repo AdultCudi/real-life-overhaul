@@ -68,14 +68,18 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>Exams are sat where the classes are; online courses and certificates are examined at the school.</summary>
+        /// <summary>
+        /// Exams are sat where the classes are; online courses and certificates are examined at the school's study desks. Each wrong place has
+        /// a reason of its own that says where the exam is sat (a class's reason says where the class is held).
+        /// </summary>
         public static string AtExam(CourseDef c, StudyMode mode, StudyHere here)
         {
-            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
+            switch (StudyNeedRules.ExamPlaceOf(c, mode))
             {
-                return here.School ? null : "reallife_study_why_exam_school";
+                case ExamPlace.Desk: return here.School ? null : "reallife_study_why_exam_school";
+                case ExamPlace.Ward: return here.Hospital ? null : "reallife_study_why_exam_hospital";
+                default: return here.University ? null : "reallife_study_why_exam_university";
             }
-            return AtClass(c, mode, here);
         }
 
         /// <summary>What the panel where the player stands offers for a course (classWhy, examWhy null when possible): a class first, then an exam, nothing while busy.</summary>
@@ -311,7 +315,8 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True if the reason a class cannot be joined is only that the player is not inside the place that holds it (the school, the university, a ward).</summary>
         public static bool Elsewhere(string why)
         {
-            return why == "reallife_study_why_not_school" || why == "reallife_study_why_not_university" || why == "reallife_study_why_not_hospital";
+            return why == "reallife_study_why_not_school" || why == "reallife_study_why_not_university" || why == "reallife_study_why_not_hospital"
+                   || why == "reallife_study_why_exam_school" || why == "reallife_study_why_exam_university" || why == "reallife_study_why_exam_hospital";
         }
 
         /// <summary>The next day on or after a day with a class of the course; -1 for none.</summary>

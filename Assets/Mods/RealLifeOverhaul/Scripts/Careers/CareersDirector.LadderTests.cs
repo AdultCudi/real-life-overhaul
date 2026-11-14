@@ -172,7 +172,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (f.Company.Stores.Count < LadderRanks.Of(f.Rung + 1).Stores)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ladder_why_stores", null, 8f);
+                    Say(NotificationType.Warning, CareersWhy.With("reallife_ladder_why_stores", "have", f.Company.Stores.Count.ToString(), "need", LadderRanks.Of(f.Rung + 1).Stores.ToString()));
                     Logger?.Info("Careers check (ladder promotion): " + f.Company.Name + " has " + f.Company.Stores.Count + " store(s), the next rung needs "
                                  + LadderRanks.Of(f.Rung + 1).Stores + ": PASS, refused as it should be");
                     return;

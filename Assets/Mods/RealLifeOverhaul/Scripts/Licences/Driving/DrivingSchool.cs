@@ -41,10 +41,20 @@ namespace RealLifeOverhaul
             return (hour % 24).GetFormattedTime(0f);
         }
 
-        /// <summary>The words of a reason <see cref="Available"/> gave: the school's hours, where it names them, are filled in from the constants above.</summary>
-        public static string ReasonText(string reasonKey)
+        /// <summary>
+        /// The words of a reason <see cref="Available"/> gave, with the figures it names: the school's hours, the days the car licence has been held and
+        /// the days asked, the penalty points held and the most allowed, and for a fee the player cannot pay what it is and what they have.
+        /// </summary>
+        public static string ReasonText(string reasonKey, SchoolService service = SchoolService.Card)
         {
-            return Licences.T(reasonKey, "from", Hour(OpensAt), "to", Hour(ClosesAt));
+            int day = TimeHelper.CurrentDay;
+            int issued = LicenceState.Of(LicenceClass.Car).Issued;
+            float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
+            string key = reasonKey == "reallife_school_no_money" ? "reallife_school_short_money" : reasonKey;   // the same refusal, with its figures
+            return Licences.T(key, "from", Hour(OpensAt), "to", Hour(ClosesAt))
+                .Replace("{held}", Mathf.Max(0, day - issued).ToString()).Replace("{days}", LicenceLaw.TaxiHeldDays.ToString())
+                .Replace("{points}", LicenceState.PointsOn(day).ToString()).Replace("{most}", LicenceLaw.TaxiMostPoints.ToString())
+                .Replace("{fee}", Licences.Money(Fee(service))).Replace("{have}", Licences.Money(cash));
         }
         public const int Classes = 5;       // LicenceClass: car, commercial, taxi, motorcycle, heavy
 
@@ -567,7 +577,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                status = DrivingSchool.ReasonText(reason);
+                status = DrivingSchool.ReasonText(reason, service);
             }
             var entry = new DialogEntry
             {

@@ -108,8 +108,8 @@ namespace RealLifeOverhaul.Careers
                 WorldPanel panel = _classDoor.Panel;
                 if (exam)
                 {
-                    panel.Lines(CareersText.Course(c.Id), CareersText.T(live.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()),
-                        null, WorldPanel.White());
+                    panel.Lines(CareersText.Course(c.Id), CareersText.T(live.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString(),
+                        "course", CareersText.Course(c.Id)), null, WorldPanel.White());
                 }
                 else
                 {
@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Careers
                 string why = (offer & 1) == 1 ? Sit(offer / 2) : Attend(offer / 2);
                 if (why != null)
                 {
-                    Tell(NotificationType.Warning, why, null, TabStudying, CampusApp.CourseRow + offer / 2);
+                    Tell(NotificationType.Warning, CareersWhy.KeyOf(why), CareersWhy.DataOf(why), TabStudying, CampusApp.CourseRow + offer / 2);
                 }
             }
             catch (Exception e)
@@ -189,6 +189,7 @@ namespace RealLifeOverhaul.Careers
                 _computer.Finish();
             }
             _computer = null;
+            _examDesks?.Clear();
         }
 
         // Once a second: the game's study panel watched while the player is in the school on a course there; in a session the classroom doors' click.
@@ -227,6 +228,8 @@ namespace RealLifeOverhaul.Careers
             {
                 _computer = null;
             }
+            ExamDesksTick();      // the school's desks marked while an exam of the player's waits there
+            ExamElsewhere();      // an exam told at the university where it is sat instead
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
@@ -408,7 +411,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (CareersGame.Energy < StudyCatalogue.TiredEnergy)
             {
-                return "reallife_study_why_tired";
+                return TiredWhy();
             }
             if (kind == SittingKind.Class)
             {
@@ -438,7 +441,7 @@ namespace RealLifeOverhaul.Careers
                 int fee = e.Stage == (int)EnrolStage.Retake ? Prices.At(StudyRules.RetakeFee(c)) : 0;
                 if (fee > 0 && CareersGame.Cash < fee)
                 {
-                    return "reallife_study_why_money";
+                    return MoneyWhy("reallife_study_money_retake", fee);
                 }
                 sitting = ExamSitting(e);
                 sitting.Fee = fee;   // charged as the player sits down: a walk called off costs nothing

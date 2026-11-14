@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Careers
             string why = OpenDesk(door, room, false);
             if (why != null)
             {
-                Tell(NotificationType.Warning, why, null, TabStudying, null);
+                Tell(NotificationType.Warning, CareersWhy.KeyOf(why), CareersWhy.DataOf(why), TabStudying, null);
             }
         }
 

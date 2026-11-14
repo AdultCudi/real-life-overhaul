@@ -461,6 +461,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--study-clear")
+        {
+            StudyClear();   // where each exam is sat, the notices and desks that say it, every refusal naming what is short with its numbers alone (StudyClearChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--next-class")
         {
             NextClasses();   // the next class, the classes held and the Campus diary's classes alone (NextClassChecks.cs)
@@ -1804,6 +1810,7 @@ internal static partial class Program
         DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)
         InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
         HomeworkCounts(); // homework counts across sittings: minutes carried, finished over two, saved and loaded, the early-stop notice and hint (HomeworkCountChecks.cs)
+        StudyClear();   // study and careers said clearly: where each exam is sat, the notices and desks that say it, every refusal naming what is short with its numbers (StudyClearChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
         DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)

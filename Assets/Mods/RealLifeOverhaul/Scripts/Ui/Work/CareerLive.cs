@@ -389,8 +389,8 @@ namespace RealLifeOverhaul.Ui
                     r.Hint = words.F("reallife_work_weighs_all",
                         "The employer weighs your record, and {name} has applied too. When you get the job, start each shift at your desk.", "name", others[0].Name);
                 }
-                string why = applied ? words.T("reallife_work_why_applied", "You have applied for that already.") : !qualified ? words.T("reallife_work_why_unqualified",
-                    "You do not hold what that post needs.") : !eligible ? words.T("reallife_work_why_skills", "Your skills are too far below what that post asks.") : null;
+                string cannot = applied || (qualified && eligible) ? null : d.ApplyWhy(o, template);   // what is not held or too low, with the figures and what raises it
+                string why = applied ? words.T("reallife_work_why_applied", "You have applied for that already.") : cannot != null ? CareersText.T(cannot) : null;
                 r.Acts.Add(new WorkAct { Kind = (int)CareerAct.Apply, Arg = o.Id, Label = words.T("reallife_career_button_apply", "Apply"),
                     Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
                 r.Acts.Add(new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"),
@@ -863,7 +863,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return true;
             }
-            Notifications.Show(NotificationType.Error, why, d.TakeWhyData(), 8f);
+            CareersDirector.Say(NotificationType.Error, why);
             return false;
         }
     }

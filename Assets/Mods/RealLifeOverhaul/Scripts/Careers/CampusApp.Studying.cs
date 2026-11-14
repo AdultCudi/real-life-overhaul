@@ -150,6 +150,12 @@ namespace RealLifeOverhaul.Careers
                     "from", CareersText.Day(e.ExamFrom), "to", CareersText.Day(e.ExamTo), "opens", CareersText.Hour(StudyCatalogue.ExamOpens),
                     "closes", CareersText.Hour(StudyCatalogue.ExamCloses), "fee", CareersText.Money(Prices.At(StudyRules.RetakeFee(c))), "score", e.Score.ToString()),
                     e.Stage == (int)EnrolStage.Retake ? CellTone.Yellow : CellTone.Plain);
+                box.Line(_director.ExamLine(c, mode, e), CellTone.Green);   // where it is sat, said as plainly as when it was opened
+            }
+            else if (e.Stage == (int)EnrolStage.Studying)
+            {
+                box.Section("reallife_campus_col_exam");
+                box.Note(_director.ExamLine(c, mode, e));   // the exam to come: where, and how long it stays open
             }
             Transform buttons = box.ButtonRow();
             if (e.FeeLate)
@@ -169,6 +175,10 @@ namespace RealLifeOverhaul.Careers
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_campus_button_sit", () => Do(() => _director.Sit(id)));
             }
             Transform more = box.ButtonRow();
+            if (e.Stage == (int)EnrolStage.Exam || e.Stage == (int)EnrolStage.Retake)
+            {
+                InfoBox.Button(more, InfoBox.Additional, "reallife_career_button_map", () => Do(() => _director.ShowExam(c, mode)));   // to the place the exam is sat
+            }
             string name = CareersText.Course(id);
             InfoBox.Button(more, InfoBox.Negative, "reallife_campus_button_withdraw", () => GameConfirm.Show(
                 "reallife_campus_confirm_withdraw_title".Localize(new { name }), "reallife_campus_confirm_withdraw_body".Localize(),

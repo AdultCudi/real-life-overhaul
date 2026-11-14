@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.Careers
                 WriteStudy(Save.modData);
             }
             StopWork(unloading);
+            _examDesks?.Clear();   // the school's desks as the game has them
             _studyOn = false;
             if (_book.Studying)
             {
@@ -140,6 +141,10 @@ namespace RealLifeOverhaul.Careers
                             Data("course", CareersText.Course(c.Id), "hour", CareersText.Hour(StudyRules.Hour(c, mode)), "place", PlaceOf(c, mode)), TabStudying, CampusApp.CourseRow + c.Id);
                     }
                 }
+            }
+            if (hour == StudyCatalogue.ExamOpens)
+            {
+                ExamsToday(day);   // an exam that can be sat today is told with where, once
             }
             if (changed)
             {
@@ -294,7 +299,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (!CareersGame.Charge(owed, CareersGame.FeeKey, CareersText.Course(course)))
             {
-                return "reallife_study_why_money";
+                return MoneyWhy("reallife_study_money_owed", owed);
             }
             e.Fee += owed;
             e.Instalments++;
@@ -313,39 +318,22 @@ namespace RealLifeOverhaul.Careers
         public string Enrol(int course, StudyMode mode, bool loan)
         {
             CourseDef c = StudyCatalogue.Find(course);
-            if (!_studyOn || c == null || !Offered(c))
+            string refused = EnrolWhy(c, mode, loan && c != null && c.Loanable && LoanOn, new List<Ask>(6));   // every requirement short, with its figures and what raises it
+            if (refused != null)
             {
-                return "reallife_study_why_closed";
-            }
-            EnrolRefusal refusal = StudyRules.CanEnrol(_study, c, mode);
-            string campus = refusal == EnrolRefusal.None ? CampusWhy(c) : null;   // a skill floor, and a seat in the cohort
-            if (campus != null)
-            {
-                return campus;
-            }
-            if (refusal == EnrolRefusal.Passed && c.Id == StudyCatalogue.DrivingRefresher)
-            {
-                refusal = EnrolRefusal.None;   // a refresher can be taken again
-            }
-            if (refusal != EnrolRefusal.None)
-            {
-                return "reallife" + "_study_why_" + Refusal(refusal);   // put together, so the text check reads only whole keys
+                return refused;
             }
             int day = Save.Day;
             var e = new Enrolment { Course = c.Id, Mode = (int)mode, Start = day, Grant = GrantFor(c), OnLoan = loan && c.Loanable && LoanOn };
             int due = Prices.At(StudyRules.InstalmentDue(e));
             string name = CareersText.Course(c.Id);
-            if (e.OnLoan && !StudyRules.LoanRoom(_study, due, Prices.Level))
-            {
-                return "reallife_study_why_loan_full";
-            }
             if (e.OnLoan)
             {
                 Lend(e, due);
             }
             else if (!CareersGame.Charge(due, CareersGame.FeeKey, name))
             {
-                return "reallife_study_why_money";
+                return MoneyWhy("reallife_study_money_fee", due);
             }
             else
             {
@@ -364,8 +352,10 @@ namespace RealLifeOverhaul.Careers
                 StudyRules.Advance(e, day);   // a certificate with no homework set goes straight to its exam
             }
             int next = StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1) / (24 * 60);
-            Tell(NotificationType.Success, c.Timetabled ? "reallife_study_note_enrolled" : "reallife_study_note_enrolled_home",
-                Data("course", name, "day", next > 0 ? CareersText.Day(next) : "-", "hour", CareersText.Hour(StudyRules.Hour(c, mode))), TabStudying, CampusApp.CourseRow + c.Id);
+            Dictionary<string, string> said = Data("course", name, "day", next > 0 ? CareersText.Day(next) : "-", "hour", CareersText.Hour(StudyRules.Hour(c, mode)));
+            said["place"] = PlaceOf(c, mode);
+            said["where"] = ExamWhere(c, mode);
+            Tell(NotificationType.Success, c.Timetabled ? "reallife_study_note_enrolled" : "reallife_study_note_enrolled_home", said, TabStudying, CampusApp.CourseRow + c.Id);
             Logger?.Info("Careers: enrolled on " + c.Key + " (" + mode + ") on day " + day + ", grant " + e.Grant + " thousandths, " + (e.OnLoan ? "on the loan" : "paid") + " " + due + ".");
             Changed();
             return null;

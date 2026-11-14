@@ -296,7 +296,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (CareersGame.Energy < StudyCatalogue.TiredEnergy)
             {
-                return "reallife_study_why_tired";
+                return TiredWhy();
             }
             CloseApps();
             ShiftSkip skip = ShiftSkip.Offer(this, sitting);

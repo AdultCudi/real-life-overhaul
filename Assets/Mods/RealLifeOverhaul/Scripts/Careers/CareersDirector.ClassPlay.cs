@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_study_why_game_busy";
             }
-            return CareersGame.Energy < StudyCatalogue.TiredEnergy ? "reallife_study_why_tired" : null;
+            return CareersGame.Energy < StudyCatalogue.TiredEnergy ? TiredWhy() : null;
         }
 
         /// <summary>
@@ -46,7 +46,12 @@ namespace RealLifeOverhaul.Careers
         {
             string classWhy = !school || AtTheSchool(e, false) ? CanAttend(e, out _) : "reallife_study_why_no_class";
             string examWhy = !school || AtTheSchool(e, true) ? CanSit(e) : "reallife_study_why_no_exam";
-            return ClassPlayRules.AtDesk(classWhy, examWhy, e.FeeLate, SeatWhy(game), away && !school);
+            DeskStart start = ClassPlayRules.AtDesk(classWhy, examWhy, e.FeeLate, SeatWhy(game), away && !school);
+            if (start.Why == "reallife_study_why_fee_owed")
+            {
+                start.Why = OwedWhy(e);   // the rule names the reason; the amount owed is said with it
+            }
+            return start;
         }
 
         // The words of a desk's button for a kind of sitting; none has a {placeholder}, as the game's activity panel writes a
@@ -316,7 +321,7 @@ namespace RealLifeOverhaul.Careers
                 int fee = Prices.At(StudyRules.RetakeFee(c));
                 if (!CareersGame.Charge(fee, CareersGame.FeeKey, CareersText.Course(c.Id)))
                 {
-                    return "reallife_study_why_money";
+                    return MoneyWhy("reallife_study_money_retake", fee);
                 }
                 e.Fee += fee;
             }
