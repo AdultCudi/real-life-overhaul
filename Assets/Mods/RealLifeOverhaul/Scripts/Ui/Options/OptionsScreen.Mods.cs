@@ -75,10 +75,10 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             Component control = Control(root, option);
-            Toggle toggle = control != null ? BuyKits.Get<Toggle>(GameContract.ModsToggle, control) : null;
-            Slider slider = control != null ? BuyKits.Get<Slider>(GameContract.ModsSlider, control) : null;
-            UI.Elements.Dropdown dropdown = control != null ? BuyKits.Get<UI.Elements.Dropdown>(GameContract.ModsDropdown, control) : null;
-            Button button = control != null ? BuyKits.Get<Button>(GameContract.ModsButton, control) : null;
+            Toggle toggle = option is ToggleOption ? BuyKits.Get<Toggle>(GameContract.ModsToggle, control) : null;
+            Slider slider = option is SliderOption ? BuyKits.Get<Slider>(GameContract.ModsSlider, control) : null;
+            UI.Elements.Dropdown dropdown = option is DropdownOption ? BuyKits.Get<UI.Elements.Dropdown>(GameContract.ModsDropdown, control) : null;
+            Button button = option is ButtonOption ? BuyKits.Get<Button>(GameContract.ModsButton, control) : null;
             if (toggle != null)
             {
                 AddToggle(option.Label, toggle);
