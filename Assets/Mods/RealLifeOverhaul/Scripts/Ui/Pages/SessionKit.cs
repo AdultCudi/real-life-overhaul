@@ -31,6 +31,12 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            if (!Offers(panel, out string why))
+            {
+                // a card with only a title and no way out is never opened: the game's own panel keeps the page, and the log says why
+                Sessions.SessionDirector.Note("the card was not opened: " + why);
+                return;
+            }
             try
             {
                 Hide(null);
@@ -46,6 +52,29 @@ namespace RealLifeOverhaul.Ui
                 UiDirector.Logger?.Warn("UI: the desk session stays on the game's own panel (" + e.GetType().Name + ").");
                 Hide(null);
             }
+        }
+
+        // The panel is on a page of choices (not walking, not in the chair, not over) and the page has a headline, words and buttons.
+        private static bool Offers(IPlayerActivity panel, out string why)
+        {
+            why = null;
+            if (panel.GetState() != PlayerActivityState.NotStarted)
+            {
+                why = "the panel is " + panel.GetState() + ", not on a page";
+            }
+            else if (panel.GetHeadlineLabel() == null || string.IsNullOrEmpty(panel.GetHeadlineLabel().key))
+            {
+                why = "the page has no headline";
+            }
+            else if (panel.GetLabels() == null || panel.GetLabels().Length == 0)
+            {
+                why = "the page has no lines";
+            }
+            else if (panel.GetButtons() == null || panel.GetButtons().Length == 0)
+            {
+                why = "the page has no buttons";
+            }
+            return why == null;
         }
 
         /// <summary>The panel alone again: the time in the chair began, the panel closed, or the kit failed.</summary>
@@ -82,6 +111,11 @@ namespace RealLifeOverhaul.Ui
         private bool _dirty = true;
         private float _next;
         private int _seen;
+        private int _emptyPolls;     // looks in a row at a page the panel gave no button on
+        private bool _left;          // the card has been asked to close (once)
+
+        /// <summary>Looks in a row at a page with no button before the card closes itself: the moments between a press and the panel's next state show none.</summary>
+        public const int EmptyPollsMost = 2;
 
         public Action Close;
 
@@ -102,6 +136,7 @@ namespace RealLifeOverhaul.Ui
                     int now = Signature();
                     _dirty |= now != _seen;
                     _seen = now;
+                    Watch();
                 }
                 return _dirty;
             }
@@ -115,6 +150,11 @@ namespace RealLifeOverhaul.Ui
 
         public bool Press(int command, int arg)
         {
+            if (command == UiDecision.ButtonCommand && arg >= 0 && arg < _actions.Count && _actions[arg] == null)
+            {
+                Leave("the way out of an empty page pressed");   // the card's own button, for a page that has none of the panel's
+                return true;
+            }
             ButtonInfo b = command == UiDecision.ChoiceCommand && arg >= 0 && arg < _choices.Count ? _choices[arg]
                 : command == UiDecision.ButtonCommand && arg >= 0 && arg < _actions.Count ? _actions[arg] : null;
             if (b == null || !b.interactable || b.onClick == null)
@@ -130,15 +170,48 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
+        // Esc and the pad's back always end the card: the panel's own Cancel runs first (it lets the panel go), and the card closes whatever it did.
         public bool Back()
         {
-            if (_cancel != null && _cancel.onClick != null)
+            if (_cancel != null && _cancel.onClick != null && _cancel.interactable)
             {
                 _cancel.onClick();
-                return true;
             }
+            Leave("Back pressed");
+            return true;
+        }
+
+        // The card closes itself, once, with a line in Player.log that says which state it was in: the panel left its pages (the walk, the chair, over),
+        // or it gave no button for two looks in a row. Never a card with a title and nothing under it.
+        private void Watch()
+        {
+            if (_left)
+            {
+                return;
+            }
+            PlayerActivityState state = _panel.GetState();
+            if (state != PlayerActivityState.NotStarted)
+            {
+                Leave("the panel is " + state);
+                return;
+            }
+            ButtonInfo[] buttons = _panel.GetButtons();
+            _emptyPolls = buttons == null || buttons.Length == 0 ? _emptyPolls + 1 : 0;
+            if (_emptyPolls >= EmptyPollsMost)
+            {
+                Leave("the panel gave no button on its page");
+            }
+        }
+
+        private void Leave(string why)
+        {
+            if (_left)
+            {
+                return;
+            }
+            _left = true;
+            Sessions.SessionDirector.Note("the card is closed: " + why);
             Close?.Invoke();
-            return Close != null;
         }
 
         public void Tab(int step)
@@ -213,6 +286,12 @@ namespace RealLifeOverhaul.Ui
             for (int i = 1; choices.Count == 0 && i < labels.Length; i++)
             {
                 more.Add(Words(labels[i]));
+            }
+            if (actions.Count == 0 && choices.Count == 0)
+            {
+                // a page with nothing on it (the moments after a press): the one way out the card always has, until it closes itself (Watch)
+                actions.Add(new UiActionModel { Label = LocalizorManager.GetLocalization("common_cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back });
+                _actions.Add(null);
             }
             string rest = string.Join(" ", more);
             var m = new UiDecisionModel

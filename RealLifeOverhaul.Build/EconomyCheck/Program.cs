@@ -156,6 +156,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--session-card")
+        {
+            SessionCard();   // the desk session's card: every state of a page, the card closing with the panel and on Esc, the two features at one desk, the keys, the clock (SessionCardChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 1 && args[0] == "--hold-meeting")
         {
             HoldMeeting(args.Length == 2 && args[1] == "table");   // "Hold meeting" at the owner's desk: the sessions table, every state, a stuck save, the panel's redraw, the texts (HoldMeetingChecks.cs)

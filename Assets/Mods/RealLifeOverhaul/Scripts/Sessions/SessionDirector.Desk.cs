@@ -188,6 +188,7 @@ namespace RealLifeOverhaul.Sessions
             }
             if (!OpenPanel(_desk))
             {
+                Note("the click opened nothing: another activity is open or the game's panel refused it");
                 SessionGame.Tell(NotificationType.Warning, "reallife_session_test_busy", null, 8f);
             }
         }
@@ -203,16 +204,22 @@ namespace RealLifeOverhaul.Sessions
 
         private IEnumerator WorkWhenFree(EmployeeStationController desk)
         {
-            float until = UnityEngine.Time.unscaledTime + WorkWaitSeconds;
+            float from = UnityEngine.Time.unscaledTime, until = from + WorkWaitSeconds;
             yield return null;
             while (SessionGame.PanelBusy && UnityEngine.Time.unscaledTime < until)
             {
                 yield return null;
             }
-            if (!SessionGame.PanelBusy && On && ReferenceEquals(desk, _desk))
+            bool busy = SessionGame.PanelBusy, same = ReferenceEquals(desk, _desk);
+            string waited = busy ? "was still up after " + WorkWaitSeconds + " s" : "let go after " + (UnityEngine.Time.unscaledTime - from).ToString("F2", CultureInfo.InvariantCulture) + " s";
+            Note("work here: the game's panel " + waited + ", sessions " + (On ? "on" : "off") + ", the desk " + (same ? "is still the owner's" : "is no longer the owner's")
+                 + ", the card " + (Ui.SessionKit.Up ? "is still up" : "is away") + (busy || !On || !same ? ": the work is not offered" : ": the work is offered"));
+            if (!busy && On && same)
             {
                 SessionBridges.WorkNow(desk);
+                yield break;
             }
+            SessionGame.Tell(NotificationType.Warning, "reallife_session_note_work_lost", null, 10f);
         }
 
         private bool OpenPanel(EmployeeStationController desk)
@@ -224,8 +231,10 @@ namespace RealLifeOverhaul.Sessions
             SessionRegistry.For(_here.Type, _hereKinds);
             if (_hereKinds.Count == 0)
             {
+                // nothing to hold here: said in a notice, and no card or panel opens over an empty page
                 Note("the panel was not opened: no kind of session is held at " + _here.Type);
-                return false;
+                SessionGame.Tell(NotificationType.Warning, "reallife_session_note_nothing", new Dictionary<string, string>(1) { { "business", _here.Name } }, 10f);
+                return true;
             }
             // Only the kinds whose premise is met are drawn (all of them, with their reasons, when none is), and the panel opens on the
             // first that can be held: it used to open on the first never-held kind, whatever it lacked, so a player always landed on the same dead page.
@@ -253,6 +262,13 @@ namespace RealLifeOverhaul.Sessions
             }
             int first = SessionRules.FirstPage(shownCan, shownDue, shown);
             var panel = new SessionPanel(this, desk, defs, first);
+            if (!panel.HasPage)
+            {
+                // a page with no words or no way out would open a card with only its title: never opened
+                Note("the panel was not opened: the first page has no lines or no buttons (" + shown + " kind(s) drawn)");
+                SessionGame.Tell(NotificationType.Warning, "reallife_session_note_nothing", new Dictionary<string, string>(1) { { "business", _here.Name } }, 10f);
+                return true;
+            }
             if (!DeskGame.Show(panel))
             {
                 Note("the panel was not opened: the game's panel is busy or refused it");

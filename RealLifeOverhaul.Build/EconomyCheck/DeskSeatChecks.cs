@@ -174,8 +174,8 @@ internal static partial class Program
         string sat = MethodText(session, "private void Arrived()");
         int sessionRefused = sat.IndexOf("if (!DeskGame.SitOn(seat, _station, out _stood))", StringComparison.Ordinal);
         Check(sessionRefused > 0 && sat.IndexOf("End(false, false);", sessionRefused, StringComparison.Ordinal) > sessionRefused
-              && ComesBefore(sat, "_seated = true;", "if (!DeskGame.SitOn(") && ComesBefore(sat, "if (!DeskGame.SitOn(", "_state = PlayerActivityState.Started;")
-              && ComesBefore(sat, "_state = PlayerActivityState.Started;", "_director.Sat(Def);"),
+              && ComesBefore(sat, "_seated = true;", "if (!DeskGame.SitOn(") && ComesBefore(sat, "if (!DeskGame.SitOn(", "Move(PlayerActivityState.Started);")
+              && ComesBefore(sat, "Move(PlayerActivityState.Started);", "_director.Sat(Def);"),
             "desk seat: a desk session is begun the moment the seat holds (End stands the player up from then on), and a seat refused ends it with nothing spent");
         string sessionEnd = MethodText(session, "private void End(bool settle, bool walking)");
         Check(sessionEnd.Contains("else if (begun && _seated)") && sessionEnd.Contains("DeskGame.StandUp(_stood, _station);")

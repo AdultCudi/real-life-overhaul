@@ -119,6 +119,10 @@ namespace RealLifeOverhaul.Ui
         public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys, bool prompts)
         {
             UiStatusModel m = UiChrome.Bar != null ? UiChrome.Bar() : null;
+            if (m != null)
+            {
+                s.ClockStamp = UiChrome.Stamp != null ? UiChrome.Stamp() : -1;   // the time on the bar is the game's minute at this layout, kept current by the host
+            }
             float y = frame.BandY, w = frame.Width, mid = BarMiddle(frame);
             int bar = Box(s, UiAt.Screen, 0f, y, w, frame.Band, UiRole.StatusBar, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             UiAt on = UiAt.Screen.In(bar);

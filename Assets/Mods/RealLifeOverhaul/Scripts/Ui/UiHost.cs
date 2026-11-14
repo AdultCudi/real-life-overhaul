@@ -81,6 +81,8 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public bool StepAside;
         private Canvas _ownCanvas;
+        private bool _aside;             // the canvas is put aside for a box of the game's: the keys are the box's alone, this host reads and takes none
+        private float _clockAt;          // the clock time the status bar's minute was last looked at
         public bool TakesInteract;   // only Interact is taken from the game each frame, for a card that answers it and no other key
 
         /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
@@ -368,7 +370,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            bool aside = UiBoxes.Up && !UiBoxes.Drawn;
+            // Whether the kit draws the box or the game does, it sits under this canvas (order 32000): the card steps aside for any box.
+            bool aside = UiBoxes.Up;
+            _aside = aside;
             if (_ownCanvas.enabled == aside)
             {
                 _ownCanvas.enabled = !aside;
@@ -432,11 +436,12 @@ namespace RealLifeOverhaul.Ui
             {
                 WindowHeld?.Invoke();
             }
-            if (PointerOnly || _held)
+            if (PointerOnly || _held || _aside)
             {
-                // No key is read here (a held screen's are the layer's over it), but the screen is in front and takes the mouse,
-                // so it is drawn as it changes.
-                if (_screen.Dirty || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
+                // No key is read here (a held screen's are the layer's over it; an aside card's are the box's over it), but the screen is
+                // in front and takes the mouse, so it is drawn as it changes.
+                if (_screen.Dirty || ClockMoved(now) || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize
+                    || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
                 {
                     Layout();
                 }
@@ -469,7 +474,7 @@ namespace RealLifeOverhaul.Ui
             }
             Vector2 size = ((RectTransform)transform).rect.size;
             bool dark = _dark != null && _dark();
-            if (_screen.Dirty || UiFaces.Version != _laidFaces || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing)
+            if (_screen.Dirty || ClockMoved(now) || UiFaces.Version != _laidFaces || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing)
                 || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
             {
                 Layout();
@@ -507,6 +512,20 @@ namespace RealLifeOverhaul.Ui
                 _view.StepFocus(now);
             }
         }
+
+        // A layout that drew the status bar drew the game's minute with it: the screen is laid again when the minute moves, a tenth of a
+        // second at most after it does, so the bar's clock never reads older than the phone's. Three field reads; nothing is allocated.
+        private bool ClockMoved(float now)
+        {
+            if (_scene.ClockStamp < 0 || now < _clockAt)
+            {
+                return false;
+            }
+            _clockAt = now + ClockEvery;
+            return UiClock.Stamp() != _scene.ClockStamp;
+        }
+
+        private const float ClockEvery = 0.1f;
 
         private void Navigate(float now)
         {
