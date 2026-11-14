@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Careers
             string why = _director.DeskBegin(late, this, out Sitting sitting);
             if (why != null)
             {
-                Notifications.Show(NotificationType.Warning, why, null, 8f);
+                CareersDirector.Say(NotificationType.Warning, why);
                 return;
             }
             _pressed = true;

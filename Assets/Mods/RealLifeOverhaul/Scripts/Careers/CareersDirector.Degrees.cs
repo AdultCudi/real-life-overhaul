@@ -121,9 +121,10 @@ namespace RealLifeOverhaul.Careers
             int day = Save.Day, minute = CareersGame.MinuteOfDay;
             if (day != _study.GraduationDay || minute < CeremonyHour * 60 - 30 || minute > CeremonyHour * 60 + 60)
             {
-                return "reallife_study_why_ceremony_hour";
+                return CareersWhy.With("reallife_study_why_ceremony_hour", "day", CareersText.Day(_study.GraduationDay), "hour", CareersText.Hour(CeremonyHour),
+                    "today", CareersText.Day(day), "now", CareersText.TimeOfDay(minute));
             }
-            return AtUniversity() ? null : "reallife_study_why_not_university";
+            return AtUniversity() ? null : "reallife_study_why_ceremony_place";
         }
 
         public string Graduate()

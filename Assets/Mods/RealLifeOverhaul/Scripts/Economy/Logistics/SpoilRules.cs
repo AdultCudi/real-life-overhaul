@@ -230,6 +230,30 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// Goods moved between two places that last read their batches at different paces: each batch of <paramref name="taken"/> read as
+        /// the place it comes to reads age, by that place's own usual life of the product (<paramref name="usual"/>), so the guard of
+        /// <see cref="Rebase"/> holds at the life the place will judge it by: goods not yet due where they were are not due on arrival.
+        /// Every piece is kept. The batches come back in the same list.
+        /// </summary>
+        public static void Arrive(List<Cohort> taken, int usual, int from, int to, int today)
+        {
+            if (taken.Count == 0 || ClampPace(from) == ClampPace(to))
+            {
+                return;
+            }
+            var one = new List<Cohort>(1);
+            Cohort[] arriving = taken.ToArray();
+            taken.Clear();
+            for (int i = 0; i < arriving.Length; i++)
+            {
+                one.Clear();
+                one.Add(arriving[i]);
+                Rebase(one, usual, from, to, today);
+                taken.Add(new Cohort(one[0].Day, arriving[i].Count));
+            }
+        }
+
         /// <summary>The pieces past their life at the turn into <paramref name="today"/> (stocked on or before today minus the life); 0 when it never spoils.</summary>
         public static int Expired(List<Cohort> batches, int life, int today)
         {

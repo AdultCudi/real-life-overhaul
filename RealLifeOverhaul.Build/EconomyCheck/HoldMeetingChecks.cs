@@ -86,6 +86,7 @@ internal static partial class Program
         HmSave();
         HmSources();
         HmTexts(table);
+        SessionCard();
         Console.WriteLine("  Hold meeting: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 

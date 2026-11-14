@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Careers
             UiClone.Safe(() => why = act());
             if (why != null)
             {
-                Notifications.Show(NotificationType.Error, why, _director.TakeWhyData(), 8f);
+                CareersDirector.Say(NotificationType.Error, why);
             }
             Refresh();
         }

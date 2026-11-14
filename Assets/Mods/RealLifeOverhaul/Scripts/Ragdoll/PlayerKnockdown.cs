@@ -38,6 +38,9 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        /// <summary>When the player last got up from being knocked down (Time.time); negative if they never have. Police leave them alone a while (CallRules.RiseSeconds).</summary>
+        internal static float RisenAt { get; private set; } = -1f;
+
         private int _trafficMask;
         private float _nextSense;
         private float _immuneUntil;
@@ -281,6 +284,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _down = false;
+            RisenAt = Time.time;
             PlayerController player = _player;
             Ragdoll ragdoll = _ragdoll;
             Vector3 origin = _origin;

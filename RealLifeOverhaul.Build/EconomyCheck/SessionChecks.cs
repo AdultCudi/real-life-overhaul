@@ -367,7 +367,7 @@ internal static partial class Program
             "sessions shared desk: the panel's first page offers Work here while the work is offered at its desk; pressed, nothing of a session is spent and the work follows");
         string desk = ModSource(@"Sessions\SessionDirector.Desk.cs");
         string wait = MethodText(desk, "private IEnumerator WorkWhenFree(EmployeeStationController desk)");
-        Check(wait.Contains("while (SessionGame.PanelBusy && UnityEngine.Time.unscaledTime < until)") && wait.Contains("if (!SessionGame.PanelBusy && On && ReferenceEquals(desk, _desk))")
+        Check(wait.Contains("while (SessionGame.PanelBusy && UnityEngine.Time.unscaledTime < until)") && wait.Contains("bool busy = SessionGame.PanelBusy, same = ReferenceEquals(desk, _desk);") && wait.Contains("if (!busy && On && same)")
               && wait.Contains("SessionBridges.WorkNow(desk);") && desk.Contains("private const float WorkWaitSeconds = 2f;"),
             "sessions shared desk: the work is offered once the game's panel has let the session go, two real seconds at most, and only at the desk still held");
         string links = ModSource(@"Wiring\Wiring.SessionLinks.cs");

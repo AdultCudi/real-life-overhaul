@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Careers
             UiClone.Safe(() => why = act());
             if (why != null)
             {
-                Notifications.Show(NotificationType.Error, why, null, 8f);
+                CareersDirector.Say(NotificationType.Error, why);
             }
             Refresh();
         }
@@ -310,10 +310,6 @@ namespace RealLifeOverhaul.Careers
             }
             box.Row("reallife_ibox_paid_in", CareersText.T("reallife_ibox_parts", "parts", StudyRules.Instalments(c).ToString()));
             box.Row("reallife_ibox_counts_as", c.School >= 0 ? TechText.School(c.School) : CareersText.T("reallife_campus_course_no_school"));
-            if (c.Needs.Length > 0 || c.NeedsDegree)
-            {
-                box.Check(CareersText.T("reallife_campus_course_needs", "needs", Needs(c)), StudyRules.Qualified(f, c));
-            }
 
             box.Section("reallife_campus_col_teaches");
             int aNow = StudyRules.Points(f, c.SkillA), bNow = StudyRules.Points(f, c.SkillB);
@@ -328,6 +324,8 @@ namespace RealLifeOverhaul.Careers
                 : CareersText.Fill("reallife_campus_course_home", "homework", c.Homework.ToString(), "hours", StudyCatalogue.HomeworkHours.ToString(), "pass", c.Pass.ToString()));
             if (live != null)
             {
+                box.Section("reallife_campus_col_exam");
+                box.Line(_director.ExamLine(c, (StudyMode)live.Mode, live));
                 Transform on = box.ButtonRow();
                 InfoBox.Button(on, InfoBox.Positive, "reallife_campus_button_studying", () => _director.OpenCampus(CareersDirector.TabStudying, CourseRow + c.Id));
                 InfoBox.Button(on, InfoBox.Additional, "common_close", ClosePick);
@@ -380,40 +378,45 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Row("reallife_campus_col_mode", CareersText.Mode(mode));
             }
-            Transform buttons = box.ButtonRow();
-            if (ok)
+            // Where and how the exam is sat and by when; then what the course asks of the player, the player's own level beside each.
+            box.Section("reallife_campus_col_exam");
+            box.Line(_director.ExamLine(c, mode, null));
+            var asks = new List<Ask>(6);
+            string why = _director.EnrolWhy(c, mode, false, asks);
+            if (asks.Count > 0)
             {
-                int id = c.Id;
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_campus_button_enrol", () => Do(() => _director.Enrol(id, mode, false)));
-                if (c.Loanable && CareersDirector.UniversityOpen)
+                box.Section("reallife_ibox_sec_what_it_asks");
+                for (int i = 0; i < asks.Count; i++)
                 {
-                    InfoBox.Button(buttons, InfoBox.Additional, "reallife_campus_button_loan", () => Do(() => _director.Enrol(id, mode, true)));
+                    _director.AskWords(c, asks[i], out string words, out string have);
+                    box.Check(words + " (" + have + ")", asks[i].Met);
                 }
             }
+            string loanWhy = c.Loanable && CareersDirector.UniversityOpen ? _director.EnrolWhy(c, mode, true, new List<Ask>(6)) : null;
+            if (why != null || loanWhy != null)
+            {
+                box.Line(CareersText.T(why ?? loanWhy), CellTone.Red);   // why a button is dimmed
+            }
+            Transform buttons = box.ButtonRow();
+            int id = c.Id;
+            Dim(InfoBox.Button(buttons, InfoBox.Positive, "reallife_campus_button_enrol", () => Do(() => _director.Enrol(id, mode, false))), why != null);
+            if (c.Loanable && CareersDirector.UniversityOpen)
+            {
+                Dim(InfoBox.Button(buttons, InfoBox.Additional, "reallife_campus_button_loan", () => Do(() => _director.Enrol(id, mode, true))), loanWhy != null);
+            }
+            int place = (int)StudyNeedRules.ExamPlaceOf(c, mode);
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_career_button_map", () => Do(() => _director.ShowCourse(id, place)));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, StudyGuide);
         }
 
-        private static string Needs(CourseDef c)
+        // A button the course's requirements leave dimmed: the line above it says why.
+        private static void Dim(UnityEngine.UI.Button button, bool off)
         {
-            var b = new System.Text.StringBuilder(64);
-            for (int i = 0; i < c.Needs.Length; i++)
+            if (button != null && off)
             {
-                if (b.Length > 0)
-                {
-                    b.Append(' ').Append(CareersText.T("reallife_campus_or")).Append(' ');
-                }
-                b.Append(CareersText.Course(c.Needs[i]));
+                button.interactable = false;
             }
-            if (c.NeedsDegree)
-            {
-                if (b.Length > 0)
-                {
-                    b.Append(' ').Append(CareersText.T("reallife_campus_or")).Append(' ');
-                }
-                b.Append(CareersText.T("reallife_campus_any_degree"));
-            }
-            return b.ToString();
         }
 
         private TableSpec WriteResults(InfoBox box, StudyFile f)

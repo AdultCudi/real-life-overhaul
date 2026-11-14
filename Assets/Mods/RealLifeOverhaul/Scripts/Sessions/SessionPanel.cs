@@ -59,6 +59,22 @@ namespace RealLifeOverhaul.Sessions
 
         private SessionDef Def => _defs[_at];
 
+        // Every change of the state goes through here: once it is no longer the pages' (the walk, the time in the chair, over) the kit's card
+        // goes with them. Without it the card stood on, with its title and nothing under it, over a panel that had no page to show.
+        private void Move(PlayerActivityState to)
+        {
+            PlayerActivityState from = _state;
+            _state = to;
+            if (to != PlayerActivityState.NotStarted && Ui.SessionKit.Up)
+            {
+                SessionDirector.Note("the card is put away: the panel went from " + from + " to " + to);
+                Ui.SessionKit.Hide(this);
+            }
+        }
+
+        /// <summary>True while the page being shown has words and a way out: what the card and the game's panel both draw. Every page has Cancel.</summary>
+        public bool HasPage => _state == PlayerActivityState.NotStarted && _labels != null && _labels.Length > 0 && _buttons != null && _buttons.Length > 0;
+
         // The labels and buttons of the page being shown, made again only on a press.
         private void Page()
         {
@@ -151,6 +167,8 @@ namespace RealLifeOverhaul.Sessions
             {
                 return;
             }
+            SessionDirector.Note("work here pressed on page " + (_at + 1) + " of " + _defs.Length + ": the session panel is let go, the card "
+                                 + (Ui.SessionKit.Up ? "is put away" : "was not up") + ", then the work is offered");
             End(false, false);
             _director.WorkAfter(_station);
         }
@@ -232,7 +250,7 @@ namespace RealLifeOverhaul.Sessions
                 Repage();
                 yield break;
             }
-            _state = PlayerActivityState.MovingTowardsActivity;
+            Move(PlayerActivityState.MovingTowardsActivity);
             yield return null;
             if (_state != PlayerActivityState.MovingTowardsActivity)
             {
@@ -276,7 +294,7 @@ namespace RealLifeOverhaul.Sessions
                     }
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
                 }
-                _state = PlayerActivityState.Started;   // only once seated: every way out from here stands the player up (End); the game's panel makes it Running on its next frame
+                Move(PlayerActivityState.Started);   // only once seated: every way out from here stands the player up (End); the game's panel makes it Running on its next frame
                 _director.Sat(Def);
             }
             catch (Exception e)
@@ -324,10 +342,6 @@ namespace RealLifeOverhaul.Sessions
         {
             try
             {
-                if (state != PlayerActivityState.NotStarted)
-                {
-                    Ui.SessionKit.Hide(this);   // the time in the chair is the game's own panel's: its skip and fast forward
-                }
                 if (state == PlayerActivityState.Finished)
                 {
                     End(true, true);   // however the panel ends it: the minutes sat settled once, and the player stood up
@@ -340,7 +354,7 @@ namespace RealLifeOverhaul.Sessions
                 }
                 if (_state != PlayerActivityState.Finished)
                 {
-                    _state = state;
+                    Move(state);
                 }
             }
             catch (Exception fault)
@@ -419,7 +433,7 @@ namespace RealLifeOverhaul.Sessions
             }
             PlayerActivityState was = _state;
             _before = was;
-            _state = PlayerActivityState.Finished;   // first: whatever the game's calls below do, nothing here runs twice
+            Move(PlayerActivityState.Finished);   // first: whatever the game's calls below do, nothing here runs twice
             bool begun = was == PlayerActivityState.Started || was == PlayerActivityState.Running;
             try
             {

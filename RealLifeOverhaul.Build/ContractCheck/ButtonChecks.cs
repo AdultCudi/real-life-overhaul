@@ -253,7 +253,7 @@ internal static partial class Program
 
         // The Campus's course: the loan beside "Enrol and pay" on the same row, for every course a loan pays for, with the university open.
         string pick = Between(campus, "\"reallife_campus_button_enrol\"", "\"common_close\"");
-        Check(pick != null && Regex.IsMatch(pick, @"if \(c\.Loanable && CareersDirector\.UniversityOpen\)\s*\{\s*InfoBox\.Button\(buttons, InfoBox\.\w+, ""reallife_campus_button_loan""")
+        Check(pick != null && Regex.IsMatch(pick, @"if \(c\.Loanable && CareersDirector\.UniversityOpen\)\s*\{\s*(?:Dim\()?InfoBox\.Button\(buttons, InfoBox\.\w+, ""reallife_campus_button_loan""")
               && !pick.Contains("ButtonRow("),
             "the Campus offers \"Enrol on a student loan\" on the same row as \"Enrol and pay\" for a course a loan pays for while the university is open");
         Check(pick != null && Regex.IsMatch(pick, @"_director\.Enrol\(id, mode, true\)"), "the Campus's loan button enrols on the loan");

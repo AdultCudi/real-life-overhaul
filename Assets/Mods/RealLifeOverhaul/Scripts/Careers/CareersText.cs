@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Careers
         private const string Mod = "reallife";   // (keys made of parts are put together from this, so the text check reads only whole keys)
         private static readonly StringBuilder B = new StringBuilder(64);
 
-        public static string T(string key) => FinanceText.T(key);
+        /// <summary>A key's text; a reason that carries figures (<see cref="CareersWhy"/>) with them filled in.</summary>
+        public static string T(string key) => key != null && key.IndexOf(CareersWhy.Sep) >= 0 ? CareersWhy.Say(key) : FinanceText.T(key);
 
         public static string T(string key, string name, string value) => FinanceText.T(key, name, value);
 

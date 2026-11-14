@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] CapitalKeys =
         {
             P + "tech_investment_racks", P + "tech_investment_fitout", P + "tech_relief", P + "tech_write_down",
+            P + "tech_refund",   // training paid twice after a firm was lost at a load, paid back once: no sale, so not in the statement
             P + "tech_game_advance", P + "tech_game_crowdfund",   // a publisher's advance against royalties and pledges: money in, never sales
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",

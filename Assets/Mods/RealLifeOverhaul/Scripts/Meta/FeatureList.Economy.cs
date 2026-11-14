@@ -377,7 +377,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.TechSectorId, Settings.TechOfferNotesId, Settings.TechInfraOfferId)
                 .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down",
                     "reallife_infra_test_price_war", "reallife_infra_test_offer", "reallife_tech_test_net", "reallife_tech_test_own_desk", "reallife_tech_test_desk_seat")
-                .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
+                .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key, Tech.FirmsKeep.BackupKey, Tech.FirmsRepair.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             Tech.TechGuide.AddVentureFacts(Features.Add("tech_startups", "reallife_meta_title_tech_startups")

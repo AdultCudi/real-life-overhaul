@@ -250,6 +250,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeRules.cs" Link="Mod\CrimeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\OffenceRules.cs" Link="Mod\OffenceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\LampLedger.cs" Link="Mod\LampLedger.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CallRules.cs" Link="Mod\CallRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\ReleaseRules.cs" Link="Mod\ReleaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.cs" Link="Mod\JusticeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Save.cs" Link="Mod\JusticeState.Save.cs" />
@@ -499,6 +500,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Parties\PartyPages.cs" Link="Mod\Parties\PartyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripRules.cs" Link="Mod\TripRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripState.cs" Link="Mod\TripState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripTally.cs" Link="Mod\TripTally.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripStore.cs" Link="Mod\TripStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SendNowLimit.cs" Link="Mod\SendNowLimit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SpoilRules.cs" Link="Mod\SpoilRules.cs" />
@@ -736,6 +738,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.Contracts.cs" Link="Mod\FirmsRules.Contracts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\ProductViews.cs" Link="Mod\ProductViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsStore.cs" Link="Mod\FirmsStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsKeep.cs" Link="Mod\FirmsKeep.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRepair.cs" Link="Mod\FirmsRepair.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\OwnDeskRules.cs" Link="Mod\OwnDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\SeatRules.cs" Link="Mod\SeatRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\SeatPlan.cs" Link="Mod\SeatPlan.cs" />
@@ -816,6 +820,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Learning.cs" Link="Mod\StudyRules.Learning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Fees.cs" Link="Mod\StudyRules.Fees.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Clash.cs" Link="Mod\StudyRules.Clash.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyNeedRules.cs" Link="Mod\StudyNeedRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\CampusRules.cs" Link="Mod\CampusRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorsRules.cs" Link="Mod\FloorsRules.cs" />

@@ -344,7 +344,7 @@ namespace RealLifeOverhaul.Careers
         public int LadderSeed => StudySeed;
 
         /// <summary>Why the player cannot be promoted at the next review now, for the Career app; null if they can.</summary>
-        public string LadderWhyNot(LadderFile f) => CareerLadderRules.WhyNot(f, Save.Day, Year, PointsOf);
+        public string LadderWhyNot(LadderFile f) => LadderWhy(f);
 
         /// <summary>The next rung's skills against the player's.</summary>
         public void LadderSkills(LadderFile f, out int have, out int need) => CareerLadderRules.SkillsNeeded(f, PointsOf, out have, out need);

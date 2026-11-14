@@ -45,6 +45,29 @@ namespace RealLifeOverhaul
         private int _figureFailures;   // standing figures in a row that could not be thrown down
         private bool _figuresOff;
 
+        /// <summary>True if someone struck by a car still lies within <paramref name="reach"/> metres of the point (PlayerCalls). At most six, four times a second at most.</summary>
+        internal static bool LyingNear(Vector3 point, float reach)
+        {
+            PedestrianIncidents incidents = Instance;
+            if (incidents == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < incidents._casualties.Length; i++)
+            {
+                Casualty casualty = incidents._casualties[i];
+                if (casualty.Present)
+                {
+                    Vector3 offset = point - casualty.Position;
+                    if (CallRules.Near(offset.x, offset.z, reach))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         /// <summary>The game's own pedestrians still held by casualties, without changing their takeover.</summary>
         internal void AppendBodies(List<object> pedestrians)
         {

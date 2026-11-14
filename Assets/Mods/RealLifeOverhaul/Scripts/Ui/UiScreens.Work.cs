@@ -317,7 +317,21 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_school_none", "reallife_work_set_role", "reallife_work_stores_shown", "reallife_work_study_how_lead",
                 "reallife_work_tasks_shown", "reallife_work_the_interview",
                 "reallife_life_why_day_first", "reallife_study_why_exam_hours", "reallife_campus_studying_about",
-                "reallife_work_tasks_range", "reallife_work_staff_range", "reallife_work_stores_range", "reallife_career_col_where"
+                "reallife_work_tasks_range", "reallife_work_staff_range", "reallife_work_stores_range", "reallife_career_col_where",
+                // where the exam is sat and what a course or a post asks, with the levels beside it (Campus, Career)
+                "reallife_work_exam_where_lead", "reallife_work_cert_home_lead", "reallife_work_cert_home_line", "reallife_work_exam_days",
+                "reallife_study_ask_skill", "reallife_study_ask_have", "reallife_study_ask_course", "reallife_study_ask_passed", "reallife_study_ask_none",
+                "reallife_study_ask_seats", "reallife_study_ask_left", "reallife_study_ask_slots", "reallife_study_ask_on", "reallife_study_ask_loan",
+                "reallife_study_ask_left_money", "reallife_study_ask_cash", "reallife_study_why_said", "reallife_study_why_short_money",
+                "reallife_study_money_fee", "reallife_study_money_retake", "reallife_study_money_owed", "reallife_study_money_degree",
+                "reallife_study_short_skill", "reallife_study_short_course", "reallife_study_short_cash", "reallife_study_short_loan",
+                "reallife_study_short_seats", "reallife_study_short_slots", "reallife_study_raise_both", "reallife_study_raise_courses",
+                "reallife_study_raise_work", "reallife_study_why_exam_school", "reallife_study_why_exam_university", "reallife_study_why_exam_hospital",
+                "reallife_study_why_exam_day", "reallife_study_why_no_ward_place", "reallife_study_why_tired", "reallife_study_why_fee_owed",
+                "reallife_study_why_ceremony_hour", "reallife_study_why_ceremony_place", "reallife_study_exam_where_desk", "reallife_study_exam_where_room",
+                "reallife_study_exam_where_ward", "reallife_study_exam_line_open", "reallife_study_exam_line_retake", "reallife_study_exam_line_later_classes",
+                "reallife_study_exam_line_later_homework", "reallife_study_exam_line_short", "reallife_work_missing_one_of", "reallife_work_why_no_chance",
+                "reallife_ladder_why_days", "reallife_ladder_why_score", "reallife_ladder_why_skills", "reallife_ladder_why_stores", "reallife_ladder_why_recommend"
             };
         }
     }

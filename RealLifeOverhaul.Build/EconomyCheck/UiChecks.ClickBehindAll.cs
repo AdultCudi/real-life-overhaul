@@ -63,7 +63,7 @@ internal static partial class Program
             "click behind all: the windows watch asks the rules, never takes the canvas the kit stands on, and a window that stops taking the mouse holds no keys");
         Check(gameHost.Contains("UiForeignWindows.Forget(root);") && overCanvas.Contains("UiForeignWindows.Forget(root);"),
             "click behind all: a canvas the kit binds to is forgotten by the watch, however early it was first judged");
-        Check(!holdSwitchesOff && host.Contains("if (PointerOnly || _held)") && host.Contains("UiHostRules.Gone(gameObject.activeInHierarchy, enabled,"),
+        Check(!holdSwitchesOff && host.Contains("if (PointerOnly || _held || _aside)") && host.Contains("UiHostRules.Gone(gameObject.activeInHierarchy, enabled,"),
             "click behind all: a held host keeps running and is laid out as it changes; only hidden, asleep or leaving is gone");
         Check(gameHost.Contains("_host.Hold(hold);   // a screen put away keeps it too"),
             "click behind all: a hold reaches the host even while its screen is put away, so it never shows again with a stale hold");

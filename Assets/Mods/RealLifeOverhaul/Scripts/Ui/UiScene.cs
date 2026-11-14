@@ -169,6 +169,7 @@ namespace RealLifeOverhaul.Ui
         public bool FocusReset;          // a new page: focus goes to FocusFirst (the row Back came from), not to the old page's target of the same number
         public bool Pointer;             // the mouse leads: buttons leave their key caps off, as the mouse presses by pointing
         public bool Floats;              // the page floats over the world (a docked panel, a card, the phone), never meant to fill the screen
+        public int ClockStamp = -1;      // UiClock.Stamp() when a layout drew the status bar's clock, else -1: the host lays the screen out again when the minute moves
         public bool Held;                // something of the kit's stands over it with the keys (a box, All apps): its buttons show no key caps
         public string Name;              // the screen's id, for the checks' messages
         public int TypingCommand = -1;   // the field that takes the keys now: its target's command and argument, set by the host before a layout (or -1 for none)
@@ -203,6 +204,7 @@ namespace RealLifeOverhaul.Ui
             Pointer = false;
             Floats = false;
             Held = false;
+            ClockStamp = -1;
             PromptW = PromptH = 0f;
         }
 

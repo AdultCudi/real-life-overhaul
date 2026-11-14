@@ -156,6 +156,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--session-card")
+        {
+            SessionCard();   // the desk session's card: every state of a page, the card closing with the panel and on Esc, the two features at one desk, the keys, the clock (SessionCardChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 1 && args[0] == "--hold-meeting")
         {
             HoldMeeting(args.Length == 2 && args[1] == "table");   // "Hold meeting" at the owner's desk: the sessions table, every state, a stuck save, the panel's redraw, the texts (HoldMeetingChecks.cs)
@@ -443,6 +449,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech-update")
+        {
+            TechUpdate();   // a tech firm's record kept when its business is not read, the copy of the last good read and the one-time repair (TechUpdateChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech-ui")
         {
             TechUiChecks();   // the Tech app's pages, presses, entry points and rules alone (UiChecks.Tech.cs, TechUiRuleChecks.cs)
@@ -452,6 +464,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--studio-ui")
         {
             StudioUiChecks();   // the tech firm's page on the app window: both firms' pages, every fact and action, the director's acts and the scrolling alone (StudioUiChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--study-clear")
+        {
+            StudyClear();   // where each exam is sat, the notices and desks that say it, every refusal naming what is short with its numbers alone (StudyClearChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1778,6 +1796,7 @@ internal static partial class Program
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
+        TechUpdate();   // a tech firm's record kept when its business is not read, the copy of the last good read and the one-time repair (TechUpdateChecks.cs)
         BusKerb();      // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
         VehicleFeelAll(); // a car of another mod given the game's soft ride, the front springs' travel kept at the full pedal: the rules, the model, the sources, the texts (VehicleFeelChecks.cs)
         LagSecond();    // the stutter every second: which stretch of the mod's clock the engine's frame time is, and the mod never driving the engine's clock (LagSecondChecks.cs)
@@ -1798,6 +1817,7 @@ internal static partial class Program
         DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)
         InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
         HomeworkCounts(); // homework counts across sittings: minutes carried, finished over two, saved and loaded, the early-stop notice and hint (HomeworkCountChecks.cs)
+        StudyClear();   // study and careers said clearly: where each exam is sat, the notices and desks that say it, every refusal naming what is short with its numbers (StudyClearChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
         DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)

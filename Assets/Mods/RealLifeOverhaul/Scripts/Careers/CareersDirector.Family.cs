@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Careers
             int cost = Prices.At(StudyRules.ChildCost(StudyCatalogue.Find(c.Course), k.Fund));
             if (!CareersGame.Charge(cost, ChildKey, name))
             {
-                return "reallife_study_why_money";
+                return MoneyWhy("reallife_study_money_degree", cost);
             }
             c.Paid = cost;
             c.Stage = (int)ChildStep.Studying;

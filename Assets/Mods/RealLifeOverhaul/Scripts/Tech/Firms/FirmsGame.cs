@@ -75,6 +75,60 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>What the game says of the building at a place key: whether it holds a registration, whose it is, its type. One pass over the registrations; on a day's read only.</summary>
+        public static PlaceReading Reading(string place)
+        {
+            var r = new PlaceReading { Kind = -1 };
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || !reg.HasValidAddress || TalentGame.Place(reg) != place)
+                {
+                    continue;
+                }
+                r.Registered = true;
+                r.BuildingFound = GameRegistrations.Found(reg);
+                r.Rented = reg.RentedByPlayer;
+                r.Foreign = GoingPublic.Foreign(reg);
+                r.Established = reg.HasEstablishedBusiness;
+                r.Kind = KindOf(reg.businessTypeName);
+                break;
+            }
+            return r;
+        }
+
+        public const string RefundKey = "reallife_transaction_tech_refund";
+
+        /// <summary>The AI compute rent the bank statement still shows booked at a business from a day on, in cents (positive). The game keeps the last days of it at least.</summary>
+        public static long RentSince(string place, int day)
+        {
+            BuildingRegistration reg = TalentGame.Find(place);
+            GameInstance save = Save;
+            if (reg == null || save == null || save.Transactions == null)
+            {
+                return 0;
+            }
+            long cents = 0;
+            foreach (Transaction t in save.Transactions)
+            {
+                if (t != null && t.transactionType == InfraGame.ComputeKey && t.amount < 0f && t.timestamp.Day >= day && Equals(t.address, reg.Address))
+                {
+                    cents += (long)Math.Round(-t.amount * 100f);
+                }
+            }
+            return cents;
+        }
+
+        /// <summary>Pays money back to the player, cents, as a line of its own in the bank statement.</summary>
+        public static void Refund(long cents, string name)
+        {
+            if (cents > 0 && Save != null)
+            {
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(RefundKey, name, null), null, null, true);
+            }
+        }
+
         /// <summary>The player's businesses that are not tech firms, as clients: place and name.</summary>
         public static void Clients(List<KeyValuePair<string, string>> into)
         {

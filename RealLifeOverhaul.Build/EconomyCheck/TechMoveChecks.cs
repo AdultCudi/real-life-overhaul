@@ -412,7 +412,7 @@ internal static partial class Program
         string firms = ModSource(@"Tech\TechDirector.Firms.cs");
         string read = MemberText(firms, "private void ReadFirms(int day)");
         int follow = read.IndexOf("FollowMoves();", StringComparison.Ordinal), regs = read.IndexOf("FirmsGame.Firms(_firmRegs);", StringComparison.Ordinal),
-            close = read.IndexOf("FirmsRules.Close(", StringComparison.Ordinal);
+            close = read.IndexOf("FirmsKeep.Sweep(", StringComparison.Ordinal);
         Check(follow > 0 && regs > follow && close > regs && read.IndexOf("RemoveAll", StringComparison.Ordinal) < 0,
             "moves: a read of the firms follows any move before it closes a firm whose business has gone");
         string start = MemberText(firms, "private void StartFirms()");

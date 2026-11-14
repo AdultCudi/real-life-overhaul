@@ -594,6 +594,10 @@ namespace RealLifeOverhaul.Ui
                 _screen.CloseFolder();
                 UiGame.Instance.Play(UiCue.Back);
             }
+            if (_screen.Readings != null && Clock(_screen.Readings, false))
+            {
+                _screen.Touch();
+            }
             if (now >= nextLook)
             {
                 nextLook = now + Look;
@@ -737,23 +741,7 @@ namespace RealLifeOverhaul.Ui
                 m.Name = string.IsNullOrEmpty(title) ? "BizPhone" : title.Trim();
                 changed = true;
             }
-            int minute = PlannerDirector.Now();
-            if (minute != _minute)
-            {
-                _minute = minute;
-                m.Time = PlannerText.Clock(PlannerTime.OfDay(minute));
-                changed = true;
-                int day = PlannerTime.DayOf(minute);
-                if (day != _day)
-                {
-                    bool first = _day < 0;
-                    _day = day;
-                    if (!all && !first)
-                    {
-                        Next();   // a new day: what comes next moved on
-                    }
-                }
-            }
+            changed |= Clock(m, all);
             bool radio = _radio != null && _radio.blocksRaycasts;
             string song = _song != null ? _song.text : null;
             if (all || radio != _radioSeen || !ReferenceEquals(song, _songSeen))
@@ -795,6 +783,30 @@ namespace RealLifeOverhaul.Ui
             {
                 _screen.Touch();
             }
+        }
+
+        // The phone's time: the game's minute, written as the status bar writes it. Looked at every frame the phone shows (three field reads),
+        // not only at the readings' look, so the phone and the bar change their minute together.
+        private static bool Clock(UiPhoneModel m, bool all)
+        {
+            int minute = PlannerDirector.Now();
+            if (minute == _minute && !all)
+            {
+                return false;
+            }
+            _minute = minute;
+            m.Time = PlannerText.Clock(PlannerTime.OfDay(minute));
+            int day = PlannerTime.DayOf(minute);
+            if (day != _day)
+            {
+                bool first = _day < 0;
+                _day = day;
+                if (!all && !first)
+                {
+                    Next();   // a new day: what comes next moved on
+                }
+            }
+            return true;
         }
 
         // What comes next, read through the Planner's and the Calendar's directors.

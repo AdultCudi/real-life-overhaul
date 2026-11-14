@@ -23,6 +23,11 @@ namespace RealLifeOverhaul.Economy
         private readonly List<string> _roadQueue = new List<string>(16);
         private readonly List<Vector3> _roadEnds = new List<Vector3>(32);
         private int[] _shares = new int[8], _slotStops = new int[8];
+        private readonly List<int> _credited = new List<int>(8);
+        private readonly List<int> _wasHeld = new List<int>(8);
+        private readonly List<int> _entryStop = new List<int>(32), _entryPool = new List<int>(32), _entryWant = new List<int>(32), _entrySize = new List<int>(32);
+        private readonly List<string> _entryItem = new List<string>(32), _poolItem = new List<string>(16);
+        private readonly List<int> _poolLeft = new List<int>(16);
 
         private void TripsStart(int now)
         {
@@ -32,6 +37,7 @@ namespace RealLifeOverhaul.Economy
                 int due = t.Out ? t.Back : t.Depart;
                 if (due < now - StaleDays * TripRules.DayMinutes)
                 {
+                    Abandoned(t);
                     _trips.Trips.RemoveAt(i);   // its goods never left the warehouse: nothing is lost
                 }
             }
@@ -47,6 +53,8 @@ namespace RealLifeOverhaul.Economy
 
         private void TripsStop()
         {
+            TallyWrite(0, true);
+            _tally.Clear();
             _roads.Clear();
             _roadQueue.Clear();
             _roadEnds.Clear();
@@ -61,6 +69,7 @@ namespace RealLifeOverhaul.Economy
                 events++;
             }
             MeasureRoads();
+            TallyWrite(now / TripRules.DayMinutes, false);
         }
 
         // ------------------------------------------------------------------------------------------------- departures
@@ -228,44 +237,85 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A trip leaves: its slot's share of the route's stops, what each needs of the warehouse's goods not already on the road,
-        // as much as fits in the vehicle in whole boxes, the road round them, its timeline, its fuel (paid) and its driver's hours.
+        // as much as fits in the vehicle in whole boxes (the boxes handed round the stops, so a full vehicle never serves only the first
+        // of them), the road round them, its timeline, its fuel (paid) and its driver's hours.
         private void Leave(Trip t)
         {
             LogisticsManagerPlan plan = LogisticsGame.Plan(t.Plan);
             Warehouse from = plan != null ? LogisticsGame.From(plan) : null;
             int count = from != null ? LogisticsGame.Slots(from, _slots) : 0;
-            if (from == null || t.Slot >= count || !_slots[t.Slot].Ready || !LogisticsGame.Managed(plan))
+            if (from == null)
             {
-                _trips.Trips.Remove(t);   // the route, its warehouse, its vehicle or its people are gone or away: no trip
+                _trips.Trips.Remove(t);   // the route or its warehouse is gone or not the player's own to run: no trip
+                return;
+            }
+            int mine = 0, first = t.Slot < count ? Share(plan, count, t.Slot, out mine) : 0;
+            LogisticsGame.Stops(plan, _stops);
+            int stops = t.Slot < count ? Math.Max(0, Math.Min(mine, _stops.Count - first)) : 0;
+            Wants(t, from, first, stops);
+            int wantedAll = 0, loadedAll = 0;
+            for (int e = 0; e < _entryWant.Count; e++)
+            {
+                wantedAll += _entryWant[e];
+            }
+            bool managed = LogisticsGame.Managed(plan), ready = t.Slot < count && _slots[t.Slot].Ready;
+            if (!managed || !ready)
+            {
+                _trips.Trips.Remove(t);   // the manager or the vehicle's driver is away: no trip, and the player is told if anything was needed
+                if (wantedAll > 0)
+                {
+                    Behind(plan, from, null, wantedAll, !managed ? TripWhy.NoManager : TripWhy.NoDriver);
+                }
                 return;
             }
             TripSlot slot = _slots[t.Slot];
-            int first = Share(plan, count, t.Slot, out int mine);
-            LogisticsGame.Stops(plan, _stops);
-            int room = slot.Room, left = room;
-            for (int k = first; k < first + mine && k < _stops.Count; k++)
+            int room = slot.Room, entries = _entryWant.Count;
+            var pieces = new int[entries];
+            int[] pool = _poolLeft.ToArray();
+            int boxes = TripRules.Allot(entries, _entryStop.ToArray(), _entryPool.ToArray(), _entryWant.ToArray(), _entrySize.ToArray(), stops,
+                Floor(t.Depart, TripRules.DayMinutes) + t.Slot, room, pool, pieces);
+            t.Left = 0;
+            t.Why = TripWhy.None;
+            for (int k = 0; k < stops; k++)
             {
-                LogisticsManagerPlanDestination d = _stops[k];
-                LogisticsGame.Needs(d, _items, _wanted);
+                LogisticsManagerPlanDestination d = _stops[first + k];
                 var stop = new TripStop { Place = LogisticsGame.Key(d.deliveryTargetAddress) };
-                for (int g = 0; g < _items.Count && left > 0; g++)
+                int behind = 0;
+                TripWhy why = TripWhy.None;
+                for (int e = 0; e < entries; e++)
                 {
-                    int free = LogisticsGame.InStock(from, _items[g]) - OnRoad(t.From, _items[g]) - Loaded(t, _items[g]);
-                    int pieces = TripRules.Fit(Math.Min(_wanted[g], free), LogisticsGame.BoxSize(_items[g]), ref left);
-                    if (pieces > 0)
+                    if (_entryStop[e] != k)
                     {
-                        stop.Items.Add(_items[g]);
-                        stop.Pieces.Add(pieces);
+                        continue;
+                    }
+                    if (pieces[e] > 0)
+                    {
+                        stop.Items.Add(_entryItem[e]);
+                        stop.Pieces.Add(pieces[e]);
+                        stop.Loaded += pieces[e];
+                    }
+                    if (pieces[e] < _entryWant[e])
+                    {
+                        behind += _entryWant[e] - pieces[e];
+                        why |= pool[_entryPool[e]] <= 0 ? TripWhy.NoStock : TripWhy.Full;
                     }
                 }
                 if (stop.Items.Count > 0)
                 {
                     t.Stops.Add(stop);
+                    loadedAll += stop.Loaded;
+                    stop.Why = why;
+                }
+                if (behind > 0)
+                {
+                    t.Left += behind;
+                    t.Why |= why;
+                    Behind(plan, from, LogisticsGame.Key(d.deliveryTargetAddress), behind, why);
                 }
             }
             if (t.Stops.Count == 0)
             {
-                _trips.Trips.Remove(t);   // nothing any stop needs is in the warehouse: the vehicle stays parked
+                _trips.Trips.Remove(t);   // nothing any stop needs is in the warehouse, or the vehicle has no room: the vehicle stays parked
                 return;
             }
             var legs = new int[t.Stops.Count + 1];
@@ -290,15 +340,50 @@ namespace RealLifeOverhaul.Economy
             t.Driver = slot.Driver;
             t.Kind = slot.Kind;
             t.Room = room;
-            t.Boxes = room - left;
+            t.Boxes = boxes;
             t.FuelCents = TripRules.Fuel(t.Metres, slot.Kind, LogisticsGame.PumpCents());
             t.WageCents = TripRules.Wage(slot.WageCents, t.Back - t.Depart);
             LogisticsGame.Fuel(from, t.FuelCents);
+            RouteTally tally = Tally(plan.id, from);
+            tally.Runs++;
+            tally.Taken += loadedAll;
             if (Verbose)
             {
                 Logger?.Info("Trips check (a departure from " + LogisticsGame.NameOf(from) + ", slot " + (t.Slot + 1) + "): " + t.Stops.Count + " stop(s), " + t.Pieces()
-                             + " piece(s) in " + t.Boxes + " of " + t.Room + " box(es), " + t.Metres + " m, back after " + (t.Back - t.Depart) + " min, fuel "
-                             + t.FuelCents + " cents, wages " + t.WageCents + " cents: " + (t.Boxes <= t.Room && t.Back > t.Depart ? "PASS" : "FAIL"));
+                             + " piece(s) in " + t.Boxes + " of " + t.Room + " box(es), " + t.Left + " left behind, " + t.Metres + " m, back after " + (t.Back - t.Depart)
+                             + " min, fuel " + t.FuelCents + " cents, wages " + t.WageCents + " cents: " + (t.Boxes <= t.Room && t.Back > t.Depart ? "PASS" : "FAIL"));
+            }
+        }
+
+        // What each stop of a slot's share needs of each product, with what the warehouse holds of it not already on the road shared by the
+        // stops: one entry for each stop's product, in the order of the stops, and one pool for each product.
+        private void Wants(Trip t, Warehouse from, int first, int stops)
+        {
+            _entryStop.Clear();
+            _entryPool.Clear();
+            _entryWant.Clear();
+            _entrySize.Clear();
+            _entryItem.Clear();
+            _poolItem.Clear();
+            _poolLeft.Clear();
+            for (int k = 0; k < stops; k++)
+            {
+                LogisticsGame.Needs(_stops[first + k], _items, _wanted);
+                for (int g = 0; g < _items.Count; g++)
+                {
+                    int pool = _poolItem.IndexOf(_items[g]);
+                    if (pool < 0)
+                    {
+                        pool = _poolItem.Count;
+                        _poolItem.Add(_items[g]);
+                        _poolLeft.Add(Math.Max(0, LogisticsGame.InStock(from, _items[g]) - OnRoad(t.From, _items[g])));
+                    }
+                    _entryStop.Add(k);
+                    _entryPool.Add(pool);
+                    _entryWant.Add(_wanted[g]);
+                    _entrySize.Add(LogisticsGame.BoxSize(_items[g]));
+                    _entryItem.Add(_items[g]);
+                }
             }
         }
 
@@ -352,29 +437,83 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A stop reached: its goods delivered by the game's own call; what moved is what left the warehouse (and its age goes with it).
+        // What the stop did not take stays in the warehouse and is told; what left it and the stop did not count is told as lost.
         private void Arrive(Trip t, TripStop stop)
         {
             stop.Done = true;
             LogisticsManagerPlan plan = LogisticsGame.Plan(t.Plan);
             Warehouse from = plan != null ? LogisticsGame.From(plan) : null;
-            if (from == null || !LogisticsGame.Deliver(plan, from, stop, _moved))
+            int loaded = stop.Total();
+            if (stop.Loaded <= 0)
             {
-                return;   // the stop or the route is gone: the goods stay in the warehouse
+                stop.Loaded = loaded;
             }
-            int moved = 0;
+            if (from == null || !LogisticsGame.Deliver(plan, from, stop, _moved, _credited, _wasHeld))
+            {
+                Returned(t, plan, from, stop, loaded, TripWhy.StopGone);   // the stop or the route is gone: the goods stay in the warehouse
+                return;
+            }
+            int delivered = 0, back = 0, lost = 0;
+            TripWhy why = TripWhy.None;
             for (int g = 0; g < stop.Items.Count && g < _moved.Count; g++)
             {
-                moved += _moved[g];
+                TripWhy kind = TripRules.Settle(stop.Pieces[g], _wasHeld[g], _moved[g], _credited[g], out int took, out int unmoved, out int gone);
+                delivered += took;
+                back += unmoved;
+                lost += gone;
+                why |= kind;
                 if (_moved[g] > 0)
                 {
                     Moved(t.From, stop.Place, stop.Items[g], _moved[g]);
                 }
-                stop.Pieces[g] = _moved[g];
+                stop.Pieces[g] = took;
+            }
+            stop.Why |= why;
+            t.Why |= why;
+            RouteTally tally = Tally(t.Plan, from);
+            tally.Delivered += delivered;
+            tally.Returned += back;
+            tally.Lost += lost;
+            if (back > 0 || lost > 0)
+            {
+                Missed(plan, from, stop.Place, back + lost, why);
             }
             if (Verbose)
             {
-                Logger?.Info("Trips check (a stop of a route from " + LogisticsGame.NameOf(from) + "): " + moved + " piece(s) delivered by the game's own call: PASS");
+                Logger?.Info("Trips check (a stop of a route from " + LogisticsGame.NameOf(from) + "): " + delivered + " piece(s) delivered by the game's own call, " + back
+                             + " handed back, " + lost + " lost: " + (delivered + back + lost == loaded ? "PASS" : "FAIL"));
             }
+        }
+
+        // A stop that took none of what its trip carried (it left the route): the goods never left the warehouse.
+        private void Returned(Trip t, LogisticsManagerPlan plan, Warehouse from, TripStop stop, int loaded, TripWhy why)
+        {
+            for (int g = 0; g < stop.Pieces.Count; g++)
+            {
+                stop.Pieces[g] = 0;
+            }
+            stop.Why |= why;
+            t.Why |= why;
+            RouteTally tally = Tally(t.Plan, from);
+            tally.Returned += loaded;
+            if (loaded > 0)
+            {
+                Missed(plan, from, stop.Place, loaded, why);
+            }
+        }
+
+        // A trip dropped before it finished (too old when the save was read): what it still carried never left the warehouse.
+        private void Abandoned(Trip t)
+        {
+            int carried = 0;
+            for (int k = 0; k < t.Stops.Count; k++)
+            {
+                carried += t.Out && !t.Stops[k].Done ? t.Stops[k].Total() : 0;
+            }
+            RouteTally tally = Tally(t.Plan, null);
+            tally.Returned += carried;
+            tally.Taken += carried;
+            tally.Why |= TripWhy.Stale;
         }
 
         // Back at the warehouse: the run goes into the log.
@@ -385,7 +524,8 @@ namespace RealLifeOverhaul.Economy
             _trips.Log.Add(new TripLog
             {
                 Day = day, Minute = t.Depart - day * TripRules.DayMinutes, Plan = t.Plan, Slot = t.Slot, Stops = t.Stops.Count, Pieces = t.Pieces(), Boxes = t.Boxes,
-                Room = t.Room, Metres = t.Metres, Minutes = t.Back - t.Depart, FuelCents = t.FuelCents, WageCents = t.WageCents
+                Room = t.Room, Metres = t.Metres, Minutes = t.Back - t.Depart, FuelCents = t.FuelCents, WageCents = t.WageCents,
+                Loaded = t.LoadedPieces(), Left = t.Left, Why = (int)t.Why
             });
             TripRules.Trim(_trips.Log, LogisticsGame.Day);
         }
@@ -466,6 +606,15 @@ namespace RealLifeOverhaul.Economy
                     into.Add(_trips.Trips[i]);
                 }
             }
+        }
+
+        /// <summary>What a route's trips left behind today: the pieces wanted and not sent or handed back, and why. False when nothing went wrong today.</summary>
+        public bool NotSentToday(string plan, out int pieces, out TripWhy why)
+        {
+            RouteTally t = TripsOn ? _tally.Peek(plan, LogisticsGame.Day) : null;
+            pieces = t != null ? t.Left + t.Returned + t.Lost : 0;
+            why = t != null ? t.Why : TripWhy.None;
+            return pieces > 0 && why != TripWhy.None;
         }
 
         /// <summary>A route's runs over the last seven days, newest first, into the list given.</summary>

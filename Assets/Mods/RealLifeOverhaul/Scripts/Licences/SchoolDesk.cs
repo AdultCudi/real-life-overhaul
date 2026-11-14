@@ -210,7 +210,7 @@ namespace RealLifeOverhaul
                 }
                 bool available = DrivingSchool.Available(service, true, out string reason);
                 string detail = Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service)))
-                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : DrivingSchool.ReasonText(reason));
+                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : DrivingSchool.ReasonText(reason, service));
                 list.Add((int)service, Licences.T(NameKeys[(int)service]), detail, ButtonDo, available, list.HeightFor(detail.Length, true));
                 count++;
             }
