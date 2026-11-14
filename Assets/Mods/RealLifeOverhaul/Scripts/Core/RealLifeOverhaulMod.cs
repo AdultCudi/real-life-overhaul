@@ -245,6 +245,7 @@ namespace RealLifeOverhaul
                     })
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
                 .AddButton("reallife_windows_reset", Ui.UiGameWindowPrefs.ResetAll)
+                .AddButton("reallife_apps_reset", Ui.UiGameDeckPrefs.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
                 .AddButton("reallife_phone_test_pages", GameUi.PhoneApp.TestPages)

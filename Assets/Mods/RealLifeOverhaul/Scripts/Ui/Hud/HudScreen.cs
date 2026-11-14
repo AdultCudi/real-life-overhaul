@@ -87,15 +87,7 @@ namespace RealLifeOverhaul.Ui
         // The row's arg-th app pressed while walking: its own button, as the full menu's row presses it (ShellApps.Press).
         private static bool OpenRow(int index)
         {
-            int seen = 0;
-            for (int i = 0; i < UiShellApps.Items.Count; i++)
-            {
-                if (UiShellApps.Items[i].InRow && seen++ == index)
-                {
-                    return ShellApps.Press(UiShellApps.Items[i].Id);
-                }
-            }
-            return false;
+            return index >= 0 && index < UiShellApps.Row.Count && ShellApps.Press(UiShellApps.Items[UiShellApps.Row[index]].Id);
         }
 
         // The time's pause or play square: the game's own pause button's method, which keeps its rules (a time lock while a

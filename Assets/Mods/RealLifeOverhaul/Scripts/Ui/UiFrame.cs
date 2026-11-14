@@ -163,6 +163,9 @@ namespace RealLifeOverhaul.Ui
         public int ToolCount;
         public bool ToolsShell;       // the tools stand on this bar as targets though the pills do not: the full menu's Help and Report bug (UiShell)
 
+        // Appended with the player's choice of the bar's apps (14 Nov 2026).
+        public int AppsMost;          // tiles the row may carry before All apps; 0 for the default ten. A chosen bar sets UiAppDeck.BarMost: the strip's room still cuts it (UiDraw.PlanPills)
+
         // Appended with the frames-a-second figure (4 Nov 2026).
         public int Fps;               // the frames a second, shown as a small pill before the needs while the game's show-FPS option is on; 0 for none
     }

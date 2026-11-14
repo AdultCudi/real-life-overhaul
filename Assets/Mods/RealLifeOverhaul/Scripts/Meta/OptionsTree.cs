@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Meta
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
                 S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_contact_groups", "phone_skin", "phone_folders", "notice_look")
-                    .Buttons("reallife_phone_layout_reset", "reallife_windows_reset")
+                    .Buttons("reallife_phone_layout_reset", "reallife_windows_reset", "reallife_apps_reset")
                     .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange")
                     .Also("group groups category categories tabs family friends people services money city sort"),
                 S("notices").Guide("phone").Opts("notice_show_road", "notice_show_money", "notice_show_property", "notice_show_work", "notice_show_business",

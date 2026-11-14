@@ -13,6 +13,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     "reallife_ui_shell_all_apps", "reallife_ui_shell_other_mods", "reallife_ui_shell_none", "reallife_ui_shell_none_other",
                     "reallife_ui_shell_prompt_folder",
+                    "reallife_ui_apps_favourites", "reallife_ui_apps_bar", "reallife_ui_apps_edit", "reallife_ui_apps_reset", "reallife_ui_apps_none_fav",
+                    "reallife_ui_apps_prompt_favourite", "reallife_ui_apps_prompt_bar", "reallife_ui_apps_not_on_bar", "reallife_ui_apps_no_room",
+                    "reallife_ui_apps_bar_place",
                     "reallife_ui_shell_another_app", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_phone_folder_money",
                     "reallife_phone_folder_work", "reallife_phone_folder_life", "reallife_phone_folder_business", "reallife_phone_folder_setup",

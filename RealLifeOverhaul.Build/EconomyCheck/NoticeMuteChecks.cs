@@ -54,7 +54,7 @@ internal static partial class Program
         "reallife_opt_text", "reallife_guide_not_here", "reallife_guide_waits", "reallife_set_not_here", "reallife_set_waits", "reallife_bug_waits",
         "reallife_perf_bench_started4", "reallife_perf_armed", "reallife_gp_toast_host", "reallife_gp_toast_absent", "reallife_gp_city_tell",
         "reallife_camera_other_toast", "reallife_staff_not_here", "reallife_staff_waits", "reallife_texts_status_off", "reallife_textsai_key_kept",
-        "reallife_gp_city_shared", "reallife_gp_hotel_no_skip", "reallife_phone_layout_reset_done", "reallife_phone_moved", "reallife_windows_reset_done",
+        "reallife_gp_city_shared", "reallife_gp_hotel_no_skip", "reallife_phone_layout_reset_done", "reallife_phone_moved", "reallife_windows_reset_done", "reallife_ui_apps_reset_done",
         "reallife_meta_welcome_note_update", "reallife_beta_note", "reallife_lic_toast", "reallife_lic_theory_passed", "reallife_lic_car_step_out",
         "reallife_lic_fee_returned", "reallife_planner_reminder", "reallife_planner_reminder_leave", "reallife_planner_welcome",
         "reallife_ui_note_interface_off"

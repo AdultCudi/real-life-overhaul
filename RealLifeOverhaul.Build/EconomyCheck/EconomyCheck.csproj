@@ -1139,6 +1139,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PhoneLayoutRules.cs" Link="Mod\PhoneLayoutRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PagerRules.cs" Link="Mod\PagerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiShellApps.cs" Link="Mod\UiShellApps.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppDeck.cs" Link="Mod\UiAppDeck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreenSwitches.cs" Link="Mod\UiScreenSwitches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.AppRow.cs" Link="Mod\UiDraw.AppRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCard.cs" Link="Mod\UiCard.cs" />

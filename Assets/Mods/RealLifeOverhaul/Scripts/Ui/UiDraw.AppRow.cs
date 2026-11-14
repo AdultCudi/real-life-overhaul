@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Ui
 
         // The apps the row would show with room enough: a row that ends with All apps is the phone's first page; one without
         // shows what it is given.
-        private static int RowApps(UiStatusModel m) => m == null || m.Apps == null ? 0 : m.AllApps ? Math.Min(m.Apps.Length, RowMost) : m.Apps.Length;
+        private static int RowApps(UiStatusModel m) => m == null || m.Apps == null ? 0 : m.AllApps ? Math.Min(m.Apps.Length, m.AppsMost > RowMost ? m.AppsMost : RowMost) : m.Apps.Length;
 
         // Other mods' apps the row does not carry have a tile of their own before All apps.
         private static bool MoreTile(UiStatusModel m) => m != null && m.AllApps && m.OtherLeft > 0;
@@ -82,6 +82,10 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             UiAt row = on.InRegion(RowRegion);
+            if (m.AppsPress && m.AllApps)
+            {
+                UiShellApps.RowShown = p.Apps;   // the edit page says which of the player's apps the strip had no room for
+            }
             float tile = BarTile, ax = p.RowX, ay = mid - tile / 2f;
             int first = s.NodeCount;
             for (int i = 0; i < p.Apps; i++)
