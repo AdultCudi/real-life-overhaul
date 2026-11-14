@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Corrigido: na interface da reforma, a página de Configurações de uma empresa agora tem as listas de funções e uniformes, para que um predefinido de uniforme possa ser dado a uma função e chegar aos funcionários, e o nome de um predefinido é mantido quando você clica fora dele, e não só no Enter. Um showroom de carros, ou qualquer local além dos primeiros 64 da empresa, agora pode receber um gerente na aba Gerentes do app Empresa, para que o gerente possa preencher o pedido de estoque de carros novos do showroom, e a interface da reforma informa quantos locais não aparecem na lista.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -38002,5 +38002,7 @@
   "reallife_tech_credit_note_many": "Uma atualização refez {firms} das suas empresas de tecnologia, então você pagou uma segunda vez para treinar e construir o que elas tinham feito. {amount} foi devolvido no total, veja seu extrato bancário.",
   "reallife_changes_100_14_title": "1.0.14",
   "reallife_changes_100_14": "Na interface RLO, agora você pode escolher quais apps ficam na barra na parte de baixo da tela e em que ordem, e marcar seus apps favoritos em Todos os apps. Corrigido: uma empresa de tecnologia que uma atualização tinha refeito agora é devolvido o que você pagou duas vezes pelo treinamento e pelo trabalho.",
-  "reallife_ui_bizman_uniform_role": "Função"
+  "reallife_ui_bizman_uniform_role": "Função",
+  "reallife_changes_100_15_title": "1.0.15",
+  "reallife_changes_100_15": "Corrigido: na interface da reforma, a página de Configurações de uma empresa agora tem as listas de funções e uniformes, para que um predefinido de uniforme possa ser dado a uma função e chegar aos funcionários, e o nome de um predefinido é mantido quando você clica fora dele, e não só no Enter. Um showroom de carros, ou qualquer local além dos primeiros 64 da empresa, agora pode receber um gerente na aba Gerentes do app Empresa, para que o gerente possa preencher o pedido de estoque de carros novos do showroom, e a interface da reforma informa quantos locais não aparecem na lista."
 }

@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Fixed: on the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed.",
+  "reallife_changes_next": "Nothing yet.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -38002,5 +38002,7 @@
   "reallife_tech_credit_note_many": "An update made {firms} of your tech firms again, so you paid a second time to train and build what they had done. {amount} has been paid back in total, see your bank statement.",
   "reallife_changes_100_14_title": "1.0.14",
   "reallife_changes_100_14": "On the RLO interface you can now choose which apps stand on the bar at the foot of the screen and in what order, and star your favourite apps in All apps. Fixed: a tech firm an update had made again is now paid back for the training and work you paid for a second time.",
-  "reallife_ui_bizman_uniform_role": "Role"
+  "reallife_ui_bizman_uniform_role": "Role",
+  "reallife_changes_100_15_title": "1.0.15",
+  "reallife_changes_100_15": "Fixed: on the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed."
 }

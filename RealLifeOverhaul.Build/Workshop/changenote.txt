@@ -1,7 +1,4 @@
-1.0.14
-
-New
-- On the RLO interface you can now choose which apps stand on the bar at the foot of the screen and in what order, and star your favourite apps in All apps.
+1.0.15
 
 Fixed
-- A tech firm an update had made again is now paid back for the training and work you paid for a second time.
+- On the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed.
