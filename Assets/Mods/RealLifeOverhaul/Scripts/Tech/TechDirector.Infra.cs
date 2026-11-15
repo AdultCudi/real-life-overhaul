@@ -85,6 +85,26 @@ namespace RealLifeOverhaul.Tech
 
         internal DataCentre CentreOf(string place) => _infra != null ? _infra.CentreAt(place) : null;
 
+        /// <summary>
+        /// Adds the data centres' registrations to a list of the player's businesses that lacks them. The game's own list of businesses holds only the types that
+        /// generate revenue and a warehouse is not one, yet the centres' takings, the cloud's among them, and their costs are in the game's daily statements at
+        /// their addresses, so whatever sums the player's statements for the company (its sector, its books) asks for them here. A registration already in the list is left.
+        /// </summary>
+        internal void AddCentres(List<BuildingRegistration> into)
+        {
+            for (int i = 0; _infra != null && i < _infra.Centres.Count; i++)
+            {
+                BuildingRegistration reg = TalentGame.Find(_infra.Centres[i].Place);
+                if (reg != null && !into.Contains(reg))
+                {
+                    into.Add(reg);
+                }
+            }
+        }
+
+        /// <summary>True if the registration is one of the player's data centres.</summary>
+        internal bool IsCentre(BuildingRegistration reg) => reg != null && CentreOf(TalentGame.Place(reg)) != null;
+
         // A warehouse that became the player's since the last look, however (rented or bought in BizMan, or any other way), is
         // put in line for the question once; the first look of a session only learns what the save holds.
         private void NoteTaken()
@@ -516,6 +536,7 @@ namespace RealLifeOverhaul.Tech
             DataCentre home = _infra.Centres.Count > 0 ? _infra.Centres[0] : null;
             BuildingRegistration at = home != null ? TalentGame.Find(home.Place) : null;
             FirmsGame.Takings(takings, at, c.Name, day - 1);
+            InfraRules.RollCloud(home, day, takings);   // the home centre's thirty days hold what the books at its address hold
             _opsDue = (long)c.Ops * InfraCatalogue.OpsWage * level / 1000;
             InfraRules.Reputation(c, outages);
             if (outages > 0 && c.Sold > 0)
@@ -645,10 +666,14 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             // growth stops where a supply is full: the feed, the cooling plant or the connection, as the page's meters say
-            if (InfraLimits.Fit(d, gpu, TechBridges.PlanMbpsAt(reg), out int binding) < racks)
+            int plan = TechBridges.PlanMbpsAt(reg);
+            if (InfraLimits.Fit(d, gpu, plan, out int binding) < racks)
             {
+                // the connection's words carry its figures, since the player's way past it is a plan, not a rack
+                CentreLimits full = InfraLimits.Of(d, plan);
                 TellTech(NotificationType.Warning, binding == InfraLimits.Power ? "reallife_infra_note_limit_power" : binding == InfraLimits.Cooling ? "reallife_infra_note_limit_cooling"
-                    : "reallife_infra_note_limit_bandwidth", Data("name", d.Name), TabInfra, TechApp.CentreRow + place);
+                    : "reallife_infra_note_limit_bandwidth", Data("name", d.Name, "use", full.NetUse.ToString(), "cap", full.NetCap.ToString(), "per", InfraLimits.MbpsPerRack.ToString(),
+                        "gpu", InfraLimits.MbpsPerGpuRack.ToString()), TabInfra, TechApp.CentreRow + place);
                 return false;
             }
             int share = BuyScale;

@@ -304,9 +304,9 @@ internal static partial class Program
               && own.Contains("case MarketNewsKind.OwnSector:") && own.Contains("\"reallife_lst_note_sector\""), "listing sources: a load moves an older listing by its books, and the founder is told");
         string links = ModSource(@"Wiring\ListingLinks.cs");
         string takings = MethodText(links, "private static void TradeTakings(int from, int to, long[] into)");
-        Check(links.Contains("MarketBridges.TradeTakings = TradeTakings;") && links.Contains("MarketBridges.TradeTakings = null;") && takings.Contains("Books.Businesses(Businesses);")
-              && takings.Contains("MarketInputs.TradeOf(r.businessTypeName)") && takings.Contains("MarketsBuildLinks.ConstructionBooks(") && !links.Contains("private static int Trade()"),
-            "listing sources: the books by trade read every business of the player's own (Going Public: Books.Businesses), a builder's works too");
+        Check(links.Contains("MarketBridges.TradeTakings = TradeTakings;") && links.Contains("MarketBridges.TradeTakings = null;") && takings.Contains("CompanyBooks.Businesses(Businesses);")
+              && takings.Contains("CompanyBooks.TradeOf(r)") && takings.Contains("MarketsBuildLinks.ConstructionBooks(") && !links.Contains("private static int Trade()"),
+            "listing sources: the books by trade read every business of the player's own (Going Public: Books.Businesses, with the data centres: CompanyBooks), a builder's works too");
         string types = ModSource(@"Tech\Firms\TechTypes.cs"), inputs = ModSource(@"Markets\MarketInputs.cs");
         bool same = true;
         foreach (string kind in new[] { "softwarestudio", "gamestudio", "itconsultancy", "cybersecurity", "ailab" })

@@ -555,6 +555,21 @@ namespace RealLifeOverhaul.Tech
             d.Days[slot] = takings;
         }
 
+        /// <summary>
+        /// The cloud's takings of a day added to the home centre's day, which <see cref="Roll"/> set from its own racks let: the cloud is booked at that centre's address,
+        /// so its statement and its thirty days must say the same. Nothing for no centre or no takings; a day's own place only, so the month's total stays the sum of its days.
+        /// </summary>
+        public static void RollCloud(DataCentre d, int day, long takings)
+        {
+            if (d == null || takings <= 0)
+            {
+                return;
+            }
+            int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            d.Days[slot] += takings;
+            d.Takings30 += takings;
+        }
+
         /// <summary>Whether the centre was down on a day is written into its 90 day ring: a bit a day, the day's own place taken over from the day 90 before.</summary>
         public static void MarkDay(DataCentre d, int day, bool down)
         {

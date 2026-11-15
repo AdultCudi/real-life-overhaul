@@ -139,7 +139,7 @@ namespace RealLifeOverhaul
             // is not in the whole company's books: the same takings never feed two stocks.
             private static void Mine()
             {
-                Books.Businesses(Businesses);
+                CompanyBooks.Businesses(Businesses);
                 ExitStockLinks.Remember();
                 Keys.Clear();
                 for (int i = 0; i < Businesses.Count; i++)
@@ -431,14 +431,14 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                    Books.Businesses(Businesses);
+                    CompanyBooks.Businesses(Businesses);
                     ExitStockLinks.Remember();
                     Keys.Clear();
                     KeyTrades.Clear();
                     for (int i = 0; i < Businesses.Count; i++)
                     {
                         BuildingRegistration r = Businesses[i];
-                        int trade = r != null && r.Address != null && !ExitStockLinks.IsListed(r) ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                        int trade = r != null && r.Address != null && !ExitStockLinks.IsListed(r) ? CompanyBooks.TradeOf(r) : -1;
                         if (trade >= 0 && trade < into.Length)
                         {
                             Keys.Add(Books.Key(r.Address));

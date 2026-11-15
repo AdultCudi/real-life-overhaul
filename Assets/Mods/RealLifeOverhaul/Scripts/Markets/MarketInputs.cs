@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Markets
             "reallife:businesstype_cybersecurity", "reallife:businesstype_ailab" };
         private static readonly int TechTrade = Array.IndexOf(Trades, "webdevelopment");
 
+        /// <summary>The trade the tech sector counts as: software. A data centre's takings, the cloud's among them, count in it though its building is a warehouse.</summary>
+        public static int SoftwareTrade => TechTrade;
+
         /// <summary>The trade of one of the game's business types, by its id; -1 for one no listed company is in.</summary>
         public static int TradeOf(string businessType)
         {
