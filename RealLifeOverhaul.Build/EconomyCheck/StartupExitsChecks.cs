@@ -25,6 +25,7 @@ internal static partial class Program
         ExitPoolChecks();
         ExitOldSaveChecks();
         ExitWiringChecks();
+        ExitHandoverChecks();   // (an offer accepted on both interfaces, the refusal named: ExitHandoverChecks.cs)
     }
 
     private static List<ExitBuyer> ExitBuyers() => new List<ExitBuyer>

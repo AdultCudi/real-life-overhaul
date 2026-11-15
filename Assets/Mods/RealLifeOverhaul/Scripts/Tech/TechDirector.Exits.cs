@@ -334,9 +334,10 @@ namespace RealLifeOverhaul.Tech
                 ChangedTech();
                 return false;
             }
-            if (!ExitBridges.CanHand(place))
+            string why = ExitBridges.WhyNotHand(place);   // the one thing in the way, named; a desk session sits inside the firm, so this is how it learns it must leave first
+            if (why != null)
             {
-                Notifications.ShowError("reallife_exit_refuse_hand_over");
+                Notifications.ShowError(why);
                 return false;
             }
             Cap c = _venture.CapOf(place);
@@ -728,6 +729,13 @@ namespace RealLifeOverhaul.Tech
             string buyer = o.Name;
             if (choice == 0)
             {
+                // The session is held at a desk inside the firm and a business cannot change hands with its owner in it: say so before trying, once, with the way round.
+                string why = ExitBridges.WhyNotHand(place);
+                if (why != null)
+                {
+                    key = why == "reallife_svc_refuse_inside" ? "reallife_tech_desk_exit_why_inside" : why;
+                    return false;
+                }
                 if (!ExitAccept(place, o.Id))
                 {
                     key = "reallife_tech_desk_exit_why_blocked";

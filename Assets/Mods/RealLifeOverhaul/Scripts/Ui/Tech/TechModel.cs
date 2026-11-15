@@ -93,7 +93,9 @@ namespace RealLifeOverhaul.Ui
         public int Section;          // the open firm's section, TechSection
         public string Pick;          // a sub page: its kind before the colon (prod:, work:, dc:, cloud, fit:, start:, cap:, newprod:, rival:, rivals:) and its id
         public string From;          // where Back returns to, the pick it was opened from
-        public int Page;             // a funding page's sub page (the cap table or the raise)
+        public int Page;             // a funding page's sub page, one of the Page constants below
+        /// <summary>The pages of a firm under Funding. Each is its own number: two sharing one lands a button on the wrong page.</summary>
+        public const int PageCap = 0, PageRaise = 1, PageBooks = 2, PageGtm = 3, PageExits = 4;
         public float Offset;         // px the table is scrolled
         public int Reveal = -1;
         public int Sort = -1;        // a table's sorted column and its way
@@ -159,8 +161,8 @@ namespace RealLifeOverhaul.Ui
             }
             else if (Rest(pick, "exits:", out place))
             {
-                Pick = "cap:" + place;   // a firm's page of exits: the cap table's third page
-                Page = 3;
+                Pick = "cap:" + place;   // a firm's page of exits
+                Page = TechView.PageExits;
             }
             else
             {
