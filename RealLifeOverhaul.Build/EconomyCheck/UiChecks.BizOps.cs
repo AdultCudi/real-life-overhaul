@@ -236,6 +236,15 @@ internal static partial class Program
         Check(src.Contains("ScheduleHelper.HasSkillForWorkstation(id, whoId)") && src.Contains("BizOpsRules.CanStart(open, taken, cleaning, h)") && src.Contains("public bool Tracks(int command) => command == UiBoard.LaneCommand")
               && src.Contains("if (arg != _hoverLane || hour != _hoverHour)"),
             "bizops: the screen gives each lane the game's own skill test and hour rule, and lays out again for the hour under the mouse only when the lane or the hour changes");
+        // A pull inwards on a shift's end is told only after the pointer has travelled the engine's drag threshold, so the end taken hold of is the one under the press.
+        var bar = new UiBoardModel { RulerX = 100f, RulerW = 2400f, FirstHour = 0, LastHour = 24, Shifts = new[] { new UiBoardShift { Start = 8 * 60, End = 12 * 60 } } };
+        float edge = 100f + 12 * 100f;
+        Check(UiBoardRules.Grip(bar, 0, edge - 4f) == UiBoardGrip.End && UiBoardRules.Grip(bar, 0, edge - 4f - 14f) == UiBoardGrip.Body
+              && src.Contains("UiBoardRules.Grip(board, arg, fromX)") && src.Contains("_downShift = arg;") && src.Contains("_fromX = fromX;"),
+            "bizops: the end of a shift taken hold of is the one under the press, not under the pointer when the drag is told, so shortening a shift by its end works");
+        // A held end stops where the game's handle stops and a refusal says why.
+        Check(src.Contains("Mathf.Clamp(wanted, _handleLo * 60, _handleHi * 60)") && src.Contains("\"reallife_ui_bizops_shift_stops\""),
+            "bizops: a shift's end stops at the next shift as the game's handle does, and the player is told why when it is let go there");
     }
 
     private static bool OpsSays(UiScene s, string words)
