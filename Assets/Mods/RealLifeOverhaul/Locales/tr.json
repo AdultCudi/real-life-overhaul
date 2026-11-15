@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: Bir girişimin sayfasındaki Çıkışlar düğmesi Pazara çık ekranını açıyordu, bu yüzden işletmenizi satın alma teklifi kabul edilemiyordu. Artık teklifleri açıyor; eski Teknoloji uygulamasında da aynı Çıkışlar sayfası var, reddedilen bir satış nedenini söylüyor ve kurucunun kredisi alınamadığında bunun nedenini açıklıyor. Yeni BizMan programında bir vardiyanın sonunu sürüklemek, bastığınız ucu tutar; böylece bir vardiya kısaltılabilir ve bir bildirim, bir vardiyanın neden daha ileri gitmediğini söyler. RLO arayüzü açıkken ve Alcware Seasons kendi sezonunu tarihin altında gösterirken, durum çubuğu artık bunun ikinci, eski kopyasını göstermez. Bir veri merkezinin bulut gelirleri artık şirketinizin sektöre göre gelirinde, defterlerinde ve hisse fiyatında sayılır ve veri merkezinin son 30 gününde görünür. İnternet bağlantısı dolu olan bir veri merkezi artık ne kadarını taşıdığını söyler.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Şirketleriniz",
   "reallife_infra_note_limit_power": "{name} daha fazla raf alamaz: güç hattı dolu.",
   "reallife_infra_note_limit_cooling": "{name} daha fazla raf alamaz: soğutma tesisi dolu.",
-  "reallife_infra_note_limit_bandwidth": "{name} daha fazla raf alamaz: internet bağlantısı dolu.",
+  "reallife_infra_note_limit_bandwidth": "{name} daha fazla raf kaldıramaz: internet bağlantısı dolu, {cap} Mbps'in {use} Mbps'i kullanılıyor. Bir raf {per} Mbps, bir yapay zeka rafı ise {gpu} kullanır. Kamu Hizmetleri uygulamasından alınacak daha hızlı bir plan bu sınırı kaldırır.",
   "reallife_studio_review_p_design_0": "Sürekli şaşırtan akıllı bir tasarım.",
   "reallife_studio_review_p_design_1": "Güçlü bir temel fikirle akıllı tasarım.",
   "reallife_studio_review_p_tech_0": "Pürüzsüz çalışıyor ve keskin hissettiriyor.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm}, paradan önce {price} fiyatla borsaya kote oldu. Firmaya {amount} ulaştı. Hisseleriniz {days} gün kilitli.",
   "reallife_exit_note_locked": "{firm} hisseleriniz {days} gün daha kilitli.",
   "reallife_exit_note_no_room": "{firm} hisselerinizi şu an satamazsınız. Bir turun yatırımcıları yalnızca turdan sonraki haftalarda alım yapar.",
-  "reallife_exit_refuse_hand_over": "İşletme şu an devredilemez. Binadan çıkın ve içinde oyunun hiçbir şeyinin kalmadığını kontrol edin.",
+  "reallife_exit_refuse_hand_over": "Satış şu anda tamamlanamadı. Oyun bir şeyin ortasında değilken Teknoloji uygulamasından yeniden deneyin.",
   "reallife_exit_refuse_not_ready": "Firma pazara çıkmak için ayda yeterince almıyor.",
   "reallife_exit_test_offer": "Bir alıcı ilk firmama teklif versin",
   "reallife_exit_test_pricing": "İlk firmamın kitabı şimdi fiyatlansın",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "Uygulama çubuğu ve favorileriniz varsayılana döndü.",
   "reallife_tech_credit_note": "Bir güncelleme {firm} işini yeniden yaptı, bu yüzden yaptığı şeyi eğitmek için ikinci kez ödeme yaptınız. {amount} Teknoloji güncelleme iadesi olarak geri ödendi, banka ekstrenize bakın.",
   "reallife_tech_credit_note_many": "Bir güncelleme teknoloji firmalarınızdan {firms} işini yeniden yaptı, bu yüzden yaptıkları işi eğitmek ve kurmak için ikinci kez ödeme yaptınız. Toplam {amount} geri ödendi, banka ekstrenize bakın.",
-  "reallife_ui_bizman_uniform_role": "Rol"
+  "reallife_ui_bizman_uniform_role": "Rol",
+  "reallife_ui_bizops_shift_stops": "Bir vardiya bir sonrakinin başladığı yerde biter; aynı kişinin diğer istasyonlardaki vardiyaları da sayılır. Önce onu taşıyın.",
+  "reallife_tech_desk_exit_why_inside": "Siz içindeyken bir firma el değiştiremez. Binadan çıkın, sonra Teknoloji uygulamasında Yatırım, Çıkışlar altından teklifi kabul edin. Teklif son gününe kadar geçerlidir.",
+  "reallife_vc_loan_no_raise": "{firm} yatırımcılardan hiçbir şey toplamadı; kurucunun kredisi de koyduklarının bir payı olduğundan alınacak bir şey yok.",
+  "reallife_vc_loan_no_cash": "{firm} hesabında şu an ödünç verilecek bir şey yok."
 }

@@ -18,8 +18,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A business of the player's handed to its buyer as the game's sale of a business ends one (its place, the buyer's name); true once it is not the player's. Default: none.</summary>
         public static Func<string, string, bool> HandOver;
 
-        /// <summary>True while the business could be handed over now (the player is not inside it, no vehicle or gift in it). Default: true.</summary>
-        public static Func<string, bool> CanHandOver;
+        /// <summary>The key of the text that says why the business cannot be handed over now (the player is inside it, a vehicle or gift is kept in it, the game is busy),
+        /// or null when it can. Default: none, so it can.</summary>
+        public static Func<string, string> HandOverRefusal;
 
         /// <summary>The population's record of a founder, by the key they were linked under; false while none is linked or the population is off. Default: none.</summary>
         public delegate bool ResidentAsk(string key, out ResidentInfo info);
@@ -74,17 +75,20 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        public static bool CanHand(string place)
+        /// <summary>Why a business cannot be handed over now (a text key), or null when it can. A bridge that throws refuses without a reason of its own.</summary>
+        public static string WhyNotHand(string place)
         {
             try
             {
-                return CanHandOver == null || CanHandOver(place);
+                return HandOverRefusal != null ? HandOverRefusal(place) : null;
             }
             catch (Exception)
             {
-                return false;
+                return GenericRefusal;
             }
         }
+
+        public const string GenericRefusal = "reallife_exit_refuse_hand_over";
 
         /// <summary>What the stock market's own model makes of a firm's books (the game's statements at its place), cents at the start's prices; 0 where it cannot say.</summary>
         public static Func<string, long> BooksWorth;
@@ -95,7 +99,7 @@ namespace RealLifeOverhaul.Tech
             Banks = null;
             Listed = null;
             HandOver = null;
-            CanHandOver = null;
+            HandOverRefusal = null;
             Resident = null;
             People = null;
             Practised = null;

@@ -42,7 +42,7 @@ internal static partial class Program
         Check(money.Contains("uis.topBar.moneyChange") && !money.Contains("midnightBankBalances"),
             "hud money: the figure under the money is the game's own label (yesterday's result, or the day result option's), at every day of the save");
         string season = MemberText(status, "private static void Season(UiStatusModel m, UIs uis)");
-        Check(season.Contains("!Settings.SeasonBar") && status.Contains("m.TimeWidest = HudClockRules.Widest(TimeHelper.use12h);"),
+        Check(season.Contains("SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, SeasonBar.Taken)") && status.Contains("m.TimeWidest = HudClockRules.Widest(TimeHelper.use12h);"),
             "hud season: the season on the bar option takes the season line off the weather pill, and the time pill keeps one width in either clock");
         Check(MemberText(status, "private static int Unread()").Contains("_noticesSeen") && status.Contains("NoticesRead()") && ModSource(@"Ui\Hud\HudScreen.cs").Contains("HudStatusGame.NoticesRead();")
               && notices.Contains("HudStatusGame.NoticesRead();"),

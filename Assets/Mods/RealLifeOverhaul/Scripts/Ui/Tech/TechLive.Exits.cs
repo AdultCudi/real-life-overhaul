@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
 {
     public sealed partial class TechLive
     {
-        private const int PageExits = 3;
+        private const int PageExits = TechView.PageExits;
         private static int _counterStep = 1, _bankStep, _approachStep;
 
         /// <summary>The whole keys of the ways to counter an offer and to hold the roadshow, so the text checks can find each one.</summary>

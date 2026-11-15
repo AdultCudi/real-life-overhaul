@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test échoué : un parcours des entreprises de la ville a trébuché sur une fiche sans bâtiment. Le journal dit laquelle.",
   "reallife_hire_test_orphan_off": "Chargez d'abord une sauvegarde. Ce test ne tourne pas dans une session Going Public.",
   "reallife_changes_next_title": "Prochaine version",
-  "reallife_changes_next": "Rien pour l'instant.",
+  "reallife_changes_next": "Corrigé : le bouton Sorties de la page d'une startup ouvrait Aller sur le marché, si bien qu'une offre d'achat de votre entreprise ne pouvait pas être acceptée. Il ouvre désormais les offres, l'ancienne app Tech a la même page Sorties, une vente refusée indique sa raison, et le prêt du fondateur explique pourquoi il ne peut pas être accordé. Dans le nouveau planning BizMan, faire glisser la fin d'un service saisit l'extrémité que vous avez pressée, si bien qu'un service peut être raccourci, et un avis indique pourquoi un service ne peut pas être prolongé davantage. Avec l'interface RLO activée et Alcware Seasons affichant sa propre saison sous la date, la barre d'état n'affiche plus une copie seconde et périmée. Les recettes cloud d'un centre de données comptent désormais dans les recettes de votre entreprise par secteur, dans ses comptes et dans son cours d'action, et apparaissent dans les 30 derniers jours du centre de données. Un centre de données dont la connexion internet est saturée indique maintenant ce qu'il supporte.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigé : quand tous les bâtiments qui pourraient accueillir le bureau des services publics sont à vous, les comptes d'électricité et d'eau se demandent et se rétablissent dans l'app Services publics, par téléphone, aux mêmes prix, et les notifications le disent ; dès qu'un bâtiment se libère, le bureau rouvre et l'app indique où. Corrigé : après avoir retiré une candidature et postulé de nouveau au même poste, l'app Carrière ouvrait celle retirée et l'entretien restait inaccessible. Chaque candidature a maintenant sa propre ligne, et l'entretien, l'offre et le retrait vont à celle en cours. Corrigé : une sauvegarde contenant une fiche d'entreprise dont la ville n'a pas le bâtiment (un autre mod peut en laisser une) ne coupe plus le secteur de la tech à chaque chargement. Le mod laisse désormais cette fiche de côté partout où il lit les entreprises de la ville, cite son adresse une fois dans le journal et n'y change rien.",
   "reallife_co_mass_raise": "Accorder une augmentation",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Vos entreprises",
   "reallife_infra_note_limit_power": "{name} ne peut pas accueillir d'autres baies : son alimentation électrique est pleine.",
   "reallife_infra_note_limit_cooling": "{name} ne peut pas accueillir d'autres baies : son installation de refroidissement est pleine.",
-  "reallife_infra_note_limit_bandwidth": "{name} ne peut pas accueillir d'autres baies : sa connexion internet est pleine.",
+  "reallife_infra_note_limit_bandwidth": "{name} ne peut pas accueillir de baies de plus : sa connexion internet est saturée, {use} Mbps sur {cap} sont utilisés. Une baie consomme {per} Mbps et une baie IA {gpu}. Un forfait plus rapide dans l'app Services publics lève la limite.",
   "reallife_studio_review_p_design_0": "Une conception astucieuse qui surprend sans cesse.",
   "reallife_studio_review_p_design_1": "Une bonne conception avec une idée de fond forte.",
   "reallife_studio_review_p_tech_0": "Tourne sans accroc et réagit vivement.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} est cotée à {price} avant l'argent. {amount} sont parvenus à l'entreprise. Vos actions sont bloquées pendant {days} jours.",
   "reallife_exit_note_locked": "Vos actions de {firm} sont bloquées pendant encore {days} jours.",
   "reallife_exit_note_no_room": "Vous ne pouvez pas vendre d'actions de {firm} maintenant. Les investisseurs d'un tour n'achètent que dans les semaines qui suivent.",
-  "reallife_exit_refuse_hand_over": "L'entreprise ne peut pas être remise maintenant. Quittez le bâtiment et vérifiez qu'aucun élément du jeu n'y est conservé.",
+  "reallife_exit_refuse_hand_over": "La vente n'a pas pu être conclue pour le moment. Réessayez depuis l'app Tech quand le jeu n'est pas en pleine action.",
   "reallife_exit_refuse_not_ready": "L'entreprise ne fait pas assez par mois pour aller en bourse.",
   "reallife_exit_test_offer": "Un acheteur fait une offre pour ma première entreprise",
   "reallife_exit_test_pricing": "Le carnet d'ordres de ma première entreprise est fixé maintenant",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "La barre d'apps et vos favoris sont revenus par défaut.",
   "reallife_tech_credit_note": "Une mise à jour a de nouveau refait {firm}, donc vous avez payé une seconde fois pour former l'équipe à ce qu'elle avait construit. {amount} vous a été remboursé sous Remboursement de la mise à jour tech, voir votre relevé bancaire.",
   "reallife_tech_credit_note_many": "Une mise à jour a de nouveau refait {firms} de vos entreprises tech, donc vous avez payé une seconde fois pour former et construire ce qu'elles avaient déjà fait. {amount} a été remboursé au total, voir votre relevé bancaire.",
-  "reallife_ui_bizman_uniform_role": "Rôle"
+  "reallife_ui_bizman_uniform_role": "Rôle",
+  "reallife_ui_bizops_shift_stops": "Un service s'arrête là où le suivant commence, et les services de la même personne dans d'autres stations comptent aussi. Déplacez celui-ci en premier.",
+  "reallife_tech_desk_exit_why_inside": "Une entreprise ne peut pas changer de mains pendant que vous y êtes assis. Quittez le bâtiment, puis acceptez l'offre dans l'app Tech, sous Financement, Sorties. L'offre reste valable jusqu'à son dernier jour.",
+  "reallife_vc_loan_no_raise": "{firm} n'a rien levé auprès des investisseurs, et le prêt du fondateur est une part de ce qu'ils ont apporté : il n'y a donc rien à prendre.",
+  "reallife_vc_loan_no_cash": "Le compte de {firm} ne dispose de rien à prêter pour le moment."
 }

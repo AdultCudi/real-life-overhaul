@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Seasons
             if (Held)
             {
                 Hide();
+                Look(DateLabel());   // the HUD's season pill asks Taken, so the answer is kept up to date while the piece itself stays down
                 return;
             }
             try
@@ -122,7 +123,12 @@ namespace RealLifeOverhaul.Seasons
         // under the date (a direct child of the date's label, found by name: nothing is searched). One log line when that answer changes.
         private static bool Wanted()
         {
-            Transform date = _piece.transform.parent;
+            return SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, Look(_piece.transform.parent));
+        }
+
+        // Whether another mod's season is under the date: a direct child of the date's label found by name, nothing searched.
+        private static bool Look(Transform date)
+        {
             Transform piece = date != null ? date.Find(OtherPiece) : null;
             bool other = piece != null && piece.gameObject.activeInHierarchy;
             int now = other ? 1 : 0;
@@ -135,7 +141,13 @@ namespace RealLifeOverhaul.Seasons
                     SeasonDirector.Logger?.Info("Seasons check (top bar): another mod's season under the date: " + says + ": PASS");
                 }
             }
-            return SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, other);
+            return other;
+        }
+
+        private static Transform DateLabel()
+        {
+            UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
+            return uis != null && uis.topBar != null && uis.topBar.dateLabel != null ? uis.topBar.dateLabel.transform : null;
         }
 
         /// <summary>The city is unloading: the piece goes with the top bar's copy of it.</summary>

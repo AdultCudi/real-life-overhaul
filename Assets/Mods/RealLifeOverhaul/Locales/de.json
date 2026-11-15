@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test fehlgeschlagen: Ein Rundgang durch die Unternehmen der Stadt ist über einen Eintrag ohne Gebäude gestolpert. Das Log sagt welchen.",
   "reallife_hire_test_orphan_off": "Lade zuerst einen Spielstand. Dieser Test läuft nicht in einer Going-Public-Sitzung.",
   "reallife_changes_next_title": "Nächste Version",
-  "reallife_changes_next": "Noch nichts.",
+  "reallife_changes_next": "Behoben: Der Ausstiege-Knopf auf der Seite eines Startups öffnete Zum Markt, daher konnte ein Angebot zum Kauf deiner Firma nicht angenommen werden. Jetzt öffnet er die Angebote, die alte Tech-App hat dieselbe Ausstiege-Seite, ein abgelehnter Verkauf nennt seinen Grund, und das Gründerdarlehen sagt, warum es nicht genommen werden kann. Im neuen BizMan-Dienstplan packt das Ziehen am Ende einer Schicht das Ende, das du gedrückt hast, sodass eine Schicht verkürzt werden kann, und ein Hinweis sagt, warum eine Schicht nicht weiter gehen kann. Mit eingeschalteter RLO-Oberfläche und Alcware Seasons, das seine eigene Jahreszeit unter dem Datum zeigt, zeigt die Statusleiste keine zweite, veraltete Kopie mehr. Die Cloud-Einnahmen eines Rechenzentrums zählen jetzt zu den Einnahmen deiner Firma nach Branche, in ihren Büchern und im Aktienkurs, und erscheinen bei dem Rechenzentrum in den letzten 30 Tagen. Ein Rechenzentrum, dessen Internetanschluss voll ist, sagt jetzt, wie viel es trägt.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Behoben: Gehören dir alle Gebäude, die das Versorgungsamt aufnehmen könnten, werden Strom- und Wasserkonten in der Versorger-App telefonisch beantragt und wieder angeschlossen, zu denselben Preisen, und die Hinweise sagen das; sobald ein Gebäude frei ist, öffnet das Amt wieder und die App sagt, wo. Behoben: Nach dem Zurückziehen einer Bewerbung und einer neuen Bewerbung auf dieselbe Stelle öffnete die Karriere-App die zurückgezogene, und das Vorstellungsgespräch war nicht erreichbar. Jede Bewerbung hat jetzt ihre eigene Zeile, und Gespräch, Angebot und Rückzug gehen an die aktive. Behoben: Ein Spielstand mit einem Geschäftseintrag, dessen Gebäude es in der Stadt nicht gibt (eine andere Mod kann so einen hinterlassen), schaltet den Techniksektor nicht mehr bei jedem Laden ab. Die Mod lässt solch einen Eintrag jetzt überall aus, wo sie die Geschäfte der Stadt liest, nennt seine Adresse einmal im Log und ändert nichts daran.",
   "reallife_co_mass_raise": "Gehaltserhöhung geben",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Deine Firmen",
   "reallife_infra_note_limit_power": "{name} kann keine Racks mehr aufnehmen: seine Stromzuleitung ist voll.",
   "reallife_infra_note_limit_cooling": "{name} kann keine Racks mehr aufnehmen: seine Kühlanlage ist voll.",
-  "reallife_infra_note_limit_bandwidth": "{name} kann keine Racks mehr aufnehmen: sein Internetanschluss ist voll.",
+  "reallife_infra_note_limit_bandwidth": "{name} kann keine weiteren Racks aufnehmen: Der Internetanschluss ist voll, {use} von {cap} Mbps sind belegt. Ein Rack braucht {per} Mbps, ein KI-Rack {gpu}. Ein schnellerer Tarif in der Versorger-App hebt die Grenze auf.",
   "reallife_studio_review_p_design_0": "Ein kluges Design, das immer wieder überrascht.",
   "reallife_studio_review_p_design_1": "Schickes Design mit einer starken Grundidee.",
   "reallife_studio_review_p_tech_0": "Läuft flüssig und wirkt präzise.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} ist mit {price} vor dem Geld gelistet. {amount} haben die Firma erreicht. Deine Anteile sind {days} Tage gesperrt.",
   "reallife_exit_note_locked": "Deine Anteile an {firm} sind noch {days} Tage gesperrt.",
   "reallife_exit_note_no_room": "Du kannst jetzt keine Anteile von {firm} verkaufen. Die Investoren einer Runde kaufen nur in den Wochen danach.",
-  "reallife_exit_refuse_hand_over": "Das Unternehmen kann jetzt nicht übergeben werden. Verlass das Gebäude und prüfe, dass darin nichts aufbewahrt wird, was dem Spiel gehört.",
+  "reallife_exit_refuse_hand_over": "Der Verkauf konnte gerade nicht abgeschlossen werden. Versuche es erneut über die Tech-App, wenn das Spiel nicht mitten in etwas steckt.",
   "reallife_exit_refuse_not_ready": "Die Firma nimmt nicht genug pro Monat ein, um an den Markt zu gehen.",
   "reallife_exit_test_offer": "Ein Käufer macht meiner ersten Firma ein Angebot",
   "reallife_exit_test_pricing": "Das Orderbuch meiner ersten Firma wird jetzt bepreist",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "Die App-Leiste und deine Favoriten sind wieder auf dem Standard.",
   "reallife_tech_credit_note": "Ein Update hat {firm} erneut neu aufgebaut, deshalb hast du ein zweites Mal bezahlt, um zu trainieren, was es zuvor gebaut hatte. {amount} wurde als Erstattung nach Tech-Update zurückgezahlt, siehe Kontoauszug.",
   "reallife_tech_credit_note_many": "Ein Update hat {firms} deiner Tech-Firmen erneut neu aufgebaut, deshalb hast du ein zweites Mal bezahlt, um zu trainieren und zu bauen, was sie schon gemacht hatten. {amount} wurde insgesamt zurückgezahlt, siehe Kontoauszug.",
-  "reallife_ui_bizman_uniform_role": "Rolle"
+  "reallife_ui_bizman_uniform_role": "Rolle",
+  "reallife_ui_bizops_shift_stops": "Eine Schicht endet dort, wo die nächste beginnt, und die Schichten derselben Person an anderen Stationen zählen ebenfalls mit. Verschiebe zuerst diese.",
+  "reallife_tech_desk_exit_why_inside": "Ein Unternehmen kann nicht den Besitzer wechseln, solange du darin sitzt. Verlass das Gebäude und nimm dann das Angebot in der Tech-App unter Kapital, Ausstiege an. Das Angebot gilt bis zu seinem letzten Tag.",
+  "reallife_vc_loan_no_raise": "{firm} hat bei Investoren nichts eingesammelt, und das Gründerdarlehen ist ein Anteil dessen, was sie eingebracht haben, daher gibt es nichts zu nehmen.",
+  "reallife_vc_loan_no_cash": "Das Konto von {firm} hat gerade nichts zum Verleihen."
 }

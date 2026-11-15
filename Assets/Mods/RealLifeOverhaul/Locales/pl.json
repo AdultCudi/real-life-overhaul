@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: przycisk Wyjścia na stronie startupu otwierał Wejście na rynek, przez co oferty kupna twojej firmy nie dało się przyjąć. Teraz otwiera oferty; stara aplikacja Tech ma tę samą stronę Wyjścia, odrzucona sprzedaż podaje powód, a pożyczka założyciela mówi, dlaczego nie można jej wziąć. W nowym harmonogramie BizMan przeciągnięcie końca zmiany chwyta ten koniec, za który pociągnąłeś, więc zmianę można skrócić, a komunikat mówi, dlaczego zmiana nie przesunie się dalej. Gdy interfejs RLO jest włączony, a Alcware Seasons pokazuje swój sezon pod datą, pasek stanu nie pokazuje już drugiej, nieaktualnej kopii. Przychody z chmury centrum danych liczą się teraz do przychodów firmy według sektora, do jej ksiąg i do kursu akcji, i są widoczne w ostatnich 30 dniach centrum danych. Centrum danych, którego łącze internetowe jest pełne, teraz mówi, ile obsługuje.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Twoje firmy",
   "reallife_infra_note_limit_power": "{name} nie może przyjąć więcej szaf: jego zasilanie jest pełne.",
   "reallife_infra_note_limit_cooling": "{name} nie może przyjąć więcej szaf: jego instalacja chłodząca jest pełna.",
-  "reallife_infra_note_limit_bandwidth": "{name} nie może przyjąć więcej szaf: jego łącze internetowe jest pełne.",
+  "reallife_infra_note_limit_bandwidth": "{name} nie przyjmie więcej szaf: jego łącze internetowe jest pełne, wykorzystane {use} z {cap} Mb/s. Szafa zużywa {per} Mb/s, a szafa AI {gpu}. Szybszy plan z aplikacji Media znosi ten limit.",
   "reallife_studio_review_p_design_0": "Sprytny projekt, który ciągle zaskakuje.",
   "reallife_studio_review_p_design_1": "Mądry projekt z mocnym pomysłem w środku.",
   "reallife_studio_review_p_tech_0": "Działa płynnie i sprawia wrażenie dopracowanej.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} jest notowana po {price} przed wpływem pieniędzy. Firma otrzymała {amount}. Twoje akcje są zablokowane. Dni blokady: {days}.",
   "reallife_exit_note_locked": "Twoje akcje w {firm} są zablokowane jeszcze przez dni: {days}.",
   "reallife_exit_note_no_room": "Nie możesz teraz sprzedać akcji {firm}. Inwestorzy rundy kupują tylko w tygodniach po niej.",
-  "reallife_exit_refuse_hand_over": "Firmy nie można teraz przekazać. Wyjdź z budynku i sprawdź, czy nie zostało w nim nic z gry.",
+  "reallife_exit_refuse_hand_over": "Sprzedaży nie udało się teraz dokończyć. Spróbuj ponownie z aplikacji Tech, gdy gra nie jest w trakcie czegoś innego.",
   "reallife_exit_refuse_not_ready": "Firma nie zarabia wystarczająco dużo miesięcznie, żeby wejść na rynek.",
   "reallife_exit_test_offer": "Kupiec składa ofertę na moją pierwszą firmę",
   "reallife_exit_test_pricing": "Książka zleceń mojej pierwszej firmy jest teraz wyceniana",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "Pasek aplikacji i twoje ulubione wróciły do ustawień domyślnych.",
   "reallife_tech_credit_note": "Aktualizacja ponownie zrobiła {firm}, więc za szkolenie tego, co zostało zbudowane, zapłacono drugi raz. {amount} zwrócono jako Zwrot po aktualizacji technologii, sprawdź wyciąg bankowy.",
   "reallife_tech_credit_note_many": "Aktualizacja ponownie zrobiła {firms} z twoich firm technologicznych, więc za szkolenie i budowę tego, co zrobiły, zapłacono drugi raz. Łącznie zwrócono {amount}, sprawdź wyciąg bankowy.",
-  "reallife_ui_bizman_uniform_role": "Rola"
+  "reallife_ui_bizman_uniform_role": "Rola",
+  "reallife_ui_bizops_shift_stops": "Zmiana kończy się tam, gdzie zaczyna się następna, a zmiany tej samej osoby na innych stanowiskach też się liczą. Najpierw przesuń tę.",
+  "reallife_tech_desk_exit_why_inside": "Firmy nie można przekazać, dopóki w niej siedzisz. Opuść budynek, potem przyjmij ofertę w aplikacji Tech w zakładce Finansowanie, Wyjścia. Oferta obowiązuje do jej ostatniego dnia.",
+  "reallife_vc_loan_no_raise": "{firm} nie pozyskała nic od inwestorów, a pożyczka założyciela to część tego, co wnieśli, więc nie ma czego wziąć.",
+  "reallife_vc_loan_no_cash": "Konto {firm} nie ma teraz z czego pożyczyć."
 }

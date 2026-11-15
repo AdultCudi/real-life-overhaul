@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly long[] FundSteps = { 1000000, 5000000, 25000000, 100000000 };   // cents at the start's prices
         private static int _fundStep = 1;
-        private const int PageCap = 0, PageRaise = 1;
+        private const int PageCap = TechView.PageCap, PageRaise = TechView.PageRaise;
 
         private sealed partial class Page
         {

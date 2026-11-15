@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "测试失败：读取城市商家时被一条没有建筑的记录绊住了。日志中写明了是哪一处。",
   "reallife_hire_test_orphan_off": "请先读取存档。此测试不能在 Going Public 联机中运行。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "还没有。",
+  "reallife_changes_next": "已修复：企业详情页的退出按钮打开的是进入市场，因此无法接受收购你公司的报价。现在它打开报价页面，旧的科技应用也有同样的退出页面，被拒绝的出售会说明原因，创始人贷款无法发放时也会说明原因。在新的BizMan排班中，拖动班次末端会抓住你按下的那一端，因此班次可以缩短，并且提示会说明班次为何不能再延长。开启RLO 界面、且Alcware Seasons在日期下显示其自身季节时，状态栏不再显示一份过时的重复副本。数据中心云端的营业额现在计入你公司按行业统计的营业额、账目和股价，并显示在数据中心的最近30天里。连接互联网已满的数据中心现在会说明它承载了多少。",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "已修复：当所有能容纳公用事业办公室的建筑都归你所有时，电力和供水账户改在公用事业应用中通过电话申请和恢复，价格不变，通知也会这样说明；一旦有建筑空出，办公室重新开放，应用会告诉你地点。 已修复：撤回申请后再次申请同一职位时，职业应用会打开已撤回的申请，无法参加面试。现在每份申请都有自己的一行，面试、录用和撤回都作用于有效的那份。 已修复：存档中若有一条营业记录对应的建筑在城市中不存在（可能是其他模组留下的），科技行业不再在每次读档时被关闭。模组现在在读取城市的商家时会跳过这类记录，在日志中只提一次它的地址，并且不改动它。",
   "reallife_co_mass_raise": "加薪",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "你的公司",
   "reallife_infra_note_limit_power": "{name}无法再接收机架：供电已满。",
   "reallife_infra_note_limit_cooling": "{name}无法再接收机架：制冷设备已满。",
-  "reallife_infra_note_limit_bandwidth": "{name}无法再接收机架：网络连接已满。",
+  "reallife_infra_note_limit_bandwidth": "{name}无法再接入机架：其互联网连接已满，{cap} Mbps 中已用 {use}。一个机架用 {per} Mbps，一个AI机架用 {gpu}。在公用事业应用中选择更快的套餐即可解除限制。",
   "reallife_studio_review_p_design_0": "聪明的设计，总能带来惊喜。",
   "reallife_studio_review_p_design_1": "设计聪明，核心创意出色。",
   "reallife_studio_review_p_tech_0": "运行流畅，反应灵敏。",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm}以{price}上市，募资前价格。公司募得{amount}。你的股份将锁定{days}天。",
   "reallife_exit_note_locked": "你在{firm}的股份还将锁定{days}天。",
   "reallife_exit_note_no_room": "你现在无法出售{firm}的股份。融资轮的投资人只在该轮之后的数周内购买。",
-  "reallife_exit_refuse_hand_over": "现在无法移交业务。请离开建筑，并确认其中没有保留游戏内的任何内容。",
+  "reallife_exit_refuse_hand_over": "此次出售刚刚无法完成。等游戏不再忙于其他事情时，请在科技应用中重试。",
   "reallife_exit_refuse_not_ready": "该公司月营收不足，无法上市。",
   "reallife_exit_test_offer": "买家向我的第一家公司报价",
   "reallife_exit_test_pricing": "我的第一家公司的簿记正在定价",
@@ -38004,5 +38004,9 @@
   "reallife_changes_100_14": "在 RLO 界面中，你现在可以选择哪些应用显示在屏幕底部的应用栏上以及排列顺序，还可以在全部应用中给喜欢的应用加星标。已修复：一家科技公司的更新若再次做过工作，现在会退还你为其重复支付的培训和工作费用。",
   "reallife_ui_bizman_uniform_role": "角色",
   "reallife_changes_100_15_title": "1.0.15",
-  "reallife_changes_100_15": "已修复：在改造后的界面中，企业的设置页面现在有角色和制服列表，因此可以把制服预设分配给某个角色，让员工穿上，而且点击预设以外的地方时，预设名称也会保留，不必只靠按 Enter。汽车展厅，或公司前 64 个之后的任何地点，现在都可以在公司应用的经理标签页中任命一位经理，这位经理就能为展厅填写新车的库存订单，改造后的界面也会显示还有多少地点没有列出。"
+  "reallife_changes_100_15": "已修复：在改造后的界面中，企业的设置页面现在有角色和制服列表，因此可以把制服预设分配给某个角色，让员工穿上，而且点击预设以外的地方时，预设名称也会保留，不必只靠按 Enter。汽车展厅，或公司前 64 个之后的任何地点，现在都可以在公司应用的经理标签页中任命一位经理，这位经理就能为展厅填写新车的库存订单，改造后的界面也会显示还有多少地点没有列出。",
+  "reallife_ui_bizops_shift_stops": "一个班次在下一个班次开始的地方结束，同一个人在其他站点的班次也算数。请先移动这一个。",
+  "reallife_tech_desk_exit_why_inside": "你还坐在企业里时，它不能易主。先离开建筑，然后在科技应用的融资、退出中接受报价。报价有效至最后一天。",
+  "reallife_vc_loan_no_raise": "{firm}没有从投资人那里募到任何资金，而创始人的贷款是其投入的一部分，因此没有可取的款项。",
+  "reallife_vc_loan_no_cash": "{firm}的账户目前没有可借出的资金。"
 }

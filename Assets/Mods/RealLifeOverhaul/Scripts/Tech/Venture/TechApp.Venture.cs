@@ -152,6 +152,12 @@ namespace RealLifeOverhaul.Tech
             }
             IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
             FirmPlace picked = null;
+            string offerOf = Picked(_picked, TechDirector.ExitRow);   // a notice of an offer (or of the way to the market) lands on the firm's page of exits
+            if (offerOf != null)
+            {
+                _picked = CapRow + offerOf;
+                _page = PageExits;
+            }
             string id = Picked(_picked, CapRow);
             for (int i = 0; i < firms.Count; i++)
             {
@@ -188,6 +194,10 @@ namespace RealLifeOverhaul.Tech
                 else if (_page == PageBooks)
                 {
                     WriteBooks(box, picked, day);
+                }
+                else if (_page == PageExits)
+                {
+                    WriteExits(box, picked);
                 }
                 else
                 {
@@ -277,6 +287,11 @@ namespace RealLifeOverhaul.Tech
                 });
             }
             Transform more = box.ButtonRow();
+            InfoBox.Button(more, InfoBox.Additional, "reallife_exit_button_page", () =>
+            {
+                _page = PageExits;
+                Refresh();
+            });
             if (c != null && c.VcSeats > 0)
             {
                 InfoBox.Button(more, InfoBox.Additional, "reallife_exit_button_sell", () => Do(() => _director.OpenExits(place)));

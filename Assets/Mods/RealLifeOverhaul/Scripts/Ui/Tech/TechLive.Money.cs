@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ui
 {
     public sealed partial class TechLive
     {
-        private const int PageBooks = 2;
+        private const int PageBooks = TechView.PageBooks;
         private static int _tierStep, _siblingStep;
 
         private sealed partial class Page

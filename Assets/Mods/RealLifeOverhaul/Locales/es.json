@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Prueba fallida: un recorrido por los negocios de la ciudad tropezó con un registro sin edificio. El registro dice cuál.",
   "reallife_hire_test_orphan_off": "Carga primero una partida. Esta prueba no se ejecuta en una sesión de Going Public.",
   "reallife_changes_next_title": "Próxima versión",
-  "reallife_changes_next": "Nada todavía.",
+  "reallife_changes_next": "Corregido: el botón Salidas de la página de una startup abría Salir al mercado, así que no se podía aceptar una oferta para comprar tu empresa. Ahora abre las ofertas, la antigua app Tecnología tiene la misma página de Salidas, una venta rechazada indica su motivo, y el préstamo del fundador explica por qué no se puede conceder. En la nueva escala de BizMan, arrastrar el final de un turno agarra el extremo que pulsaste, así que un turno se puede acortar, y un aviso dice por qué un turno no puede alargarse más. Con la interfaz de RLO activada y Alcware Seasons mostrando su propia temporada bajo la fecha, la barra de estado ya no muestra una segunda copia desfasada. La nube de un centro de datos ahora cuenta en los ingresos de tu empresa por sector, en sus cuentas y en su precio de las acciones, y aparece en los últimos 30 días del centro de datos. Un centro de datos cuya conexión a internet está llena ahora dice cuánto soporta.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corregido: cuando todos los edificios que podrían albergar la oficina de servicios públicos son tuyos, las cuentas de luz y agua se solicitan y se reconectan en la app Suministros, por teléfono, a los mismos precios, y los avisos lo dicen; en cuanto un edificio queda libre, la oficina vuelve a abrir y la app dice dónde. Corregido: tras retirar una solicitud y volver a solicitar el mismo puesto, la app Carrera abría la retirada y no se podía llegar a la entrevista. Cada solicitud tiene ahora su propia fila, y la entrevista, la oferta y la retirada van a la activa. Corregido: una partida con un registro de negocio cuyo edificio no existe en la ciudad (otro mod puede dejar uno atrás) ya no apaga el sector tecnológico en cada carga. El mod ahora deja fuera ese registro en todas partes donde lee los negocios de la ciudad, nombra su dirección una vez en el registro y no cambia nada de él.",
   "reallife_co_mass_raise": "Dar un aumento",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Tus empresas",
   "reallife_infra_note_limit_power": "{name} no admite más racks: su suministro eléctrico está lleno.",
   "reallife_infra_note_limit_cooling": "{name} no admite más racks: su planta de refrigeración está llena.",
-  "reallife_infra_note_limit_bandwidth": "{name} no admite más racks: su conexión a internet está llena.",
+  "reallife_infra_note_limit_bandwidth": "{name} no puede aceptar más racks: su conexión a internet está llena, con {use} de {cap} Mbps en uso. Un rack usa {per} Mbps y un rack de IA {gpu}. Un plan más rápido en la app Suministros levanta el límite.",
   "reallife_studio_review_p_design_0": "Un diseño ingenioso que no deja de sorprender.",
   "reallife_studio_review_p_design_1": "Diseño inteligente con una idea central fuerte.",
   "reallife_studio_review_p_tech_0": "Funciona sin tirones y se siente ágil.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} cotiza a {price} antes del dinero. {amount} llegaron a la empresa. Tus acciones quedan bloqueadas durante {days} días.",
   "reallife_exit_note_locked": "Tus acciones en {firm} están bloqueadas durante {days} días más.",
   "reallife_exit_note_no_room": "No puedes vender acciones de {firm} ahora. Los inversores de una ronda solo compran en las semanas posteriores.",
-  "reallife_exit_refuse_hand_over": "El negocio no puede entregarse ahora. Sal del edificio y comprueba que no quede nada del juego dentro.",
+  "reallife_exit_refuse_hand_over": "La venta no se pudo completar en este momento. Vuelve a intentarlo desde la app Tecnología cuando el juego no esté en medio de algo.",
   "reallife_exit_refuse_not_ready": "La empresa no ingresa lo suficiente al mes para salir al mercado.",
   "reallife_exit_test_offer": "Un comprador hace una oferta por mi primera empresa",
   "reallife_exit_test_pricing": "El libro de mi primera empresa se fija ahora",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "La barra de apps y tus favoritos han vuelto a los valores predeterminados.",
   "reallife_tech_credit_note": "Una actualización volvió a hacer {firm}, así que pagaste una segunda vez para entrenar lo que había construido. {amount} se ha devuelto como Reembolso por actualización tecnológica, mira tu extracto bancario.",
   "reallife_tech_credit_note_many": "Una actualización volvió a hacer {firms} de tus empresas tecnológicas, así que pagaste una segunda vez para entrenar y construir lo que habían hecho. {amount} se ha devuelto en total, mira tu extracto bancario.",
-  "reallife_ui_bizman_uniform_role": "Rol"
+  "reallife_ui_bizman_uniform_role": "Rol",
+  "reallife_ui_bizops_shift_stops": "Un turno termina donde empieza el siguiente, y los turnos de la misma persona en otras estaciones también cuentan. Mueve primero ese.",
+  "reallife_tech_desk_exit_why_inside": "Una empresa no puede cambiar de manos mientras estás en ella. Sal del edificio y luego acepta la oferta en la app Tecnología, en Financiación, Salidas. La oferta sigue vigente hasta su último día.",
+  "reallife_vc_loan_no_raise": "{firm} no ha captado nada de inversores, y el préstamo del fundador es una parte de lo que aportaron, así que no hay nada que tomar.",
+  "reallife_vc_loan_no_cash": "La cuenta de {firm} no tiene nada que prestar en este momento."
 }

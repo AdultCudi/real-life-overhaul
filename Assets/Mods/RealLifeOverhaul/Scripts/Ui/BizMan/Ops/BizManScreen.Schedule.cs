@@ -64,6 +64,12 @@ namespace RealLifeOverhaul.Ui
         private int _dragLane = -1, _dragStart, _dragEnd, _dragHour;
         private float _downX = -1f;                 // where the pointer last went down on a lane, so its click says which hour
         private int _downLane = -1;
+        // Where the pointer went down on a shift: the engine tells a drag only after the pointer has travelled its threshold, so the end taken
+        // hold of is read from here (read from where the drag begins, a pull inwards from the end looked like a pull on the body).
+        private int _downShift = -1;
+        private float _downShiftX, _downShiftY;
+        private int _handleLo, _handleHi;           // the hours the held end may reach (the game's handle range)
+        private bool _pinned;                       // the held end is at its limit and the pointer is past it
         private string _renaming;                   // the workstation whose name is being typed
         private string _crewPick;                   // the person chosen in the people beside the board, to be put on the next hour pressed
         private bool _crewDrag;                     // a person of the column held by the pointer
@@ -1575,6 +1581,12 @@ namespace RealLifeOverhaul.Ui
                 _downLane = arg;
                 _downX = x;
             }
+            else if (command == UiBoard.ShiftCommand)
+            {
+                _downShift = arg;
+                _downShiftX = x;
+                _downShiftY = y;
+            }
         }
 
         public bool DragBegin(int command, int arg, float x, float y)
@@ -1594,7 +1606,10 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             WorkShift s = _shifts[arg];
-            UiBoardGrip grip = UiBoardRules.Grip(board, arg, x);
+            bool pressed = _downShift == arg;
+            float fromX = pressed ? _downShiftX : x, fromY = pressed ? _downShiftY : y;
+            _downShift = -1;
+            UiBoardGrip grip = UiBoardRules.Grip(board, arg, fromX);
             if (grip != UiBoardGrip.Body && ScheduleHelper.IsHeadquarters && s.type != WorkShiftType.Cleaning)
             {
                 Notifications.ShowError("bizman_schedule_cannot_change_working_hours");   // the game's own refusal for a headquarters' working hours
@@ -1603,8 +1618,16 @@ namespace RealLifeOverhaul.Ui
             _dragged = s;
             _chosen = s;
             _grip = grip;
-            _fromX = x;
-            _fromY = y;
+            _fromX = fromX;
+            _fromY = fromY;
+            _pinned = false;
+            _handleLo = 0;
+            _handleHi = BizOpsRules.Hours;
+            if (grip != UiBoardGrip.Body)
+            {
+                int count = Others(s, s.itemInstanceId, true);
+                BizOpsRules.HandleRange(grip == UiBoardGrip.Start, s.startingHour, s.endingHour, _others, _othersEnd, count, out _handleLo, out _handleHi);
+            }
             _dragLane = board.Shifts[arg].Lane;
             _dragStart = s.startingHour;
             _dragEnd = s.endingHour;
@@ -1636,6 +1659,14 @@ namespace RealLifeOverhaul.Ui
             board.Shifts[index].End = s.endingHour * 60;
             UiBoardRules.Drag(board, index, _grip, _fromX, _fromY, x, y, out int lane, out int start, out int end);
             board.Shifts[index] = held;
+            if (_grip != UiBoardGrip.Body)
+            {
+                // The bar stops where the game's own handle stops, so what is shown is what a release will write.
+                int wanted = _grip == UiBoardGrip.Start ? start : end, kept = Mathf.Clamp(wanted, _handleLo * 60, _handleHi * 60);
+                _pinned = kept != wanted;
+                start = _grip == UiBoardGrip.Start ? kept : start;
+                end = _grip == UiBoardGrip.Start ? end : kept;
+            }
             _dragHour = UiBoardRules.MinuteAt(board, x) / 60;
             int scroll = UiBoardRules.EdgeScroll(board, y);
             if (scroll != 0)
@@ -1667,7 +1698,13 @@ namespace RealLifeOverhaul.Ui
             }
             WorkShift s = _dragged;
             _dragged = null;
+            _downShift = -1;
             _dirty = true;
+            if (!cancelled && _pinned && _grip != UiBoardGrip.Body)
+            {
+                Notifications.ShowError("reallife_ui_bizops_shift_stops", null, false);
+            }
+            _pinned = false;
             if (cancelled || s == null || _dragLane < 0 || _dragLane >= _lanes.Count)
             {
                 return;
@@ -1760,6 +1797,10 @@ namespace RealLifeOverhaul.Ui
         {
             int count = Others(s, s.itemInstanceId, true);
             BizOpsRules.HandleRange(startEnd, s.startingHour, s.endingHour, _others, _othersEnd, count, out int lo, out int hi);
+            if (hour < lo || hour > hi)
+            {
+                Notifications.ShowError("reallife_ui_bizops_shift_stops", null, false);
+            }
             hour = Mathf.Clamp(hour, lo, hi);
             int start = startEnd ? hour : s.startingHour, end = startEnd ? s.endingHour : hour;
             if (start >= end || (start == s.startingHour && end == s.endingHour))

@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
     public sealed partial class TechLive
     {
         public const string FoundRow = "found:", NichesRow = "niches:", NicheRow = "niche:";
-        private const int PageGtm = 3;
+        private const int PageGtm = TechView.PageGtm;
 
         // What the founding flow has picked so far; a page that was left keeps it until the player founds or picks otherwise.
         private static string _foundPlace;

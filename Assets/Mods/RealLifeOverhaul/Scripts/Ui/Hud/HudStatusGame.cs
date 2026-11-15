@@ -188,14 +188,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            if (!Settings.Seasons)
+            if (!SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, SeasonBar.Taken))
             {
-                m.Season = OtherSeason(uis);
-                return;
-            }
-            if (!Settings.SeasonBar)
-            {
-                return;   // the option the old bar's season piece keeps to; the weather pill stays without the season line
+                return;   // off, or another mod's season already stands under the date (its piece stays visible over the HUD): never a second one, and never a copy of its words
             }
             int season = SeasonRules.SeasonOf(SeasonGame.Today, GameCalendar.DaysPerYear);
             m.Season = SeasonText.Title(season);
@@ -248,18 +243,6 @@ namespace RealLifeOverhaul.Ui
             }
             m.WeatherWords = UiText.T(key);
         }
-
-        // Another mod's season (AlcwareSeasons writes its own under the game's date) while the mod's seasons are off: its
-        // words as it wrote them, mirrored, never worked out.
-        private static string OtherSeason(UIs uis)
-        {
-            Transform date = uis != null && uis.topBar != null && uis.topBar.dateLabel != null ? uis.topBar.dateLabel.transform : null;
-            Transform other = date != null ? date.Find(OtherSeasonName) : null;
-            TMP_Text words = other != null && other.gameObject.activeSelf ? other.GetComponentInChildren<TMP_Text>(false) : null;
-            return words != null ? UiWidgets.Text(words) : null;
-        }
-
-        private const string OtherSeasonName = "Alcware season indicator";
 
         // The air's temperature over the season and the weather's words (Seasons/TemperatureRules: a figure for the eye from
         // the calendar, the day's roll, the hour and the weather; neither the game nor the mod keeps one), in the game's units.
@@ -380,7 +363,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
                 h = h * 31 + (save.notifications != null ? save.notifications.Count : 0) * 7 + _noticesSeen;
-                h = h * 31 + HudFps.Value + (Settings.SeasonBar ? 1 : 0) + (TimeHelper.use12h ? 2 : 0);
+                h = h * 31 + HudFps.Value + (Settings.SeasonBar ? 1 : 0) + (SeasonBar.Taken ? 4 : 0) + (TimeHelper.use12h ? 2 : 0);
                 h = h * 31 + (int)Weather.Sky * 16 + (int)Weather.Spell * 4 + (RainHelper.isRaining ? 2 : 0) + (SeasonDirector.Instance != null && SeasonDirector.Instance.Snowing ? 1 : 0);
                 TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;
                 h = h * 31 + (day != null && day.gameObject.activeSelf && day.text != null ? day.text.GetHashCode() : 0);

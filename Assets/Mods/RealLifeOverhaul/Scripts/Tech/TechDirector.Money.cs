@@ -676,6 +676,9 @@ namespace RealLifeOverhaul.Tech
             long lent = c != null && StartupMoney.Has(c) && Save != null ? StartupMoney.Lend(c, Save.Day) : 0;
             if (lent <= 0)
             {
+                // Said, not silent: a press that does nothing reads as a dead button.
+                Notifications.Show(NotificationType.Warning, c != null ? StartupMoney.LoanRefusal(c) ?? "reallife_vc_loan_no_cash" : "reallife_vc_acct_none",
+                    Data("firm", FirmOf(place)?.File.Name ?? string.Empty), 8f, null, null, true, false);
                 return false;
             }
             RefreshFloor(Save.Day);

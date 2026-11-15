@@ -328,6 +328,25 @@ namespace RealLifeOverhaul.Tech
 
         public static long LoanMax(Cap c) => c.Acc.Raised * MoneyCatalogue.LoanShare / 1000;
 
+        /// <summary>The key of the words for why a founder's loan cannot be had now, or null when it can: the loan is a share of what investors put in,
+        /// taken once, out of what the account holds.</summary>
+        public static string LoanRefusal(Cap c)
+        {
+            if (!Has(c))
+            {
+                return "reallife_vc_acct_none";
+            }
+            if (c.Acc.LoanUsed || c.Acc.Loan > 0)
+            {
+                return "reallife_vc_acct_loan_used";
+            }
+            if (LoanMax(c) <= 0)
+            {
+                return "reallife_vc_loan_no_raise";
+            }
+            return Balance(c) <= 0 ? "reallife_vc_loan_no_cash" : null;
+        }
+
         /// <summary>A director's loan, once: out of the account, owed back in 180 days with interest. Returns the cents lent.</summary>
         public static long Lend(Cap c, int day)
         {

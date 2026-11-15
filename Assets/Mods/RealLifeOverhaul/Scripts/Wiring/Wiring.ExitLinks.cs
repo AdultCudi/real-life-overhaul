@@ -34,7 +34,7 @@ namespace RealLifeOverhaul
                 ExitBridges.Banks = Banks;
                 ExitBridges.Listed = Listed;
                 ExitBridges.HandOver = HandOver;
-                ExitBridges.CanHandOver = CanHandOver;
+                ExitBridges.HandOverRefusal = HandOverRefusal;
                 ExitBridges.Resident = Resident;
                 ExitBridges.People = () => Settings.LivingPopulation && CityPopulation.Running;
                 ExitBridges.Practised = (skill, hours) => CareersDirector.Instance?.PractisedSkill(skill, hours);
@@ -170,17 +170,38 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static bool CanHandOver(string place)
+            // The text of why the business cannot change hands now: the sale of a business's own words for each thing in the way, so a refusal names the one that applies.
+            private static string HandOverRefusal(string place)
             {
                 try
                 {
                     BuildingRegistration reg = ServicesGame.Find(place);
-                    return reg == null || !ServicesGame.IsSellable(reg) || ServicesGame.Blocked(reg) == SaleBlock.None;
+                    if (reg == null || !ServicesGame.IsSellable(reg))
+                    {
+                        return null;
+                    }
+                    return RefusalKey(ServicesGame.Blocked(reg));
                 }
                 catch (Exception e)
                 {
-                    Fault("ExitLinks.CanHandOver", e);
-                    return false;
+                    Fault("ExitLinks.HandOverRefusal", e);
+                    return ExitBridges.GenericRefusal;
+                }
+            }
+
+            /// <summary>The key of the words for what stands in the way of a sale; null for nothing. Game-free, so the checks can hold every case to a text.</summary>
+            internal static string RefusalKey(SaleBlock block)
+            {
+                switch (block)
+                {
+                    case SaleBlock.None: return null;
+                    case SaleBlock.Inside: return "reallife_svc_refuse_inside";
+                    case SaleBlock.Vehicle: return "reallife_svc_refuse_vehicle";
+                    case SaleBlock.Gift: return "reallife_svc_refuse_gift";
+                    case SaleBlock.Busy: return "reallife_svc_refuse_busy";
+                    case SaleBlock.Stock: return "reallife_svc_refuse_stock";
+                    case SaleBlock.Lot: return "reallife_svc_refuse_lot";
+                    default: return "reallife_svc_refuse_not_business";
                 }
             }
 
