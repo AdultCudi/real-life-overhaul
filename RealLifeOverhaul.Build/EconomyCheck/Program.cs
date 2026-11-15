@@ -776,6 +776,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--cloud-takings")
+        {
+            CloudTakings();   // (a data centre's cloud takings in the company's sector, books and tape, and the centre's thirty days, alone: CloudTakingsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ai-training")
         {
             AiTraining();   // (an AI model's training against the compute behind it alone: AiTrainingChecks.cs)
@@ -1677,6 +1683,7 @@ internal static partial class Program
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();
         Infra2();
+        CloudTakings();   // a data centre's cloud takings in the company's sector, books and tape, and the centre's thirty days (CloudTakingsChecks.cs)
         AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();
         StartupMoneyChecks();

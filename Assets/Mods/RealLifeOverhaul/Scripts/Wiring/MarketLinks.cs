@@ -172,12 +172,12 @@ namespace RealLifeOverhaul
             // Yesterday's takings of the player's businesses, by the trade a listed company shares with them.
             private static void Trades(ref MarketEnv e)
             {
-                Books.Businesses(Businesses);
+                CompanyBooks.Businesses(Businesses);
                 e.Trades = 0;
                 for (int i = 0; i < Businesses.Count; i++)
                 {
                     BuildingRegistration r = Businesses[i];
-                    int trade = MarketInputs.TradeOf(r != null ? r.businessTypeName : null);
+                    int trade = CompanyBooks.TradeOf(r);
                     if (trade < 0)
                     {
                         continue;
