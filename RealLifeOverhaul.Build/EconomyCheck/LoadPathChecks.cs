@@ -166,5 +166,15 @@ internal static partial class Program
             "season bar: the stand-down's own path to the picture follows the seasons' master option only, never Alcware");
         Check(Between(look, "private bool StandDown()", "private void Looks(").Contains("reallife_season_alcware") && look.Contains("OtherMods.AlcwareSeasons.Loaded"),
             "season bar: the rest of the seasons keep standing down for Alcware (the notice and the log line are kept)");
+
+        // The HUD of the new interface: no second season beside Alcware's, and never a copy of its words (a copy went stale between day changes).
+        string hudGame = ModSource(@"Ui\Hud\HudStatusGame.cs");
+        string hudSeason = MethodText(hudGame, "private static void Season(UiStatusModel m, UIs uis)");
+        Check(hudSeason.Contains("SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, SeasonBar.Taken)") && !hudGame.Contains("OtherSeason") && !hudGame.Contains("Alcware season indicator"),
+            "season bar: the new interface's season pill gives way to Alcware's piece under the date by the same rule, and never mirrors its words");
+        Check(MethodText(hudGame, "public static int Signature()").Contains("SeasonBar.Taken"),
+            "season bar: the HUD's pill is built again when Alcware's piece appears or goes");
+        Check(MethodText(bar2, "public static void Show(string line, int season)").Contains("Look(DateLabel());") && bar2.Contains("private static Transform DateLabel()"),
+            "season bar: the once-a-second look keeps the answer to Alcware's piece up to date while the HUD holds the old piece down, one child lookup and no per-frame call");
     }
 }
