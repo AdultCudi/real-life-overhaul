@@ -1,4 +1,4 @@
-1.0.15
+1.0.16
 
 Fixed
-- On the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed.
+- The Exits button of a startup's page opened Go to market, so an offer to buy your firm could not be accepted. It now opens the offers, the old Tech app has the same Exits page, a refused sale names its reason, and the founder's loan says why when it cannot be taken. In the new BizMan schedule, dragging the end of a shift takes hold of the end you pressed, so a shift can be shortened, and a notice says why a shift will not go further. With the RLO interface on and Alcware Seasons showing its own season under the date, the status bar no longer shows a second, out of date copy of it. A data centre's cloud takings now count in your company's takings by sector, its books and its share price, and show in the data centre's last 30 days. A data centre whose internet connection is full now says how much it carries.
