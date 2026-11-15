@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Nada ainda.",
+  "reallife_changes_next": "Corrigido: o botão Saídas na página de uma startup abria Ir ao mercado, então uma oferta para comprar sua empresa não podia ser aceita. Agora ele abre as ofertas, o antigo app Tecnologia tem a mesma página de Saídas, uma venda recusada informa o motivo, e o empréstimo do fundador explica por que não pode ser concedido. Na nova Escala do BizMan, arrastar o fim de um turno segura a ponta que você apertou, então um turno pode ser encurtado, e um aviso diz por que um turno não pode ir mais longe. Com a interface RLO ligada e o Alcware Seasons mostrando a própria estação sob a data, a barra de status não mostra mais uma cópia velha e repetida dela. A nuvem de um data center agora conta no faturamento da sua empresa por setor, nos seus livros e no preço das ações, e aparece nos últimos 30 dias do data center. Um data center cuja conexão com a internet está cheia agora diz quanto ele carrega.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Suas empresas",
   "reallife_infra_note_limit_power": "{name} não pode receber mais racks: a rede elétrica está cheia.",
   "reallife_infra_note_limit_cooling": "{name} não pode receber mais racks: o sistema de refrigeração está cheio.",
-  "reallife_infra_note_limit_bandwidth": "{name} não pode receber mais racks: a conexão de internet está cheia.",
+  "reallife_infra_note_limit_bandwidth": "{name} não pode receber mais racks: a conexão com a internet está cheia, com {use} de {cap} Mbps em uso. Um rack usa {per} Mbps e um rack de IA {gpu}. Um plano mais rápido no app Contas levanta o limite.",
   "reallife_studio_review_p_design_0": "Um design esperto que não para de surpreender.",
   "reallife_studio_review_p_design_1": "Design inteligente com uma ideia central forte.",
   "reallife_studio_review_p_tech_0": "Roda sem travar e responde rápido.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} está listada a {price} antes do dinheiro. {amount} chegaram à empresa. Suas ações ficam bloqueadas por {days} dias.",
   "reallife_exit_note_locked": "Suas ações em {firm} ficam bloqueadas por mais {days} dias.",
   "reallife_exit_note_no_room": "Você não pode vender ações de {firm} agora. Os investidores de uma rodada só compram nas semanas depois dela.",
-  "reallife_exit_refuse_hand_over": "O negócio não pode ser passado agora. Saia do prédio e confira se nada do jogo ficou guardado nele.",
+  "reallife_exit_refuse_hand_over": "A venda não pôde ser concluída agora. Tente de novo pelo app Tecnologia quando o jogo não estiver no meio de alguma coisa.",
   "reallife_exit_refuse_not_ready": "A empresa não fatura o suficiente por mês para ir à bolsa.",
   "reallife_exit_test_offer": "Um comprador faz uma oferta pela minha primeira empresa",
   "reallife_exit_test_pricing": "O livro da minha primeira empresa está sendo precificado agora",
@@ -38004,5 +38004,9 @@
   "reallife_changes_100_14": "Na interface RLO, agora você pode escolher quais apps ficam na barra na parte de baixo da tela e em que ordem, e marcar seus apps favoritos em Todos os apps. Corrigido: uma empresa de tecnologia que uma atualização tinha refeito agora é devolvido o que você pagou duas vezes pelo treinamento e pelo trabalho.",
   "reallife_ui_bizman_uniform_role": "Função",
   "reallife_changes_100_15_title": "1.0.15",
-  "reallife_changes_100_15": "Corrigido: na interface da reforma, a página de Configurações de uma empresa agora tem as listas de funções e uniformes, para que um predefinido de uniforme possa ser dado a uma função e chegar aos funcionários, e o nome de um predefinido é mantido quando você clica fora dele, e não só no Enter. Um showroom de carros, ou qualquer local além dos primeiros 64 da empresa, agora pode receber um gerente na aba Gerentes do app Empresa, para que o gerente possa preencher o pedido de estoque de carros novos do showroom, e a interface da reforma informa quantos locais não aparecem na lista."
+  "reallife_changes_100_15": "Corrigido: na interface da reforma, a página de Configurações de uma empresa agora tem as listas de funções e uniformes, para que um predefinido de uniforme possa ser dado a uma função e chegar aos funcionários, e o nome de um predefinido é mantido quando você clica fora dele, e não só no Enter. Um showroom de carros, ou qualquer local além dos primeiros 64 da empresa, agora pode receber um gerente na aba Gerentes do app Empresa, para que o gerente possa preencher o pedido de estoque de carros novos do showroom, e a interface da reforma informa quantos locais não aparecem na lista.",
+  "reallife_ui_bizops_shift_stops": "Um turno termina onde o próximo começa, e os turnos da mesma pessoa em outras estações também contam. Mova esse primeiro.",
+  "reallife_tech_desk_exit_why_inside": "Uma empresa não pode mudar de mãos enquanto você está nela. Saia do prédio e depois aceite a oferta no app Tecnologia, em Captação, Saídas. A oferta vale até o último dia dela.",
+  "reallife_vc_loan_no_raise": "{firm} não captou nada de investidores, e o empréstimo do fundador é uma parte do que eles colocaram, então não há nada a pegar.",
+  "reallife_vc_loan_no_cash": "A conta de {firm} não tem nada para emprestar agora."
 }

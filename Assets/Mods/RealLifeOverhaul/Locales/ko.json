@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "테스트 실패: 도시의 사업체 순회가 건물이 없는 기록에 걸렸습니다. 로그에 어느 것인지 나옵니다.",
   "reallife_hire_test_orphan_off": "먼저 저장 파일을 불러오세요. 이 테스트는 Going Public 세션에서는 실행되지 않습니다.",
   "reallife_changes_next_title": "다음 버전",
-  "reallife_changes_next": "아직 없음.",
+  "reallife_changes_next": "수정: 스타트업 페이지의 엑시트 버튼이 시장 진입을 열어서, 회사를 사려는 제안을 받을 수 없었습니다. 이제는 제안을 열며, 예전 테크 앱에도 같은 엑시트 페이지가 있습니다. 거절된 매각은 그 이유를 알려 주고, 창업자의 대출은 받을 수 없을 때 이유를 알려 줍니다. 새 BizMan 일정에서는 근무 끝을 끌면 누른 쪽 끝을 잡으므로 근무를 줄일 수 있고, 알림이 근무가 더 이어지지 않는 이유를 알려 줍니다. RLO 인터페이스가 켜져 있고 Alcware Seasons가 날짜 아래에 자체 시즌을 보여 줄 때, 상태 표시줄에는 오래된 두 번째 사본이 더 이상 나오지 않습니다. 데이터 센터의 클라우드 매출은 이제 업종별 회사 매출, 장부, 주가에 포함되며 데이터 센터의 지난 30일 항목에 나타납니다. 인터넷 연결이 가득 찬 데이터 센터는 이제 얼마나 감당하는지 알려 줍니다.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "수정: 공공사업소를 가질 수 있는 건물이 모두 내 것일 때, 전기와 수도 계정은 같은 요금으로 공공요금 앱에서 전화로 신청하고 다시 연결하며, 알림이 그렇다고 말합니다. 건물이 비면 사업소가 다시 열리며 앱이 그곳을 알려 줍니다. 수정: 지원을 철회한 뒤 같은 직책에 다시 지원하면 커리어 앱이 철회된 지원을 열었고 면접에 닿을 수 없었습니다. 이제 지원마다 자기 줄이 있으며, 면접, 제안, 철회는 살아 있는 지원에 갑니다. 수정: 도시에 없는 건물을 가리키는 사업체 기록 (다른 모드가 남겨 둘 수 있음)이 있는 저장 파일은 불러올 때마다 테크 업계를 끄지 않습니다. 이제 모드는 도시의 사업체를 읽는 곳마다 그런 기록을 빼고, 주소를 로그에 한 번 적고, 그 기록은 아무것도 바꾸지 않습니다.",
   "reallife_co_mass_raise": "임금 인상하기",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "내 회사",
   "reallife_infra_note_limit_power": "{name}에는 랙을 더 놓을 수 없습니다. 전력 공급이 가득 찼습니다.",
   "reallife_infra_note_limit_cooling": "{name}에는 랙을 더 놓을 수 없습니다. 냉각 설비가 가득 찼습니다.",
-  "reallife_infra_note_limit_bandwidth": "{name}에는 랙을 더 놓을 수 없습니다. 인터넷 회선이 가득 찼습니다.",
+  "reallife_infra_note_limit_bandwidth": "{name}에는 랙을 더 들일 수 없습니다. 인터넷 연결이 가득 찼고, {cap} Mbps 중 {use} Mbps를 쓰고 있습니다. 랙 하나는 {per} Mbps를 쓰고, AI 랙은 {gpu}. 공과금 앱에서 더 빠른 요금제를 고르면 이 한도가 풀립니다.",
   "reallife_studio_review_p_design_0": "영리한 디자인이라 계속 놀라게 해요.",
   "reallife_studio_review_p_design_1": "탄탄한 핵심 아이디어가 돋보이는 똑똑한 디자인이에요.",
   "reallife_studio_review_p_tech_0": "부드럽게 돌아가고 반응도 날카로워요.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} 상장, 투자 전 가격 {price}. 회사에 {amount} 도달. 귀하의 주식은 {days}일 동안 묶입니다.",
   "reallife_exit_note_locked": "{firm}의 귀하 주식은 {days}일 더 묶여 있습니다.",
   "reallife_exit_note_no_room": "지금은 {firm}의 주식을 팔 수 없습니다. 라운드의 투자자는 그 뒤 몇 주 동안만 삽니다.",
-  "reallife_exit_refuse_hand_over": "지금은 사업체를 넘길 수 없습니다. 건물을 나가고, 게임 자체 물건이 그 안에 남아 있지 않은지 확인하세요.",
+  "reallife_exit_refuse_hand_over": "지금은 매각을 마칠 수 없었습니다. 게임이 다른 일을 하는 중이 아닐 때 테크 앱에서 다시 시도하세요.",
   "reallife_exit_refuse_not_ready": "회사가 시장에 나갈 만큼 월 매출을 충분히 내지 못합니다.",
   "reallife_exit_test_offer": "구매자가 내 첫 회사에 제안합니다",
   "reallife_exit_test_pricing": "내 첫 회사의 장부가 지금 가격을 매깁니다",
@@ -37974,5 +37974,9 @@
   "reallife_ui_apps_reset_done": "앱 바와 즐겨찾기가 기본값으로 돌아갔습니다.",
   "reallife_tech_credit_note": "업데이트로 {firm} 작업이 다시 이루어져서, 그 작업을 학습시키는 데 두 번째 비용을 내셨습니다. 환불 금액은 {amount}이며, 기술 업데이트 환불로 처리되었습니다. 은행 명세서를 확인해 주세요.",
   "reallife_tech_credit_note_many": "업데이트로 {firms} 등 기술 회사의 작업이 다시 이루어져서, 학습과 구축 비용을 두 번째로 내셨습니다. 환불 금액은 총 {amount}이며, 은행 명세서를 확인해 주세요.",
-  "reallife_ui_bizman_uniform_role": "역할"
+  "reallife_ui_bizman_uniform_role": "역할",
+  "reallife_ui_bizops_shift_stops": "근무는 다음 근무가 시작되는 곳에서 끝나며, 같은 사람이 다른 근무지에서 하는 근무도 함께 계산됩니다. 그 근무를 먼저 옮겨야 합니다.",
+  "reallife_tech_desk_exit_why_inside": "회사 안에 계시는 동안에는 회사의 주인을 바꿀 수 없습니다. 건물을 나간 뒤, 테크 앱의 자금 조달, 엑시트에서 제안을 수락하세요. 제안은 마지막 날까지 유효합니다.",
+  "reallife_vc_loan_no_raise": "{firm}은(는) 투자자에게서 아무것도 모으지 않았습니다. 창업자의 대출은 투자한 금액의 일부이므로 가져갈 것이 없습니다.",
+  "reallife_vc_loan_no_cash": "{firm}의 계좌에는 지금 빌려줄 금액이 없습니다."
 }

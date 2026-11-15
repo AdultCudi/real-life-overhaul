@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: the Exits button of a startup's page opened Go to market, so an offer to buy your firm could not be accepted. It now opens the offers, the old Tech app has the same Exits page, a refused sale names its reason, and the founder's loan says why when it cannot be taken. In the new BizMan schedule, dragging the end of a shift takes hold of the end you pressed, so a shift can be shortened, and a notice says why a shift will not go further. With the RLO interface on and Alcware Seasons showing its own season under the date, the status bar no longer shows a second, out of date copy of it. A data centre's cloud takings now count in your company's takings by sector, its books and its share price, and show in the data centre's last 30 days. A data centre whose internet connection is full now says how much it carries.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -34361,7 +34361,7 @@
   "reallife_ui_tech_your_firms": "Your firms",
   "reallife_infra_note_limit_power": "{name} cannot take more racks: its power feed is full.",
   "reallife_infra_note_limit_cooling": "{name} cannot take more racks: its cooling plant is full.",
-  "reallife_infra_note_limit_bandwidth": "{name} cannot take more racks: its internet connection is full.",
+  "reallife_infra_note_limit_bandwidth": "{name} cannot take more racks: its internet connection is full, {use} of {cap} Mbps used. A rack uses {per} Mbps and an AI rack {gpu}. A faster plan from the Utilities app lifts the limit.",
   "reallife_studio_review_p_design_0": "A clever design that keeps surprising.",
   "reallife_studio_review_p_design_1": "Smart design with a strong core idea.",
   "reallife_studio_review_p_tech_0": "Runs smoothly and feels sharp.",
@@ -35480,7 +35480,7 @@
   "reallife_exit_note_listed": "{firm} is listed at {price} before the money. {amount} reached the firm. Your shares are locked up for {days} days.",
   "reallife_exit_note_locked": "Your shares in {firm} are locked up for {days} more days.",
   "reallife_exit_note_no_room": "You cannot sell shares of {firm} now. The investors of a round buy only in the weeks after it.",
-  "reallife_exit_refuse_hand_over": "The business cannot be handed over now. Leave the building and check that nothing of the game's is kept in it.",
+  "reallife_exit_refuse_hand_over": "The sale could not be completed just now. Try again from the Tech app when the game is not in the middle of something.",
   "reallife_exit_refuse_not_ready": "The firm does not take enough a month to go to the market.",
   "reallife_exit_test_offer": "A buyer makes my first firm an offer",
   "reallife_exit_test_pricing": "My first firm's book is priced now",
@@ -38004,5 +38004,9 @@
   "reallife_changes_100_14": "On the RLO interface you can now choose which apps stand on the bar at the foot of the screen and in what order, and star your favourite apps in All apps. Fixed: a tech firm an update had made again is now paid back for the training and work you paid for a second time.",
   "reallife_ui_bizman_uniform_role": "Role",
   "reallife_changes_100_15_title": "1.0.15",
-  "reallife_changes_100_15": "Fixed: on the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed."
+  "reallife_changes_100_15": "Fixed: on the RLO interface, a business's Settings page now has the role and uniform lists, so a uniform preset can be given to a role and reach the staff, and a preset's name is kept when you click away from it as well as on Enter. A car showroom, or any place past the company's first 64, can now be given a manager on the Company app's Managers tab, so a manager can fill the showroom's standing order for new cars, and the RLO interface says how many places are not listed.",
+  "reallife_ui_bizops_shift_stops": "A shift stops where the next one starts, and the same person's shifts at other stations count too. Move that one first.",
+  "reallife_tech_desk_exit_why_inside": "A firm cannot change hands while you sit in it. Leave the building, then accept the offer in the Tech app under Funding, Exits. The offer stands until its last day.",
+  "reallife_vc_loan_no_raise": "{firm} has raised nothing from investors, and the founder's loan is a share of what they put in, so there is none to take.",
+  "reallife_vc_loan_no_cash": "{firm}'s account holds nothing to lend from just now."
 }
