@@ -17,6 +17,14 @@ namespace RealLifeOverhaul.Ui
         public string Car;           // the car they are seen in, in the game's words; null where nothing is on record (RivalsSeen)
         public string Found;         // where they tend to be found, in a few words; null for the same
         public int Age;
+        public bool HasFortune;      // the mod's fortune of the rival is known (not the player, not a defeated rival): the fields below are read
+        public int Buildings;        // buildings they own (the game's Real Estate Properties table)
+        public long Property;        // their market value
+        public long RentWeek;        // what they would rent for in a week at the market's rate
+        public long Fortune;         // the buildings' value and half a year of takings and rent (RivalFortuneRules)
+        public int FortunePlace;     // their place among the rivals by fortune, 1 the richest; 0 unknown
+        public int RivalPlace;       // their place among the rivals in the game's ranking, by weekly income
+        public int Rivals;           // rivals in both of those
     }
 
     /// <summary>One of the chosen rival's businesses as the game's table holds it.</summary>
@@ -77,7 +85,7 @@ namespace RealLifeOverhaul.Ui
     public static class RivalsViews
     {
         public const string App = "Rivals";
-        public const int ColumnRank = 0, ColumnChange = 4;
+        public const int ColumnRank = 0, ColumnChange = 5;
 
         /// <summary>The first day a game has: no chart shows an earlier one (the game's own chart labels the week before day 1 as Day 0 and Day -1).</summary>
         public const int FirstDay = 1;
@@ -215,13 +223,18 @@ namespace RealLifeOverhaul.Ui
             p.StatusTone = who.Defeated ? UiRole.Muted : who.You ? UiRole.Accent : UiRole.Danger;
             bool facts = chosen >= 0 && tab != UiRivals.League;
             bool seen = chosen >= 0 && !who.You && !who.Defeated && !string.IsNullOrEmpty(who.Car) && !string.IsNullOrEmpty(who.Found);
-            int n = (facts ? 1 : 0) + (seen ? 2 : 0), at = 0;
+            bool fortune = chosen >= 0 && who.HasFortune;
+            int n = (facts ? 1 : 0) + (seen ? 2 : 0) + (fortune ? FortuneFactCount(who) : 0), at = 0;
             p.FactLabels = new string[n];
             p.FactValues = new string[n];
             if (facts)
             {
                 p.FactLabels[at] = t("common_weekly_income", "Weekly Income");
                 p.FactValues[at++] = Money(v, who.WeeklyIncome);
+            }
+            if (fortune)
+            {
+                at = FortuneFacts(p, t, v, who, at);
             }
             if (seen)   // seen around the city: their car and where they tend to be found, both from their real figures (RivalsSeen)
             {
@@ -235,6 +248,27 @@ namespace RealLifeOverhaul.Ui
             m.ProfileActions = v.Contacts && chosen >= 0
                 ? new[] { new UiActionModel { Label = t("open_in_contacts", "Open in Contacts"), Kind = UiButtonKind.Secondary, Icon = UiIcon.AddressBook, Key = UiAction.Option } }
                 : new UiActionModel[0];
+        }
+
+        /// <summary>The facts a rival's fortune adds to its head: the buildings and their value, the rent, the fortune, and, where it differs from the game's, the place by fortune.</summary>
+        public static int FortuneFactCount(RivalEntry who) => 3 + (who.FortunePlace > 0 && who.FortunePlace != who.RivalPlace ? 1 : 0);
+
+        private static int FortuneFacts(UiProfileModel p, UiWords t, RivalsView v, RivalEntry who, int at)
+        {
+            p.FactLabels[at] = t("reallife_ui_rivals_property", "Buildings");
+            string owns = t(who.Buildings == 1 ? "reallife_ui_rivals_property_one" : "reallife_ui_rivals_property_many", "{count} worth {value}");
+            p.FactValues[at++] = StaffViews.Fill(owns, "count", Whole(who.Buildings), "value", Money(v, who.Property));
+            p.FactLabels[at] = t("reallife_ui_rivals_rent", "Their rent a week");
+            p.FactValues[at++] = Money(v, who.RentWeek);
+            p.FactLabels[at] = t("reallife_ui_rivals_fortune", "Fortune");
+            p.FactValues[at++] = Money(v, who.Fortune);
+            if (who.FortunePlace > 0 && who.FortunePlace != who.RivalPlace)
+            {
+                p.FactLabels[at] = t("reallife_ui_rivals_by_fortune", "By fortune");
+                string by = t("reallife_ui_rivals_by_fortune_value", "{place} of {count}, the game's {game}");
+                p.FactValues[at++] = StaffViews.Fill(by, "place", Whole(who.FortunePlace), "count", Whole(who.Rivals), "game", Whole(who.RivalPlace));
+            }
+            return at;
         }
 
         /// <summary>A place's stars, by halves: the top of the league five, the foot one half, a defeated rival none.</summary>
@@ -262,6 +296,7 @@ namespace RealLifeOverhaul.Ui
                 new UiDataColumn { Title = t("common_name", "Name"), Kind = UiCellKind.Person },
                 new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Money, Width = 136f },
                 new UiDataColumn { Title = t("common_businesses", "Businesses"), Kind = UiCellKind.Figure, Width = 104f },
+                new UiDataColumn { Title = t("reallife_ui_rivals_fortune", "Fortune"), Kind = UiCellKind.Money, Width = 128f },
                 new UiDataColumn { Title = WeekTitle(t, v.Today), Kind = UiCellKind.Trend, Width = 104f },
             };
             table.Rows = new UiDataRow[v.League.Length];
@@ -275,11 +310,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[]
                     {
-                        e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses),
+                        e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses), e.HasFortune ? Money(v, e.Fortune) : string.Empty,
                         float.IsNaN(change) ? string.Empty : PersonaViews.Signed((int)Math.Round(change * 100f))
                     },
-                    Values = new[] { -1, -1, -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change) },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger },
+                    Values = new[] { -1, -1, -1, -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change) },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger },
                     Sub = e.Defeated ? t("reallife_ui_rivals_defeated", "Defeated") : e.You ? t("reallife_ui_rivals_you", "You") : e.District,
                     Hue = UiColour.HueOf(e.Name ?? string.Empty), Ring = UiRole.None
                 };

@@ -16,12 +16,12 @@ namespace RealLifeOverhaul.Rivals
             Features.Add("rivals", "reallife_meta_title_rivals")
                 .Group("reallife_rival_header")
                 .About("reallife_guide_rivals_about").Help("reallife_guide_rivals")
-                .Owns(Settings.RivalsId, Settings.RivalsStrengthId, Settings.RivalsFirstId)
+                .Owns(Settings.RivalsId, Settings.RivalsStrengthId, Settings.RivalsFirstId, Settings.RivalsHoldingsId)
                 .Preset(Settings.RivalsStrengthId, RivalCatalogue.Gentle, RivalCatalogue.Hard, RivalCatalogue.Ruthless)   // (Normal is its default)
-                .Data(RivalStore.Key, RivalStore.TestKey)
+                .Data(RivalStore.Key, RivalStore.TestKey, Economy.RivalHoldingsStore.Key)
                 .Test("reallife_rival_test_property", "reallife_rival_test_outlet", "reallife_rival_test_poach", "reallife_rival_test_stake", "reallife_rival_test_bid",
                     "reallife_rival_test_lobby", "reallife_rival_test_suit", "reallife_rival_test_press", "reallife_rival_test_next", "reallife_rival_test_forward",
-                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first",
+                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first", "reallife_rival_test_holdings",
                     "reallife_testshops_all", "reallife_testshops_nearest")
                 .Fact("rival_tens", () => Money(RivalRules.FirstFrom(Settings.RivalsFirst)))   // (the option's amount: the Guide says when they come in this game)
                 .Fact("rival_hundreds", () => Money(RivalCatalogue.TierFrom[2]))
@@ -74,6 +74,10 @@ namespace RealLifeOverhaul.Rivals
                 .Fact("rival_takeover_premium", () => (RivalCatalogue.TakeoverPremiumBp / 100).ToString(Inv) + "%")
                 .Fact("rival_breakup", () => Permille(RivalCatalogue.BreakUpPermille))
                 .Fact("rival_breakup_days", () => Whole(RivalCatalogue.BreakUpDays))
+                .Fact("rival_holdings_least", () => Whole(Economy.RivalHoldingsRules.Least))
+                .Fact("rival_holdings_week", () => Whole(7 * Economy.RivalHoldingsRules.SalesPerDay))
+                .Fact("rival_holdings_days", () => Whole(Economy.RivalHoldingsRules.ListedDays))
+                .Fact("rival_fortune_weeks", () => Whole(RivalFortuneRules.PurseWeeks))
                 .ResetData(() => RivalDirector.Instance?.Forget());   // the director opens the rivals afresh from the (now empty) save on its next second
         }
 

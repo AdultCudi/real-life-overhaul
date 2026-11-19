@@ -20,6 +20,7 @@ health	reallife_guide_health	illness, the doctor, hospital stays, health plans a
 parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
 loyalty	reallife_guide_loyalty	loyalty cards for the player's shops
 suppliers	reallife_guide_suppliers	a choice of suppliers, fixed price contracts, late or short deliveries
+rivals-property	reallife_guide_rivals	the game's rivals' buildings by their place in the ranking, and their fortune
 rivals-seen	reallife_guide_rivals_seen	rivals seen around the city, their cars, the greeting and the sightings
 dynasty	reallife_guide_dynasty	the will, estate tax, retiring and the heir who carries on
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
