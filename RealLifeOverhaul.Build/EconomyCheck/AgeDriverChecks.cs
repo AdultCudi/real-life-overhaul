@@ -23,8 +23,10 @@ internal static partial class Program
     {
         TalkAgeRuleChecks();
         TalkAgeSourceChecks();
+        TalkAgeMoreChecks();
         DriverRuleChecks();
         DriverSourceChecks();
+        DriverOldChecks();
         AgeDriverTextChecks();
     }
 
@@ -84,6 +86,29 @@ internal static partial class Program
             "age header: read from the mod's own data, never from the figure's model, and nothing searched or run a frame");
     }
 
+
+    // The other talks with a person: the partner's (face to face and on the phone) and the flatmate's.
+    private static void TalkAgeMoreChecks()
+    {
+        string family = ModSource(@"Family\FamilyTalk.cs"), phone = ModSource(@"Family\FamilyPhone.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
+        string talk = ModSource(@"Home\Roommates\RoommateTalk.cs"), call = ModSource(@"Home\Roommates\RoommatePhone.cs");
+        string head = MemberText(family, "internal static void PartnerHead(out string who, out string age)");
+        Check(family.Contains("class FamilyDialog : Dialog, ITalkAge") && phone.Contains("class PartnerDialog : Dialog, ITalkAge")
+              && family.Contains("_aboutPartner = partner || with != null;") && family.Contains("using var head = TalkAgeGame.Making(this);") && phone.Contains("using var head = TalkAgeGame.Making(this);"),
+            "age header: the family's face-to-face talk with the partner (a character beside them, a wedding, a ring, a date) and the partner's call are headed with the partner's age");
+        Check(head.Contains("TalkAgeGame.Partner()") && head.Contains("TalkAgeGame.Exact(Partner.LookAge)") && links.Contains("TalkAgeGame.Partner = PartnerAgeWords;") && links.Contains("TalkAgeGame.Partner = null;")
+              && links.Contains("SocialTalk.AgeWords(p)"),
+            "age header: the partner's age is People's through the family bridge, and their look's age where Social keeps none");
+        foreach (string file in new[] { @"Family\WeddingDay.cs", @"Family\Errands.cs" })
+        {
+            Check(ModSource(file).Contains("partner: true"), "age header: the talks about the partner in " + file + " are marked as with them");
+        }
+        Check(talk.Contains("class RoommateDialog : Dialog, ITalkAge") && call.Contains("class RoommateCallDialog : Dialog, ITalkAge")
+              && talk.Contains("internal static Flatmate Mate => RoommateDirector.Instance?.State?.Mate;") && talk.Contains("TalkAgeGame.Exact(RoommateTalk.Mate != null ? RoommateTalk.Mate.Person.Age : 0)"),
+            "age header: the flatmate's call and talk at the flat are headed with the age the mod keeps for them");
+        Check(TalkAgeRules.BandKey(1) == "reallife_talk_age_teens", "age header: a rolled age under the adults' is still a band, never nothing");
+    }
+
     // ------------------------------------------------------------------------------------------------- the driver
 
     private static void DriverRuleChecks()
@@ -138,8 +163,24 @@ internal static partial class Program
         Check(hud.Contains("\"reallife_driver_tool_call\"") && hud.Contains("\"reallife_driver_tool_choose\"") && hud.Contains("\"reallife_driver_tool_none\"") && hud.Contains("\"reallife_driver_tool_coming\"")
               && hud.Contains("\"reallife_driver_tool_waiting\"") && hud.Contains("\"reallife_driver_tool_driving\""),
             "private driver button: its six hover texts are in the HUD screen's key list");
-        Check(!ModSource(@"Core\GameUi\GameBar.cs").Contains("privateDriver") && ModSource(@"Ui\HudScreens\HudTopGame.cs").Contains("HudDriver"),
-            "private driver button: only the RLO interface's bar has it; the old interface draws no buttons of its own on the game's top bar, so the game's phone stays its way");
+        Check(ModSource(@"Ui\HudScreens\HudTopGame.cs").Contains("HudDriver"), "private driver button: the kit's bar draws it from the same reads as the old bar's");
+    }
+
+
+    private static void DriverOldChecks()
+    {
+        string old = ModSource(@"Ui\HudScreens\DriverButton.cs"), director = ModSource(@"Ui\UiDirector.cs"), driver = ModSource(@"Ui\HudScreens\HudDriver.cs");
+        string tick = MemberText(old, "public static void Tick()"), build = MemberText(old, "private static bool Build()");
+        Check(director.Contains("DriverButton.Tick();") && director.Contains("DriverButton.Remove();") && tick.Contains("HudLive.Live") && tick.Contains("HudDriver.Look(out DriverState state, out bool open)")
+              && tick.Contains("_failed = true;"),
+            "private driver button: the game's own top bar has it too, on the interface director's slow tick, standing down while the kit's HUD is over the bar, gone with the city, a fault removes it");
+        Check(build.Contains("UiClone.Need(row, \"HelpButton\"") && build.Contains("UiClone.StripGameScripts(copy, m => m is BasicTooltip)") && build.Contains("UiClone.Rewire(copy.transform, Pressed)")
+              && build.Contains("TMPro.TMP_Text") && build.Contains("vehiclePOIIcon") && old.Contains("if (_piece == null && !Build())"),
+            "private driver button: built once from the bar's help button, the control and its picture only (no label), pressed through one listener, with the game's own car marker");
+        Check(old.Contains("HudDriver.Press()") && old.Contains("HudDriverRules.NoteKey(state, _cars)") && old.Contains("Keys.Label(KeyAction.Driver)") && old.Contains("HudDriver.Frame();")
+              && old.Contains("_keys.enabled = shows;") && driver.Contains("_pressedFrame == Time.frameCount")
+              && !tick.Contains("Find(") && !tick.Contains("FindObject") && !tick.Contains("GetComponentsIn"),
+            "private driver button: the same press, state, tooltip and key as the kit's, the key read only while it shows and answered once a frame, nothing searched on the tick");
     }
 
     // ------------------------------------------------------------------------------------------------- the texts

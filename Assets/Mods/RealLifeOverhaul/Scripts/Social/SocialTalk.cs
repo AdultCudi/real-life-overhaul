@@ -241,7 +241,7 @@ namespace RealLifeOverhaul
             int years = AgeOf(person);
             if (TalkAgeRules.Exact(person.Met, false))
             {
-                return SocialLife.T(TalkAgeRules.ExactKey, new Dictionary<string, string>(1) { { "age", years.ToString(System.Globalization.CultureInfo.InvariantCulture) } });
+                return TalkAgeGame.Exact(years);
             }
             string band = TalkAgeRules.BandKey(years);
             return band != null ? band.GetLocalization() : null;

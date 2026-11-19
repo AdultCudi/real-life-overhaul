@@ -49,6 +49,9 @@ namespace RealLifeOverhaul.Roommates
             return true;
         }
 
+        /// <summary>The flatmate who lives in, the person a talk with the Roommate contact or at the flat is with; null while nobody does.</summary>
+        internal static Flatmate Mate => RoommateDirector.Instance?.State?.Mate;
+
         private static bool OnPhone => DialogController.current != null && DialogController.current.dialogType == DialogType.PhoneCall;
 
         /// <summary>A last line: on the phone the call ends by itself, face to face there is a button to leave.</summary>
@@ -242,10 +245,15 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>The face-to-face conversation: whatever <see cref="RoommateTalk.Open"/> was given.</summary>
-    public sealed class RoommateDialog : Dialog
+    public sealed class RoommateDialog : Dialog, ITalkAge
     {
+        public string TalkWho => RoommateTalk.Mate?.Person.Name;
+
+        public string TalkAge => TalkAgeGame.Exact(RoommateTalk.Mate != null ? RoommateTalk.Mate.Person.Age : 0);
+
         public RoommateDialog()
         {
+            using var head = TalkAgeGame.Making(this);   // the first page is headed with their age too
             npcNameKey = RoommatePhone.ContactId;
             DialogController.current.ShowEntry(Guard.Entry(RoommateTalk.TakeFirst()));
         }

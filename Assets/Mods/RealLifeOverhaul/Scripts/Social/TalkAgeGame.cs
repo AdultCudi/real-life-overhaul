@@ -48,6 +48,15 @@ namespace RealLifeOverhaul
             return default;
         }
 
+        /// <summary>Set by Wiring/FamilyLinks: the partner's age words as People keeps them (null while Social keeps no partner); family life reads it for its talks with the partner.</summary>
+        public static Func<string> Partner;
+
+        /// <summary>"34 years old": an exact age as words, for a person the player knows.</summary>
+        public static string Exact(int years)
+        {
+            return years > 0 ? SocialLife.T(TalkAgeRules.ExactKey, new Dictionary<string, string>(1) { { "age", years.ToString(System.Globalization.CultureInfo.InvariantCulture) } }) : null;
+        }
+
         /// <summary>The age words of the talk the game runs now, null when it is not a talk with a person.</summary>
         public static string Of(object dialog)
         {
