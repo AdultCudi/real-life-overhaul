@@ -308,7 +308,7 @@ internal static partial class Program
         Check(pay, "police ladder: every rung pays more than the one below");
         Check(publicScale, "police ladder: the pay is on the nurses' public scale, never under a nurse's rung and never over the nurses' top by more than a tenth");
         Check(climbs, "police ladder: each rung asks more points and no fewer days than the one below");
-        Check(p.Ranks[0].Pay == nurse.Ranks[0].Pay, "police ladder: a cadet starts on what a care worker starts on (" + p.Ranks[0].Pay / 100 + ")");
+        Check(p.Ranks[0].Pay == 80 * 100 && p.Ranks[0].Pay > nurse.Ranks[0].Pay, "police ladder: a cadet starts at the pay of a rung after a diploma, a little above what a care worker starts on (" + p.Ranks[0].Pay / 100 + ")");
         Check(p.Hour + p.Hours <= 22 && p.Hours >= 6 && p.Hour == PoliceRules.Hour && p.Hours == PoliceRules.Hours && p.Days == (2 | 4 | 8 | 16 | 32),
             "police ladder: five days a week, Tuesday to Saturday, on the afternoon shift inside the day");
         Check(ProRules.Wage(p.Ranks[0].Pay, p.Hours * 60) == (long)p.Ranks[0].Pay * 8, "police pay: a whole shift pays the rank's hour eight times, by the careers' own wage");

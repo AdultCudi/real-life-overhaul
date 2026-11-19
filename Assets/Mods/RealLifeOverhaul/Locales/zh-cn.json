@@ -38326,7 +38326,7 @@
   "reallife_estate_block_fee_rate": "你的费用",
   "reallife_estate_block_earned": "累计赚取的费用",
   "reallife_estate_block_missed": "租户连续{count}个月，共{most}个月，未达到业主的标准。",
-  "reallife_estate_block_held_what": "每月结转时，你可获得所收租金的一部分；你每重新出租一套公寓，还可获得{days}天的租金。月度满意度低于业主标准，将扣除该月费用的{share}，连续多次则会终止管理。",
+  "reallife_estate_block_held_what": "每月结转时，你可获得所收租金的一部分。你每重新出租一套公寓，还可获得{days}天的租金。月度满意度低于业主标准，将扣除该月费用的{share}，连续多次则会终止管理。",
   "reallife_estate_btn_pitch": "按其要价竞标",
   "reallife_estate_btn_undercut": "压价竞标",
   "reallife_estate_btn_withdraw": "撤回竞标",

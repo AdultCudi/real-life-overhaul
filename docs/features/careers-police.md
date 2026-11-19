@@ -64,7 +64,7 @@ Every constant is in `PoliceRules` with its unit; the checks (`EconomyCheck --po
 | Rating | starts at 60 and stays within 0 to 100: a success +6 and +2 per danger, backup +2 (+3 at a risky or deadly call), a ticket +3, a failure -5 (-3 at a risky or deadly call), an injury -2, backing off -8 and 2 less per danger | an injury is not the officer's fault; walking away from a deadly call is nearly free |
 | Commendation | a talk, arrest or first aid that settles a risky or deadly call; a shift ended at 90 or more with something answered | never for backup |
 | Review | the last six ratings against 60, one point per 6, at most 8 either way | the careers' own review does the promoting |
-| Pay | 70, 120, 170, 220, 290 an hour at the start's prices; a public post pays 90 percent of that | the nurses' scale (70, 120, 165, 215, 285) |
+| Pay | 80, 120, 170, 220, 290 an hour at the start's prices; a public post pays 90 percent of that | the nurses' scale (70, 120, 165, 215, 285), but the cadet starts at 80 because the rung asks a diploma and every rung after a diploma pays about the courier's top level (EconomyCheck's career pay) |
 | Skills | talking on relationships, arresting on guarding, first aid on first aid; the ranks are judged on guarding and relationships | no new skill |
 | Fatal | Permadeath's `DutyFrom` 3 (a deadly call), `DutyOdds` 0.06 once warned | rarer than a mugging's 0.10 |
 | Clock | a look counts up to 12 game minutes; more is a skip and ends the shift | the game's fastest speed is under that a second |

@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The Driver key, each frame while the interface is on; it answers only while the bar shows the button.</summary>
         internal static void Frame()
         {
-            if (!_shown || !UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Driver)) || !Keys.Down(KeyAction.Driver) || _pressedFrame == Time.frameCount)
+            if (!_shown || !UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Driver)) || TypingNow.Now || !Keys.Down(KeyAction.Driver) || _pressedFrame == Time.frameCount)
             {
                 return;
             }

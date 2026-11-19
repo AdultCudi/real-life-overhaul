@@ -617,7 +617,7 @@ internal static partial class Program
         string founding = ModSource(@"Tech\TechDirector.Founding.cs"), day = ModSource(@"Tech\TechDirector.Firms.cs"), cloud = ModSource(@"Tech\TechDirector.Infra.cs"), infraRules = ModSource(@"Tech\Infra\InfraRules.cs"), views = ModSource(@"Tech\Firms\ProductViews.cs");
         // only the rules name a feature's cost: a page that works out the points to go itself (the cost less the work, in whatever shape) was below zero while a model waited for its training
         var named = new Regex(@"\bFeatureCost\s*\(", RegexOptions.CultureInvariant);
-        var rulesOnly = new HashSet<string> { "FirmsRules.cs", "SectorRules.Rivals.cs", "RivalryRules.Reactions.cs", "TechDirector.FoundDesk.cs" };
+        var rulesOnly = new HashSet<string> { "FirmsRules.cs", "SectorRules.Rivals.cs", "RivalryRules.Reactions.cs", "TechDirector.FoundDesk.cs", "SegmentRules.cs" };
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts")), stray = "none";
         int scanned = 0, users = 0;
         foreach (string folder in new[] { "Tech", System.IO.Path.Combine("Ui", "Tech") })
