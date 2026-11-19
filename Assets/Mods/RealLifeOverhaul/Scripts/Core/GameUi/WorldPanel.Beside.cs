@@ -80,6 +80,18 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        // The city's boxes let go with the city: a fault that stood the step aside down is a fault of that city's interface.
+        private static void ForgetBox()
+        {
+            _overlay = null;
+            _box = null;
+            _resume = null;
+            _resumeBox = null;
+            _resumeCanvas = null;
+            _heldFor = null;
+            _besideOff = false;
+        }
+
         // Found again when the city, and so its interface, is another one.
         private static bool Find()
         {

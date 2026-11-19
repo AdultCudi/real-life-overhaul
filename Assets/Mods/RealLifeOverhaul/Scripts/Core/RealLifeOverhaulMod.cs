@@ -2085,6 +2085,8 @@ namespace RealLifeOverhaul
             }
             _running = null;
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
+            Guard.Step("the RLO interface", () => Ui.UiDirector.CityEnds("the city is unloading"));   // the game's screens back as found while they stand, every kit ready for the next city
+            Guard.Step("the panels over places", () => GameUi.WorldPanel.CityEnds());   // the game's box and its flag, which the scenes' unloading does not clear
             Guard.Step("the wiring", () => Wiring.Disconnect());
             Guard.Step("Uptown's pedestrians' zones", () => Uptown.GroundDirector.Unloading("the city is unloading"));   // their people back to the game's pools while the pools stand
             Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
