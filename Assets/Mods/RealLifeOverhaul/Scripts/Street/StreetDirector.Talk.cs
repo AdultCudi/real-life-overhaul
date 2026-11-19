@@ -465,6 +465,28 @@ namespace RealLifeOverhaul.Street
             return known >= 0 ? known : c.Who.Age;
         }
 
+        /// <summary>
+        /// Their age for the talk's header: the exact age once the player knows them or has asked (the figure asking gives, and the People page
+        /// shows), else the band their age falls in. Null with no talk. A string made when a page is shown, never per frame.
+        /// </summary>
+        public string AgeWords()
+        {
+            StreetChat c = _chat;
+            if (c == null || c.Who == null || c.Memo == null)
+            {
+                return null;
+            }
+            int cast = c.Memo.Cast;
+            bool known = cast >= 0 && StreetBridges.AgeOf != null && StreetBridges.AgeOf(cast) >= 0;
+            int years = AgeShown(c);
+            if (TalkAgeRules.Exact(known, c.Memo.AgeTold))
+            {
+                return StreetText.T(TalkAgeRules.ExactKey, new Dictionary<string, string>(1) { { "age", years.ToString(System.Globalization.CultureInfo.InvariantCulture) } });
+            }
+            string band = TalkAgeRules.BandKey(years);
+            return band != null ? band.GetLocalization() : null;
+        }
+
         private DialogEntry Choose(StreetAsk ask)
         {
             if (_chat == null || _pending || _typing)
@@ -635,10 +657,18 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>The conversation in the game's dialogue panel; the game's factory makes it when the panel opens.</summary>
-    public sealed class StreetDialog : Dialog
+    public sealed class StreetDialog : Dialog, ITalkAge
     {
+        private readonly StreetDirector _director;
+
+        public string TalkWho => _director != null ? "reallife_street_stranger".GetLocalization() : null;
+
+        public string TalkAge => _director != null ? _director.AgeWords() : null;
+
         public StreetDialog(StreetDirector director)
         {
+            _director = director;
+            using var talk = TalkAgeGame.Making(this);   // the first page is headed with their age too
             npcNameKey = "reallife_street_stranger";
             DialogEntry first = director != null ? director.First() : null;
             DialogController.current.ShowEntry(Guard.Entry(first ?? new DialogEntry { messageData = "reallife_street_stranger".Localize(), OnCancel = () => DialogController.current.CancelDialog() }));

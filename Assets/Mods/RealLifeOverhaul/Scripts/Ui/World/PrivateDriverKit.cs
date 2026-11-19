@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class PrivateDriverScreen : WorldToolScreen, IUiScreen
     {
         internal const string Body = "Body", Headline = "Headline";
-        private const float Near = 20f;           // m: the car is "waiting" this close to the player
+        private const float Near = HudDriverRules.Near;   // m: the car is "waiting" this close to the player (the bar's driver button reads the same)
         private const int MostCars = UiToolPanel.MostLines - 3;
 
         private readonly SmartphonePrivateDriverUI _ui;
@@ -288,7 +288,7 @@ namespace RealLifeOverhaul.Ui
             return service != null && !string.IsNullOrEmpty(service.businessName) ? service.businessName : UiText.T("ba:private_driver");
         }
 
-        private static string CarName(VehicleInstance v) => v == null ? string.Empty : WorldHost.Plain(UiText.T(v.vehicleTypeName)) ?? v.vehicleTypeName;
+        internal static string CarName(VehicleInstance v) => v == null ? string.Empty : WorldHost.Plain(UiText.T(v.vehicleTypeName)) ?? v.vehicleTypeName;
 
         // The car's own picture, as BizMan shows a dealer's cars, or the game's car marker where it has none.
         private static string CarPicture(VehicleInstance v)

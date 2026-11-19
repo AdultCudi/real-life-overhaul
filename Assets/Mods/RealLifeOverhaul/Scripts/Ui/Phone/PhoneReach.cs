@@ -220,6 +220,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 PhoneReach.Frame();
+                HudDriver.Frame();   // the bar's driver button has a key too, read in the same guarded frame
             }
             catch (Exception e)
             {

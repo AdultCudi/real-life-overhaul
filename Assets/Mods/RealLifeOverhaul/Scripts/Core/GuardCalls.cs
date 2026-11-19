@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
             }
             Calls.Pages.Add(entry, Calls.Mark);
             TalkLogGame.Page(entry);   // what a contact's call says is kept for the Contacts thread (caught inside; a page is shown once)
+            TalkAgeGame.Mark(entry);   // a talk with a person is headed with who they are and how old (caught inside)
             if (Ours(entry.OnConfirm))
             {
                 entry.OnConfirm = new Answer(entry.OnConfirm).Give;
