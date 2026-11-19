@@ -143,6 +143,23 @@ namespace RealLifeOverhaul.Economy
                 .Fact("duty_city_come", () => Whole(EstateCatalogue.CityDays));
         }
 
+        /// <summary>The figures the Guide's page "Flats and studios" prints.</summary>
+        public static void AddFlatFacts(Feature f)
+        {
+            f.Fact("flat_lease", () => EstateText.Share(FlatCatalogue.LeaseShare))
+                .Fact("flat_service", () => EstateText.Share(FlatCatalogue.ServiceShare))
+                .Fact("flat_min_units", () => Whole(FlatCatalogue.MinUnits))
+                .Fact("flat_window", () => Whole(FlatCatalogue.ListWindow))
+                .Fact("flat_listed_most", () => Whole(FlatCatalogue.ListedMost))
+                .Fact("flat_held_most", () => Whole(FlatCatalogue.HeldMost))
+                .Fact("flat_deposit_low", () => Whole(ProductCatalogue.HomeDepositLeast) + "%")
+                .Fact("flat_deposit_high", () => Whole(ProductCatalogue.HomeDepositMost) + "%")
+                .Fact("flat_term_low", () => Whole(ProductCatalogue.HomeTermLeast))
+                .Fact("flat_term_high", () => Whole(ProductCatalogue.HomeTermMost))
+                .Fact("flat_fee", () => EstateText.Share(EstateCatalogue.AgentFee))
+                .Fact("flat_studio_part", () => EstateText.Share(FlatCatalogue.KindWeight[0] * 1000 / FlatCatalogue.KindWeight[FlatCatalogue.Kinds - 1]));
+        }
+
         // A shop building let in a steady economy, averaged over the seeds.
         private static int Let(int income)
         {

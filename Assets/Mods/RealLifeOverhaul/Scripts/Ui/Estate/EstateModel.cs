@@ -1,4 +1,5 @@
 using System;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -246,6 +247,8 @@ namespace RealLifeOverhaul.Ui
         public int Tab;
         public string Pick;             // a row's id, its kind before the colon: "unt:" a unit, "own:" a building, "app:" an applicant, "call:", "mkt:", "htl:", "ins:", "hot:", "car:", "add:", "lot:"
         public string From;             // the page a unit was opened from, so Back returns there
+        public int FlatPercent = ProductCatalogue.HomeDepositLeast;   // the deposit showing on a flat for sale, per cent
+        public int FlatTerm = ProductCatalogue.HomeTermLeast;         // ...and the mortgage's term, days
         public int ListShare = 2;       // the asking price showing on a building's page, a place in the shares
         public int ToUse = -1;          // the use showing for a change of use
         public int RentUse;             // the rents view's kind of rent: 0 flats, 1 shops, 2 offices

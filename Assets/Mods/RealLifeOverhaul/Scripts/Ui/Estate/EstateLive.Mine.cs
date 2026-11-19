@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Ui
                     Market();
                     return;
                 }
+                if (pick != null && pick.StartsWith(FlatPick, StringComparison.Ordinal) && FlatPage())
+                {
+                    return;   // a flat held, on the Mine tab; a listing is the Market tab's
+                }
                 if (pick != null && pick.StartsWith("lot:", StringComparison.Ordinal))
                 {
                     _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabHire);
@@ -42,6 +46,14 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 string place = Picked(pick, "own:");
+                if (place != null && FlatRules.IsKey(place))
+                {
+                    _v.Pick = FlatPick + place;   // a flat is looked after on its own page
+                    if (FlatPage())
+                    {
+                        return;
+                    }
+                }
                 h = place != null ? _s.Holding(place) : null;
                 if (h != null)
                 {
@@ -182,6 +194,7 @@ namespace RealLifeOverhaul.Ui
                         0, EstateText.T("reallife_estate_kind_lot"), UiRole.None, EstateTables.OwnLot, YearCard(_s.Hire.TakingsYear, _s.Hire.CostsYear, EstateGame.NameOf(_s.Hire.Lot))));
                     keys.Add("lot:");
                 }
+                FlatHeld(rows, keys);
                 SpaceHeld(rows, keys);
                 RollTotals roll = EstateFigures.Roll(lines, _monthDays);
                 long due = roll.Due, owed = roll.Owed, empty = roll.EmptyAsking;
@@ -201,7 +214,8 @@ namespace RealLifeOverhaul.Ui
                 t.EmptyIcon = UiIcon.Home;
                 _m.Table = t;
                 _m.RowKeys = keys.ToArray();
-                Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind") },
+                Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind",
+                    "reallife_flat_kind_filter") },
                     null, EstateText.T("reallife_estate_empty_mine"));
                 _m.Notes = new[] { EstateText.T("reallife_ui_estate_note_mine"), EstateText.T("reallife_ui_estate_note_mine_game") };
                 // What is due is the let flats' rent, so the foot shows it while flats are among the rows shown, and says nothing over hotels, the lot and spaces alone.

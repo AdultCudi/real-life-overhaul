@@ -61,6 +61,7 @@ side-jobs	reallife_guide_side_jobs	taxi and delivery shifts in the player's own 
 justice	reallife_guide_justice	courts and prison
 estate-agency	reallife_guide_economy_estate	the estate agency's blocks of other owners' flats and the player's own buildings under it
 landlord	reallife_guide_economy_estate_duties	a landlord's duties
+flats	reallife_guide_economy_estate_flats	flats and studios to buy as a home
 landmarks	reallife_guide_landmarks	Uptown's landmarks
 law	reallife_guide_law	police stations and custody
 leisure	reallife_guide_leisure	leisure

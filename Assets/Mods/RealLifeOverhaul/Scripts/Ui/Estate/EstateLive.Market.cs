@@ -39,6 +39,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     return;   // a building's car park (ParkSpaces)
                 }
+                if (FlatPage())
+                {
+                    return;   // a unit for sale (Flats)
+                }
                 _v.Pick = null;
                 GameInstance save = SaveGameManager.Current;
                 var rows = new List<UiDataRow>(64);
@@ -92,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                     keys.Add("htl:" + hs.Id);
                 }
                 SpaceRows(rows, keys, locate, where);
+                FlatRows(rows, keys, locate, where);
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_building"), Kind = UiCellKind.Tile, Width = 0f },
@@ -113,7 +118,8 @@ namespace RealLifeOverhaul.Ui
                     new[] { EstateText.Share(_s.Real), EstateText.Share(_c.Index), EstateText.Cycle(_c.Cycle) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_no_market"), EstateText.T("reallife_ui_estate_empty_market_body"),
                     new[] { districts, Choice("reallife_tab_all_kinds", "reallife_estate_use_homes", "reallife_estate_use_shops",
-                        "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind") }, new[] { 1 }, EstateText.T("reallife_estate_empty_market"));
+                        "reallife_estate_use_offices", "reallife_estate_use_storage", "reallife_estate_row_hotel", "reallife_space_kind",
+                        "reallife_flat_kind_filter") }, new[] { 1 }, EstateText.T("reallife_estate_empty_market"));
                 _m.RowRuns = Ordered(locate);
                 // The three sentences the old page ended with: what moves a price, what moves a rent, and how a mortgage is arranged.
                 _m.Notes = new[] { EstateText.T("reallife_estate_market_what"), EstateText.T("reallife_ui_estate_note_market_rents"), EstateText.T("reallife_ui_estate_note_mortgage") };

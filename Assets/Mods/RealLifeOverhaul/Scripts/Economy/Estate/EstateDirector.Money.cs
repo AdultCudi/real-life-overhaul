@@ -60,6 +60,10 @@ namespace RealLifeOverhaul.Economy
                 _state.Hotels[i].TakingsYear = _state.Hotels[i].CostsYear = 0;
             }
             _state.Hire.TakingsYear = _state.Hire.CostsYear = 0;
+            for (int i = 0; i < _state.Flats.Flats.Count; i++)
+            {
+                _state.Flats.Flats[i].Hold.RentYear = _state.Flats.Flats[i].Hold.CostYear = 0;
+            }
         }
 
         /// <summary>A cost, deductible unless it is trading (TradingYear); unless 'force', false with nothing taken if cash is short.</summary>

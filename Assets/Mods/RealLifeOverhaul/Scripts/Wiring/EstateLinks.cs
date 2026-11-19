@@ -22,6 +22,7 @@ namespace RealLifeOverhaul
                 EstateBridges.RentLever = () => EstateRules.FromCouncil(Policy(Lever.Rent));
                 EstateBridges.PermitLever = () => Policy(Lever.Permits);
                 EstateBridges.EventOn = EventOn;
+                CreditDesk.FlatSecurity = EstateDirector.FlatSecurityState;   // a mortgage secured by a flat asks the property business whether it is still the player's
                 HotelReception.Owner = EstateDirector.OwnsHotel;
                 HotelReception.Books = EstateDirector.OpenBooks;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -29,6 +30,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                CreditDesk.FlatSecurity = null;
                 EstateBridges.Reset();   // the Planner's director goes with the city, and its sources with it
                 HotelReception.Owner = null;
                 HotelReception.Books = null;

@@ -667,6 +667,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--flats")
+        {
+            Flats();   // (flats and studios to buy as a home alone, while working on them: FlatChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--estate-duties")
         {
             EstateDuties();
@@ -2020,6 +2026,7 @@ internal static partial class Program
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         Loyalty();      // loyalty cards: the tables, members growing and falling away, the bounded lift in the one figure, the costs, no scheme giving back more than it brings unless chosen, the turn, the other owners' shops, the save, the sources, the texts (LoyaltyChecks.cs)
         Cinematic();    // the cinematic shots, a developer's tool: the list and its lenses and names, the picker, where the camera stands and is pulled in, the lights' hours, the focus, the sources, the texts (CinematicChecks.cs)
+        Flats();        // flats and studios to buy as a home: the shares of a building, the price of a lease and a first deposit in every district, the listing, the bills once a month, a fold into a building bought whole, a sale, a let flat, the refusals, the save, the sources and the texts (FlatChecks.cs)
         BizAsks();      // the smaller business asks: a parking space in a building's car park and the showroom's suppliers, their rules, caps, saves, pages, sources and texts (BizAsksChecks.cs)
         Suppliers();    // suppliers and contracts: prices and terms, take or pay, the judging of a delivery, the remedy, what is owed, the suppliers' own books, the rivals, the buyer's rules, the save, the pages, the sources, the texts (SupplierChecks.cs)
         Insurance();    // insurance: a car's tier and the driver's record on the Garage's premium, a home's premium, what a claim pays and never pays, the first days, the year's limits, the days of grace, the rivals' cover, the save, the pages, the sources, the texts (InsuranceChecks.cs)

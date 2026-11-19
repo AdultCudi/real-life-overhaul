@@ -350,6 +350,21 @@ namespace RealLifeOverhaul.Ui
                 // a listing's repair cost and the market's notes
                 "reallife_ui_estate_listing_run_down", "reallife_ui_estate_listing_kept", "reallife_ui_estate_listing_how",
                 "reallife_ui_estate_market_heading", "reallife_estate_hire_how",
+                // flats and studios to buy: the pages' words
+                "reallife_flat_name", "reallife_flat_kind_studio", "reallife_flat_kind_one", "reallife_flat_kind_two", "reallife_flat_kind_three",
+                "reallife_flat_kind_filter", "reallife_flat_landlord", "reallife_flat_sub", "reallife_flat_state_home", "reallife_flat_l_price",
+                "reallife_flat_l_floor", "reallife_flat_sqm", "reallife_flat_l_freehold", "reallife_flat_l_lease", "reallife_flat_l_service",
+                "reallife_flat_l_tax", "reallife_flat_l_owner", "reallife_flat_l_deposit", "reallife_flat_l_term", "reallife_flat_l_owed",
+                "reallife_flat_l_asking", "reallife_flat_deposit_at", "reallife_flat_term_at", "reallife_flat_sec_bills",
+                "reallife_flat_sec_mortgage", "reallife_flat_sec_yours", "reallife_flat_price_made", "reallife_flat_bills", "reallife_flat_let_rent",
+                "reallife_flat_mortgage_line", "reallife_flat_mortgage_no", "reallife_flat_how", "reallife_flat_btn_buy_cash",
+                "reallife_flat_btn_buy_mortgage", "reallife_flat_q_buy_title", "reallife_flat_q_buy_cash", "reallife_flat_q_buy_mortgage",
+                "reallife_flat_own_paid", "reallife_flat_own_owed", "reallife_flat_home_what", "reallife_flat_btn_let", "reallife_flat_btn_stop_let",
+                "reallife_flat_applicant", "reallife_flat_offer_net", "reallife_flat_q_sell_title", "reallife_flat_list_what",
+                    "reallife_flat_renting", "reallife_flat_repair_what", "reallife_estate_state_works", "reallife_flat_q_sell", "reallife_flat_sell_what",
+                "reallife_meta_title_economy_estate_flats", "reallife_estate_btn_unlist", "reallife_estate_btn_court", "reallife_estate_own_listed",
+                "reallife_estate_own_offer", "reallife_estate_own_sale_agreed", "reallife_flat_own_empty", "reallife_estate_own_let",
+                "reallife_estate_state_sold", "reallife_flat_state_arrears", "reallife_estate_state_let",
                 // the Guide's page named at the foot
                 "reallife_guide_app", "reallife_meta_title_economy_estate", "reallife_meta_title_economy_estate_duties", "reallife_meta_title_parking_spaces",
                 "reallife_estate_block_why_rival", "reallife_estate_block_why_nobody", "reallife_estate_block_why_standard", "reallife_estate_block_why_inspection",

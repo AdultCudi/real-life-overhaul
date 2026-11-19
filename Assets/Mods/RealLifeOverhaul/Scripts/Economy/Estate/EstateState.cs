@@ -396,6 +396,7 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] RentRing = new int[EstateCatalogue.RentRingKept];   // the city's mean rent a flat, dollars a month, oldest first (wave 4: reallife:estate_rent_ring)
         public readonly int[] RentRingMonths = new int[EstateCatalogue.RentRingKept];   // the month number of each entry of the ring, so a month the read missed shows as itself
         public int RentRingCount, RentRingMonth;   // how many are kept, and the month number of the last
+        public readonly FlatBook Flats = new FlatBook();   // the flats the player owns, in a line of their own (reallife:estate_flats)
         public readonly List<LandlordMark> Marks = new List<LandlordMark>(EstateCatalogue.LandlordsMost);   // other landlords' mean flat rent at the last month's turn
 
         /// <summary>The sale remembered of a building, or null.</summary>
@@ -420,8 +421,15 @@ namespace RealLifeOverhaul.Economy
                     return Holdings[i];
                 }
             }
-            return null;
+            // A flat's key finds its one-unit holding, so a tenancy, a call or a sale is looked up as a building's is.
+            OwnedFlat flat = FlatRules.IsKey(place) ? Flats.Find(place) : null;
+            return flat != null ? flat.Hold : null;
         }
+
+        /// <summary>The buildings the player holds and then the flats, as one list for what both let: tenants, calls, inspections.</summary>
+        public int LetCount => Holdings.Count + Flats.Flats.Count;
+
+        public EstateHolding LetAt(int i) => i < Holdings.Count ? Holdings[i] : Flats.Flats[i - Holdings.Count].Hold;
 
         public HotelFile Hotel(string slot)
         {

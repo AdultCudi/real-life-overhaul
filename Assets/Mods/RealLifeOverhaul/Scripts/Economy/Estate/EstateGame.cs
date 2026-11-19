@@ -63,6 +63,8 @@ namespace RealLifeOverhaul.Economy
         public int Base;            // the game's own value of it
         public int Key;             // a number for its address
         public int Units = 1;       // the units the game counts in it
+        public int Sqm;             // its floor
+        public int TaxYear;         // the game's property tax on it for a year, whoever owns it (RealEstate.TaxesAmount)
         public string Place, District;
         public EstateHolding Holding;   // the player's, while they own it
     }
@@ -204,7 +206,8 @@ namespace RealLifeOverhaul.Economy
                 var c = new CityBuilding
                 {
                     B = b, Custom = b.customMarketPrice, Base = Mathf.RoundToInt(Mathf.Min(value, int.MaxValue / 8)), Place = place, Key = EstateRules.Hash(place),
-                    District = b.Neighbourhood ?? string.Empty, Units = EstateRules.UnitCount(b.totalSqm, UnitSqm(b))
+                    District = b.Neighbourhood ?? string.Empty, Units = EstateRules.UnitCount(b.totalSqm, UnitSqm(b)),
+                    Sqm = Mathf.Max(0, b.totalSqm), TaxYear = TaxYearOf(b)
                 };
                 City.Add(c);
                 ByPlace[place] = c;

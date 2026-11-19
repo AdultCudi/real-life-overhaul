@@ -166,9 +166,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            for (int i = 0; i < state.Holdings.Count; i++)
+            for (int i = 0; i < state.LetCount; i++)
             {
-                EstateHolding h = state.Holdings[i];
+                EstateHolding h = state.LetAt(i);
                 for (int n = 0; h.Managed && n < h.Units.Count; n++)
                 {
                     EstateUnit u = h.Units[n];
