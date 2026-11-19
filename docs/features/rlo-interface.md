@@ -209,6 +209,16 @@ silently cut the favourites.
   sources must hold. The screen's layouts at every frame and language are in `--ui-screens` (`all_apps` cases for the
   favourites, none and the bar's page).
 
+## The private driver on the bar
+
+A player who uses the phone mainly for the private driver asked for a button for him (13 Nov 2026). While the RLO interface's HUD is on and the player has a private driver contract (`PrivateDriverHelpers.GetActiveContract`), the bar's pill of small tools has a car button after the phone's (`HudTopGame.Driver`, `Ui/HudScreens/HudDriver.cs`, rules in `HudDriverRules.cs`). A press does what the phone does, in one: the garage's only car is called at once through the card's own button for it (`SmartphonePrivateDriverUI.OnClickVehicle`, so the fee, the refusals and the notices are the game's); with several cars, none yet, a car already called (the card has its Dismiss) or the card open, it opens or shuts the card the kit draws beside the phone (`PrivateDriverKit`), by the phone's own driver button where that shows, or by the same method its listener calls where the phone is folded and the game has hidden the button. The destination, following and the rest are the game's own at the car.
+
+The driver's state is on the button: the glyph is plain at rest, amber while the car is on its way, green when it waits within 20 m, the accent while the player rides in it, and the hover words say which, with the car's name and the key. The key is the Driver key (Insert by default, `KeyAction.Driver`), rebindable in Settings beside the Phone key, read in the phone key's guarded frame (`PhoneReachWatch`) and answering only while the bar shows the button. Cost: four times a second with the bar a few field reads; one key test a frame.
+
+The old interface has no place for quick buttons: the mod draws nothing of its own on the game's top bar, and the game's phone (its Private driver button, shown while the phone is unfolded) stays the way there.
+
+Checks: EconomyCheck `--age-driver` (`AgeDriverChecks.cs`).
+
 ## Save and Going Public
 
 Nothing is saved in the save, and nothing is shared: the kit only draws. The player's bar and favourites are kept with the

@@ -18,7 +18,9 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_hud_weather_sunny", "reallife_ui_hud_weather_clear",
                     "reallife_ui_hud_weather_rain", "reallife_ui_hud_weather_mist", "reallife_ui_hud_weather_storm", "reallife_ui_hud_weather_snow", "reallife_ui_hud_weather_heat",
                     "reallife_ui_hud_weather_cold", "reallife_ui_hud_weather_ice", "tutorial_objectives", "common_setdestination",
-                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_close", "reallife_ui_shell_all_apps"
+                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_close", "reallife_ui_shell_all_apps",
+                    "reallife_driver_tool_call", "reallife_driver_tool_choose", "reallife_driver_tool_none", "reallife_driver_tool_coming", "reallife_driver_tool_waiting",
+                    "reallife_driver_tool_driving"
                 }).Switch(UiScreenSwitches.Hud),
                 new UiScreenDef("hud_picker", UiTemplate.Hud, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "input_key_menu" }),
                 new UiScreenDef("hud_activity", UiTemplate.Hud, null, new[] { "reallife_ui_prompt_move", "common_cancel", "playeractivityui_timemachine", "playeractivityui_fast_forward" }),

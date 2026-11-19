@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     internal static class HudTopGame
     {
-        public const int Dances = 0, Accessories = 1, Help = 2, Bug = 3, Phone = 4;   // the tools in the bar's pill, in this order when all show
+        public const int Dances = 0, Accessories = 1, Help = 2, Bug = 3, Phone = 4, Driver = 5;   // the tools in the bar's pill, in this order when all show
 
         private static readonly string[] LeftLeaves = { "Avatar", "AccessoriesPanel", "PlayerStats", "Splitter", "Money", "MoneyTransaction", "Splitter (1)", "Date", "Time", "TimeControls" };
         private static readonly string[] RightLeaves = { "NotificationsButton", "HelpButton", "ReportBugButton", "SettingsButton" };
@@ -30,11 +30,11 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly UiConceal Hidden = new UiConceal();
         private static readonly UiConceal Selector = new UiConceal();   // the dance list's own canvas: unseen, and no longer catching clicks
-        private static readonly UiIcon[] Tools = new UiIcon[5];
-        private static readonly bool[] ToolsOn = new bool[5];
-        private static readonly bool[] ToolsOff = new bool[5];
-        private static readonly UiRole[] ToolTints = new UiRole[5];
-        private static readonly int[] ToolKind = new int[5];   // which tool each place of the pill holds
+        private static readonly UiIcon[] Tools = new UiIcon[6];
+        private static readonly bool[] ToolsOn = new bool[6];
+        private static readonly bool[] ToolsOff = new bool[6];
+        private static readonly UiRole[] ToolTints = new UiRole[6];
+        private static readonly int[] ToolKind = new int[6];   // which tool each place of the pill holds
         private static readonly Button[] DanceButtons = new Button[16];
         private static readonly string[] DanceNames = new string[16];
         private static readonly UiHudPopupModel DancesPopup = new UiHudPopupModel { Numbered = true, Rows = new UiHudPopupRow[16] };
@@ -193,6 +193,7 @@ namespace RealLifeOverhaul.Ui
             Selector.Clear();
             _built = false;
             _toolCount = 0;
+            HudDriver.Off();
         }
 
         /// <summary>A new city: the bar is looked for again.</summary>
@@ -233,6 +234,10 @@ namespace RealLifeOverhaul.Ui
             if (PhoneReach.Look(out bool phoneOpen))
             {
                 Tool(Phone, UiIcon.Phone, phoneOpen, false);   // the game's own phone is in play: its head stands under this bar, so the bar folds and unfolds it
+            }
+            if (HudDriver.Look(out DriverState driver, out bool driverOpen))
+            {
+                Tool(Driver, UiIcon.Car, driverOpen, false, HudDriverRules.Tint(driver));   // the private driver: its state in the glyph's colour, the card open as the chosen tone
             }
             int sig = _toolCount;
             for (int i = 0; i < _toolCount; i++)
@@ -281,6 +286,10 @@ namespace RealLifeOverhaul.Ui
             if (index >= 0 && index < _toolCount && ToolKind[index] == Phone)
             {
                 return PhoneReach.Words();
+            }
+            if (index >= 0 && index < _toolCount && ToolKind[index] == Driver)
+            {
+                return HudDriver.Words();
             }
             if (index < 0 || index >= _toolCount || ToolKind[index] != Bug || _bug == null)
             {
@@ -340,6 +349,8 @@ namespace RealLifeOverhaul.Ui
                     return UiWidgets.Press(_bug);
                 case Phone:
                     return PhoneReach.Press();
+                case Driver:
+                    return HudDriver.Press();
             }
             return false;
         }
