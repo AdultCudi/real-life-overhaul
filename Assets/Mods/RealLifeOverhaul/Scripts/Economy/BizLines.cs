@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",
             P + "tech_venture_dividend", P + "tech_venture_wind_down", P + "tech_venture_exit",
             P + "tech_terms_salary", P + "tech_terms_bonus", P + "tech_terms_dividend", P + "tech_terms_buyout", P + "tech_terms_earn_out",   // what a sale's terms pay the player later
-            P + "tech_terms_remit", P + "tech_terms_cover",   // a contract's firm: its month's profit to its owner, and a loss carried by the owner
+            P + "tech_terms_remit", P + "tech_terms_cover", P + "tech_terms_dividend_tax",   // a contract's firm: its month's profit to its owner, and a loss carried by the owner
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",

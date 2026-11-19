@@ -17,6 +17,8 @@ internal static partial class Program
         SaleTermEarnChecks();
         SaleTermBossChecks();
         SaleTermLockChecks();
+        SaleTermTaxChecks();
+        SaleTermDeskChecks();
         SaleTermSaveChecks();
         SaleTermSourceChecks();
         SaleTermTextChecks();
@@ -369,6 +371,117 @@ internal static partial class Program
         Check(m.State.Locks.Count <= MarketState.LocksMost && most, "sale terms: no more than " + MarketState.LocksMost + " locks are kept");
     }
 
+    // What each kind of payment is to the tax: a dividend, a gain over what was held back, or nothing (pay for work: the game and the mod tax no wages); a contract firm's profit lifted out of the takings.
+    private static void SaleTermTaxChecks()
+    {
+        long dividends = 0, gains = 0, none = 0;
+        bool once = true, tallied = true;
+        foreach (int kind in new[] { TermKind.Slice, TermKind.Earn, TermKind.Boss })
+        {
+            var f = new TermFile { Seed = 9 };
+            TermPlan p = TermPlanOf(kind, 1, 0);
+            TermDeal d = TermBegin(f, p, kind, 1, 0);
+            var ev = new List<TermEvent>();
+            var world = new TermWorld { FirmHere = true, Takings = d.Mrr0 * 1300 / 1000, Customers = 5000, StockLive = false, StockCents = 0 };
+            d.Index = kind == TermKind.Earn ? SaleTermCatalogue.IndexMost : d.Index;
+            long paidViaEvents = 0, taxed = 0;
+            for (int day = d.Day; day <= d.Day + 4 * 360; day++)
+            {
+                ev.Clear();
+                SaleTermRules.Day(f, d, day, world, ev);
+                foreach (TermEvent e in ev)
+                {
+                    TermTaxing t = SaleTermRules.Taxing(d, e);
+                    bool paid = e.Kind == TermEventKind.SliceDividend || e.Kind == TermEventKind.SliceBought || e.Kind == TermEventKind.EarnPaid || e.Kind == TermEventKind.Salary || e.Kind == TermEventKind.VestCash;
+                    once &= !(t.Dividend > 0 && t.Gain > 0) && (t.Dividend + t.Gain <= e.Cents) && (e.Kind != TermEventKind.SliceDividend || (t.Dividend == e.Cents && t.Gain == 0))
+                            && ((e.Kind != TermEventKind.Salary && e.Kind != TermEventKind.VestCash && e.Kind != TermEventKind.VestShares && e.Kind != TermEventKind.Remit) || (t.Dividend == 0 && t.Gain == 0));
+                    dividends += t.Dividend;
+                    gains += t.Gain;
+                    none += paid && t.Dividend + t.Gain == 0 ? e.Cents : 0;
+                    taxed += t.Dividend + t.Gain;
+                    paidViaEvents += paid ? e.Cents : 0;
+                }
+                d.Handed = d.Handed || !d.Open;
+            }
+            tallied &= taxed <= paidViaEvents;
+        }
+        Check(once, "sale terms tax: each payment is one thing to the tax: a dividend, a gain, or nothing; never two, never more than was paid");
+        Check(tallied && dividends > 0 && gains > 0 && none > 0, "sale terms tax: dividends (" + dividends + "), gains (" + gains + ") and untaxed pay (" + none + ") all arise over the deals, none above what they paid");
+        var g = new TermFile { Seed = 2 };
+        TermDeal sl = TermBegin(g, TermPlanOf(TermKind.Slice, 0), TermKind.Slice, 0);
+        TermTaxing buy = SaleTermRules.Taxing(sl, new TermEvent { Deal = sl, Kind = TermEventKind.SliceBought, Cents = sl.Deferred + 5000 });
+        TermTaxing under = SaleTermRules.Taxing(sl, new TermEvent { Deal = sl, Kind = TermEventKind.SliceBought, Cents = sl.Deferred - 5000 });
+        Check(buy.Gain == 5000 && buy.Dividend == 0 && under.Gain == 0, "sale terms tax: a buyout is a capital gain over the price of the stake, never under nothing");
+        TermDeal er = TermBegin(g, TermPlanOf(TermKind.Earn, 0, 0), TermKind.Earn, 0, 0);
+        TermTaxing prize = SaleTermRules.Taxing(er, new TermEvent { Deal = er, Kind = TermEventKind.EarnPaid, Cents = er.Further });
+        Check(prize.Gain == er.Further - er.Deferred && prize.Dividend == 0, "sale terms tax: an earn-out's prize is a capital gain over what was held back, which the sale noted already");
+        TermDeal bs = TermBegin(g, TermPlanOf(TermKind.Boss, 0, 0), TermKind.Boss, 0, 0);
+        TermTaxing bp = SaleTermRules.Taxing(bs, new TermEvent { Deal = bs, Kind = TermEventKind.EarnPaid, Cents = bs.Further });
+        Check(bp.Gain == bs.Further - (bs.Deferred - bs.Grant), "sale terms tax: a contract's earn-out prize is over its own held back part, not the grant");
+        // a contract firm's profit is the owner's: out of the takings, once, by the days it covers
+        var h = new TermFile { Seed = 3 };
+        SaleTermRules.Hold(h, 100, 129, 3000);
+        Check(SaleTermRules.Held(h, 100, 129) == 3000 && SaleTermRules.Held(h, 100, 114) == 1500 && SaleTermRules.Held(h, 0, 99) == 0 && SaleTermRules.Held(h, 130, 400) == 0,
+            "sale terms tax: a month's profit paid to the owner is lifted out of the days it covers and no others");
+        Check(SaleTermRules.Held(h, 0, 114) + SaleTermRules.Held(h, 115, 200) == 3000, "sale terms tax: two quarters that split a month take out the whole of it between them, once");
+        SaleTermRules.Hold(h, 130, 159, -600);
+        Check(SaleTermRules.Held(h, 100, 159) == 2400, "sale terms tax: a loss the owner carried puts the takings back by as much");
+        SaleTermRules.Hold(h, 160, 159, 99);
+        SaleTermRules.Hold(h, 200, 229, 0);
+        Check(h.Held.Count == 2, "sale terms tax: an empty or backwards stretch enters nothing");
+        for (int i = 0; i < TermFile.HeldMost + 20; i++)
+        {
+            SaleTermRules.Hold(h, 300 + i, 300 + i, 1);
+        }
+        Check(h.Held.Count <= TermFile.HeldMost && SaleTermRules.Held(h, 300 + TermFile.HeldMost + 19, 300 + TermFile.HeldMost + 19) == 1, "sale terms tax: the ledger is bounded and the oldest line goes first");
+        SaleTermRules.Hold(h, 2000, 2029, 5);
+        Check(SaleTermRules.Held(h, 100, 129) == 0, "sale terms tax: a line older than the return can look back on is dropped");
+        var k = new TermFile { Seed = 4 };
+        SaleTermRules.Hold(k, 10, 39, 3000);
+        TermBegin(k, TermPlanOf(TermKind.Slice, 0), TermKind.Slice);
+        TermFile back = SaleTermStore.Load(new Dictionary<string, string> { { SaleTermStore.Key, SaleTermStore.Write(k) } }, out _);
+        Check(back != null && back.Held.Count == 1 && SaleTermRules.Held(back, 10, 39) == 3000, "sale terms tax: the ledger is saved and read back, in a part an older line does not have");
+        var onlyHeld = new TermFile { Seed = 4 };
+        SaleTermRules.Hold(onlyHeld, 10, 39, 3000);
+        Check(SaleTermStore.Write(onlyHeld) != null && SaleTermStore.Load(new Dictionary<string, string> { { SaleTermStore.Key, SaleTermStore.Write(onlyHeld) } }, out _).Held.Count == 1,
+            "sale terms tax: a ledger with no deal left is still kept");
+        int none2 = RealLifeOverhaul.Economy.TaxRules.OtherIncome(null, null, 0, 9, (a, b) => 700);
+        int both = RealLifeOverhaul.Economy.TaxRules.OtherIncome((a, b) => 1000, (a, b) => 200, 0, 9, (a, b) => 700);
+        Check(none2 == -700 && both == 500 && RealLifeOverhaul.Economy.TaxRules.OtherIncome((a, b) => 1000, (a, b) => 200, 0, 9) == 1200,
+            "sale terms tax: the return's other income takes a contract firm's profit off the takings, and is as it was with none");
+        string d1 = ModSource(@"Tech\TechDirector.SaleTerms.cs"), game = ModSource(@"Economy\Company\CompanyGame.cs"), links = ModSource(@"Wiring\Wiring.ExitLinks.cs");
+        Check(d1.Contains("PayDeductible(sum, VentureGame.TermRemitKey") && d1.Contains("SaleTermRules.Hold(_terms, since + 1, day, sum / 100)") && ModSource(@"Tech\Venture\VentureGame.cs").Contains("SetTaxDeductibleName(deductibleWords)"),
+            "sale terms tax: the profit paid to the owner is deductible by the game's own tax, and entered in the ledger the return reads");
+        Check(game.Contains("TaxRules.OtherIncome(OtherIncome, StartupGains, fromDay, toDay, HeldProfit)") && links.Contains("CompanyBridges.HeldProfit = ") && d1.Contains("HeldBetween(int fromDay, int toDay)"),
+            "sale terms tax: the quarterly return, its page and the reserve (one sum, CompanyGame.Other) all read the lifted profit");
+        Check(d1.Contains("WithholdDividend(cents, name)") && d1.Contains("ExitBridges.DividendTax(cents / 100)") && links.Contains("StakeDividendTax") && ModSource(@"Markets\MarketDirector.Grants.cs").Contains("ListingVotes.DividendTax"),
+            "sale terms tax: a stake's dividend is taxed by the stock market's own dividend rule, as a line of its own");
+        Check(d1.Contains("SaleTermRules.Taxing(d, e).Gain") && !d1.Contains("ExitGains.Note(_gains, day, name, e.Cents)"), "sale terms tax: a buyout and a prize are noted as gains once, from one place, and a dividend is not also a gain");
+        int salary = d1.IndexOf("case TermEventKind.Salary:", StringComparison.Ordinal);
+        string salaryBlock = salary > 0 ? d1.Substring(salary, d1.IndexOf("case TermEventKind.VestShares:", salary, StringComparison.Ordinal) - salary) : string.Empty;
+        Check(salaryBlock.Contains("TermSalaryKey") && !salaryBlock.Contains("Tax") && !salaryBlock.Contains("Note("), "sale terms tax: the salary is paid in full with no tax line, as every wage the mod pays is (the game takes none)");
+        Check(ModSource(@"Economy\BizLines.cs").Contains("\"tech_terms_dividend_tax\""), "sale terms tax: the dividend tax line is in a list of BizLines");
+    }
+
+    private static void SaleTermDeskChecks()
+    {
+        string links = ModSource(@"Wiring\Wiring.ExitLinks.cs"), exits = ModSource(@"Tech\TechDirector.Exits.cs");
+        Check(links.Contains("C(\"offer_accept\", 20), C(\"offer_counter\", 40), C(\"offer_decline\", 0), C(\"offer_shares\", 20), C(\"offer_slice\", 20), C(\"offer_earn\", 20), C(\"offer_boss\", 30)"),
+            "sale terms desk: the offer's session keeps accept, counter and decline as the first three choices and adds the four terms after them");
+        Check(exits.Contains("choice == 0 || choice >= 3") && exits.Contains("SessionTerms(choice)") && exits.Contains("ExitAccept(place, o.Id, terms)")
+              && exits.Contains("terms.Kind == TermKind.Boss ? null : ExitBridges.WhyNotHand(place)"), "sale terms desk: the session's accept takes the terms through the same ExitAccept the page uses; a contract may be made from inside");
+        Check(exits.Contains("case 3: return new TermChoice { Kind = TermKind.Shares, Step = 1 }") && exits.Contains("case 6: return new TermChoice { Kind = TermKind.Boss, Step = 0, Target = 1 }")
+              && exits.Contains("internal bool ExitAccept(string place, int offerId, TermChoice choice = default(TermChoice))"), "sale terms desk: a session choice is a TermChoice, and ExitAccept takes one to be called later with it stored");
+        Dictionary<string, string> en = LocaleFile("en");
+        bool all = true;
+        foreach (string n in new[] { "shares", "slice", "earn", "boss" })
+        {
+            string a = "reallife_tech_desk_exit_offer_" + n;
+            all &= en.TryGetValue(a, out string t1) && en.TryGetValue(a + "_trade", out string t2) && t1.Length > 0 && t2.Length > 0 && t2.Length <= 190 && !t2.Contains("!") && !t2.Contains("—");
+        }
+        Check(all, "sale terms desk: every choice has its name and its tip within 190 characters");
+    }
+
     private static void SaleTermSaveChecks()
     {
         var f = new TermFile { Seed = 321 };
@@ -445,7 +558,7 @@ internal static partial class Program
         Check(mod.Contains("reallife_terms_test_year") && deal.Contains("TestTermsYear"), "sale terms: the options page has the test that moves the deals a year on");
         Check(!deal.Contains("Update(") && !deal.Contains("LateUpdate(") && !deal.Contains("FindObjectsByType"), "sale terms: nothing per frame");
         string lines = ModSource(@"Economy\BizLines.cs");
-        foreach (string key in new[] { "salary", "bonus", "dividend", "buyout", "earn_out", "remit", "cover" })
+        foreach (string key in new[] { "salary", "bonus", "dividend", "buyout", "earn_out", "remit", "cover", "dividend_tax" })
         {
             Check(lines.Contains("\"tech_terms_" + key + "\""), "sale terms: the bank line tech_terms_" + key + " is in a list of BizLines");
         }
@@ -474,9 +587,9 @@ internal static partial class Program
             "reallife_terms_row_locked", "reallife_terms_row_paying", "reallife_terms_row_target", "reallife_terms_row_contract", "reallife_terms_note_shares", "reallife_terms_note_slice",
             "reallife_terms_note_earn", "reallife_terms_note_boss", "reallife_terms_note_slice_end", "reallife_terms_note_earn_paid", "reallife_terms_note_earn_lapsed", "reallife_terms_note_shares_free",
             "reallife_terms_note_vest_shares", "reallife_terms_note_vest_cash", "reallife_terms_note_strike", "reallife_terms_note_dismissed", "reallife_terms_note_resigned", "reallife_terms_note_ended",
-            "reallife_terms_note_gone", "reallife_terms_note_handed", "reallife_terms_test_none", "reallife_terms_test_year", "reallife_mkt_why_locked", "reallife_mkt_inv_mark_locked", "reallife_stk_locked_sub"
+            "reallife_terms_note_gone", "reallife_terms_note_handed", "reallife_terms_test_none", "reallife_terms_test_year", "reallife_mkt_why_locked", "reallife_mkt_inv_mark_locked", "reallife_stk_locked_sub", "reallife_terms_deduct"
         });
-        foreach (string k in new[] { VentureGame_Keys("salary"), VentureGame_Keys("bonus"), VentureGame_Keys("dividend"), VentureGame_Keys("buyout"), VentureGame_Keys("earn_out"), VentureGame_Keys("remit"), VentureGame_Keys("cover") })
+        foreach (string k in new[] { VentureGame_Keys("salary"), VentureGame_Keys("bonus"), VentureGame_Keys("dividend"), VentureGame_Keys("buyout"), VentureGame_Keys("earn_out"), VentureGame_Keys("remit"), VentureGame_Keys("cover"), VentureGame_Keys("dividend_tax") })
         {
             keys.Add(k);
             keys.Add(k + "_label");

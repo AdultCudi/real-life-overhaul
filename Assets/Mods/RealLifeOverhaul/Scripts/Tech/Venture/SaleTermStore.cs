@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The line, or null while there is nothing to keep.</summary>
         public static string Write(TermFile f)
         {
-            if (f == null || f.Deals.Count == 0)
+            if (f == null || (f.Deals.Count == 0 && f.Held.Count == 0))
             {
                 return null;
             }
@@ -30,6 +30,11 @@ namespace RealLifeOverhaul.Tech
                     .Add(d.Deferred).Add(d.Mrr0).Add(d.Cust0).Add(d.Paid).Add(d.Most).Add(d.Seen).Add(d.Index).Add(d.CIndex).Add(d.Stock).Add(d.Shares).Add(d.ShareCents).Add(d.LockTo)
                     .Add(d.Mille).Add(d.Measure).Add(d.Target).Add(d.EarnState).Add(d.Due).Add(d.Further).Add(d.Salary).Add(d.Grant).Add(d.Years).Add(d.Vested).Add(d.Strikes)
                     .Add(d.Review).Add(d.Handed).Add(d.Synced).Add(d.Absent);
+            }
+            w.Part('t');
+            foreach (HeldLine l in f.Held)
+            {
+                w.Record().Add(l.From).Add(l.To).Add(l.Money);
             }
             return w.ToString();
         }
@@ -63,6 +68,13 @@ namespace RealLifeOverhaul.Tech
                 {
                     f.Deals.Add(d);
                     f.Next = Math.Max(f.Next, d.Id + 1);
+                }
+            }
+            foreach (Fields x in r.Records('t'))
+            {
+                if (f.Held.Count < TermFile.HeldMost)
+                {
+                    f.Held.Add(new HeldLine { From = x.Int(), To = x.Int(), Money = x.Long() });
                 }
             }
             return f;

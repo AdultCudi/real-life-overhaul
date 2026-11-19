@@ -45,6 +45,9 @@ namespace RealLifeOverhaul
                 ExitBridges.HandOverReady = HandOverReady;
                 ServicesBridges.Contracted = place => TechDirector.Instance != null && TechDirector.Instance.Contracted(place);
                 CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
+                // a contract firm's profit is its owner's, not the player's
+                CompanyBridges.HeldProfit = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.HeldBetween(from, to) : 0;
+                ExitBridges.DividendTax = DividendTax;
                 ExitJobLinks.Connect();
             }
 
@@ -54,6 +57,7 @@ namespace RealLifeOverhaul
                 ExitBridges.Reset();
                 ServicesBridges.Contracted = null;
                 CompanyBridges.StartupGains = null;
+                CompanyBridges.HeldProfit = null;
             }
 
             // The founders of the city's startups as residents of the field their startup works in; none while the venture part is off.
@@ -191,6 +195,21 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The tax withheld from a stake's dividend, whole money: the stock market's own rate for dividends, moved by the council's business tax.
+            private static long DividendTax(long money)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null ? m.StakeDividendTax(money) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.DividendTax", e);
+                    return 0L;
+                }
+            }
+
             // A contract keeps the business until it ends and then hands it over as a sale does, which only the sales of businesses can do, and never in a Going Public session.
             private static bool HandOverReady(string place)
             {
@@ -292,7 +311,10 @@ namespace RealLifeOverhaul
 
             internal static SessionDef Offer()
             {
-                SessionDef def = Make(OfferId, "offer", new[] { C("offer_accept", 20), C("offer_counter", 40), C("offer_decline", 0) }, 30);
+                SessionDef def = Make(OfferId, "offer", new[]
+                {
+                    C("offer_accept", 20), C("offer_counter", 40), C("offer_decline", 0), C("offer_shares", 20), C("offer_slice", 20), C("offer_earn", 20), C("offer_boss", 30)
+                }, 30);   // the first three are as they were; the rest accept on the terms of the Exits page at their middle sizes (TechDirector.SessionTerms)
                 def.Blocked = ask => Blocked(ask, 0);
                 def.Apply = (ask, choices) => Apply(ask, choices, 0);
                 return def;

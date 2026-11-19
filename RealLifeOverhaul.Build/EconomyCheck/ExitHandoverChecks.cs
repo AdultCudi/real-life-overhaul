@@ -74,7 +74,7 @@ internal static partial class Program
 
         int session = exits.IndexOf("internal bool ExitSession(", StringComparison.Ordinal);
         string held = session >= 0 ? exits.Substring(session) : string.Empty;
-        int why = held.IndexOf("WhyNotHand(place)", StringComparison.Ordinal), call = held.IndexOf("ExitAccept(place, o.Id)", StringComparison.Ordinal);
+        int why = held.IndexOf("WhyNotHand(place)", StringComparison.Ordinal), call = held.IndexOf("ExitAccept(place, o.Id, terms)", StringComparison.Ordinal);
         Check(why > 0 && call > why && held.Contains("\"reallife_tech_desk_exit_why_inside\""),
             "exit hand-over: the desk session sits inside the firm, so it says to leave and accept in the Tech app before trying, and does not show a second refusal");
         string inside = LocaleText("en", "reallife_tech_desk_exit_why_inside");

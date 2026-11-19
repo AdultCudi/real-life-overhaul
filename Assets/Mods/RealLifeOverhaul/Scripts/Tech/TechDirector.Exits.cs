@@ -747,6 +747,23 @@ namespace RealLifeOverhaul.Tech
             return which == 0 ? (e.Offers.Count > 0 ? null : "reallife_tech_desk_exit_why_none") : (e.Stage == ListStage.Bankers ? null : "reallife_tech_desk_exit_why_none");
         }
 
+        /// <summary>
+        /// The terms a desk session's choice stands for: 0 all in cash, 3 half in the buyer's shares, 4 a fifth of the firm kept, 5 an earn-out on takings at the middle target, 6 a three year
+        /// contract with the same target. Any other number is cash. The same <see cref="TermChoice"/> the Exits page builds, so a sale agreed at the desk can be completed later with
+        /// <see cref="ExitAccept"/> and the choice stored with it.
+        /// </summary>
+        internal static TermChoice SessionTerms(int sessionChoice)
+        {
+            switch (sessionChoice)
+            {
+                case 3: return new TermChoice { Kind = TermKind.Shares, Step = 1 };
+                case 4: return new TermChoice { Kind = TermKind.Slice, Step = 1 };
+                case 5: return new TermChoice { Kind = TermKind.Earn, Target = 1 };
+                case 6: return new TermChoice { Kind = TermKind.Boss, Step = 0, Target = 1 };
+                default: return default(TermChoice);
+            }
+        }
+
         /// <summary>A session held: the offer's choices are accept, counter (a fifth more) and decline; the roadshow's are the three ways to hold it.</summary>
         internal bool ExitSession(string place, string name, int which, int choice, out string key, out string[] pairs)
         {
@@ -774,16 +791,17 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             string buyer = o.Name;
-            if (choice == 0)
+            if (choice == 0 || choice >= 3)
             {
+                TermChoice terms = SessionTerms(choice);
                 // The session is held at a desk inside the firm and a business cannot change hands with its owner in it: say so before trying, once, with the way round.
-                string why = ExitBridges.WhyNotHand(place);
+                string why = terms.Kind == TermKind.Boss ? null : ExitBridges.WhyNotHand(place);   // a contract is made from inside the firm
                 if (why != null)
                 {
                     key = why == "reallife_svc_refuse_inside" ? "reallife_tech_desk_exit_why_inside" : why;
                     return false;
                 }
-                if (!ExitAccept(place, o.Id))
+                if (!ExitAccept(place, o.Id, terms))
                 {
                     key = "reallife_tech_desk_exit_why_blocked";
                     return false;

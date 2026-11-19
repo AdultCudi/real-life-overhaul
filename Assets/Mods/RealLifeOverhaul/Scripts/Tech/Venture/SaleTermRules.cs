@@ -98,9 +98,21 @@ namespace RealLifeOverhaul.Tech
         public bool Live => State == TermState.Open || (Kind == TermKind.Boss && !Handed);
     }
 
-    /// <summary>What the terms keep in a save: the deals. A save from before has none.</summary>
+    /// <summary>
+    /// A stretch of days in which a contract's firm made a profit (negative: a loss) that was its owner's, in whole money at today's prices. The mod's quarterly return takes it out of
+    /// the player's takings, in proportion to the days of it that fall in the quarter.
+    /// </summary>
+    public sealed class HeldLine
+    {
+        public int From, To;
+        public long Money;
+    }
+
+    /// <summary>What the terms keep in a save: the deals and what their firms' profit was the owner's. A save from before has none.</summary>
     public sealed class TermFile
     {
+        public const int HeldMost = 120, HeldKept = 800;   // lines kept, and the days a line stays: past the longest quarter and year the return can look back on
+        public readonly List<HeldLine> Held = new List<HeldLine>(4);
         public int Seed, Next = 1;
         public readonly List<TermDeal> Deals = new List<TermDeal>(4);
 
@@ -163,6 +175,13 @@ namespace RealLifeOverhaul.Tech
         public long Salary, Grant;
         public int Years, LockDays;
         public long Most;           // the most the deal can ever pay after the sale
+    }
+
+    /// <summary>What a payment of a deal is to the tax: whole cents of dividend (withheld as the stock market's dividends are) and of capital gain
+    /// (noted for the return). Everything else is untaxed.</summary>
+    public struct TermTaxing
+    {
+        public long Dividend, Gain;
     }
 
     /// <summary>What the day sees of the world around a deal: the firm if it is still the player's (a contract), and the market's price of the buyer's stock.</summary>
@@ -517,6 +536,61 @@ namespace RealLifeOverhaul.Tech
                 d.EarnState = 2;
             }
             into.Add(new TermEvent { Deal = d, Kind = why });
+        }
+
+        /// <summary>
+        /// What a deal's payment is to the tax, once. A slice's dividend is a dividend; its buyout and an earn-out's prize are capital gains over what was held back (the sale noted its
+        /// whole part as a gain at the time). Salary, a vested bonus or vested shares are pay for work: the game takes no tax from wages and the mod follows it (the pay slip's tax line
+        /// reads zero), so they are in no tax line. A contract firm's profit is not the player's: see <see cref="Hold"/>.
+        /// </summary>
+        public static TermTaxing Taxing(TermDeal d, in TermEvent e)
+        {
+            switch (e.Kind)
+            {
+                case TermEventKind.SliceDividend:
+                    return new TermTaxing { Dividend = e.Cents };
+                case TermEventKind.SliceBought:
+                    return new TermTaxing { Gain = Math.Max(0L, e.Cents - d.Deferred) };
+                case TermEventKind.EarnPaid:
+                    return new TermTaxing { Gain = Math.Max(0L, e.Cents - (d.Kind == TermKind.Boss ? d.Deferred - d.Grant : d.Deferred)) };
+                default:
+                    return default(TermTaxing);
+            }
+        }
+
+        /// <summary>A contract firm's profit of the days since it was last settled, which is its owner's: entered once, a line for the days it covers.</summary>
+        public static void Hold(TermFile f, int fromDay, int toDay, long money)
+        {
+            if (f == null || money == 0 || toDay < fromDay)
+            {
+                return;
+            }
+            f.Held.Add(new HeldLine { From = fromDay, To = toDay, Money = money });
+            for (int i = f.Held.Count - 1; i >= 0; i--)
+            {
+                if (toDay - f.Held[i].To > TermFile.HeldKept)
+                {
+                    f.Held.RemoveAt(i);
+                }
+            }
+            while (f.Held.Count > TermFile.HeldMost)
+            {
+                f.Held.RemoveAt(0);   // the oldest line goes first
+            }
+        }
+
+        /// <summary>What the player's taxable takings between two days are lowered by: the profit of the contract firms that was the owners', each
+        /// line in proportion to its days inside the stretch.</summary>
+        public static long Held(TermFile f, int fromDay, int toDay)
+        {
+            long sum = 0;
+            for (int i = 0; f != null && i < f.Held.Count; i++)
+            {
+                HeldLine l = f.Held[i];
+                int lo = Math.Max(l.From, fromDay), hi = Math.Min(l.To, toDay);
+                sum += hi >= lo ? l.Money * (hi - lo + 1) / (l.To - l.From + 1) : 0L;
+            }
+            return sum;
         }
 
         /// <summary>The player resigns a contract: the same ending as a dismissal, by the player's own word.</summary>

@@ -198,16 +198,14 @@ namespace RealLifeOverhaul.Tech
             {
                 case TermEventKind.SliceDividend:
                     VentureGame.Give(cents, VentureGame.TermDividendKey, name);
-                    ExitGains.Note(_gains, day, name, e.Cents);
+                    WithholdDividend(cents, name);
                     break;
                 case TermEventKind.SliceBought:
                     VentureGame.Give(cents, VentureGame.TermBuyoutKey, name);
-                    ExitGains.Note(_gains, day, name, Math.Max(0L, e.Cents - d.Deferred));
                     Notifications.Show(NotificationType.Success, "reallife_terms_note_slice_end", Data("firm", name, "buyer", d.Buyer, "amount", TechText.Cents(cents)), 12f, null, null, true, false);
                     break;
                 case TermEventKind.EarnPaid:
                     VentureGame.Give(cents, VentureGame.TermEarnKey, name);
-                    ExitGains.Note(_gains, day, name, Math.Max(0L, e.Cents - (d.Kind == TermKind.Boss ? d.Deferred - d.Grant : d.Deferred)));
                     Notifications.Show(NotificationType.Success, "reallife_terms_note_earn_paid", Data("firm", name, "buyer", d.Buyer, "amount", TechText.Cents(cents)), 12f, null, null, true, false);
                     break;
                 case TermEventKind.EarnLapsed:
@@ -255,6 +253,7 @@ namespace RealLifeOverhaul.Tech
                     TermRemit(d, firm, day);
                     break;
             }
+            ExitGains.Note(_gains, day, name, SaleTermRules.Taxing(d, e).Gain);   // a buyout and a prize over what was held back are capital gains, noted once
             if (Verbose && e.Kind != TermEventKind.Remit)
             {
                 Logger?.Info("Tech check (sale terms, day " + day + "): deal " + d.Id + " " + e.Kind + " " + TechText.Cents(cents) + ", paid so far " + TechText.Cents(Level(d.Paid)) + " of at most "
@@ -272,17 +271,43 @@ namespace RealLifeOverhaul.Tech
             {
                 return;
             }
+            int since = d.Synced;
             d.Synced = day;
             long sum = FirmProfitSum(firm, days);
+            SaleTermRules.Hold(_terms, since + 1, day, sum / 100);   // its owner's profit is out of the player's taxable takings
             if (sum > 0)
             {
-                VentureGame.Pay(sum, VentureGame.TermRemitKey, d.Firm, null, true);
+                // deductible by the game's own tax, which counts the firm's profit in the player's business income until it is paid on
+                VentureGame.PayDeductible(sum, VentureGame.TermRemitKey, d.Firm, TechText.T("reallife_terms_deduct"));
             }
             else if (sum < 0)
             {
                 long cover = Math.Min(-sum, Level(d.Mrr0 * SaleTermCatalogue.CoverMille / 1000));
                 VentureGame.Give(cover, VentureGame.TermCoverKey, d.Firm);
             }
+        }
+
+        // The tax withheld from a stake's dividend, as the stock market's dividends are: its own rate, moved by the council's business tax, as a line of its own.
+        private void WithholdDividend(long cents, string name)
+        {
+            long tax;
+            try
+            {
+                tax = ExitBridges.DividendTax != null ? ExitBridges.DividendTax(cents / 100) * 100 : 0L;
+            }
+            catch (Exception)
+            {
+                tax = 0L;
+            }
+            VentureGame.Pay(Math.Min(tax, cents), VentureGame.TermDividendTaxKey, name, null, true);
+        }
+
+        /// <summary>The profit of contract firms that was their owners', whole money, between two days; read from the save when the venture part is
+        /// off, so switching it off lifts nothing out of a quarter.</summary>
+        internal int HeldBetween(int fromDay, int toDay)
+        {
+            TermFile f = _terms ?? (Save != null ? SaleTermStore.Load(Save.modData, out _) : null);
+            return (int)Math.Max(-int.MaxValue / 2, Math.Min(int.MaxValue / 2, SaleTermRules.Held(f, fromDay, toDay)));
         }
 
         // A contract that has ended gives its business to the buyer as the sale does: whenever the game allows, tried on each day until it does.

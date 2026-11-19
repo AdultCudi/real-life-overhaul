@@ -9,6 +9,14 @@ namespace RealLifeOverhaul.Markets
             return FirmsOpen ? _engine.GrantPrice(stockId) : 0;
         }
 
+        /// <summary>The tax withheld from a dividend of whole money paid to the player: the market's rate for dividends, moved by the council's
+        /// business tax. Nothing while the market is off.</summary>
+        public long StakeDividendTax(long money)
+        {
+            MarketState s = Running ? _engine.State : null;
+            return s != null && money > 0 ? ListingVotes.DividendTax(money, s.Env.Lever(MarketInputs.BusinessTaxLever)) : 0L;
+        }
+
         /// <summary>Shares paid to the player with a lock-up to a day (0: free); true once they are in the portfolio.</summary>
         public bool Grant(int stockId, long shares, int cents, int lockDay)
         {

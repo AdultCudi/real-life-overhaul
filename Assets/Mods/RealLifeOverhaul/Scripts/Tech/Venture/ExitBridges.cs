@@ -57,6 +57,10 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static Func<int, long, int, int, bool> ShareGrant;
 
+        /// <summary>The tax withheld from a dividend of whole money paid to the player, as the stock market's dividends are taxed (the council's
+        /// business tax moves the rate). Default: none withheld.</summary>
+        public static Func<long, long> DividendTax;
+
         /// <summary>True while a business could be handed to a buyer now as a sale ends one: the sales of businesses run and the player is not a guest. Default: none.</summary>
         public static Func<string, bool> HandOverReady;
 
@@ -122,6 +126,7 @@ namespace RealLifeOverhaul.Tech
             ShareQuote = null;
             ShareGrant = null;
             HandOverReady = null;
+            DividendTax = null;
         }
     }
 }
