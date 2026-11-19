@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_rota_asks_least", "reallife_rota_back", "reallife_rota_block_add", "reallife_rota_block_remove",
                 "reallife_rota_blocks_count", "reallife_rota_change_close", "reallife_rota_change_open", "reallife_rota_change_why_open",
                 "reallife_rota_change_why_pay", "reallife_rota_copy", "reallife_rota_cover_title", "reallife_rota_day_costs",
-                "reallife_rota_day_off", "reallife_rota_day_takings", "reallife_rota_day_title_short", "reallife_rota_edit", "reallife_rota_fill",
+                "reallife_rota_day_off", "reallife_rota_day_takings", "reallife_rota_day_title_short", "reallife_rota_edit", "reallife_rota_failed", "reallife_rota_fill",
                 "reallife_rota_first_day", "reallife_rota_floor_chart", "reallife_rota_floor_hours", "reallife_rota_folk_title",
                 "reallife_rota_from_to", "reallife_rota_has_crew", "reallife_rota_has_page", "reallife_rota_has_page_what",
                 "reallife_rota_has_staff_link", "reallife_rota_has_title", "reallife_rota_head_stations", "reallife_rota_hire_first",

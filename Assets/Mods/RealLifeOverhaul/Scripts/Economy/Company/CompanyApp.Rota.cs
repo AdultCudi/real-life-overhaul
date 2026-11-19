@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Economy
             if (sheet == null)
             {
                 box.Title(at.Name);
-                string why = _director.RotaUnread(at.Place) ? "reallife_rota_cannot" : _director.RotaWorking(at.Place) ? "reallife_rota_working" : "reallife_rota_off";
+                string why = _director.RotaNoSheetText(at);
                 box.Line(CompanyText.T(why), CellTone.Yellow);
                 BackButton(box);
                 return;
