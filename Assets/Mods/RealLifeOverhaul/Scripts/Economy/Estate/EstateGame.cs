@@ -41,6 +41,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The city's firms that do a tradesman's work, by their address key, for a booked service; empty for none. Default: none.</summary>
         public static Func<string[]> Contractors;
 
+        /// <summary>Adds to a set the buildings that are a rival's head office, by their place as the property business writes it (<see cref="EstateGame.Place"/>); the rivals' holdings leave them alone. Default: none.</summary>
+        public static Action<HashSet<string>> HeadOffices;
+
         public static void Reset()
         {
             RentLever = null;
@@ -52,6 +55,7 @@ namespace RealLifeOverhaul.Economy
             Pool = null;
             Contractors = null;
             HousingIn = null;
+            HeadOffices = null;
         }
     }
 

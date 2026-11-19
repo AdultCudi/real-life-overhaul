@@ -76,6 +76,16 @@ namespace RealLifeOverhaul.RivalsSeen
             return true;
         }
 
+        /// <summary>Adds the building of every head office on record ("street#number") to a set, for what must leave them alone (the rivals' holdings in the property business). Nothing with none.</summary>
+        public void HeadBuildings(ICollection<string> into)
+        {
+            SeenFile f = File;
+            for (int i = 0; f != null && into != null && i < f.Heads.Count; i++)
+            {
+                into.Add(f.Heads[i].Office);
+            }
+        }
+
         /// <summary>A rival's head office as one line for a narrow place on a page: the address and the district; empty with none.</summary>
         public string HeadLine(string key)
         {

@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
                 RivalBridges.SeenLine = tycoon => SeenDirector.Instance != null ? SeenDirector.Instance.TycoonLine(tycoon) : string.Empty;
                 RivalBridges.HeadLine = tycoon => SeenDirector.Instance != null ? SeenDirector.Instance.TycoonHead(tycoon) : string.Empty;
                 RivalBridges.ShowHead = tycoon => SeenDirector.Instance != null && SeenDirector.Instance.ShowTycoonHead(tycoon);
+                Economy.EstateBridges.HeadOffices = HeadPlaces;
                 SeenBridges.Offer = OfferOf;
                 SeenBridges.ShowOffer = id => Economy.ServicesDirector.Instance?.ShowRival(id);
                 SeenBridges.Fund = tycoon => Schemes.SchemeDirector.Instance != null && Schemes.SchemeDirector.Instance.FundFrom(tycoon);
@@ -51,8 +52,35 @@ namespace RealLifeOverhaul
                 RivalBridges.SeenLine = null;
                 RivalBridges.HeadLine = null;
                 RivalBridges.ShowHead = null;
+                Economy.EstateBridges.HeadOffices = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // The rivals' head offices as the property business writes a place, for the rivals' holdings to leave alone.
+            private static void HeadPlaces(HashSet<string> into)
+            {
+                try
+                {
+                    SeenDirector seen = SeenDirector.Instance;
+                    if (seen == null)
+                    {
+                        return;
+                    }
+                    var keys = new List<string>(32);
+                    seen.HeadBuildings(keys);
+                    for (int i = 0; i < keys.Count; i++)
+                    {
+                        if (SeenRules.Address(keys[i], out int cut, out int number) && cut > 0)
+                        {
+                            into.Add(Economy.EstateGame.Place(keys[i].Substring(0, cut), number));
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("SeenLinks.HeadPlaces", e);
+                }
             }
 
             // What a rival has on the market with the player, from Services: a business they put up, or one they would take if the player does not.

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UI.Notification;
 
@@ -9,6 +10,24 @@ namespace RealLifeOverhaul.Economy
     {
         private bool _holdingsDealt;     // this game was dealt by the plan in its first days: it goes on gently
         private bool _holdingsBroken;    // a fault in this part: off for the session, the rest of the property business runs
+        private readonly HashSet<string> _holdingsKept = new HashSet<string>(StringComparer.Ordinal);   // the buildings the rivals' holdings leave alone, made again at each pass
+
+        // The places the holdings must not touch: the buildings the agency's blocks are tied to (offered or held) and every rival's head office, the latter asked of the rivals seen
+        // around the city. Made at the pass or the test, never per frame.
+        private HashSet<string> KeptBuildings()
+        {
+            _holdingsKept.Clear();
+            List<ManagedBlock> blocks = _state != null && _state.Agency != null ? _state.Agency.Book.Blocks : null;
+            for (int i = 0; blocks != null && i < blocks.Count; i++)
+            {
+                if (blocks[i].Stage != (int)BlockStage.Lost && !string.IsNullOrEmpty(blocks[i].Place))
+                {
+                    _holdingsKept.Add(blocks[i].Place);
+                }
+            }
+            EstateBridges.HeadOffices?.Invoke(_holdingsKept);
+            return _holdingsKept;
+        }
 
         // The game's rivals' buildings brought towards their place in the Rivals app's ranking, as far as the option and the day allow.
         // Rests in a Going Public session (the rivals there are the host's); a fault stops only this part.
@@ -26,7 +45,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 float started = UnityEngine.Time.realtimeSinceStartup;
-                if (!EstateGame.HoldRivals(day, pace, out HoldingsReport r))
+                if (!EstateGame.HoldRivals(day, pace, KeptBuildings(), out HoldingsReport r))
                 {
                     return;
                 }
@@ -56,7 +75,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// "Test: the rivals' buildings": one gentle day's step now whatever the option says, and a notice of what the first and the last rival
-        /// hold against their shares. Puts a few buildings of the rivals up for sale and lets rivals buy others, as the day does; never one of the player's.
+        /// hold against their shares. Puts a few buildings of the rivals up for sale and lets rivals buy others, as the day does; never one of the player's, a rival's head office or a block's building.
         /// </summary>
         public void TestHoldings()
         {
@@ -65,7 +84,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            if (GoingPublic.InSession || !EstateGame.HoldRivals(Save.Day, RivalHoldingsPace.Gentle, out HoldingsReport r))
+            if (GoingPublic.InSession || !EstateGame.HoldRivals(Save.Day, RivalHoldingsPace.Gentle, KeptBuildings(), out HoldingsReport r))
             {
                 TestRefusals.TellKey(Logger, Test, "reallife_estate_test_rivals_off");
                 return;

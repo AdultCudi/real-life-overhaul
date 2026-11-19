@@ -32,8 +32,11 @@ namespace RealLifeOverhaul.Economy
         private static readonly Dictionary<string, int> HoldingsDistrict = new Dictionary<string, int>(16, StringComparer.Ordinal);
         private static readonly List<RivalData> HoldingsRanked = new List<RivalData>(32);
 
-        /// <summary>The rivals' holdings brought towards their place in the ranking by <paramref name="pace"/>; false, with nothing done, where the game's rivals cannot be read.</summary>
-        public static bool HoldRivals(int day, RivalHoldingsPace pace, out HoldingsReport report)
+        /// <summary>
+        /// The rivals' holdings brought towards their place in the ranking by <paramref name="pace"/>; false, with nothing done, where the game's rivals cannot be read. The buildings in
+        /// <paramref name="kept"/> (places as <see cref="Place"/> writes them: a rival's head office, a building a managed block is tied to) are left out of the book, so never sold or dealt.
+        /// </summary>
+        public static bool HoldRivals(int day, RivalHoldingsPace pace, HashSet<string> kept, out HoldingsReport report)
         {
             report = default;
             GameInstance save = Save;
@@ -45,7 +48,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            ReadBook(save);
+            ReadBook(save, kept);
             HoldingsBook book = HoldingsBookKept;
             report.Rivals = book.Rivals;
             report.Buildings = book.Count;
@@ -98,8 +101,8 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // The buildings the plan may move: a rival's, or for sale and nobody's. Everything else is left out of the book altogether.
-        private static void ReadBook(GameInstance save)
+        // The buildings the plan may move: a rival's, or for sale and nobody's. Everything else, and what is kept, is left out of the book altogether.
+        private static void ReadBook(GameInstance save, HashSet<string> kept)
         {
             HoldingsBook book = HoldingsBookKept;
             HoldingsDistrict.Clear();
@@ -114,6 +117,10 @@ namespace RealLifeOverhaul.Economy
                     || GameDlc.Gated(building) || GoingPublic.Mine(reg) || GoingPublic.Foreign(reg) || RivalsHelper.IgnoredAddresses.Contains(reg.Address))
                 {
                     continue;
+                }
+                if (kept != null && kept.Count > 0 && kept.Contains(Place(reg.StreetName, reg.StreetNumber)))
+                {
+                    continue;   // a rival's head office, or the building of a block the agency manages: it stays as it is
                 }
                 int owner;
                 int listed = 0;

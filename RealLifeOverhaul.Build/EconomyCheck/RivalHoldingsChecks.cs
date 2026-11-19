@@ -436,6 +436,13 @@ internal static partial class Program
             "rivals' buildings: the book never takes in a building the player owns or rents, a special service, a Hamptons house, a DLC's, one the game's ignore list holds, or another player's");
         Check(game.Contains("RealEstateHelper.SetBuildingForSale(reg)") && game.Contains("save.buildingsForSale.RemoveAt(s)") && game.Contains("reg.buildingOwnerRivalId = HoldingsIds[move.To];"),
             "rivals' buildings: a sale is the game's own SetBuildingForSale, a purchase writes the owner and takes the listing off as the game's rivals' purchase does");
+        string seenLinks = ModSource(@"Wiring\Wiring.SeenLinks.cs"), estateGame = ModSource(@"Economy\Estate\EstateGame.cs"), seenHead = ModSource(@"RivalsSeen\SeenDirector.Head.cs");
+        Check(game.Contains("kept.Contains(Place(reg.StreetName, reg.StreetNumber))") && game.Contains("HashSet<string> kept, out HoldingsReport report")
+              && director.Contains("blocks[i].Stage != (int)BlockStage.Lost") && director.Contains("_holdingsKept.Add(blocks[i].Place)") && director.Contains("EstateBridges.HeadOffices?.Invoke(_holdingsKept)")
+              && Occurs(director, "KeptBuildings()") >= 3 && estateGame.Contains("public static Action<HashSet<string>> HeadOffices;") && estateGame.Contains("HeadOffices = null;")
+              && seenLinks.Contains("Economy.EstateBridges.HeadOffices = HeadPlaces;") && seenLinks.Contains("Economy.EstateBridges.HeadOffices = null;") && seenLinks.Contains("Economy.EstateGame.Place(keys[i].Substring(0, cut), number)")
+              && seenHead.Contains("public void HeadBuildings(ICollection<string> into)"),
+            "rivals' buildings: a rival's head office and the building of a block the agency holds or has on offer are left out of the book, so the plan never sells or deals them, at the day's pass and in the test");
         Check(ranking.Contains("RivalHoldingsRules.Compare(") && ranking.Contains("RivalsHelper.IsRivalDefeated(rival.id)") && ranking.Contains("rival.WeeklyIncome")
               && game.Contains("RivalRanking.Read(HoldingsRanked)"), "rivals' buildings: the places are the game's own ranking, by weekly takings, without the defeated");
         Check(director.Contains("GoingPublic.InSession") && director.Contains("RivalHoldingsRules.Pace(Settings.RivalsHoldings, day, _holdingsDealt)") && director.Contains("_holdingsBroken = true;"),
