@@ -237,9 +237,11 @@ namespace RealLifeOverhaul.Economy
             box.Section("reallife_ibox_sec_offer");
             box.Row("reallife_svc_bid_price", ServicesText.Money(v.Price));
             box.Line(ServicesText.T("reallife_svc_rsale_takings", "amount", ServicesText.Money(v.Weekly)));
+            box.Row("reallife_svc_rsale_where", ServicesGame.Where(v.Place));
             box.Note(ServicesText.T("reallife_svc_rsale_how"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_rsale_buy", () => _director.BuyRival(id));
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_career_button_map", () => _director.ShowRival(id));
             BackButton(box);
         }
     }

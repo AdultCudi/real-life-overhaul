@@ -559,10 +559,15 @@ namespace RealLifeOverhaul.Tech
             Mentors(day);
             int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0, reviewsMore = 0, offersMore = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
+            bool staffPay = Settings.EconomyCompanyStaff;   // the one option for raises asked, rivals' offers, strikes and sick pay: off, professionals ask for nothing and no rival approaches them
             for (int i = 0; i < _people.Count; i++)
             {
                 Person person = _people[i];
                 Profile p = person.File;
+                if (!staffPay)
+                {
+                    TalentRules.StandDown(p);   // a request or offer made while it was on is called off, with no refusal's cost
+                }
                 PlaceDays.Entry here = _places.Of(p.Place, day);   // the place's comfort and team week, asked once for the place and not for each of its people
                 int hours = HoursOf(person, day);
                 person.HoursYesterday = hours;
@@ -620,6 +625,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     reviews++;
                     int rating = TalentRules.Review(p, Seed, day, year, person.MainPoints);
+                    if (!staffPay)
+                    {
+                        TalentRules.StandDown(p);
+                    }
                     bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
                     if (reviews <= TalentCatalogue.NoticesMost)
                     {
@@ -647,7 +656,7 @@ namespace RealLifeOverhaul.Tech
                     TalentRules.Answer(p, false, day, year);   // not answered in time: they take it
                     Tell(NotificationType.Warning, "reallife_talent_note_poach_gone", Data("name", person.Name, "rival", p.PoachBy, "day", p.NoticeEnd.ToString()), TabTeam, Row(p));
                 }
-                else if (TalentRules.Approachable(p, day)
+                else if (staffPay && TalentRules.Approachable(p, day)
                     && TalentRules.Approached(Seed, p, day, _shortageRead[(int)p.Def.Family], esteem, p.GameWage, p.Going, _places.PullAt(here, p.Place, day))
                     && !Held(p) && !gameOffer)
                 {

@@ -83,10 +83,31 @@ namespace RealLifeOverhaul.Economy
                 : "'" + h.Business + "' of " + h.RivalName + " has no price the game can name yet; nothing is put up") + ".");
             if (sale != null)
             {
-                Tell(NotificationType.Info, "reallife_svc_note_rival_selling", TabSale, "rsale:" + sale.Id, "seller", sale.SellerName, "business", sale.Business, "amount",
-                    ServicesText.Money(sale.Price), "day", sale.Deadline.ToString());
+                Tell(NotificationType.Info, "reallife_svc_note_rival_selling", TabSale, "rsale:" + sale.Id, "seller", sale.SellerName, "business", sale.Business, "address",
+                    ServicesGame.Where(sale.Place), "amount", ServicesText.Money(sale.Price), "day", sale.Deadline.ToString());
             }
             return sale;
+        }
+
+        /// <summary>
+        /// Show on map for a rival's business put up for sale: the game's own destination on its building, as the Careers pages' button sets
+        /// one, and a notice saying where it is.
+        /// </summary>
+        public void ShowRival(int id)
+        {
+            RivalSale v = _state != null ? _state.RivalSale(id) : null;
+            if (v == null || !ServicesGame.Split(v.Place, out string street, out int number))
+            {
+                Notifications.ShowError("reallife_svc_refuse_rival_sale_gone");
+                return;
+            }
+            if (!Careers.DeskGame.Route(street, number))
+            {
+                Notifications.ShowError("reallife_career_why_route");
+                return;
+            }
+            Notifications.Show(NotificationType.Success, "reallife_svc_rsale_shown",
+                new Dictionary<string, string>(2) { { "business", v.Business }, { "address", ServicesGame.Where(v.Place) } });
         }
 
         /// <summary>The player buys a rival's business put up for sale: the game's own checks, then its own question, then BizMan's own takeover.</summary>

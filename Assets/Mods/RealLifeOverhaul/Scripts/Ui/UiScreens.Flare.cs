@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_kit_kind_official", "reallife_flare_kit_kind_player", "reallife_flare_kit_kind_resident", "reallife_flare_kit_kind_sponsor",
                 "reallife_flare_kit_line_title", "reallife_flare_kit_new", "reallife_flare_kit_no_business", "reallife_flare_kit_no_business_body", "reallife_flare_kit_no_influencers",
                 "reallife_flare_kit_no_influencers_body", "reallife_flare_kit_no_photo", "reallife_flare_kit_no_place", "reallife_flare_kit_no_poll", "reallife_flare_kit_no_results",
-                "reallife_flare_kit_no_results_body", "reallife_flare_kit_no_reviews", "reallife_flare_kit_no_reviews_body", "reallife_flare_kit_notice_campaign",
+                "reallife_flare_kit_no_results_body", "reallife_flare_kit_no_reviews", "reallife_flare_kit_no_reviews_body", "reallife_flare_kit_no_reviews_wait", "reallife_flare_kit_notice_campaign",
                 "reallife_flare_kit_notice_campaign_flop", "reallife_flare_kit_notice_follow", "reallife_flare_kit_notice_follow_one", "reallife_flare_kit_notice_job",
                 "reallife_flare_kit_notice_offer", "reallife_flare_kit_notice_promo", "reallife_flare_kit_notice_promo_flop", "reallife_flare_kit_off_body",
                 "reallife_flare_kit_offer_card", "reallife_flare_kit_offer_until", "reallife_flare_kit_option_0", "reallife_flare_kit_option_1",

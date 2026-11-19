@@ -141,6 +141,49 @@ namespace RealLifeOverhaul.Flare
             return FlareUseRules.StarsOf(_city.StarRows, place.Replace('~', '|'));
         }
 
+        /// <summary>
+        /// The stars of a business as the page shows them: what the city's residents wrote (<see cref="StarsFor"/>) and the review posts of the feed
+        /// that went up for it, the two stores a business's reviews come to (the posts are the ones the player is told of and answers in the
+        /// feed). Null when there are none of either; the city's own row when no post is about it, so nothing is copied then.
+        /// </summary>
+        public FlareStarRow StarsWithPosts(string place, long now)
+        {
+            FlareStarRow city = StarsFor(place);
+            if (_file == null || string.IsNullOrEmpty(place))
+            {
+                return city;
+            }
+            FlareStarRow row = null;
+            for (int i = 0; i < _file.Posts.Count; i++)
+            {
+                FlarePost p = _file.Posts[i];
+                if (p.Source != FlareSource.Review || p.Author == FlareAuthor.Player || p.Place != place || p.At > now
+                    || (p.Author == FlareAuthor.Network && _file.Net.IsHidden(p.AuthorId)))
+                {
+                    continue;
+                }
+                row = row ?? CopyOf(city, place);
+                switch (FlareRules.Clamp(p.Arg, 1, 5))
+                {
+                    case 1: row.One++; break;
+                    case 2: row.Two++; break;
+                    case 3: row.Three++; break;
+                    case 4: row.Four++; break;
+                    default: row.Five++; break;
+                }
+            }
+            return row ?? city;
+        }
+
+        private static FlareStarRow CopyOf(FlareStarRow from, string place)
+        {
+            return from == null ? new FlareStarRow { Key = place } : new FlareStarRow
+            {
+                Key = from.Key, One = from.One, Two = from.Two, Three = from.Three, Four = from.Four, Five = from.Five, Recent = from.Recent, Earlier = from.Earlier,
+                Eased = from.Eased, EasedStars = from.EasedStars, Raised = from.Raised, RaisedStars = from.RaisedStars
+            };
+        }
+
         /// <summary>Demand, per cent, for the kind a live trend or the newest placed post is about. Not a function of how many posts there are.</summary>
         public int PostDemand()
         {

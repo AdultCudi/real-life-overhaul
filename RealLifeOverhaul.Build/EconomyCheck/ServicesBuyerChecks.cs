@@ -356,6 +356,14 @@ internal static partial class Program
             fits &= en(notice).Length > 0 && en(notice).Length + 100 <= 240;   // names and an amount filled in
         }
         Check(fits, "named buyers' texts: each notice fits the game's notification with its names filled");
+        // A rival's business for sale says where it is and can be shown on the map, in the notice, the old page and the kit's card, by the game's own destination
+        // that the Careers pages' Show on map sets (a player could not tell which business it was or where).
+        string sellKit = ModSource(@"Ui\Services\ServicesLive.Sell.cs"), sellOld = EconomySource(@"Services\ServicesApp.Sale.cs"), rivals = EconomySource(@"Services\ServicesDirector.Rivals.cs");
+        Check(en("reallife_svc_note_rival_selling").Contains("{address}") && en("reallife_svc_rsale_where").Length > 0 && en("reallife_svc_rsale_shown").Contains("{address}")
+              && rivals.Contains("\"address\",") && rivals.Contains("Careers.DeskGame.Route(street, number)")
+              && sellOld.Contains("ServicesGame.Where(v.Place)") && sellOld.Contains("_director.ShowRival(id)")
+              && sellKit.Contains("ServicesGame.Where(v.Place)") && sellKit.Contains("_d.ShowRival(id2)") && sellKit.Contains("UiAction.Option, () => _d.ShowRival(id2)"),
+            "named buyers' texts: a rival's sale names its address and district and has a Show on map in the notice, the old page and the kit");
         string guide = en("reallife_guide_economy_sale");
         Check(guide.Contains("{sale_quality_least}") && guide.Contains("{sale_rival_weeks}") && guide.Contains("{sale_rsale_ask}") && guide.Contains("# Rivals selling")
               && guide.Contains("<b>" + en("reallife_svc_raise_head") + "</b>") && guide.Contains("<b>" + en("reallife_svc_rsale_buy") + "</b>")
