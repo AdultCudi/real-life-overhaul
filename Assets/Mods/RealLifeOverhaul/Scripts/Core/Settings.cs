@@ -173,6 +173,7 @@
         public const string FamilyExpectId = "family_expect";
         public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
         public const string FamilyYearWeeksId = "family_year_weeks";
+        public const string FamilyMomContactId = "family_mom_contact";
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
         public const string CivicConstructionId = "civic_construction";
@@ -220,6 +221,7 @@
         public const string EconomyCompanyLevelId = "economy_company_level";
         public const string EconomyCompanyStaffId = "economy_company_staff";
         public const string EconomyCompanyAgreeUpToId = "economy_company_agree_up_to";   // ...a request for a raise of this share of the pay or less is agreed by itself
+        public const string EconomyCompanyMatchRivalsId = "economy_company_match_rivals";   // ...a rival's offer to staff or a professional is matched by itself up to the same limit
         public const string EconomyCompanyCoverId = "economy_company_cover";
         public const string EconomyCompanyMarketingId = "economy_company_marketing";
         public const string EconomyCompanyTaxId = "economy_company_tax";
@@ -402,6 +404,7 @@
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
         public const string CareersClassStartId = "careers_class_start";
+        public const string CareersSkillFadeId = "careers_skill_fade";
         public const string CareersRejectReasonId = "careers_reject_reason";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
@@ -600,6 +603,7 @@
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
         public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
+        public static bool FamilyMomContact = true;      // Mom gets in touch by herself: texts, calls, visits, introductions (off: she is only ever called), and at most one such contact a day
         public static bool Civic = true;                 // civic life: a city government and a construction programme
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
         public static bool CivicConstruction = true;     // construction sites that progress over days
@@ -647,6 +651,7 @@
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompanyStaff = true;   // ...the wage market, raises, rivals' offers, strikes, overtime and sick pay
         public static int EconomyCompanyAgreeUpTo = 0;   // ...a request for a raise of this many per cent of the pay or less is agreed by itself each morning; 0 is off
+        public static bool EconomyCompanyMatchRivals = false;   // a rival's offer to staff or a professional is matched at once, up to the agree limit, with one notice a day
         public static bool EconomyCompanyCover = true;   // ...business insurance: policies, premiums and claims
         public static bool EconomyCompanyMarketing = true;   // ...campaigns and their reports
         public static bool EconomyCompanyTax = true;     // ...the quarterly return and the accountant
@@ -845,6 +850,7 @@
         public static bool CareersLife = true;           // working life in a profession (off: a job is its days and pay alone)
         public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type
         public static bool CareersClassStart = true;     // "your class starts now" at a class's hour while the player is not inside the place that holds it, once a class
+        public static bool CareersSkillFade = true;      // a skill left unused for weeks fades a little each day (off: nothing fades, and fading starts again from the day it is switched on)
         public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
@@ -882,6 +888,17 @@
         public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
         private static string _modId;
+
+        /// <summary>Sets "Match rivals' offers automatically" from the Open Roles page and saves it, so the options screen stays in step.</summary>
+        public static void SetMatchRivals(bool on)
+        {
+            EconomyCompanyMatchRivals = on;
+            if (_modId != null)
+            {
+                UnityEngine.PlayerPrefs.SetInt(Key(_modId, EconomyCompanyMatchRivalsId), on ? 1 : 0);
+                UnityEngine.PlayerPrefs.Save();
+            }
+        }
 
         /// <summary>Flips the third-person camera on or off and saves it, so the options screen stays in step.</summary>
         public static void ToggleCamera()
@@ -1080,6 +1097,7 @@
             FamilyExpect = Bool(modId, FamilyExpectId, FamilyExpect);
             FamilyInterest = Int(modId, FamilyInterestId, FamilyInterest);
             FamilyYearWeeks = Int(modId, FamilyYearWeeksId, FamilyYearWeeks);
+            FamilyMomContact = Bool(modId, FamilyMomContactId, FamilyMomContact);
             Civic = Bool(modId, CivicId, Civic);
             CivicElections = Bool(modId, CivicElectionsId, CivicElections);
             CivicConstruction = Bool(modId, CivicConstructionId, CivicConstruction);
@@ -1127,6 +1145,7 @@
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
             EconomyCompanyStaff = Bool(modId, EconomyCompanyStaffId, EconomyCompanyStaff);
             EconomyCompanyAgreeUpTo = Int(modId, EconomyCompanyAgreeUpToId, EconomyCompanyAgreeUpTo);
+            EconomyCompanyMatchRivals = Bool(modId, EconomyCompanyMatchRivalsId, EconomyCompanyMatchRivals);
             EconomyCompanyCover = Bool(modId, EconomyCompanyCoverId, EconomyCompanyCover);
             EconomyCompanyMarketing = Bool(modId, EconomyCompanyMarketingId, EconomyCompanyMarketing);
             EconomyCompanyTax = Bool(modId, EconomyCompanyTaxId, EconomyCompanyTax);
@@ -1313,6 +1332,7 @@
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);
+            CareersSkillFade = Bool(modId, CareersSkillFadeId, CareersSkillFade);
             CareersRejectReason = Bool(modId, CareersRejectReasonId, CareersRejectReason);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);

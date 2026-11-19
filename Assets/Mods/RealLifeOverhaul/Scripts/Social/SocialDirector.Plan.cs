@@ -87,7 +87,7 @@ namespace RealLifeOverhaul
                 && !SocialPlaces.Find(plan.Kind, new Vector3(plan.X, plan.Y, plan.Z), 0f, 250f, out venue, null, plan.Time))
             {
                 // The place is not what it was: called off, nobody's fault.
-                SocialLife.SendText(person, "reallife_social_plan_lost", SocialLife.Data(person), true);
+                SocialLife.SendText(person, "reallife_social_plan_lost", SocialLife.Data(person), true, true);
                 plan.Clear();
                 return;
             }
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul
             RefreshContext(InstanceBehavior<GameManager>.Instance, Time.time);
             if (!Begin(scene))
             {
-                SocialLife.SendText(person, "reallife_social_plan_lost", SocialLife.Data(person), true);
+                SocialLife.SendText(person, "reallife_social_plan_lost", SocialLife.Data(person), true, true);
                 plan.Clear();
             }
         }
@@ -111,7 +111,7 @@ namespace RealLifeOverhaul
             bool rain = RainHelper.isRaining && kind == PlanKind.Walk;
             Dictionary<string, string> data = SocialLife.PlanData(person, plan, 0f);
             data["outing"] = SocialLife.T(SocialCatalogue.Outing(kind).Name);
-            SocialLife.SendText(person, SocialLines.Pick(rain ? SocialCatalogue.TextCancelRain : SocialCatalogue.TextCancel), data, true);
+            SocialLife.SendText(person, SocialLines.Pick(rain ? SocialCatalogue.TextCancelRain : SocialCatalogue.TextCancel), data, true, true);
             Logger?.Info("Social: " + person.Name + " called off " + kind + ".");
             plan.Clear();
             // The next call to them picks it up again.
@@ -133,9 +133,13 @@ namespace RealLifeOverhaul
 
         private bool StartRing(SocialPerson person, float real)
         {
-            if (person == null || !person.Met || !CanRing())
+            if (person == null || !person.Met || !CanRing() || (person.IsFamily && !MomContact.MayOn(SocialLife.Day)))
             {
                 return false;
+            }
+            if (person.IsFamily)
+            {
+                MomContact.Note(SocialLife.Day);
             }
             _ringing = true;
             _ringPerson = person;
@@ -168,7 +172,7 @@ namespace RealLifeOverhaul
                 // player never heard what it was, so it lapses at no cost, as an offer whose text is refused does.
                 _ringing = false;
                 if (_ringPerson != null && Settings.Social
-                    && !SocialLife.SendText(_ringPerson, SocialLines.Pick(SocialCatalogue.TextMissedCall), SocialLife.Data(_ringPerson)))
+                    && !SocialLife.SendText(_ringPerson, SocialLines.Pick(SocialCatalogue.TextMissedCall), SocialLife.Data(_ringPerson), false, true))
                 {
                     SocialOffer offer = SocialState.Offer;
                     if (offer.Active && offer.Person == _ringPerson.Index)

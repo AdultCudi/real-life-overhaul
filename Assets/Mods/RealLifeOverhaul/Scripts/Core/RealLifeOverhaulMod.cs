@@ -392,6 +392,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
                 .AddToggle(Settings.CareersClassStartId, "reallife_study_opt_class_start", Settings.CareersClassStart,
                     v => Settings.CareersClassStart = v)
+                .AddToggle(Settings.CareersSkillFadeId, "reallife_study_opt_skill_fade", Settings.CareersSkillFade,
+                    v => Settings.CareersSkillFade = v)
                 .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
                     v => Settings.CareersDegrees = v)
                 .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
@@ -1065,6 +1067,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyStaff = v)
                 .AddSlider(Settings.EconomyCompanyAgreeUpToId, "reallife_co_opt_agree_up_to", 0, Economy.CompanyCatalogue.AgreeUpToMost, Settings.EconomyCompanyAgreeUpTo,
                     v => Settings.EconomyCompanyAgreeUpTo = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.EconomyCompanyMatchRivalsId, "reallife_co_opt_match_rivals", Settings.EconomyCompanyMatchRivals,
+                    v => Settings.EconomyCompanyMatchRivals = v)
                 .AddToggle(Settings.EconomyCompanyCoverId, "reallife_co_opt_cover", Settings.EconomyCompanyCover,
                     v => Settings.EconomyCompanyCover = v)
                 .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
@@ -1553,6 +1557,8 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyChildren = v)
                 .AddToggle(Settings.FamilyRelativesId, "reallife_family_relatives", Settings.FamilyRelatives,
                     v => Settings.FamilyRelatives = v)
+                .AddToggle(Settings.FamilyMomContactId, "reallife_family_mom_contact_opt", Settings.FamilyMomContact,
+                    v => Settings.FamilyMomContact = v)
                 .AddToggle(Settings.FamilyFrictionId, "reallife_family_friction", Settings.FamilyFriction,
                     v => Settings.FamilyFriction = v)
                 .AddToggle(Settings.FamilyWorkId, "reallife_family_work_opt", Settings.FamilyWork,

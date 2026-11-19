@@ -209,7 +209,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 bool available = DrivingSchool.Available(service, true, out string reason);
-                string detail = Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service)))
+                string detail = Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service))).Replace("{days}", LicenceLaw.ValidDays.ToString())
                     .Replace("{status}", available ? Licences.T("reallife_school_ready") : DrivingSchool.ReasonText(reason, service));
                 list.Add((int)service, Licences.T(NameKeys[(int)service]), detail, ButtonDo, available, list.HeightFor(detail.Length, true));
                 count++;
@@ -278,7 +278,14 @@ namespace RealLifeOverhaul
                 }
                 string done = _director.Take(service);
                 bool failed = LicenceDirector.Refused(done);
-                Licences.Toast(failed ? NotificationType.Warning : NotificationType.Success, done ?? "reallife_school_not_now", 9f);
+                if (done == "reallife_school_done_renew")
+                {
+                    Licences.Toast(NotificationType.Success, done, "days", LicenceLaw.ValidDays.ToString(), 9f);
+                }
+                else
+                {
+                    Licences.Toast(failed ? NotificationType.Warning : NotificationType.Success, done ?? "reallife_school_not_now", 9f);
+                }
                 Step(service + (failed ? " not taken (" + done + ")" : " taken"));
                 if (!failed && (service == SchoolService.Renew || service == SchoolService.Taxi || service == SchoolService.Motorcycle))
                 {

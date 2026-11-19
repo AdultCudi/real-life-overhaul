@@ -281,7 +281,7 @@ namespace RealLifeOverhaul
                 return Licences.StandingName(LicenceStanding.None);
             }
             return Licences.T("reallife_lic_card_line", "standing", Licences.StandingName(LicenceState.Standing(kind, day)), "issued", card.Issued.ToString())
-                .Replace("{expires}", card.Expires.ToString());
+                .Replace("{expires}", card.End.ToString());
         }
 
         /// <summary>Appends a line for each record entry that still counts.</summary>

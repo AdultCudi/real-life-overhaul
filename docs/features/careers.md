@@ -250,6 +250,14 @@ With Developer diagnostics on, `Player.log` has a "Careers check (set off)" line
 
 Why: the class at a desk and the work desk used to be put on their way in the frame of the press and given their walk order a frame later. Whenever the panel saw them on their way in the frame of the press (which depends on whether the key or the click is read before the panel's `Update`), the walk was dropped: the panel closed and the player stayed where they were.
 
+## Skills that fade, and the option that stops it (`StudyRules.Fade`, `Hold`, `Fading`)
+
+- A skill unused for `StudyCatalogue.FadeAfterDays` days loses `FadePerDay` thousandths a day, never below `FadeFloor` of its best. The option **Skills fade without practice** (`careers_skill_fade`, on by default) is read by the night's
+  pass (`CareersDirector.StudyDay`): off, nothing fades and each midnight keeps its day in `StudyFile.FadeFrom` (the last field of the file's head; a save without it reads 0). A skill counts as used on that day at the earliest, so switching
+  the option on again takes nothing off in one go: the fading starts again from the day it was switched on, after the usual days.
+- The Campus app's Skills tab marks a skill as fading only with the option on, and says that nothing fades when it is off (`reallife_campus_skills_about_steady`).
+- Checks: `--options4`.
+
 ## The management ladder at a city company
 
 A job on the floor of a store of one of the city's companies (a rival's chain, or the city's own businesses of one name and type; `CareerLadderRules.Holds`: a profession worked at a business of the city or a rival, never the public sector or an office) puts the player on a management ladder there. Option "The management ladder at the city's companies" (`careers_ladder`), on by default; off, a job there is the profession's ranks alone and the record is kept. It answers a player's suggestion (#suggestions, "Corporate Bureaucracy System Expansion", section 6): the same ladder as in the player's own companies, promotion by time in the rank, performance score, skills and a superior's recommendation, and the rank's real tools on promotion.

@@ -237,7 +237,7 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(Logger, "Friend texts", TestRefusal.FeatureOff, 0, "text messages are switched off");
                 return;
             }
-            SocialLife.SendText(friend, SocialLines.Pick(friend.Mood <= -1 ? SocialCatalogue.TextBadDay : SocialCatalogue.TextNews), SocialLife.Data(friend), true);
+            SocialLife.SendText(friend, SocialLines.Pick(friend.Mood <= -1 ? SocialCatalogue.TextBadDay : SocialCatalogue.TextNews), SocialLife.Data(friend), true, true);
         }
 
         /// <summary>A lift, a loan and help moving in turn; the player calls them to answer.</summary>

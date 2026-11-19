@@ -42,6 +42,11 @@ namespace RealLifeOverhaul.Economy
             best.PoachOffer = Math.Max(best.PoachOffer, CompanyCatalogue.Share(best.Going, 1000 + Math.Max(CompanyCatalogue.PoachPremium, premium)));
             name = best.Name;
             business = ShopName(best.Place);
+            if (MatchRival(best, Save.Day))
+            {
+                Changed();
+                return true;   // matched by itself: the night's matches are told together (RivalMatches)
+            }
             Tell(NotificationType.Warning, "reallife_co_note_offer", new Dictionary<string, string>
             {
                 { "name", best.Name }, { "rival", best.Rival }, { "wage", CompanyText.Wage(best.PoachOffer) }, { "days", CompanyCatalogue.PoachAnswerDays.ToString() }

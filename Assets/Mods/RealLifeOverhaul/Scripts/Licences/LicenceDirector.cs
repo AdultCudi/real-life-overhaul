@@ -527,7 +527,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                int left = card.Expires - day;
+                int left = card.End - day;
                 if (left == LicenceLaw.RenewFromDays || left == 3)
                 {
                     Licences.Toast(NotificationType.Warning, "reallife_lic_renew_soon", "class", Licences.ClassName(kind), "days", left.ToString(), 10f);

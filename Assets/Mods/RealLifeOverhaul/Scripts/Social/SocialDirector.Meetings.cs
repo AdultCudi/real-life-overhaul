@@ -261,7 +261,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < count; i++)
             {
                 SocialPerson p = SocialState.Get((from + i) % count);
-                if (p != null && p.Met && !p.Drifted && p.Stage >= SocialStage.Friend && !p.Asleep(hour) && p.LastOutingDay != day
+                if (p != null && p.Met && !p.Drifted && p.Stage >= SocialStage.Friend && !p.Asleep(hour) && p.LastOutingDay != day && (!p.IsFamily || MomContact.MayOn(day))
                     && p.FreeAt(hour, SocialLife.Weekend(day)) && (best == null || p.Closeness > best.Closeness + 10))
                 {
                     best = p;
@@ -329,8 +329,16 @@ namespace RealLifeOverhaul
             }
             else if (_pendingDropBy != null)
             {
-                if (Begin(new MeetScene(MeetScene.Kind.DropBy, _pendingDropBy, null, _dropByAtShop)))
+                if (_pendingDropBy.IsFamily && !MomContact.MayOn(SocialLife.Day))
                 {
+                    _pendingDropBy = null;   // she was picked to drop by, but has started a contact since (or her option was switched off)
+                }
+                else if (Begin(new MeetScene(MeetScene.Kind.DropBy, _pendingDropBy, null, _dropByAtShop)))
+                {
+                    if (_pendingDropBy.IsFamily)
+                    {
+                        MomContact.Note(SocialLife.Day);
+                    }
                     _pendingDropBy = null;
                 }
             }

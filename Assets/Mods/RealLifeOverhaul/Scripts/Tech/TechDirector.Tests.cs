@@ -62,6 +62,11 @@ namespace RealLifeOverhaul.Tech
             }
             string rival = TechBridges.Rival != null && p.At != null ? TechBridges.Rival(p.At) : null;
             TalentRules.Offer(p.File, string.IsNullOrEmpty(rival) ? TechText.T("reallife_talent_rival_default") : rival, Save.Day);
+            if (MatchOffer(p, Save.Day))
+            {
+                Changed();   // matched by itself ("Match rivals' offers automatically" on, the offer inside its limit): the notice comes with the next hour
+                return;
+            }
             Tell(NotificationType.Warning, "reallife_talent_note_poach",
                 Data("name", p.Name, "rival", p.File.PoachBy, "percent", (p.File.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
                 TabTeam, Row(p.File));

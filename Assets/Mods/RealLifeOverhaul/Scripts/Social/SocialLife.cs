@@ -369,7 +369,7 @@ namespace RealLifeOverhaul
             person.MovedIn = false;
             person.Dates = 0;
             Remember(person, MemoryCode.BreakUp);
-            SendText(person, SocialLines.Pick(SocialCatalogue.TextBreakUp), Data(person), true);
+            SendText(person, SocialLines.Pick(SocialCatalogue.TextBreakUp), Data(person), true, true);
             Toast(NotificationType.Error, "reallife_social_broke_up", Data(person), 12f);
             ModState.AddModifier(ModState.MoodDownBig);
             TellPartnerChanged();
@@ -469,10 +469,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Refused by <see cref="MayText"/> and once they texted today, unless <paramref name="must"/>; with texts off, a notification.</summary>
-        public static bool SendText(SocialPerson person, string key, Dictionary<string, string> data, bool must = false)
+        /// <summary>
+        /// Refused by <see cref="MayText"/> and once they texted today, unless <paramref name="must"/>; with texts off, a notification.
+        /// Mom's own are also held to <see cref="MomContact"/> (her option, and one contact a day from every feature) unless
+        /// <paramref name="reply"/>: a text that answers what the player did or agreed to (a plan, a favour, a loan) is never held back.
+        /// </summary>
+        public static bool SendText(SocialPerson person, string key, Dictionary<string, string> data, bool must = false, bool reply = false)
         {
             if (person == null || key == null || !person.Met || !SocialState.Loaded)
+            {
+                return false;
+            }
+            bool momStarts = person.IsFamily && !reply;
+            if (momStarts && !MomContact.MayOn(Day))
             {
                 return false;
             }
@@ -487,6 +496,10 @@ namespace RealLifeOverhaul
                 if (must && (!Settings.Social || !Settings.SocialTexts))
                 {
                     person.LastLine = key;
+                    if (momStarts)
+                    {
+                        MomContact.Note(Day);
+                    }
                     Said(person, key, data);
                     Toast(NotificationType.Info, key, data, 10f);
                     return true;
@@ -508,6 +521,10 @@ namespace RealLifeOverhaul
                 SocialState.TextsToday++;
                 person.LastTextDay = Day;
                 person.LastLine = key;
+                if (momStarts)
+                {
+                    MomContact.Note(Day);
+                }
                 Said(person, key, data);
                 return true;
             }
@@ -600,7 +617,7 @@ namespace RealLifeOverhaul
             float weight = person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f;
             Change(person, 0f, SocialRules.StoodUpAffection * weight, SocialRules.StoodUpTrust * weight);
             Remember(person, MemoryCode.StoodUp);
-            SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), data, true);
+            SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), data, true, true);
             ModState.AddModifier(ModState.MoodDown);
             Logger?.Info("Social: the player stood " + person.Name + " up.");
         }

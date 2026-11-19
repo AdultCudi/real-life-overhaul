@@ -136,11 +136,11 @@ namespace RealLifeOverhaul.Planner
             for (int k = 0; k < ClassKeys.Length; k++)
             {
                 LicenceState.Card card = LicenceState.Of((LicenceClass)Classes[k]);
-                if (!card.Held || card.Expires <= 0)
+                if (!card.Held || card.End <= 0)
                 {
                     continue;
                 }
-                PlannerEntry e = into.Add(Id, Classes[k], 0, PlannerCategory.Licence, card.Expires);
+                PlannerEntry e = into.Add(Id, Classes[k], 0, PlannerCategory.Licence, card.End);
                 if (e != null && into.WantText)
                 {
                     e.Title = PlannerText.T("reallife_planner_licence_title", "class", ClassKeys[k].GetLocalization());

@@ -337,6 +337,20 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
   The children stay with the player and spend every other weekend, or every weekend, with the other parent, who then pays half of what the children cost.
   Nothing in any of this harms a child.
 
+## Mom's own contact (`MomRules`, `MomContact`)
+
+- The option **Mom gets in touch by herself** (`family_mom_contact`, on by default, in the family area but not grey with the family switch: she is the social life's too) decides whether Mom ever starts a contact.
+  Off, she never texts, rings, drops by, brings somebody to meet the player, writes about the dinner or a birthday, or is dealt as a life event. She stays in the phone and her call is the player's, so a call to her works as ever.
+- With it on there is one rule for every feature that speaks for her: at most one contact a day (`MomRules.May`, the day kept in `ModState.LastMomContactDay` and saved). Before it, each feature had its own cap and they stacked:
+  the social life sent her texts (one a person a day, but also a ring, an outing's invitation, a favour asked, a stranger introduced, a drop-by at the player's shop and, on top, the day after an outing), the life events dealt her
+  texts (21 of them, any waking hour) and the family sent the dinner invitation, the dinner day's text, a Sunday visit and a text of a missed dinner. All of these could meet on one day.
+- Where it is asked: `SocialLife.SendText` (every text of the social life to her, unless it answers what the player did or agreed to, passed as `reply`), `SocialDirector.StartRing`, who is picked to text (`Reachable`), the arrest
+  reaction, `Visitor` and the visit's start, `LifeEventRunner.ReadContext` (her events need `Need.Mom`, which now also needs her to be allowed) and `Run`, and the family's `Relatives` texts. Words about the player's own news
+  (an engagement, a child) and her gift wait on the option alone, since they answer it, and count as her contact for the day.
+- Nothing is kept for her while it is off: the day-after text she owes is let go, the family's flags (`LastHolidayTold`, `LastHoliday`) are set whether or not the text goes, so switching it on again brings one contact a day and no burst.
+  The dinner at Mom's still stands on the calendar and her table is still set, so the player can call her and go over; hard times does not count a dinner nobody told of as late, nor say she rang the partner.
+- Checks: `--options4` (`Options4Checks.cs`).
+
 ## The phone
 
 - **Family**: five short pages (household, the family, coming up, memories, budget) and "things to do", one at a time with "do it", "something else" and leaving, which is every decision above.

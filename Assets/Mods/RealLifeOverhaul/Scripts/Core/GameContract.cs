@@ -199,6 +199,8 @@ namespace RealLifeOverhaul
 
         // Core/RivalOfferGuard: a rival's open offer told from one that is over; without them only the employee is judged
         public static readonly GameMember OfferDeadline = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "poachDeadlineDays", "Int32"));
+        public static readonly GameMember OfferAccept = Optional(Method(RivalOffers, Game, "Entities.EmployeeInstance", "AcceptPoachPayRaise", "Void"));
+        // (the Accept button's own call, for the option that matches offers by itself)
         public static readonly GameMember OfferDay = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "lastPoachDay", "Int32"));
 
         // Core/StaffLeave: which day an hours count is of; without it a count at a day's first hour is taken for the day before

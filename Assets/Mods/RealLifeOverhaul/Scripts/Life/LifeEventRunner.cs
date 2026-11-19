@@ -56,7 +56,7 @@ namespace RealLifeOverhaul
             }
             flags |= If(TimeHelper.CurrentDay - ModState.LastMomGiftDay >= 7, Need.MomGiftDue);
             flags |= If(PhoneContacts.Friend != null, Need.Friend);
-            flags |= If(PhoneContacts.Mom != null, Need.Mom);
+            flags |= If(PhoneContacts.Mom != null && MomContact.May, Need.Mom);   // her events are dealt only while she may get in touch (option, and one a day)
             flags |= If(!HudConfirm.isOpen, Need.CanPrompt);
             flags |= If(TimeHelper.CurrentDay <= 7, Need.Newcomer);
             flags |= If(TimeHelper.CurrentDay >= 15, Need.Veteran);
@@ -68,6 +68,10 @@ namespace RealLifeOverhaul
 
         public static void Run(LifeEvent lifeEvent)
         {
+            if ((lifeEvent.Needs & Need.Mom) != 0)
+            {
+                MomContact.Note(TimeHelper.CurrentDay);
+            }
             if (!lifeEvent.IsChoice)
             {
                 Apply(lifeEvent, Pick(lifeEvent.Outcomes));

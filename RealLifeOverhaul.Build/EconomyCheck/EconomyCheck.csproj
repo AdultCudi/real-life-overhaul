@@ -1479,6 +1479,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunRules.cs" Link="Mod\TestRun\RunRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunPlan.cs" Link="Mod\TestRun\RunPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunText.cs" Link="Mod\TestRun\RunText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\LicenceTerm.cs" Link="Mod\LicenceTerm.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\MomRules.cs" Link="Mod\MomRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RivalMatchRules.cs" Link="Mod\RivalMatchRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\BulkRaiseRules.cs" Link="Mod\BulkRaiseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\HeavyRules.cs" Link="Mod\HeavyRules.cs" />
     <!-- The city's population (PopulationChecks.cs): the measure, generation, life, the labour market, money and the pools, housing, the run, all game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationCatalogue.cs" Link="Mod\Population\PopulationCatalogue.cs" />
