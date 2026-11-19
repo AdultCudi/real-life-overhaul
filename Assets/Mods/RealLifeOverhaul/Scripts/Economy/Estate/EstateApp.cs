@@ -378,6 +378,8 @@ namespace RealLifeOverhaul.Economy
                 row.Set(4, EstateText.T("reallife_estate_row_going_concern"));
             }
             ParkSpaces.SpacePark pickedSpace = WriteSpaceRows(districts, ref selected);   // the buildings with a car park under them (ParkSpaces)
+            FlatListing pickedFlat;
+            bool flatPicked = WriteFlatRows(districts, ref selected, out pickedFlat);   // the flats and studios for sale (Flats)
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_no_market"));
@@ -385,6 +387,10 @@ namespace RealLifeOverhaul.Economy
             if (pickedSpace != null)
             {
                 WriteSpace(box, pickedSpace);
+            }
+            else if (flatPicked)
+            {
+                WriteFlatListing(box, pickedFlat, c);
             }
             else if (picked != null)
             {

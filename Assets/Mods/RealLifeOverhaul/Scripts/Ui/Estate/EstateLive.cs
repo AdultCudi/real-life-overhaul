@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Ui
         private static string GuideNote(int tab, string pick)
         {
             string key = pick != null && pick.StartsWith("spc:", StringComparison.Ordinal) ? "reallife_meta_title_parking_spaces"
+                : pick != null && pick.StartsWith("flt:", StringComparison.Ordinal) ? "reallife_meta_title_economy_estate_flats"
                 : tab == EstateDirector.TabTenants || tab == EstateDirector.TabWorks || (pick != null && (pick.StartsWith("unt:", StringComparison.Ordinal)
                     || pick.StartsWith("cal:", StringComparison.Ordinal) || pick.StartsWith("app:", StringComparison.Ordinal) || pick.StartsWith("wrk:", StringComparison.Ordinal)))
                     ? "reallife_meta_title_economy_estate_duties" : "reallife_meta_title_economy_estate";

@@ -490,6 +490,8 @@ namespace RealLifeOverhaul.Meta
                 S("parkspaces").For("parking_spaces").Opt("parking_spaces", "economy_estate").Also("parking space spaces car park garage underground buy bay spot hourly charge"),
                 S("carsupply").For("economy_dealer_supply").Opt("economy_dealer_supply", "economy_dealer")
                     .Also("supplier suppliers wholesaler importer car showroom dealership delivery order standing order manager stock"),
+                S("estateflats").For("economy_estate_flats").Opt("economy_estate_flats", "economy_estate")
+                    .Also("flat flats studio studios apartment apartments home buy own mortgage deposit lease service charge landlord let tenant first home affordable cheap"),
                 S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")
                     .Also("landlord tenants satisfaction repairs repair maintenance complaints inspection inspector fine arrears payment plan reminder eviction letting agent property manager flip"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),

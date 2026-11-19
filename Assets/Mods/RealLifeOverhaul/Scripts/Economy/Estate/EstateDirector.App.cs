@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Economy
                     EstateGame.ReadAgency(_state.Agency);
                     if (added > 0 || dropped > 0)
                     {
+                        FoldFlats(Save.Day);
                         EstateGame.WriteValues(_state, _climate.Index);
                         WriteRents(false);
                         BuildAlerts(Save.Day);
@@ -120,7 +121,7 @@ namespace RealLifeOverhaul.Economy
             {
                 waiting += _state.Hotels[i].AskRooms > 0 ? 1 : 0;
             }
-            return waiting;
+            return waiting + FlatsWaiting();
         }
 
         partial void PropertyAlerts(int day);

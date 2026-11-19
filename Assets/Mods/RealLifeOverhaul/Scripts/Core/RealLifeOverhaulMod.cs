@@ -1334,6 +1334,10 @@ namespace RealLifeOverhaul
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
                     v => Settings.EstateDuties = v)
+                .AddToggle(Settings.EstateFlatsId, "reallife_flat_opt", Settings.EstateFlats,
+                    v => Settings.EstateFlats = v)
+                .AddButton("reallife_flat_test_buy", () => Economy.EstateDirector.Instance?.TestFlatBuy())
+                .AddButton("reallife_flat_test_bills", () => Economy.EstateDirector.Instance?.TestFlatBills())
                 .AddToggle(Settings.ParkingSpacesId, "reallife_space_enabled", Settings.ParkingSpaces,
                     v => Settings.ParkingSpaces = v)
                 .AddButton("reallife_space_test_btn_buy", () => ParkSpaces.SpaceDirector.Instance?.TestBuy())
