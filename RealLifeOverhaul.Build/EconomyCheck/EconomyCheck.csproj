@@ -301,6 +301,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Sold.cs" Link="Mod\EstateRules.Sold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Duties.cs" Link="Mod\EstateRules.Duties.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyBook.cs" Link="Mod\AgencyBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyBookCatalogue.cs" Link="Mod\AgencyBookCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyBookRules.cs" Link="Mod\AgencyBookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyBookStore.cs" Link="Mod\AgencyBookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HotelRules.cs" Link="Mod\HotelRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HireRules.cs" Link="Mod\HireRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateBalance.cs" Link="Mod\EstateBalance.cs" />
@@ -423,6 +427,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenCatalogue.cs" Link="Mod\RivalsSeen\SeenCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenFile.cs" Link="Mod\RivalsSeen\SeenFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenRules.cs" Link="Mod\RivalsSeen\SeenRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\HeadOfficeRules.cs" Link="Mod\RivalsSeen\HeadOfficeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenDay.cs" Link="Mod\RivalsSeen\SeenDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenStore.cs" Link="Mod\RivalsSeen\SeenStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenTable.cs" Link="Mod\RivalsSeen\SeenTable.cs" />

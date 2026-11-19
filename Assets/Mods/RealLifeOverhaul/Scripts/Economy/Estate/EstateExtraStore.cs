@@ -281,12 +281,17 @@ namespace RealLifeOverhaul.Economy
             {
                 ReadRing(s, text);
             }
+            if (data != null && data.TryGetValue(AgencyBookStore.Key, out text))
+            {
+                AgencyBookStore.Read(s.Agency.Book, text);
+            }
         }
 
         public static void Write(EstateState s, Dictionary<string, string> data)
         {
             data[TenantsKey] = WriteTenants(s);
             data[RentRingKey] = WriteRing(s);
+            data[AgencyBookStore.Key] = AgencyBookStore.Write(s.Agency.Book);
         }
 
         private static void Ints(StringBuilder t, params int[] values)

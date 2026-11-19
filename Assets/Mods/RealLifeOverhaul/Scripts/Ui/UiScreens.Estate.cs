@@ -351,7 +351,27 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_estate_listing_run_down", "reallife_ui_estate_listing_kept", "reallife_ui_estate_listing_how",
                 "reallife_ui_estate_market_heading", "reallife_estate_hire_how",
                 // the Guide's page named at the foot
-                "reallife_guide_app", "reallife_meta_title_economy_estate", "reallife_meta_title_economy_estate_duties", "reallife_meta_title_parking_spaces"
+                "reallife_guide_app", "reallife_meta_title_economy_estate", "reallife_meta_title_economy_estate_duties", "reallife_meta_title_parking_spaces",
+                "reallife_estate_block_why_rival", "reallife_estate_block_why_nobody", "reallife_estate_block_why_standard", "reallife_estate_block_why_inspection",
+                "reallife_estate_block_why_resigned",
+                "reallife_estate_manager_agency", "reallife_estate_duty_agency_what", "reallife_ui_estate_fee_agency", "reallife_ui_estate_fee_agency_short",
+                "reallife_estate_filter_managing", "reallife_estate_stage_managed", "reallife_estate_stage_lost", "reallife_estate_row_block", "reallife_estate_owner_0",
+                "reallife_estate_owner_1", "reallife_estate_owner_2", "reallife_estate_owner_3", "reallife_estate_owner_4", "reallife_estate_owner_5",
+                "reallife_estate_owner_unknown", "reallife_estate_agency_unknown", "reallife_estate_rival_agency", "reallife_estate_standard_fair",
+                "reallife_estate_standard_good", "reallife_estate_standard_strict", "reallife_estate_sec_book", "reallife_estate_sec_fees", "reallife_estate_sec_pitch",
+                "reallife_estate_book_blocks", "reallife_estate_book_blocks_of", "reallife_estate_book_hours", "reallife_estate_book_hours_of",
+                "reallife_estate_book_skill", "reallife_estate_book_own", "reallife_estate_book_own_of", "reallife_estate_book_fees_coming",
+                "reallife_estate_book_fees_last", "reallife_estate_book_letting", "reallife_estate_book_pitches", "reallife_estate_book_pitches_of",
+                "reallife_estate_block_owner", "reallife_estate_block_flats", "reallife_estate_block_flats_of", "reallife_estate_block_expects",
+                "reallife_estate_block_fee_ask", "reallife_estate_block_fee_under", "reallife_estate_block_hours", "reallife_estate_block_hours_of",
+                "reallife_estate_block_rivals", "reallife_estate_block_rivals_of", "reallife_estate_block_score", "reallife_estate_block_score_of",
+                "reallife_estate_block_pitched", "reallife_estate_block_open", "reallife_estate_block_pitch_what", "reallife_estate_block_let",
+                "reallife_estate_block_let_of", "reallife_estate_block_cond", "reallife_estate_block_calls", "reallife_estate_block_inspect",
+                "reallife_estate_block_inspect_of", "reallife_estate_block_served", "reallife_estate_block_month", "reallife_estate_block_fee_coming",
+                "reallife_estate_block_fee_rate", "reallife_estate_block_earned", "reallife_estate_block_missed", "reallife_estate_block_held_what",
+                "reallife_estate_btn_pitch", "reallife_estate_btn_undercut", "reallife_estate_btn_withdraw", "reallife_estate_btn_resign",
+                "reallife_ui_estate_fig_blocks", "reallife_ui_estate_fig_fees", "reallife_ui_estate_block_fee_ask", "reallife_ui_estate_block_hours",
+                "reallife_ui_estate_block_rivals", "reallife_ui_estate_block_sub"
             };
         }
 

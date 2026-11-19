@@ -155,12 +155,14 @@ namespace RealLifeOverhaul.Ui
                         }
                         lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_costs_row"), Cash((long)h.CallsYear + h.FeesYear + h.FinesYear)));
                         int manager = h.Manager;
+                        int most = EstateCatalogue.Managers - (_d.AgencyOpen ? 1 : 2);   // the player's own agency is a choice only while it is open
                         lines.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager), null,
-                            manager > 0, manager < EstateCatalogue.Managers - 1, () => Show(() => _d.SetManager(place, manager - 1)), () => Show(() => _d.SetManager(place, manager + 1))));
+                            manager > 0, manager < most, () => Show(() => _d.SetManager(place, manager - 1)), () => Show(() => _d.SetManager(place, manager + 1))));
                         // What it costs to have them run it, as a row: the figure, not a paragraph about it.
                         lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fee_row"), manager == (int)EstateManager.Manager
                             ? EstateText.T("reallife_ui_estate_fee_manager", "share", EstateText.Share(EstateCatalogue.ManagerShare))
                             : manager == (int)EstateManager.Agent ? EstateText.T("reallife_ui_estate_fee_agent", "days", EstateCatalogue.AgentLetDays.ToString(Inv))
+                            : manager == (int)EstateManager.Agency ? EstateText.T(h.Covered ? "reallife_ui_estate_fee_agency" : "reallife_ui_estate_fee_agency_short")
                             : EstateText.T("reallife_ui_estate_fee_none")));
                     }
                     bool cover = h.Cover;

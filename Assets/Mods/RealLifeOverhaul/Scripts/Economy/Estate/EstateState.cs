@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Economy
 
         // A landlord's duties, saved in part m.
         public int Manager;             // EstateManager
+        public bool Covered;            // under the player's own agency and its agents cover it today: it is run as a property manager runs it; not saved
         public int InspectDay;          // the city's next inspection; 0 while none is due
         public int OrderDay;            // the day an improvement order must be met; 0 for none
         public int Strikes;             // inspections failed in a row
@@ -265,8 +266,12 @@ namespace RealLifeOverhaul.Economy
         public readonly List<DistrictRep> Districts = new List<DistrictRep>(16);
         public readonly List<Instruction> Open = new List<Instruction>(EstateCatalogue.InstructionsMost);
 
+        public readonly AgencyBook Book = new AgencyBook();   // other owners' blocks the agency manages (AgencyBookStore)
+
         public int Capacity;                   // an agent's hours a day, tenths; read each morning, not saved
         public int Negotiators;
+        public int Skill;                      // the agents' customer service skill, 0 to 100, weighted by their hours; read each morning, not saved
+        public int Reserved;                   // the hours a day the blocks and the player's own buildings under the agency take, tenths; worked out each morning, not saved
 
         public bool Running => Office.Length > 0;
 

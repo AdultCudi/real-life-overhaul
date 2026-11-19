@@ -35,8 +35,8 @@ namespace RealLifeOverhaul.Economy
             "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none", "reallife_estate_filter_calls"
         };
 
-        public const int IsLetting = 0, IsSale = 1;
-        private static readonly string[] InstructionKinds = { "reallife_estate_filter_lettings", "reallife_estate_filter_sales" };
+        public const int IsLetting = 0, IsSale = 1, IsManaging = 2;
+        private static readonly string[] InstructionKinds = { "reallife_estate_filter_lettings", "reallife_estate_filter_sales", "reallife_estate_filter_managing" };
 
         public const int CarOut = 0, CarIn = 1, CarNotOnHire = 2;
         private static readonly string[] CarPlaces = { "reallife_estate_filter_out", "reallife_estate_filter_in", "reallife_estate_filter_not_on_hire" };

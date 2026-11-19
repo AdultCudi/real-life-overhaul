@@ -1344,6 +1344,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
                 .AddButton("reallife_estate_test_offer", () => Economy.EstateDirector.Instance?.TestOffer())
                 .AddButton("reallife_estate_test_instruction", () => Economy.EstateDirector.Instance?.TestInstruction())
+                .AddButton("reallife_estate_test_block", () => Economy.EstateDirector.Instance?.TestBlockOffer())
+                .AddButton("reallife_estate_test_block_month", () => Economy.EstateDirector.Instance?.TestBlockMonth())
                 .AddButton("reallife_estate_test_night", () => Economy.EstateDirector.Instance?.TestHotelNight())
                 .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
