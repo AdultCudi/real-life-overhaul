@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Texts
         {
             null, "reallife_texts_rule_empty", "reallife_texts_rule_lines", "reallife_texts_rule_long", "reallife_texts_rule_must", "reallife_texts_rule_number",
             "reallife_texts_rule_dash", "reallife_texts_rule_exclaim", "reallife_texts_rule_banned", "reallife_texts_rule_language", "reallife_texts_rule_repeat",
-            "reallife_texts_rule_machine", "reallife_texts_rule_capital", "reallife_texts_rule_article", "reallife_texts_rule_name", "reallife_texts_rule_cut"
+            "reallife_texts_rule_machine", "reallife_texts_rule_capital", "reallife_texts_rule_article", "reallife_texts_rule_name", "reallife_texts_rule_cut", "reallife_texts_rule_side"
         };
 
         /// <summary>"RLO Texts: what was shown": the running pack's lines this session as a notice, and every pack's count in Player.log.</summary>
