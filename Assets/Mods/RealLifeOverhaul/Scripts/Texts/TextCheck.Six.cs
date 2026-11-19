@@ -126,6 +126,10 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextVerdict.Machine;
             }
+            if (WishesOwnDay(words, intent))
+            {
+                return TextVerdict.Side;
+            }
             if (recent != null)
             {
                 for (int i = 0; i < recent.Count; i++)
@@ -170,7 +174,11 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextVerdict.Language;
             }
-            return MachineIn(words, null, lang) ? TextVerdict.Machine : TextVerdict.Ok;
+            if (MachineIn(words, null, lang))
+            {
+                return TextVerdict.Machine;
+            }
+            return WishesOwnDay(words, intent) ? TextVerdict.Side : TextVerdict.Ok;
         }
 
         // A line break of any kind, Unicode's own included.

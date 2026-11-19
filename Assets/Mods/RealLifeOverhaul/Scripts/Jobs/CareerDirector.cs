@@ -477,7 +477,7 @@ namespace RealLifeOverhaul
             bool late = Careers.OpenHoursRules.RotaLateMarks(TimeHelper.CurrentHour >= CareerState.RotaHour + CareerCatalogue.OnTimeHours, CareerState.ShutDay, day);
             if (!Begin(CareerState.Employer, CareerState.CurrentRank, CareerState.Hourly, CareerState.Piece, late, true, out reasonKey))
             {
-                if (reasonKey == "reallife_job_no_client" && CareerState.ShutDay != day)
+                if (ClientRules.IsNoClient(reasonKey) && CareerState.ShutDay != day)
                 {
                     // the shift waits on the clients' doors, not on the player: neither a later start nor the day missed is held against them
                     CareerState.ShutDay = day;

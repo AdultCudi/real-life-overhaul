@@ -15,7 +15,7 @@ internal static partial class Program
     private static readonly string[] NotPlaceRefusals =
     {
         "reallife_career_no_off", "reallife_career_no_employer", "reallife_career_no_shift_today", "reallife_career_too_early", "reallife_career_too_late",
-        "reallife_job_no_busy", "reallife_job_no_now", "reallife_job_no_client", "reallife_job_no_energy", "reallife_job_no_off", "reallife_job_no_daily",
+        "reallife_job_no_busy", "reallife_job_no_now", "reallife_job_no_client", "reallife_job_no_client_near", "reallife_job_no_client_hours", "reallife_job_no_energy", "reallife_job_no_off", "reallife_job_no_daily",
         "reallife_trades_off", "reallife_job_on_foot", "reallife_trades_not_here", "reallife_career_cart_no_money", "reallife_career_at_depot", string.Empty, null
     };
 

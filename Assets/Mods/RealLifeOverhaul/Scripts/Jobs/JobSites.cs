@@ -1,7 +1,9 @@
 using System;
+using BAModAPI;
 using BigAmbitions.Tags;
 using Extensions;
 using Helpers;
+using Streets;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -12,7 +14,6 @@ namespace RealLifeOverhaul
     {
         private const float Room = 0.6f;         // metres of clear floor wanted round a place somebody works at
         private const int Attempts = 24;
-        private const int ClientPicks = 96;
         private const int ClosingMargin = 15;   // game minutes clear of closing time
 
         /// <summary>Any business that is somebody else's and open; kept as a field so asking allocates nothing.</summary>
@@ -20,37 +21,105 @@ namespace RealLifeOverhaul
         /// <summary>The same, and a shop with shelves and customers.</summary>
         public static readonly Predicate<CityBuildingController> ShopClient = IsShop;
 
+        private static readonly System.Collections.Generic.List<CityBuildingController> Candidates = new System.Collections.Generic.List<CityBuildingController>(64);
         private static NavMeshPath _path;
 
-        /// <summary>A nearby client open long enough for the walk and the floor, by hand or by the clock. Asked only when a job begins.</summary>
+        /// <summary>
+        /// A nearby client open long enough for the walk and the floor, by hand or by the clock; or the key of the real reason there is none.
+        /// The Gig Line asks this to offer the gig (<see cref="Probe"/>) and the gig asks it to begin, so the two never disagree. Asked only
+        /// when a job is offered or begins.
+        /// </summary>
         public static bool RandomClient(JobContext ctx, JobDef def, int units, float min, float max, float seconds, float secondsPerMetre,
-            Predicate<CityBuildingController> only, out DoorSpot spot)
+            Predicate<CityBuildingController> only, out DoorSpot spot, out string why, Predicate<DoorSpot> place = null)
         {
-            for (int i = 0; i < ClientPicks; i++)
+            return Find(ctx.PlayerPosition, def, units, min, max, seconds, secondsPerMetre, only, place, ctx.Logger, out spot, out why);
+        }
+
+        /// <summary>Whether a gig could begin here and now as far as its client goes: the same search the gig makes, and the reason when not.</summary>
+        public static bool Probe(Vector3 from, JobDef def, int units, float min, float max, float seconds, float secondsPerMetre,
+            Predicate<CityBuildingController> only, Predicate<DoorSpot> place, out string why)
+        {
+            return Find(from, def, units, min, max, seconds, secondsPerMetre, only, place, null, out _, out why);
+        }
+
+        // Every building in reach is looked at once, nearest checks first, so a gig is refused only when no client fits; one is then
+        // taken at random among those that do.
+        private static bool Find(Vector3 from, JobDef def, int units, float min, float max, float seconds, float secondsPerMetre,
+            Predicate<CityBuildingController> only, Predicate<DoorSpot> place, IModLogger log, out DoorSpot spot, out string why)
+        {
+            spot = default;
+            why = ClientRules.NoneNear;
+            CityBuildingController[] buildings = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
+            if (buildings == null)
             {
-                if (!JobSpots.RandomDoor(ctx.PlayerPosition, min, max, null, 0f, out DoorSpot found, only, 1))
+                return false;
+            }
+            float minSqr = min * min;
+            float maxSqr = max * max;
+            float speed = Mathf.Max(0.25f, PlayerPrefSettings.GameSpeed);
+            Candidates.Clear();
+            int near = 0;
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                CityBuildingController building = buildings[i];
+                if (building == null || building.building == null || GameMembers.Fenced(building.building) || !JobSpots.DoorOf(building, out Vector3 door))
                 {
                     continue;
                 }
-                // The floor is worked by hand or left to the clock, so the longer of the two is reserved, the walk on top of the clock's.
-                float speed = Mathf.Max(0.25f, PlayerPrefSettings.GameSpeed);
-                float walk = JobSpots.Flat(ctx.PlayerPosition, found.Front) * secondsPerMetre * speed;
-                float needed = Mathf.Max(seconds * speed + walk, walk + units * ShiftRates.Minutes(def)) + ClosingMargin;
-                float open = OpenMinutes(found.Building.buildingRegistration);
+                Vector3 offset = door - from;
+                offset.y = 0f;
+                float sqr = offset.sqrMagnitude;
+                if (sqr < minSqr || sqr > maxSqr || Mathf.Abs(door.y - from.y) > 6f || (only != null && !only(building)))
+                {
+                    continue;
+                }
+                near++;
+                float needed = ClientRules.Needed(seconds, speed, Mathf.Sqrt(sqr), secondsPerMetre, units, ShiftRates.Minutes(def), ClosingMargin);
+                float open = OpenMinutes(building.buildingRegistration);
                 if (open < needed)
                 {
-                    if (Meta.Dev.Verbose)
+                    if (log != null && Meta.Dev.Verbose)
                     {
-                        ctx.Logger?.Info("Jobs: '" + def.Id + "' client refused: " + NameOf(found) + " (" + found.Name + ") stays open for " + open.ToString("F0")
-                                         + " game minutes; the walk, work, clock and margin need " + needed.ToString("F0") + ".");
+                        log.Info("Jobs: '" + def.Id + "' client refused: " + NameOf(building) + " stays open for " + open.ToString("F0")
+                                 + " game minutes; the walk, work, clock and margin need " + needed.ToString("F0") + ".");
                     }
                     continue;
                 }
+                Candidates.Add(building);
+            }
+            int openCount = Candidates.Count;
+            while (Candidates.Count > 0)
+            {
+                int pick = UnityEngine.Random.Range(0, Candidates.Count);
+                CityBuildingController building = Candidates[pick];
+                Candidates[pick] = Candidates[Candidates.Count - 1];
+                Candidates.RemoveAt(Candidates.Count - 1);
+                if (!JobSpots.Front(building, out Vector3 front) || !JobSpots.DoorOf(building, out Vector3 door))
+                {
+                    continue;
+                }
+                var found = new DoorSpot { Front = front, Door = door, Building = building, Name = building.building.Address.ToFormattedString() };
+                if (place != null && !place(found))
+                {
+                    continue;
+                }
+                Candidates.Clear();
                 spot = found;
+                why = null;
                 return true;
             }
-            spot = default;
+            why = ClientRules.Reason(near, openCount);
+            if (log != null && Meta.Dev.Verbose)
+            {
+                log.Info("Jobs: '" + def.Id + "' no client: " + near + " of the kind within " + max.ToString("F0") + " m, " + openCount + " open long enough: " + why + ".");
+            }
             return false;
+        }
+
+        private static string NameOf(CityBuildingController building)
+        {
+            BuildingRegistration registration = building.buildingRegistration;
+            return registration != null && !string.IsNullOrEmpty(registration.BusinessName) ? registration.BusinessName : building.building.Address.ToFormattedString();
         }
 
         // Consecutive open hours from the game's schedule, including adjoining slots and days, stopping at the first gap.

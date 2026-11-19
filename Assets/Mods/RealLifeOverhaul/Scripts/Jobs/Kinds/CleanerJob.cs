@@ -37,6 +37,12 @@ namespace RealLifeOverhaul
         private const float Half = 0.5f;               // share of the floor at which a shift is done rather than failed
         private const string MopClip = "mop_floor";
 
+        /// <summary>Whether a floor could be offered here: the same search the job makes. The reason as a key when not.</summary>
+        public static bool CanBegin(Vector3 from, JobDef def, int units, out string why)
+        {
+            return JobSites.Probe(from, def, units, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.AnyClient, null, out why);
+        }
+
         private static readonly string[] PercentText = new string[101];
 
         private readonly JobDef _def = JobCatalogue.Find(JobCatalogue.Cleaner);
@@ -147,9 +153,9 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_no_daily";
                 return false;
             }
-            if (!JobSites.RandomClient(Ctx, Def, _units, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.AnyClient, out _client))
+            if (!JobSites.RandomClient(Ctx, Def, _units, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.AnyClient, out _client, out string why))
             {
-                Refusal = "reallife_job_no_client";
+                Refusal = why;
                 return false;
             }
             _clientName = JobSites.NameOf(_client);

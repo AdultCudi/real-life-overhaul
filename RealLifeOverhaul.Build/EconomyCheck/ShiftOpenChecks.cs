@@ -262,7 +262,7 @@ internal static partial class Program
         Check(model.Contains("o.Shift = Shift;") && model.Contains("_fitted = p.WithShift("), "shift open: a post's week is copied with it and its profession made once a week");
         string clock = MethodText(street, "public bool ClockOn(out string reasonKey)");
         string miss = MethodText(street, "private void Miss(int day, Employer employer)");
-        Check(clock.Contains("OpenHoursRules.RotaLateMarks(") && clock.Contains("reasonKey == \"reallife_job_no_client\"") && clock.Contains("CareerState.ShutDay = day;")
+        Check(clock.Contains("OpenHoursRules.RotaLateMarks(") && clock.Contains("ClientRules.IsNoClient(reasonKey)") && clock.Contains("CareerState.ShutDay = day;")
               && miss.Contains("OpenHoursRules.RotaShutExcuses(CareerState.ShutDay, day)") && miss.Contains("\"reallife_career_shut_excused\"")
               && miss.IndexOf("RotaShutExcuses", StringComparison.Ordinal) < miss.IndexOf("CareerState.Missed(day)", StringComparison.Ordinal),
             "shift open: a rota shift turned away because no client near was open is not a late mark nor a no-show");
