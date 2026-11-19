@@ -37,8 +37,8 @@ namespace RealLifeOverhaul.Ui
             Found.Clear();
             int now = PlannerDirector.Now();
             int today = PlannerTime.DayOf(now);
-            FromPlanner(now, today);
-            FromCalendar(now, today);
+            bool planned = FromPlanner(now, today);
+            FromCalendar(now, today, planned);
             Found.Sort(Soonest);
             int n = Math.Min(Math.Min(Found.Count, Most), rows.Length);
             for (int i = 0; i < n; i++)
@@ -52,12 +52,13 @@ namespace RealLifeOverhaul.Ui
             return n;
         }
 
-        private static void FromPlanner(int now, int today)
+        // True where the Planner was read: it holds every date the Calendar's Planner source writes, so those are not read a second time.
+        private static bool FromPlanner(int now, int today)
         {
             PlannerDirector planner = PlannerDirector.Instance;
             if (planner == null || !Settings.Planner)
             {
-                return;
+                return false;
             }
             planner.LookFor(Planned, today, today + Days - 1, null);
             for (int i = 0; i < Planned.Items.Count; i++)
@@ -69,10 +70,13 @@ namespace RealLifeOverhaul.Ui
                 }
                 Found.Add(new Coming { At = e.Begins, Day = e.Day, Start = e.Start >= 0 ? e.Start : e.Deadline ? e.End : -1, Title = e.Title });
             }
+            return true;
         }
 
-        // The Calendar's own sources for this month, less the Planner's (already read) and anything past.
-        private static void FromCalendar(int now, int today)
+        // The Calendar's own sources for this month, less the Planner's (already read, when it was) and anything past. The Planner's entries come under
+        // "planner:<source>", never plain "planner": a test for the plain id let every street event in twice. Taken by source, not by title and hour, so two
+        // different events at one hour both stay.
+        private static void FromCalendar(int now, int today, bool planned)
         {
             CalendarDirector calendar = CalendarDirector.Instance;
             if (calendar == null)
@@ -85,7 +89,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < items.Count; i++)
             {
                 CalendarEntry e = items[i];
-                if (e.Source == "planner" || string.IsNullOrEmpty(e.Title) || e.Day < today || e.Day >= today + Days)
+                if ((planned && e.FromPlanner) || string.IsNullOrEmpty(e.Title) || e.Day < today || e.Day >= today + Days)
                 {
                     continue;
                 }

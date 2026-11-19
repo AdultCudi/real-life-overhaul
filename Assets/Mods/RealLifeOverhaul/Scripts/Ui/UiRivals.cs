@@ -125,6 +125,17 @@ namespace RealLifeOverhaul.Ui
             {
                 if (m.ChartTabs.Length > 1)
                 {
+                    // The tabs beside the buttons while they fit; with both of the rival's buttons in a long language they stand on a row of their own under them.
+                    float tabsW = 0f;
+                    for (int i = 0; i < m.ChartTabs.Length; i++)
+                    {
+                        tabsW += UiDraw.Snap(UiTextRules.Width(m.ChartTabs[i], UiStyle.Nav) + UiTokens.S4 * 2f) + UiTokens.S1;
+                    }
+                    if (tabsW > right - UiTokens.S3 - rx && m.ProfileActions.Length > 0)
+                    {
+                        ry += UiTokens.Control + UiTokens.S3;
+                        right = rx + rw + UiTokens.S3;
+                    }
                     UiDraw.Tabs(s, at, rx, ry, right - UiTokens.S3 - rx, m.ChartTabs, m.ChartTab, null, ChartTabCommand);
                 }
                 ry += UiTokens.Control + UiTokens.S3;

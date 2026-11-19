@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         public string[] FactValues = new string[0];
         public string RatingLabel;                 // "Ability"
         public int Rating = -1;                    // halves of five stars, 0 to 10, or -1 for none
+        public bool Wrap;                          // the facts stand as wide as they are and run on to a second row, none left out or cut (a head with long facts)
     }
 
     /// <summary>
@@ -406,6 +407,10 @@ namespace RealLifeOverhaul.Ui
             float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
             float factsH = labelH + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
             float starsW = p.Rating >= 0 ? UiDraw.Snap(5f * UiTokens.Icon + 8f * UiTokens.Hairline) : 0f;
+            if (p.Wrap)
+            {
+                return y + UiDraw.Snap(Math.Max(side, WrappedFacts(s, at, p, tx, ty, x + w - tx, labelH, starsW) - y)) + UiTokens.S6;
+            }
             int count = Math.Min(MostFacts, Math.Min(p.FactLabels.Length, p.FactValues.Length));
             int slots = count + (starsW > 0f ? 1 : 0);   // the rating is the last slot, so every gutter is one rhythm
             float slot = slots > 0 ? UiDraw.SnapDown((x + w - tx) / slots) : 0f;
@@ -422,6 +427,37 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Stars(s, at, sx, ty + labelH, UiTokens.Icon, p.Rating);
             }
             return y + UiDraw.Snap(Math.Max(side, ty + factsH - y)) + UiTokens.S6;
+        }
+
+        // The facts of a head that has many or long ones: each as wide as its label or value, side by side with a gutter, and on to the next row when the
+        // next does not fit; the rating's stars stand last on the first row. A fact wider than the row is cut, the only one that is. Returns the y under them.
+        private static float WrappedFacts(UiScene s, UiAt at, UiProfileModel p, float tx, float ty, float room, float labelH, float starsW)
+        {
+            int count = Math.Min(p.FactLabels.Length, p.FactValues.Length);
+            float gap = UiTokens.S6, rowH = labelH + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), fx = 0f, y = ty, firstEnd = -1f;
+            for (int i = 0; i < count; i++)
+            {
+                float need = UiDraw.Snap(Math.Max(UiTextRules.Width(p.FactLabels[i], UiStyle.SectionHeader), UiTextRules.Width(p.FactValues[i], UiStyle.Title)) + UiTokens.S1);
+                float limit = room - (y == ty && starsW > 0f ? starsW + gap : 0f);
+                if (fx > 0f && fx + need > limit)
+                {
+                    firstEnd = y == ty ? fx : firstEnd;
+                    fx = 0f;
+                    y += rowH + UiTokens.S3;
+                    limit = room;
+                }
+                float w = Math.Min(need, Math.Max(0f, limit - fx));
+                UiDraw.Text(s, at, tx + fx, y, w, UiStyle.SectionHeader, UiRole.Text2, p.FactLabels[i], UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, tx + fx, y + labelH, w, UiStyle.Title, UiRole.Text, p.FactValues[i], UiFlags.Truncate);
+                fx += w + gap;
+            }
+            if (starsW > 0f)
+            {
+                float sx = firstEnd >= 0f ? firstEnd : y == ty ? fx : 0f;
+                UiDraw.Text(s, at, tx + sx, ty, starsW, UiStyle.SectionHeader, UiRole.Text2, p.RatingLabel, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Stars(s, at, tx + sx, ty + labelH, UiTokens.Icon, p.Rating);
+            }
+            return y + rowH;
         }
 
         /// <summary>

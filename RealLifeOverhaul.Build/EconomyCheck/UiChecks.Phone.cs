@@ -421,6 +421,19 @@ internal static partial class Program
             }
         }
         Check(lost == null, "phone screen: what comes next keeps its title and its first row with the radio, the private driver, both or neither (lost " + (lost ?? "nowhere") + ")");
+        // The Planner's dates come into the Calendar as "planner:<source>" (Wiring.CalendarLinks), so a street event stood twice in Up next: once from the Planner,
+        // once from the Calendar. One entry is one row: the Calendar's copy of a Planner date is told by its source, never by title and hour (two events at 11:00 stay two).
+        var list = new RealLifeOverhaul.Calendar.CalendarList();
+        list.Begin(1, 30);
+        RealLifeOverhaul.Calendar.CalendarEntry ev = list.Add("planner:event", 4, 0, RealLifeOverhaul.Calendar.CalendarGroup.City, 4);
+        RealLifeOverhaul.Calendar.CalendarEntry pay = list.Add("nightly", 0, 0, RealLifeOverhaul.Calendar.CalendarGroup.Money, 4);
+        RealLifeOverhaul.Calendar.CalendarEntry bare = list.Add("planner", 0, 0, RealLifeOverhaul.Calendar.CalendarGroup.Time, 4);
+        string next = ModSource(@"Ui\Phone\PhoneNextGame.cs");
+        Check(ev != null && pay != null && bare != null && ev.FromPlanner && bare.FromPlanner && !pay.FromPlanner && next.Contains("(planned && e.FromPlanner)") && !next.Contains("e.Source == \"planner\""),
+            "phone screen: Up next takes a Planner date written into the Calendar (planner:event) once, and keeps the Calendar's own days (pay days, bills, birthdays)");
+        string boards = ModSource(@"Ui\Work\CareerLive.Boards.cs");
+        Check(boards.Contains("_boardNotes[i].Text = board.Address == null ? string.Empty : text;") && boards.Contains("_boardActs[i].Why = board.Address == null ? text : null;"),
+            "career: a city with no help-wanted board for an employer says so once, under the dimmed button, not also in the page's own line");
     }
 
     private static void PhoneNavStill()
