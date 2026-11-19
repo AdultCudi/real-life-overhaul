@@ -90,6 +90,26 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// The sale of a rival's business that this rival is part of now, for what they say when the player meets them: the one they put up, else the one they would take over, the
+        /// nearer deadline first. Null for none. Read on a press, never per frame.
+        /// </summary>
+        public RivalSale SaleOf(string rival)
+        {
+            RivalSale best = null;
+            for (int i = 0; _state != null && !string.IsNullOrEmpty(rival) && i < _state.RivalSales.Count; i++)
+            {
+                RivalSale v = _state.RivalSales[i];
+                bool seller = string.Equals(v.Seller, rival, StringComparison.Ordinal);
+                if ((seller || string.Equals(v.Buyer, rival, StringComparison.Ordinal))
+                    && (best == null || (string.Equals(best.Seller, rival, StringComparison.Ordinal) ? seller && v.Deadline < best.Deadline : seller || v.Deadline < best.Deadline)))
+                {
+                    best = v;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
         /// Show on map for a rival's business put up for sale: the game's own destination on its building, as the Careers pages' button sets
         /// one, and a notice saying where it is.
         /// </summary>

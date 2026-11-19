@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.RivalsSeen
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header, r what is kept of each rival (key,
     /// name, figure, before, shops, shops before, mark day, form, tier, rung, car, car day, known, greet day, greets), n the sightings (day, hour, kind, spot, form,
-    /// posted, key, name, firm, place, district, car, old, test). A record's sixteenth field (an older line's day the player last stood near them) is no longer
+    /// posted, key, name, firm, place, district, car, old, test), o the head offices (rival's key, building, district, owned). A record's sixteenth field (an older line's day the player
+    /// last stood near them) is no longer
     /// kept: it is read past, and a later field must come after it. Words are escaped, so a name may hold any character. A newer version adds fields at the end of a
     /// record or a part with a new letter: this reader takes what it knows, drops a sighting of a kind it does not know and puts every figure inside its bounds, a
     /// day after the line's own day included. A save from before the feature has no line and loads with nothing in it. Every number is in the invariant culture.
@@ -51,6 +52,15 @@ namespace RealLifeOverhaul.RivalsSeen
                     Join(t, r.Shops, r.ShopsBefore, r.MarkDay, (int)r.Form, r.Tier, r.Rung);
                     t.Append('|').Append(Esc(r.Car)).Append('|');
                     Join(t, r.CarDay, r.Known, r.GreetDay, r.Greets);
+                }
+            }
+            if (f.Heads.Count > 0)
+            {
+                t.Append("^o:");
+                for (int i = 0; i < f.Heads.Count; i++)
+                {
+                    SeenHead h = f.Heads[i];
+                    t.Append(i > 0 ? ";" : string.Empty).Append(Esc(h.Key)).Append('|').Append(Esc(h.Office)).Append('|').Append(Esc(h.District)).Append('|').Append(h.Owned ? '1' : '0');
                 }
             }
             if (f.Notes.Count > 0)
@@ -95,6 +105,7 @@ namespace RealLifeOverhaul.RivalsSeen
                     case 'h': Header(f, body); break;
                     case 'r': Records(f, body); break;
                     case 'n': Notes(f, body); break;
+                    case 'o': Heads(f, body); break;
                 }
             }
             Bound(f);
@@ -139,6 +150,20 @@ namespace RealLifeOverhaul.RivalsSeen
                     CarDay = Math.Max(-1, I(x, 11, -1)), Known = SeenCatalogue.Clamp(I(x, 12, 0), 0, SeenCatalogue.GreetWarmMost * 10), GreetDay = Math.Max(-1, I(x, 13, -1)),
                     Greets = Math.Max(0, I(x, 14, 0))
                 });
+            }
+        }
+
+        private static void Heads(SeenFile f, string body)
+        {
+            foreach (string record in body.Split(';'))
+            {
+                string[] x = record.Split('|');
+                string key = Un(x, 0), office = Un(x, 1);
+                if (key.Length == 0 || office.Length == 0 || f.Head(key) != null || f.HeadAt(office) != null || f.Heads.Count >= SeenCatalogue.HeadsMost)
+                {
+                    continue;   // one office to a rival and one rival to an office, and no more than the line can hold
+                }
+                f.Heads.Add(new SeenHead { Key = key, Office = office, District = Un(x, 2), Owned = I(x, 3, 0) != 0 });
             }
         }
 

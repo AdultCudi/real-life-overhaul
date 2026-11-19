@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private long _seen;
         private int _tab, _selected, _reveal = -1, _focus = -1;
+        private string _headId;     // the game's id of the rival whose head office the profile's Show on map is for; null for none
         private float _offset;
 
         public RivalsScreen(RivalsApp app)
@@ -86,7 +87,8 @@ namespace RealLifeOverhaul.Ui
                 case UiAppWindow.NavCommand:
                     return Show(arg);
                 case UiAppWindow.ActionCommand:
-                    return Done(UiWidgets.Press(Contacts()), "open the chosen rival in Contacts: handed to the game");
+                    // the actions are Open in Contacts where the game offers it, then Show on map for the head office where there is one
+                    return _v.Contacts && arg == 0 ? Done(UiWidgets.Press(Contacts()), "open the chosen rival in Contacts: handed to the game") : ShowHead();
                 case UiRivals.ChartTabCommand:
                     return Filter(arg);
                 case UiDataTable.First + UiDataTable.Row:
@@ -375,8 +377,23 @@ namespace RealLifeOverhaul.Ui
                 head.Found = found;
                 _league[chosen] = head;
             }
+            _headId = seenBy != null ? seenId : null;
+            string office = seenBy != null ? seenBy.OwnerHead(seenId) : null;
+            if (!string.IsNullOrEmpty(office))
+            {
+                RivalEntry head = _league[chosen];
+                head.Head = office;
+                _league[chosen] = head;
+            }
             _v.League = _league.ToArray();
             _v.Chosen = chosen;
+        }
+
+        // Show on map for the chosen rival's head office: the game's own destination marker, set by the rivals seen around the city (RivalsSeen).
+        private bool ShowHead()
+        {
+            RivalsSeen.SeenDirector seen = RivalsSeen.SeenDirector.Instance;
+            return !string.IsNullOrEmpty(_headId) && seen != null && seen.ShowOwnerHead(_headId);
         }
 
         /// <summary>A weekly income's figure from about a week before today in the game's history of it, or NaN with none.</summary>

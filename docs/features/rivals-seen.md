@@ -113,6 +113,32 @@ A greeting is counted before the talk opens (`SeenRules.Hello`), by the social l
 
 Once the player runs a business, each game hour they are out in a car of the ladder's fourth rung or dearer, or inside an eating place that is not one of their own (`GoingPublic.Mine`), a roll of 120 per mille writes a line about it (`SeenDay.Player`), never twice within 6 days. It is one of the day's 3 posts: with 3 out already it waits for another day. It names the car or the place they are really in or at, goes out on Flare at once, is printed the next morning, and is said in a notification.
 
+## Head offices
+
+A player asked where the rivals can be found for real ("Do they have a place we can visit?"). Each rival now has a head office: a real office building of the city, marked on the map with their name, where they are in office hours and where the greeting goes on to business.
+
+| File | What it is |
+| --- | --- |
+| `HeadOfficeRules` | the choice: `OfficeSite`, `SeenHead`, the rank order, `Choose`, `Apply`, `Drop`: game-free and seeded |
+| `SeenDirector.Head` | the director's part: the choice on the day's pass, the marks, the pages' lines, Show on map, the test |
+| `SeenMap` | the rivals' row of the city map's filters and a marker on each office |
+| `SeenGame` (`OfficeSites`, `AddressText`) | the city's office buildings read once for a choice, an address in the game's words |
+| `SeenDialog` | the talk at the office |
+
+**Which building.** The rivals are ranked by standing (`HeadOfficeRules.RankOrder`): the rich list's tycoons first by worth, then the game's rival owners by the weekly income the Rivals app shows, a tie by key. The city's office buildings are taken in the order of their addresses, from the game's own list of buildings behind `Core/GameDlc`, leaving out any the mod keeps (`SpecialBuildings.Holds`, `TakenBy`), any the player rents or owns and any another Going Public player has. A rival who owns an office building (`BuildingRegistration.buildingOwnerRivalId`) has one of theirs, picked by a draw of the save's seed and their key. Any other rival has an office building in the district their rank fits: the districts of the offices are ordered by the mean of the game's market price a square metre there, dearest first, and a rival of rank r of n takes the district at place r x districts / n, and the nearest districts either side if it is full. A building a rival owns is never another rival's, and no building is two rivals' head office. The choice is made once for a rival and kept in the save (part `o` of the line: rival, building, district, owned); it is made again only when the city no longer has the building as an office, or when its rival has gone. Every draw is a hash of the save's seed and the rival, so the same save gives the same offices on every machine.
+
+**Found there.** The head office replaces their office as the table finds it (`SeenSubject.Office`): the week of `SeenRules.Where` puts them at it on weekdays from 9:00 to 18:00 (an hour less for one doing well, still there at lunch when it is not their way to eat out, and until 21:00 for one in trouble), and the world stands them by its door as it stands them at any place near the player. The firm they run keeps its name, and the busiest of their businesses is still where the sightings say they eat. A head office needs no business in it to be found (`SeenTable.IsHead`).
+
+**On the map.** `SeenMap` registers one row of the map's filters, `Rivals' head offices`, and one marker on each office with `{name}, head office`, through `Core/MapPlaces` as the game's own special places are. The map and the minimap are the game's, so both interfaces show them, and the kit's map dock lists the row with the mod's other filters. The row goes with the feature (`Running`).
+
+**On the pages.** The rival's page has a `Head office` row, the address and the district, and `Show on map`, the Careers pages' own text and call (`Careers.DeskGame.Route`, which `ServicesDirector.ShowRival` also uses): the old Finance app's page of a tycoon (`RivalPage`, through `RivalBridges.HeadLine` and `ShowHead`), the kit's Finance page of a tycoon and the kit's Rivals app for one of the game's rival owners. The game's own Rivals app on the old interface is the game's and has no row for it; there the map is the way.
+
+**The talk.** A rival met at their head office in office hours says so on the game's panel (`At their head office`), and after the greeting's two questions the dialogue offers `Talk business with them`. They say where the office is and when they are in it. Then: for one of the game's rival owners, `Ask what they have for sale` (a business of theirs on the market with the player, or one they would take over if the player does not, from Services' sales of rivals' businesses, with `Show it on the map`); for a tycoon, `Ask what they have in mind` (the fund they have open to the player, with `Look at the fund` opening the Schemes page, else the move they have announced); and for both, `Ask how they see you`, in four steps of how well they know the player by the greeting's own scale (by sight, an acquaintance, a friend, a close friend). The talk earns nothing and spends nothing: every button leads to the page of the feature it is about.
+
+**Going Public.** The whole feature rests in a session, head offices with it; nothing is sent.
+
+**Tests.** Options, Tests, `Rivals seen: where each head office is` says how many rivals have one and shows the first on the map; offline, `--rivalseen` (`SeenHeadChecks.cs`).
+
 ## Going Public
 
 In a session the city's people are the host's and the tycoons rest. The whole feature rests with them (`SeenRules.Runs`): nobody appears, nothing is written, the save's line is left as it is. So no rival ever stands on one player's machine only and nothing is sent. Outside a session every draw is a hash of the save's seed, itself a hash of the playthrough's own id, so the same save gives the same week on every machine and every load.

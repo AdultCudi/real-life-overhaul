@@ -34,6 +34,13 @@ namespace RealLifeOverhaul
                 SeenBridges.Playthrough = Playthrough;
                 SeenBridges.Post = (words, hour, minute) => FlareDirector.Instance != null && FlareDirector.Instance.Society(words, hour, minute);
                 RivalBridges.SeenLine = tycoon => SeenDirector.Instance != null ? SeenDirector.Instance.TycoonLine(tycoon) : string.Empty;
+                RivalBridges.HeadLine = tycoon => SeenDirector.Instance != null ? SeenDirector.Instance.TycoonHead(tycoon) : string.Empty;
+                RivalBridges.ShowHead = tycoon => SeenDirector.Instance != null && SeenDirector.Instance.ShowTycoonHead(tycoon);
+                SeenBridges.Offer = OfferOf;
+                SeenBridges.ShowOffer = id => Economy.ServicesDirector.Instance?.ShowRival(id);
+                SeenBridges.Fund = tycoon => Schemes.SchemeDirector.Instance != null && Schemes.SchemeDirector.Instance.FundFrom(tycoon);
+                SeenBridges.ShowFund = () => Schemes.SchemeDirector.Instance?.ShowFund();
+                SeenBridges.Move = MoveOf;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
             }
@@ -42,8 +49,51 @@ namespace RealLifeOverhaul
             {
                 SeenBridges.Reset();
                 RivalBridges.SeenLine = null;
+                RivalBridges.HeadLine = null;
+                RivalBridges.ShowHead = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // What a rival has on the market with the player, from Services: a business they put up, or one they would take if the player does not.
+            private static SeenOffer OfferOf(string rival)
+            {
+                try
+                {
+                    Economy.RivalSale v = Economy.ServicesDirector.Instance?.SaleOf(rival);
+                    if (v == null)
+                    {
+                        return null;
+                    }
+                    bool selling = string.Equals(v.Seller, rival, StringComparison.Ordinal);
+                    return new SeenOffer
+                    {
+                        Id = v.Id, Business = v.Business, Other = selling ? v.BuyerName : v.SellerName, Address = Economy.ServicesGame.Where(v.Place), Price = v.Price, Deadline = v.Deadline,
+                        Selling = selling
+                    };
+                }
+                catch (Exception e)
+                {
+                    Fault("SeenLinks.Offer", e);
+                    return null;
+                }
+            }
+
+            // What a tycoon has announced against the player, in the words of the rivals' own page; empty for nothing.
+            private static string MoveOf(int tycoon)
+            {
+                try
+                {
+                    RivalFile f = Rivals();
+                    RivalMove m = f != null ? f.Pending() : null;
+                    return m != null && m.Tycoon == tycoon ? RivalText.Fill("reallife_rival_pending_line", "rival", f.Tycoons[tycoon].Def.Name, "what", RivalText.What(m), "day", m.Land.ToString())
+                        : string.Empty;
+                }
+                catch (Exception e)
+                {
+                    Fault("SeenLinks.Move", e);
+                    return string.Empty;
+                }
             }
 
             private static RivalFile Rivals()

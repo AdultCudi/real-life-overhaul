@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         public string District;      // the district they are busiest in, in the game's words; null for none
         public string Car;           // the car they are seen in, in the game's words; null where nothing is on record (RivalsSeen)
         public string Found;         // where they tend to be found, in a few words; null for the same
+        public string Head;          // their head office, the address and the district; null for none (RivalsSeen)
         public int Age;
     }
 
@@ -215,7 +216,8 @@ namespace RealLifeOverhaul.Ui
             p.StatusTone = who.Defeated ? UiRole.Muted : who.You ? UiRole.Accent : UiRole.Danger;
             bool facts = chosen >= 0 && tab != UiRivals.League;
             bool seen = chosen >= 0 && !who.You && !who.Defeated && !string.IsNullOrEmpty(who.Car) && !string.IsNullOrEmpty(who.Found);
-            int n = (facts ? 1 : 0) + (seen ? 2 : 0), at = 0;
+            bool head = chosen >= 0 && !who.You && !who.Defeated && !string.IsNullOrEmpty(who.Head);
+            int n = (facts ? 1 : 0) + (seen ? 2 : 0) + (head ? 1 : 0), at = 0;
             p.FactLabels = new string[n];
             p.FactValues = new string[n];
             if (facts)
@@ -228,13 +230,26 @@ namespace RealLifeOverhaul.Ui
                 p.FactLabels[at] = t("reallife_ui_rivals_drives", "Drives");
                 p.FactValues[at++] = who.Car;
                 p.FactLabels[at] = t("reallife_ui_rivals_found", "Usually");
-                p.FactValues[at] = who.Found;
+                p.FactValues[at++] = who.Found;
+            }
+            if (head)   // their head office: a real building of the city, marked on the map, where they are found in office hours (RivalsSeen)
+            {
+                p.FactLabels[at] = t("reallife_ui_rivals_head", "Head office");
+                p.FactValues[at] = who.Head;
             }
             p.RatingLabel = t("reallife_ui_rivals_strength", "Strength");
             p.Rating = chosen >= 0 ? Stars(chosen, v.League.Length, who.Defeated) : -1;
-            m.ProfileActions = v.Contacts && chosen >= 0
-                ? new[] { new UiActionModel { Label = t("open_in_contacts", "Open in Contacts"), Kind = UiButtonKind.Secondary, Icon = UiIcon.AddressBook, Key = UiAction.Option } }
-                : new UiActionModel[0];
+            var actions = new System.Collections.Generic.List<UiActionModel>(2);
+            if (v.Contacts && chosen >= 0)
+            {
+                actions.Add(new UiActionModel { Label = t("open_in_contacts", "Open in Contacts"), Kind = UiButtonKind.Secondary, Icon = UiIcon.AddressBook, Key = UiAction.Option });
+            }
+            if (head)
+            {
+                // Show on map, the Careers pages' own text
+                actions.Add(new UiActionModel { Label = t("reallife_career_button_map", "Show on map"), Kind = UiButtonKind.Secondary, Icon = UiIcon.MapPin, Key = UiAction.Count });
+            }
+            m.ProfileActions = actions.ToArray();
         }
 
         /// <summary>A place's stars, by halves: the top of the league five, the foot one half, a defeated rival none.</summary>

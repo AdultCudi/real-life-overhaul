@@ -65,7 +65,14 @@ namespace RealLifeOverhaul.RivalsSeen
             Instance = this;
             _onSave = OnSave;
             _post = Post;
-            _onLanguage = Guard.Wrap(() => _revision++);   // the pages' lines were in the language before: made again when next asked
+            _onLanguage = Guard.Wrap(() =>
+            {
+                _revision++;   // the pages' lines were in the language before: made again when next asked
+                if (_loaded && _file != null)
+                {
+                    SeenMap.Set(_subjects, SeenGame.City.Table);   // ...and so are the markers' names
+                }
+            });
             try
             {
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Combine(LocalizorManager.OnLanguageChanged, _onLanguage);
@@ -90,6 +97,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 Logger?.Error(e);
             }
             SeenGame.City.Forget();
+            SeenMap.Clear();
             if (Instance == this)
             {
                 Instance = null;
@@ -237,6 +245,7 @@ namespace RealLifeOverhaul.RivalsSeen
             Write();
             ClearWorld(GoingPublic.InSession ? "a Going Public session" : "switched off");
             SeenGame.City.Forget();
+            SeenMap.Clear();
             _subjects.Clear();
             _loaded = false;
             _readDay = _readRivals = -1;
@@ -256,6 +265,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 save.modData.Remove(SeenStore.TestKey);
             }
             ClearWorld("the data is reset");
+            SeenMap.Clear();
             _file = null;
             _subjects.Clear();
             _loaded = false;
@@ -282,10 +292,12 @@ namespace RealLifeOverhaul.RivalsSeen
                 return false;
             }
             SeenGame.City.Subjects(_subjects, day);
+            HeadOffices(day);   // each rival's head office is their office (before the table looks for the offices)
             if (!SeenGame.City.Refresh(_subjects))
             {
                 return false;
             }
+            HeadMarks(day);
             bool again = day == _readDay;
             _readDay = day;
             _readRivals = rivals;
