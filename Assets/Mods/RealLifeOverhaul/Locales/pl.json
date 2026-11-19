@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: firma bez stanowisk pracy nie znika już z planera grafiku personelu. Miejska warstwa Flare nie zatrzymuje się już do końca sesji, gdy firma zostaje założona w czasie, gdy wyliczany jest dzień mieszkańców, i sama próbuje ponownie po każdym innym błędzie.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -37990,5 +37990,6 @@
   "reallife_svc_rsale_shown": "{business} znajduje się pod adresem {address}. Oznaczono go jako twój cel.",
   "reallife_tech_new_niche_made": "Stworzone dla niszy {niche}: jej klienci to {who}, więc sprzedaje im po cenie z cennika.",
   "reallife_tech_mkt_product_niche_off": "Ten produkt jest stworzony dla: {who}. {niche} nie robi tu zakupów, więc produkt sprzedaje się na cały rynek, a nisza go nie liczy. Aby sprzedawać w niszy, uruchom produkt stworzony dla {niche}.",
-  "reallife_texts_rule_side": "życzenia od złej strony"
+  "reallife_texts_rule_side": "życzenia od złej strony",
+  "reallife_rota_failed": "Planer nie zdołał teraz obliczyć tej firmy. Spróbuje ponownie, gdy zmienią się stanowiska pracy, personel albo dzień. Szczegóły są w Player.log."
 }
