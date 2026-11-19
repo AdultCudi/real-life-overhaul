@@ -93,9 +93,13 @@ namespace RealLifeOverhaul.Economy
                         RotaRescue(job.Place);
                     }
                 }
+                else if (_rotaStage == StageRead)
+                {
+                    RotaUnreadable(at, e);   // the game's figures are read in this stage alone
+                }
                 else
                 {
-                    RotaUnreadable(at, e);
+                    RotaPlannerFailed(at, e);
                 }
             }
             double took = _rotaClock.Elapsed.TotalMilliseconds;
@@ -151,6 +155,10 @@ namespace RealLifeOverhaul.Economy
                         sheet.Place = place;
                         _rotaStage = StageWrite;
                         return RotaToFill(job, sheet);
+                    }
+                    if (RotaFailed(place))
+                    {
+                        return true;   // it failed as it stands: waits for a change
                     }
                     _rotaSheetGood = false;
                     _rotaRaise = _rotaRaise ?? RaiseOf;

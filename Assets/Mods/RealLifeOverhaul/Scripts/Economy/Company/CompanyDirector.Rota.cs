@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Economy
         private readonly List<RotaUndo> _rotaUndo = new List<RotaUndo>(4);
         private readonly List<RotaJob> _rotaJobs = new List<RotaJob>(4);
         private readonly List<string> _rotaUnread = new List<string>(2);   // places the game's figures could not be read for this session
+        private readonly Dictionary<string, long> _rotaFailed = new Dictionary<string, long>(2);   // places the planner itself failed on, by the stamp they failed at
         private readonly RotaSheet _rotaSheet = new RotaSheet();
         private readonly RotaSolver _rotaSolver = new RotaSolver();
         private readonly RotaAdvisor _rotaAdvisor = new RotaAdvisor();
@@ -78,6 +79,7 @@ namespace RealLifeOverhaul.Economy
             _rotaPlaces.Clear();
             _rotaUndo.Clear();
             _rotaUnread.Clear();
+            _rotaFailed.Clear();
             _rotaJobs.Clear();
             _rotaSheetGood = false;
             _rotaSheet.Place = null;
@@ -129,6 +131,10 @@ namespace RealLifeOverhaul.Economy
             }
             try
             {
+                if (RotaFailed(place))
+                {
+                    return null;   // not tried again until something it is worked out from changes: a fault of the planner's would only repeat
+                }
                 if (RotaFresh(place))
                 {
                     _rotaSheet.Place = place;   // the list of places is made afresh from time to time
@@ -158,6 +164,28 @@ namespace RealLifeOverhaul.Economy
 
         internal bool RotaUnread(string place) => _rotaUnread.Contains(place);
 
+        /// <summary>True while the planner's own fault on a business stands: the business is the same as when it failed, so it would only fail again.</summary>
+        internal bool RotaFailed(RotaPlace place)
+        {
+            long failedAt;
+            if (_rotaFailed.Count == 0 || place == null || place.Reg == null || Save == null || !_rotaFailed.TryGetValue(place.Place, out failedAt))
+            {
+                return false;
+            }
+            if (failedAt == RotaGame.Stamp(place, RotaDays(place)))
+            {
+                return true;
+            }
+            _rotaFailed.Remove(place.Place);   // its stations, staff, goods or the day changed: planned again
+            return false;
+        }
+
+        /// <summary>The key of what a page says in place of a rota it has none for.</summary>
+        internal string RotaNoSheetText(RotaPlace place)
+        {
+            return RotaUnread(place.Place) ? "reallife_rota_cannot" : RotaFailed(place) ? "reallife_rota_failed" : RotaWorking(place.Place) ? "reallife_rota_working" : "reallife_rota_off";
+        }
+
         private bool RotaFresh(RotaPlace place)
         {
             return _rotaSheetGood && ReferenceEquals(_rotaSheet.Reg, place.Reg) && _rotaSheet.Stamp == RotaGame.Stamp(place, RotaDays(place));
@@ -170,6 +198,27 @@ namespace RealLifeOverhaul.Economy
             Logger?.Error(e);
             Logger?.Warn("Company: the staff rota planner could not read " + place.Name
                          + " from the game and leaves it out for this session; its page says so. Other businesses are still planned.");
+        }
+
+        // A fault in the planner's own arithmetic, not in what it read: the business stays out of the plan only until its stamp changes.
+        private void RotaPlannerFailed(RotaPlace place, Exception e)
+        {
+            _rotaSheetGood = false;
+            long stamp;
+            try
+            {
+                stamp = RotaGame.Stamp(place, RotaDays(place));
+            }
+            catch (Exception read)
+            {
+                Logger?.Error(e);
+                RotaUnreadable(place, read);   // the game's figures cannot be read now either
+                return;
+            }
+            _rotaFailed[place.Place] = stamp;
+            Logger?.Error(e);
+            Logger?.Warn("Company: the staff rota planner failed while working out " + place.Name + " (a fault of the planner, not of the game's figures). "
+                         + "It leaves the business out until its stations, staff or goods change or the day turns, and then tries again. Other businesses are still planned.");
         }
 
         private CompanyShop RotaShopOf(RotaPlace place)

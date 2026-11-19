@@ -168,12 +168,12 @@ namespace RealLifeOverhaul.Economy
                 Mend();
                 return false;
             }
-            if (_slid || !_shop.HasCustomers)
+            if (_slid || !_shop.HasCustomers || _s == 0)
             {
-                return true;
+                return true;    // with no stations there is no shift to slide, and no station to ask a group of
             }
             // One station of one day a step; the week is gone over until a whole round moves nothing.
-            _moved |= SlideAt(_slideDay / Math.Max(1, _s), _slideDay % Math.Max(1, _s));
+            _moved |= SlideAt(_slideDay / _s, _slideDay % _s);
             if (++_slideDay >= Days * _s)
             {
                 _slid = !_moved || ++_rounds >= Hours * 8;
