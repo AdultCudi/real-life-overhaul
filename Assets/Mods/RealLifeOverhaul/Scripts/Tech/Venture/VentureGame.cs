@@ -18,6 +18,14 @@ namespace RealLifeOverhaul.Tech
         public const string DividendKey = "reallife_transaction_tech_venture_dividend";
         public const string WindKey = "reallife_transaction_tech_venture_wind_down";
         public const string ExitKey = "reallife_transaction_tech_venture_exit";
+        public const string TermSalaryKey = "reallife_transaction_tech_terms_salary";
+        public const string TermBonusKey = "reallife_transaction_tech_terms_bonus";
+        public const string TermDividendKey = "reallife_transaction_tech_terms_dividend";
+        public const string TermBuyoutKey = "reallife_transaction_tech_terms_buyout";
+        public const string TermEarnKey = "reallife_transaction_tech_terms_earn_out";
+        public const string TermRemitKey = "reallife_transaction_tech_terms_remit";
+        public const string TermCoverKey = "reallife_transaction_tech_terms_cover";
+        public const string TermDividendTaxKey = "reallife_transaction_tech_terms_dividend_tax";
         public const string BankersKey = "reallife_transaction_tech_listing_bankers";
         public const string RelatedCostKey = "reallife_transaction_tech_related_cost";
         public const string RelatedTakingsKey = "reallife_transaction_tech_related_takings";
@@ -34,6 +42,25 @@ namespace RealLifeOverhaul.Tech
                 return true;
             }
             return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, Info(key, name), null, at != null ? at.Address : null, force);
+        }
+
+        /// <summary>
+        /// Money out of the player's cash that the game's own tax deducts, under the words given: a contract firm's profit paid to its owner, which is no profit of the player's. The deduction
+        /// is the game's own (TaxDeductibleName), so its yearly tax reads it without any change to a statement.
+        /// </summary>
+        public static bool PayDeductible(long cents, string key, string name, string deductibleWords)
+        {
+            if (cents <= 0)
+            {
+                return true;
+            }
+            if (Save == null)
+            {
+                return false;
+            }
+            TransactionInfo info = Info(key, name);
+            info.SetTaxDeductibleName(deductibleWords);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, null, true);
         }
 
         /// <summary>Money into the player's cash, cents.</summary>

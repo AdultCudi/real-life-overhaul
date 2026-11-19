@@ -48,6 +48,22 @@ namespace RealLifeOverhaul.Tech
         /// number, or none). True once their employer record moved. Default: none.</summary>
         public static Func<int, string, int, bool> FounderHired;
 
+        /// <summary>The market's price of a listed company's stock now, real cents; 0 when it cannot be bought (the market is off, the stock is gone, the player is a guest). Default: none.</summary>
+        public static Func<int, int> ShareQuote;
+
+        /// <summary>
+        /// Shares of a listed company put in the player's portfolio as part payment of a sale: the stock, the shares, the price of one in real cents and the day they stay locked
+        /// until (0: free). True once they are in the portfolio. Default: none.
+        /// </summary>
+        public static Func<int, long, int, int, bool> ShareGrant;
+
+        /// <summary>The tax withheld from a dividend of whole money paid to the player, as the stock market's dividends are taxed (the council's
+        /// business tax moves the rate). Default: none withheld.</summary>
+        public static Func<long, long> DividendTax;
+
+        /// <summary>True while a business could be handed to a buyer now as a sale ends one: the sales of businesses run and the player is not a guest. Default: none.</summary>
+        public static Func<string, bool> HandOverReady;
+
         public static string KeyOf(int startup) => "founder:" + startup.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         public static bool ResidentOf(int startup, out ResidentInfo info)
@@ -107,6 +123,10 @@ namespace RealLifeOverhaul.Tech
             Fixtures = null;
             Job = null;
             FounderHired = null;
+            ShareQuote = null;
+            ShareGrant = null;
+            HandOverReady = null;
+            DividendTax = null;
         }
     }
 }

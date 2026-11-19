@@ -33,6 +33,14 @@ internal static partial class Program
             "agreed sale: the player's word keeps the offer, its price, its last day, the day it was given and the buyer");
         Check(ExitRules.IsAgreed(e, 7) && !ExitRules.IsAgreed(e, 8) && ExitRules.Check(e, 35) == ExitRules.AgreedState.Standing && ExitRules.Check(e, 40) == ExitRules.AgreedState.Standing,
             "agreed sale: it stands through the offer's last day");
+        Check(e.Agreed.Terms.Kind == TermKind.Cash, "agreed sale: a word given with no terms is all in cash");
+        FirmExit tf = AgreedFirm(out ExitOffer to);
+        var picked = new TermChoice { Kind = TermKind.Earn, Step = 0, Target = 2, Measure = TermMeasure.Customers };
+        Check(ExitRules.Agree(tf, to, 35, picked) && tf.Agreed.Terms.Kind == TermKind.Earn && tf.Agreed.Terms.Target == 2 && tf.Agreed.Terms.Measure == TermMeasure.Customers,
+            "agreed sale: the player's word keeps the terms they chose with it");
+        FirmExit hf = AgreedFirm(out ExitOffer ho2);
+        ho2.Kind = 1;
+        Check(ExitRules.Agree(hf, ho2, 35, picked) && hf.Agreed.Terms.Kind == TermKind.Cash, "agreed sale: a team bought for its people is agreed in cash whatever terms were picked");
         Check(!ExitRules.Agree(e, o, 36), "agreed sale: a second word at a firm that has one agreed changes nothing");
         Check(ExitRules.Check(e, 41) == ExitRules.AgreedState.Lapsed, "agreed sale: past the offer's last day it has lapsed, whether or not the offer was swept");
         e.Offers.Clear();
@@ -68,7 +76,7 @@ internal static partial class Program
         FirmExit a = file.Exit("Main~1", true);
         a.Offers.Add(new ExitOffer { Id = 5, Name = "Pocketloop", Buyer = 1, BuyerId = 9, Price = 777000, Made = 20, Lapse = 44 });
         a.Offers.Add(new ExitOffer { Id = 6, Name = "Northgate Systems", Price = 999000, Made = 22, Lapse = 46 });
-        ExitRules.Agree(a, a.Offers[0], 31);
+        ExitRules.Agree(a, a.Offers[0], 31, new TermChoice { Kind = TermKind.Boss, Step = 1, Target = 2, Measure = TermMeasure.Customers });
         FirmExit b = file.Exit("Main~2", true);
         b.Offers.Add(new ExitOffer { Id = 8, Name = "Other", Price = 5, Made = 1, Lapse = 3 });
         string line = ExitStore.Write(file);
@@ -77,6 +85,13 @@ internal static partial class Program
         Check(ra != null && ra.Agreed != null && ra.Agreed.Offer == 5 && ra.Agreed.Price == 777000 && ra.Agreed.Lapse == 44 && ra.Agreed.Day == 31 && ra.Agreed.Name == "Pocketloop"
               && rb != null && rb.Agreed == null && ra.Offers.Count == 2,
             "agreed sale: it is kept in the save with its offer, price, last day and buyer, and another firm's offers are not touched");
+        TermChoice kept = ra != null && ra.Agreed != null ? ra.Agreed.Terms : default(TermChoice);
+        Check(kept.Kind == TermKind.Boss && kept.Step == 1 && kept.Target == 2 && kept.Measure == TermMeasure.Customers, "agreed sale: the terms chosen are kept in the save with the word");
+        string bare = Regex.Replace(line, @"(~a:[^~]*?)(\|[^|;~]*){4}(?=[;~]|$)", "$1");
+        ExitFile bareBack = ExitStore.Read(bare, out _);
+        FirmExit rbare = bareBack.Exit("Main~1", false);
+        Check(bare != line && rbare != null && rbare.Agreed != null && rbare.Agreed.Offer == 5 && rbare.Agreed.Name == "Pocketloop" && rbare.Agreed.Terms.Kind == TermKind.Cash,
+            "agreed sale: a word saved before it had terms reads as all in cash");
         string without = Regex.Replace(line, "~a:[^~]*", string.Empty);
         ExitFile old = ExitStore.Read(without, out _);
         Check(without != line && old.Exit("Main~1", false) != null && old.Exit("Main~1", false).Offers.Count == 2 && old.Exit("Main~1", false).Agreed == null,
@@ -101,17 +116,17 @@ internal static partial class Program
             "agreed sale: the game's exit building event sets the flag the one-second timer reads, through the guard, kept on the event as the other features keep theirs");
         Check(director.Contains("KeepMoney();") && Regex.IsMatch(director, @"KeepMoney\(\);\s*if \(_exits != null\)\s*\{\s*KeepAgreed\(\);"),
             "agreed sale: the timer asks only while the exits run, and a look is one flag test while no sale waits");
-        Check(finish.Contains("ExitBridges.WhyNotHand(e.Place)") && finish.Contains("ExitAccept(e.Place, offer)") && finish.IndexOf("WhyNotHand", StringComparison.Ordinal) < finish.IndexOf("ExitAccept(", StringComparison.Ordinal)
+        Check(finish.Contains("ExitBridges.WhyNotHand(e.Place)") && finish.Contains("ExitAccept(e.Place, offer, e.Agreed.Terms)") && finish.IndexOf("WhyNotHand", StringComparison.Ordinal) < finish.IndexOf("ExitAccept(", StringComparison.Ordinal)
               && finish.Contains("BusyRefusal") && finish.Contains("InsideRefusal") && finish.Contains("reallife_exit_note_agreed_blocked"),
             "agreed sale: it completes through ExitAccept after the same refusal check, names what stands in the way once, waits a second while the game is busy and says nothing while the player is inside again");
         Check(Regex.IsMatch(exits, @"_agreeTry = AnyAgreed\(\);") && exits.Contains("DropAgreedHandler();") && Regex.IsMatch(exits, @"AgreedDay\(day\);[^\r\n]*\s*FirmExitsDay\(day\);"),
             "agreed sale: a sale agreed before the save was made is looked at first after the load, the handler is let go when the exits stop, and the day's pass lapses it before the offers' own sweep");
-        string accept = MemberText(exits, "internal bool ExitAccept(string place, int offerId)");
+        string accept = MemberText(exits, "internal bool ExitAccept(string place, int offerId, TermChoice choice = default(TermChoice))");
         Check(accept.Contains("e.Agreed = null;") && Occurs(accept, "ExitRules.IsAgreed(e, offerId)") == 2 && MemberText(exits, "internal void ExitDecline(string place, int offerId)").Contains("ExitRules.IsAgreed(e, offerId)")
               && MemberText(exits, "internal int ExitCounter(string place, int offerId, int step)").Contains("ExitRules.IsAgreed(e, offerId)"),
             "agreed sale: a sale made, an offer that lapsed or whose buyer is gone, or turned down, ends the agreement, and the agreed offer is never countered");
         string session = MemberText(exits, "internal bool ExitSession(string place, string name, int which, int choice, out string key, out string[] pairs)");
-        Check(session.Contains("e.Agreed != null") && session.Contains("reallife_tech_desk_exit_already_agreed") && session.Contains("ExitAgree(place, o)") && session.Contains("reallife_tech_desk_exit_offer_agreed"),
+        Check(session.Contains("e.Agreed != null") && session.Contains("reallife_tech_desk_exit_already_agreed") && session.Contains("ExitAgree(place, o, terms)") && session.Contains("SessionTerms(choice)") && session.Contains("reallife_tech_desk_exit_offer_agreed"),
             "agreed sale: a second visit to the desk says a sale is already agreed, and the first keeps the player's word");
         string lapse = MemberText(agreed, "private void LapseAgreed(FirmExit e, int day)");
         Check(lapse.Contains("e.Offers.Remove(o);") && lapse.Contains("reallife_exit_note_agreed_lapsed") && MemberText(agreed, "internal bool ExitCallOff(string place)").Contains("reallife_exit_note_agreed_off"),

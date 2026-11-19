@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.Tech
         public int Lapse;         // the offer's last day: the agreement lapses with it
         public int Day;           // the day it was agreed
         public string Name = string.Empty;   // the buyer
+        public TermChoice Terms;  // the way to be paid the player chose at the desk (cash when none was): the sale completes on these terms
     }
 
     /// <summary>What exits keep for one firm of the player's: its offers, its way to the market and its sales of shares. Game-free.</summary>

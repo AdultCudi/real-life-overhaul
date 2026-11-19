@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Tech
             {
                 if (e.Agreed != null)
                 {
-                    w.Record().Place(e.Place).Add(e.Agreed.Offer).Add(e.Agreed.Price).Add(e.Agreed.Lapse).Add(e.Agreed.Day).Add(e.Agreed.Name);
+                    w.Record().Place(e.Place).Add(e.Agreed.Offer).Add(e.Agreed.Price).Add(e.Agreed.Lapse).Add(e.Agreed.Day).Add(e.Agreed.Name)
+                        .Add(e.Agreed.Terms.Kind).Add(e.Agreed.Terms.Step).Add(e.Agreed.Terms.Target).Add(e.Agreed.Terms.Measure);   // the terms appended: a save without them reads as cash
                 }
             }
             w.Part('p');
@@ -97,6 +98,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmExit e = f.Exit(x.Place(), true);
                 var a = new ExitAgreed { Offer = x.Int(), Price = Math.Max(0L, x.Long()), Lapse = x.Int(), Day = x.Int(), Name = x.Text() };
+                a.Terms = new TermChoice { Kind = TalentCatalogue.Clamp(x.Int(0), 0, TermKind.Count - 1), Step = Math.Max(0, x.Int(0)), Target = Math.Max(0, x.Int(0)), Measure = TalentCatalogue.Clamp(x.Int(0), 0, 1) };
                 e.Agreed = e.OfferOf(a.Offer) != null ? a : null;   // an agreement whose offer the save no longer holds has nothing to complete
             }
             foreach (Fields x in r.Records('p'))

@@ -135,7 +135,7 @@ internal static partial class Program
     {
         string exits = ModSource(@"Tech\TechDirector.Exits.cs"), deals = ModSource(@"Tech\TechDirector.Deals.cs"), venture = ModSource(@"Tech\TechDirector.Venture.cs");
         string gains = ModSource(@"Tech\TechDirector.ExitGains.cs"), links = ModSource(@"Wiring\Wiring.ExitLinks.cs"), game = ModSource(@"Economy\Company\CompanyGame.cs");
-        Check(Regex.IsMatch(exits, @"VentureGame\.Give\(Level\(r\.Price\)[\s\S]*?ExitGains\.ForSale\(_gains, c, place, name, r\.Player, fixtures \* 100L") && exits.Contains("GainNotice(name, gain);"),
+        Check(Regex.IsMatch(exits, @"VentureGame\.Give\(Level\((?:r\.Price|atOnce)\)[\s\S]*?ExitGains\.ForSale\(_gains, c, place, name, r\.Player, fixtures \* 100L") && exits.Contains("GainNotice(name, gain);"),
             "exit tax: a firm sold to a buyer, and a team taken for the hire (one path), notes its gain after the buyer's money came in");
         Check(Regex.IsMatch(exits, @"VentureGame\.Give\(Level\(paid\), VentureGame\.ShareSaleKey[\s\S]*?ExitGains\.ForShares\(_gains, c, place, firm\.File\.Name, paid, held, room"),
             "exit tax: the player's vested shares sold after a round, and a listed firm's after the lock-up (one path), note theirs");

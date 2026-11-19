@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Tech
             }
             int offer = e.Agreed.Offer;
             string buyer = e.Agreed.Name;
-            if (ExitAccept(e.Place, offer))
+            if (ExitAccept(e.Place, offer, e.Agreed.Terms))
             {
                 Logger?.Info("Tech: the sale of " + firm.File.Name + " to " + buyer + " agreed inside the firm completed on day " + day + " once the player was outside.");
                 return false;
@@ -189,16 +189,36 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>The player's word to an offer, given at a desk inside the firm; the sale completes when they step outside. False if one is already agreed or the offer has lapsed.</summary>
-        internal bool ExitAgree(string place, ExitOffer o)
+        /// <summary>
+        /// The player's word to an offer on the terms they chose, given at a desk inside the firm; the sale completes on those terms when they step outside. False if one is already
+        /// agreed, the offer has lapsed, or the terms cannot be made now (the reason is told, as ExitAccept would). With the terms off, or for a team bought for its people, it is cash.
+        /// </summary>
+        internal bool ExitAgree(string place, ExitOffer o, TermChoice terms = default(TermChoice))
         {
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
-            if (Save == null || !ExitRules.Agree(e, o, Save.Day))
+            if (o == null || o.Hire || _terms == null)
+            {
+                terms = default(TermChoice);
+            }
+            if (Save == null || e == null || e.Agreed != null)
+            {
+                return false;
+            }
+            if (terms.Kind != TermKind.Cash)
+            {
+                TermPlan plan = TermPlanFor(place, o, terms, out _);
+                if (!plan.Ok)
+                {
+                    Notifications.ShowError(plan.Why);
+                    return false;
+                }
+            }
+            if (!ExitRules.Agree(e, o, Save.Day, terms))
             {
                 return false;
             }
             _agreeTold = string.Empty;
-            Logger?.Info("Tech: the player agreed to sell " + place + " to " + o.Name + " for " + TechText.Cents(Level(o.Price)) + " on day " + Save.Day
+            Logger?.Info("Tech: the player agreed to sell " + place + " to " + o.Name + " for " + TechText.Cents(Level(o.Price)) + " on terms " + terms.Kind + " on day " + Save.Day
                          + ", to complete when they step outside (the offer stands to day " + o.Lapse + ").");
             ChangedTech();
             return true;

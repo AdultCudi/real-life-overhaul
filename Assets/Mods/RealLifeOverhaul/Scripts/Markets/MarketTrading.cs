@@ -260,6 +260,30 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(MarketCatalogue.BorrowFeeLeastBp, Math.Min(MarketCatalogue.BorrowFeeMostBp, bp));
         }
 
+        /// <summary>The player's shares of a company that cannot be sold on a day: those under a lock-up from the terms of a sale, never more than are held.</summary>
+        public static long Locked(MarketState state, int stockId, int day)
+        {
+            long locked = 0;
+            for (int i = 0; i < state.Locks.Count; i++)
+            {
+                ShareLock l = state.Locks[i];
+                locked += l.StockId == stockId && l.UntilDay > day ? l.Shares : 0L;
+            }
+            return Math.Min(locked, Math.Max(0L, state.Held(stockId)));
+        }
+
+        /// <summary>The first day the shares of a company the player holds are all free to sell; 0 when none is locked.</summary>
+        public static int LockedUntil(MarketState state, int stockId, int day)
+        {
+            int until = 0;
+            for (int i = 0; i < state.Locks.Count; i++)
+            {
+                ShareLock l = state.Locks[i];
+                until = l.StockId == stockId && l.UntilDay > day ? Math.Max(until, l.UntilDay) : until;
+            }
+            return until;
+        }
+
         /// <summary>Shares already asked to be sold or bought; a stop loss or take profit holds nothing back.</summary>
         public static long Reserved(MarketState state, int stockId, OrderSide side)
         {
@@ -327,6 +351,11 @@ namespace RealLifeOverhaul.Markets
             if (buying && after > MostHeld(s))
             {
                 e.Why = OrderWhy.HoldingLimit;
+                return e;
+            }
+            if (!buying && state.Locks.Count > 0 && after < Locked(state, s.Id, state.Day))
+            {
+                e.Why = OrderWhy.Locked;   // a sale would dip into shares locked up by the terms of a sale; checked before a short sale, which would sell them first
                 return e;
             }
             if (!buying && after < 0)

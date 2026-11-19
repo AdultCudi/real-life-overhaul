@@ -165,15 +165,15 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// The player's word to an offer, given at a desk inside the firm: the offer, its price and its last day are kept. False, with nothing changed, if a sale is already
-        /// agreed at the firm, or the offer is not one of its own, or it has lapsed.
+        /// agreed at the firm, or the offer is not one of its own, or it has lapsed. The terms are the way to be paid the player chose (a team bought for its people is always cash).
         /// </summary>
-        public static bool Agree(FirmExit e, ExitOffer o, int day)
+        public static bool Agree(FirmExit e, ExitOffer o, int day, TermChoice terms = default(TermChoice))
         {
             if (e == null || o == null || e.Agreed != null || e.OfferOf(o.Id) != o || day > o.Lapse)
             {
                 return false;
             }
-            e.Agreed = new ExitAgreed { Offer = o.Id, Price = o.Price, Lapse = o.Lapse, Day = day, Name = o.Name };
+            e.Agreed = new ExitAgreed { Offer = o.Id, Price = o.Price, Lapse = o.Lapse, Day = day, Name = o.Name, Terms = o.Hire ? default(TermChoice) : terms };
             return true;
         }
 

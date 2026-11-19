@@ -15,9 +15,10 @@ namespace RealLifeOverhaul.Economy
         public const int StateOnTime = 0, StateLate = 1, StateMissed = 2;   // how a return ended
 
         /// <summary>The income no statement holds, from its two sources (a business sold, a startup stake sold), each counted once; either may be missing.</summary>
-        public static int OtherIncome(Func<int, int, int> business, Func<int, int, int> stake, int fromDay, int toDay)
+        public static int OtherIncome(Func<int, int, int> business, Func<int, int, int> stake, int fromDay, int toDay, Func<int, int, int> held = null)
         {
-            long sum = (business != null ? business(fromDay, toDay) : 0L) + (stake != null ? stake(fromDay, toDay) : 0L);
+            // A contract firm's profit is its owner's: what was paid on to them is taken out of the player's takings, once, by the days it covers.
+            long sum = (business != null ? business(fromDay, toDay) : 0L) + (stake != null ? stake(fromDay, toDay) : 0L) - (held != null ? held(fromDay, toDay) : 0L);
             return (int)Math.Min(int.MaxValue / 2, sum);
         }
 
