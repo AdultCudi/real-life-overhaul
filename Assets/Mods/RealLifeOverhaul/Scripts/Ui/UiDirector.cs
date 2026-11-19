@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Ui
         private static int _noticed;       // notices given this session for pieces taken off
         /// <summary>What the kits are told when the player's switch is turned off in a session (not a stop): the build face and the like may keep what is up.</summary>
         internal const string SwitchOffWhy = "the switch is off";
+        private static bool _ending;      // the city's part is unloading: nothing is put back over the game's screens
         private static bool _letGo;       // everything was let go for a part that stopped: once, until the part runs again
 
         private bool _fallbackSet;
@@ -98,6 +99,8 @@ namespace RealLifeOverhaul.Ui
         private void Awake()
         {
             Instance = this;
+            _ending = false;
+            ForgetCity();   // what the last city left in the kits' statics: the menu tick that did this never runs in the menu, as this director goes with its city
             UiFonts.Said = line => Logger?.Warn(line);
             UiReentry.Said = line => Logger?.Warn(line);   // a call refused for coming back into itself: once a session at each place, with its stack
             UiFonts.Begin(Path.Combine(ModRoot ?? string.Empty, UiFonts.BundlePath));
@@ -479,9 +482,41 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// The city is ending (the mod's city part unloading, before the game takes its scenes away): everything the kit holds over the
+        /// game's screens is given back while those screens still stand, and the kits forget this city, so the next one starts as the
+        /// first did. The director's own OnDestroy does the same a frame later; this does not wait for it.
+        /// </summary>
+        internal static void CityEnds(string why)
+        {
+            _ending = true;   // the one-second tick of this director, still alive until the frame ends, puts nothing back
+            LetGoAll(why);
+            ForgetCity();
+        }
+
+        // Every kit's references and flags for a city looked at afresh, and the pieces a fault took off asked again while they have a try left.
+        // A city's director goes with the city, so this runs as a director starts and as its city ends, not only from the menu tick.
+        private static void ForgetCity()
+        {
+            for (int i = 0; i < RemoveOrder.Length; i++)
+            {
+                try
+                {
+                    RearmOne(RemoveOrder[i]);
+                }
+                catch (Exception e)
+                {
+                    PieceFailed(PieceOf[RemoveOrder[i]], e);
+                }
+            }
+            UiPieces.Rearm();
+            _letGo = false;
+        }
+
         private void OnDestroy()
         {
             LetGoAll("the mod unloading");
+            Quietly(ForgetCity);
             if (Instance == this)
             {
                 Instance = null;
@@ -494,6 +529,10 @@ namespace RealLifeOverhaul.Ui
             while (true)
             {
                 yield return second;
+                if (_ending)
+                {
+                    continue;
+                }
                 if (Stopped)
                 {
                     if (!_letGo)
@@ -544,18 +583,7 @@ namespace RealLifeOverhaul.Ui
             if (!city)
             {
                 RemoveAll("no city");
-                for (int i = 0; i < RemoveOrder.Length; i++)
-                {
-                    try
-                    {
-                        RearmOne(RemoveOrder[i]);
-                    }
-                    catch (Exception e)
-                    {
-                        PieceFailed(PieceOf[RemoveOrder[i]], e);
-                    }
-                }
-                UiPieces.Rearm();   // a piece taken off after a fault is asked again in the next city, while it has a try left
+                ForgetCity();
                 _said = 0;
                 _waited = 0;
                 return;

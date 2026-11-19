@@ -196,6 +196,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (!ReferenceEquals(_root, null) || !ReferenceEquals(_found, null))
+            {
+                Remove("the city was unloaded");   // its objects went with their scene: what it held of them is not the next bind's
+            }
             if (Time.unscaledTime < _nextLook)
             {
                 return;
@@ -322,7 +326,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The game's screen as it was: the kit gone, its leaves seen and touchable again.</summary>
         public void Remove(string why)
         {
-            if (_root == null && _found == null)
+            // Not by the engine's null alone: a screen whose scene went first (a city that unloaded under it) reads null there, but its
+            // flags (stepped aside, held, hidden under the menu), its hold on the game's pieces and its host still stand, and the next city's bind would inherit them.
+            if (ReferenceEquals(_root, null) && ReferenceEquals(_found, null) && ReferenceEquals(_host, null) && _conceal.Count == 0 && !_classic && !_held && !_underMenu && _back == null && !_shown)
             {
                 return;
             }

@@ -145,6 +145,10 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
+            if (OverlayUI.IsVisible && box.GetCurrentOverlayType == null)
+            {
+                ClearFlag();   // the game's static said a box was up from the last city; this one's holds nothing, so no panel is "keeping" it
+            }
             if (_slotsChanged)
             {
                 Assemble();
@@ -220,14 +224,46 @@ namespace RealLifeOverhaul.GameUi
                 }
                 else if (OverlayUI.IsVisible)
                 {
-                    // The interface went first (the city is unloading): the game's flag must not be left saying a box is up.
-                    GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // its private setter, resolved once
+                    ClearFlag();   // The interface went first (the city is unloading): the game's flag must not be left saying a box is up.
                 }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
             }
+        }
+
+        // The game's flag for a box being up is a static the scene's unloading does not clear, and its key and event handlers read the box's
+        // current panel whenever it is set (OverlayUI.OnPlayerActionPressed, UpdateDisplay): left true with no box holding anything, they
+        // throw in the next city, and every panel of the mod waits on a box that nothing holds.
+        private static void ClearFlag()
+        {
+            GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // its private setter, resolved once
+        }
+
+        /// <summary>
+        /// The city is ending: the panel in the game's box comes down while the box stands, the box's flag is not left set, and what was
+        /// found of the city's interface is forgotten, so the next city's first panel is made as the first city's was.
+        /// </summary>
+        public static void CityEnds()
+        {
+            WorldPanel panel = _current;
+            if (panel != null)
+            {
+                panel.Hide();
+            }
+            _current = null;
+            Watch(false);
+            if (OverlayUI.IsVisible)
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                OverlayUI box = uis != null ? uis.overlayUI : null;
+                if (box == null || box.GetCurrentOverlayType == null)
+                {
+                    ClearFlag();
+                }
+            }
+            ForgetBox();
         }
 
         Vector3 IOverlay.GetTargetPosition()

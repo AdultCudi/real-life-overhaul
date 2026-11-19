@@ -61,10 +61,16 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The game's own notices again.</summary>
         public static void Remove(string why)
         {
-            Cards.Remove(why);
-            List.Remove(why);
-            _live = null;
-            Leave();
+            try
+            {
+                Cards.Remove(why);
+                List.Remove(why);
+            }
+            finally
+            {
+                _live = null;
+                Leave();   // the game's toast event is the game's alone again, whatever a host could not give back
+            }
         }
 
         /// <summary>A new city: the stack is looked for again.</summary>
