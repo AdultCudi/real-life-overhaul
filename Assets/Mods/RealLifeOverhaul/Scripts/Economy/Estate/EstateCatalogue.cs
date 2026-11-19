@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Economy
     public static class EstateCatalogue
     {
         public const int HoldingsMost = 40;
+        public const int LandlordHomesMost = 12;    // residential buildings of a rival landlord kept for a block to be tied to
         public const int SoldMost = 24;             // buildings sold remembered, the newest kept: a sold one put back is handed back to its buyer
         public const int SoldLookBack = 7;          // days of the game's books searched for a building's sale: it keeps at least six days of them
         public const int ApplicantsMost = 3;        // waiting for one unit

@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
     {
         private const int ForOffer = 7401, ForDistrict = 7402, ForOwner = 7403, ForUnits = 7404, ForSqm = 7405, ForFee = 7406, ForStandard = 7407, ForCond = 7408, ForLet = 7409;
         private const int ForRival = 7410, ForBidShare = 7411, ForBidPct = 7412, ForAgency = 7413, ForCity = 7414, ForInspectFirst = 7415;
-        private const int ForCall = 7416, ForAnswer = 7417, ForEnd = 7418, ForRenew = 7419, ForRelet = 7420;
+        private const int ForCall = 7416, ForAnswer = 7417, ForEnd = 7418, ForRenew = 7419, ForRelet = 7420, ForHome = 7421;
 
         // ------------------------------------------------------------------------------------------------- the rival agencies
 
@@ -132,8 +132,10 @@ namespace RealLifeOverhaul.Economy
                 return null;
             }
             int n = book.NextId;
-            DistrictRep d = districts[EstateRules.Between(EstateRules.Roll(seed, day, ForDistrict, n), 0, districts.Count - 1)];
             string owner = OwnerFor(seed, day, n, landlords);
+            string place;
+            DistrictRep d = HomeFor(agency, districts, landlords, owner, seed, day, n, out place)
+                            ?? districts[EstateRules.Between(EstateRules.Roll(seed, day, ForDistrict, n), 0, districts.Count - 1)];
             if (book.OfBlock(owner, d.Name) != null)
             {
                 return null;   // the same owner never asks twice for the same district: tomorrow's draw is another
@@ -142,7 +144,7 @@ namespace RealLifeOverhaul.Economy
             int sqm = EstateRules.Between(EstateRules.Roll(seed, day, ForSqm, n), AgencyBookCatalogue.FlatSqmLeast, AgencyBookCatalogue.FlatSqmMost);
             var offer = new ManagedBlock
             {
-                Id = n, Owner = owner, District = d.Name, Stage = (int)BlockStage.Offered,
+                Id = n, Owner = owner, District = d.Name, Place = place, Stage = (int)BlockStage.Offered,
                 Units = EstateRules.Between(EstateRules.Roll(seed, day, ForUnits, n), AgencyBookCatalogue.UnitsLeast, AgencyBookCatalogue.UnitsMost),
                 Sqm = sqm, RentDay = FlatRentDay(sqm, d.SqmPrice, real, c.Index, c.DaysPerYear),
                 FeeAsk = EstateRules.Between(EstateRules.Roll(seed, day, ForFee, n), AgencyBookCatalogue.FeeAskLeast, AgencyBookCatalogue.FeeAskMost),
@@ -154,6 +156,49 @@ namespace RealLifeOverhaul.Economy
             Bid(seed, offer, landlords);
             book.Blocks.Add(offer);
             return offer;
+        }
+
+        // A rival owner who really owns residential buildings in the save has the block tied to one of them, by a seeded pick among those in a district the agency knows and not already
+        // tied to a block; null (and no place) for a landlord of the city, or a rival with none.
+        private static DistrictRep HomeFor(AgencyFile agency, List<DistrictRep> districts, IList<AgencyLandlord> landlords, string owner, int seed, int day, int n, out string place)
+        {
+            place = string.Empty;
+            for (int i = 0; landlords != null && i < landlords.Count; i++)
+            {
+                if (!string.Equals(landlords[i].Id, owner, StringComparison.Ordinal) || landlords[i].Homes == null)
+                {
+                    continue;
+                }
+                var fit = new List<RentHome>(landlords[i].Homes.Count);
+                for (int h = 0; h < landlords[i].Homes.Count; h++)
+                {
+                    RentHome home = landlords[i].Homes[h];
+                    if (!TiedTo(agency.Book, home.Place) && districts.Exists(x => x.Name == home.District))
+                    {
+                        fit.Add(home);
+                    }
+                }
+                if (fit.Count == 0)
+                {
+                    return null;
+                }
+                RentHome pick = fit[EstateRules.Between(EstateRules.Roll(seed, day, ForHome, n), 0, fit.Count - 1)];
+                place = pick.Place;
+                return districts.Find(x => x.Name == pick.District);
+            }
+            return null;
+        }
+
+        private static bool TiedTo(AgencyBook book, string place)
+        {
+            for (int i = 0; i < book.Blocks.Count; i++)
+            {
+                if (book.Blocks[i].Stage != (int)BlockStage.Lost && book.Blocks[i].Place == place)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // A rival of the save who is a landlord asks on a draw, else a landlord of the city; with no rival landlord the city's alone.

@@ -259,6 +259,11 @@ internal static partial class Program
 
     private static void SeenHeadSources()
     {
+        string row = ModSource(@"RivalsSeen\SeenAppRow.cs");
+        Check(row.Contains("\"ba:gameevent_rivalselectedinapp\"") && row.Contains("EventHold.Keep(") && row.Contains("GameContract.RivalsHoodText") && row.Contains("\"reallife_career_button_map\"") && row.Contains("ShowOwnerHead(_forId)")
+              && row.Contains("if (_line == null || _button == null)") && !row.Contains("Update()") && ModSource(@"RivalsSeen\SeenDirector.cs").Contains("SeenAppRow.Keep();") && ModSource(@"RivalsSeen\SeenDirector.cs").Contains("SeenAppRow.Stop();")
+              && ModSource(@"Core\GameContract.Persona.cs").Contains("\"neighborhoodLocalization\""),
+            "head offices: the game's own Rivals app gets a head office line and Show on map on the old interface, copied once beside the game's own district text and Open in Contacts button, written on the game's own event for a rival chosen, never per frame, and the copies go with the feature and with the layout the kit hides");
         string game = ModSource(@"RivalsSeen\SeenGame.cs"), map = ModSource(@"RivalsSeen\SeenMap.cs"), head = ModSource(@"RivalsSeen\SeenDirector.Head.cs"), dir = ModSource(@"RivalsSeen\SeenDirector.cs");
         Check(game.Contains("SpecialBuildings.Holds(c)") && game.Contains("SpecialBuildings.TakenBy(r) != null") && game.Contains("SpecialBuildings.Players(r)") && game.Contains("GoingPublic.Mine(r)") && game.Contains("GameDlc.Open("),
             "head offices: an office the mod keeps, one the player has, one of another player's in a Going Public session and one a DLC keeps are never a rival's head office");

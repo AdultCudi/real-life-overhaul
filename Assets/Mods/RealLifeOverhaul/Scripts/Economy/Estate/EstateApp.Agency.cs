@@ -156,6 +156,10 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_estate_block_owner", AgencyText.Owner(b.Owner));
             box.Row("reallife_estate_block_flats", EstateText.T("reallife_estate_block_flats_of", "units", b.Units.ToString(), "sqm", b.Sqm.ToString(),
                 "rent", EstateText.Money(b.RentDay * monthDays)));
+            if (b.Place.Length > 0)
+            {
+                box.Row("reallife_estate_block_building", EstateGame.NameOf(b.Place));
+            }
             box.Row("reallife_estate_block_expects", AgencyText.Standard(b.Standard) + ", " + EstateText.Level(b.Standard));
             switch ((BlockStage)b.Stage)
             {
@@ -186,6 +190,10 @@ namespace RealLifeOverhaul.Economy
             else if (b.Held)
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_resign", () => _director.ResignBlock(id));
+            }
+            if (b.Place.Length > 0 && b.Stage != (int)BlockStage.Lost)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_career_button_map", () => _director.ShowBlock(id));
             }
             BackButton(buttons);
             Meta.Guide.Point(box, GuideTitle);

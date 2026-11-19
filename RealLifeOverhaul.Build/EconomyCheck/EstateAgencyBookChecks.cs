@@ -24,6 +24,7 @@ internal static partial class Program
         AgencyBookDays();
         AgencyBookMonths();
         AgencyBookNothingPaysTwice();
+        AgencyBookTied();
         AgencyBookSaveChecks();
         AgencyBookOwn();
         AgencyBookSources();
@@ -43,7 +44,12 @@ internal static partial class Program
         var l = new List<AgencyLandlord>(count);
         for (int i = 0; i < count; i++)
         {
-            l.Add(new AgencyLandlord { Id = "rival-" + (i * 7 % 13).ToString("00"), Units = 20 + i * 45 });
+            var homes = new List<RentHome>();
+            for (int h = 0; h < 5; h++)
+            {
+                homes.Add(new RentHome { Place = "Row%20" + i + "~" + (10 + h), District = h % 2 == 0 ? "ba:neighborhood_midtown" : "ba:neighborhood_garment" });
+            }
+            l.Add(new AgencyLandlord { Id = "rival-" + (i * 7 % 13).ToString("00"), Units = 20 + i * 45, Homes = homes });
         }
         return l;
     }
@@ -553,6 +559,75 @@ internal static partial class Program
         a2.Book.Month = back.Month;
         var again = new List<BlockEvent>();
         Check(!AgencyBookRules.MonthEnd(a2, 4, again) && again.Count == 0 && back.Month == 4, "agency book: a month settled before a save is not settled again after the load");
+    }
+
+    private static void AgencyBookTied()
+    {
+        List<AgencyLandlord> landlords = BookLandlords();
+        int tied = 0, wrong = 0, cityTied = 0, twice = 0;
+        for (int seed = 1; seed <= 20; seed++)
+        {
+            AgencyFile a = BookAgency();
+            for (int day = 1; day <= 150; day++)
+            {
+                ManagedBlock o = AgencyBookRules.Draw(a, landlords, seed, day, Climate(), 1000);
+                if (day % 9 == 0 && a.Book.Blocks.Count > 0)
+                {
+                    a.Book.Blocks.RemoveAt(0);
+                }
+                if (o == null)
+                {
+                    continue;
+                }
+                AgencyLandlord owner = landlords.FirstOrDefault(l => l.Id == o.Owner);
+                bool city = AgencyBookRules.CityNumber(o.Owner) >= 0;
+                cityTied += city && o.Place.Length > 0 ? 1 : 0;
+                if (!city && owner.Homes != null && o.Place.Length > 0)
+                {
+                    tied++;
+                    RentHome home = owner.Homes.First(h => h.Place == o.Place);
+                    wrong += home.District == o.District ? 0 : 1;
+                }
+                twice += a.Book.Blocks.Count(b => b.Stage != (int)BlockStage.Lost && b.Place.Length > 0 && b.Place == o.Place) > 1 ? 1 : 0;
+            }
+        }
+        Check(tied > 50 && wrong == 0 && cityTied == 0 && twice == 0, "agency book: a block of a rival who owns homes is tied to one of them, in its district, never to one already tied, and a landlord of the city's is tied to none (" + tied + " tied)");
+        AgencyFile x = BookAgency(), y = BookAgency();
+        ManagedBlock p = null, q = null;
+        for (int day = 1; day <= 60 && (p == null || p.Place.Length == 0); day++)
+        {
+            x.Book.Blocks.Clear();
+            y.Book.Blocks.Clear();
+            x.Book.LastOfferDay = y.Book.LastOfferDay = -1000;
+            p = AgencyBookRules.Draw(x, landlords, 5, day, Climate(), 1000);
+            q = AgencyBookRules.Draw(y, landlords, 5, day, Climate(), 1000);
+        }
+        Check(p != null && q != null && p.Place == q.Place && p.District == q.District, "agency book: the building a block is tied to is the same for the same save and day");
+        var read = new RentLandlord { Id = "r" };
+        var reverse = new RentLandlord { Id = "r" };
+        string[] places = new string[20];
+        for (int i = 0; i < 20; i++)
+        {
+            places[i] = "S~" + (i * 7 % 20).ToString("00");
+        }
+        foreach (string s in places)
+        {
+            read.AddHome(s, "d");
+        }
+        foreach (string s in places.Reverse())
+        {
+            reverse.AddHome(s, "d");
+        }
+        Check(read.Homes.Count == EstateCatalogue.LandlordHomesMost && read.Homes.Select(h => h.Place).SequenceEqual(reverse.Homes.Select(h => h.Place))
+              && read.Homes[0].Place == "S~00", "agency book: a rival's homes kept for a block are the lowest addresses, the same whatever order the game lists them in");
+        var line = new AgencyBook();
+        line.Blocks.Add(new ManagedBlock { Id = 3, Owner = "rival-01", District = "d", Place = "Row%20A~12", Units = 6, Sqm = 50, RentDay = 10, Stage = (int)BlockStage.Offered });
+        var back = new AgencyBook();
+        AgencyBookStore.Read(back, AgencyBookStore.Write(line));
+        Check(back.Blocks.Count == 1 && back.Blocks[0].Place == "Row%20A~12", "agency book: the building a block is tied to is saved with it");
+        string app = ModSource(@"Economy\Estate\EstateApp.Agency.cs"), kit = ModSource(@"Ui\Estate\EstateLive.Market.cs");
+        Check(app.Contains("_director.ShowBlock(id)") && kit.Contains("_d.ShowBlock(id)") && ModSource(@"Economy\Estate\EstateDirector.Book.cs").Contains("Careers.DeskGame.Route(")
+              && ModSource(@"Economy\Estate\EstateGame.Rents.cs").Contains("cb.Place, cb.District"), "agency book: both interfaces show a tied block's building with Show on map, the Careers pages' own call");
     }
 
     private static void AgencyBookSaveChecks()

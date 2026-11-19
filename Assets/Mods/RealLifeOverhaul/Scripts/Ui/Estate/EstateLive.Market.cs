@@ -517,6 +517,7 @@ namespace RealLifeOverhaul.Ui
                     UiFactLine.Row(EstateText.T("reallife_estate_block_owner"), AgencyText.Owner(b.Owner)),
                     UiFactLine.Row(EstateText.T("reallife_estate_block_flats"), EstateText.T("reallife_estate_block_flats_of", "units", b.Units.ToString(Inv), "sqm", b.Sqm.ToString(Inv),
                         "rent", Money(b.RentDay * monthDays))),
+                    UiFactLine.Row(EstateText.T("reallife_estate_block_building"), b.Place.Length > 0 ? EstateGame.NameOf(b.Place) : EstateText.T("reallife_estate_block_no_building")),
                     UiFactLine.Row(EstateText.T("reallife_estate_block_expects"), AgencyText.Standard(b.Standard) + ", " + EstateText.Level(b.Standard))
                 };
                 var work = new List<UiFactLine>();
@@ -574,6 +575,10 @@ namespace RealLifeOverhaul.Ui
                         work.Add(UiFactLine.Say(AgencyText.Why(b), UiRole.DangerText));
                         terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_earned"), Money(b.Earned)));
                         break;
+                }
+                if (b.Place.Length > 0 && b.Stage != (int)BlockStage.Lost)
+                {
+                    actions.Add(_runs.Button(EstateText.T("reallife_career_button_map"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Count, () => _d.ShowBlock(id)));
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray() } };
                 _m.Right = new[]

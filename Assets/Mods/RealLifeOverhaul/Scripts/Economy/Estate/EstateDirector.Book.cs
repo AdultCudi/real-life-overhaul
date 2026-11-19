@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Economy
                 RentLandlord l = rents.Landlords[i];
                 if (!string.IsNullOrEmpty(l.Id) && l.Units > 0)
                 {
-                    _landlords.Add(new AgencyLandlord { Id = l.Id, Units = l.Units });
+                    _landlords.Add(new AgencyLandlord { Id = l.Id, Units = l.Units, Homes = l.Homes });
                 }
             }
             return _landlords;
@@ -210,6 +210,22 @@ namespace RealLifeOverhaul.Economy
                 case PitchResult.NoAgency: return "reallife_estate_why_no_agency";
                 default: return "reallife_estate_why_offer_gone";
             }
+        }
+
+        /// <summary>
+        /// Show on map for a block tied to a real building of its owner's: the game's own destination marker, as the Careers pages' button sets one, and a notice saying where it is.
+        /// </summary>
+        public bool ShowBlock(int id)
+        {
+            ManagedBlock b = _state != null ? _state.Agency.Book.Find(id) : null;
+            var address = b != null && b.Place.Length > 0 ? EstateGame.AddressOf(b.Place) : null;
+            if (address == null || !Careers.DeskGame.Route(address.streetName, address.streetNumber))
+            {
+                Notifications.ShowError("reallife_career_why_route");
+                return false;
+            }
+            Notifications.Show(NotificationType.Success, "reallife_estate_block_shown", Data("block", AgencyText.Block(b), "address", EstateGame.NameOf(b.Place)));
+            return true;
         }
 
         public void WithdrawPitch(int id)

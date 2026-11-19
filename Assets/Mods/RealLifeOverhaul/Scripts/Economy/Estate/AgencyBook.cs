@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Economy
         public int Id;
         public string Owner = string.Empty;     // a rival's id of the game, or "city:" and a number for a landlord of the city
         public string District = string.Empty;  // the game's neighbourhood
+        public string Place = string.Empty;     // a real residential building of the owner's the block is tied to, as the property business writes a place; empty for a landlord of the city
         public int Stage;                       // BlockStage
         public int Why;                         // BlockWhy, once lost
         public string Rival = string.Empty;     // the rival of the save whose agency was chosen instead, once lost to one
@@ -127,6 +128,7 @@ namespace RealLifeOverhaul.Economy
     {
         public string Id;       // the game's rival id
         public int Units;       // units they hold in the city
+        public System.Collections.Generic.IList<RentHome> Homes;   // some of their residential buildings, for a block to be tied to; null with none
     }
 
     /// <summary>What the agency's day did, for the director to pay, tell and record.</summary>

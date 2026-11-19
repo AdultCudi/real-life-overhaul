@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Economy
                     AgencyBid bid = b.Bids[k];
                     t.Append(k > 0 ? "," : string.Empty).Append(Esc(bid.Rival).Replace(".", "%2E")).Append('.').Append(bid.Pct.ToString(Inv)).Append('.').Append(bid.Skill.ToString(Inv));
                 }
-                t.Append('|').Append(Esc(b.Rival));
+                t.Append('|').Append(Esc(b.Rival)).Append('|').Append(Esc(b.Place));
             }
             return t.ToString();
         }
@@ -172,6 +172,7 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             b.Rival = f.Length > 29 ? Unesc(f[29]) : string.Empty;
+            b.Place = f.Length > 30 ? Unesc(f[30]) : string.Empty;
             return b;
         }
 

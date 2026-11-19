@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             SeenGame.City.Forget();
             SeenMap.Clear();
+            SeenAppRow.Stop();
             if (Instance == this)
             {
                 Instance = null;
@@ -167,6 +168,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 Load();
             }
             SaveHook.Keep(_onSave);
+            SeenAppRow.Keep();   // the head office on the game's own Rivals app, for the old interface
             int day = SeenGame.Day, hour = SeenGame.Hour;
             if (SeenRules.ReadAgain(day, _readDay, rivals, _readRivals) && !Pass(day, rivals))
             {
@@ -246,6 +248,7 @@ namespace RealLifeOverhaul.RivalsSeen
             ClearWorld(GoingPublic.InSession ? "a Going Public session" : "switched off");
             SeenGame.City.Forget();
             SeenMap.Clear();
+            SeenAppRow.Stop();
             _subjects.Clear();
             _loaded = false;
             _readDay = _readRivals = -1;
@@ -266,6 +269,7 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             ClearWorld("the data is reset");
             SeenMap.Clear();
+            SeenAppRow.Stop();
             _file = null;
             _subjects.Clear();
             _loaded = false;
