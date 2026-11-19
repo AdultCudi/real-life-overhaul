@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.SelfTest
         private int _stepMore, _windowMore;
         private readonly List<string> _all = new List<string>(1024);   // every line of the log since the plan began, for assert_log_has
         private readonly Dictionary<string, int> _starts = new Dictionary<string, int>(StringComparer.Ordinal);   // where in _all each step began
+        private readonly Dictionary<string, float> _minutesAt = new Dictionary<string, float>(StringComparer.Ordinal);
+        private readonly Dictionary<string, float> _moneyAt = new Dictionary<string, float>(StringComparer.Ordinal);
+        private float _windowMinutes, _windowMoney;
         private int _windowStart;   // where in _all the assert window began
         private bool _hooked;
         private Application.LogCallback _onLog;   // made once: the same delegate is put on the game's log and taken off it
@@ -110,6 +113,14 @@ namespace RealLifeOverhaul.SelfTest
         public void Begin(string label, bool assert)
         {
             _starts[label] = _all.Count;
+            float minutes = SelfTestGame.Minutes(), money = SelfTestGame.MoneyNow();
+            _minutesAt[label] = minutes;
+            _moneyAt[label] = money;
+            if (!assert)
+            {
+                _windowMinutes = minutes;
+                _windowMoney = money;
+            }
             _step.Clear();
             _stepMore = 0;
             if (assert)
@@ -156,6 +167,12 @@ namespace RealLifeOverhaul.SelfTest
             }
             return false;
         }
+
+        /// <summary>The game's minutes when the named step began, else when the assert window began.</summary>
+        public float MinutesAt(string label) => label != null && _minutesAt.TryGetValue(label, out float m) ? m : _windowMinutes;
+
+        /// <summary>The player's money when the named step began, else when the assert window began.</summary>
+        public float MoneyAt(string label) => label != null && _moneyAt.TryGetValue(label, out float m) ? m : _windowMoney;
 
         /// <summary>True when the step of that label has begun.</summary>
         public bool Knows(string label) => _starts.ContainsKey(label);

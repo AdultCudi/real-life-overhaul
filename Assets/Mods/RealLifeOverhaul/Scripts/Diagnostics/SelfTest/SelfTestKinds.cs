@@ -134,6 +134,24 @@ namespace RealLifeOverhaul.SelfTest
             new SelfTestKind("game_open", 60,
                 "Opens a window of the game's own by its own call: help (the F1 help), blueprints (the pause menu's Blueprints), phone (the full menu).",
                 new[] { "what:s" }, new[] { "settle:n" }),
+            new SelfTestKind("assert_money", 30,
+                "Asserts the player's money: atleast, atmost, and/or changed_by (within a tolerance, default 1) since the last action or the step labelled by from.",
+                null, new[] { "atleast:n", "atmost:n", "changed_by:n", "within:n", "from:s" }),
+            new SelfTestKind("assert_owns", 30,
+                "Asserts the building at an address is the player's (owned or rented), optionally with that business name; absent true asserts it is not.",
+                new[] { "address:s" }, new[] { "business:s", "absent:b" }),
+            new SelfTestKind("assert_bank_line", 30,
+                "Asserts the bank's lines hold a transaction whose key contains the text since the last action (or the step labelled by from): at least one, exactly count, or none with absent.",
+                new[] { "key:s" }, new[] { "count:i", "absent:b", "from:s" }),
+            new SelfTestKind("assert_notice", 60,
+                "Asserts a notice whose text key contains the text was shown since the last action (or from the labelled step), waiting up to wait seconds; absent asserts none was. "
+                + "Only notices the game keeps in the save are seen.",
+                new[] { "key:s" }, new[] { "from:s", "absent:b", "wait:n" }),
+            new SelfTestKind("write_wav", 30,
+                "Writes a short generated tone (a wav) into a folder under RealLifeOverhaul/GigMusic of the game's data folder and nowhere else; "
+                + "delete true removes it, bad true writes a file that is not a wav.",
+                new[] { "path:s" }, new[] { "seconds:n", "hz:n", "delete:b", "bad:b" }),
+            new SelfTestKind("set_year", 10, "Sets the length of the game's year in days for the running game (a long year, for the terms that read it).", new[] { "days:i" }, null),
             new SelfTestKind("note", 10, "Writes a line into the results.", new[] { "text:s" }, null),
         };
 

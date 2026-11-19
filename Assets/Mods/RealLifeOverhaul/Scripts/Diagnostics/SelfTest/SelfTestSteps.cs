@@ -48,6 +48,12 @@ namespace RealLifeOverhaul.SelfTest
                 case "measure": return new MeasureStep();
                 case "monologue": return new MonologueStep();
                 case "game_open": return new GameOpenStep();
+                case "assert_money": return new AssertMoneyStep();
+                case "assert_owns": return new AssertOwnsStep();
+                case "assert_bank_line": return new AssertBankLineStep();
+                case "assert_notice": return new AssertNoticeStep();
+                case "write_wav": return new WriteWavStep();
+                case "set_year": return new SetYearStep();
                 case "note": return new NoteStep();
             }
             return null;

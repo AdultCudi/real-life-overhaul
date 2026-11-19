@@ -40,6 +40,9 @@ namespace RealLifeOverhaul.SelfTest
             return save == null ? "no game" : "day " + save.Day + ", " + save.Hour.ToString("00") + ":" + ((int)save.Minute).ToString("00") + ", money " + (long)save.Money;
         }
 
+        /// <summary>The player's money now, or -1 with no game.</summary>
+        public static float MoneyNow() => SaveGameManager.Current == null ? -1f : SaveGameManager.Current.Money;
+
         /// <summary>The game's clock as total minutes (day, hours, minutes), or -1 with no game.</summary>
         public static float Minutes()
         {

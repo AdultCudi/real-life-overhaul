@@ -120,9 +120,17 @@ internal static partial class Program
 
         plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"quit\":false,\"keep_options\":true,\"steps\":[{\"do\":\"wait_seconds\",\"seconds\":120}]}", out errors);
         Check(plan != null && !plan.Quit && plan.KeepOptions && plan.Steps[0].Limit == 150, "selftest plan: quit and keep_options are read, and a wait's limit grows with its seconds");
+        Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"wait_menu\"},{\"do\":\"assert_log_has\",\"text\":\"x\",\"from\":\"load 1\"}]}", "label of no earlier step"),
+            "selftest plan: a from that names the label of no earlier step is refused when the plan is read, not when it runs");
+        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"wait_menu\",\"label\":\"load_1\"},{\"do\":\"assert_log_has\",\"text\":\"x\",\"from\":\"load_1\"},"
+            + "{\"do\":\"repeat\",\"times\":2,\"steps\":[{\"do\":\"wait_city\",\"label\":\"c\"},{\"do\":\"assert_money\",\"atleast\":1,\"from\":\"c\"},{\"do\":\"assert_bank_line\",\"key\":\"k\",\"from\":\"c\",\"count\":1},"
+            + "{\"do\":\"assert_notice\",\"key\":\"n\",\"absent\":true},{\"do\":\"assert_owns\",\"address\":\"1 Main Street\"},{\"do\":\"set_year\",\"days\":365},{\"do\":\"write_wav\",\"path\":\"Busking/a.wav\",\"hz\":440}]}]}", out errors);
+        Check(plan != null && errors.Count == 0 && plan.Steps.Count == 16 && plan.Steps[3].Arg("from") == "c_r1" && plan.Steps[10].Arg("from") == "c_r2",
+            "selftest plan: inside a repeat a from names the same round's label, and the money, bank line, notice, owns, year and wav steps read with their arguments (" + (plan != null ? plan.Steps.Count : -1) + " steps)");
+        Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"since\":\"never\"}]}", "marked by no earlier"), "selftest plan: a since that no earlier measure marked is refused");
         Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\"}]}", "mark"), "selftest plan: a measure that names no mark and no moment to measure from is refused");
         plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"mark\":\"a\"},{\"do\":\"measure\",\"since\":\"a\",\"as\":\"load\"},"
-            + "{\"do\":\"assert_log_has\",\"text\":\"Uptown check\",\"from\":\"x\",\"absent\":false,\"wait\":4},{\"do\":\"game_open\",\"what\":\"help\"},{\"do\":\"monologue\"}]}", out errors);
+            + "{\"do\":\"assert_log_has\",\"text\":\"Uptown check\",\"absent\":false,\"wait\":4},{\"do\":\"game_open\",\"what\":\"help\"},{\"do\":\"monologue\"}]}", out errors);
         Check(plan != null && plan.Steps.Count == 5 && plan.Steps[1].Arg("as") == "load" && plan.Steps[2].Arg("text") == "Uptown check" && !plan.Steps[2].Flag("absent", true) && plan.Steps[2].Number("wait", 0) == 4,
             "selftest plan: measure, assert_log_has, game_open and monologue read with their arguments");
     }
@@ -294,6 +302,13 @@ internal static partial class Program
               && SelfTestScreenTable.Rank("question_box", false) == 2 && SelfTestScreenTable.Rank("build_mode", false) == 2 && ui.Contains("public static List<string> Ordered"),
             "selftest source: the walk of the registry puts the plain apps first, then the screens a test button opens, and the situations (pickers, world boxes, build mode) last");
         Check(SelfTestKinds.Find("open_every_screen").Limit >= 3600 && world.Contains("set again") && world.Contains("the first set read"), "selftest source: a long walk has a generous limit, and set_money sets, reads after a frame, sets again once and says how far off the first read was");
+        byte[] wav = SelfTestWav.Make(0.5, 440);
+        int dataBytes = BitConverter.ToInt32(wav, 40), rate = BitConverter.ToInt32(wav, 24);
+        Check(wav.Length == 44 + dataBytes && dataBytes == SelfTestWav.Rate && rate == SelfTestWav.Rate && wav[0] == (byte)'R' && wav[8] == (byte)'W' && BitConverter.ToInt16(wav, 22) == 1 && BitConverter.ToInt16(wav, 34) == 16,
+            "selftest source: a generated tone is a mono 16 bit PCM wav of the length asked (" + wav.Length + " bytes)");
+        string state = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.State.cs");
+        Check(state.Contains("Path.GetFullPath(Path.Combine(Application.persistentDataPath, \"RealLifeOverhaul\", \"GigMusic\"))") && state.Contains("rel.Contains(\"..\")") && state.Contains("StartsWith(root"),
+            "selftest source: the wav step writes only inside RealLifeOverhaul/GigMusic of the game's data folder, never up a path");
         // The screens table against the registry and the options page.
         string mod = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");
         bool ids = true, labels = true;
@@ -348,10 +363,23 @@ internal static partial class Program
         {
             files.AddRange(Directory.GetFiles(IoPath.Combine(folder, "plans"), "*.json"));
         }
+        string beta = @"D:\BigAmbitionsMod\wt-living\Assets\Mods\RealLifeOverhaul\Scripts\Core\RealLifeOverhaulMod.cs";
+        string buttons = File.Exists(beta) ? File.ReadAllText(beta) : string.Empty;   // the beta's page, where the new features' buttons are
+        string buttonsHere = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");
         foreach (string file in files)
         {
             SelfTestPlan plan = SelfTestRead(File.ReadAllText(file), out List<string> errors);
             Check(plan != null && errors.Count == 0 && plan.Steps.Count > 0, "selftest plans: " + IoPath.GetFileName(file) + " reads against the table" + (errors.Count > 0 ? ": " + string.Join("; ", errors) : string.Empty));
+            var missing = new List<string>();
+            for (int i = 0; plan != null && i < plan.Steps.Count; i++)
+            {
+                string button = plan.Steps[i].Arg("button");
+                if (button != null && !buttons.Contains("AddButton(\"" + button + "\"") && !buttonsHere.Contains("AddButton(\"" + button + "\""))
+                {
+                    missing.Add(button);
+                }
+            }
+            Check(missing.Count == 0, "selftest plans: " + IoPath.GetFileName(file) + " presses only buttons the options page has (" + string.Join(", ", missing) + ")");
         }
     }
 }

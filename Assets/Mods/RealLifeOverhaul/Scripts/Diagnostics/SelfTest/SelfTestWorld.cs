@@ -84,6 +84,21 @@ namespace RealLifeOverhaul.SelfTest
             }
         }
 
+        /// <summary>Whether the building at an address is the player's (owned or rented), with the business name when one is asked for; words say what was found.</summary>
+        public static bool Owns(int number, string street, string business, out string words)
+        {
+            Building building = BuildingHelper.GetBuilding(new Address(street, number));
+            BuildingRegistration reg = building != null ? building.GetRegistration() : null;
+            if (reg == null)
+            {
+                words = "no building stands at " + number + " " + street;
+                return false;
+            }
+            bool owned = reg.BuildingOwnedByPlayer || reg.RentedByPlayer;
+            words = number + " " + street + ": owned " + reg.BuildingOwnedByPlayer + ", rented by the player " + reg.RentedByPlayer + ", business '" + reg.BusinessName + "'";
+            return owned && (string.IsNullOrEmpty(business) || reg.BusinessName == business);
+        }
+
         /// <summary>Where the player stands, or zero with no player.</summary>
         public static Vector3 PlayerAt()
         {

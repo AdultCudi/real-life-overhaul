@@ -99,7 +99,51 @@ namespace RealLifeOverhaul.SelfTest
                     plan.Steps[i].Label += "_" + (i + 1);   // two steps of one name keep their files apart
                 }
             }
+            CheckNames(plan, errors);
             return errors.Count == 0 ? plan : null;
+        }
+
+        // A "from" names the label of an earlier step of the plan (the label as the results spell it: letters, digits, dash and underscore),
+        // and a "since" names a moment an earlier measure step marked: a name that nothing carries would only be found when the plan ran.
+        private static void CheckNames(SelfTestPlan plan, List<string> errors)
+        {
+            var labels = new HashSet<string>(StringComparer.Ordinal);
+            var marks = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < plan.Steps.Count; i++)
+            {
+                SelfTestStepSpec step = plan.Steps[i];
+                string from = step.Arg("from");
+                if (from != null && !labels.Contains(from))
+                {
+                    // inside a repeat every label of a round carries the round's suffix: a "from" written without it means the same round's step
+                    int cut = step.Label.Length;
+                    while (cut > 2 && char.IsDigit(step.Label[cut - 1]))
+                    {
+                        cut--;
+                    }
+                    string suffix = cut > 2 && step.Label[cut - 1] == 'r' && step.Label[cut - 2] == '_' ? step.Label.Substring(cut - 2) : string.Empty;
+                    if (suffix.Length > 0 && labels.Contains(from + suffix))
+                    {
+                        step.Args["from"] = from + suffix;
+                        from = null;
+                    }
+                }
+                if (from != null && !labels.Contains(from))
+                {
+                    errors.Add("step " + (i + 1) + " (" + step.Kind + "): from '" + from + "' is the label of no earlier step (labels are written with letters, digits, dash and underscore: "
+                               + SelfTestRules.SafeName(from, "?") + "?)");
+                }
+                string since = step.Arg("since");
+                if (since != null && !marks.Contains(since))
+                {
+                    errors.Add("step " + (i + 1) + " (" + step.Kind + "): since '" + since + "' was marked by no earlier measure step");
+                }
+                labels.Add(step.Label);
+                if (step.Arg("mark") != null)
+                {
+                    marks.Add(step.Arg("mark"));
+                }
+            }
         }
 
         private static void Expand(JArray steps, SelfTestPlan plan, List<string> errors, int depth, string suffix, ref int attempted)

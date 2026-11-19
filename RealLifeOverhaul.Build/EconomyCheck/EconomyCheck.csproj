@@ -903,6 +903,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\SelfTest\SelfTestRules.cs" Link="Mod\SelfTestRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\SelfTest\SelfTestResults.cs" Link="Mod\SelfTestResults.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\SelfTest\SelfTestScreenTable.cs" Link="Mod\SelfTestScreenTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\SelfTest\SelfTestWav.cs" Link="Mod\SelfTestWav.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />
