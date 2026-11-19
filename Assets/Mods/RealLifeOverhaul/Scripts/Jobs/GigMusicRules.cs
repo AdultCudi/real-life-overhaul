@@ -22,10 +22,16 @@ namespace RealLifeOverhaul
         bool WriteText(string path, string text);
     }
 
-    /// <summary>The kinds of gig that play a sound of their own, one folder each under the mod's GigMusic folder.</summary>
+    /// <summary>
+    /// The kinds of gig sound the mod plays, one folder each under the mod's GigMusic folder: the busker's music, and the short
+    /// effects a gig plays at a moment (the cart's customer calling out and its till, the taxi's car door).
+    /// </summary>
     public enum GigSound
     {
-        Busking = 0
+        Busking = 0,
+        CartCalls = 1,
+        CartTill = 2,
+        TaxiDoor = 3
     }
 
     /// <summary>The files taken from one folder, in the order they will play, and what was left out and why.</summary>
@@ -51,6 +57,10 @@ namespace RealLifeOverhaul
         public const int MostFiles = 24;                       // files taken from one folder: a set is minutes, and a folder of hundreds is a mistake
         public const int MostMegabytes = 40;                   // MB a file may be: about 40 minutes of mp3 at 128 kbps, 4 minutes of CD wav; streamed, so it is never held whole
         public const long MostBytes = MostMegabytes * 1024L * 1024L;
+        public const int MostEffectFiles = 8;                  // files taken for a short effect: a few to pick among is plenty
+        public const int MostEffectKilobytes = 1024;           // KB an effect file may be: a second or two of mp3, about 6 seconds of CD wav, held decoded for the gig
+        public const long MostEffectBytes = MostEffectKilobytes * 1024L;
+        public const float MostEffectSeconds = 8f;             // seconds an effect plays before it is cut: a file made longer is a mistake, and the gig never waits for it
         public const float FadeSeconds = 0.8f;                 // seconds a file is faded out at the set's end: short enough to be no wait, long enough for no click
 
         // The types the game's own custom radio reads (AudioFileFormatHelper.GetAudioTypeFromExtension).
@@ -62,7 +72,35 @@ namespace RealLifeOverhaul
         /// <summary>The folder's name for a kind of gig sound: the gig's own name.</summary>
         public static string Name(GigSound kind)
         {
-            return kind.ToString();
+            switch (kind)
+            {
+                case GigSound.CartCalls: return "Cart/Calls";
+                case GigSound.CartTill: return "Cart/Till";
+                case GigSound.TaxiDoor: return "Taxi/Door";
+                default: return "Busking";
+            }
+        }
+
+        /// <summary>Whether a kind is a short effect played at a moment, not music played through a set.</summary>
+        public static bool IsEffect(GigSound kind)
+        {
+            return kind != GigSound.Busking;
+        }
+
+        public static int MostFilesOf(GigSound kind)
+        {
+            return IsEffect(kind) ? MostEffectFiles : MostFiles;
+        }
+
+        public static long MostBytesOf(GigSound kind)
+        {
+            return IsEffect(kind) ? MostEffectBytes : MostBytes;
+        }
+
+        /// <summary>The size limit as the player is told it: MB for music, KB for an effect.</summary>
+        public static string LimitText(GigSound kind)
+        {
+            return IsEffect(kind) ? MostEffectKilobytes + " KB" : MostMegabytes + " MB";
         }
 
         public static string FolderOf(string root, GigSound kind)
@@ -88,6 +126,17 @@ namespace RealLifeOverhaul
         /// <see cref="MostFiles"/> by name; then shuffled by <paramref name="seed"/> if asked. Reads the folder's list and each size once.
         /// </summary>
         public static GigMusicSet Read(IGigMusicFiles files, string folder, bool shuffle, int seed)
+        {
+            return Read(files, folder, shuffle, seed, MostFiles, MostBytes);
+        }
+
+        /// <summary>The same for a kind of gig sound, with the limits of its kind: music or a short effect.</summary>
+        public static GigMusicSet Read(IGigMusicFiles files, GigSound kind, string root, bool shuffle, int seed)
+        {
+            return Read(files, FolderOf(root, kind), shuffle, seed, MostFilesOf(kind), MostBytesOf(kind));
+        }
+
+        private static GigMusicSet Read(IGigMusicFiles files, string folder, bool shuffle, int seed, int mostFiles, long mostBytes)
         {
             var set = new GigMusicSet();
             if (files == null || !files.FolderExists(folder))
@@ -116,9 +165,9 @@ namespace RealLifeOverhaul
                 {
                     set.Left.Add(name + ": empty or cannot be read");
                 }
-                else if (size > MostBytes)
+                else if (size > mostBytes)
                 {
-                    set.Left.Add(name + ": over " + MostMegabytes + " MB");
+                    set.Left.Add(name + ": over " + (mostBytes >> 10 >= MostMegabytes * 1024L ? MostMegabytes + " MB" : (mostBytes >> 10) + " KB"));
                 }
                 else
                 {
@@ -126,13 +175,13 @@ namespace RealLifeOverhaul
                 }
             }
             kept.Sort(ByName);
-            if (kept.Count > MostFiles)
+            if (kept.Count > mostFiles)
             {
-                for (int i = MostFiles; i < kept.Count; i++)
+                for (int i = mostFiles; i < kept.Count; i++)
                 {
-                    set.Left.Add(Path.GetFileName(kept[i]) + ": past the " + MostFiles + " files taken");
+                    set.Left.Add(Path.GetFileName(kept[i]) + ": past the " + mostFiles + " files taken");
                 }
-                kept.RemoveRange(MostFiles, kept.Count - MostFiles);
+                kept.RemoveRange(mostFiles, kept.Count - mostFiles);
             }
             set.Paths = kept.ToArray();
             if (shuffle)
@@ -191,6 +240,12 @@ namespace RealLifeOverhaul
         public static bool SaysEmpty(bool option, int taken, bool said)
         {
             return option && taken <= 0 && !said;
+        }
+
+        /// <summary>The file an effect plays the <paramref name="n"/>th time (from 0): each in turn, round and round, in the order the read gave (by name or by the save's seed).</summary>
+        public static int EffectIndex(int n, int count)
+        {
+            return count <= 0 ? -1 : (int)((uint)n % (uint)count);
         }
 
         /// <summary>The file after this one, wrapping round; -1 with nothing to play.</summary>

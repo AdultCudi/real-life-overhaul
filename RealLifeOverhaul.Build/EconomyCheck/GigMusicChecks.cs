@@ -73,8 +73,73 @@ internal static partial class Program
         GigMusicOrder();
         GigMusicChoice();
         GigMusicFolder();
+        GigMusicEffects();
         GigMusicSources();
         GigMusicWords();
+    }
+
+    private static void GigMusicEffects()
+    {
+        const string root = "data/GigMusic";
+        string[] names = { "Busking", "Cart/Calls", "Cart/Till", "Taxi/Door" };
+        int n = 0;
+        foreach (GigSound kind in Enum.GetValues(typeof(GigSound)))
+        {
+            Check(GigMusicRules.Name(kind) == names[n] && GigMusicRules.IsEffect(kind) == (n > 0), "gig music: " + kind + " is the folder " + names[n] + (n > 0 ? ", a short effect" : ", music"));
+            n++;
+        }
+        Check(Enum.GetValues(typeof(GigSound)).Length == names.Length, "gig music: every kind of gig sound has a folder named plainly");
+        Check(GigMusicRules.MostEffectFiles == 8 && GigMusicRules.MostEffectKilobytes == 1024 && GigMusicRules.MostEffectBytes == 1024L * 1024L && GigMusicRules.MostEffectBytes < GigMusicRules.MostBytes
+              && GigMusicRules.MostFilesOf(GigSound.CartTill) == 8 && GigMusicRules.MostFilesOf(GigSound.Busking) == 24 && GigMusicRules.MostBytesOf(GigSound.TaxiDoor) == GigMusicRules.MostEffectBytes,
+            "gig music: an effect takes at most " + GigMusicRules.MostEffectFiles + " files of " + GigMusicRules.MostEffectKilobytes + " KB, much smaller than music");
+
+        var disc = new FakeDisc();
+        string till = GigMusicRules.FolderOf(root, GigSound.CartTill);
+        for (int i = 0; i < 10; i++)
+        {
+            disc.Add(till, "ding" + i + ".wav", 5000L);
+        }
+        disc.Add(till, "zbig.mp3", GigMusicRules.MostEffectBytes + 1);
+        disc.Add(till, "edge.ogg", GigMusicRules.MostEffectBytes);
+        GigMusicSet set = GigMusicRules.Read(disc, GigSound.CartTill, root, false, 1);
+        string left = string.Join("|", set.Left);
+        Check(set.Count == 8 && GigNames(set).StartsWith("ding0.wav,ding1.wav") && left.Contains("zbig.mp3") && left.Contains("past the 8 files"),
+            "gig music: of ten till files eight are taken by name, the one over 1 MB and those past the eighth are named as left out (taken " + set.Count + ")");
+        disc.Add(GigMusicRules.FolderOf(root, GigSound.CartCalls), "hey.mp3", GigMusicRules.MostEffectBytes + 1000);
+        Check(GigMusicRules.Read(disc, GigSound.CartCalls, root, false, 1).Count == 0 && GigMusicRules.Read(disc, GigSound.Busking, root, false, 1).Count == 0,
+            "gig music: each folder is read alone, a file over its kind's limit is left out, and an empty folder gives none");
+        disc.Add(GigMusicRules.FolderOf(root, GigSound.Busking), "song.mp3", GigMusicRules.MostEffectBytes + 1000);
+        Check(GigMusicRules.Read(disc, GigSound.Busking, root, false, 1).Count == 1, "gig music: the same size is fine for music (40 MB) and too much for an effect");
+        int seed = GigMusicRules.SeedFor(77, GigSound.CartTill);
+        GigMusicSet shuffled = GigMusicRules.Read(disc, GigSound.CartTill, root, true, seed);
+        Check(GigNames(shuffled) == GigNames(GigMusicRules.Read(disc, GigSound.CartTill, root, true, seed)) && shuffled.Count == 8 && seed != GigMusicRules.SeedFor(77, GigSound.CartCalls),
+            "gig music: an effect's files are shuffled by the save's seed, the same every time, and each sound has its own mix");
+        bool round = GigMusicRules.EffectIndex(0, 3) == 0 && GigMusicRules.EffectIndex(1, 3) == 1 && GigMusicRules.EffectIndex(3, 3) == 0 && GigMusicRules.EffectIndex(7, 3) == 1
+                     && GigMusicRules.EffectIndex(5, 0) == -1 && GigMusicRules.EffectIndex(int.MaxValue, 3) >= 0;
+        Check(round, "gig music: an effect plays each file in turn, round and round, and none with no files");
+        Check(GigMusicRules.MostEffectSeconds > 0f && GigMusicRules.MostEffectSeconds <= 15f, "gig music: an effect is cut after " + GigMusicRules.MostEffectSeconds + " s");
+
+        var made = new FakeDisc();
+        Check(GigMusicRules.Prepare(made, root, "NOTE") && made.Has(DiscPath.Combine(root, "Cart/Calls")) && made.Has(DiscPath.Combine(root, "Cart/Till")) && made.Has(DiscPath.Combine(root, "Taxi/Door")),
+            "gig music: the button makes a folder for every sound");
+
+        string effect = ModSource(@"Jobs\GigEffect.cs");
+        string vendor = ModSource(@"Jobs\Kinds\VendorJob.Sounds.cs");
+        string vendorMain = ModSource(@"Jobs\Kinds\VendorJob.cs");
+        string taxi = ModSource(@"Jobs\Kinds\TaxiJob.cs");
+        string taxiPassenger = ModSource(@"Jobs\Kinds\TaxiJob.Passenger.cs");
+        string voice = MemberText(vendor, "private bool Voice(StreetActor person)");
+        Check(effect.Contains("if (!Settings.GigMusic || runner == null)") && effect.Contains("GigMusicRules.Read(GigMusicGame.Disc, kind, GigMusicGame.Root, shuffle,") && effect.Contains("Street.StreetGame.SaveSeed()")
+              && effect.Contains("handler.streamAudio = false;") && effect.Contains("Told.Add(path)") && effect.Contains("ToldEmpty.Add(kind)") && effect.Contains("\"reallife_gig_music_failed\"") && effect.Contains("\"reallife_gig_music_empty\""),
+            "gig music: an effect follows the option, reads its folder once as the gig starts, is shuffled by the save, and says a failed file and an empty folder once");
+        Check(effect.Contains("public void Close()") && effect.Contains("UnityEngine.Object.Destroy(_clips[i])") && effect.Contains("MostEffectSeconds") && !effect.Contains("void Update") && !effect.Contains("FindObject") && !effect.Contains("yield return null")
+              && !effect.Contains("modData") && !effect.Replace("UnityEngine.Networking", "").Contains("Network") && !effect.Contains("UnityWebRequest.Post"),
+            "gig music: an effect's clips are let go when the gig ends, a long file is cut, nothing is per frame, saved or sent");
+        Check(Times(vendorMain, "GigEffect.Open(") == 2 && vendorMain.Contains("_calls?.Close();") && vendorMain.Contains("_till?.Close();") && vendor.Contains("_calls.Play(person.Position)") && vendor.Contains("_till.Play(_cartAt + Vector3.up * CounterHeight)")
+              && voice.IndexOf("_calls.Play(", StringComparison.Ordinal) < voice.IndexOf("sounds.PlayAudio(", StringComparison.Ordinal),
+            "gig music: the cart plays the player's voice and till where it played the game's, and the game's sound is the fallback");
+        Check(Times(taxi, "GigEffect.Open(GigSound.TaxiDoor") == 1 && taxi.Contains("_door?.Close();") && Times(taxiPassenger, "DoorHeard(") == 3 && Times(taxiPassenger, "JobCast.DoorSound(") == 1,
+            "gig music: both of the taxi's door sounds go through the player's file first, then the game's own");
     }
 
     private static string GigNames(GigMusicSet set)
@@ -321,8 +386,8 @@ internal static partial class Program
         en.TryGetValue("reallife_gig_music_readme", out string readme);
         Check(readme != null && readme.Contains("{files}") && readme.Contains("{megabytes}") && readme.Contains("{types}") && readme.Contains("{folder}") && !readme.Contains("!"),
             "gig music: the note in the folder says what to put where, the limits and the types");
-        Check(en.TryGetValue("reallife_guide_jobs", out string guide) && guide.Contains("# Your own music in gigs") && guide.Contains("<b>Play your own music in gigs</b>") && guide.Contains("{gig_music_files}")
+        Check(en.TryGetValue("reallife_guide_jobs", out string guide) && guide.Contains("# Your own music and sounds in gigs") && guide.Contains("<b>Play your own music in gigs</b>") && guide.Contains("{gig_music_files}")
               && guide.Contains("Going Public"), "gig music: the jobs' Guide page has the section");
-        Check(WhatsNewHas(en, "play your own music files in your busking sets"), "gig music: What's new has the line in English");
+        Check(WhatsNewHas(en, "play your own music and sounds in gigs"), "gig music: What's new has the line in English");
     }
 }

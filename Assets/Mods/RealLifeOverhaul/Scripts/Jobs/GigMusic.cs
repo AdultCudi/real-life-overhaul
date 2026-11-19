@@ -234,7 +234,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static AudioType TypeOf(string path)
+        internal static AudioType TypeOf(string path)
         {
             switch (Path.GetExtension(path).ToLowerInvariant())
             {

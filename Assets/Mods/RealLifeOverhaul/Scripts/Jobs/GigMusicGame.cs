@@ -27,7 +27,10 @@ namespace RealLifeOverhaul
                     "files", GigMusicRules.MostFiles.ToString(),
                     "megabytes", GigMusicRules.MostMegabytes.ToString(),
                     "types", GigMusicRules.TypesText(),
-                    "folder", GigMusicRules.Name(GigSound.Busking));
+                    "folder", GigMusicRules.Name(GigSound.Busking),
+                    "effectfiles", GigMusicRules.MostEffectFiles.ToString(),
+                    "effectkilobytes", GigMusicRules.MostEffectKilobytes.ToString(),
+                    "effectseconds", GigMusicRules.MostEffectSeconds.ToString("0"));
                 if (!GigMusicRules.Prepare(Disc, root, note.Replace("\r\n", "\n").Replace("\n", "\r\n")))
                 {
                     JobText.Toast(UI.Notification.NotificationType.Warning, "reallife_gig_music_no_folder", "folder", root);

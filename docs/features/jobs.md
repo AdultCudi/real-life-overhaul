@@ -312,6 +312,8 @@ A player asked for gigs to take their own music files, as the game's custom radi
 
 **Fallback.** With no file taken, a notice says once a session that the folder is empty. A file that cannot be opened or decoded, or ends as it starts, is named once in a notice and skipped; when none can be played the game's own clip plays instead. Each outcome is one log line.
 
+**Short sounds.** The same folder holds one folder for each sound the gigs play at a moment: `Cart/Calls` (the customer's voice as an order starts, and the reminder), `Cart/Till` (a drink paid for) and `Taxi/Door` (a passenger getting in or out), played by `GigEffect` in place of the game's own effect (`VendorJob.Sounds`, `TaxiJob.Passenger.DoorHeard`). Same types and the same two options, but smaller limits: 8 files of 1 MB each, and each is cut after 8 seconds. They are read and loaded once as the gig starts (`GigEffect.Open`), decoded whole, and destroyed when it ends (`Close`). Each moment plays the next file, round and round, in the read's order (by name or by the save's seed). If none is ready or every file failed, the game's own effect plays; failures and an empty folder are said once in a notice. No other gig in `Kinds/` plays a sound of its own (the others only play animation clips).
+
 **Going Public.** The files, their names and the choice are local: nothing is saved in the game's save, shared or sent, so other players neither hear nor receive them. Nothing of anyone's music is bundled or downloaded.
 
 `EconomyCheck --gig-music` (`GigMusicChecks.cs`) holds the folder rules (which files are taken, the limits, the order, the shuffle by seed, the choice and fallback, the fade, the folder made with its note), and that the sources keep to the above.
