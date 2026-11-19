@@ -343,6 +343,7 @@ namespace RealLifeOverhaul.DistrictSave
             DistrictPlaces.Early();
             PlaceSet places = DistrictPlaces.Build();
             Pass(save, places, false);
+            DistrictPlaces.Recorded();   // after the pass: a building put in the game's lookup now is no reason for the pass to have put its records back
             Flush();
         }
 

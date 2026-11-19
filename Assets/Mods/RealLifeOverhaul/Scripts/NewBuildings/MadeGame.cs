@@ -76,6 +76,16 @@ namespace RealLifeOverhaul.NewBuildings
             return !string.IsNullOrEmpty(district) && all != null && all.Contains(district) && CityCheck.Here(district);
         }
 
+        /// <summary>
+        /// True when the game has that district, without the city check: at the load's first step the check still holds the last city's districts, and the district's
+        /// own step (LifeGame.Know) has just put Uptown's among the game's. A record made then is taken back at the make if the city check refuses it.
+        /// </summary>
+        public static bool DistrictListed(string district)
+        {
+            List<string> all = NeighborhoodHelper.Neighborhoods;
+            return !string.IsNullOrEmpty(district) && all != null && all.Contains(district);
+        }
+
         /// <summary>True when a made home can be put on the food deliveries' list of addresses they leave out (the contract's field is there).</summary>
         public static bool HomesLeftOut()
         {
@@ -91,7 +101,8 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>True when the game (or another mod) already has a building at that address: the made one then stands down.</summary>
         public static bool GameHas(string street, int number)
         {
-            return BuildingHelper.GetBuilding(new Address(street, number)) != null;
+            Building there = BuildingHelper.GetBuilding(new Address(street, number));
+            return there != null && !IsEarly(there);   // a record this mod made at the load's first step is not the game's or another mod's
         }
 
         /// <summary>The size's floor area as the game has it, or 0.</summary>
@@ -114,8 +125,12 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < MadeStreets.All.Length; i++)
             {
                 MadeStreet street = MadeStreets.All[i];
-                if (lookup.ContainsKey(street.Id))
+                if (lookup.TryGetValue(street.Id, out StreetData there))
                 {
+                    if (Streets.TryGetValue(street.Id, out StreetData own) && own == there)
+                    {
+                        there.streetLocalization = Named(street);   // put in at the load's first step: its name read again now the mod's texts are in
+                    }
                     continue;
                 }
                 if (!Streets.TryGetValue(street.Id, out StreetData data) || data == null)
@@ -211,7 +226,7 @@ namespace RealLifeOverhaul.NewBuildings
         /// one the district save keeps for its address (that very object goes back into the list at its city step), else a new
         /// one put in the save's list as the game's own lookup would; <paramref name="made"/> says it is new at this load.
         /// </summary>
-        public static BuildingRegistration MakeRegistration(MadeSpec spec, out bool made)
+        public static BuildingRegistration MakeRegistration(MadeSpec spec, out bool made, bool list = true)
         {
             made = false;
             if (spec.Life)
@@ -232,7 +247,11 @@ namespace RealLifeOverhaul.NewBuildings
                 return reg;
             }
             made = true;
-            SaveGameManager.Current?.BuildingRegistrations?.Add(reg);   // as BuildingHelper.GetBuildingRegistration adds one it makes
+            if (list)
+            {
+                // As BuildingHelper.GetBuildingRegistration adds one it makes; a record made early joins the list when its building is made.
+                SaveGameManager.Current?.BuildingRegistrations?.Add(reg);
+            }
             return reg;
         }
 
@@ -265,6 +284,17 @@ namespace RealLifeOverhaul.NewBuildings
         /// </summary>
         public static bool Enter(Building record, BuildingRegistration registration, out string why)
         {
+            if (!EnterLookups(record, registration, out why))
+            {
+                return false;
+            }
+            ServiceListed(record, true);
+            return true;
+        }
+
+        /// <summary>The two lookups alone, the registration first (Enter's first part): what a record made early is entered with, before the city's scenes are built.</summary>
+        public static bool EnterLookups(Building record, BuildingRegistration registration, out string why)
+        {
             why = null;
             var registrations = GameContract.RegistrationLookup.Field?.GetValue(null) as Dictionary<Address, BuildingRegistration>;
             var buildings = GameContract.BuildingLookup.Field?.GetValue(null) as Dictionary<Address, Building>;
@@ -276,7 +306,6 @@ namespace RealLifeOverhaul.NewBuildings
             Address address = record.Address;
             registrations[address] = registration;
             buildings[address] = record;
-            ServiceListed(record, true);
             return true;
         }
 
@@ -424,6 +453,7 @@ namespace RealLifeOverhaul.NewBuildings
         // Out of the game's lookups and destroyed: what the mod made by code goes with the city.
         private static void Drop()
         {
+            DropEarly("the city is unloading");
             for (int i = 0; i < Records.Count; i++)
             {
                 Building b = Records[i];
