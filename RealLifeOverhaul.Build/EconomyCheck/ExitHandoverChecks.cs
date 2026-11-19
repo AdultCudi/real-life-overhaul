@@ -74,11 +74,12 @@ internal static partial class Program
 
         int session = exits.IndexOf("internal bool ExitSession(", StringComparison.Ordinal);
         string held = session >= 0 ? exits.Substring(session) : string.Empty;
-        int why = held.IndexOf("WhyNotHand(place)", StringComparison.Ordinal), call = held.IndexOf("ExitAccept(place, o.Id)", StringComparison.Ordinal);
-        Check(why > 0 && call > why && held.Contains("\"reallife_tech_desk_exit_why_inside\""),
-            "exit hand-over: the desk session sits inside the firm, so it says to leave and accept in the Tech app before trying, and does not show a second refusal");
-        string inside = LocaleText("en", "reallife_tech_desk_exit_why_inside");
-        Check(!string.IsNullOrEmpty(inside) && inside.Contains("Tech app") && inside.Length <= 240, "exit hand-over: the session's words name where to accept the offer");
+        int why = held.IndexOf("WhyNotHand(place)", StringComparison.Ordinal), agree = held.IndexOf("ExitAgree(place, o)", StringComparison.Ordinal);
+        int call = held.IndexOf("ExitAccept(place, o.Id)", StringComparison.Ordinal);
+        Check(why > 0 && agree > why && call > agree && held.Contains("why == InsideRefusal") && held.Contains("\"reallife_tech_desk_exit_offer_agreed\""),
+            "exit hand-over: the desk session sits inside the firm, so the player's word is kept and the sale completes when they step outside; any other refusal is named before trying");
+        string inside = LocaleText("en", "reallife_tech_desk_exit_offer_agreed");
+        Check(!string.IsNullOrEmpty(inside) && inside.Contains("step outside") && inside.Length <= 240, "exit hand-over: the session's words say the sale completes when the player steps outside");
         Check(ModSource(@"Wiring\Wiring.ExitLinks.cs").Contains("ExitBridges.HandOverRefusal = HandOverRefusal;"), "exit hand-over: the link is connected with the other exit links");
     }
 

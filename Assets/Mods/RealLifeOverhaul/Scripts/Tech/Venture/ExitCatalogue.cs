@@ -85,11 +85,25 @@ namespace RealLifeOverhaul.Tech
         public bool Hire => Kind == 1;
     }
 
+    /// <summary>
+    /// A sale the player agreed at a desk inside the firm, which completes when they step outside (a business cannot change hands with its owner in it): the offer, its
+    /// price as agreed and its last day, and the day it was agreed. Game-free.
+    /// </summary>
+    public sealed class ExitAgreed
+    {
+        public int Offer;         // the offer's id
+        public long Price;        // cents at the start's prices, as agreed
+        public int Lapse;         // the offer's last day: the agreement lapses with it
+        public int Day;           // the day it was agreed
+        public string Name = string.Empty;   // the buyer
+    }
+
     /// <summary>What exits keep for one firm of the player's: its offers, its way to the market and its sales of shares. Game-free.</summary>
     public sealed class FirmExit
     {
         public string Place = string.Empty;
         public readonly List<ExitOffer> Offers = new List<ExitOffer>(2);
+        public ExitAgreed Agreed;         // a sale agreed and waiting for the player to step outside; null when none
         // the way to the market
         public int Stage;                 // ListStage
         public int Bank;                  // the bank's place in the list the market gave
@@ -128,7 +142,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>True for a record with nothing in it: the save has no part for it.</summary>
-        public bool Empty => Offers.Count == 0 && Stage == ListStage.None && StageSeen == -2 && SoldDay == 0 && Sold == 0;
+        public bool Empty => Offers.Count == 0 && Agreed == null && Stage == ListStage.None && StageSeen == -2 && SoldDay == 0 && Sold == 0;
     }
 
     /// <summary>A startup's founder as a person of the city, and where the startup works. Game-free.</summary>

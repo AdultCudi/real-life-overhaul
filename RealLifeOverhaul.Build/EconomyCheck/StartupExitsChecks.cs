@@ -26,6 +26,7 @@ internal static partial class Program
         ExitOldSaveChecks();
         ExitWiringChecks();
         ExitHandoverChecks();   // (an offer accepted on both interfaces, the refusal named: ExitHandoverChecks.cs)
+        ExitAgreedChecks();     // (a sale agreed at a desk inside the firm, completed when the player steps outside: ExitAgreedChecks.cs)
     }
 
     private static List<ExitBuyer> ExitBuyers() => new List<ExitBuyer>

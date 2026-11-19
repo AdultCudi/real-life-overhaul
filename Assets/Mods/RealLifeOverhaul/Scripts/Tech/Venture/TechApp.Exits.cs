@@ -68,6 +68,14 @@ namespace RealLifeOverhaul.Tech
                     : r.Gap > 0 ? TechText.Fill("reallife_exit_offer_gap", "owed", TechText.Cents(_director.Level(r.Owed)), "paid", TechText.Cents(_director.Level(r.Paid)),
                         "gap", TechText.Cents(_director.Level(r.Gap)))
                     : TechText.Fill("reallife_exit_offer_after", "investors", TechText.Cents(_director.Level(r.Paid)), "you", TechText.Cents(_director.Level(Math.Max(0L, r.Player)))));
+                if (ExitRules.IsAgreed(e, id))
+                {
+                    // The player gave their word at a desk inside the firm: the sale completes when they step outside, until then they may call it off.
+                    box.Line(TechText.Fill("reallife_exit_agreed_line", "buyer", o.Name, "amount", TechText.Cents(_director.Level(e.Agreed.Price)), "firm", firm.File.Name,
+                        "day", e.Agreed.Lapse.ToString()));
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_exit_button_call_off", () => Do(() => _director.ExitCallOff(place)));
+                    continue;
+                }
                 string title = TechText.Fill("reallife_exit_confirm_accept_title", "firm", firm.File.Name);
                 string body = TechText.Fill(o.Hire ? "reallife_exit_confirm_hire_body" : "reallife_exit_confirm_accept_body", "firm", firm.File.Name, "buyer", o.Name,
                     "amount", TechText.Cents(_director.Level(o.Price)));
@@ -77,7 +85,7 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(row, InfoBox.Additional, "reallife_exit_button_decline", () => Do(() => _director.ExitDecline(place, id)));
             }
             ExitOffer first = e.Offers[0];
-            if (!first.Countered && !first.Hire)
+            if (!first.Countered && !first.Hire && !ExitRules.IsAgreed(e, first.Id))
             {
                 string[] steps = RealLifeOverhaul.Ui.TechLive.CounterKeys;
                 _counterAt = Math.Max(0, Math.Min(steps.Length - 1, _counterAt));
