@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Economy
     {
         private bool _holdingsDealt;     // this game was dealt by the plan in its first days: it goes on gently
         private bool _holdingsBroken;    // a fault in this part: off for the session, the rest of the property business runs
-        private readonly HashSet<string> _holdingsKept = new HashSet<string>(StringComparer.Ordinal);   // the buildings the rivals' holdings leave alone, made again at each pass
+        // the buildings the rivals' holdings leave alone, made again at each pass
+        private readonly HashSet<string> _holdingsKept = new HashSet<string>(StringComparer.Ordinal);
 
         // The places the holdings must not touch: the buildings the agency's blocks are tied to (offered or held) and every rival's head office, the latter asked of the rivals seen
         // around the city. Made at the pass or the test, never per frame.
