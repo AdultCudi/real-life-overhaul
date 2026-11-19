@@ -37,14 +37,14 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
         public static readonly string[] TakingsKeys =
         {
             P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "tech_bakeoff", P + "broadband_takings", P + "ownbank_takings",
-            P + "study_academy", P + "bld_contract"
+            P + "study_academy", P + "bld_contract", P + "estate_agency_fee", P + "estate_agency_letting"
         };
 
         /// <summary>Running costs.</summary>
@@ -78,6 +78,8 @@ namespace RealLifeOverhaul.Economy
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",
             P + "tech_venture_dividend", P + "tech_venture_wind_down", P + "tech_venture_exit",
+            P + "tech_terms_salary", P + "tech_terms_bonus", P + "tech_terms_dividend", P + "tech_terms_buyout", P + "tech_terms_earn_out",   // what a sale's terms pay the player later
+            P + "tech_terms_remit", P + "tech_terms_cover", P + "tech_terms_dividend_tax",   // a contract's firm: its month's profit to its owner, and a loss carried by the owner
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",

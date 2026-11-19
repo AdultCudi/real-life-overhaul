@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Economy
 
         // A landlord's duties, saved in part m.
         public int Manager;             // EstateManager
+        public bool Covered;            // under the player's own agency and its agents cover it today: it is run as a property manager runs it; not saved
         public int InspectDay;          // the city's next inspection; 0 while none is due
         public int OrderDay;            // the day an improvement order must be met; 0 for none
         public int Strikes;             // inspections failed in a row
@@ -265,8 +266,12 @@ namespace RealLifeOverhaul.Economy
         public readonly List<DistrictRep> Districts = new List<DistrictRep>(16);
         public readonly List<Instruction> Open = new List<Instruction>(EstateCatalogue.InstructionsMost);
 
+        public readonly AgencyBook Book = new AgencyBook();   // other owners' blocks the agency manages (AgencyBookStore)
+
         public int Capacity;                   // an agent's hours a day, tenths; read each morning, not saved
         public int Negotiators;
+        public int Skill;                      // the agents' customer service skill, 0 to 100, weighted by their hours; read each morning, not saved
+        public int Reserved;                   // the hours a day the blocks and the player's own buildings under the agency take, tenths; worked out each morning, not saved
 
         public bool Running => Office.Length > 0;
 
@@ -391,6 +396,7 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] RentRing = new int[EstateCatalogue.RentRingKept];   // the city's mean rent a flat, dollars a month, oldest first (wave 4: reallife:estate_rent_ring)
         public readonly int[] RentRingMonths = new int[EstateCatalogue.RentRingKept];   // the month number of each entry of the ring, so a month the read missed shows as itself
         public int RentRingCount, RentRingMonth;   // how many are kept, and the month number of the last
+        public readonly FlatBook Flats = new FlatBook();   // the flats the player owns, in a line of their own (reallife:estate_flats)
         public readonly List<LandlordMark> Marks = new List<LandlordMark>(EstateCatalogue.LandlordsMost);   // other landlords' mean flat rent at the last month's turn
 
         /// <summary>The sale remembered of a building, or null.</summary>
@@ -415,8 +421,15 @@ namespace RealLifeOverhaul.Economy
                     return Holdings[i];
                 }
             }
-            return null;
+            // A flat's key finds its one-unit holding, so a tenancy, a call or a sale is looked up as a building's is.
+            OwnedFlat flat = FlatRules.IsKey(place) ? Flats.Find(place) : null;
+            return flat != null ? flat.Hold : null;
         }
+
+        /// <summary>The buildings the player holds and then the flats, as one list for what both let: tenants, calls, inspections.</summary>
+        public int LetCount => Holdings.Count + Flats.Flats.Count;
+
+        public EstateHolding LetAt(int i) => i < Holdings.Count ? Holdings[i] : Flats.Flats[i - Holdings.Count].Hold;
 
         public HotelFile Hotel(string slot)
         {

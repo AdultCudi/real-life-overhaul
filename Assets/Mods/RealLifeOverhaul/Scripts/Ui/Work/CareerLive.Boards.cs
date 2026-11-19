@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Ui
                 : CareersText.Fill("reallife_career_boards_at", "employer", board.Name, "address", board.Address, "place", board.Place ?? string.Empty);
             for (int i = 0; i < _boardNotes.Count; i++)
             {
-                _boardNotes[i].Text = text;
+                _boardNotes[i].Text = board.Address == null ? string.Empty : text;   // the dimmed button says it under itself: twice on the page otherwise
                 _boardActs[i].Why = board.Address == null ? text : null;
             }
         }

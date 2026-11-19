@@ -28,6 +28,11 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_work_why_gone";
             }
+            string entry = DutyEntryWhy(p);
+            if (entry != null)
+            {
+                return entry;   // the service's own asks: a clean record, a licence, good health (Police)
+            }
             if (!ProRules.Qualified(_study, p, o.Rank))
             {
                 var groups = new List<int[]>(2);

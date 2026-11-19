@@ -171,6 +171,7 @@ namespace RealLifeOverhaul
             _panelSongs = JobText.T("reallife_job_busker_panel_songs");
             _panelStrums = JobText.T("reallife_job_busker_panel_strums");
             _idle = ownClip ? StrumClip : null;
+            _own = GigMusic.Open(GigSound.Busking, Ctx.Director, Ctx.Logger);   // the folder is read now, once
             _step = Step.ToPitch;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_busker_card_done");
             _clock = new ShiftClock(Ctx, this, this, "busker", "reallife_job_busker_unit", "reallife_job_busker_units", "reallife_job_busker_slip", true);

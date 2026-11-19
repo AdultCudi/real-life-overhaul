@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Pays those loans off as the game's own pay-off does; false if one could not be paid. Default: true.</summary>
         public static Func<Address, bool> SettleLoans;
 
+        /// <summary>True while a contract of a firm's sale (Tech/Venture) holds a business, by its place: it is its buyer's, the player only runs it. Default: false.</summary>
+        public static Func<string, bool> Contracted;
+
         /// <summary>Tells "running a business" that a business, by its place, is no longer the player's. Default: nobody.</summary>
         public static Action<string> BusinessGone;
 
@@ -71,6 +74,7 @@ namespace RealLifeOverhaul.Economy
             HoldsStaff = null;
             Sold = null;
             Investors = null;
+            Contracted = null;
         }
     }
 

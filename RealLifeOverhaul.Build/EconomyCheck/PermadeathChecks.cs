@@ -600,7 +600,7 @@ internal static partial class Program
             Check(en.TryGetValue(key, out string t) && t.Contains("{count}") && LanguagesLacking(langs, codes, key).Length == 0, "permadeath: " + key + " says its count, in every language");
         }
         foreach (string key in new[] { "reallife_pd_ill_1", "reallife_pd_ill_2", "reallife_pd_ill_3", "reallife_pd_near_crash", "reallife_pd_near_struck", "reallife_pd_near_mugging",
-                     "reallife_pd_near_assault", "reallife_pd_mugged_body", "reallife_opt_tip_permadeath" })
+                     "reallife_pd_near_assault", "reallife_pd_near_duty", "reallife_pd_mugged_body", "reallife_opt_tip_permadeath" })
         {
             Check(LanguagesLacking(langs, codes, key).Length == 0, "permadeath: the warning " + key + " is in every language");
         }

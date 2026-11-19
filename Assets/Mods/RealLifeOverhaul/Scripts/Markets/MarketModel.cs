@@ -141,6 +141,17 @@ namespace RealLifeOverhaul.Markets
         public double MarketValue => Shares * (Last > 0 ? Last : MidCents) / 100.0;
     }
 
+    /// <summary>
+    /// Shares of the player's that cannot be sold before a day: those a firm's buyer paid part of the price in, for the lock-up its terms stated. Saved in the desk's part of the
+    /// market's line, so an older reader never sees it. Game-free.
+    /// </summary>
+    public sealed class ShareLock
+    {
+        public int StockId;
+        public long Shares;
+        public int UntilDay;      // the first day they may be sold
+    }
+
     /// <summary>The player's shares in one company. Shares under nothing are shares sold short (a margin account only).</summary>
     public sealed class Position
     {
@@ -175,6 +186,7 @@ namespace RealLifeOverhaul.Markets
         StopSide,       // a stop loss on the wrong side of the price
         ProfitSide,     // a take profit on the wrong side: to sell it is over the bid, to buy back under the offer
         Switched,       // worked orders or dividends put back switched off in the options
+        Locked,         // shares paid in a sale are locked up: a sale of them waits for the lock-up's last day
         Count
     }
 
@@ -425,6 +437,8 @@ namespace RealLifeOverhaul.Markets
         public readonly List<Stock> Stocks = new List<Stock>(160);
         public readonly List<Position> Positions = new List<Position>(16);
         public readonly List<Order> Orders = new List<Order>(16);
+        public const int LocksMost = 24;
+        public readonly List<ShareLock> Locks = new List<ShareLock>(2);   // shares the player may not sell yet (a sale of a firm's terms)
         public readonly List<Trade> Trades = new List<Trade>(MarketCatalogue.TradesKept + 1);
         public readonly List<int> Watch = new List<int>(16);
         public readonly Account Account = new Account();

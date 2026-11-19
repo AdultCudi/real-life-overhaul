@@ -656,6 +656,25 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
+        /// <summary>
+        /// What a page or notice says of the leased lines the Utilities app sells (the way past a full connection): pairs for <see cref="TechText.Fill"/> of the smallest and
+        /// largest step's size, the racks each carries and its month's price, and the days the smallest takes to install where fibre runs. Null while the utilities have none to sell.
+        /// </summary>
+        internal string[] LinePairs()
+        {
+            if (!TechBridges.LineAt(0, out TechBridges.LineQuote small) || !TechBridges.LineAt(1, out TechBridges.LineQuote large))
+            {
+                return null;
+            }
+            System.Globalization.CultureInfo inv = System.Globalization.CultureInfo.InvariantCulture;
+            return new[]
+            {
+                "low", (small.Mbps / 1000f).ToString("0.#", inv), "high", (large.Mbps / 1000f).ToString("0.#", inv),
+                "low_racks", (small.Mbps / InfraLimits.MbpsPerRack).ToString(inv), "high_racks", (large.Mbps / InfraLimits.MbpsPerRack).ToString("N0", inv),
+                "from", TechText.Cents(Level(small.MonthCents)), "up_to", TechText.Cents(Level(large.MonthCents)), "days", small.Days.ToString(inv)
+            };
+        }
+
         /// <summary>Racks bought for a data centre, paid now: capital, written down over five years. At the scale they are of the new kind.</summary>
         internal bool BuyRacks(string place, int racks, bool gpu)
         {
@@ -666,14 +685,20 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             // growth stops where a supply is full: the feed, the cooling plant or the connection, as the page's meters say
-            int plan = TechBridges.PlanMbpsAt(reg);
+            int plan = TechBridges.CentreMbps(reg);
             if (InfraLimits.Fit(d, gpu, plan, out int binding) < racks)
             {
-                // the connection's words carry its figures, since the player's way past it is a plan, not a rack
+                // the connection's words carry its figures, since the player's way past it is a leased line, not a rack
                 CentreLimits full = InfraLimits.Of(d, plan);
+                Dictionary<string, string> words = Data("name", d.Name, "use", full.NetUse.ToString(), "cap", full.NetCap.ToString(), "per", InfraLimits.MbpsPerRack.ToString(),
+                    "gpu", InfraLimits.MbpsPerGpuRack.ToString());
+                string[] line = LinePairs();
+                for (int i = 0; line != null && i + 1 < line.Length; i += 2)
+                {
+                    words[line[i]] = line[i + 1];
+                }
                 TellTech(NotificationType.Warning, binding == InfraLimits.Power ? "reallife_infra_note_limit_power" : binding == InfraLimits.Cooling ? "reallife_infra_note_limit_cooling"
-                    : "reallife_infra_note_limit_bandwidth", Data("name", d.Name, "use", full.NetUse.ToString(), "cap", full.NetCap.ToString(), "per", InfraLimits.MbpsPerRack.ToString(),
-                        "gpu", InfraLimits.MbpsPerGpuRack.ToString()), TabInfra, TechApp.CentreRow + place);
+                    : line != null ? "reallife_infra_note_limit_line" : "reallife_infra_note_limit_bandwidth", words, TabInfra, TechApp.CentreRow + place);
                 return false;
             }
             int share = BuyScale;

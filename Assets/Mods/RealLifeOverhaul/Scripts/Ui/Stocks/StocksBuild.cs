@@ -500,7 +500,7 @@ namespace RealLifeOverhaul.Ui
                     },
                     Values = new[] { (int)UiIcon.Building, 0, 0, 0, 0, day > 0 ? 1 : day < 0 ? -1 : 0, gain > 0 ? 1 : gain < 0 ? -1 : 0, 0, 0 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                    Sub = s != null ? s.Ticker : string.Empty
+                    Sub = s != null ? s.Ticker + LockedWords(state, p, words) : string.Empty
                 };
             }
             for (int i = 0; i < rows.Length; i++)
@@ -535,6 +535,14 @@ namespace RealLifeOverhaul.Ui
                 Rows = rows, RowCount = rows.Length, EmptyIcon = UiIcon.ChartPie,
                 Filters = new[] { PeriodWord(period, words) }
             };
+        }
+
+        // The words that follow a held company's ticker while some of its shares are locked up by the terms of a sale: how many, and until which day.
+        private static string LockedWords(MarketState state, Position p, UiWords words)
+        {
+            long locked = p.Shares > 0 ? MarketTrading.Locked(state, p.StockId, state.Day) : 0L;
+            return locked > 0 ? words("reallife_stk_locked_sub", "{shares} locked until day {day}").Replace("{shares}", locked.ToString("N0"))
+                .Replace("{day}", MarketTrading.LockedUntil(state, p.StockId, state.Day).ToString()).Insert(0, ", ") : string.Empty;
         }
 
         // The player's own row of the old tab's holdings for a company: the shares they hold themselves, not a bot's, a bond or the founder's stake.

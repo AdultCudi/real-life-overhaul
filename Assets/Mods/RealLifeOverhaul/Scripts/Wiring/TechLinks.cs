@@ -39,6 +39,15 @@ namespace RealLifeOverhaul
                 TechBridges.Ipo = Ipo;
                 TechBridges.Mbps = Mbps;
                 TechBridges.PlanMbps = reg => UtilityLinks.Speed(reg, -1, false);
+                TechBridges.LineMbps = LineMbps;
+                TechBridges.LineStep = which =>
+                {
+                    int s = which <= 0 ? 0 : Utilities.LeasedLineCatalogue.Steps - 1;
+                    return new TechBridges.LineQuote
+                    {
+                        Mbps = Utilities.LeasedLineCatalogue.Mbps[s], MonthCents = Utilities.LeasedLineCatalogue.MonthCents[s], Days = Utilities.LeasedLineCatalogue.InstallDays[s]
+                    };
+                };
                 TechBridges.Net = Net;
                 TechBridges.NetDays = () => Utilities.InternetCatalogue.InstallDays;
                 TechBridges.OpenInternet = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
@@ -249,17 +258,39 @@ namespace RealLifeOverhaul
                         return int.MaxValue;   // no utilities to ask: the data centre is taken to be connected
                     }
                     Utilities.Account a = state.Find(Utilities.UtilitiesGame.Place(reg), Utilities.Service.Internet);
+                    int line = Utilities.LeasedLineRules.LineMbps(a, SaveGameManager.Current.Day);   // a leased line carries on through its plan's outage
                     if (a == null || a.State != Utilities.SupplyState.Active || Utilities.InternetRules.InOutage(a, SaveGameManager.Current.Day * 24 + SaveGameManager.Current.Hour))
                     {
-                        return 0;
+                        return line;
                     }
                     Utilities.Provider p = Utilities.InternetRules.Get(a.Provider);
-                    return p != null && p.Mbps != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0;
+                    return Utilities.LeasedLineRules.Speed(p != null && p.Mbps != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0, line);
                 }
                 catch (Exception e)
                 {
                     Fault("TechLinks.Mbps", e);
                     return int.MaxValue;
+                }
+            }
+
+            // The speed of a building's leased line today, 0 with none or while it is being installed: read apart from the plan so a hall's limits count a line
+            // even where the speed switch leaves the plan unknown.
+            private static int LineMbps(BuildingRegistration reg)
+            {
+                try
+                {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    if (state == null || !Settings.Utilities || reg == null)
+                    {
+                        return 0;
+                    }
+                    return Utilities.LeasedLineRules.LineMbps(state.Find(Utilities.UtilitiesGame.Place(reg), Utilities.Service.Internet), SaveGameManager.Current.Day);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.LineMbps", e);
+                    return 0;
                 }
             }
 

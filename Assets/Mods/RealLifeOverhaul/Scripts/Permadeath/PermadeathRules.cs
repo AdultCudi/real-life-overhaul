@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Permadeath
         Mugging = 4,     // a mugger refused, and it went badly
         Assault = 5,     // the private lender's men, over a debt long past its day
         Test = 6,        // the options page's rehearsal: nobody died
-        Starvation = 7   // days on an empty stomach, long past its warnings
+        Starvation = 7,  // days on an empty stomach, long past its warnings
+        Duty = 8         // a police shift's deadliest incidents (Careers/Police): an armed hold-up
     }
 
     /// <summary>What one dangerous moment comes to while Permadeath is on.</summary>
@@ -56,6 +57,10 @@ namespace RealLifeOverhaul.Permadeath
 
         public const float MuggingOdds = 0.10f;      // of refusals that end with the player hurt (half of them), once warned
         public const float AssaultOdds = 0.08f;      // of the private lender's beatings, once warned
+
+        // On a police shift: the measure is the incident's danger (0 routine to 3 deadly, Careers/PoliceRules); only a deadly one that hurt the officer can be fatal.
+        public const float DutyFrom = 3f;            // the danger at which an injury on duty can be judged fatal
+        public const float DutyOdds = 0.06f;         // of the injuries at a deadly incident, once warned: a patrol is chosen, so it is kinder than being mugged
 
         // A flu left untreated: hours since it began with no medicine, doctor or hospital.
         public const int IllWarnFirst = 48;          // hours: it gets worse, and no longer clears up by itself
@@ -104,6 +109,7 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Struck: return measure >= StruckFrom;
                 case DeathCause.Mugging:
                 case DeathCause.Assault: return true;
+                case DeathCause.Duty: return measure >= DutyFrom;
                 default: return false;   // the illness and hunger have their own course; a test kills nobody
             }
         }
@@ -121,6 +127,7 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Struck: return Lerp(StruckLeast, StruckMost, Between(StruckFrom, StruckWorst, measure));
                 case DeathCause.Mugging: return MuggingOdds;
                 case DeathCause.Assault: return AssaultOdds;
+                case DeathCause.Duty: return DutyOdds;
                 default: return 0f;
             }
         }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
@@ -45,7 +46,25 @@ namespace RealLifeOverhaul.Careers
                 box.Line(CareersText.T(j.Declared ? "reallife_life_job_declared" : "reallife_life_job_conflict"), j.Declared ? CellTone.Plain : CellTone.Red);
             }
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
+            _file.Clear();
+            _director.DutyLines(_file);   // an officer's file: arrests, tickets, commendations
+            if (_file.Count > 0)
+            {
+                box.Section("reallife_police_file_title");
+                for (int i = 0; i < _file.Count; i++)
+                {
+                    box.Row(_file[i].Key, _file[i].Value);
+                }
+                _file.Clear();
+                _director.DutyCaseLines(_file);   // a detective's open cases, as final words
+                for (int i = 0; i < _file.Count; i++)
+                {
+                    box.Line(_file[i].Key + ": " + _file[i].Value);
+                }
+            }
         }
+
+        private readonly List<KeyValuePair<string, string>> _file = new List<KeyValuePair<string, string>>(8);
 
         private void JobButtons(Transform buttons, Job j, int day)
         {

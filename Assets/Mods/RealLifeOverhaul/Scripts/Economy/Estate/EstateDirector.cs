@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Economy
         Hotel = 1,
         Hire = 2,
         Duties = 3,     // a landlord's duties over the property part: satisfaction, repair calls, inspections, managers
-        Count = 4
+        Flats = 4,      // single flats and studios of residential buildings, bought as a home, over the property part
+        Count = 5
     }
 
     /// <summary>One row for the Planner, made on the day event and when the player changes something.</summary>
@@ -38,7 +39,7 @@ namespace RealLifeOverhaul.Economy
         public const string AppId = "RealLifeEstate";
         public const int TabMarket = 0, TabMine = 1, TabTenants = 2, TabWorks = 3, TabAgency = 4, TabHotel = 5, TabHire = 6;
 
-        private static readonly string[] PartNames = { "property", "the hotel", "car hire", "a landlord's duties" };
+        private static readonly string[] PartNames = { "property", "the hotel", "car hire", "a landlord's duties", "flats" };
         private static readonly string[] AppGlyphs = { "Icon-Building", "Icon-Neighborhood", "Icon-Shop" };
 
         public static IModLogger Logger;
@@ -116,7 +117,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether a part runs: the feature is running, the part's option is on and no fault has stopped it.</summary>
         public bool On(EstatePart part)
         {
-            return _running && !_broken && !_partBroken[(int)part] && Wanted(part) && (part != EstatePart.Duties || !_partBroken[(int)EstatePart.Property]);
+            return _running && !_broken && !_partBroken[(int)part] && Wanted(part) && ((part != EstatePart.Duties && part != EstatePart.Flats) || !_partBroken[(int)EstatePart.Property]);
         }
 
         private static bool Wanted(EstatePart part)
@@ -127,6 +128,7 @@ namespace RealLifeOverhaul.Economy
                 case EstatePart.Hotel: return Settings.EstateHotel;
                 case EstatePart.Hire: return Settings.EstateHire;
                 case EstatePart.Duties: return Settings.Estate && Settings.EstateDuties;
+                case EstatePart.Flats: return Settings.Estate && Settings.EstateFlats;
                 default: return false;
             }
         }
@@ -296,7 +298,17 @@ namespace RealLifeOverhaul.Economy
                 EstateGame.ReadAgency(_state.Agency);
                 ApplyProperty(today);
             }
+            _holdingsDealt = RivalHoldingsStore.Read(save.modData);
+            if (On(EstatePart.Property))
+            {
+                HoldingsDay(today);   // a new game is dealt at once, before the player has looked at the Rivals app
+            }
             EstateExtraStore.Read(_state, save.modData);
+            FlatStore.Load(_state.Flats, save.modData);
+            if (On(EstatePart.Flats) && On(EstatePart.Property))
+            {
+                FoldFlats(today);   // a building bought whole while the part was off or the game was not running takes in the flats held in it
+            }
             ReadHotels(today);
             if (On(EstatePart.Hire))
             {
@@ -539,9 +551,11 @@ namespace RealLifeOverhaul.Economy
                     NewYear(day);
                 }
                 Part(EstatePart.Property, "the day", () => PropertyDay(day));
+                Part(EstatePart.Flats, "the day", () => { if (On(EstatePart.Property)) { FlatsDay(day); } });
                 if (On(EstatePart.Property))
                 {
                     QueueRents(day);
+                    HoldingsDay(day);
                 }
                 Part(EstatePart.Hotel, "the day", () => HotelDay(day));
                 if (On(EstatePart.Hire) || _state.Hire.Cars.Count > 0)
@@ -661,6 +675,8 @@ namespace RealLifeOverhaul.Economy
             }
             save.modData[EstateStore.Key] = EstateStore.Write(_state);
             EstateExtraStore.Write(_state, save.modData);
+            RivalHoldingsStore.Write(save.modData, _holdingsDealt);
+            FlatsWritten(save.modData);
             if (_beforeTests != null)
             {
                 save.modData[EstateStore.TestKey] = _beforeTests;
@@ -697,6 +713,7 @@ namespace RealLifeOverhaul.Economy
             }
             _state = null;
             _beforeTests = null;
+            _holdingsDealt = false;
         }
     }
 }

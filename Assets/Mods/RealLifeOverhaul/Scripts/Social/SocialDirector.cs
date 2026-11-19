@@ -278,7 +278,7 @@ namespace RealLifeOverhaul
                 Dictionary<string, string> data = SocialLife.Data(_thanks);
                 data["t_place"] = _thanksPlace ?? string.Empty;   // for RLO Texts' card
                 data["t_kind"] = _thanksKind.ToString();
-                if (SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), data))
+                if (SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), data, false, true))
                 {
                     _thanks.AfterDay = 0;   // (their thanks says it: no text about it tomorrow)
                 }

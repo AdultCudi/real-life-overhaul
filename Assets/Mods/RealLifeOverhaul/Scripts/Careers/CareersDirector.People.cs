@@ -49,12 +49,14 @@ namespace RealLifeOverhaul.Careers
             {
                 data[RosterStore.Key] = RosterStore.Write(_roster);
             }
+            DutyWrite(data);
         }
 
         private void PeopleForget()
         {
             _standing = null;
             _roster = null;
+            DutyForget();
             _standingRead = _rosterRead = false;
             _waitSince = 0;   // a second save in the session waits for the population as the first did
             PeopleForgotten();
@@ -101,7 +103,7 @@ namespace RealLifeOverhaul.Careers
         {
             Profession p = j.Def;
             int score = LifeRules.ReviewScore(j, ProRules.Points(Study, p, j.Post.Rank), ProRules.Need(Study, p, j.Post.Rank),
-                (BossKind)j.Boss) + LadderReviewBonus();
+                (BossKind)j.Boss) + LadderReviewBonus() + DutyReviewBonus(j);
             return TalentCatalogue.Clamp(score, 0, 100);
         }
 
@@ -134,7 +136,8 @@ namespace RealLifeOverhaul.Careers
             StandingFile f = Standing;
             if (f != null)
             {
-                StandingRules.Shift(f, day, minutes, PerformanceNow(j), (int)((long)Prices.At(j.Pay) * minutes / 6000));
+                int score = PerformanceNow(j);
+                StandingRules.Shift(f, day, minutes, IsPolice(j) ? PoliceRules.Blend(score, DutyRatingOn(day)) : score, (int)((long)Prices.At(j.Pay) * minutes / 6000));
             }
         }
 

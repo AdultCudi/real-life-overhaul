@@ -57,7 +57,8 @@ namespace RealLifeOverhaul
         public const int TaxiHeldDays = 7;           // a car licence held this long...
         public const int TaxiMostPoints = 5;         // ...with no more points than this
         public static int RenewalFee => Prices.At(90);
-        public const int ValidDays = 120;            // days, as every text and the written test say: two of the game's own 60-day years, and not stretched by a longer year
+        /// <summary>Days a licence runs: two of this save's years, at least 120 (LicenceTerm). Read when one is issued, renewed or shown.</summary>
+        public static int ValidDays => LicenceTerm.Days(GameCalendar.DaysPerYear);
         public const int RenewFromDays = 14;         // renewable from this many days before it runs out
         public const int LapsedAfterDays = 30;       // expired longer than this: theory and practical again
         public const int RetestWaitDays = 1;
@@ -108,8 +109,11 @@ namespace RealLifeOverhaul
         public struct Card
         {
             public int Issued;     // day; 0 = never held
-            public int Expires;
+            public int Expires;    // the day it ran to when it was issued or renewed; the day it ends on is End
+            public int Term;       // days it was given then; 0 = a card saved before terms were kept (120)
             public bool Held => Issued > 0;
+            /// <summary>The last valid day: Expires, and more when the year has been lengthened since the card was given.</summary>
+            public int End => LicenceTerm.End(Expires, Term, LicenceLaw.ValidDays);
         }
 
         public struct Entry
@@ -191,11 +195,11 @@ namespace RealLifeOverhaul
             {
                 return LicenceStanding.Suspended;
             }
-            if (day <= card.Expires)
+            if (day <= card.End)
             {
                 return LicenceStanding.Valid;
             }
-            return day - card.Expires > LicenceLaw.LapsedAfterDays ? LicenceStanding.Lapsed : LicenceStanding.Expired;
+            return day - card.End > LicenceLaw.LapsedAfterDays ? LicenceStanding.Lapsed : LicenceStanding.Expired;
         }
 
         public static bool Valid(LicenceClass kind, int day) => Standing(kind, day) == LicenceStanding.Valid;
@@ -253,7 +257,8 @@ namespace RealLifeOverhaul
 
         public static void Grant(LicenceClass kind, int day)
         {
-            Cards[(int)kind] = new Card { Issued = day > 0 ? day : 1, Expires = (day > 0 ? day : 1) + LicenceLaw.ValidDays };
+            int term = LicenceLaw.ValidDays;
+            Cards[(int)kind] = new Card { Issued = day > 0 ? day : 1, Expires = (day > 0 ? day : 1) + term, Term = term };
         }
 
         public static void Revoke(LicenceClass kind)
@@ -271,7 +276,9 @@ namespace RealLifeOverhaul
             Card card = Cards[(int)kind];
             if (card.Held)
             {
-                card.Expires = Math.Max(card.Expires, day) + LicenceLaw.ValidDays;
+                int term = LicenceLaw.ValidDays;
+                card.Expires = Math.Max(card.End, day) + term;
+                card.Term = term;
                 Cards[(int)kind] = card;
             }
         }
@@ -279,7 +286,7 @@ namespace RealLifeOverhaul
         public static bool Renewable(LicenceClass kind, int day)
         {
             Card card = Cards[(int)kind];
-            return card.Held && day >= card.Expires - LicenceLaw.RenewFromDays && day - card.Expires <= LicenceLaw.LapsedAfterDays;
+            return card.Held && day >= card.End - LicenceLaw.RenewFromDays && day - card.End <= LicenceLaw.LapsedAfterDays;
         }
 
         public static int PointsOn(int day)
@@ -395,6 +402,12 @@ namespace RealLifeOverhaul
                     case "lessons": Lessons[0] = Int(v, 0); Lessons[1] = Int(v, 1); break;
                     case "tests": TestsPassed = Int(v, 0); TestsFailed = Int(v, 1); break;
                     case "heavy": Cards[4] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; break;
+                    case "terms":
+                        for (int t = 0; t < Cards.Length; t++)
+                        {
+                            Cards[t].Term = Math.Max(0, Int(v, t));
+                        }
+                        break;
                     case "hgv": Heavy = HeavyRules.Read(v); break;
                     case "pts":
                         for (int i = 0; i < v.Length; i++)
@@ -445,6 +458,8 @@ namespace RealLifeOverhaul
             // After the record, so an older RLO reads everything before and passes over both parts.
             Pair(text, "heavy", Cards[4].Issued, Cards[4].Expires);
             HeavyRules.Write(text, Heavy);
+            // Last, so an older RLO passes over it: the days each card was given, which keep a longer year's term for the card.
+            Pair(text, "terms", Cards[0].Term, Cards[1].Term, Cards[2].Term, Cards[3].Term, Cards[4].Term);
             data[Key] = text.ToString();
         }
 

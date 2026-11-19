@@ -89,7 +89,22 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_lease_least", () => Whole(EstateCatalogue.TermLeast))
                 .Fact("est_lease_most", () => Whole(EstateCatalogue.TermLeast + EstateCatalogue.TermStep * (EstateCatalogue.TermSteps - 1)))
                 .Fact("est_hotel_sell", () => EstateText.Share(EstateCatalogue.HotelSellShare))
-                .Fact("est_holdings", () => Whole(EstateCatalogue.HoldingsMost));
+                .Fact("est_holdings", () => Whole(EstateCatalogue.HoldingsMost))
+                .Fact("agb_blocks", () => Whole(AgencyBookCatalogue.BlocksMost))
+                .Fact("agb_offers", () => Whole(AgencyBookCatalogue.OffersMost))
+                .Fact("agb_open_days", () => Whole(AgencyBookCatalogue.OfferOpenDays))
+                .Fact("agb_units_low", () => Whole(AgencyBookCatalogue.UnitsLeast))
+                .Fact("agb_units_high", () => Whole(AgencyBookCatalogue.UnitsMost))
+                .Fact("agb_fee_low", () => EstateText.Share(AgencyBookCatalogue.FeeAskLeast))
+                .Fact("agb_fee_high", () => EstateText.Share(AgencyBookCatalogue.FeeAskMost))
+                .Fact("agb_undercut", () => EstateText.Share((100 - AgencyBookCatalogue.UndercutPct) * 10))
+                .Fact("agb_hours", () => (AgencyBookCatalogue.HoursPerUnit / 10f).ToString("0.##", Inv))
+                .Fact("agb_letting_days", () => Whole(AgencyBookCatalogue.LettingFeeDays))
+                .Fact("agb_misses", () => Whole(AgencyBookCatalogue.MissesMost))
+                .Fact("agb_penalty", () => EstateText.Share(AgencyBookCatalogue.PenaltyPct * 10))
+                .Fact("agb_strikes", () => Whole(AgencyBookCatalogue.StrikesMost))
+                .Fact("agb_rival_bids", () => Whole(AgencyBookCatalogue.RivalBidsMost))
+                .Fact("agb_own_cover", () => EstateText.Share(AgencyBookCatalogue.OwnCoverLeast));
         }
 
         /// <summary>The figures the Guide's page "A landlord's duties" prints.</summary>
@@ -126,6 +141,23 @@ namespace RealLifeOverhaul.Economy
                 .Fact("duty_more", () => EstateText.Share(EstateCatalogue.ManagedApplicants - 1000))
                 .Fact("duty_record", () => Whole(EstateCatalogue.ManagerRecordLeast))
                 .Fact("duty_city_come", () => Whole(EstateCatalogue.CityDays));
+        }
+
+        /// <summary>The figures the Guide's page "Flats and studios" prints.</summary>
+        public static void AddFlatFacts(Feature f)
+        {
+            f.Fact("flat_lease", () => EstateText.Share(FlatCatalogue.LeaseShare))
+                .Fact("flat_service", () => EstateText.Share(FlatCatalogue.ServiceShare))
+                .Fact("flat_min_units", () => Whole(FlatCatalogue.MinUnits))
+                .Fact("flat_window", () => Whole(FlatCatalogue.ListWindow))
+                .Fact("flat_listed_most", () => Whole(FlatCatalogue.ListedMost))
+                .Fact("flat_held_most", () => Whole(FlatCatalogue.HeldMost))
+                .Fact("flat_deposit_low", () => Whole(ProductCatalogue.HomeDepositLeast) + "%")
+                .Fact("flat_deposit_high", () => Whole(ProductCatalogue.HomeDepositMost) + "%")
+                .Fact("flat_term_low", () => Whole(ProductCatalogue.HomeTermLeast))
+                .Fact("flat_term_high", () => Whole(ProductCatalogue.HomeTermMost))
+                .Fact("flat_fee", () => EstateText.Share(EstateCatalogue.AgentFee))
+                .Fact("flat_studio_part", () => EstateText.Share(FlatCatalogue.KindWeight[0] * 1000 / FlatCatalogue.KindWeight[FlatCatalogue.Kinds - 1]));
         }
 
         // A shop building let in a steady economy, averaged over the seeds.

@@ -13,6 +13,61 @@ namespace RealLifeOverhaul.Ui
     public static class UiTextRules
     {
         public const string Ellipsis = "…";
+
+        /// <summary>
+        /// Two sentences as one line: the first ends with its own mark (a full stop is added where it has none), the second starts after a space and with a capital.
+        /// Either alone where the other is empty. The joining of sentences, never a list's comma.
+        /// </summary>
+        public static string Sentences(string first, string second)
+        {
+            first = first == null ? string.Empty : first.Trim();
+            second = second == null ? string.Empty : second.Trim();
+            if (first.Length == 0 || second.Length == 0)
+            {
+                return first.Length == 0 ? second : first;
+            }
+            char last = first[first.Length - 1];
+            bool ended = last == '.' || last == '!' || last == '?' || last == '…' || last == '。' || last == '！' || last == '？';
+            return (ended ? first : first + ".") + " " + char.ToUpperInvariant(second[0]) + second.Substring(1);
+        }
+
+        /// <summary>
+        /// True where a text holds punctuation that two joined parts leave: a full stop then a comma, a comma then a full stop, or exactly two full stops in a row
+        /// (three are an ellipsis). An abbreviation's own stop before a comma ("e.g.,", "etc.,", the Russian "дн.,") closes a word of three letters
+        /// or fewer, so it is let be: only a stop that closes a longer word counts.
+        /// </summary>
+        public static bool DoubledMark(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+            for (int i = 0; i + 1 < text.Length; i++)
+            {
+                char a = text[i], b = text[i + 1];
+                if (a == ',' && b == '.')
+                {
+                    return true;
+                }
+                if (a == '.' && b == '.' && (i == 0 || text[i - 1] != '.') && (i + 2 >= text.Length || text[i + 2] != '.'))
+                {
+                    return true;
+                }
+                if (a == '.' && b == ',')
+                {
+                    int letters = 0;
+                    while (letters < i && char.IsLetter(text[i - 1 - letters]))
+                    {
+                        letters++;
+                    }
+                    if (letters >= 4)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
         public const float LineRoom = 1f;      // em: room under a one-line text's box (and over one centred on its box), over any font's line
         public const float WrapRoom = 0.5f;    // em: room under a wrapped block's box: under a line's height, so a block cut to its lines never gains one
 

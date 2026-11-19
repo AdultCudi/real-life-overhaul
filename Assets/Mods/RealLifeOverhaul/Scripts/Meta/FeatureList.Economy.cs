@@ -302,8 +302,9 @@ namespace RealLifeOverhaul.Meta
             Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")
                 .Group("reallife_co_header")
                 .About("reallife_guide_economy_company_about").Help("reallife_guide_economy_company")
-                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyAgreeUpToId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
-                    Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId, Settings.EconomyCompanyLicencesId)
+                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyAgreeUpToId, Settings.EconomyCompanyMatchRivalsId,
+                    Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId, Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId,
+                    Settings.EconomyCompanyLicencesId)
                 .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)
                 .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey, Economy.PricePlanStore.Key)
                 .Cleanup(() => Economy.CompanyDirector.Instance?.StopAll(), -2)
@@ -336,6 +337,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")
                 .Owns(Settings.EstateId, Settings.EstateHotelId, Settings.EstateHireId)
+                .Test("reallife_estate_test_block", "reallife_estate_test_block_month")
                 .Preset(Settings.EstateRentId, 150, 100, 80)   // rental income, per cent
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EstateHireId)   // a hired car leaves the city and comes back as another
                 .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)
@@ -347,6 +349,14 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_estate_duties_about").Help("reallife_guide_economy_estate_duties")
                 .Owns(Settings.EstateDutiesId)
                 .Test("reallife_estate_test_call", "reallife_estate_test_complaint", "reallife_estate_test_inspection", "reallife_estate_test_manager"));
+            // Flats and studios: a part of the property business too, with its own switch and Guide page; its state is a line of its own (reallife:estate_flats).
+            Economy.EstateGuide.AddFlatFacts(Features.Add("economy_estate_flats", "reallife_meta_title_economy_estate_flats")
+                .Group("reallife_estate_header")
+                .About("reallife_guide_economy_estate_flats_about").Help("reallife_guide_economy_estate_flats")
+                .Owns(Settings.EstateFlatsId)
+                .Data(Economy.FlatStore.Key)
+                .StandsAside(GoingPublic.OwnershipSentence, Settings.EstateFlatsId)
+                .Test("reallife_flat_test_buy", "reallife_flat_test_bills"));
             // Its rows stand under the company's header.
             Economy.OnlineGuide.AddFacts(Features.Add("economy_online", "reallife_meta_title_economy_online")
                 .About("reallife_guide_economy_online_about").Help("reallife_guide_economy_online")

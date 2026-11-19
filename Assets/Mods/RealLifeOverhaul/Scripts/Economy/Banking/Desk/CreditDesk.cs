@@ -223,6 +223,11 @@ namespace RealLifeOverhaul.Economy
 
         private static bool SecurityThere(CreditAccount a)
         {
+            if (a.Kind == ProductKind.Mortgage && FlatRules.IsKey(a.Security))
+            {
+                // A flat is the property business's own record, not the game's: unknown (the business is not running) leaves the account as it is.
+                return (FlatSecurity != null ? FlatSecurity(a.Security) : FlatUnknown) != FlatGone;
+            }
             return a.Kind == ProductKind.Mortgage ? Books.Estate(a.Security) != null : Books.Vehicle(a.Security) != null;
         }
 

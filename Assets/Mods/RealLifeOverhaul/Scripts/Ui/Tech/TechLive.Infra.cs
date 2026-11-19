@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Ui
                 string place = d.Place;
                 int share = _d.ScaleNow(), buy = TechDirector.BuyScale;
                 BuildingRegistration reg = TalentGame.Find(place);
-                int plan = TechBridges.PlanMbpsAt(reg);
+                int plan = TechBridges.CentreMbps(reg);
                 CentreLimits lim = InfraLimits.Of(d, plan);
                 int fitStandard = InfraLimits.Fit(d, false, plan, out int binding);
                 int step = InfraRules.RacksStep(buy);
@@ -238,6 +238,13 @@ namespace RealLifeOverhaul.Ui
                 supply.Say(fit > 0 ? TechText.T("reallife_ui_tech_dc_room_for", "count", fit.ToString(Inv)) : TechText.T("reallife_ui_tech_dc_next_full", "name", d.Name, "limit",
                     TechText.T(LimitKey(binding))),
                     fit > 0 ? UiRole.None : UiRole.WarnText);
+                string[] linePairs = _d.LinePairs();
+                if (linePairs != null)
+                {
+                    // the way past a full connection: a leased line, sold in the Utilities app
+                    supply.Say(TechText.Fill("reallife_infra_centre_line", linePairs), binding == InfraLimits.Bandwidth && fit == 0 ? UiRole.WarnText : UiRole.Text2);
+                    supply.Go(TechText.T("reallife_infra_button_line"), Do(() => _d.OpenInternet()));
+                }
                 _m.Left = CentreCards(d, share, buy, step);
                 _m.Right = new[] { supply.Build() };
             }
@@ -360,7 +367,7 @@ namespace RealLifeOverhaul.Ui
                     card.Say(TechText.Fill("reallife_endscale_infra_upkeep", "upkeep", Cents(_d.Level(InfraRules.Upkeep(d, share))), "dense", Math.Min(d.Dense, d.Racks).ToString(Inv),
                         "dense_gpu", Math.Min(d.DenseGpu, d.GpuRacks).ToString(Inv), "old", (d.Legacy + d.LegacyGpu).ToString(Inv)));
                 }
-                int plan = TechBridges.PlanMbpsAt(TalentGame.Find(place));
+                int plan = TechBridges.CentreMbps(TalentGame.Find(place));
                 int fitGpu = InfraLimits.Fit(d, true, plan, out _);
                 card.Button(TechText.T("reallife_infra_button_gpu"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.BuyRacks(place, 1, true)), fitGpu < 1);
                 if (buy > 0 && d.Legacy + d.LegacyGpu > 0)

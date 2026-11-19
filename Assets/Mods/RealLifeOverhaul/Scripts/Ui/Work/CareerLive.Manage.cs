@@ -399,6 +399,7 @@ namespace RealLifeOverhaul.Ui
             cj.CanDeclare = !j.Declared && d.Conflicted(j);
             // A shift starts at the desk; from here only where no desk could be had, and overtime is worked the same way.
             cj.DeskLine = d.DeskLine(j);
+            cj.StartKey = d.StartButtonKey(j);
             string fallback = d.DeskFallbackWhy(j);
             if (fallback != null)
             {

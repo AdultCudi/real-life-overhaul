@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
             SoldBack(false);
             EstateGame.ReadHoldings(s, out added, out dropped);
             EstateGame.ReadAgency(s.Agency);
+            AgencyCover();   // each building under the agency is told whether its agents cover it, before its morning
             for (int i = s.Holdings.Count - 1; i >= 0; i--)
             {
                 HoldingDay(s.Holdings[i], day);
@@ -161,7 +162,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Tell(NotificationType.Info, "reallife_estate_note_applied_many", Data("building", h.Name, "count", applied.ToString()), TabTenants, null);
                 }
-                if (duties && h.Manager != (int)EstateManager.Self)
+                if (duties && EstateRules.Handles(h))
                 {
                     AgentLets(h, day);
                 }
@@ -578,9 +579,9 @@ namespace RealLifeOverhaul.Economy
 
         partial void PropertyAlerts(int day)
         {
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateHolding h = _state.Holdings[i];
+                EstateHolding h = _state.LetAt(i);
                 int id = EstateRules.Hash(h.Place);
                 // A building's units make one row of each kind, at the earliest day.
                 int waiting = 0, lapse = int.MaxValue, owed = 0, behind = 0, answer = 0, court = int.MaxValue, notice = int.MaxValue;

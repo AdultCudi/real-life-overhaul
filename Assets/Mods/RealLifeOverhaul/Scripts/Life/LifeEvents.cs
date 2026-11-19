@@ -301,6 +301,18 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Set by Wiring/Wiring.HealthLinks: an injury got on a police shift (Careers/Police), which Health names as an accident at work. Default: as any hurt.</summary>
+        public static Action<int> HurtOnDuty;
+
+        /// <summary>An injury on a police shift: the same as <see cref="Injure"/>, and Health counts it as an accident at work (the employer's insurer, days off paid).</summary>
+        public void InjureOnDuty(int hours, float energyLoss, string notificationKey)
+        {
+            ModState.AddModifier(ModState.Injured, hours);
+            (HurtOnDuty ?? Hurt)?.Invoke(hours);
+            EnergyHelper.SpentEnergyOnce(energyLoss);
+            Notify(NotificationType.Error, notificationKey);
+        }
+
         public void Injure(int hours, float energyLoss, string notificationKey)
         {
             ModState.AddModifier(ModState.Injured, hours);

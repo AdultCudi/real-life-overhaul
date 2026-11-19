@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
         private const string KeyFriendDay = "reallife:friend_day";
         private const string KeyMomDay = "reallife:mom_day";
         private const string KeyMomGiftDay = "reallife:mom_gift_day";
+        private const string KeyMomContactDay = "reallife:mom_contact_day";
         private const string KeyModifiers = "reallife:modifiers";
         private const string KeySeenEvents = "reallife:seen_events";
         private const string KeyPendingFine = "reallife:pending_fine";
@@ -94,6 +95,8 @@ namespace RealLifeOverhaul
         public static int LastFriendCallDay;
         public static int LastMomCallDay;
         public static int LastMomGiftDay;
+        /// <summary>The last day Mom got in touch by herself, by any feature (MomContact): one such contact a day at most.</summary>
+        public static int LastMomContactDay;
 
         /// <summary>Money owed for a hit-and-run the player got away from; 0 when nothing is owed.</summary>
         public static int PendingFine;
@@ -115,6 +118,7 @@ namespace RealLifeOverhaul
             LastFriendCallDay = 0;
             LastMomCallDay = 0;
             LastMomGiftDay = 0;
+            LastMomContactDay = 0;
             PendingFine = 0;
             PendingFineDue = 0f;
             SeenEvents.Clear();
@@ -140,6 +144,7 @@ namespace RealLifeOverhaul
             LastFriendCallDay = (int)ReadFloat(data, KeyFriendDay);
             LastMomCallDay = (int)ReadFloat(data, KeyMomDay);
             LastMomGiftDay = (int)ReadFloat(data, KeyMomGiftDay);
+            LastMomContactDay = (int)ReadFloat(data, KeyMomContactDay);
             // Absent from older saves: nothing is owed.
             float pending = ReadFloat(data, KeyPendingFine);
             PendingFine = (int)Mathf.Clamp(float.IsNaN(pending) ? 0f : pending, 0f, PendingFineMost);
@@ -221,6 +226,7 @@ namespace RealLifeOverhaul
             data[KeyFriendDay] = LastFriendCallDay.ToString(CultureInfo.InvariantCulture);
             data[KeyMomDay] = LastMomCallDay.ToString(CultureInfo.InvariantCulture);
             data[KeyMomGiftDay] = LastMomGiftDay.ToString(CultureInfo.InvariantCulture);
+            data[KeyMomContactDay] = LastMomContactDay.ToString(CultureInfo.InvariantCulture);
             data[KeyPendingFine] = PendingFine.ToString(CultureInfo.InvariantCulture);
             data[KeyPendingFineDue] = PendingFineDue.ToString(CultureInfo.InvariantCulture);
             string stash = string.Join(";", parts);

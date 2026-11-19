@@ -1216,7 +1216,7 @@ internal static partial class Program
             "health sources: every injury, the doctor's desk and the doctor's phone line reach health through their one door each");
         int missed = work.IndexOf("CareersBridges.DayMissed?.Invoke(", StringComparison.Ordinal), excused = work.IndexOf("if (Excused(day) || j.OffUntil >= day)", StringComparison.Ordinal);
         int worked = work.IndexOf("if (worked)", StringComparison.Ordinal);
-        Check(missed > worked && missed < excused && worked > 0 && work.Contains("CareersBridges.ShiftWorked?.Invoke(j.Def.SkillA);"),
+        Check(missed > worked && missed < excused && worked > 0 && work.Contains("CareersBridges.ShiftWorked?.Invoke(IsPolice(j) ? -1 : j.Def.SkillA);"),
             "health wiring: health hears of a working day only once it is settled as not worked, before it is excused (what it pays for the day is driven in HealthPartDayChecks)");
         Check(wiring.Contains("CareerLinks.Health = new Leave();") && wiring.Contains("CareerLinks.Health = _noteBefore;") && wiring.Contains("return d.Covers(day);"),
             "health sources: with Health on the leave rules answer whether a day off is excused, and the answer as it was is put back with the option off");

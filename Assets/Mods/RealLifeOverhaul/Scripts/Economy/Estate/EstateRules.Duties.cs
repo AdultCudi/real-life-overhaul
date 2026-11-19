@@ -501,10 +501,22 @@ namespace RealLifeOverhaul.Economy
             h.InspectDay = h.OrderDay = h.Strikes = 0;
         }
 
+        /// <summary>Whoever runs a building as a property manager does: a property manager, or the player's own agency while its agents have the hours (<see cref="EstateHolding.Covered"/>).</summary>
+        public static bool Runs(EstateHolding h)
+        {
+            return h.Manager == (int)EstateManager.Manager || (h.Manager == (int)EstateManager.Agency && h.Covered);
+        }
+
+        /// <summary>Somebody other than the player markets and lets the building: a letting agent, or whoever <see cref="Runs"/> it.</summary>
+        public static bool Handles(EstateHolding h)
+        {
+            return h.Manager == (int)EstateManager.Agent || Runs(h);
+        }
+
         /// <summary>How much more often applicants come with an agent or a manager marketing the building.</summary>
         public static int ApplicantLift(EstateHolding h)
         {
-            return h.Manager != (int)EstateManager.Self ? EstateCatalogue.ManagedApplicants : 1000;
+            return Handles(h) ? EstateCatalogue.ManagedApplicants : 1000;
         }
 
         /// <summary>A letting agent's fee for a letting at a rent.</summary>
@@ -551,7 +563,7 @@ namespace RealLifeOverhaul.Economy
         {
             var m = new ManagerMove();
             EstateUnit u = h.Unit(unit);
-            if (h.Manager != (int)EstateManager.Manager || u == null || !u.Let)
+            if (!Runs(h) || u == null || !u.Let)
             {
                 return m;
             }
@@ -569,7 +581,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether a manager starts the repair works an improvement order needs: near its day, with the building below the mark.</summary>
         public static bool ManagerRepairs(EstateHolding h, int day)
         {
-            return h.Manager == (int)EstateManager.Manager && h.OrderDay > 0 && !h.Busy && h.SaleDay == 0 && h.OrderDay - day <= EstateCatalogue.ManagerRepairDays
+            return Runs(h) && h.OrderDay > 0 && !h.Busy && h.SaleDay == 0 && h.OrderDay - day <= EstateCatalogue.ManagerRepairDays
                    && h.Cond < EstateCatalogue.InspectPass + EstateCatalogue.InspectCallPenalty;
         }
     }

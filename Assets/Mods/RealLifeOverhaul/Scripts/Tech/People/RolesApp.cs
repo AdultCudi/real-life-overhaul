@@ -41,6 +41,13 @@ namespace RealLifeOverhaul.Tech
             }
             _table.Money = amount => TechText.Money((long)amount);
             _table.SelectionLost = ClosePick;
+            _table.Filtered = () =>
+            {
+                if (_tab == TechDirector.TabTeam && _picked == null && _ready)
+                {
+                    Refresh();   // the table has filtered its rows itself; the box says what a raise for everyone shown comes to
+                }
+            };
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
             for (int i = 0; i < TabKeys.Length; i++)
             {

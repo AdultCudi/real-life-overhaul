@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     UnitDuty(h, n, day);
-                    if (h.Manager == (int)EstateManager.Manager)
+                    if (EstateRules.Runs(h))
                     {
                         ManagerUnit(h, n, day, ref sent, ref chased, ref served);
                     }
@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Economy
             EstateUnit u = h.Units[unit];
             DutyDay d = EstateRules.Duty(h, unit, _state.Seed, day, _climate);
             string name = EstateText.UnitName(h, unit), call = CallPick(h, unit);
-            bool quiet = h.Manager == (int)EstateManager.Manager;   // the manager deals with calls: the morning's one notice says so
+            bool quiet = EstateRules.Runs(h);   // the manager deals with calls: the morning's one notice says so
             if (d.NewCall && !quiet)
             {
                 Tell(NotificationType.Warning, "reallife_estate_note_call", Data("building", name, "fault", EstateText.Fault(u.Call), "amount", EstateText.Money(u.CallCost)), TabWorks, call);
@@ -285,9 +285,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateRules.DutiesOff(_state.Holdings[i], day);
+                EstateRules.DutiesOff(_state.LetAt(i), day);
             }
             CloseVisit();
             _visitPlace = null;
@@ -319,7 +319,7 @@ namespace RealLifeOverhaul.Economy
                     quit = Math.Min(quit, u.QuitDay);
                 }
             }
-            if (waiting > 0 && h.Manager != (int)EstateManager.Manager)
+            if (waiting > 0 && !EstateRules.Runs(h))
             {
                 Alert(13, id, Math.Max(day, since + EstateCatalogue.CallGraceDays), EstateText.T("reallife_estate_plan_calls_title", "building", h.Name),
                     EstateText.T("reallife_estate_plan_calls_what", "count", waiting.ToString()), null, EstateText.T("reallife_estate_plan_calls_missed"));
@@ -422,13 +422,20 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
-        /// <summary>Who runs a building day to day: the player, a letting agent or a property manager.</summary>
+        /// <summary>Who runs a building day to day: the player, a letting agent, a property manager or, with an agency open, the player's own agency.</summary>
         public void SetManager(string place, int manager)
         {
             EstateHolding h = Mine(place);
             if (h != null && Duties)
             {
-                h.Manager = EstateCatalogue.Clamp(manager, 0, EstateCatalogue.Managers - 1);
+                int to = EstateCatalogue.Clamp(manager, 0, EstateCatalogue.Managers - 1);
+                if (to == (int)EstateManager.Agency && !AgencyOpen)
+                {
+                    Tell(NotificationType.Warning, "reallife_estate_why_no_agency_own", null, TabAgency, null);
+                    return;
+                }
+                h.Manager = to;
+                AgencyCover();
                 Changed();
             }
         }

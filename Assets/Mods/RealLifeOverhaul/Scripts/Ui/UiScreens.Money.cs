@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_bb_sold_out", "reallife_endscale_bb_confirm_extend_body", "reallife_endscale_bb_confirm_extend_title",
                 "reallife_endscale_bb_extend", "reallife_endscale_owed_line", "reallife_money_dig", "reallife_money_live",
                 "reallife_net_box_buy", "reallife_net_box_cancel", "reallife_net_box_change", "reallife_net_box_contract_note",
+                "reallife_net_box_line", "reallife_net_box_line_cancel", "reallife_net_box_line_install", "reallife_net_line_carries", "reallife_ui_util_your_line",
                 "reallife_net_box_contract_switch", "reallife_net_box_grace_place", "reallife_net_box_install_day",
                 "reallife_net_box_install_fee", "reallife_net_box_install_free", "reallife_net_box_install_own", "reallife_net_box_needs",
                 "reallife_net_box_needs_orders", "reallife_net_box_none_here", "reallife_net_box_reconnect", "reallife_net_box_switch_fee",

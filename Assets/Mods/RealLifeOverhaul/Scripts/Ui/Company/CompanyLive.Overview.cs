@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Ui
                 int tab = AlertTab(a.A, out UiIcon icon);
                 rows.Add(new CompanyWaiting
                 {
-                    Name = a.Title, Line = a.What + (string.IsNullOrEmpty(a.Money) ? string.Empty : ", " + a.Money), Icon = icon, OpenLabel = w.T("reallife_co_open", "Open"),
+                    Name = a.Title, Line = UiTextRules.Sentences(a.What, a.Money), Icon = icon, OpenLabel = w.T("reallife_co_open", "Open"),
                     Open = CompanyAct.Of(CompanyDo.Go, null, tab)
                 });
             }

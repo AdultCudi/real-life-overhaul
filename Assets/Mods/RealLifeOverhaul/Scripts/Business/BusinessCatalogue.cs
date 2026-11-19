@@ -185,6 +185,12 @@ namespace RealLifeOverhaul
         public const int AwardBoost = 5;
         public const int AwardDays = 4;
 
+        /// <summary>
+        /// True for the two kinds that are staff pay trouble: a rival's offer to an employee and a strike threat over wages. They need the option "Staff pay, raises,
+        /// strikes and sick pay" as well as their own group's switch, so a player who switched staff trouble off gets none (game-free: BusinessIssues.KindOn asks it).
+        /// </summary>
+        public static bool NeedsStaffPay(string kind) => kind == Poach || kind == Strike;
+
         public static readonly IssueDef[] All =
         {
             new IssueDef(Undercut, "reallife_biz_undercut_name", PressureGroup.Rivals, false, 10, 3, 14),

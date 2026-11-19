@@ -179,7 +179,9 @@ namespace RealLifeOverhaul.Economy
                 string rival = shop != null && CompanyBridges.Rival != null ? CompanyBridges.Rival(shop.Reg) : null;
                 StaffRules.Offer(f, CompanyStore.Clean(string.IsNullOrEmpty(rival) ? CompanyText.T("reallife_co_rival_default") : rival), Save.Day);
                 f.PoachOffer = Math.Max(f.PoachOffer, f.Paid + 100);
-                TestDone(f.Rival + " offers " + f.Name + " " + f.PoachOffer + " an hour (hundredths); paid " + f.Paid, TabStaff, "emp:" + f.Id);
+                string offer = f.Rival + " offers " + f.Name + " " + f.PoachOffer + " an hour (hundredths); paid " + f.Paid;
+                // With "Match rivals' offers automatically" on and the offer inside its limit it is matched here, as at night; the notice comes with the next hour.
+                TestDone(MatchRival(f, Save.Day) ? offer + ": matched by itself" : offer, TabStaff, "emp:" + f.Id);
             });
         }
 

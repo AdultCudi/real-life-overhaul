@@ -32,6 +32,31 @@ namespace RealLifeOverhaul.Family
         private const string InPersonType = "reallife_familytalk_calldialogtype";
 
         private static Func<DialogEntry> _first;
+        private static bool _aboutPartner;   // the conversation being opened is with the partner (a character beside them, or a talk about them)
+
+        /// <summary>Whether the conversation being opened is with the partner; read once by <see cref="FamilyDialog"/>.</summary>
+        internal static bool TakePartner()
+        {
+            bool partner = _aboutPartner;
+            _aboutPartner = false;
+            return partner;
+        }
+
+        /// <summary>The partner's header for a talk with them: their name and age as People keeps it, else the age their look has; null when they have none.</summary>
+        internal static void PartnerHead(out string who, out string age)
+        {
+            who = age = null;
+            if (!FamilyState.Loaded || !FamilyState.HasPartner || string.IsNullOrEmpty(FamilyState.S.PName))
+            {
+                return;
+            }
+            who = FamilyState.S.PName;
+            age = TalkAgeGame.Partner != null ? TalkAgeGame.Partner() : null;
+            if (age == null)
+            {
+                age = TalkAgeGame.Exact(Partner.LookAge);
+            }
+        }
 
         /// <summary>The first entry of the face-to-face conversation being opened; read once by <see cref="FamilyDialog"/>.</summary>
         internal static DialogEntry TakeFirst()
@@ -50,7 +75,7 @@ namespace RealLifeOverhaul.Family
         }
 
         /// <summary>Opens a conversation face to face, as the game's counters do; <paramref name="closed"/> is called however it ends.</summary>
-        public static bool Open(Func<DialogEntry> first, Action closed = null, ThirdPersonCharacter with = null)
+        public static bool Open(Func<DialogEntry> first, Action closed = null, ThirdPersonCharacter with = null, bool partner = false)
         {
             var uis = InstanceBehavior<UI.UIs>.Instance;
             if (uis == null || uis.playerHUD == null || uis.playerHUD.dialogUI == null || DialogController.current != null)
@@ -59,6 +84,7 @@ namespace RealLifeOverhaul.Family
                 return false;
             }
             _first = first;
+            _aboutPartner = partner || with != null;
             var type = (CallDialogType)ModEnumHash.GetSafeHash(InPersonType);
             CallDialogFactory.RegisterDialog(type, Guard.Maker(() => new FamilyDialog()));
             uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed), with);
@@ -204,10 +230,23 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>The face-to-face family conversation: whatever <see cref="FamilyTalk.Open"/> was given.</summary>
-    public sealed class FamilyDialog : Dialog
+    public sealed class FamilyDialog : Dialog, ITalkAge
     {
+        private readonly bool _partner;
+        private string _who, _age;
+
+        public string TalkWho => _who;
+
+        public string TalkAge => _age;
+
         public FamilyDialog()
         {
+            _partner = FamilyTalk.TakePartner();
+            if (_partner)
+            {
+                FamilyTalk.PartnerHead(out _who, out _age);
+            }
+            using var head = TalkAgeGame.Making(this);   // the first page is headed with their age too
             npcNameKey = FamilyPhone.FamilyId;
             DialogController.current.ShowEntry(Guard.Entry(FamilyTalk.TakeFirst()));
         }

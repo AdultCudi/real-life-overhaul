@@ -411,6 +411,7 @@ namespace RealLifeOverhaul.Ui
             }
             CanvasGroup view = View();
             DialogEntry e = Entry();
+            string age = TalkAgeGame.Of(_ui.dialog);   // a talk with a person: the game's header reads "who, age", the kit names them as it always did and says the age under it
             string speaker = null;
             int mood = -2;
             Transform content = Content();
@@ -432,7 +433,7 @@ namespace RealLifeOverhaul.Ui
                         Add(new UiMessageModel { From = UiFrom.Them, Text = words, Mood = DialogRules.MoodIcon(m) });
                         mood = m;
                     }
-                    speaker = Words(c.Find("HeaderLabel")) ?? speaker;
+                    speaker = age == null ? Words(c.Find("HeaderLabel")) ?? speaker : speaker;
                 }
                 Asides(c);
                 if (!now)
@@ -444,7 +445,7 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
             }
-            Head(speaker, mood);
+            Head(speaker, mood, age);
             if (view != null)
             {
                 Line(view, e);
@@ -474,7 +475,7 @@ namespace RealLifeOverhaul.Ui
 
         // Who is talking: the latest line's speaker as the game heads it, else the name the conversation gives its speaker;
         // under them where the talk is held (the contact it is with, the business the player stands in, or the street).
-        private void Head(string speaker, int mood)
+        private void Head(string speaker, int mood, string age)
         {
             Contact c = _ui.contact;
             string with = c != null ? ContactName(c) : null;
@@ -486,7 +487,8 @@ namespace RealLifeOverhaul.Ui
             // Contacts shows it; a person, or a clerk with a face, keeps the face.
             _m.Picture = c != null && !ContactsScreen.Person(c) && (name == with || !UiFaces.Has(name)) ? FirmPictures.Of(c) : null;
             _m.Ring = ContactsRules.MoodRing(mood);
-            _m.Role = where != null && where != _m.Name ? where : null;
+            where = where != null && where != _m.Name ? where : null;
+            _m.Role = age == null ? where : where == null ? TalkAgeRules.Sentence(age) : TalkAgeRules.Sentence(age) + " · " + where;
             string word = DialogRules.MoodWord(mood);   // the mood in a word beside the face, in the ring's colour
             _m.Status = word != null ? UiText.T(word) : null;
             _m.StatusTone = _m.Ring;

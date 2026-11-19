@@ -50,6 +50,12 @@ namespace RealLifeOverhaul.Ui
                         NichePage(nicheId);
                         return;
                     }
+                    TermDeal deal = int.TryParse(Pick(pick, TechApp.DealRow), out int did) && _d.Terms != null ? _d.Terms.Of(did) : null;
+                    if (deal != null)
+                    {
+                        DealPage(deal);
+                        return;
+                    }
                     Startup picked = int.TryParse(Pick(pick, TechApp.StartupRow), out int sid) ? v.StartupOf(sid) : null;
                     if (picked != null)
                     {
@@ -90,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                         value += mine;
                     }
                 }
+                DealRows(rows, keys);   // what the sales' terms still hold, beside the startups held
                 _m.Shape = TechShape.Table;
                 _m.Table = new UiDataTableModel
                 {

@@ -6,6 +6,7 @@ using BigAmbitions.Rivals;
 using EnhancedUI.EnhancedScroller;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.Rivals;
 using Streets;
 using UI.Components;
 using UI.Smartphone.Apps.MarketInsider;
@@ -44,7 +45,9 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private long _seen;
         private int _tab, _selected, _reveal = -1, _focus = -1;
+        private string _headId;     // the game's id of the rival whose head office the profile's Show on map is for; null for none
         private float _offset;
+        private long[] _worths = new long[24];   // the rivals' fortunes in the game's order, for their places
 
         public RivalsScreen(RivalsApp app)
         {
@@ -86,7 +89,8 @@ namespace RealLifeOverhaul.Ui
                 case UiAppWindow.NavCommand:
                     return Show(arg);
                 case UiAppWindow.ActionCommand:
-                    return Done(UiWidgets.Press(Contacts()), "open the chosen rival in Contacts: handed to the game");
+                    // the actions are Open in Contacts where the game offers it, then Show on map for the head office where there is one
+                    return _v.Contacts && arg == 0 ? Done(UiWidgets.Press(Contacts()), "open the chosen rival in Contacts: handed to the game") : ShowHead();
                 case UiRivals.ChartTabCommand:
                     return Filter(arg);
                 case UiDataTable.First + UiDataTable.Row:
@@ -366,7 +370,19 @@ namespace RealLifeOverhaul.Ui
                     District = string.IsNullOrEmpty(d.mostActiveNeighborhood) ? null : UiText.T(d.mostActiveNeighborhood)
                 });
                 _lines.Add(line);
+                if (!you && !d.isDefeated)
+                {
+                    RivalEntry e = _league[_league.Count - 1];
+                    RivalFortune f = RivalFortuneGame.Of(d.rivalId, d.ownedBuildings, d.weeklyIncome, today);   // (kept for the day: a redraw reads nothing again)
+                    e.HasFortune = true;
+                    e.Buildings = f.Buildings;
+                    e.Property = f.Property;
+                    e.RentWeek = f.RentWeek;
+                    e.Fortune = f.Worth;
+                    _league[_league.Count - 1] = e;
+                }
             }
+            Places();
             RivalsSeen.SeenDirector seenBy = seenId != null && chosen < _league.Count ? RivalsSeen.SeenDirector.Instance : null;
             if (seenBy != null && seenBy.Owner(seenId, out string car, out string found))   // (made again only when what it says has changed: RivalsSeen/SeenPage)
             {
@@ -375,8 +391,57 @@ namespace RealLifeOverhaul.Ui
                 head.Found = found;
                 _league[chosen] = head;
             }
+            _headId = seenBy != null ? seenId : null;
+            string office = seenBy != null ? seenBy.OwnerHead(seenId) : null;
+            if (!string.IsNullOrEmpty(office))
+            {
+                RivalEntry head = _league[chosen];
+                head.Head = office;
+                _league[chosen] = head;
+            }
             _v.League = _league.ToArray();
             _v.Chosen = chosen;
+        }
+
+        // Each rival's place by fortune among the rivals, beside its place in the game's ranking (the league's order): the game ranks by weekly income alone.
+        private void Places()
+        {
+            int rivals = 0;
+            for (int i = 0; i < _league.Count; i++)
+            {
+                rivals += _league[i].HasFortune ? 1 : 0;
+            }
+            if (_worths.Length < _league.Count)
+            {
+                _worths = new long[_league.Count];
+            }
+            int n = 0, place = 0;
+            for (int i = 0; i < _league.Count; i++)
+            {
+                if (_league[i].HasFortune)
+                {
+                    _worths[n++] = _league[i].Fortune;
+                }
+            }
+            for (int i = 0; i < _league.Count; i++)
+            {
+                RivalEntry e = _league[i];
+                if (!e.HasFortune)
+                {
+                    continue;
+                }
+                e.RivalPlace = ++place;
+                e.FortunePlace = RivalFortuneRules.PlaceByFortune(_worths, n, place - 1);
+                e.Rivals = rivals;
+                _league[i] = e;
+            }
+        }
+
+        // Show on map for the chosen rival's head office: the game's own destination marker, set by the rivals seen around the city (RivalsSeen).
+        private bool ShowHead()
+        {
+            RivalsSeen.SeenDirector seen = RivalsSeen.SeenDirector.Instance;
+            return !string.IsNullOrEmpty(_headId) && seen != null && seen.ShowOwnerHead(_headId);
         }
 
         /// <summary>A weekly income's figure from about a week before today in the game's history of it, or NaN with none.</summary>

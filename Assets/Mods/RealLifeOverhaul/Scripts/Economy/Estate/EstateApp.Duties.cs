@@ -75,12 +75,14 @@ namespace RealLifeOverhaul.Economy
             }
             box.Line(EstateText.T("reallife_estate_duty_costs", "calls", EstateText.Money(h.CallsYear), "fees", EstateText.Money(h.FeesYear), "fines", EstateText.Money(h.FinesYear)));
             box.Headline("reallife_estate_duty_who");
-            if (!box.HasSelector || !box.Selector(EstateCatalogue.Managers, h.Manager, EstateText.Manager, i => _director.SetManager(place, i)))
+            int choices = _director.AgencyOpen || h.Manager == (int)EstateManager.Agency ? EstateCatalogue.Managers : EstateCatalogue.Managers - 1;
+            if (!box.HasSelector || !box.Selector(choices, h.Manager, EstateText.Manager, i => _director.SetManager(place, i)))
             {
                 box.Line(EstateText.Manager(h.Manager));
             }
             box.Note(EstateText.T(h.Manager == (int)EstateManager.Manager ? "reallife_estate_duty_manager_what" : h.Manager == (int)EstateManager.Agent ? "reallife_estate_duty_agent_what"
-                    : "reallife_estate_duty_self_what", "share", EstateText.Share(EstateCatalogue.ManagerShare), "days", EstateCatalogue.AgentLetDays.ToString()));
+                    : h.Manager == (int)EstateManager.Agency ? "reallife_estate_duty_agency_what" : "reallife_estate_duty_self_what", "share", EstateText.Share(EstateCatalogue.ManagerShare),
+                "days", EstateCatalogue.AgentLetDays.ToString()));
         }
 
         // A let unit's satisfaction, what it is made of, a call, a tenant's notice to go and a payment plan.
@@ -164,9 +166,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            for (int i = 0; i < state.Holdings.Count; i++)
+            for (int i = 0; i < state.LetCount; i++)
             {
-                EstateHolding h = state.Holdings[i];
+                EstateHolding h = state.LetAt(i);
                 for (int n = 0; h.Managed && n < h.Units.Count; n++)
                 {
                     EstateUnit u = h.Units[n];

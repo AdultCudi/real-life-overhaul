@@ -259,10 +259,15 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>A call to the Roommate contact.</summary>
-    public sealed class RoommateCallDialog : Dialog
+    public sealed class RoommateCallDialog : Dialog, ITalkAge
     {
+        public string TalkWho => RoommateTalk.Mate?.Person.Name;
+
+        public string TalkAge => TalkAgeGame.Exact(RoommateTalk.Mate != null ? RoommateTalk.Mate.Person.Age : 0);
+
         public RoommateCallDialog()
         {
+            using var head = TalkAgeGame.Making(this);   // the first page is headed with their age too
             npcNameKey = RoommatePhone.ContactId;
             DialogController.current.ShowEntry(Guard.Entry(RoommateTalk.Safe(RoommatePhone.Menu)()));
         }

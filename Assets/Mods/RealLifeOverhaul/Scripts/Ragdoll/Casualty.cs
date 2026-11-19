@@ -41,6 +41,15 @@ namespace RealLifeOverhaul
         private Vector3 _lastPosition;
         private Vector3 _kerb;
 
+        /// <summary>First aid from an officer on a shift (Careers/Police): somebody only knocked down gets up as soon as they can.</summary>
+        internal void Aided(float now)
+        {
+            if (_stage == Stage.Down && Result == Outcome.Knocked && now < _upAt)
+            {
+                _upAt = now;
+            }
+        }
+
         public Casualty(PedestrianIncidents owner)
         {
             _owner = owner;

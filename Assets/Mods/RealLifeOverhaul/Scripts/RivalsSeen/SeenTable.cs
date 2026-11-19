@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.RivalsSeen
         private readonly List<int> _officeCut = new List<int>(32), _officeNumber = new List<int>(32);   // ...taken apart: where the street ends, and the number
         private readonly List<object> _officeAt = new List<object>(32);    // ...the building found there; null while none is
         private readonly List<float> _officeX = new List<float>(32), _officeZ = new List<float>(32);
+        private readonly List<bool> _officeHead = new List<bool>(32);      // ...whether it is a rival's head office, which stands without a business in it
         private readonly ulong[] _numbers = new ulong[4];                  // ...their numbers' low eight bits, so a business at none of them is passed over at once
         private readonly List<int> _open = new List<int>(16);
         private string _away = string.Empty;
@@ -93,17 +94,26 @@ namespace RealLifeOverhaul.RivalsSeen
             for (int i = 0; subjects != null && i < subjects.Count; i++)
             {
                 string office = subjects[i] != null ? subjects[i].Office : null;
-                if (!string.IsNullOrEmpty(office) && !_offices.Contains(office))
+                if (string.IsNullOrEmpty(office))
                 {
-                    SeenRules.Address(office, out int cut, out int number);
-                    _numbers[(number & 255) >> 6] |= 1UL << (number & 63);
-                    _offices.Add(office);
-                    _officeCut.Add(cut);
-                    _officeNumber.Add(number);
-                    _officeAt.Add(null);
-                    _officeX.Add(0f);
-                    _officeZ.Add(0f);
+                    continue;
                 }
+                bool head = subjects[i].Head.Length > 0 && string.Equals(subjects[i].Head, office, StringComparison.Ordinal);
+                int known = _offices.IndexOf(office);
+                if (known >= 0)
+                {
+                    _officeHead[known] |= head;
+                    continue;
+                }
+                SeenRules.Address(office, out int cut, out int number);
+                _numbers[(number & 255) >> 6] |= 1UL << (number & 63);
+                _offices.Add(office);
+                _officeCut.Add(cut);
+                _officeNumber.Add(number);
+                _officeAt.Add(null);
+                _officeX.Add(0f);
+                _officeZ.Add(0f);
+                _officeHead.Add(head);
             }
         }
 
@@ -135,6 +145,12 @@ namespace RealLifeOverhaul.RivalsSeen
                 }
             }
             return -1;
+        }
+
+        /// <summary>True for one of the day's offices that is a rival's head office: its building needs no business in it to be found.</summary>
+        public bool IsHead(int office)
+        {
+            return office >= 0 && office < _officeHead.Count && _officeHead[office];
         }
 
         /// <summary>The building found at one of the day's offices (<see cref="OfficeAt"/>), and where it stands.</summary>
@@ -186,6 +202,7 @@ namespace RealLifeOverhaul.RivalsSeen
             _officeAt.Clear();
             _officeX.Clear();
             _officeZ.Clear();
+            _officeHead.Clear();
             Array.Clear(_numbers, 0, _numbers.Length);
             _open.Clear();
         }

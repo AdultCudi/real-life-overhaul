@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Tech
                 return TechColumns.Off;
             }
             Startup picked = null;
+            TermDeal deal = int.TryParse(Picked(_picked, DealRow), out int dealId) && _director.Terms != null ? _director.Terms.Of(dealId) : null;
             string id = Picked(_picked, StartupRow);
             long invested = 0, value = 0;
             int holdings = 0;
@@ -53,7 +54,19 @@ namespace RealLifeOverhaul.Tech
                 }
                 picked = id == s.Id.ToString() ? s : picked;
             }
-            if (picked != null)
+            WriteDealRows(day);
+            if (deal != null)
+            {
+                box.Title(deal.Firm);
+                box.Subtitle(SaleTermText.KindWords(deal));
+                WriteDeal(box, deal);
+                InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_roles_button_back", () =>
+                {
+                    _picked = null;
+                    Refresh();
+                });
+            }
+            else if (picked != null)
             {
                 WriteStartup(box, v, picked, day);
             }
@@ -83,6 +96,38 @@ namespace RealLifeOverhaul.Tech
                 Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Startups;
+        }
+
+        // The deals of the terms of the player's sales, listed with the startups held: a stake kept, an earn-out waiting, shares locked, a contract run. Open ones only.
+        private void WriteDealRows(int day)
+        {
+            TermFile terms = _director.Terms;
+            for (int i = 0; terms != null && i < terms.Deals.Count; i++)
+            {
+                TermDeal d = terms.Deals[i];
+                if (!d.Live || d.Kind == TermKind.Cash)
+                {
+                    continue;
+                }
+                TermWorld w = _director.TermWorldOf(d);
+                long aim = SaleTermRules.Aim(d);
+                long worth = d.Kind == TermKind.Slice ? SaleTermRules.SliceWorth(d) : d.Kind == TermKind.Shares ? d.Deferred : (d.EarnState == 0 ? d.Further : 0L)
+                    + (d.Kind == TermKind.Boss ? d.Grant * Mathf.Max(0, d.Years - d.Vested) / Mathf.Max(1, d.Years) : 0L);
+                TableRow row = Row(DealRow + d.Id);
+                row.Set(0, d.Firm);
+                row.Set(1, SaleTermText.KindWords(d));
+                row.Set(2, TechText.Fill("reallife_terms_row_day", "day", (d.Kind == TermKind.Shares ? d.LockTo : d.Kind == TermKind.Earn ? d.Due : d.EndDay).ToString()));
+                Cents(row, 3, _director.Level(SaleTermRules.Takings(d, w)));
+                Cents(row, 4, _director.Level(d.Price));
+                row.Set(5, d.Kind == TermKind.Slice ? TechText.Mille(d.Mille) : "-", d.Mille);
+                Cents(row, 6, _director.Level(worth));
+                row.Set(7, d.Kind == TermKind.Shares ? TechText.Fill("reallife_terms_row_locked", "days", SaleTermRules.LockLeft(d, day).ToString())
+                    : d.Kind == TermKind.Slice ? TechText.T("reallife_terms_row_paying")
+                    : d.Kind == TermKind.Boss && d.EarnState != 0 ? TechText.T("reallife_terms_row_contract")
+                    : TechText.Fill("reallife_terms_row_target", "pct", TechText.Mille(aim > 0 ? (int)System.Math.Min(9990L, SaleTermRules.Progress(d, w) * 1000 / aim) : 0)),
+                    d.Kind == TermKind.Boss && d.Strikes > 0 ? TableRow.Yellow : TableRow.Green);
+                row.Kind = TechColumns.Yours;
+            }
         }
 
         private void WriteStartup(InfoBox box, VentureFile v, Startup s, int day)

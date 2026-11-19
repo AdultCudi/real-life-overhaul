@@ -479,6 +479,7 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Struck: return "reallife_pd_near_struck";
                 case DeathCause.Mugging: return "reallife_pd_near_mugging";
                 case DeathCause.Assault: return "reallife_pd_near_assault";
+                case DeathCause.Duty: return "reallife_pd_near_duty";
                 default: return null;
             }
         }

@@ -301,9 +301,10 @@ namespace RealLifeOverhaul.Tech
             return NicheCatalogue.Def(f.Niche).Buyers == (int)SectorBuyers.Enterprises ? (int)Segment.Enterprise : (int)Segment.Business;
         }
 
-        private static bool NicheServes(FoundedFirm f, Product p)
+        private static bool NicheServes(FoundedFirm f, Product p) => NicheServes(f, SectorRules.MarketOf(p));
+
+        private static bool NicheServes(FoundedFirm f, int market)
         {
-            int market = SectorRules.MarketOf(p);
             bool serves = f.Niche >= 0 && NicheRules.Serves(NicheCatalogue.Def(f.Niche), market);
             for (int i = 0; i < f.Expanded.Count && !serves; i++)
             {

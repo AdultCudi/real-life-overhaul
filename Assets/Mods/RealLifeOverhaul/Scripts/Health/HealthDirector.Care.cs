@@ -107,6 +107,27 @@ namespace RealLifeOverhaul.Health
             TakeInjury(injury, false);
         }
 
+        /// <summary>The player was hurt on a police shift for so many hours (LifeEvents.InjureOnDuty): the same injury as <see cref="Hurt"/>, as an accident at work.</summary>
+        public void HurtOnDuty(int hours)
+        {
+            if (!Running)
+            {
+                return;
+            }
+            Condition injury = HealthRules.InjuryOf(_state.Seed, hours, _state.Injuries);
+            if (injury != Condition.None)
+            {
+                TakeInjury(injury, true);
+            }
+        }
+
+        /// <summary>True while an illness or an injury is open (the days a case runs are days off); serious: it needs the hospital. Both false while health is not running.</summary>
+        public bool Ailing(out bool serious)
+        {
+            serious = Running && (_state.Case.Serious || _state.Stay.Active);
+            return Running && (_state.Case.Open || _state.Stay.Active);
+        }
+
         /// <summary>A shift was worked at a trade with so much risk (0 none, 1 some, 2 high): now and then an accident, drawn once a day.</summary>
         public void ShiftWorked(int risk)
         {

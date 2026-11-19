@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember RivalsButtons = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.RivalLeaderboard", "_buttons", "List<RivalLeaderboardButton>");
         public static readonly GameMember RivalsWarMark = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.RivalLeaderboardButton", "activeRivalryIcon", "Image");
         public static readonly GameMember RivalsContacts = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "openInContactsButton", "Button");
+        public static readonly GameMember RivalsHoodText = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "neighborhoodLocalization", "TextLocalizationComponent");
         public static readonly GameMember RivalsChart = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "chartController", "ChartController");
         public static readonly GameMember RivalsFilter = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "_selectedFilter", "String");
         public static readonly GameMember RivalsMarks = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "rivalryIconsParent", "Transform");

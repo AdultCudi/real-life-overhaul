@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         int cond = EstateRules.StreetCondition(r.Seed, cb.Key);
                         int rent = EstateRules.MarketRent(cb.Base, use, Income(cb.District), cond, 0, r.Climate);
-                        r.Into.AddLandlord(reg.buildingOwnerRivalId, use, rent, Math.Max(1, cb.Units));
+                        r.Into.AddLandlord(reg.buildingOwnerRivalId, use, rent, Math.Max(1, cb.Units), cb.Place, cb.District);
                     }
                 }
                 if (all == null || r.Cursor >= all.Count)

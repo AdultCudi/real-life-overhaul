@@ -52,7 +52,8 @@ namespace RealLifeOverhaul.Utilities
                 {
                     (int)a.Service, (int)a.Kind, (int)a.State, a.Owned ? 1 : 0, a.AutoDebit ? 1 : 0, a.OpenedDay, a.ConnectDay, a.TemporaryUntil,
                     a.Deposit, a.Accrued, a.Units, a.Owed, a.DueDay, a.LateCharged ? 1 : 0, a.LastBill, a.LastBillDay, a.OnTime, a.CutForDebt ? 1 : 0,
-                    a.Provider, a.Plan, a.BusinessPlan ? 1 : 0, a.ContractUntil, a.PriceCents, a.OutageFrom, a.OutageUntil
+                    a.Provider, a.Plan, a.BusinessPlan ? 1 : 0, a.ContractUntil, a.PriceCents, a.OutageFrom, a.OutageUntil,
+                    a.LineStep, a.LineDay, a.LineNext, a.LineNextDay   // the line's four at the end: an older line reads none
                 };
                 for (int f = 0; f < figures.Length; f++)
                 {
@@ -260,7 +261,11 @@ namespace RealLifeOverhaul.Utilities
                 ContractUntil = Math.Max(0, I(c, 22)),
                 PriceCents = Math.Max(0, I(c, 23)),
                 OutageFrom = Math.Max(0, I(c, 24)),
-                OutageUntil = Math.Max(0, I(c, 25))
+                OutageUntil = Math.Max(0, I(c, 25)),
+                LineStep = Clamp(I(c, 26), 0, LeasedLineCatalogue.Steps),
+                LineDay = Math.Max(0, I(c, 27)),
+                LineNext = Clamp(I(c, 28), 0, LeasedLineCatalogue.Steps),
+                LineNextDay = Math.Max(0, I(c, 29))
             };
         }
 

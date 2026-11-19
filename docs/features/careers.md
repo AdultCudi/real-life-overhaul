@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-Two things share the name: the six employers behind the help-wanted boards, whose ranks turn the gigs into a career, and the city's education and professions (courses, the university, twenty-five professions, working for yourself).
+Two things share the name: the six employers behind the help-wanted boards, whose ranks turn the gigs into a career, and the city's education and professions (courses, the university, twenty-six professions, working for yourself).
 
 ## Where the code is
 
@@ -16,7 +16,8 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it); the building trades' four are the last: the bricklaying diploma, the crane operator's ticket, construction management and the architect's licence (a certificate of the player's alone, no profession's staff sit it), and the skill masonry |
 | `Study/StudyRules` (and .Learning, .Fees) | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
 | `Study/StudyNeedRules`, `CareersWhy`, `CareersDirector.Why` and `.Needs`, `ExamDesks` | where each course's exam is sat (a study desk inside the school for a certificate, an online or a distance course and the school's own; the course's classroom at the university; a ward) and the days it stays open; what a course asks before enrolling, each with the player's own level (`Ask`), and what raises a skill from the same catalogue; a refusal that carries its figures as one string (the key, then name and value pairs, said by `CareersText.T`, handed to a notice by `CareersDirector.Say`). Enrolling, applying for a post and the next rung of the ladder name every requirement short, the level asked and the level held, and what raises it; the exam is said where it opens (a notice whose click shows the place on the map), on the card of each course on both interfaces with a Show on map button, each morning it is open, and at the university when it is sat elsewhere; and inside the school the study desks carry the game's mark and the destination marker while an exam is open (game-free apart from the director's parts) |
-| `Work/ProCatalogue` | twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
+| `Work/ProCatalogue` | twenty-six professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
+| `Police/` | the police career as a profession of the working life: its rules, the officer's file, the shift on patrol and the list of an incident's moves; see [Police career](careers-police.md) |
 | `Work/ProRules` | what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice, references, the city's vacancies (game-free) |
 | `Work/LifeRules` | reviews, rises, bonuses, promotion, burnout, office matters, search firms, redundancy, benefit, options, the pension, the top seats of a rival's company, a conflict of interest (game-free) |
 | `Work/OwnRules` | founding a company or a practice, a founder's record, restraint clauses and claims, freelance contracts (game-free) |
@@ -249,6 +250,14 @@ So an activity of the mod's that walks the player to its place (`SchoolDesk`, `D
 With Developer diagnostics on, `Player.log` has a "Careers check (set off)" line for each walk (`DeskGame.SetOffSeen`): PASS when it got to the desk or the computer with the panel holding it, FAIL when the panel took the activity's own walk order for a click elsewhere.
 
 Why: the class at a desk and the work desk used to be put on their way in the frame of the press and given their walk order a frame later. Whenever the panel saw them on their way in the frame of the press (which depends on whether the key or the click is read before the panel's `Update`), the walk was dropped: the panel closed and the player stayed where they were.
+
+## Skills that fade, and the option that stops it (`StudyRules.Fade`, `Hold`, `Fading`)
+
+- A skill unused for `StudyCatalogue.FadeAfterDays` days loses `FadePerDay` thousandths a day, never below `FadeFloor` of its best. The option **Skills fade without practice** (`careers_skill_fade`, on by default) is read by the night's
+  pass (`CareersDirector.StudyDay`): off, nothing fades and each midnight keeps its day in `StudyFile.FadeFrom` (the last field of the file's head; a save without it reads 0). A skill counts as used on that day at the earliest, so switching
+  the option on again takes nothing off in one go: the fading starts again from the day it was switched on, after the usual days.
+- The Campus app's Skills tab marks a skill as fading only with the option on, and says that nothing fades when it is off (`reallife_campus_skills_about_steady`).
+- Checks: `--options4`.
 
 ## The management ladder at a city company
 

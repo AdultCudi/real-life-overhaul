@@ -74,6 +74,11 @@ namespace RealLifeOverhaul.Law
         public static bool PrecinctsChosen => Instance != null && Instance._precincts != null && Instance._precincts.Chosen;
 
         /// <summary>The precinct nearest a point, or null before the city is ready: where patrols come from, where somebody is taken.</summary>
+        /// <summary>How many precincts there are, and the one at an index, for the police career's posts (Wiring/PoliceLinks).</summary>
+        public static int PrecinctCount => Instance != null && Instance._precincts != null ? Instance._precincts.Count : 0;
+
+        public static Precinct PrecinctAt(int index) => Instance != null && Instance._precincts != null ? Instance._precincts.At(index) : null;
+
         public static Precinct NearestPrecinct(Vector3 at)
         {
             return Instance != null && Instance._precincts != null ? Instance._precincts.Nearest(at) : null;

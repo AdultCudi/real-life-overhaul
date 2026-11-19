@@ -22,6 +22,9 @@ namespace RealLifeOverhaul.RivalsSeen
         public string District = string.Empty;  // the game's own key of the district they work in; empty where the source has none
         public string Office = string.Empty;    // the place of their own premises, as the city's table writes a place; empty with none
         public bool Hamptons;                   // they own a house in the Hamptons
+        public string Head = string.Empty;      // their head office as the file keeps it ("street#number", HeadOfficeRules); empty with none
+        public string HeadDistrict = string.Empty;   // ...and the game's own key of its district
+        public bool HeadOwned;                  // ...the building is one they own
         public bool Gone;                       // out of the picture by their source's own rules (taken over, defeated, not come forward): seen nowhere
     }
 
@@ -72,6 +75,33 @@ namespace RealLifeOverhaul.RivalsSeen
         public bool Coast = true;               // the city has the Hamptons (read each day, never saved): without them nobody weekends there
         public readonly List<SeenRecord> Records = new List<SeenRecord>(32);
         public readonly List<SeenNote> Notes = new List<SeenNote>(SeenCatalogue.NotesKept + SeenCatalogue.TestNotesKept + 2);
+        public readonly List<SeenHead> Heads = new List<SeenHead>(32);   // the rivals' head offices, each chosen once (HeadOfficeRules)
+
+        /// <summary>The head office of a rival, or null.</summary>
+        public SeenHead Head(string key)
+        {
+            for (int i = 0; i < Heads.Count; i++)
+            {
+                if (Heads[i].Key == key)
+                {
+                    return Heads[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The head office at a building ("street#number"), or null: no building is two rivals' head office.</summary>
+        public SeenHead HeadAt(string office)
+        {
+            for (int i = 0; i < Heads.Count; i++)
+            {
+                if (string.Equals(Heads[i].Office, office, System.StringComparison.Ordinal))
+                {
+                    return Heads[i];
+                }
+            }
+            return null;
+        }
 
         /// <summary>The record of a rival, or null.</summary>
         public SeenRecord Of(string key)
@@ -136,6 +166,10 @@ namespace RealLifeOverhaul.RivalsSeen
         public string Car = string.Empty;   // the game's own id of its type; empty with none on record
         public int Pick;        // which of their two ways of saying hello today
         public int Gained;      // what the greeting added to how well they know the player, tenths
+        public string Key = string.Empty;       // the rival's key: "t" and the tycoon's index, or "g" and the game's own id
+        public bool Dealings;   // the talk goes on to what they have with the player (a head office, where they are found in office hours)
+        public int Standing;    // how well they know the player after this greeting: SeenRules.Standing
+        public string Head = string.Empty;      // their head office's address, in words; empty with none
     }
 
     /// <summary>

@@ -61,6 +61,12 @@ internal static partial class UiSamples
         public readonly List<EService> Services = new List<EService>();
     }
 
+    internal sealed class EFlat
+    {
+        public string Name, District;
+        public EUnit Unit;   // null: the player lives in it, with no rent and no tenant
+    }
+
     internal sealed class EHotel
     {
         public string Name, District;
@@ -117,6 +123,7 @@ internal static partial class UiSamples
     {
         public string Variant;
         public readonly List<EBuilding> Buildings = new List<EBuilding>();
+        public readonly List<EFlat> Flats = new List<EFlat>();
         public readonly List<EHotel> Hotels = new List<EHotel>();
         public readonly List<EListing> Market = new List<EListing>();
         public readonly List<EListing> HotelsForSale = new List<EListing>();
@@ -270,6 +277,9 @@ internal static partial class UiSamples
             w.Buildings.Add(Building("250 Park Lane", "Midtown", 'o', 2, 80, 7400000, 6300000, 50000, 190000, 11000, 11, LetUnit(mia, 270, 275, 455, 750, 80, 250), LetUnit(luis, 270, 275, 430, 880, 90, 260)));
             w.Buildings.Add(Building("6 Harlem Court", "Uptown", 'h', 1, 64, 1100000, 900000, 0, 30000, 3000, 30, LetUnit(zoe, 90, 95, 380, 700, 75, 90)));
         }
+        // A flat and a studio bought one by one: one lived in, one let, so the roll's rows for a unit that is not a building are drawn in every language.
+        w.Flats.Add(new EFlat { Name = "9 25th Street, studio", District = "Midtown" });
+        w.Flats.Add(new EFlat { Name = "250 Park Avenue South, two-bedroom flat", District = "Murray Hill", Unit = LetUnit(P("Noor Haddad", "Nurse, Murray Hill Clinic", 31), 96, 100, 520, 780, 85, 90) });
         // The hotels you run, the cars you hire out, the agency's instructions: they stand beside the buildings in every variant that has any.
         w.Hotels.Add(new EHotel { Name = "Pier House Hotel", District = "Midtown", Stars = 8, Clean = 82, Staff = 70, Costs = 3300, TakingsYear = 44000, CostsYear = 36100, PushDays = 3, Rooms = new[] { 28, 12 }, Sold = new[] { 24, 10 },
             Going = new[] { 120, 100 }, Yours = new[] { 128, 96 }, Reviews = new[] { 1, 3 } });

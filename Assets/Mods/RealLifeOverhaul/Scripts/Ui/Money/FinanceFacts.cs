@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Ui
         CutPrices,       // cut the prices of the player's own shops for 14 days
         HoldPrices,      // end a price cut
         OpenHolding,     // the rival's holding in the Stocks app
+        ShowHead,        // the rival's head office on the map
         ShowList,        // the rich list as a City Ledger page
         Accept,          // accept a request or an invitation
         Refuse,          // refuse a request or decline an invitation
@@ -237,6 +238,8 @@ namespace RealLifeOverhaul.Ui
         public string FollowLabel;
         public string HoldingLabel;
         public bool CanHolding;
+        public bool CanHead;                  // the rival has a head office to show on the map
+        public string HeadLabel;
         public string ListLabel;
     }
 

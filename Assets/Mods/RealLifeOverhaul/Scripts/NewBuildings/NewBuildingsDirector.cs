@@ -222,6 +222,19 @@ namespace RealLifeOverhaul.NewBuildings
         // searches nothing.
         private bool MakeAll()
         {
+            try
+            {
+                return MakeAllSpecs();
+            }
+            finally
+            {
+                // A record made at the load's first step that no building stands on.
+                MadeGame.DropEarly("no make claimed them: the declaration stood down or the district did not stand at this load");
+            }
+        }
+
+        private bool MakeAllSpecs()
+        {
             _specs.Clear();
             MadeBuildings.Wanted(_specs);
             if (!Settings.NewBuildings)
@@ -430,9 +443,21 @@ namespace RealLifeOverhaul.NewBuildings
                 spec.Type = other.Type;
                 _tookOther++;
             }
-            // The registration first: whether the record may carry its service depends on whose the save says the lot is.
-            BuildingRegistration registration = MadeGame.MakeRegistration(spec, out bool fresh);
-            Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0, registration, fresh, out why);
+            // The registration first: whether the record may carry its service depends on whose the save says the lot is. A district building's record and
+            // registration were made at the load's first step (MadeGame.RegisterEarly) and are claimed here; any other is made now.
+            int designArea = spec.DesignArea ? CopyGame.SourceArea(design) : 0;
+            Building record;
+            BuildingRegistration registration;
+            bool fresh;
+            if (!inPlay && MadeGame.TakeEarly(spec, designArea, out registration, out record, out fresh))
+            {
+                why = null;
+            }
+            else
+            {
+                registration = MadeGame.MakeRegistration(spec, out fresh);
+                record = MadeGame.MakeRecord(spec, designArea, registration, fresh, out why);
+            }
             if (record == null)
             {
                 _standWhy = why;

@@ -205,6 +205,10 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The public building a profession works at (one of them, by the roll), or null.</summary>
         public static EmployerRef PublicFor(Profession p, int roll)
         {
+            if (p.Place == Workplace.Precinct)
+            {
+                return PrecinctFor(roll);
+            }
             IReadOnlyList<EmployerRef> places = PublicPlaces();
             int count = 0;
             for (int i = 0; i < places.Count; i++)
@@ -224,6 +228,31 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             return null;
+        }
+
+        private static readonly List<PrecinctView> Precincts = new List<PrecinctView>(8);
+
+        /// <summary>
+        /// One of the city's police precincts (Law, asked each time: they are chosen once the player is out of doors, so a list kept at a load could be
+        /// empty for good), by the roll; null while there are none. Few and cheap: it is asked when a vacancy is made.
+        /// </summary>
+        private static EmployerRef PrecinctFor(int roll)
+        {
+            Precincts.Clear();
+            try
+            {
+                CareersBridges.Precincts?.Invoke(Precincts);
+            }
+            catch (Exception)
+            {
+                Precincts.Clear();
+            }
+            if (Precincts.Count == 0)
+            {
+                return null;
+            }
+            PrecinctView at = Precincts[(roll & int.MaxValue) % Precincts.Count];
+            return string.IsNullOrEmpty(at.Street) ? null : new EmployerRef { Name = at.Name, Street = at.Street, Number = at.Number, Type = string.Empty, Kind = EmployerKind.Public };
         }
 
         private static bool Fits(Profession p, string type)
@@ -369,6 +398,10 @@ namespace RealLifeOverhaul.Careers
         {
             try
             {
+                if (p.Place == Workplace.Precinct && AtAPrecinct())
+                {
+                    return true;   // the service is one: a patrol begins at any of its stations
+                }
                 if (string.IsNullOrEmpty(post.Street))
                 {
                     return p.Place == Workplace.Hospital ? CareersGame.InHospital() : p.Place == Workplace.School && CareersGame.InSchool();
@@ -379,6 +412,21 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
+        }
+
+        // Inside or by the door of any of the city's police stations; a handful, asked when a page is read or a shift begun.
+        private static bool AtAPrecinct()
+        {
+            Precincts.Clear();
+            CareersBridges.Precincts?.Invoke(Precincts);
+            for (int i = 0; i < Precincts.Count; i++)
+            {
+                if (CareersGame.InsideAt(Precincts[i].Street, Precincts[i].Number) || Near(Precincts[i].Street, Precincts[i].Number))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool Near(string street, int number)

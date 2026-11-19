@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Family
                         WeddingPlanner.PutBack(plan, 7);
                         FamilyState.Harmony(3f);
                         return FamilyTalk.Close("reallife_family_coldfeet_given_time", WeddingPlanner.PlanFill(plan));
-                    }));
+                    }), partner: true);
                 return;
             }
             TestRefusal why = director.SceneRefusal(true);
@@ -166,7 +166,7 @@ namespace RealLifeOverhaul.Family
             FamilyDirector director = FamilyDirector.Instance;
             director.WhenFree(() =>
             {
-                if (!FamilyTalk.Open(() => FamilyTalk.Close(FamilyText.Built(story)), OfferHoneymoon))
+                if (!FamilyTalk.Open(() => FamilyTalk.Close(FamilyText.Built(story)), OfferHoneymoon, partner: true))
                 {
                     FamilyText.Good("reallife_family_married", Args.Us);
                 }

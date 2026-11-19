@@ -63,7 +63,7 @@ internal static partial class Program
         Check(slow.Contains("Quietly(PhoneReach.Ensure);") && slow.IndexOf("Quietly(PhoneReach.Ensure);", StringComparison.Ordinal) < slow.IndexOf("InstallOne(kit);", StringComparison.Ordinal)
               && slow.Contains("PhoneReach.Stop();") && !MemberText(director, "private static void RemoveOne(int kit, string why)").Contains("PhoneReach"),
             "phone reach: the key stands while the interface is on and is let go only when it goes off, never with the phone kit, so a fault of that kit is when it works");
-        Check(top.Contains("Phone = 4") && top.Contains("new UiIcon[5]") && top.Contains("new int[5]") && top.Contains("PhoneReach.Look(out bool phoneOpen)") && top.Contains("Tool(Phone, UiIcon.Phone, phoneOpen, false);")
+        Check(top.Contains("Phone = 4") && top.Contains("new UiIcon[6]") && top.Contains("new int[6]") && top.Contains("PhoneReach.Look(out bool phoneOpen)") && top.Contains("Tool(Phone, UiIcon.Phone, phoneOpen, false);")
               && top.Contains("case Phone:") && top.Contains("return PhoneReach.Press();") && top.Contains("return PhoneReach.Words();"),
             "phone reach: the bar's pill has the phone button, pressing the reach's fold, with the key in its hover words");
         string standDown = MemberText(kit, "private static void StandDown(string why)");

@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Ui
     {
         private const int PageExits = TechView.PageExits;
         private static int _counterStep = 1, _bankStep, _approachStep;
+        private static int _termKind, _termStep, _termTarget, _termMeasure;   // the terms picked for an offer: how to be paid, its size, an earn-out's target and what it counts
 
         /// <summary>The whole keys of the ways to counter an offer and to hold the roadshow, so the text checks can find each one.</summary>
         public static readonly string[] CounterKeys = { "reallife_exit_counter_0", "reallife_exit_counter_1", "reallife_exit_counter_2" };
@@ -32,7 +33,8 @@ namespace RealLifeOverhaul.Ui
                     _m.Left = new[] { none.Build() };
                     return;
                 }
-                _m.Left = new[] { OffersCard(firm, e), SharesCard(firm) };
+                TermDeal contract = _d.ContractOf(place);
+                _m.Left = contract != null ? new[] { ContractCard(contract), SharesCard(firm) } : new[] { OffersCard(firm, e), SharesCard(firm) };
                 _m.Right = new[] { MarketCard(firm, e) };
             }
 
@@ -49,32 +51,100 @@ namespace RealLifeOverhaul.Ui
                     }
                     return card.Build();
                 }
+                TermChoice pick = ExitRules.IsAgreed(e, e.Offers[0].Id) ? default(TermChoice) : TermPick(card, e.Offers[0]);   // an agreed sale has its terms already
                 for (int i = 0; i < e.Offers.Count; i++)
                 {
                     ExitOffer o = e.Offers[i];
                     int id = o.Id;
                     card.Say(TechText.Fill(o.Hire ? "reallife_exit_hire_line" : "reallife_exit_offer_line", "buyer", o.Name, "amount", Cents(_d.Level(o.Price)), "firm", firm.File.Name,
                         "day", o.Lapse.ToString(Inv)), UiRole.OkText);
-                    SaleResult r = _d.ExitPreview(place, o);
+                    TermChoice choice = o.Hire ? default(TermChoice) : pick;
+                    TermPlan plan = _d.TermPlanFor(place, o, choice, out SaleResult r);
                     string after = r.Owed <= 0 ? TechText.Fill("reallife_exit_offer_free", "you", Cents(_d.Level(Math.Max(0L, r.Player))))
                         : r.Gap > 0 ? TechText.Fill("reallife_exit_offer_gap", "owed", Cents(_d.Level(r.Owed)), "paid", Cents(_d.Level(r.Paid)), "gap", Cents(_d.Level(r.Gap)))
                         : TechText.Fill("reallife_exit_offer_after", "investors", Cents(_d.Level(r.Paid)), "you", Cents(_d.Level(Math.Max(0L, r.Player))));
                     card.Say(after, r.Gap > 0 ? UiRole.WarnText : UiRole.None);
+                    if (ExitRules.IsAgreed(e, id))
+                    {
+                        // The player gave their word at a desk inside the firm, on the terms they chose there: the sale completes on them when they step outside, until then they may call it off.
+                        card.Say(TechText.Fill("reallife_exit_agreed_line", "buyer", o.Name, "amount", Cents(_d.Level(e.Agreed.Price)), "firm", firm.File.Name,
+                            "day", e.Agreed.Lapse.ToString(Inv), "terms", SaleTermText.Words(e.Agreed.Terms)), UiRole.OkText);
+                        card.Button(TechText.T("reallife_exit_button_call_off"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitCallOff(place)));
+                        continue;
+                    }
+                    foreach (string line in SaleTermText.Lines(_d, plan, r, o, _day))
+                    {
+                        card.Say(line, plan.Ok ? UiRole.None : UiRole.WarnText);   // every figure of the terms, before the game's box
+                    }
                     string title = TechText.Fill("reallife_exit_confirm_accept_title", "firm", firm.File.Name);
-                    string body = TechText.Fill(o.Hire ? "reallife_exit_confirm_hire_body" : "reallife_exit_confirm_accept_body", "firm", firm.File.Name, "buyer", o.Name,
-                        "amount", Cents(_d.Level(o.Price)));
+                    string body = choice.Kind != TermKind.Cash && plan.Ok ? SaleTermText.ConfirmBody(_d, firm.File.Name, o, plan, r, _day)
+                        : TechText.Fill(o.Hire ? "reallife_exit_confirm_hire_body" : "reallife_exit_confirm_accept_body", "firm", firm.File.Name, "buyer", o.Name, "amount", Cents(_d.Level(o.Price)));
                     card.Button(TechText.T("reallife_exit_button_accept"), i == 0 ? UiButtonKind.Primary : UiButtonKind.Secondary, UiAction.Count, Ask(title, body,
-                        () => _d.ExitAccept(place, id)));
+                        () => _d.ExitAccept(place, id, choice)));
                     card.Button(TechText.T("reallife_exit_button_decline"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitDecline(place, id)));
                 }
                 ExitOffer first = e.Offers[0];
-                if (!first.Countered && !first.Hire)
+                if (!first.Countered && !first.Hire && !ExitRules.IsAgreed(e, first.Id))
                 {
                     _counterStep = Math.Max(0, Math.Min(CounterKeys.Length - 1, _counterStep));
                     int at = _counterStep, offer = first.Id;
                     card.Step(TechText.T("reallife_ui_tech_exit_counter"), TechText.T(CounterKeys[at]), null, at > 0, at < CounterKeys.Length - 1,
                         Go(v => _counterStep = at - 1), Go(v => _counterStep = at + 1));
                     card.Button(TechText.T("reallife_exit_button_counter"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitCounter(place, offer, at)));
+                }
+                return card.Build();
+            }
+
+            // The terms to be paid on: how, and how much of each. Shares only when the buyer is a listed company whose stock can be bought. The steppers are the page's, never per frame.
+            private TermChoice TermPick(TechCard card, ExitOffer first)
+            {
+                if (first.Hire || _d.Terms == null)
+                {
+                    return default(TermChoice);
+                }
+                bool shares = _d.TermsHaveShares(first);
+                _termKind = !shares && _termKind == TermKind.Shares ? TermKind.Cash : Math.Max(0, Math.Min(TermKind.Count - 1, _termKind));
+                int kind = _termKind;
+                int next = kind + (kind == TermKind.Cash && !shares ? 2 : 1), less = kind - (kind == TermKind.Slice && !shares ? 2 : 1);
+                card.Step(TechText.T("reallife_ui_tech_terms_kind"), TechText.T(SaleTermText.KindKeys[kind]), null, kind > TermKind.Cash, kind < TermKind.Count - 1,
+                    Go(v => _termKind = less), Go(v => _termKind = next));
+                if (kind == TermKind.Shares || kind == TermKind.Slice)
+                {
+                    string[] keys = kind == TermKind.Shares ? SaleTermText.ShareKeys : SaleTermText.SliceKeys;
+                    int at = _termStep = Math.Max(0, Math.Min(keys.Length - 1, _termStep));
+                    card.Step(TechText.T("reallife_ui_tech_terms_size"), TechText.T(keys[at]), null, at > 0, at < keys.Length - 1, Go(v => _termStep = at - 1), Go(v => _termStep = at + 1));
+                }
+                if (kind == TermKind.Boss)
+                {
+                    int at = _termStep = Math.Max(0, Math.Min(SaleTermText.YearKeys.Length - 1, _termStep));
+                    card.Step(TechText.T("reallife_ui_tech_terms_term"), TechText.T(SaleTermText.YearKeys[at]), null, at > 0, at < SaleTermText.YearKeys.Length - 1,
+                        Go(v => _termStep = at - 1), Go(v => _termStep = at + 1));
+                }
+                if (kind == TermKind.Earn || kind == TermKind.Boss)
+                {
+                    int target = _termTarget = Math.Max(0, Math.Min(SaleTermText.TargetKeys.Length - 1, _termTarget));
+                    card.Step(TechText.T("reallife_ui_tech_terms_target"), TechText.T(SaleTermText.TargetKeys[target]), null, target > 0, target < SaleTermText.TargetKeys.Length - 1,
+                        Go(v => _termTarget = target - 1), Go(v => _termTarget = target + 1));
+                    int measure = _termMeasure = Math.Max(0, Math.Min(SaleTermText.MeasureKeys.Length - 1, _termMeasure));
+                    card.Step(TechText.T("reallife_ui_tech_terms_measure"), TechText.T(SaleTermText.MeasureKeys[measure]), null, measure > 0, measure < SaleTermText.MeasureKeys.Length - 1,
+                        Go(v => _termMeasure = measure - 1), Go(v => _termMeasure = measure + 1));
+                }
+                return new TermChoice { Kind = kind, Step = _termStep, Target = _termTarget, Measure = _termMeasure };
+            }
+
+            // A firm the player runs under the contract of its sale: the terms as written, how they stand, and the way to resign.
+            private UiFactCardModel ContractCard(TermDeal d)
+            {
+                var card = new TechCard(_runs, TechText.T("reallife_ui_tech_terms_contract"));
+                foreach (string line in SaleTermText.DealLines(_d, d, _day))
+                {
+                    card.Say(line);
+                }
+                int id = d.Id;
+                if (d.Open)
+                {
+                    card.Button(TechText.T("reallife_terms_button_resign"), UiButtonKind.Secondary, UiAction.Count, Ask(TechText.Fill("reallife_terms_confirm_resign_title", "firm", d.Firm),
+                        TechText.Fill("reallife_terms_confirm_resign_body", "firm", d.Firm, "buyer", d.Buyer), () => _d.TermResign(id)));
                 }
                 return card.Build();
             }

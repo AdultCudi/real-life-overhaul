@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
                     Cells = new[]
                     {
                         o.ProviderName, w.Speed(o.Mbps), o.Own ? w.T("reallife_ui_util_free", "Free") : w.Cents(v.Contract ? o.ContractCents : o.MonthlyCents),
-                        o.Current ? w.T("reallife_ui_util_your_plan", "Your plan") : string.Empty
+                        o.Current ? w.T(o.Leased ? "reallife_ui_util_your_line" : "reallife_ui_util_your_plan", o.Leased ? "Your line" : "Your plan") : string.Empty
                     },
                     Subs = new[] { o.Kind, null, null, null },
                     Values = new[] { (int)UiIcon.Globe, 0, 0, 0 },
@@ -164,9 +164,13 @@ namespace RealLifeOverhaul.Ui
                         "left", f.GraceLeft.ToString(CultureInfo.InvariantCulture), "days", f.GraceDays.ToString(CultureInfo.InvariantCulture), "day", w.Day(f.GraceUntilDay))
                 });
             }
-            if (p.Connected)
+            if (p.Connected && p.ProviderIndex >= 0)
             {
                 lines.Add(new UtilitiesLine { Label = w.T("reallife_net_col_contract", "Contract"), Value = p.ContractText });
+            }
+            if (p.HasLine && p.LineText != null)
+            {
+                lines.Add(new UtilitiesLine { Label = w.T("reallife_net_box_line", "Leased line"), Value = p.LineText });
             }
             UtilityOptionFact o = option >= 0 ? p.Options[option] : null;
             if (o == null)
@@ -175,12 +179,29 @@ namespace RealLifeOverhaul.Ui
                 card.Actions = Connection(p, null, false, w);
                 return card;
             }
-            bool contract = v.Contract && !o.Own;
-            bool same = p.Connected && !p.Cut && p.ProviderIndex == o.Provider;
+            bool contract = v.Contract && !o.Own && !o.Leased;
+            bool same = o.Leased ? o.Current : p.Connected && !p.Cut && p.ProviderIndex == o.Provider;
             card.Sub = w.F("reallife_ui_util_plan_title", "{provider}, {speed}", "provider", o.ProviderName, "speed", w.Speed(o.Mbps));
             string price = o.Own ? w.T("reallife_ui_util_free", "Free") : w.Cents(contract ? o.ContractCents : o.MonthlyCents);
             lines.Add(new UtilitiesLine { Label = w.T("reallife_net_col_month", "A month"), Value = price });
-            if (!same)
+            if (o.Leased && !same)
+            {
+                // a carrier's line is bought beside the plan: its fee and wait, and what the district has
+                lines.Add(new UtilitiesLine
+                {
+                    Value = w.F("reallife_net_box_line_install", "Installation: {fee}. It takes {days} days: live on {day}.", "fee", w.Money(o.InstallFee),
+                        "days", o.InstallDays.ToString(CultureInfo.InvariantCulture), "day", w.Day(f.Day + o.InstallDays))
+                });
+                lines.Add(new UtilitiesLine { Value = o.Note });
+            }
+            if (o.Leased)
+            {
+                lines.Add(new UtilitiesLine
+                {
+                    Value = w.F("reallife_net_line_carries", "Carries {racks} standard racks, or {gpu} AI racks.", "racks", w.N(o.Racks), "gpu", w.N(o.GpuRacks))
+                });
+            }
+            else if (!same)
             {
                 lines.Add(new UtilitiesLine
                 {
@@ -207,7 +228,7 @@ namespace RealLifeOverhaul.Ui
                     "months", f.ContractMonths.ToString(CultureInfo.InvariantCulture)) });
             }
             card.Lines = lines.ToArray();
-            if (!o.Own)
+            if (!o.Own && !o.Leased)
             {
                 card.SwitchLabel = w.T("reallife_net_box_contract_switch", "On a contract");
                 card.SwitchOn = v.Contract;
@@ -228,6 +249,14 @@ namespace RealLifeOverhaul.Ui
                     Command = UtilitiesFace.BuyAction, Arg = 2, Disabled = p.Owes
                 });
             }
+            if (p.HasLine)
+            {
+                actions.Add(new UiActionModel
+                {
+                    Label = w.T("reallife_net_box_line_cancel", "Cancel the leased line"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Close, Key = UiAction.Count,
+                    Command = UtilitiesFace.BuyAction, Arg = 3
+                });
+            }
             if (p.Connected)
             {
                 actions.Add(new UiActionModel
@@ -238,7 +267,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (o != null)
             {
-                bool change = p.Connected && !p.Cut;
+                bool change = o.Leased ? p.HasLine : p.Connected && !p.Cut;
                 actions.Add(new UiActionModel
                 {
                     Label = w.T(change ? "reallife_net_box_change" : "reallife_net_box_buy", change ? "Change plan" : "Buy"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check,

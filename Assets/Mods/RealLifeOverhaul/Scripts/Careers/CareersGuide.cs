@@ -129,7 +129,18 @@ namespace RealLifeOverhaul.Careers
                 .Fact("work_offer_pay_least", () => Mille(ProRules.OfferPay(1000, 0)))
                 .Fact("work_offer_pay_most", () => Mille(ProRules.OfferPay(1000, 100)))
                 .Fact("work_shortage_least", () => Mille(HiringCatalogue.ShortageLeast))
-                .Fact("work_shortage_most", () => Mille(HiringCatalogue.ShortageMost));
+                .Fact("work_shortage_most", () => Mille(HiringCatalogue.ShortageMost))
+                .Fact("police_clean_days", () => Whole(TalentCatalogue.Scaled(PoliceRules.CleanDays, GameCalendar.DaysPerYear)))
+                .Fact("police_from", () => CareersText.Hour(PoliceRules.Hour))
+                .Fact("police_to", () => CareersText.Hour(PoliceRules.Hour + PoliceRules.Hours))
+                .Fact("police_crime_times", () => Whole((int)CityWatch.DutyCrime))
+                .Fact("police_back_off", () => Whole(PoliceRules.LossBackOff))
+                .Fact("police_start", () => Whole(PoliceRules.RatingStart))
+                .Fact("police_commend", () => Whole(PoliceRules.CommendRating))
+                .Fact("police_thrown_days", () => Whole(TalentCatalogue.Scaled(CaseRules.ThrownDays, GameCalendar.DaysPerYear)))
+                .Fact("police_detective", () => CareersText.Title(ProCatalogue.Police, CaseRules.DetectiveRank))
+                .Fact("police_actions", () => Whole(CaseRules.ActionsMost))
+                .Fact("police_fatal_one_in", () => Whole((long)System.Math.Round(1.0 / Permadeath.PermadeathRules.DutyOdds)));
             AddScoreFacts(f);
         }
 

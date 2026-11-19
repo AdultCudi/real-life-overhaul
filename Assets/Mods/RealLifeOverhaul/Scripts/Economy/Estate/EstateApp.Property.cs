@@ -111,10 +111,16 @@ namespace RealLifeOverhaul.Economy
                 row.Set(6, EstateText.Money(state.Hire.TakingsYear), state.Hire.TakingsYear);
                 row.Set(7, EstateText.Money(state.Hire.CostsYear), state.Hire.CostsYear);
             }
+            OwnedFlat pickedFlat = WriteFlatsHeld(ref selected);   // the flats held (Flats)
             WriteSpacesHeld(ref selected);   // the parking spaces held (ParkSpaces)
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_nothing_owned"));
+            }
+            if (pickedFlat != null)
+            {
+                WriteFlat(box, pickedFlat, c);
+                return;
             }
             if (picked != null)
             {
@@ -275,9 +281,9 @@ namespace RealLifeOverhaul.Economy
             RentApplicant applicant = null;
             TableRow row;
             int let = 0, empty = 0, owed = 0, pickedUnit = 0, appliedUnit = 0;
-            for (int i = 0; i < state.Holdings.Count; i++)
+            for (int i = 0; i < state.LetCount; i++)
             {
-                EstateHolding h = state.Holdings[i];
+                EstateHolding h = state.LetAt(i);
                 if (!h.Managed)
                 {
                     continue;

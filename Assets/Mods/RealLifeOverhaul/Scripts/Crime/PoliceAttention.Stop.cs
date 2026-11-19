@@ -368,16 +368,31 @@ namespace RealLifeOverhaul
             int fine = Known(_fine);
             int killed = _killed;
             int paid = fine + _owed + _hurt * PolicePursuit.InjuryFine + _killed * PolicePursuit.DeathFine;
+            // An officer on a shift in uniform is let off a minor stop with a word: no fine, no line on the record, no points (Careers/Police rules).
+            bool courtesy = Careers.PoliceRules.Courtesy(CityWatch.OnShift, _hurt, killed, _owed, (_booked & (1 << (int)Offence.DrunkDriving)) != 0);
             Justice.Summon(JusticeReports.Struck(_hurt, killed, true, paid - fine - _owed));   // a death on the way goes to court
-            Settle(fine, false, (_booked & (_booked - 1)) != 0 ? "reallife_crime_ticket_several" : TicketKey(_first), "reallife_crime_ticket_crash");
-            Logger?.Info($"Police attention: ticket for {_first}, {fine}.");
+            if (courtesy)
+            {
+                Crime.Show(NotificationType.Info, "reallife_police_courtesy", 9f);
+            }
+            else
+            {
+                Settle(fine, false, (_booked & (_booked - 1)) != 0 ? "reallife_crime_ticket_several" : TicketKey(_first), "reallife_crime_ticket_crash");
+            }
+            Logger?.Info(courtesy ? $"Police attention: {_first} let off with a word for an officer on a shift." : $"Police attention: ticket for {_first}, {fine}.");
             Justice.PoliceContact(driving: true);   // a bench warrant is served, a suspended licence charged
-            Stopped?.Invoke(_booked, false);
+            if (!courtesy)
+            {
+                Stopped?.Invoke(_booked, false);
+            }
             _backup.Release(TrafficTools.Ready);   // one car makes the stop
             _patrol.Park();
             _state = State.Ticketed;
             _nextOffence = now + AfterTicket;
-            Law.Arrests.Cited(fine);
+            if (!courtesy)
+            {
+                Law.Arrests.Cited(fine);
+            }
             if (Law.Arrests.StayedAtScene(killed, paid, _patrol.Car))
             {
                 _state = State.Custody;   // somebody died under their wheels on the way: an arrest, not a ticket
