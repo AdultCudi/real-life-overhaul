@@ -712,16 +712,30 @@ namespace RealLifeOverhaul.Ui
             int slot = total > rows && rows > 0 ? FreeSlot(lay) : -1;
             if (slot >= 0)
             {
-                float viewH = Math.Max(ListRow, bottom - y), offset = Math.Max(0f, Math.Min(lay.Offset[slot], Math.Max(0f, all - ListGap - viewH)));
+                float viewH = Math.Max(ListRow, bottom - y), offset = lay.Offset[slot];
+                int reveal = lay.Reveal[slot];
+                lay.Reveal[slot] = -1;
+                if (reveal >= 0 && reveal < total)
+                {
+                    float top = 0f;
+                    for (int i = 0; i < reveal; i++)
+                    {
+                        top += heights[i] + ListGap;
+                    }
+                    offset = Math.Max(Math.Min(offset, top), top + heights[reveal] - viewH);   // the row the pad came to, brought into view
+                }
+                offset = Math.Max(0f, Math.Min(offset, Math.Max(0f, all - ListGap - viewH)));
                 lay.Offset[slot] = offset;
                 short clip = s.AddClip(x, y, cw, viewH, offset);
                 s.Clips[clip].ContentHeight = all - ListGap;
                 lay.Clip[slot] = clip;
+                short list = s.AddList(total, 0, total, clip, -1);
+                lay.List[slot] = list;
                 var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
                 float ry = 0f;
                 for (int i = 0; i < total; i++)
                 {
-                    ItemRow(s, inClip.Arriving(i), lay, ref b.Items[i], 0f, ry, cw, heights[i]);
+                    ItemRow(s, inClip.Arriving(i), lay, ref b.Items[i], 0f, ry, cw, heights[i], list, i);
                     ry += heights[i] + ListGap;
                 }
                 UiDraw.ScrollThumb(s, at, x + cw - UiTokens.S1, y, viewH, offset, all - ListGap);
@@ -734,7 +748,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < rows; i++)
             {
-                ItemRow(s, at, lay, ref b.Items[i], x, y, cw, heights[i]);
+                ItemRow(s, at, lay, ref b.Items[i], x, y, cw, heights[i], -1, i);
                 y += heights[i] + ListGap;
             }
             if (rest && rows > 0 && bottom - y >= UiTokens.PairRow)
@@ -762,15 +776,15 @@ namespace RealLifeOverhaul.Ui
             return -1;
         }
 
-        private static void ItemRow(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float cw, float h)
+        private static void ItemRow(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float cw, float h, short list, int index)
         {
             int face = UiDraw.Box(s, at, x, y, cw, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             RowFace(s, at.In(face), x, y, cw, h, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
                 false, false, it.FaceName, true);
             if (it.Press && it.Act.Do != CompanyDo.None)
             {
-                int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
-                UiDraw.Node(s, at, x, y, cw, h, Item, index, face);
+                int act = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
+                UiDraw.Node(s, at, x, y, cw, h, Item, act, face, false, list, index);
             }
         }
 
