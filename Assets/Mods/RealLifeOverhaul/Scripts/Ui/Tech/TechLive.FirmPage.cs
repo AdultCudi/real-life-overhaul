@@ -11,7 +11,14 @@ namespace RealLifeOverhaul.Ui
         {
             private const int MostPeople = 7;
 
-            private bool Studio => _d.StudioRuns(_firm.File.K);
+            private bool Studio => _firm != null && _d.StudioRuns(_firm.File.K);
+
+            // Whether the firm at a place is a studio: a game's page opened from the Products tab has no firm open (_firm is null), and its buttons still name the game's place.
+            private bool StudioAt(string place)
+            {
+                FirmPlace firm = _firm != null && _firm.File.Place == place ? _firm : _d.FirmOf(place);
+                return firm != null && _d.StudioRuns(firm.File.K);
+            }
 
             // ------------------------------------------------------------------------------------------------- a firm's sections
 
@@ -182,7 +189,7 @@ namespace RealLifeOverhaul.Ui
             // What a button of a studio's or a firm's page asks: the app's own moves, or the director's. A desk step only shows the desk (the director's ToDesk), never runs.
             private TechRun ActRun(ViewAction a, string place, int id)
             {
-                bool studio = Studio;
+                bool studio = StudioAt(place);
                 int act = a.Act, arg = a.Arg;
                 if (act == StudioAct.Concept || (!studio && act == SectorAct.NewProduct))
                 {
@@ -724,7 +731,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Go(v => _projectPick = value);
                 }
-                return Studio ? Do(() => _d.StudioDo(act, place, id, value)) : Do(() => _d.SectorDo(act, place, value));
+                return StudioAt(place) ? Do(() => _d.StudioDo(act, place, id, value)) : Do(() => _d.SectorDo(act, place, value));
             }
         }
 

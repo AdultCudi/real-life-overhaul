@@ -173,6 +173,12 @@ internal static partial class Program
 
     private static void TechUiChecks()
     {
+        // A game's page opened from the Products tab has no firm open: its buttons ask the game's own place whether it is a studio and never the open firm.
+        {
+            string firmPage = ModSource(@"Ui\Tech\TechLive.FirmPage.cs");
+            Check(firmPage.Contains("private bool Studio => _firm != null &&") && firmPage.Contains("bool studio = StudioAt(place);") && firmPage.Contains("return StudioAt(place) ? Do(() => _d.StudioDo(act, place, id, value))"),
+                "tech ui: a studio's game page opened from the Products tab runs its buttons by the game's place, with no firm open");
+        }
         // Every tab and every firm section builds its own page: the model is new for each write, so no part of the one before stays.
         {
             var seen = new HashSet<string>();

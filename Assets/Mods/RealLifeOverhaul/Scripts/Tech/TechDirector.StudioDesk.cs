@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _studio.Games.Count; i++)
             {
                 GameDev g = _studio.Games[i];
-                if (g.Place == place && g.Building && StudioRules.Progress(g) >= StudioCatalogue.PhaseShare[0] && g.Hidden > StudioRules.BugRoom(g) / 10)
+                if (g.Place == place && StudioRules.PlaytestWorth(g))
                 {
                     return g;
                 }
