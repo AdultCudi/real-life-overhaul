@@ -510,6 +510,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             UiPieces.Rearm();
+            DriverButton.Remove();
             _letGo = false;
         }
 
@@ -613,6 +614,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             UiSwitchOptions.Look();   // a faulted screen's switch on the game's Mods page reads off, a second at most after the fault or the page showing
+            DriverButton.Tick();   // the private driver's button on the game's own top bar, with the interface off or its HUD not over the bar
             if (!On)
             {
                 if (_said != 1)

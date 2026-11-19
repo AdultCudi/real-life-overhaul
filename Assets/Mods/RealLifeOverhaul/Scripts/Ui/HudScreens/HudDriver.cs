@@ -26,6 +26,13 @@ namespace RealLifeOverhaul.Ui
         private static PrivateDriverVehicle _car;
         private static bool _cardOpen;
         private static DriverState _state = DriverState.None;
+        private static int _pressedFrame = -1;   // the frame a key press was last answered: the kit's watch and the old bar's both read the key
+
+        /// <summary>The cars in the garage, as last read.</summary>
+        public static int Cars => _cars;
+
+        /// <summary>The called car's name, as last read; empty while none is called.</summary>
+        public static string CarName() => _car != null && _car.vehicleInstance != null ? PrivateDriverScreen.CarName(_car.vehicleInstance) : string.Empty;
 
         /// <summary>The bar's read: whether the button shows, its state, and whether the card is open.</summary>
         public static bool Look(out DriverState state, out bool open)
@@ -92,17 +99,17 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The words on hover: the state and what a press does, with the key as bound now.</summary>
         public static string Words()
         {
-            string car = _car != null && _car.vehicleInstance != null ? PrivateDriverScreen.CarName(_car.vehicleInstance) : string.Empty;
-            return UiText.Fill(HudDriverRules.NoteKey(_state, _cars), "key", Keys.Label(KeyAction.Driver), "car", car);
+            return UiText.Fill(HudDriverRules.NoteKey(_state, _cars), "key", Keys.Label(KeyAction.Driver), "car", CarName());
         }
 
         /// <summary>The Driver key, each frame while the interface is on; it answers only while the bar shows the button.</summary>
         internal static void Frame()
         {
-            if (!_shown || !UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Driver)) || !Keys.Down(KeyAction.Driver))
+            if (!_shown || !UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Driver)) || !Keys.Down(KeyAction.Driver) || _pressedFrame == Time.frameCount)
             {
                 return;
             }
+            _pressedFrame = Time.frameCount;
             if (!Press())
             {
                 UiGame.Instance.Play(UiCue.Error);   // the bar's button has the HUD's own cue for a press that did nothing

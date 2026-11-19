@@ -215,7 +215,7 @@ A player who uses the phone mainly for the private driver asked for a button for
 
 The driver's state is on the button: the glyph is plain at rest, amber while the car is on its way, green when it waits within 20 m, the accent while the player rides in it, and the hover words say which, with the car's name and the key. The key is the Driver key (Insert by default, `KeyAction.Driver`), rebindable in Settings beside the Phone key, read in the phone key's guarded frame (`PhoneReachWatch`) and answering only while the bar shows the button. Cost: four times a second with the bar a few field reads; one key test a frame.
 
-The old interface has no place for quick buttons: the mod draws nothing of its own on the game's top bar, and the game's phone (its Private driver button, shown while the phone is unfolded) stays the way there.
+The old interface has the button too, on the game's own top bar (`Ui/HudScreens/DriverButton.cs`): a copy of the bar's help button, the control and its picture only (no label), with the game's car marker, put in the row of the bar's buttons. It is built once when the bar is there, shows under the same condition, takes the same press (`HudDriver.Press`), the Driver key (a key test a frame while it shows, answered once a frame) and the same state colours, and says the state and the key in the game's own tooltip (`BasicTooltip` kept on the copy, its words and values set when the state changes). It is read on the interface director's slow tick, stands down while the kit's HUD is over the bar (`HudLive.Live`), and goes with the city. The game's phone, with its own Private driver button while unfolded, is still there.
 
 Checks: EconomyCheck `--age-driver` (`AgeDriverChecks.cs`).
 
