@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Ui
             b.Rival = _flare.CompetitorOf(shop.Place, out string rival, out int tenths)
                 ? FlareText.Fill("reallife_flare_kit_rival_line", "business", rival, "stars", (tenths / 10f).ToString("0.0", CultureInfo.InvariantCulture)) : null;
             // The stars, as the city's residents gave them, the answered ones weighed as the reply rules say.
-            FlareStarRow row = _flare.StarsFor(shop.Place);
+            FlareStarRow row = _flare.StarsWithPosts(shop.Place, now);
             int total = row != null ? row.Total : 0;
             int average = FlareReplyRules.Average(row);
             b.RatingTitle = FlareText.T("reallife_flare_kit_rating");
@@ -80,7 +80,9 @@ namespace RealLifeOverhaul.Ui
             Reviews(file, shop, now);
             _m.List.EmptyIcon = UiIcon.Star;
             _m.List.EmptyTitle = FlareText.T("reallife_flare_kit_no_reviews");
-            _m.List.EmptyBody = FlareText.T("reallife_flare_kit_no_reviews_body");
+            _m.List.EmptyBody = _flare.CityOn
+                ? FlareText.Fill("reallife_flare_kit_no_reviews_wait", "visits", FlareCityCatalogue.VisitsPerReview.ToString(CultureInfo.InvariantCulture))
+                : FlareText.T("reallife_flare_kit_no_reviews_body");
         }
 
         // The account's reach a day, only the days that have one (the days before the first post are not zeros of a chart); null with fewer than two.

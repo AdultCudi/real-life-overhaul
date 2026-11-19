@@ -296,6 +296,21 @@ internal static partial class Program
         TalentRules.Offer(q, "A Rival", 10);
         TalentRules.Answer(q, false, 11, 120);
         Check(q.Leaving == (int)LeaveKind.Poached && q.NoticeEnd > 11, "tech: an offer not matched sends them to the rival after their notice");
+        // The option for raises, rivals' offers, strikes and sick pay reaches the professionals too: off, a request and an offer in hand are called off with
+        // no refusal's cost, no review asks for a rise and no rival approaches (the log of a player with it off showed a dozen approaches a day).
+        Profile off = Person(0, TalentCatalogue.Senior, 70, 70, 70);
+        TalentRules.Offer(off, "A Rival", 10);
+        off.RaiseAsk = 500;
+        off.AskEnd = 14;
+        int morale = off.Morale;
+        TalentRules.StandDown(off);
+        Check(!TalentRules.OfferOpen(off, 11) && off.RaiseAsk == 0 && off.AskEnd == 0 && off.Morale == morale && off.NoticeEnd == 0,
+            "tech: with raises and rivals' offers off, a request and an offer in hand are called off at no cost to them");
+        string people = ModSource(@"Tech\TechDirector.People.cs");
+        string peopleDay = MemberText(people, "private void PeopleDay(int day)");
+        Check(peopleDay.Contains("bool staffPay = Settings.EconomyCompanyStaff;") && peopleDay.Contains("if (!staffPay)") && peopleDay.Contains("else if (staffPay && TalentRules.Approachable(p, day)")
+              && peopleDay.IndexOf("TalentRules.StandDown(p);", peopleDay.IndexOf("TalentRules.Review(", StringComparison.Ordinal), StringComparison.Ordinal) > 0,
+            "tech: the professionals' day reads the staff option: nobody approached, no raise asked for by a review, old requests and offers called off");
     }
 
     private static void TechPeopleSave()

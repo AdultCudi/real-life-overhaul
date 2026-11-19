@@ -157,6 +157,39 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The street and number a place is written from; false for one that is no address.</summary>
+        public static bool Split(string place, out string street, out int number)
+        {
+            street = null;
+            number = 0;
+            int at = place != null ? place.LastIndexOf('~') : -1;
+            if (at <= 0 || !int.TryParse(place.Substring(at + 1), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out number))
+            {
+                return false;
+            }
+            try
+            {
+                street = Uri.UnescapeDataString(place.Substring(0, at));
+                return street.Length > 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Where a place is, as the game writes an address and names its district ("12 Elm Street, Midtown"); empty for a place that is no address.</summary>
+        public static string Where(string place)
+        {
+            if (!Split(place, out string street, out int number))
+            {
+                return string.Empty;
+            }
+            string address = CivicCity.AddressText(street, number);
+            string district = Save != null ? GameRegistrations.District(Find(place)) : null;
+            return string.IsNullOrEmpty(district) ? address : address + ", " + ServicesText.District(district);
+        }
+
         public static string Name(BuildingRegistration reg)
         {
             try
