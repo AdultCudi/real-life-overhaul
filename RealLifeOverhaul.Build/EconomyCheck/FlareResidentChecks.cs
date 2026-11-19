@@ -25,6 +25,7 @@ internal static partial class Program
         FlareResidentCreator();
         FlareResidentTrends();
         FlareResidentDesk();
+        FlareLiftSliceChecks();
         FlareResidentMore();
     }
 

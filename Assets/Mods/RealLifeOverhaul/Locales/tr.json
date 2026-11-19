@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: iş istasyonu olmayan bir işletme artık personel vardiya planlayıcısından düşmüyor. Flare'ın şehir katmanı, sakinlerin günü hesaplanırken bir işletme kurulduğunda oturum boyunca durmuyor ve başka herhangi bir hatadan sonra kendiliğinden yeniden deniyor.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -37990,5 +37990,6 @@
   "reallife_svc_rsale_shown": "{business} işletmesi {address} adresinde. Hedefiniz olarak işaretlendi.",
   "reallife_tech_new_niche_made": "{niche} için yapıldı: müşterileri {who}, bu yüzden onlara liste fiyatından satar.",
   "reallife_tech_mkt_product_niche_off": "Bu ürün {who} için yapıldı. {niche} bu ürünü almadığı için tüm pazara satılır ve niş ona katkı yapmaz. Orada satmak için {niche} için yapılmış bir ürün başlatın.",
-  "reallife_texts_rule_side": "yanlış taraftan bir dilek"
+  "reallife_texts_rule_side": "yanlış taraftan bir dilek",
+  "reallife_rota_failed": "Planlayıcı bu işletmeyi şu an hesaplayamadı. İş istasyonları, personel ya da gün değiştiğinde yeniden dener. Ayrıntılar Player.log dosyasında."
 }

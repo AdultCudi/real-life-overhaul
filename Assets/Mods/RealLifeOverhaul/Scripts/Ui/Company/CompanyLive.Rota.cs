@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Ui
             RotaSheet sheet = d.RotaSheetFor(at);
             if (sheet == null)
             {
-                p.Refused = CompanyText.T(d.RotaUnread(place) ? "reallife_rota_cannot" : d.RotaWorking(place) ? "reallife_rota_working" : "reallife_rota_off");
+                p.Refused = CompanyText.T(d.RotaNoSheetText(at));
                 p.RefusedCard = RefusedCard(at, p.Refused, null, w);
                 return p;
             }
