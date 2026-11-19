@@ -58,6 +58,12 @@ namespace RealLifeOverhaul.Schemes
             }
         }
 
+        /// <summary>Whether the fund on offer now is this tycoon's (by their place on the rich list) and stands: what they say of it when the player meets them.</summary>
+        public bool FundFrom(int tycoon)
+        {
+            return _state != null && !_broken && !SchemeGame.InSession && _state.Fund.Tycoon == tycoon && SchemeRules.FundStands(_state, SchemeGame.Day);
+        }
+
         /// <summary>The fund a rival offers, as a page: put the money in, have it looked at first, or turn it down. False with no offer open.</summary>
         public bool ShowFund()
         {

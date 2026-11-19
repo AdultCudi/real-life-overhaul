@@ -46,6 +46,7 @@ internal static partial class Program
         SeenCostChecks();
         SeenSourceChecks();
         SeenTextChecks();
+        SeenHeadChecks();   // the rivals' head offices: a real office building each, kept, marked, the talk at it (SeenHeadChecks.cs)
     }
 
     // ---- a small city to be seen in
@@ -1582,7 +1583,7 @@ internal static partial class Program
         Check(world.Contains("_onHello = _door.Press(Hello);") && world.Contains("panel.Button(0, \"reallife_seen_btn_hello\", _onHello, true, true);")
               && world.Contains("SeenDialog.Open(talk, s.Person.Character);"), "rivals seen page: the panel's one button says hello, which opens the talk");
         string dialog = ModSource(@"RivalsSeen\SeenDialog.cs");
-        Check(dialog.Contains("entry.OnConfirm = () => Line(SeenCatalogue.BusinessTalk[Form], true);") && dialog.Contains("entry.OnSecondOption = () => Line(SeenCatalogue.CarTalk[Form], true);")
+        Check(dialog.Contains("entry.OnConfirm = () => Answer(SeenCatalogue.BusinessTalk[Form]);") && dialog.Contains("entry.OnSecondOption = () => Answer(SeenCatalogue.CarTalk[Form]);")
               && dialog.Contains("entry.OnCancel = Leave;") && dialog.Contains("SeenCatalogue.HelloKnown[Form]") && dialog.Contains("SeenCatalogue.Hello[Form]")
               && dialog.Contains("if (!string.IsNullOrEmpty(_talk.Car))"),
             "rivals seen page: the talk's buttons ask about the business and the car (only with a car on record) and leave, each by the rival's form");
@@ -1686,7 +1687,7 @@ internal static partial class Program
         string folder = System.IO.Path.GetDirectoryName(ModPath(@"RivalsSeen\SeenDirector.cs"));
         var files = new List<string>(Directory.GetFiles(folder, "*.cs")) { ModPath(@"Wiring\Wiring.SeenLinks.cs"), ModPath(@"Wiring\Wiring.SeenTycoons.cs") };
         Check(files.Count >= 18, "rivals seen sources: the feature's files are found (" + files.Count + ")");
-        string[] gameFree = { "SeenRules.cs", "SeenDay.cs", "SeenFile.cs", "SeenCatalogue.cs", "SeenStore.cs", "SeenTable.cs", "SeenLines.cs", "SeenPage.cs", "Wiring.SeenTycoons.cs" };
+        string[] gameFree = { "SeenRules.cs", "SeenDay.cs", "SeenFile.cs", "SeenCatalogue.cs", "SeenStore.cs", "SeenTable.cs", "SeenLines.cs", "SeenPage.cs", "HeadOfficeRules.cs", "Wiring.SeenTycoons.cs" };
         int randoms = 0;
         foreach (string file in files)
         {

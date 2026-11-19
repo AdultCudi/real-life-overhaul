@@ -277,6 +277,12 @@ namespace RealLifeOverhaul.Ui
                     InstructionPage(agency, picked);
                     return;
                 }
+                ManagedBlock block = Parse(_v.Pick, "blk:", out id) ? agency.Book.Find(id) : null;
+                if (block != null)
+                {
+                    BlockPage(agency, block);
+                    return;
+                }
                 _v.Pick = null;
                 var rows = new List<UiDataRow>(8);
                 var keys = new List<string>(8);
@@ -295,6 +301,26 @@ namespace RealLifeOverhaul.Ui
                         SortKeys = new[] { N, n.Value, pays, n.Hours - n.Done, N, n.Day }, Kinds = new[] { n.Sale ? EstateTables.IsSale : EstateTables.IsLetting, n.Stage }
                     });
                     keys.Add("ins:" + n.Id);
+                }
+                int monthDays = MacroCatalogue.MonthDays(_c.DaysPerYear);
+                for (int i = 0; i < agency.Book.Blocks.Count; i++)
+                {
+                    ManagedBlock b = agency.Book.Blocks[i];
+                    int code = AgencyText.StageCode(b);
+                    int roll = b.Held ? AgencyBookRules.RentRoll(b, monthDays) : b.Units * b.RentDay * monthDays;
+                    int fee = AgencyBookRules.MonthFee(roll, b.FeeAsk, b.Pitched || b.Held ? b.FeePct : 100);
+                    int hours = AgencyBookRules.Hours(b.Units);
+                    rows.Add(new UiDataRow
+                    {
+                        Cells = new[] { AgencyText.Block(b), Money(roll), Money(fee), (hours / 10f).ToString("0.#", Inv), EstateText.Stage(code),
+                            b.Stage == (int)BlockStage.Offered ? EstateText.T("reallife_estate_row_until", "day", b.Until.ToString(Inv))
+                                : b.Held ? EstateText.T("reallife_estate_row_since", "day", b.Until.ToString(Inv)) : string.Empty },
+                        Values = new[] { (int)UiIcon.Building, 0, 0, 0, 0, 0 },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, b.Stage == (int)BlockStage.Offered ? UiRole.Warn : b.Held ? UiRole.Ok : UiRole.Danger, UiRole.None },
+                        Subs = new[] { AgencyText.Owner(b.Owner), null, null, null, null, null },
+                        SortKeys = new[] { N, roll, fee, hours, N, b.Until }, Kinds = new[] { EstateTables.IsManaging, code }
+                    });
+                    keys.Add("blk:" + b.Id);
                 }
                 var cols = new[]
                 {
@@ -317,8 +343,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), EstateGame.NameOf(agency.Office), null, null, cols, rows, keys, AgencySide(agency),
                     EstateText.T("reallife_estate_row_no_instructions"), EstateText.T("reallife_estate_agency_open_what"),
-                    new[] { Choice("reallife_tab_all_kinds", "reallife_estate_filter_lettings", "reallife_estate_filter_sales"),
-                        Choice("reallife_tab_all_stages", "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing") }, new[] { 1, 2 },
+                    new[] { Choice("reallife_tab_all_kinds", "reallife_estate_filter_lettings", "reallife_estate_filter_sales", "reallife_estate_filter_managing"),
+                        Choice("reallife_tab_all_stages", "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing", "reallife_estate_stage_managed",
+                            "reallife_estate_stage_lost") }, new[] { 1, 2 },
                     EstateText.T("reallife_estate_empty_agency"));
                 int pending = 0;
                 for (int i = 0; i < agency.Open.Count; i++)
@@ -331,7 +358,9 @@ namespace RealLifeOverhaul.Ui
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_instructions"), Value = agency.Open.Count.ToString(Inv) },
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_col_commission"), Value = Money(pending) },
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_negotiators"), Value = agency.Negotiators.ToString(Inv) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_hours_day"), Value = (agency.Capacity / 10f).ToString("0.#", Inv) }
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_hours_day"), Value = (agency.Capacity / 10f).ToString("0.#", Inv) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_blocks"), Value = agency.Book.Count(BlockStage.Held).ToString(Inv) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_fees"), Value = Money(AgencyBookRules.FeesToCome(agency.Book)) }
                 };
                 var names = new List<string>(6);
                 var reps = new List<int>(6);
@@ -388,6 +417,30 @@ namespace RealLifeOverhaul.Ui
                         }
                     };
                 }
+                // With no instruction to answer, the first call for pitches that has not been answered stands over the table in the same way.
+                for (int i = 0; i < agency.Book.Blocks.Count && _m.Offer == null; i++)
+                {
+                    ManagedBlock b = agency.Book.Blocks[i];
+                    if (b.Stage != (int)BlockStage.Offered || b.Pitched)
+                    {
+                        continue;
+                    }
+                    int bid = b.Id, roll = b.Units * b.RentDay * monthDays;
+                    _m.Offer = new EstateOffer
+                    {
+                        Icon = UiIcon.Building, Title = AgencyText.Block(b), Chip = EstateText.Stage(AgencyText.StageCode(b)),
+                        Sub = EstateText.T("reallife_ui_estate_block_sub", "owner", AgencyText.Owner(b.Owner), "standard", AgencyText.Standard(b.Standard)),
+                        FigLabels = new[] { EstateText.T("reallife_ui_estate_block_fee_ask"), EstateText.T("reallife_ui_estate_block_hours"), EstateText.T("reallife_ui_estate_block_rivals"),
+                            EstateText.T("reallife_ui_estate_offer_lapses") },
+                        FigValues = new[] { EstateText.Share(b.FeeAsk) + ", " + Money(AgencyBookRules.MonthFee(roll, b.FeeAsk, 100)), (AgencyBookRules.Hours(b.Units) / 10f).ToString("0.#", Inv),
+                            b.Bids.Count.ToString(Inv), EstateText.T("reallife_ui_estate_n_days", "days", Math.Max(0, b.Until - _day).ToString(Inv)) },
+                        Actions = new[]
+                        {
+                            _runs.Button(EstateText.T("reallife_estate_btn_undercut"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _d.PitchBlock(bid, true))),
+                            _runs.Button(EstateText.T("reallife_estate_btn_pitch"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() => _d.PitchBlock(bid, false)))
+                        }
+                    };
+                }
             }
 
             private static bool Parse(string pick, string prefix, out int id)
@@ -409,6 +462,19 @@ namespace RealLifeOverhaul.Ui
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_deals"), agency.Deals.ToString(Inv)));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_lost"), agency.Lost.ToString(Inv)));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_earned"), Money(agency.Commission)));
+                    AgencyBook book = agency.Book;
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_blocks"), EstateText.T("reallife_estate_book_blocks_of", "held", book.Count(BlockStage.Held).ToString(Inv),
+                        "most", AgencyBookCatalogue.BlocksMost.ToString(Inv))));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_hours"), EstateText.T("reallife_estate_book_hours_of", "taken", (agency.Reserved / 10f).ToString("0.#", Inv),
+                        "all", (agency.Capacity / 10f).ToString("0.#", Inv)), book.Served < 1000 ? UiRole.WarnText : UiRole.None));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_skill"), agency.Skill.ToString(Inv)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_own"), EstateText.T("reallife_estate_book_own_of", "units", book.OwnUnits.ToString(Inv)),
+                        book.OwnPaused ? UiRole.DangerText : UiRole.None));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_fees_coming"), Money(AgencyBookRules.FeesToCome(book))));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_fees_last"), Money(book.LastMonthFees)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_letting"), Money(book.MonthLettings)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_book_pitches"), EstateText.T("reallife_estate_book_pitches_of", "won", book.Won.ToString(Inv),
+                        "lost", book.Lost.ToString(Inv))));
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_close_agency"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.CloseAgency())));
                 }
                 else
@@ -432,6 +498,93 @@ namespace RealLifeOverhaul.Ui
                 }
                 lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_agency_what")));
                 return new UiFactCardModel { Title = EstateText.T("reallife_estate_tab_agency"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
+            }
+
+            // A block of another owner's flats: a call for pitches, a block held, or one lost.
+            private void BlockPage(AgencyFile agency, ManagedBlock b)
+            {
+                int id = b.Id, monthDays = MacroCatalogue.MonthDays(_c.DaysPerYear);
+                DistrictRep d = agency.District(b.District);
+                int rep = d != null ? d.Rep : 0;
+                _m.Shape = EstateShape.Detail;
+                _m.Back = EstateText.T("reallife_co_back");
+                _m.DetailIcon = UiIcon.Building;
+                _m.DetailTitle = AgencyText.Block(b);
+                _m.DetailChip = EstateText.Stage(AgencyText.StageCode(b));
+                _m.DetailChipTone = b.Stage == (int)BlockStage.Offered ? UiRole.Warn : b.Held ? UiRole.Ok : UiRole.Danger;
+                var terms = new List<UiFactLine>
+                {
+                    UiFactLine.Row(EstateText.T("reallife_estate_block_owner"), AgencyText.Owner(b.Owner)),
+                    UiFactLine.Row(EstateText.T("reallife_estate_block_flats"), EstateText.T("reallife_estate_block_flats_of", "units", b.Units.ToString(Inv), "sqm", b.Sqm.ToString(Inv),
+                        "rent", Money(b.RentDay * monthDays))),
+                    UiFactLine.Row(EstateText.T("reallife_estate_block_building"), b.Place.Length > 0 ? EstateGame.NameOf(b.Place) : EstateText.T("reallife_estate_block_no_building")),
+                    UiFactLine.Row(EstateText.T("reallife_estate_block_expects"), AgencyText.Standard(b.Standard) + ", " + EstateText.Level(b.Standard))
+                };
+                var work = new List<UiFactLine>();
+                var actions = new List<UiActionModel>(2);
+                switch ((BlockStage)b.Stage)
+                {
+                    case BlockStage.Offered:
+                        int roll = b.Units * b.RentDay * monthDays;
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_fee_ask"), EstateText.Share(b.FeeAsk) + ", " + Money(AgencyBookRules.MonthFee(roll, b.FeeAsk, 100))));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_fee_under"), EstateText.Share(b.FeeAsk * AgencyBookCatalogue.UndercutPct / 100) + ", "
+                            + Money(AgencyBookRules.MonthFee(roll, b.FeeAsk, AgencyBookCatalogue.UndercutPct))));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_hours"), EstateText.T("reallife_estate_block_hours_of",
+                            "hours", (AgencyBookRules.Hours(b.Units) / 10f).ToString("0.#", Inv), "spare", (AgencyBookRules.Spare(agency) / 10f).ToString("0.#", Inv))));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_rivals"), EstateText.T("reallife_estate_block_rivals_of", "count", b.Bids.Count.ToString(Inv))));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_score"), EstateText.T("reallife_estate_block_score_of",
+                            "skill", agency.Skill.ToString(Inv), "rep", EstateText.Level(rep))));
+                        work.Add(UiFactLine.Say(EstateText.T(b.Pitched ? "reallife_estate_block_pitched" : "reallife_estate_block_open", "day", b.Until.ToString(Inv),
+                            "fee", EstateText.Share(b.FeeAsk * b.FeePct / 100)), b.Pitched ? UiRole.OkText : UiRole.None));
+                        work.Add(UiFactLine.Say(EstateText.T("reallife_estate_block_pitch_what")));
+                        if (b.Pitched)
+                        {
+                            actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_withdraw"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.WithdrawPitch(id))));
+                        }
+                        else
+                        {
+                            actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_undercut"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _d.PitchBlock(id, true))));
+                            actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_pitch"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() => _d.PitchBlock(id, false))));
+                        }
+                        break;
+                    case BlockStage.Held:
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_let"), EstateText.T("reallife_estate_block_let_of", "let", b.Let.ToString(Inv), "units", b.Units.ToString(Inv))));
+                        if (b.Happy >= 0)
+                        {
+                            work.Add(UiFactLine.Bar(EstateText.T("reallife_estate_duty_happy"), b.Happy / 10));
+                        }
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_cond"), EstateText.Level(b.Cond), EstateRules.RunDown(b.Cond) ? UiRole.WarnText : UiRole.None));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_calls"), b.Calls.Count.ToString(Inv), b.Calls.Count > 0 ? UiRole.WarnText : UiRole.None));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_inspect"), EstateText.T("reallife_estate_block_inspect_of", "day", b.NextInspect.ToString(Inv),
+                            "strikes", b.Strikes.ToString(Inv), "most", AgencyBookCatalogue.StrikesMost.ToString(Inv)), b.Strikes > 0 ? UiRole.DangerText : UiRole.None));
+                        work.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_served"), EstateText.Share(b.Served), b.Served < AgencyBookCatalogue.ServedGood ? UiRole.WarnText : UiRole.None));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_month"), Money(b.Collected)));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_fee_coming"), Money(AgencyBookRules.MonthFee(b.Collected, b.FeeAsk, b.FeePct))));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_fee_rate"), EstateText.Share(b.FeeAsk * b.FeePct / 100)));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_earned"), Money(b.Earned)));
+                        if (b.Missed > 0)
+                        {
+                            work.Add(UiFactLine.Say(EstateText.T("reallife_estate_block_missed", "count", b.Missed.ToString(Inv),
+                                "most", AgencyBookCatalogue.MissesMost.ToString(Inv)), UiRole.DangerText));
+                        }
+                        work.Add(UiFactLine.Say(EstateText.T("reallife_estate_block_held_what", "share", EstateText.Share(AgencyBookCatalogue.PenaltyPct * 10),
+                            "days", AgencyBookCatalogue.LettingFeeDays.ToString(Inv))));
+                        actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_resign"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.ResignBlock(id))));
+                        break;
+                    default:
+                        work.Add(UiFactLine.Say(AgencyText.Why(b), UiRole.DangerText));
+                        terms.Add(UiFactLine.Row(EstateText.T("reallife_estate_block_earned"), Money(b.Earned)));
+                        break;
+                }
+                if (b.Place.Length > 0 && b.Stage != (int)BlockStage.Lost)
+                {
+                    actions.Add(_runs.Button(EstateText.T("reallife_career_button_map"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Count, () => _d.ShowBlock(id)));
+                }
+                _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray() } };
+                _m.Right = new[]
+                {
+                    new UiFactCardModel { Title = EstateText.T(b.Held ? "reallife_ibox_sec_now" : "reallife_estate_sec_pitch"), Heading = true, Lines = work.ToArray(), Actions = actions.ToArray() }
+                };
             }
 
             private void InstructionPage(AgencyFile agency, Instruction n)

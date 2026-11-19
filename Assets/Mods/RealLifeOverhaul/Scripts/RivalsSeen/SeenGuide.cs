@@ -19,8 +19,10 @@ namespace RealLifeOverhaul.RivalsSeen
                 .About("reallife_guide_rivals_seen_about").Help("reallife_guide_rivals_seen")
                 .Owns(Settings.LivingRivalsSeenId)
                 .Data(SeenStore.Key, SeenStore.TestKey)
-                .Test("reallife_seen_test_btn_where", "reallife_seen_test_btn_here", "reallife_seen_test_btn_sighting", "reallife_seen_test_btn_back")
+                .Test("reallife_seen_test_btn_where", "reallife_seen_test_btn_here", "reallife_seen_test_btn_sighting", "reallife_seen_test_btn_head", "reallife_seen_test_btn_back")
                 .Fact("seen_world_most", () => SeenCatalogue.WorldMost.ToString(Inv))
+                .Fact("seen_head_from", () => SeenCatalogue.WorkFrom.ToString(Inv))
+                .Fact("seen_head_to", () => SeenCatalogue.WorkTo.ToString(Inv))
                 .Fact("seen_near", () => SeenCatalogue.NearMetres.ToString(Inv))
                 .Fact("seen_car_hold", () => SeenCatalogue.CarHoldDays.ToString(Inv))
                 .Fact("seen_day_most", () => SeenCatalogue.PostsMost.ToString(Inv))
@@ -42,6 +44,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 .AddButton("reallife_seen_test_btn_where", () => SeenDirector.Instance?.TestWhere())
                 .AddButton("reallife_seen_test_btn_here", () => SeenDirector.Instance?.TestHere())
                 .AddButton("reallife_seen_test_btn_sighting", () => SeenDirector.Instance?.TestSighting())
+                .AddButton("reallife_seen_test_btn_head", () => SeenDirector.Instance?.TestHead())
                 .AddButton("reallife_seen_test_btn_back", () => SeenDirector.Instance?.TestBack())
                 .AddSplitter();
         }

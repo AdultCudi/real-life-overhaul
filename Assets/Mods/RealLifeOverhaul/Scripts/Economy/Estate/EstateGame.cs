@@ -87,6 +87,8 @@ namespace RealLifeOverhaul.Economy
         public const string GainsKey = "reallife_transaction_estate_gains";
         public const string MarketingKey = "reallife_transaction_estate_marketing";
         public const string CommissionKey = "reallife_transaction_estate_commission";
+        public const string ManagementFeeKey = "reallife_transaction_estate_agency_fee";        // the share of the rent an owner pays the agency each month for a block it manages
+        public const string LettingFeeKey = "reallife_transaction_estate_agency_letting";       // the agency's fee for a flat of a block it lets again
         public const string HotelBuyKey = "reallife_transaction_estate_hotel_buy";
         public const string HotelSoldKey = "reallife_transaction_estate_hotel_sold";
         public const string HotelTakingsKey = "reallife_transaction_estate_hotel_takings";
@@ -556,7 +558,8 @@ namespace RealLifeOverhaul.Economy
         public static void ReadAgency(AgencyFile agency)
         {
             GameInstance save = Save;
-            agency.Capacity = agency.Negotiators = 0;
+            agency.Capacity = agency.Negotiators = agency.Skill = 0;
+            long weighted = 0, hours = 0;
             foreach (KeyValuePair<string, long> pair in SqmSum)
             {
                 if (pair.Key.Length == 0)
@@ -594,9 +597,13 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
+                int skill = Mathf.RoundToInt(e.GetSkillValue(CustomerService) * Mathf.Clamp01(e.satisfaction / 100f));
                 agency.Negotiators++;
-                agency.Capacity += AgencyRules.Capacity(e.assignedWeeklyHours, Mathf.RoundToInt(e.GetSkillValue(CustomerService) * Mathf.Clamp01(e.satisfaction / 100f)));
+                agency.Capacity += AgencyRules.Capacity(e.assignedWeeklyHours, skill);
+                weighted += (long)skill * e.assignedWeeklyHours;
+                hours += e.assignedWeeklyHours;
             }
+            agency.Skill = hours > 0 ? (int)(weighted / hours) : 0;   // the agents' skill, by their hours: what the owners judge a pitch by
         }
 
         /// <summary>A cost as a transaction of the mod's own; unless <paramref name="force"/>, false with nothing taken if cash is short.</summary>

@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Ui
             ry = Sentence(s, ron, r.Reading, rx, ry, rw, UiRole.Text, 4);
             // The answers come first: each is a numbered choice with what it does and its forecast, as many hints as the column holds. What is left
             // is for the moves.
-            float footH = r.CanHolding || !string.IsNullOrEmpty(r.ListLabel) ? UiTokens.Control + UiTokens.S2 : 0f;
+            float footH = r.CanHolding || r.CanHead || !string.IsNullOrEmpty(r.ListLabel) ? UiTokens.Control + UiTokens.S2 : 0f;
             int shown = Math.Min(r.Answers.Length, 9);
             float movesMin = r.Moves.Length > 0 ? UiTokens.Control + 2f * (UiTokens.PairRow + UiTokens.S1) : 0f;
             float extra = bottom - footH - ry - movesMin - (shown > 0 ? UiTokens.Control + shown * UiTokens.Control : 0f);
@@ -197,7 +197,11 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             // Their holding in the Stocks app and the rich list as the paper prints it: the way on from this page.
-            var foot = new System.Collections.Generic.List<UiActionModel>(2);
+            var foot = new System.Collections.Generic.List<UiActionModel>(3);
+            if (r.CanHead)
+            {
+                foot.Add(Act(r.HeadLabel, UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Count, FinanceAct.ShowHead));
+            }
             if (r.CanHolding)
             {
                 foot.Add(Act(r.HoldingLabel, UiButtonKind.Secondary, UiIcon.ChartLineUp, UiAction.Count, FinanceAct.OpenHolding));

@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
                     "ba:businesstype_bookstore", "ba:businesstype_warehouse",
                     "smartphone_rivals", "rivals_leaderboard", "common_businesses", "rivals_real_estate_properties", "rivals_overview", "common_years_amount",
                     "reallife_ui_rivals_defeated", "reallife_ui_rivals_you", "rivals_defense_icons_active_rivalry_title", "common_weekly_income",
-                    "reallife_ui_rivals_strength", "reallife_ui_rivals_drives", "reallife_ui_rivals_found",
+                    "reallife_ui_rivals_strength", "reallife_ui_rivals_drives", "reallife_ui_rivals_found", "reallife_ui_rivals_head", "reallife_career_button_map",
                     "reallife_ui_rivals_fortune", "reallife_ui_rivals_property", "reallife_ui_rivals_property_one", "reallife_ui_rivals_property_many", "reallife_ui_rivals_rent",
                     "reallife_ui_rivals_by_fortune", "reallife_ui_rivals_by_fortune_value",
                     "open_in_contacts", "common_name", "reallife_ui_rivals_week", "reallife_ui_rivals_week_from", "reallife_ui_rivals_none", "reallife_ui_rivals_none_body", "common_business_name",

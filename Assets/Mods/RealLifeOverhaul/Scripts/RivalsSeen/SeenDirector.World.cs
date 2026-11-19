@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.RivalsSeen
             public Vector3 At;
             public SeenSpot Spot;
             public bool Test;    // put out by a test button: it stays until left behind, whatever the hour
+            public bool Head;    // at their head office in office hours: the greeting goes on to what they have with the player
         }
 
         private readonly Standing[] _out = new Standing[SeenCatalogue.WorldMost];
@@ -174,7 +175,10 @@ namespace RealLifeOverhaul.RivalsSeen
                 return -1;
             }
             SeenSubject who = _subjects[d.Subject];
-            _out[_outCount++] = new Standing { Person = person, Key = who.Key, Name = who.Name, Place = d.Place ?? string.Empty, At = at, Spot = d.Where.Spot };
+            _out[_outCount++] = new Standing
+            {
+                Person = person, Key = who.Key, Name = who.Name, Place = d.Place ?? string.Empty, At = at, Spot = d.Where.Spot, Head = who.Head.Length > 0 && SeenRules.AtOffice(d.Where)
+            };
             SeenRecord r = _file.Of(who.Key);
             bool car = r != null && r.Car.Length > 0 && SeenGame.PassBy(r.Car, front, origin);
             Logger?.Info("Rivals seen: " + who.Name + " stands at " + (d.Place ?? "?") + " (" + d.Where.Spot + "), "
@@ -266,7 +270,8 @@ namespace RealLifeOverhaul.RivalsSeen
             {
                 _linesFor = s.Key;
                 _lineName = s.Name;
-                _lineWhere = s.Place.Length > 0 ? SeenText.Fill("reallife_seen_panel_at", "spot", SeenText.Spot(s.Spot), "place", s.Place) : SeenText.Spot(s.Spot);
+                string spot = s.Head ? SeenText.T(s.Spot == SeenSpot.Late ? "reallife_seen_spot_head_late" : "reallife_seen_spot_head") : SeenText.Spot(s.Spot);
+                _lineWhere = s.Place.Length > 0 ? SeenText.Fill("reallife_seen_panel_at", "spot", spot, "place", s.Place) : spot;
             }
             WorldPanel panel = _door.Panel;
             panel.Lines(_lineName, _lineWhere, null, WorldPanel.White());
@@ -299,6 +304,9 @@ namespace RealLifeOverhaul.RivalsSeen
                 {
                     return;
                 }
+                SeenSubject who = SubjectOf(s.Key);
+                talk.Dealings = s.Head && who != null && who.Head.Length > 0;
+                talk.Head = talk.Dealings ? SeenGame.AddressText(who.Head) : string.Empty;
                 SeenDialog.Open(talk, s.Person.Character);
                 _door.Hide("talking with them");
                 _revision++;

@@ -661,6 +661,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--estate-agency")
+        {
+            EstateAgencyBookCheckRun();   // (the estate agency's book of other owners' blocks alone: EstateAgencyBookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--estate-duties")
         {
             EstateDuties();
@@ -1658,6 +1664,7 @@ internal static partial class Program
         MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         EstateWave4();   // named tenants, the rent record, booked servicing, improvements, the city's rents and their save (EstateWave4Checks.cs)
+        EstateAgencyBookCheckRun();   // the agency's book of other owners' blocks: fees, pitches against rival agencies, hours, a block's days, the month paid once, the line in the save (EstateAgencyBookChecks.cs)
         DealerWave4();   // the other dealers' cars and prices, looks, an auction's bids and their save (DealerWave4Checks.cs)
         EstateRun();   // a hundred and twenty days of the property business through its day entries, a save on day 30 and one from before (EstateRunChecks.cs)
         DealerRun();   // ninety days of the dealership through its hour, the same (DealerRunChecks.cs)

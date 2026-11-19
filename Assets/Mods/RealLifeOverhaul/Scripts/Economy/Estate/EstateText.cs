@@ -22,7 +22,11 @@ namespace RealLifeOverhaul.Economy
         };
         private static readonly string[] CarStateKeys = { "reallife_estate_car_idle", "reallife_estate_car_out", "reallife_estate_car_valet", "reallife_estate_car_waiting" };
         public static readonly string[] ClassKeys = { "reallife_estate_class_economy", "reallife_estate_class_standard", "reallife_estate_class_premium", "reallife_estate_class_luxury" };
-        public static readonly string[] StageKeys = { "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing" };
+        // the last two are a block's (AgencyText.StageCode)
+        public static readonly string[] StageKeys =
+        {
+            "reallife_estate_stage_offered", "reallife_estate_stage_marketing", "reallife_estate_stage_completing", "reallife_estate_stage_managed", "reallife_estate_stage_lost"
+        };
         // Eight descriptions for each use: a tenant is never named.
         private static readonly string[][] TenantKeys =
         {
@@ -189,7 +193,7 @@ namespace RealLifeOverhaul.Economy
         {
             "reallife_estate_grievance_rent", "reallife_estate_grievance_building", "reallife_estate_grievance_repair", "reallife_estate_grievance_notice", "reallife_estate_grievance_order"
         };
-        public static readonly string[] ManagerKeys = { "reallife_estate_manager_self", "reallife_estate_manager_agent", "reallife_estate_manager_manager" };
+        public static readonly string[] ManagerKeys = { "reallife_estate_manager_self", "reallife_estate_manager_agent", "reallife_estate_manager_manager", "reallife_estate_manager_agency" };
 
         /// <summary>A repair call's fault, by its kind.</summary>
         private static readonly string[] ImproveKeys =

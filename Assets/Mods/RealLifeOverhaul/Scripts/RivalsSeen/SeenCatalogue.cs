@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.RivalsSeen
         public const int SightingChance = 180;    // per mille at each of the day's hours a sighting may be written at (SeenDay), the first that comes up kept
         public const int NotesKept = 24;          // sightings kept for the pages and the paper, newest last
         public const int TestNotesKept = 4;       // a test's sightings kept beside those, never in their place (SeenDay.Trim)
+        public const int HeadsMost = 64;          // head offices a save's line can hold: the game's 19 rival owners and the tycoons, with room to spare
         public const int PaperMost = 2;           // society lines in one morning's paper
         public const int PostsMost = 3;           // posts a day on the City Ledger's Flare account from here, the player's own line among them (a test's comes on top)
         public const int PlayerGapDays = 6;       // days at least between two lines about the player
@@ -126,6 +127,13 @@ namespace RealLifeOverhaul.RivalsSeen
 
         // ---- knowing them
         public const int GreetWarmMost = 100;     // how well a rival can come to know the player (the social life's own scale)
+
+        /// <summary>Where a rival's knowing of the player passes from a face to an acquaintance, a friend (the social life's bar for one, 30 points) and a close friend, in tenths of a point.
+        /// </summary>
+        public static readonly int[] StandingBars = { 100, 300, 600 };
+
+        /// <summary>What a rival says of how well they know the player, by <see cref="SeenRules.Standing"/>.</summary>
+        public static readonly string[] StandingKeys = { "reallife_seen_standing_0", "reallife_seen_standing_1", "reallife_seen_standing_2", "reallife_seen_standing_3" };
 
         /// <summary>The words for a place, for a page.</summary>
         public static readonly string[] SpotNames =

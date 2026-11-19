@@ -37,14 +37,14 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
         public static readonly string[] TakingsKeys =
         {
             P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "tech_bakeoff", P + "broadband_takings", P + "ownbank_takings",
-            P + "study_academy", P + "bld_contract"
+            P + "study_academy", P + "bld_contract", P + "estate_agency_fee", P + "estate_agency_letting"
         };
 
         /// <summary>Running costs.</summary>

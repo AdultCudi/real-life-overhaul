@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
             SoldBack(false);
             EstateGame.ReadHoldings(s, out added, out dropped);
             EstateGame.ReadAgency(s.Agency);
+            AgencyCover();   // each building under the agency is told whether its agents cover it, before its morning
             for (int i = s.Holdings.Count - 1; i >= 0; i--)
             {
                 HoldingDay(s.Holdings[i], day);
@@ -161,7 +162,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Tell(NotificationType.Info, "reallife_estate_note_applied_many", Data("building", h.Name, "count", applied.ToString()), TabTenants, null);
                 }
-                if (duties && h.Manager != (int)EstateManager.Self)
+                if (duties && EstateRules.Handles(h))
                 {
                     AgentLets(h, day);
                 }

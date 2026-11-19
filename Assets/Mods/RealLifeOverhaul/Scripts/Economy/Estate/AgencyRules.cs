@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One day of the agency, its hours spent oldest first; every outcome goes into <paramref name="events"/>.</summary>
         public static void Day(AgencyFile agency, int seed, int day, EstateClimate c, List<AgencyEvent> events)
         {
-            int hours = agency.Running ? Math.Max(0, agency.Capacity) : 0;
+            int hours = agency.Running ? Math.Max(0, agency.Capacity - agency.Reserved) : 0;   // what the blocks and the buildings of his own under the agency do not take
             for (int n = 0; n < agency.Open.Count; n++)
             {
                 Instruction i = agency.Open[n];

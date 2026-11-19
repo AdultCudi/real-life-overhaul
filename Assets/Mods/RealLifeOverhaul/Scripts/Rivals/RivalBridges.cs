@@ -48,6 +48,10 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int, long, bool> Shares;
         /// <summary>A line on the car a tycoon (by index) drives and where they tend to be found; empty for nothing (RivalsSeen). Default: none.</summary>
         public static Func<int, string> SeenLine;
+        /// <summary>A tycoon's (by index) head office as one line, the address and the district; empty with none (RivalsSeen). Default: none.</summary>
+        public static Func<int, string> HeadLine;
+        /// <summary>Show on map for a tycoon's head office, by index: the game's own destination marker. False if it could not be shown (RivalsSeen). Default: nothing.</summary>
+        public static Func<int, bool> ShowHead;
         /// <summary>A line on who leads a tycoon's holding (by index), their age and what the last handover cost; empty for nothing (Dynasty). Default: none.</summary>
         public static Func<int, string> DynastyLine;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
@@ -144,6 +148,8 @@ namespace RealLifeOverhaul.Rivals
             MarketLine = null;
             Shares = null;
             SeenLine = null;
+            HeadLine = null;
+            ShowHead = null;
             DynastyLine = null;
             LeaseTrend = null;
             LeaseRenewed = null;

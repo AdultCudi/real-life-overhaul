@@ -337,6 +337,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")
                 .Owns(Settings.EstateId, Settings.EstateHotelId, Settings.EstateHireId)
+                .Test("reallife_estate_test_block", "reallife_estate_test_block_month")
                 .Preset(Settings.EstateRentId, 150, 100, 80)   // rental income, per cent
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EstateHireId)   // a hired car leaves the city and comes back as another
                 .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)

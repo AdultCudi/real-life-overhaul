@@ -699,7 +699,34 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             bool knew = r.Known >= KnowsFrom;
             int gained = Greet(r, day, true);
-            return new SeenTalk { Name = string.IsNullOrEmpty(name) ? r.Name : name, Form = r.Form, Known = knew, Car = r.Car, Pick = HelloPick(f.Seed, Who(key), day), Gained = gained };
+            return new SeenTalk
+            {
+                Name = string.IsNullOrEmpty(name) ? r.Name : name, Form = r.Form, Known = knew, Car = r.Car, Pick = HelloPick(f.Seed, Who(key), day), Gained = gained, Key = key,
+                Standing = Standing(r.Known)
+            };
+        }
+
+        /// <summary>
+        /// How well a rival knows the player, in four steps of the social life's own scale (<see cref="SeenCatalogue.StandingBars"/>, tenths of a point): by sight, an acquaintance, a
+        /// friend, a close friend. 0 for somebody who has hardly met them. What the talk says of it; nothing else comes of it.
+        /// </summary>
+        public static int Standing(int tenths)
+        {
+            int step = 0;
+            for (int i = 0; i < SeenCatalogue.StandingBars.Length; i++)
+            {
+                step += tenths >= SeenCatalogue.StandingBars[i] ? 1 : 0;
+            }
+            return step;
+        }
+
+        /// <summary>
+        /// Whether a rival is at their head office in office hours on a day and hour: the working week's hours of <see cref="Where(int,int,SeenForm,int,bool,bool,int,int,bool)"/> at the
+        /// office (a weekday from <see cref="SeenCatalogue.WorkFrom"/> to <see cref="SeenCatalogue.WorkTo"/>, an hour earlier for one doing well, a lunch out when it is their way).
+        /// </summary>
+        public static bool AtOffice(SeenWhere where)
+        {
+            return where.Spot == SeenSpot.Office || where.Spot == SeenSpot.Late;
         }
     }
 }

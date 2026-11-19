@@ -261,6 +261,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(seen);
             }
+            string head = RivalBridges.HeadLine != null ? RivalBridges.HeadLine(who) : null;
+            if (!string.IsNullOrEmpty(head))
+            {
+                box.Row("reallife_rival_label_head", head);
+            }
             string family = RivalBridges.DynastyLine != null ? RivalBridges.DynastyLine(who) : null;
             if (!string.IsNullOrEmpty(family))
             {
@@ -298,7 +303,7 @@ namespace RealLifeOverhaul.Rivals
                 UnityEngine.Transform rowOf = k < 3 ? first ?? (first = box.ButtonRow()) : second ?? (second = box.ButtonRow());
                 InfoBox.Button(rowOf, k % 3, RivalCatalogue.CounterNames[k], () => Ask(director, who, kind, picked, pick));
             }
-            Foot(box, pick, back, d.StockId);
+            Foot(box, pick, back, d.StockId, !string.IsNullOrEmpty(head) ? who : -1);
             return true;
         }
 
@@ -326,9 +331,13 @@ namespace RealLifeOverhaul.Rivals
         }
 
         // The foot of a tycoon's page: their holding in the Stocks app, closing it and going back, and the Guide's page.
-        private static void Foot(InfoBox box, Action<string> pick, Action back, int? stock)
+        private static void Foot(InfoBox box, Action<string> pick, Action back, int? stock, int head = -1)
         {
             UnityEngine.Transform buttons = box.ButtonRow();
+            if (head >= 0 && RivalBridges.ShowHead != null)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_career_button_map", () => RivalBridges.ShowHead?.Invoke(head));   // their head office, as the Careers pages' button shows a place
+            }
             if (stock.HasValue && RivalBridges.OpenStock != null)
             {
                 int id = stock.Value;
