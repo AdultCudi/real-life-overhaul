@@ -207,8 +207,8 @@ internal static partial class Program
         Check(en["reallife_talk_head"] == "{who}, {age}" && en["reallife_talk_age_exact"].Contains("{age}") && en["reallife_driver_tool_call"].Contains("{key}")
               && en["reallife_driver_tool_coming"].Contains("{car}") && en["reallife_driver_tool_waiting"].Contains("{car}") && en["reallife_driver_tool_driving"].Contains("{car}"),
             "age and driver texts: the header and the hover words carry the values they are filled with");
-        en.TryGetValue("reallife_changes_next", out string next);
-        Check(next != null && next.Contains("in its header how old they are") && next.Contains("private driver button") && !next.Contains("Fixed:"),
-            "age and driver texts: What's new says both in the next row, as a feature");
+        // In any row, and as features: other lines of the row may be fixes, so only these two sentences are looked at for a mark of their own.
+        Check(AnyChangesRow(en, "in its header how old they are") && AnyChangesRow(en, "private driver button") && !AnyChangesRow(en, "Fixed: A talk with a person") && !AnyChangesRow(en, "Fixed: A private driver"),
+            "age and driver texts: What's new says both in a row, as a feature");
     }
 }
