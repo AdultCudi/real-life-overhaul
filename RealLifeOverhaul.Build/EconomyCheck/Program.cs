@@ -582,6 +582,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--age-driver")
+        {
+            AgeDriver();   // the age in a talk's header, and the private driver's button on the bar (AgeDriverChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--phone-reach")
         {
             PhoneReach();   // a folded phone always has a way back: the bar's button, the key, the cause in Player.log (PhoneReachChecks.cs)
@@ -1742,6 +1748,7 @@ internal static partial class Program
         AppDeckChecks();     // the player's bar and favourites: rules, stored line, frame's list, sources (AppDeckChecks.cs)
         HudStart();          // the fonts read on past the loading screen's hold, every wait of the HUD's start named in Player.log (HudStartChecks.cs)
         PhoneReach();        // a folded phone always has a way back: the bar's button, the key, the cause in Player.log (PhoneReachChecks.cs)
+        AgeDriver();         // the age in a talk's header, and the private driver's button on the bar (AgeDriverChecks.cs)
         GlyphAtlases();      // a text's characters are in an atlas before it is built, and built again if they come late (GlyphChecks.cs)
         PhoneMap();          // the HUD over the phone after the map, the phone cut at the bar, the fast forward pressed, the help put back a frame later (PhoneMapChecks.cs)
         Work();

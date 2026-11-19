@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// somebody whose ring is on is their call answered (SocialDirector.TakeRing). Mom's, on a family dinner day while her
     /// table is set, opens on whether the player is coming over, and "Something else" offers it too (PhoneContacts.MomsDinner).
     /// </summary>
-    public sealed partial class PersonDialog : Dialog
+    public sealed partial class PersonDialog : Dialog, ITalkAge
     {
         private static int GiftPrice => Prices.At(60);
 
@@ -32,8 +32,13 @@ namespace RealLifeOverhaul
         private float _moodRoll = -1f;   // the call's one draw of whether a rough day says no to plans (SocialRules.MoodSaysNo); -1 until plans come up
         private int _testTopic;          // a test's topic for this call's first chat; -1 for the topic by what happened
 
+        public string TalkWho => _p != null && _p.Met ? _p.Name : null;
+
+        public string TalkAge => _p != null && _p.Met ? SocialTalk.AgeWords(_p) : null;
+
         public PersonDialog(int index)
         {
+            using var age = TalkAgeGame.Making(this);   // the first page is headed with their age too
             _testTopic = TestTopicFor == index ? TestTopic : -1;
             TestTopic = TestTopicFor = -1;
             _p = SocialState.Get(index);

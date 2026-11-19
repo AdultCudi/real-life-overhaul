@@ -116,6 +116,20 @@ The answers are written lines in every RLO Texts pack (`StreetCards.Aged`): no d
 
 Test: Options, Street talk, "Street talk: ask the nearest passer-by their age" (`StreetDirector.TestAge`) stops the nearest person within 8 m with time to talk, today's answer forgotten, and the blue button asks their age. The answer writes `Street talk check (age)`: the age said and how, and for somebody the player knows the People page's age, PASS or FAIL; swapping numbers afterwards writes the same check against their new People page.
 
+## The age in a talk's header (`TalkAgeRules`, `TalkAgeGame`)
+
+A player asked to be able to know how old somebody is when talking to them (15 Nov 2026: "you never know if you are talking to a 70 years old grandma ... or a 20 years old college student"). The header of a talk with a person now says it, in the game's own panel and on the RLO interface.
+
+| talk | what it says |
+|---|---|
+| a call or a face-to-face talk with somebody the player knows (`PersonDialog`, `SceneDialog` once they are met) | their exact age, the one People shows (`SocialTalk.AgeOf`): "34 years old" |
+| street talk with a stranger (`StreetDialog`) | the ten years their age falls in, "in their twenties" (`TalkAgeRules.BandKey`: the late teens, then each decade) |
+| ...once they have said how old they are (`StreetMemo.AgeTold`), or are somebody the player knows | the exact age, the figure asking gives (`StreetDirector.AgeShown`) |
+
+Both come from the person's own age in the mod's data, never from the figure on screen, so the header agrees with what asking gives; nothing about how ages are made changed. The header is the game's own: a page of the mod's dialogs that is a text page gets the key `reallife_talk_head` ("{who}, {age}") from `Guard.Entry` (`TalkAgeGame.Mark`), and the values go into the panel's header label a frame later (the page fades in over a second, so nothing raw shows). A talk's constructor shows its first page before the game sets the controller's dialog, so it holds `TalkAgeGame.Making(this)` meanwhile. The RLO interface's conversation (`DialogScreen`) names the person as it always did and puts the age under the name, before where the talk is held. The mod draws no hover or greeting card of its own for a person on the street or one the player knows (the person's card on the kit is an employee's at their station, whose age the game keeps), so there is none to change. Not covered: a family member's face-to-face chat (`FamilyDialog`), whose page the family feature builds.
+
+Cost: a string and one short coroutine per page of a talk with a person; nothing a frame. Checks: EconomyCheck `--age-driver` (`AgeDriverChecks.cs`).
+
 ## Who the player can fall for (`RomanceRules`)
 
 Players found that the people they could ask out were often twice their age, that more men than women came up whatever they were, and that asking out worked for one character and not for another.

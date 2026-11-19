@@ -228,6 +228,25 @@ namespace RealLifeOverhaul
             return SocialRules.AgeOn(person.Age, person.AgeDay, person.Birthday, SocialLife.Day, SocialPlaces.DaysPerYear);
         }
 
+        /// <summary>
+        /// Their age as the header of a talk says it: the exact age People shows once the player knows them (<see cref="AgeOf"/>), else the band
+        /// that age falls in ("in their thirties"). A string made when a page of the talk is shown.
+        /// </summary>
+        public static string AgeWords(SocialPerson person)
+        {
+            if (person == null)
+            {
+                return null;
+            }
+            int years = AgeOf(person);
+            if (TalkAgeRules.Exact(person.Met, false))
+            {
+                return SocialLife.T(TalkAgeRules.ExactKey, new Dictionary<string, string>(1) { { "age", years.ToString(System.Globalization.CultureInfo.InvariantCulture) } });
+            }
+            string band = TalkAgeRules.BandKey(years);
+            return band != null ? band.GetLocalization() : null;
+        }
+
         /// <summary>What the answer and the first exchange of the day are worth, more face to face. Returns their reply's key.</summary>
         public static string Answer(SocialPerson person, SocialTopic topic, bool warm, bool inPerson, bool firstOfTalk)
         {
