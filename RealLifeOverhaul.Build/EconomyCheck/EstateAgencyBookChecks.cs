@@ -817,8 +817,8 @@ internal static partial class Program
         Check(en.TryGetValue("reallife_guide_economy_estate", out guide) && guide.Contains("# Managing other owners' blocks") && guide.Contains("# Your own buildings") && guide.Contains("{agb_fee_low}")
               && guide.Contains("<b>Your own agency</b>") && en["reallife_estate_manager_agency"] == "Your own agency" && guide.Contains("<b>Hand it back</b>") && en["reallife_estate_btn_resign"] == "Hand it back"
               && guide.Contains("<b>Managing</b>") && en["reallife_estate_filter_managing"] == "Managing", "agency book: the Guide describes the blocks and the player's own buildings under the agency, naming the buttons as they read");
-        string next;
-        Check(en.TryGetValue("reallife_changes_next", out next) && next.Contains("estate agency"), "agency book: What's new tells of it");
+        Check(WhatsNewHas(en, "estate agency"),   // in any row: the next row empties when a version is cut
+         "agency book: What's new tells of it");
         string docs = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features\estate-agency.md"));
         Check(System.IO.File.Exists(docs) && System.IO.File.ReadAllText(docs).Contains(AgencyBookStore.Key), "agency book: docs/features/estate-agency.md describes it and its save line");
     }

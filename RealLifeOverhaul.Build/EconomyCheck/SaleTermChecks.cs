@@ -608,8 +608,7 @@ internal static partial class Program
             }
         }
         Check(all && plain, "sale terms: every text is in en, plain, with no dash or exclamation mark, and every notice within 240 characters (" + keys.Count + " keys)");
-        string next = WhatsNewText(en, "reallife_changes_next");
-        Check(next.Contains("Selling a tech firm now has terms") && !next.Contains("Fixed: Selling a tech firm"), "sale terms: the What's new line says it, as a feature and not a fix");
+        Check(WhatsNewHas(en, "Selling a tech firm now has terms") && !WhatsNewHas(en, "Fixed: Selling a tech firm"), "sale terms: the What's new line says it, as a feature and not a fix");
         string guide = en["reallife_guide_tech_startups"];
         Check(guide.Contains("# Selling a firm on terms") && guide.Contains("{terms_lock}") && guide.Contains("{terms_boss_years}") && guide.Contains("<b>Stay as the boss</b>") && guide.Contains("<b>Keep a slice</b>"),
             "sale terms: the Guide's startup page has the terms, with its figures filled from the code");

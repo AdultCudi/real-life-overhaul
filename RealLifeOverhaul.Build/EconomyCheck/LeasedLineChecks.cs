@@ -307,6 +307,6 @@ internal static partial class Program
         Check(short240, "leased: every notice is at most 240 characters");
         Check(en.TryGetValue("reallife_infra_note_limit_line", out string limit) && limit.Contains("leased line") && limit.Contains("{low}") && limit.Contains("{high}") && limit.Contains("{from}"),
             "leased: the refusal says a leased line lifts the limit, with its sizes and its price");
-        Check(en.TryGetValue("reallife_changes_next", out string next) && next.Contains("leased line"), "leased: What's new tells of the leased lines");
+        Check(WhatsNewHas(en, "leased line"), "leased: What's new tells of the leased lines");
     }
 }

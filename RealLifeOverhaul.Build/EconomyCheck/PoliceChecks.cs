@@ -822,7 +822,7 @@ internal static partial class Program
         }
         Check(filled && guide.Contains("# Police work"), "police texts: the Guide's police section is in the careers page and every figure in it is filled from the rules");
         Check(PoliceSource("Careers/CareersGuide.cs").Contains("Permadeath.PermadeathRules.DutyOdds"), "police texts: the Guide's odds of a fatal injury are Permadeath's own constant");
-        Check(english.TryGetValue("reallife_changes_next", out string next) && next.Contains("police") && !next.Contains("Fixed: The police"), "police texts: the What's new line says the police career is in and does not start with a fix mark");
+        Check(WhatsNewHas(english, "police") && !WhatsNewHas(english, "Fixed: The police"), "police texts: the What's new line says the police career is in and does not start with a fix mark");
         // the kit lists the keys its screen reads
         string screens = PoliceSource("Ui/UiScreens.Work.cs");
         Check(screens.Contains("\"reallife_pro_name_police\"") && screens.Contains("\"reallife_pro_rank_police_0\"") && screens.Contains("\"reallife_pro_rank_police_4\"") && screens.Contains("\"reallife_police_file_arrests\"")
