@@ -75,6 +75,19 @@ namespace RealLifeOverhaul.SelfTest
         {
             public override string Name => "kit_press";
 
+            // A target that is not there fails the step, unless the plan says it is optional (a Back that a closed page does not have).
+            private static void Miss(SelfTestContext c, string words)
+            {
+                if (c.Flag("optional", false))
+                {
+                    c.Skip("not pressed, and optional: " + words);
+                }
+                else
+                {
+                    c.Fail(words);
+                }
+            }
+
             public override IEnumerator Run(SelfTestContext c)
             {
                 UiHost host = SelfTestGame.Target(c.Arg("screen"));
@@ -107,7 +120,7 @@ namespace RealLifeOverhaul.SelfTest
                     }
                     if (!rowDone)
                     {
-                        c.Fail("on '" + id + "': " + why);
+                        Miss(c, "on '" + id + "': " + why);
                         yield break;
                     }
                     pressed = "row " + c.Arg("row");
@@ -131,7 +144,7 @@ namespace RealLifeOverhaul.SelfTest
                     }
                     if (!done)
                     {
-                        c.Fail("on '" + id + "': " + why);
+                        Miss(c, "on '" + id + "': " + why);
                         yield break;
                     }
                     pressed = "the target '" + label + "'";
@@ -146,7 +159,7 @@ namespace RealLifeOverhaul.SelfTest
                     int arg = (int)c.Number("arg", -1f);
                     if (!host.SelfTestPress(command, arg, out why))
                     {
-                        c.Fail("on '" + id + "': " + why);
+                        Miss(c, "on '" + id + "': " + why);
                         yield break;
                     }
                     pressed = "command " + c.Arg("command") + "=" + command + (arg >= 0 ? " argument " + arg : string.Empty);
@@ -158,6 +171,68 @@ namespace RealLifeOverhaul.SelfTest
                 }
                 yield return new WaitForSecondsRealtime(c.Number("settle", 0.6f));
                 c.Pass("pressed " + pressed + " on '" + id + "'; it has " + host.SelfTestShape());
+            }
+        }
+
+        /// <summary>
+        /// The "kit_choose" step (SelfTestKinds has its words): a choice control set to an option by what the player does with it. A choice that
+        /// lists its options on a press is pressed once and the option's target pressed; one that steps to the next option on each press
+        /// (a table's kind filter) is pressed until its words read the option.
+        /// </summary>
+        internal sealed class KitChooseStep : SelfTestStep
+        {
+            public override string Name => "kit_choose";
+
+            public override IEnumerator Run(SelfTestContext c)
+            {
+                UiHost host = SelfTestGame.Target(c.Arg("screen"));
+                if (host == null)
+                {
+                    c.Fail("no kit screen shows: " + SelfTestGame.ShowingWords());
+                    yield break;
+                }
+                string control = c.Arg("control_key") != null ? UiText.T(c.Arg("control_key")) : c.Arg("control");
+                string option = c.Arg("option_key") != null ? UiText.T(c.Arg("option_key")) : c.Arg("option");
+                if (control == null || option == null)
+                {
+                    c.Fail("name the control (control or control_key) and the option (option or option_key)");
+                    yield break;
+                }
+                bool found = host.SelfTestFindLabel(control, out int command, out int arg);
+                if (!found && c.Arg("control_key2") != null)
+                {
+                    control = UiText.T(c.Arg("control_key2"));   // the control may already read another option
+                    found = host.SelfTestFindLabel(control, out command, out arg);
+                }
+                if (!found)
+                {
+                    c.Fail("no target on '" + host.Screen.Id + "' reads '" + control + "'; kit_commands lists the targets");
+                    yield break;
+                }
+                int most = (int)c.Number("max", 20f);
+                for (int presses = 0; presses <= most; presses++)
+                {
+                    string now = host.SelfTestLabelAt(command, arg);
+                    if (now.IndexOf(option, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        c.Pass("the choice reads '" + now + "' after " + presses + " press(es)");
+                        yield break;
+                    }
+                    if (presses > 0 && host.SelfTestPressOption(option, out string label))
+                    {
+                        yield return new WaitForSecondsRealtime(0.5f);
+                        c.Pass("the choice listed its options after " + presses + " press(es) and '" + label + "' was picked");
+                        yield break;
+                    }
+                    if (!host.SelfTestPress(command, arg, out string why))
+                    {
+                        c.Fail("the choice would not be pressed: " + why);
+                        yield break;
+                    }
+                    c.Waiting = "the choice to read '" + option + "' (now '" + now + "')";
+                    yield return new WaitForSecondsRealtime(0.4f);
+                }
+                c.Fail("the choice never read '" + option + "' in " + most + " presses; it reads '" + host.SelfTestLabelAt(command, arg) + "'");
             }
         }
 

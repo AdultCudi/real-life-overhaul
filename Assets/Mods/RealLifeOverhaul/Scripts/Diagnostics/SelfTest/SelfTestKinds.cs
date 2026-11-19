@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.SelfTest
                 "Presses a target of the showing kit screen the way a click does: by the name of a command constant or a number (command, with arg), by the words on "
                 + "the target (text, nth) by a text key (key), or by the row of a list (row, from 0). The target is waited for up to wait seconds (default 3). "
                 + "A table row also answers to the words of any of its cells.",
-                null, new[] { "command:s", "arg:i", "text:s", "key:s", "nth:i", "row:i", "wait:n", "screen:s", "settle:n" }),
+                null, new[] { "command:s", "arg:i", "text:s", "key:s", "nth:i", "row:i", "wait:n", "optional:b", "screen:s", "settle:n" }),
             new SelfTestKind("kit_type", 60, "Types a text into the showing kit screen's field, the way the keyboard does.", new[] { "text:s" }, new[] { "screen:s", "submit:b" }),
             new SelfTestKind("kit_scroll", 60, "Turns the wheel over a scroll region of the showing kit screen.", new[] { "clip:i", "notches:n" }, new[] { "screen:s" }),
             new SelfTestKind("press_button", 120,
@@ -158,6 +158,10 @@ namespace RealLifeOverhaul.SelfTest
                 + "delete true removes it, bad true writes a file that is not a wav.",
                 new[] { "path:s" }, new[] { "seconds:n", "hz:n", "delete:b", "bad:b" }),
             new SelfTestKind("set_year", 10, "Sets the length of the game's year in days for the running game (a long year, for the terms that read it).", new[] { "days:i" }, null),
+            new SelfTestKind("kit_choose", 90,
+                "Sets a choice control to an option the way a player does: the control is named by its current words (control or control_key), the option by its words or text key. "
+                + "A choice that lists options is pressed once and the option pressed; one that steps to the next option on each press is pressed until it reads the option (at most max presses).",
+                null, new[] { "control:s", "control_key:s", "control_key2:s", "option:s", "option_key:s", "screen:s", "max:i" }),
             new SelfTestKind("kit_commands", 30,
                 "Writes every showing kit screen's pressable targets into the results: number, command constant name, argument, words and whether enabled.",
                 null, new[] { "screen:s", "most:n" }),

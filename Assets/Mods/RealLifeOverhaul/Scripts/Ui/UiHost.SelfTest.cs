@@ -236,6 +236,47 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>The first target whose own words hold the text: its command and argument; false when none does.</summary>
+        internal bool SelfTestFindLabel(string text, out int command, out int arg)
+        {
+            command = arg = -1;
+            for (int i = 0; _scene != null && i < _scene.NodeCount; i++)
+            {
+                if (!_scene.Nodes[i].Handle && SelfTestLabelOf(i).IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    command = _scene.Nodes[i].Command;
+                    arg = _scene.Nodes[i].Arg;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The words of the target with that command and argument now (a choice's value changes as it is pressed); empty when it is not there.</summary>
+        internal string SelfTestLabelAt(int command, int arg)
+        {
+            int at = Find(command, arg);
+            return at < 0 ? string.Empty : SelfTestLabelOf(at);
+        }
+
+        /// <summary>Presses a target that is not a list row and whose own words are exactly the text (an option of an opened choice); false when there is none.</summary>
+        internal bool SelfTestPressOption(string text, out string label)
+        {
+            label = null;
+            for (int i = 0; _scene != null && i < _scene.NodeCount; i++)
+            {
+                UiNode n = _scene.Nodes[i];
+                string words = SelfTestLabelOf(i);
+                if (!n.Handle && n.List < 0 && !n.Disabled && string.Equals(words.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    label = words;
+                    PressNode(i, Time.unscaledTime);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private int Find(int command, int arg)
         {
             if (_scene == null)
