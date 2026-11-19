@@ -113,6 +113,11 @@ namespace RealLifeOverhaul.Tech
                 .Fact("infra_years", () => Whole(InfraCatalogue.WriteDownDays / 365))
                 .Fact("infra_technician", () => Whole(InfraCatalogue.RacksPerTechnician))
                 .Fact("infra_net", () => Whole(InfraCatalogue.NetNeeded))
+                .Fact("infra_line_low", () => Whole(Utilities.LeasedLineCatalogue.Mbps[0] / 1000))   // the leased lines the Utilities app sells: read from their catalogue, which is game-free
+                .Fact("infra_line_high", () => Whole(Utilities.LeasedLineCatalogue.Mbps[Utilities.LeasedLineCatalogue.Steps - 1] / 1000))
+                .Fact("tech_move_work", () => Mille(SegmentRules.Work))
+                .Fact("tech_move_days", () => Whole(SegmentRules.Days))
+                .Fact("tech_move_lost", () => Mille(SegmentRules.Lost))
                 .Fact("infra_colo", () => Guide.Money(Prices.At(InfraCatalogue.ColoMonth / 100)))
                 .Fact("infra_unit", () => Guide.Money(Prices.At(InfraCatalogue.UnitDay) / 100f))
                 .Fact("infra_gpu_unit", () => Guide.Money(Prices.At(InfraCatalogue.GpuUnitDay) / 100f))

@@ -244,6 +244,55 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>The speed of a building's leased line today, Mbps (Utilities/LeasedLineRules); 0 with none, one still being installed, or the utilities off. Default: none.</summary>
+        public static Func<BuildingRegistration, int> LineMbps;
+
+        /// <summary>A leased line's size, month's price at the start's prices (cents) and the days it takes to install where fibre runs.</summary>
+        public struct LineQuote
+        {
+            public int Mbps, MonthCents, Days;
+        }
+
+        /// <summary>The leased line steps the carriers sell: 0 the smallest, 1 the largest (Utilities/LeasedLineCatalogue). Default: none, so no page speaks of one.</summary>
+        public static Func<int, LineQuote> LineStep;
+
+        /// <summary><see cref="LineStep"/> asked: false with no answer, or if the utilities fault.</summary>
+        public static bool LineAt(int which, out LineQuote quote)
+        {
+            quote = default(LineQuote);
+            try
+            {
+                if (LineStep == null)
+                {
+                    return false;
+                }
+                quote = LineStep(which);
+                return quote.Mbps > 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The connection a data centre's limits are read from: the plan's speed (<see cref="PlanMbpsAt"/>) or its leased line's if that is faster. With no line this is
+        /// exactly the plan's answer, so a hall with none is held as before.
+        /// </summary>
+        public static int CentreMbps(BuildingRegistration reg)
+        {
+            int plan = PlanMbpsAt(reg), line = 0;
+            try
+            {
+                line = LineMbps != null && reg != null ? LineMbps(reg) : 0;
+            }
+            catch (Exception)
+            {
+                line = 0;
+            }
+            return line > plan ? line : plan;
+        }
+
         /// <summary>A business's internet: 0 working or not needed, 1 no plan, 2 being installed (when: the day), 3 down (when: the hour back).</summary>
         public delegate int NetAsk(BuildingRegistration reg, out int when);
 
@@ -547,6 +596,8 @@ namespace RealLifeOverhaul.Tech
             Supplied = null;
             Mbps = null;
             PlanMbps = null;
+            LineMbps = null;
+            LineStep = null;
             Net = null;
             NetDays = null;
             OpenInternet = null;

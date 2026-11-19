@@ -222,6 +222,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return _source.Do(UtilitiesAct.Cancel, _view.Place, 0, 0, 0);
             }
+            if (which == 3)
+            {
+                return _source.Do(UtilitiesAct.Cancel, _view.Place, 1, 0, 0);   // only the leased line
+            }
             if (which == 2)
             {
                 return _source.Do(UtilitiesAct.Reconnect, _view.Place, 0, 0, 0);
@@ -232,7 +236,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             UtilityOptionFact o = p.Options[option];
-            bool done = _source.Do(UtilitiesAct.Buy, _view.Place, o.Provider, o.Plan, _view.Contract && !o.Own ? 1 : 0);
+            bool done = _source.Do(UtilitiesAct.Buy, _view.Place, o.Provider, o.Plan, _view.Contract && !o.Own && !o.Leased ? 1 : 0);
             if (done)
             {
                 _view.Option = -1;

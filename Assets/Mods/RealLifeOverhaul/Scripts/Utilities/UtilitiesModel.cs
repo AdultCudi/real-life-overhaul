@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Utilities
         public int ContractUntil;        // the first day out of contract (0: month by month)
         public int PriceCents;           // the month's price: held for a contract, set again each month without one
         public int OutageFrom, OutageUntil;   // an outage, in hours from the save's first day (day * 24 + hour)
+        public int LineStep;             // a data centre's leased line (LeasedLineCatalogue): 0 none, else its step + 1; it stands beside the plan
+        public int LineDay;              // the day the line goes live (LeasedLineRules.Order)
+        public int LineNext, LineNextDay;   // a change to another step: its step + 1 and the day it takes over from the line that runs until then
 
         public bool IsHome => Kind == PlaceKind.Home;
     }

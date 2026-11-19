@@ -12,6 +12,12 @@ namespace RealLifeOverhaul.Utilities
             {
                 Account a = _state.Accounts[i];
                 SupplyState before = a.State;
+                LeasedLineRules.Turn(a, today);
+                if (a.Service == Service.Internet && a.LineStep > 0 && a.LineDay == today && LeasedLineRules.LiveAt(a, today) > 0)
+                {
+                    UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_line_live", "place", NameOf(a),
+                        "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[a.LineStep - 1])), 10f);
+                }
                 if (!UtilitiesRules.Turn(a, today))
                 {
                     continue;

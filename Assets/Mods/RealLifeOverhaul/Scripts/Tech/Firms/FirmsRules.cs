@@ -330,6 +330,7 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static int Build(Firm firm, Product p, in Crew c, int points, int testing, int most = FirmsCatalogue.FeaturesMost, int boost = -1, int focus = -1)
         {
+            points = SegmentRules.Pay(p, points);   // a model's re-launch is paid first: the work it owes comes out of the day's points before any feature
             int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(focus >= 0 ? focus : firm.Focus, 0, (int)Focus.Count - 1)];
             long feature = (long)points * split[0] / 1000 * (1000 + (boost >= 0 ? boost : ProductBoost(c))) / 1000 * 1000 / (1000 + firm.Debt);
             int fix = points * split[1] / 1000 / FirmsCatalogue.PointsPerFix + testing;   // a tester's point fixes a bug

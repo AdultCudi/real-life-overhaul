@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>Fills in the buildings of the player's online shops; false while the online shops are not running.</summary>
         public static Func<List<BuildingRegistration>, bool> Shops;
 
+        /// <summary>True for a building that is a warehouse of the player's fitted out as a data centre: the only place a leased line is sold. Default: none, so none is sold.</summary>
+        public static Func<BuildingRegistration, bool> LineSite;
+
         /// <summary>The credit grade, fair (2) while nothing says otherwise.</summary>
         public static int GradeNow
         {
@@ -54,6 +57,7 @@ namespace RealLifeOverhaul.Utilities
             FirmWork = null;
             ShopMost = null;
             Shops = null;
+            LineSite = null;
         }
     }
 }

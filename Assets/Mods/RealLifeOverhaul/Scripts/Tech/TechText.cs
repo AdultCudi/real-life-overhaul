@@ -99,6 +99,23 @@ namespace RealLifeOverhaul.Tech
 
         public static string SegmentName(Segment segment) => T(Mod + "_tech_segment_" + segment.ToString().ToLowerInvariant());
 
+        /// <summary>
+        /// What a segment means for a product made for it: the list price a month a customer, how many buyers there are, how many of a consumer service's users pay, how many
+        /// customers leave a month and how much support each thousand need a day. Every figure is the one the product is run by (FirmsCatalogue);
+        /// <paramref name="price"/> is the list price as the page writes money.
+        /// </summary>
+        public static string SegmentMeans(Segment segment, string price)
+        {
+            int s = TalentCatalogue.Clamp((int)segment, 0, (int)Segment.Count - 1);
+            string[] pairs =
+            {
+                "price", price, "market", Whole(FirmsCatalogue.Market[s]), "paying", (FirmsCatalogue.ConsumerPaying / 10).ToString(Inv), "churn", Mille(FirmsCatalogue.Churn[s]),
+                "tickets", FirmsCatalogue.Tickets[s].ToString(Inv)
+            };
+            return s == (int)Segment.Consumer ? Fill("reallife_tech_segment_means_consumer", pairs)
+                : s == (int)Segment.Business ? Fill("reallife_tech_segment_means_business", pairs) : Fill("reallife_tech_segment_means_enterprise", pairs);
+        }
+
         public static string FocusName(Focus focus) => T(Mod + "_tech_focus_" + focus.ToString().ToLowerInvariant());
 
         public static string Work(WorkKind kind) => T(Mod + "_tech_work_" + kind.ToString().ToLowerInvariant());
