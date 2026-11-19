@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
         public string MatterText, MatterA, MatterB;          // an office matter waiting, and its two answers
         public bool CanDeclare, CanAsk = true;
         public string DeskLine, DeskFallback, DeskWhy, StartWhy, LateWhy;   // where the desk is; why none could be had; why a shift cannot be begun from here; the same for overtime
+        public string StartKey;                              // the locale key of the start button's words: the working day's, or an officer's patrol begun or ended
         public bool CanStart, CanLate;                       // a shift (or overtime) may be begun from this page, at no desk
         public string AskWhy;
         public readonly List<KeyValuePair<string, string>> Life = new List<KeyValuePair<string, string>>(6);   // the working life: next review, boss, overtime, pension
@@ -232,7 +233,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (j.CanStart)
             {
-                start = b.Button(w.T("reallife_career_button_work", "Start the working day"), UiButtonKind.Secondary, UiIcon.Play, UiAction.Count,
+                start = b.Button(w.T(j.StartKey ?? "reallife_career_button_work", j.StartKey == "reallife_police_button_start" ? "Go on patrol"
+                        : j.StartKey == "reallife_police_button_end" ? "End your shift" : "Start the working day"), UiButtonKind.Secondary, UiIcon.Play, UiAction.Count,
                     WorkBuilder.Do((int)CareerAct.StartWork, 0, j.StartWhy));
             }
             if (j.CanLate)

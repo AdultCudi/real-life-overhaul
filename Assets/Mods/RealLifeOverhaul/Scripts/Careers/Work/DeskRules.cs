@@ -78,7 +78,8 @@ namespace RealLifeOverhaul.Careers
             }
             switch (p.Id)
             {
-                case ProCatalogue.Teacher: return None;
+                case ProCatalogue.Teacher:
+                case ProCatalogue.Police: return None;   // a patrol is worked on the street, from the front desk of the station (Careers/Police)
                 case ProCatalogue.CouncilOfficer: return CouncilKinds;
                 case ProCatalogue.Sales: return SalesKinds;
                 case ProCatalogue.Chef: return TillKinds;

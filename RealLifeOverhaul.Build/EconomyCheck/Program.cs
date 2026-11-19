@@ -1306,6 +1306,18 @@ internal static partial class Program
             return _failed == 0 ? 0 : 1;
         }
 
+        if (args.Length == 1 && args[0] == "--permadeath")
+        {
+            Endings();   // (permadeath alone, while working on it: PermadeathChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--police")
+        {
+            Police();   // (the police career alone, while working on it: PoliceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--health")
         {
             Health();   // (health alone, while working on it: HealthChecks.cs)
@@ -2031,6 +2043,7 @@ internal static partial class Program
         Suppliers();    // suppliers and contracts: prices and terms, take or pay, the judging of a delivery, the remedy, what is owed, the suppliers' own books, the rivals, the buyer's rules, the save, the pages, the sources, the texts (SupplierChecks.cs)
         Insurance();    // insurance: a car's tier and the driver's record on the Garage's premium, a home's premium, what a claim pays and never pays, the first days, the year's limits, the days of grace, the rivals' cover, the save, the pages, the sources, the texts (InsuranceChecks.cs)
         Giving();       // giving: the steps and caps, the charities' months on a city, the deduction, standing and warmth by the sum given, loans, asks, the rivals, the save, the pages, the sources, the texts (GivingChecks.cs)
+        Police();       // the police career: who may join, the outcome table across ranks and dangers, injury and death only where the switches allow, the rating, pay, dismissal, the file, the sources and the texts (PoliceChecks.cs)
         Health();       // health: the draws and the wave, a case's days, plans and claims, bills and the debt, sick leave, the people's day, the staff, the rivals, the save, the option, the pages, the sources, the texts (HealthChecks.cs)
         Subway();       // the districts' subway stations: their place in the game's sorted list, the search, when they stand and when they may go, the people of the line, the campus's gates, the sources (fare, save, session, frame) and the texts (SubwayChecks.cs)
         Stockx();       // the stock market's extras: splits with nothing gained or lost, the fund against its parts, blocks, the bank's own books, the rivals, the save, the sources, the texts (StockxChecks.cs)

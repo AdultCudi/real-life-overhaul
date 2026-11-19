@@ -75,13 +75,13 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private void WorkedMore(Job j, Sitting s, int minutes, int day)
+        private void WorkedMore(Job j, bool overtime, int minutes, int day)
         {
             if (!Settings.CareersLife)
             {
                 return;
             }
-            if (s.Kind == SittingKind.Overtime)
+            if (overtime)
             {
                 j.Overtime += minutes;
             }
@@ -318,6 +318,10 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_work_why_no_job";
             }
             Profession p = j.Def;
+            if (IsPolice(j))
+            {
+                return "reallife_police_why_no_late";   // a patrol is its shift's hours, with no overtime to work
+            }
             if (j.TodayDay != day || j.TodayMinutes * 1000 < p.Hours * 60 * ProRules.CountedShare)
             {
                 return "reallife_life_why_day_first";

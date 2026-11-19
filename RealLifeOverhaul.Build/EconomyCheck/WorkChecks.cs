@@ -29,7 +29,7 @@ internal static partial class Program
             Profession p = ProCatalogue.All[i];
             ids &= p.Id == i && ProCatalogue.Find(i) == p;
             hours &= p.Days != 0 && p.Hours >= 6 && p.Hours <= 10 && p.Hour + p.Hours <= 22 && p.Hour >= 6;
-            types &= p.Public == (p.Place == Workplace.Hospital || p.Place == Workplace.School || p.Place == Workplace.CityHall);
+            types &= p.Public == (p.Place == Workplace.Hospital || p.Place == Workplace.School || p.Place == Workplace.CityHall || p.Place == Workplace.Precinct);
             bool topExec = false;
             for (int r = 0; r < p.Ranks.Length; r++)
             {

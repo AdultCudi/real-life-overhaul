@@ -68,6 +68,68 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>
+        /// The nearest person still lying in the road to a point, for an officer on a police shift (Wiring/PoliceLinks): where, and a number for them that
+        /// lasts as long as they lie there. False for none. At most six, once a second.
+        /// </summary>
+        internal static bool Duty(Vector3 from, out Vector3 where, out int key)
+        {
+            where = Vector3.zero;
+            key = 0;
+            PedestrianIncidents incidents = Instance;
+            if (incidents == null)
+            {
+                return false;
+            }
+            float best = float.MaxValue;
+            for (int i = 0; i < incidents._casualties.Length; i++)
+            {
+                Casualty casualty = incidents._casualties[i];
+                if (!casualty.Present)
+                {
+                    continue;
+                }
+                Vector3 offset = from - casualty.Position;
+                float sqr = offset.x * offset.x + offset.z * offset.z;
+                if (sqr < best)
+                {
+                    best = sqr;
+                    where = casualty.Position;
+                    key = Mathf.RoundToInt(casualty.StruckAt * 10f) | 1;
+                }
+            }
+            return best < float.MaxValue;
+        }
+
+        /// <summary>An officer gave first aid to the person lying nearest the point: one who was only knocked down is helped to their feet. False if nobody was there.</summary>
+        internal static bool DutyAid(Vector3 near, float now)
+        {
+            PedestrianIncidents incidents = Instance;
+            if (incidents == null)
+            {
+                return false;
+            }
+            Casualty nearest = null;
+            float best = float.MaxValue;
+            for (int i = 0; i < incidents._casualties.Length; i++)
+            {
+                Casualty casualty = incidents._casualties[i];
+                if (!casualty.Present)
+                {
+                    continue;
+                }
+                Vector3 offset = near - casualty.Position;
+                float sqr = offset.x * offset.x + offset.z * offset.z;
+                if (sqr < best)
+                {
+                    best = sqr;
+                    nearest = casualty;
+                }
+            }
+            nearest?.Aided(now);
+            return nearest != null;
+        }
+
         /// <summary>The game's own pedestrians still held by casualties, without changing their takeover.</summary>
         internal void AppendBodies(List<object> pedestrians)
         {

@@ -413,6 +413,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_reject", () => Careers.CareersDirector.Instance?.TestReject())
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
+                .AddButton("reallife_police_test_patrol", () => Careers.CareersDirector.Instance?.TestDuty())
+                .AddButton("reallife_police_test_hurt", () => Careers.CareersDirector.Instance?.TestDutyHurt())
                 .AddButton("reallife_work_test_computer", () => Careers.CareersDirector.Instance?.TestComputerWork())
                 .AddButton("reallife_work_test_interview_place", () => Careers.CareersDirector.Instance?.TestInterviewPlace())
                 .AddButton("reallife_work_test_interview_home", () => Careers.CareersDirector.Instance?.TestInterviewHome())

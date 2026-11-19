@@ -4,6 +4,7 @@
 business-pressure	reallife_guide_business	business events
 calendar	reallife_guide_calendar	the Calendar app
 careers	reallife_guide_careers,reallife_guide_careers_life	careers
+careers-police	reallife_guide_careers_jobs	the police career
 character	reallife_guide_character	the player's look
 city-events	reallife_guide_events	fires, weather, street events
 city-life	reallife_guide_citylife	people on the pavements

@@ -233,8 +233,93 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A working day was worked at a profession whose first skill is this one (Health draws an accident at a risky trade). Default: nothing.</summary>
         public static Action<int> ShiftWorked;
 
+        /// <summary>The city's police precincts (Law): each one's name and address, into the list given. Default: none, so no police post is on the jobs board.</summary>
+        public static Action<List<PrecinctView>> Precincts;
+
+        /// <summary>
+        /// What the player's police record and the courts say of them over the last so many days (int.MaxValue: ever), and whether they hold a driving
+        /// licence in good standing and are well enough for duty (Law, Justice, Licences, Health). Default: a clean record, a licence and well.
+        /// </summary>
+        public static Func<int, PoliceRules.Conduct> Conduct;
+
+        /// <summary>
+        /// The incident near the player that an officer on a shift can answer: a street crime, an accident or a person lying in the road (Crime, Traffic,
+        /// Ragdoll). Default: none.
+        /// </summary>
+        public static Func<DutyCall> Incident;
+
+        /// <summary>An incident answered: the scene plays out what came of it. True if the scene took it. Default: nothing happens to the scene.</summary>
+        public static Func<DutyCall, DutyMove, DutyResult, bool> Settle;
+
+        /// <summary>
+        /// The officer is hurt on duty (the hours of injury, the incident's danger): Health gives it a name and a course as an accident at work and Permadeath
+        /// judges it as it judges every danger; 0 hurt, 1 hurt and warned that the next could be fatal, 2 the life ends. Default: 0 and nothing happens.
+        /// </summary>
+        public static Func<int, int, int> Hurt;
+
+        /// <summary>True while one of the gig jobs (Scripts/Jobs) is on a shift: the two share the player's work clothes, so only one runs. Default: no.</summary>
+        public static Func<bool> GigOn;
+
+        /// <summary>The district the player stands in, as a name key the places are named by (Law's nearest precinct's), for an arrest's case. Default: none.</summary>
+        public static Func<string> District;
+
+        public static string DistrictNow()
+        {
+            try
+            {
+                return District != null ? District() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static PoliceRules.Conduct ConductOver(int days)
+        {
+            try
+            {
+                return Conduct != null ? Conduct(days) : new PoliceRules.Conduct { SinceOffence = -1, Licence = true, Sound = true, Fit = true };
+            }
+            catch (Exception)
+            {
+                return new PoliceRules.Conduct { SinceOffence = -1, Licence = true, Sound = true, Fit = true };
+            }
+        }
+
+        public static DutyCall IncidentNow()
+        {
+            try
+            {
+                return Incident != null ? Incident() : default;
+            }
+            catch (Exception)
+            {
+                return default;
+            }
+        }
+
+        public static bool GigOnNow()
+        {
+            try
+            {
+                return GigOn != null && GigOn();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static void Reset()
         {
+            Precincts = null;
+            Conduct = null;
+            Incident = null;
+            Settle = null;
+            Hurt = null;
+            GigOn = null;
+            District = null;
             DayMissed = null;
             ShiftWorked = null;
             Learners = null;
@@ -275,6 +360,33 @@ namespace RealLifeOverhaul.Careers
         public string Place;     // the shop or service the board stands outside (its door is not the office), or null with no board
         public bool Works;       // a building trades' employer (no board): the practice's floor or the works sites, with a line of its own
         public string Line;      // that line's text key: its practice, its works sites or that nothing stands (null for an employer with a board)
+    }
+
+    /// <summary>One police precinct, as careers read it: where its post is.</summary>
+    public struct PrecinctView
+    {
+        public string Name, Street;   // the name as shown, and the street of its building
+        public int Number;
+    }
+
+    /// <summary>Which scene an incident is of, for the one that settles it. Not saved.</summary>
+    public enum DutySource
+    {
+        Crime = 0,      // a staged street crime (Crime/CrimeDirector)
+        Accident = 1,   // a road accident (Traffic/TrafficAccidents)
+        Casualty = 2    // a person lying in the road (Ragdoll/PedestrianIncidents)
+    }
+
+    /// <summary>An incident an officer on a shift can answer, as careers read it. Game-free.</summary>
+    public struct DutyCall
+    {
+        public bool Present;
+        public DutySource Source;
+        public DutyKind Kind;
+        public int Danger;      // PoliceRules.Routine to Deadly
+        public int Key;         // names this incident among the others, as long as it lasts
+        public int Metres;      // from the player, flat
+        public string Id;       // a crime's id in the catalogue, for the log; null for the others
     }
 
     /// <summary>One rival's ad on the jobs board, as careers read it.</summary>

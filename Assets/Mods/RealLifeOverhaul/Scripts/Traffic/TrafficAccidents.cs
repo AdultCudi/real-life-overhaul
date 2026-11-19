@@ -70,6 +70,26 @@ namespace RealLifeOverhaul
 
         public bool HasActiveAccident => _phase != Phase.None;
 
+        /// <summary>
+        /// The accident on the street now, for an officer on a police shift (Wiring/PoliceLinks): where it is, how serious (0 slight, 1 serious, 2 severe) and
+        /// whether it is a person struck. False for none. Field reads only.
+        /// </summary>
+        internal static bool Duty(out Vector3 where, out int severity, out bool person)
+        {
+            TrafficAccidents a = Instance;
+            where = Vector3.zero;
+            severity = 0;
+            person = false;
+            if (a == null || !a.HasActiveAccident)
+            {
+                return false;
+            }
+            where = a._scene;
+            severity = (int)a._severity;
+            person = a._casualtyScene;
+            return true;
+        }
+
         /// <summary>True while an accident scene is on the street. Only one incident of any kind runs at a time.</summary>
         public static bool IsActive => Instance != null && Instance.HasActiveAccident;
 

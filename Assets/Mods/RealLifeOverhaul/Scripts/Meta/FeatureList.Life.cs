@@ -467,8 +467,8 @@ namespace RealLifeOverhaul.Meta
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
                 .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
                 .Owns(Settings.CareersJobsId, Settings.CareersAgencyNoteId, Settings.CareersRejectReasonId)
-                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies")
-                .Data(Careers.CareersStore.Key)
+                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies", "reallife_police_test_patrol", "reallife_police_test_hurt")
+                .Data(Careers.CareersStore.Key, Careers.DutyStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddLifeFacts(Features.Add("careers_life", "reallife_meta_title_careers_life")

@@ -625,7 +625,7 @@ internal static partial class Program
         { "Meta/StaffView.cs", "none:a search box of the Staff app, which gives the keys back as its typing ends, whatever is off" },
         { "Camera/ChaseCamera.cs", "cleanup:camera" }, { "Camera/ThirdPersonCamera.cs", "cleanup:camera" },
         { "Careers/ComputerSitting.cs", "cleanup:careers_study" }, { "Careers/DeskGame.cs", "cleanup:careers_study" }, { "Careers/InterviewVisit.cs", "cleanup:careers_study" },
-        { "Careers/SchoolDesk.cs", "cleanup:careers_study" },
+        { "Careers/SchoolDesk.cs", "cleanup:careers_study" }, { "Careers/Police/PoliceDesk.cs", "cleanup:careers_jobs" },
         { "Construction/BuildModeGame.cs", "cleanup:construction" }, { "Construction/BuilderDeskGame.cs", "cleanup:construction" },
         { "Economy/Dealer/Floor/ShowroomGame.cs", "cleanup:economy_dealer" }, { "Economy/Ventures/PitchMeeting.cs", "cleanup:ventures" },
         { "Jobs/JobBody.cs", "cleanup:jobs" }, { "Leisure/LeisureBody.cs", "cleanup:leisure" }, { "Leisure/Photo/PhotoMode.cs", "cleanup:leisure" },

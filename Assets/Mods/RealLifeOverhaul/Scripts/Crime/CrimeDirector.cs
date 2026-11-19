@@ -90,6 +90,48 @@ namespace RealLifeOverhaul
 
         private int _wastedDay = -1;
         private int _wastedCalls;
+        private int _serial;   // numbers each scene begun, so an officer's incident is the same one while it lasts (Careers/Police)
+
+        /// <summary>
+        /// The street crime going on now, for an officer on a police shift (Wiring/PoliceLinks): its id in the catalogue, where it plays and a number for it
+        /// that lasts as long as it does. False for none. Field reads only.
+        /// </summary>
+        internal static bool Duty(out string id, out Vector3 focus, out int key)
+        {
+            ICrimeScene scene = Instance != null ? Instance._scene : null;
+            id = null;
+            focus = Vector3.zero;
+            key = 0;
+            if (scene == null || !scene.Active || scene.Entry == null)
+            {
+                return false;
+            }
+            id = scene.Id;
+            focus = scene.Focus;
+            key = Instance._serial;
+            return true;
+        }
+
+        /// <summary>An officer answered the crime going on: the scene plays out what came of it. False if it was gone.</summary>
+        internal static bool DutySettle(Careers.DutyMove move, Careers.DutyResult result)
+        {
+            CrimeDirector director = Instance;
+            ICrimeScene scene = director != null ? director._scene : null;
+            PlayerController player = PlayerHelper.PlayerController;
+            if (scene == null || !scene.Active || player == null)
+            {
+                return false;
+            }
+            try
+            {
+                return scene.Duty(move, result, Time.time, player.transform.position);
+            }
+            catch (Exception e)
+            {
+                director.Fault(e);
+                return false;
+            }
+        }
 
         private void Awake()
         {
@@ -168,7 +210,8 @@ namespace RealLifeOverhaul
             _nextCheck = now + CheckInterval;
             try
             {
-                if (Settings.StreetCrime && CanStage() && Random.value < Settings.CrimeFrequency * 0.02f * PlaceShare() * Events.Weather.CrimeFactor * CityWatch.CrimeScale * CityWatch.ResidentsScale)
+                if (Settings.StreetCrime && CanStage() && Random.value < Settings.CrimeFrequency * 0.02f * PlaceShare() * Events.Weather.CrimeFactor * CityWatch.CrimeScale
+                    * CityWatch.ResidentsScale * CityWatch.DispatchScale)
                 {
                     Deal(now);
                 }
@@ -369,6 +412,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             _scene = scene;
+            _serial++;
             _nextTick = now + TickInterval;
             if (!_markerLabels.TryGetValue(entry.Marker, out _markerLabel))
             {

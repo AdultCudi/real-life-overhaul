@@ -82,6 +82,7 @@ namespace RealLifeOverhaul
                 DoctorVisit.Treated = () => Safe("HealthLinks.Treated", () => HealthDirector.Instance?.DoctorTreated());
                 DoctorVisit.Wait = Wait;
                 LifeEvents.Hurt = hours => Safe("HealthLinks.Hurt", () => HealthDirector.Instance?.Hurt(hours));
+                LifeEvents.HurtOnDuty = hours => Safe("HealthLinks.HurtOnDuty", () => HealthDirector.Instance?.HurtOnDuty(hours));
                 PhoneContacts.DoctorFirst = DoctorFirst;
                 CareersBridges.DayMissed = (day, pay, hired, shift, worked) => Safe("HealthLinks.DayMissed", () => HealthDirector.Instance?.DayMissed(day, pay, hired, shift, worked));
                 CareersBridges.ShiftWorked = skill => Safe("HealthLinks.ShiftWorked", () => HealthDirector.Instance?.ShiftWorked(Risk(skill)));
@@ -110,6 +111,7 @@ namespace RealLifeOverhaul
                 DoctorVisit.Treated = null;
                 DoctorVisit.Wait = null;
                 LifeEvents.Hurt = null;
+                LifeEvents.HurtOnDuty = null;
                 PhoneContacts.DoctorFirst = null;
                 CareersBridges.DayMissed = null;
                 CareersBridges.ShiftWorked = null;
