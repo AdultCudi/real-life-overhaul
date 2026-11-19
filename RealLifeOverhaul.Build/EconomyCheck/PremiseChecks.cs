@@ -304,7 +304,7 @@ internal static partial class Program
               && ModSource(@"Ui\Flare\FlareScreen.Fill.cs").Contains("Text = words ?? _flare.FriendLine(p, index, people[k]),"),
             "no line twice running: both Flare screens draw a friend's written comment through the walk over their earlier comments");
 
-        string life = MemberText(ModSource(@"Social\SocialLife.cs"), "public static bool SendText(SocialPerson person, string key, Dictionary<string, string> data, bool must = false)");
+        string life = MemberText(ModSource(@"Social\SocialLife.cs"), "public static bool SendText(SocialPerson person, string key, Dictionary<string, string> data, bool must = false, bool reply = false)");
         string lines = ModSource(@"Social\SocialCatalogue.cs");
         Check(life.Contains("key = SocialLines.After(person.LastLine, key, must);") && Occurs(life, "person.LastLine = key;") == 2 && life.IndexOf("if (key == null)", StringComparison.Ordinal) > 0
               && lines.Contains("Pools[pool[index]] = pool;") && lines.Contains("return SocialAskRules.Next(last, key, key != null && Pools.TryGetValue(key, out string[] pool) ? pool : null, must, Dice.Next(), Fits);"),

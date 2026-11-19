@@ -242,7 +242,15 @@ namespace RealLifeOverhaul.Careers
             }
             long interest = StudyRules.LoanInterest(_study.LoanCents, GameCalendar.DaysPerYear);
             _study.LoanCents += interest;
-            int faded = StudyRules.Fade(_study, day);
+            int faded = 0;
+            if (Settings.CareersSkillFade)
+            {
+                faded = StudyRules.Fade(_study, day);
+            }
+            else
+            {
+                StudyRules.Hold(_study, day);
+            }
             if (Verbose && (faded > 0 || interest > 0))
             {
                 Logger?.Info("Careers check (study day " + day + "): skills faded " + faded + " thousandths in all, loan interest " + interest + " cents: PASS");

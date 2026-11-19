@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Meta
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
                     .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
-                    "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
+                    "family_year_weeks").FreeOpts("family_mom_contact").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
@@ -357,7 +357,7 @@ namespace RealLifeOverhaul.Meta
                 S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
                     .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
                     .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
-                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
+                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start", "careers_skill_fade")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")
                     .Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
@@ -412,7 +412,7 @@ namespace RealLifeOverhaul.Meta
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff")
-                    .Opt("economy_company_agree_up_to", "economy_company_staff")
+                    .Opt("economy_company_agree_up_to", "economy_company_staff").Opt("economy_company_match_rivals", "economy_company_staff")
                     .Opts("economy_company_cover", "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
                     .Also("shop wages insurance advertising accountant permits")
                     .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "

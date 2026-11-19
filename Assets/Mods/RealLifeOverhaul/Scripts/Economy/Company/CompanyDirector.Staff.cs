@@ -182,6 +182,27 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// A rival's offer just made to somebody, matched at once as the player's Match it is (<see cref="StaffRules.OfferAnswer"/>), when "Match rivals' offers
+        /// automatically" is on, the offer is within the limit of the option that agrees raises by itself, and no manager answers offers there. False where it
+        /// is not, and the offer waits for its answer as before. The player is told of the night's matches together, never for each.
+        /// </summary>
+        private bool MatchRival(StaffFile f, int day)
+        {
+            int limit = RivalMatchRules.Limit(Settings.EconomyCompanyAgreeUpTo, CompanyCatalogue.AgreeUpToMost);
+            if (!Settings.EconomyCompanyMatchRivals || f.PoachDay == 0 || StaffRules.GivesWay(f) || Manages(f.Place, ManagerTask.Offers, f.Id)
+                || !RivalMatchRules.WithinOffer(f.Paid, f.PoachOffer, limit))
+            {
+                return false;
+            }
+            string rival = f.Rival;
+            int offer = f.PoachOffer, before = f.Paid;
+            StaffRules.OfferAnswer(f, true, day);
+            RivalMatches.Matched(day, RivalMatchRules.Monthly(System.Math.Max(0, f.Paid - before), GameCalendar.MonthDays));
+            Logger?.Info("Company: " + rival + "'s offer of " + offer + " an hour (hundredths) to " + f.Name + " matched by itself (limit " + limit + "%): agreed raise now " + f.Raise + ".");
+            return true;
+        }
+
         private void Approach(int day)
         {
             CompanyState s = _state;
@@ -194,6 +215,10 @@ namespace RealLifeOverhaul.Economy
             string rival = shop != null && CompanyBridges.Rival != null ? CompanyBridges.Rival(shop.Reg) : null;
             StaffRules.Offer(f, CompanyStore.Clean(string.IsNullOrEmpty(rival) ? CompanyText.T("reallife_co_rival_default") : rival), day);
             s.PoachRest = day + CompanyCatalogue.PoachCompanyRestDays;
+            if (MatchRival(f, day))
+            {
+                return;   // matched by itself, and told with the others of the night in one notice (RivalMatches)
+            }
             if (!Manages(f.Place, ManagerTask.Offers, f.Id))
             {
                 Tell(NotificationType.Warning, "reallife_co_note_offer", new Dictionary<string, string>
@@ -260,6 +285,7 @@ namespace RealLifeOverhaul.Economy
         // some hours and reopens them itself.
         partial void StaffHour(int day, int hour)
         {
+            RivalMatches.Flush(day, hour);   // the night's matched offers, told once (also by the professionals' hour)
             GiveWayAll(day);
             if (hour != CompanyCatalogue.StrikeHour)
             {

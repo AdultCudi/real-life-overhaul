@@ -444,7 +444,7 @@ namespace RealLifeOverhaul.Meta
             // The courses and what runs with them share the jobs header.
             Careers.CareersGuide.AddStudyFacts(Features.Add("careers_study", "reallife_meta_title_careers_study")
                 .About("reallife_guide_careers_study_about").Help("reallife_guide_careers_study")
-                .Owns(Settings.CareersStudyId, Settings.CareersClassStartId)
+                .Owns(Settings.CareersStudyId, Settings.CareersClassStartId, Settings.CareersSkillFadeId)
                 .Test("reallife_study_test_class", "reallife_study_test_exam", "reallife_study_test_skills")
                 .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
@@ -752,7 +752,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")
                 .Owns(Settings.FamilyId, Settings.FamilyAtHomeId, Settings.FamilyWeddingId, Settings.FamilyChildrenId, Settings.FamilyRelativesId,
-                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId)
+                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId, Settings.FamilyMomContactId)
                 .Preset(Settings.FamilyFrictionId, 0, 1, 1)
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")

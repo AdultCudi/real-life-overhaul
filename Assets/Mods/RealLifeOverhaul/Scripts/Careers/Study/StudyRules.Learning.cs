@@ -134,6 +134,25 @@ namespace RealLifeOverhaul.Careers
             return StudyCatalogue.WorkLearn * hours * (100 - Points(f, skill)) / 100 * ladder / 1000;
         }
 
+        /// <summary>
+        /// Whether a skill is fading on <paramref name="day"/>: above the least that fades and unused for more than
+        /// <see cref="StudyCatalogue.FadeAfterDays"/> days, counted from <see cref="StudyFile.FadeFrom"/> at the earliest.
+        /// </summary>
+        public static bool Fading(StudyFile f, int skill, int day)
+        {
+            return skill >= 0 && skill < Skills.Count && f.Skill[skill] > StudyCatalogue.FadeLeast * 1000
+                   && day - Math.Max(f.Used[skill], f.FadeFrom) > StudyCatalogue.FadeAfterDays;
+        }
+
+        /// <summary>
+        /// A midnight with "Skills fade without practice" off: nothing fades, and the day is kept so that switching it on again does
+        /// not take a long idle spell off in one go: fading starts again from that day.
+        /// </summary>
+        public static void Hold(StudyFile f, int day)
+        {
+            f.FadeFrom = Math.Max(f.FadeFrom, day);
+        }
+
         /// <summary>A day gone by: a skill unused for over <see cref="StudyCatalogue.FadeAfterDays"/> days fades, within its floors; returns the thousandths lost.</summary>
         public static int Fade(StudyFile f, int day)
         {
@@ -141,7 +160,7 @@ namespace RealLifeOverhaul.Careers
             for (int s = 0; s < Skills.Count; s++)
             {
                 int now = f.Skill[s];
-                if (now <= StudyCatalogue.FadeLeast * 1000 || day - f.Used[s] <= StudyCatalogue.FadeAfterDays)
+                if (!Fading(f, s, day))
                 {
                     continue;
                 }

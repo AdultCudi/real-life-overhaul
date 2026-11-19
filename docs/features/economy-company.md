@@ -47,6 +47,16 @@ Wiring/CompanyLinks.cs  business pressure, fires, break-ins, the courts, the pap
 **Adding a part** is a rules file (game-free, with checks), a `CompanyDirector.X.cs` that fills in the partial methods `XDay` and `XAlerts`, a `CompanyApp.X.cs` that fills in `WriteX`, a value of `CompanyPart`, a switch in the options and the names in the catalogue.
 The core calls a part's day inside its own `try`: a fault there switches that part off for the session with one line and the others go on.
 
+## Rivals' offers matched by themselves (`RivalMatchRules`, `RivalMatches`)
+
+- The option **Match rivals' offers automatically** (`economy_company_match_rivals`, off by default, needs staff pay) matches a rival's offer the moment it is made, by the answer the Match it button gives
+  (`StaffRules.OfferAnswer(f, true, day)` for staff, `TalentRules.Answer` after `Raise` for professionals), when the offer is within the limit of **Agree to raises automatically, up to (%)** (`RivalMatchRules.WithinOffer`
+  against the pay for staff, `WithinBp` for a professional's basis points over it). With that limit at 0 nothing is matched. An offer to staff that a manager answers is left to the manager.
+- The matches of a night are told once: each adds its extra cost a month to `RivalMatches` (a 40 hour week over the days of the save's month), and the first hour of the day says "N kept, about X a month more". The Company's hourly pass and
+  the professionals' hourly pass both flush it, so one notice comes whichever runs.
+- The game's own rival offers (the messages with Accept and Decline) are the game's and are not answered by this.
+- The switch is also on the Team page of Open Roles. Checks: `--options4`.
+
 ## What the game already had, and what was therefore built
 
 | Part | The game's own, left as it is | Built here |

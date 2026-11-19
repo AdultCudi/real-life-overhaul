@@ -332,7 +332,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_study_why_ceremony_hour", "reallife_study_why_ceremony_place", "reallife_study_exam_where_desk", "reallife_study_exam_where_room",
                 "reallife_study_exam_where_ward", "reallife_study_exam_line_open", "reallife_study_exam_line_retake", "reallife_study_exam_line_later_classes",
                 "reallife_study_exam_line_later_homework", "reallife_study_exam_line_short", "reallife_work_missing_one_of", "reallife_work_why_no_chance",
-                "reallife_ladder_why_days", "reallife_ladder_why_score", "reallife_ladder_why_skills", "reallife_ladder_why_stores", "reallife_ladder_why_recommend"
+                "reallife_ladder_why_days", "reallife_ladder_why_score", "reallife_ladder_why_skills", "reallife_ladder_why_stores", "reallife_ladder_why_recommend",
+                "reallife_roles_sec_raise", "reallife_roles_raise_nobody", "reallife_roles_raise_none", "reallife_work_raise_note", "reallife_work_stat_raise",
+                "reallife_work_raise_all", "reallife_work_match_on", "reallife_work_match_off"
             };
         }
     }

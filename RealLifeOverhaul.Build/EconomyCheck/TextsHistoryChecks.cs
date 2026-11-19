@@ -278,7 +278,7 @@ internal static partial class Program
         string hourly = MemberText(contact, "private void Hourly(");
         string next = MemberText(contact, "private static bool NextDayText(");
         Check(test >= 0 && kept > test && settle.Contains("_who.AfterWell = wentWell;") && settle.Contains("_who.AfterKind = _kind;")
-              && director.Contains("if (SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), data))") && director.Contains("_thanks.AfterDay = 0;"),
+              && director.Contains("if (SocialLife.SendText(_thanks, SocialLines.Pick(SocialCatalogue.TextThanks), data, false, true))") && director.Contains("_thanks.AfterDay = 0;"),
             "texts history: an outing that ends (not a test's) is kept for the day after, how it went and where; a good one's thanks sent the same day lets it go");
         int capped = hourly.IndexOf("!SocialLife.MayText()", StringComparison.Ordinal);
         int news = hourly.IndexOf("_reactedBreakInDay != day", StringComparison.Ordinal);

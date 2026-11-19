@@ -493,7 +493,7 @@ namespace RealLifeOverhaul.Careers
                 row.Set(1, CareersText.Points(f.Skill[s]), f.Skill[s]);
                 row.Set(2, CareersText.Points(f.Best[s]), f.Best[s]);
                 row.Set(3, f.Skill[s] > 0 ? CareersText.Day(f.Used[s]) : "-", f.Used[s]);
-                bool fading = f.Skill[s] > StudyCatalogue.FadeLeast * 1000 && day - f.Used[s] > StudyCatalogue.FadeAfterDays;
+                bool fading = Settings.CareersSkillFade && StudyRules.Fading(f, s, day);
                 row.Set(4, CareersText.T(f.Skill[s] <= 0 ? "reallife_campus_skill_none" : fading ? "reallife_campus_skill_fading" : "reallife_campus_skill_kept"),
                     fading ? TableRow.Yellow : TableRow.Plain);
                 row.Kind = Skills.Professional(s) ? CampusColumns.SkillProfession : CampusColumns.SkillTrade;
@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (index >= 0 && index < Skills.Count)
             {
-                bool fading = f.Skill[index] > StudyCatalogue.FadeLeast * 1000 && day - f.Used[index] > StudyCatalogue.FadeAfterDays;
+                bool fading = Settings.CareersSkillFade && StudyRules.Fading(f, index, day);
                 box.Title(CareersText.Skill(index));
                 box.Chip(CareersText.T(f.Skill[index] <= 0 ? "reallife_campus_skill_none" : fading ? "reallife_campus_skill_fading" : "reallife_campus_skill_kept"),
                     fading ? CellTone.Yellow : CellTone.Plain);
@@ -517,7 +517,9 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_campus_skills_title"));
-            box.Note(CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor)));
+            box.Note(Settings.CareersSkillFade
+                ? CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor))
+                : CareersText.T("reallife_campus_skills_about_steady"));
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_campus_sum_skills", any.ToString());
             TutorButton(box);

@@ -130,7 +130,7 @@ namespace RealLifeOverhaul
             data["t_place"] = string.Empty;   // (no outing: RLO Texts' thanks card needs one, so a test is the written line)
             data["t_kind"] = PlanKind.Coffee.ToString();
             string key = SocialFollowRules.Line(SocialFollowRules.NextDayLines(person.IsFamily, person.Together, well), SocialLife.Day + _nextDayTurn / 2, person.Seed);
-            bool sent = SocialLife.SendText(person, key, data, true);
+            bool sent = SocialLife.SendText(person, key, data, true, true);
             Logger?.Info("Social check (the day after test): " + person.Name + (well ? " after a good one" : " after a bad one") + ": " + key + (sent ? ": PASS" : ": FAIL, it could not be sent"));
         }
     }

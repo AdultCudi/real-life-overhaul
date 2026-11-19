@@ -277,7 +277,7 @@ namespace RealLifeOverhaul
             if (!_heldWarned && held > HoldNudge)
             {
                 _heldWarned = true;
-                SocialLife.SendText(_who, "reallife_social_text_outside", SocialLife.Data(_who), true);
+                SocialLife.SendText(_who, "reallife_social_text_outside", SocialLife.Data(_who), true, true);
             }
             if (held > HoldMost)
             {
