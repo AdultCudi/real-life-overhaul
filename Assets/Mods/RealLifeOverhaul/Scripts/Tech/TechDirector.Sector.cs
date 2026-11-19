@@ -197,6 +197,7 @@ namespace RealLifeOverhaul.Tech
                     md.Who, SectorRules.Boost(sp, day));
                 if (p.Live)
                 {
+                    _sector.ProductFor(p.Id).Known = _aware[i];
                     SectorRules.Join(md, SectorRules.Attraction(_appeals[i], _aware[i]));
                     RivalryOwn(firm, p, md, day, i);
                 }

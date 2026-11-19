@@ -300,6 +300,7 @@ internal static partial class Program
         prod.DiscountUntil = 400;
         prod.TrainedDay = 63;
         prod.Data = 21;
+        prod.Known = 321;
         string line = SectorStore.Write(f);
         SectorFile back = SectorStore.Read(line, out int version);
         SectorFirm bf = back.FirmAt("Long%20Rd~7");
@@ -311,7 +312,7 @@ internal static partial class Program
             "sector save: the header, the city, the anchors and the companies come back as written");
         Check(bf != null && bf.LastOutage == 40 && bf.LostToOutage == 321 && bf.OfferCarry == 777777 && bf.PortfolioUntil == 99 && bf.PitchTender == 12 && bf.PitchWeight == -100 && bf.SprintUntil == 47
               && bf.Sprint == 2 && bf.Release == 0 && bf.DivertUntil == 51 && bf.ReliableUntil == 52 && bf.IncidentFrom == 8
-              && bp != null && bp.Benchmark == 66 && bp.Generation == 8 && bp.BoostUntil == 70 && bp.Boost == 150 && bp.DiscountUntil == 400 && bp.TrainedDay == 63 && bp.Data == 21,
+              && bp != null && bp.Benchmark == 66 && bp.Generation == 8 && bp.BoostUntil == 70 && bp.Boost == 150 && bp.DiscountUntil == 400 && bp.TrainedDay == 63 && bp.Data == 21 && bp.Known == 321,
             "sector save: a firm's record and a product's come back as written");
         Check(back.Rivals.Count == f.Rivals.Count && back.Rivals[2].Customers == 123456 && back.Rivals[2].Tier == 0 && startup != null && startup.Stage == 2 && startup.Carry == 999999
               && startup.Name.IndexOf('|') < 0 && SectorStore.Write(back) == SectorStore.Write(SectorStore.Read(SectorStore.Write(back), out _)),
