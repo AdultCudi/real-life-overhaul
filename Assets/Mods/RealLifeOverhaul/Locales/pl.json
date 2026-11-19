@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Stworzone dla niszy {niche}: jej klienci to {who}, więc sprzedaje im po cenie z cennika.",
   "reallife_tech_mkt_product_niche_off": "Ten produkt jest stworzony dla: {who}. {niche} nie robi tu zakupów, więc produkt sprzedaje się na cały rynek, a nisza go nie liczy. Aby sprzedawać w niszy, uruchom produkt stworzony dla {niche}.",
   "reallife_texts_rule_side": "życzenia od złej strony",
+  "reallife_rota_failed": "Planer nie zdołał teraz obliczyć tej firmy. Spróbuje ponownie, gdy zmienią się stanowiska pracy, personel albo dzień. Szczegóły są w Player.log.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} ma twoje słowo na {amount}. {firm} zmienia właściciela w chwili, gdy wyjdziesz na zewnątrz. Do tego czasu możesz to odwołać na stronie Wyjścia.",
   "reallife_tech_desk_exit_already_agreed": "Sprzedaż tej firmy jest już uzgodniona. Dokończy się, gdy wyjdziesz na zewnątrz, albo możesz ją odwołać na stronie Wyjścia.",
   "reallife_exit_agreed_line": "Uzgodnione: {firm} przechodzi do {buyer} za {amount}, gdy wyjdziesz na zewnątrz, na tych warunkach: {terms}. Wygasa po dniu {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Prowadź swoje sprawy",
   "reallife_police_desk_cases_detail": "Przesłuchaj świadka, sprawdź miejsce zdarzenia albo spisz akta: jedna czynność na sprawę i kilka na zmianę.",
   "reallife_ui_rivals_week_change": "Zmiana z 7 dni",
-  "reallife_rota_failed": "Planer nie zdołał teraz obliczyć tej firmy. Spróbuje ponownie, gdy zmienią się stanowiska pracy, personel albo dzień. Szczegóły są w Player.log.",
+  "reallife_opt_sec_estateflats": "Mieszkania i kawalerki",
   "reallife_flat_tenant_home": "Mieszkasz tutaj",
   "reallife_flat_tenant_empty": "Pusto",
   "reallife_ui_estate_roll_sub_flats": "Budynków: {buildings}, mieszkań: {flats}, lokali łącznie: {units}",
   "reallife_ui_estate_roll_waiting": "{waiting} czeka na ciebie",
-  "reallife_ui_estate_roll_waiting_clear": "nic nie czeka na ciebie",
-  "reallife_opt_sec_estateflats": "Mieszkania i kawalerki"
+  "reallife_ui_estate_roll_waiting_clear": "nic nie czeka na ciebie"
 }

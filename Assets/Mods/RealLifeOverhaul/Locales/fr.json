@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Conçu pour {niche} : ses clients sont {who}, donc il leur est vendu au prix du tarif.",
   "reallife_tech_mkt_product_niche_off": "Ce produit est conçu pour {who}, que {niche} n'achète pas, donc il se vend à tout le marché et la niche ne compte pas pour lui. Lancez un produit conçu pour {niche} pour vendre là-bas.",
   "reallife_texts_rule_side": "un souhait venu du mauvais côté",
+  "reallife_rota_failed": "Le planificateur n'a pas pu établir le planning de cette entreprise pour l'instant. Il réessaie quand les postes de travail, le personnel ou le jour changent. Player.log contient le détail.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} a donné sa parole pour {amount}. {firm} change de mains dès que vous sortez. Vous pouvez annuler la vente sur la page Cessions d'ici là.",
   "reallife_tech_desk_exit_already_agreed": "Une vente de cette entreprise est déjà conclue. Elle se finalise quand vous sortez, ou vous pouvez l'annuler sur la page Cessions.",
   "reallife_exit_agreed_line": "Convenu : {firm} passe à {buyer} pour {amount} quand vous sortez, selon ces conditions : {terms}. L'accord expire après le jour {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Traiter vos affaires",
   "reallife_police_desk_cases_detail": "Interroger un témoin, examiner la scène ou rédiger un dossier : une action par affaire et quelques-unes par service.",
   "reallife_ui_rivals_week_change": "Variation 7 jours",
-  "reallife_rota_failed": "Le planificateur n'a pas pu établir le planning de cette entreprise pour l'instant. Il réessaie quand les postes de travail, le personnel ou le jour changent. Player.log contient le détail.",
+  "reallife_opt_sec_estateflats": "Appartements et studios",
   "reallife_flat_tenant_home": "Vous habitez ici",
   "reallife_flat_tenant_empty": "Vide",
   "reallife_ui_estate_roll_sub_flats": "{buildings} bâtiment(s) et {flats} appartement(s), {units} lot(s) au total",
   "reallife_ui_estate_roll_waiting": "{waiting} en attente de vous",
-  "reallife_ui_estate_roll_waiting_clear": "rien en attente de vous",
-  "reallife_opt_sec_estateflats": "Appartements et studios"
+  "reallife_ui_estate_roll_waiting_clear": "rien en attente de vous"
 }

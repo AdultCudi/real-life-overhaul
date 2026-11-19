@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Gemaakt voor {niche}: de klanten zijn {who}, dus die kopen het tegen de lijstprijs.",
   "reallife_tech_mkt_product_niche_off": "Dit product is gemaakt voor {who}, die {niche} niet inkoopt, dus het wordt op de hele markt verkocht en de niche telt er niet voor mee. Begin met een product voor {niche} om daar te verkopen.",
   "reallife_texts_rule_side": "een wens van de verkeerde kant",
+  "reallife_rota_failed": "De planner kon dit bedrijf op dit moment niet uitrekenen. Hij probeert het opnieuw als de werkstations, het personeel of de dag verandert. Player.log bevat de details.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} heeft je woord voor {amount}. {firm} wisselt van eigenaar zodra je naar buiten stapt. Tot die tijd kun je het afblazen op de pagina Exits.",
   "reallife_tech_desk_exit_already_agreed": "Een verkoop van dit bedrijf is al afgesproken. Die wordt afgerond als je naar buiten stapt, of je blaast hem af op de pagina Exits.",
   "reallife_exit_agreed_line": "Afgesproken: {firm} gaat naar {buyer} voor {amount} zodra je naar buiten stapt, op deze voorwaarden: {terms}. Het vervalt na dag {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Werk aan je zaken",
   "reallife_police_desk_cases_detail": "Ondervraag een getuige, controleer de plaats delict of rond het dossier af: één actie per zaak en een paar per dienst.",
   "reallife_ui_rivals_week_change": "Wijziging 7 dagen",
-  "reallife_rota_failed": "De planner kon dit bedrijf op dit moment niet uitrekenen. Hij probeert het opnieuw als de werkstations, het personeel of de dag verandert. Player.log bevat de details.",
+  "reallife_opt_sec_estateflats": "Flats en studio's",
   "reallife_flat_tenant_home": "Je woont hier",
   "reallife_flat_tenant_empty": "Leeg",
   "reallife_ui_estate_roll_sub_flats": "{buildings} gebouw(en) en {flats} flat(s), {units} eenheid(en) in totaal",
   "reallife_ui_estate_roll_waiting": "{waiting} wacht(en) op jou",
-  "reallife_ui_estate_roll_waiting_clear": "niets wacht op jou",
-  "reallife_opt_sec_estateflats": "Flats en studio's"
+  "reallife_ui_estate_roll_waiting_clear": "niets wacht op jou"
 }

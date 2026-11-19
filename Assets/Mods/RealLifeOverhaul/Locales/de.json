@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Gemacht für {niche}: Die Kunden sind {who}, deshalb verkauft es an sie zum Listenpreis.",
   "reallife_tech_mkt_product_niche_off": "Dieses Produkt ist für {who} gemacht, was {niche} nicht einkauft. Deshalb verkauft es sich an den gesamten Markt, und die Nische zählt dafür nicht. Starte ein Produkt für {niche}, um dort zu verkaufen.",
   "reallife_texts_rule_side": "ein Glückwunsch von der falschen Seite",
+  "reallife_rota_failed": "Der Dienstplaner konnte dieses Unternehmen gerade nicht berechnen. Er versucht es erneut, wenn sich die Arbeitsplätze, das Personal oder der Tag ändern. Player.log enthält die Einzelheiten.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} hat dein Wort über {amount}. {firm} wechselt den Besitzer in dem Moment, in dem du hinausgehst. Bis dahin kannst du es auf der Seite Ausstiege abbrechen.",
   "reallife_tech_desk_exit_already_agreed": "Ein Verkauf dieser Firma ist schon vereinbart. Er wird abgeschlossen, wenn du hinausgehst, oder du brichst ihn auf der Seite Ausstiege ab.",
   "reallife_exit_agreed_line": "Vereinbart: {firm} geht für {amount} an {buyer}, wenn du hinausgehst, zu diesen Bedingungen: {terms}. Das Angebot erlischt nach Tag {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Deine Fälle bearbeiten",
   "reallife_police_desk_cases_detail": "Einen Zeugen befragen, den Tatort prüfen oder die Akte schreiben: eine Aktion pro Fall und ein paar pro Schicht.",
   "reallife_ui_rivals_week_change": "Änderung 7 Tage",
-  "reallife_rota_failed": "Der Dienstplaner konnte dieses Unternehmen gerade nicht berechnen. Er versucht es erneut, wenn sich die Arbeitsplätze, das Personal oder der Tag ändern. Player.log enthält die Einzelheiten.",
+  "reallife_opt_sec_estateflats": "Wohnungen und Studios",
   "reallife_flat_tenant_home": "Du wohnst hier",
   "reallife_flat_tenant_empty": "Leer",
   "reallife_ui_estate_roll_sub_flats": "{buildings} Gebäude und {flats} Wohnung(en), insgesamt {units} Einheit(en)",
   "reallife_ui_estate_roll_waiting": "{waiting} warten auf dich",
-  "reallife_ui_estate_roll_waiting_clear": "nichts wartet auf dich",
-  "reallife_opt_sec_estateflats": "Wohnungen und Studios"
+  "reallife_ui_estate_roll_waiting_clear": "nichts wartet auf dich"
 }

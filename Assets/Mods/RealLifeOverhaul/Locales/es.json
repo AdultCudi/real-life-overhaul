@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Hecho para {niche}: sus clientes son {who}, así que se les vende al precio de listado.",
   "reallife_tech_mkt_product_niche_off": "Este producto está hecho para {who}, a quienes {niche} no compra, así que se vende a todo el mercado y el nicho no cuenta para él. Lanza un producto hecho para {niche} para venderle allí.",
   "reallife_texts_rule_side": "un deseo desde el lado equivocado",
+  "reallife_rota_failed": "El planificador no pudo calcular este negocio por ahora. Lo vuelve a intentar cuando cambian los puestos de trabajo, el personal o el día. Player.log tiene el detalle.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} tiene tu palabra por {amount}. {firm} cambia de manos en cuanto salgas a la calle. Hasta entonces puedes anularlo en la página de Salidas.",
   "reallife_tech_desk_exit_already_agreed": "Ya hay acordada una venta de esta empresa. Se completa cuando salgas a la calle, o puedes anularla en la página de Salidas.",
   "reallife_exit_agreed_line": "Acordado: {firm} pasa a {buyer} por {amount} cuando salgas a la calle, en estas condiciones: {terms}. Caduca después del día {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Trabaja tus casos",
   "reallife_police_desk_cases_detail": "Entrevista a un testigo, revisa la escena o redacta un expediente: una acción por caso y algunas por turno.",
   "reallife_ui_rivals_week_change": "Cambio 7 días",
-  "reallife_rota_failed": "El planificador no pudo calcular este negocio por ahora. Lo vuelve a intentar cuando cambian los puestos de trabajo, el personal o el día. Player.log tiene el detalle.",
+  "reallife_opt_sec_estateflats": "Pisos y estudios",
   "reallife_flat_tenant_home": "Vives aquí",
   "reallife_flat_tenant_empty": "Vacío",
   "reallife_ui_estate_roll_sub_flats": "{buildings} edificio(s) y {flats} piso(s), {units} unidad(es) en total",
   "reallife_ui_estate_roll_waiting": "{waiting} esperando por ti",
-  "reallife_ui_estate_roll_waiting_clear": "nada esperando por ti",
-  "reallife_opt_sec_estateflats": "Pisos y estudios"
+  "reallife_ui_estate_roll_waiting_clear": "nada esperando por ti"
 }

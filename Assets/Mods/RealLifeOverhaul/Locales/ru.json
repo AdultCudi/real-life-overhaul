@@ -37991,6 +37991,7 @@
   "reallife_tech_new_niche_made": "Сделан для ниши {niche}. Его клиенты: {who}, поэтому им он продаётся по прайсу.",
   "reallife_tech_mkt_product_niche_off": "Этот продукт сделан для {who}, которых ниша {niche} не покупает, поэтому он продаётся на весь рынок, и ниша для него не считается. Выпустите продукт для ниши {niche}, чтобы продавать там.",
   "reallife_texts_rule_side": "пожелание не от того человека",
+  "reallife_rota_failed": "Планировщик пока не смог рассчитать этот бизнес. Он попробует снова, когда изменятся рабочие места, персонал или день. Подробности есть в Player.log.",
   "reallife_tech_desk_exit_offer_agreed": "{buyer} согласен на {amount}. {firm} переходит к нему, как только вы выйдете на улицу. До тех пор это можно отменить на странице «Выход из бизнеса».",
   "reallife_tech_desk_exit_already_agreed": "Продажа этой фирмы уже согласована. Она завершится, когда вы выйдете на улицу, или её можно отменить на странице «Выход из бизнеса».",
   "reallife_exit_agreed_line": "Согласовано: {firm} переходит к {buyer} за {amount}, когда вы выйдете на улицу, на таких условиях: {terms}. Предложение истекает после дня {day}.",
@@ -38560,11 +38561,10 @@
   "reallife_police_desk_cases": "Работа с делами",
   "reallife_police_desk_cases_detail": "Опросите свидетеля, осмотрите место или оформите материалы: одно действие по делу и несколько за смену.",
   "reallife_ui_rivals_week_change": "Изм. за 7 дн.",
-  "reallife_rota_failed": "Планировщик пока не смог рассчитать этот бизнес. Он попробует снова, когда изменятся рабочие места, персонал или день. Подробности есть в Player.log.",
+  "reallife_opt_sec_estateflats": "Квартиры и студии",
   "reallife_flat_tenant_home": "Вы живете здесь",
   "reallife_flat_tenant_empty": "Пусто",
   "reallife_ui_estate_roll_sub_flats": "Зданий: {buildings}, квартир: {flats}, всего помещений: {units}",
   "reallife_ui_estate_roll_waiting": "ждут вас: {waiting}",
-  "reallife_ui_estate_roll_waiting_clear": "ничего не ждет вас",
-  "reallife_opt_sec_estateflats": "Квартиры и студии"
+  "reallife_ui_estate_roll_waiting_clear": "ничего не ждет вас"
 }
