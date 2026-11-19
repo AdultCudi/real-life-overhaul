@@ -256,11 +256,12 @@ namespace RealLifeOverhaul.Nav
         /// </summary>
         private void Sort(NavKitSpace up)
         {
-            if (_canvas.overrideSorting != up.Up)
+            bool over = up.Up && !up.Under;   // under the kit's canvas while its popup (the dances, the accessories) is open: that one drops over the card's place
+            if (_canvas.overrideSorting != over)
             {
-                _canvas.overrideSorting = up.Up;
+                _canvas.overrideSorting = over;
             }
-            if (up.Up && _canvas.sortingOrder != up.Order)
+            if (over && _canvas.sortingOrder != up.Order)
             {
                 _canvas.sortingOrder = up.Order;
             }

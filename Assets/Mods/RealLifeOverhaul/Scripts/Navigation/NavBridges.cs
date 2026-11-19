@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Nav
         public float ColumnRight, ColumnBottom;
         public float ChipsLeft, ChipsTop;       // the key chips over the bar's right end; ChipsTop below 0 for none
         public int Order;
+        public bool Under;                      // one of the kit HUD's popups stands open: the card goes back under the kit's canvas, so the popup is drawn over it
     }
 
     /// <summary>What the minimap and the GPS ask of the rest of the mod, filled in by Wiring/NavLinks.cs; each has a default.</summary>

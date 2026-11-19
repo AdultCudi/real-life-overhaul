@@ -91,9 +91,19 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The valuation's label as a row: the game keeps its own only inside a sentence, so the row's is the mod's.</summary>
         public static string ValuationLabel(BizWorth w) => UiText.T(w.Yours ? "reallife_ui_biz_value_sold" : "reallife_ui_biz_valuation");
 
-        /// <summary>The valuation as a sentence: the game's own for a rival's business, the label and the figure for the player's.</summary>
-        public static string ValuationSentence(BizWorth w) => w.Valuation == null ? null
-            : w.Yours ? BizFactsRules.Pair(ValuationLabel(w), w.Valuation) : UiText.Fill("bizman_estimated_valuation", "valuation", w.Valuation);
+        /// <summary>
+        /// The valuation as a sentence: the game's own for a rival's business (its text has a bold tag around the figure, which the kit does not draw,
+        /// so it is taken out), the label and the figure for the player's.
+        /// </summary>
+        public static string ValuationSentence(BizWorth w)
+        {
+            if (w.Valuation == null)
+            {
+                return null;
+            }
+            return w.Yours ? BizFactsRules.Pair(ValuationLabel(w), w.Valuation)
+                : MapText.Plain(UiText.Fill("bizman_estimated_valuation", "valuation", w.Valuation));
+        }
 
         /// <summary>The market value as a sentence: the game's label and the figure.</summary>
         public static string MarketSentence(BizWorth w) => BizFactsRules.Pair(UiText.T("bizman_market_value"), w.Market);

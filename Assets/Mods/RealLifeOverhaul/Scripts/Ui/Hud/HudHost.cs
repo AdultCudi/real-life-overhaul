@@ -71,6 +71,9 @@ namespace RealLifeOverhaul.Ui
         private AllAppsScreen _allApps;
         private float _appsDue;                         // when the app row's list is read again from the game while walking
 
+        /// <summary>True while one of the bar's popups (the dances, the accessories) shows; set with the HUD's other pieces on the slow tick, read by the minimap to stand under it.</summary>
+        public bool PopupUp;
+
         /// <summary>The one HUD host, while it stands.</summary>
         public static HudHost Instance { get; private set; }
 
