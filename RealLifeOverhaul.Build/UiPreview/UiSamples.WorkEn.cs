@@ -903,7 +903,7 @@ internal static partial class UiSamples
         { "reallife_work_haggled_out", "They will not haggle again." },
         { "reallife_work_head_skill_line", "Head teacher, skill {n}" },
         { "reallife_work_helper_fee", "A helper takes" },
-        { "reallife_work_hire_at", "Hire at {pay} an hour" },
+        { "reallife_work_hire_at", "Offer {pay} an hour" },
         { "reallife_work_hired_month", "Hired this month" },
         { "reallife_work_hired_on", "Joined" },
         { "reallife_work_hired_via_ad", "Hired through this ad" },

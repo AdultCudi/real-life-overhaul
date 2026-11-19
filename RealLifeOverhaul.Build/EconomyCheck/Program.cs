@@ -829,6 +829,25 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--early-records")
+        {
+            EarlyRecordChecks();   // (the district's buildings findable at the load's first step alone, while working on them: EarlyRecordChecks.cs)
+            DistrictSaveChecks();   // with the district save it hooks into (DistrictSaveChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--exit-agreed")
+        {
+            ExitAgreedChecks();   // (a sale agreed at a desk inside the firm and completed on leaving, alone, while working on it: ExitAgreedChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--loose-ends")
+        {
+            LooseEndsChecks();   // (the Offer button's words and the staff pay option's reach, alone, while working on them: LooseEndsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--outlook")
         {
             OutlookApp();   // (the Economy app's checks alone, while working on them: OutlookChecks.cs)
@@ -1902,8 +1921,10 @@ internal static partial class Program
         BuildTrades();  // the building trades: the trades and what each asks, the courses and ladders, the bar, the match, the inspection and its bribe, the design game and its score, the tender, the book, the sources, the texts (BuildTradesChecks.cs)
         WorkPlace();    // every employer's place of work found: the clock on that names the practice or the site, the marker that stays up, the pin and the pages, the sources, the texts (WorkPlaceChecks.cs)
         NewBuildingsChecks(); // the mod's own buildings: the design picked and where it stands, the lot taken, what refuses one, nothing of them saved, none destroyed in a session, the texts (NewBuildingsChecks.cs)
+        EarlyRecordChecks();    // the district's buildings findable at the load's first step: the records in the game's lookups before any mod's city part, the order of the mod's own steps, the same work in the make (EarlyRecordChecks.cs)
         SpecialServiceChecks(); // a made building with one of the game's special services: the special type only with one, the registration as the game fills one, the lists in and out, a branch's contact (SpecialServiceChecks.cs)
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
+        LooseEndsChecks();   // the applicants' button says Offer on both interfaces; the staff pay option stops a rival's offer, a strike threat and sick days, and the notices name the options (LooseEndsChecks.cs)
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
         ConstructionKitChecks();   // the Construction app's licence by floors, the land's monthly asks, the quotes' risk and their save (ConstructionKitChecks.cs)

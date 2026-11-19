@@ -414,7 +414,7 @@ namespace RealLifeOverhaul
             {
                 BusinessIssue open = BusinessState.Issues[i];
                 IssueDef def = open.Def;
-                if (def != null && BusinessIssues.GroupOn(def.Group) && (def.Positive || !Settings.BusinessEasy))
+                if (def != null && BusinessIssues.KindOn(def) && (def.Positive || !Settings.BusinessEasy))
                 {
                     continue;
                 }
@@ -492,7 +492,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < all.Length; i++)
             {
                 IssueDef def = all[i];
-                if ((Settings.BusinessEasy && !def.Positive) || !BusinessIssues.GroupOn(def.Group) || !BusinessState.KindRested(def, day)
+                if ((Settings.BusinessEasy && !def.Positive) || !BusinessIssues.KindOn(def) || !BusinessState.KindRested(def, day)
                     || BusinessIssues.Why(def, reg, false) != null)
                 {
                     continue;
@@ -529,7 +529,7 @@ namespace RealLifeOverhaul
             {
                 IssueDef def = BusinessCatalogue.Find(kind);
                 int day = TimeHelper.CurrentDay;
-                if (def == null || _broken || !BusinessState.Loaded || !Settings.Business || !BusinessGame.IsBusiness(reg) || !BusinessIssues.GroupOn(def.Group)
+                if (def == null || _broken || !BusinessState.Loaded || !Settings.Business || !BusinessGame.IsBusiness(reg) || !BusinessIssues.KindOn(def)
                     || (Settings.BusinessEasy && !def.Positive) || !BusinessState.PastGrace(day) || BusinessState.Issues.Count >= BusinessCatalogue.MostOpen
                     || !BusinessState.Eligible(BusinessGame.Place(reg), day) || !BusinessState.KindRested(def, day) || BusinessIssues.Why(def, reg, false) != null)
                 {

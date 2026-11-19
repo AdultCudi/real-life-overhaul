@@ -185,7 +185,7 @@ namespace RealLifeOverhaul.Ui
                     t.Amounts.Add(new WorkAmount { Id = 0, Value = dollars, Min = 1, Max = 200, Figure = "$" + dollars.ToString(Inv) + " " + w.T("reallife_work_an_hour", "an hour") });
                 }
                 r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
-                r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
+                r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Offer {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
                     OfferWhy(a, w, dollars)));
                 r.Acts.Add(a.Stage == (int)ApplyStage.Countered ? Act(Counter, a.Id, w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Secondary, UiIcon.Check)
                     : Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, false,
@@ -307,7 +307,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_rival_bid", "Rival's offer"), Value = a.RivalBy + ", " + TechText.Rate(a.RivalBid) });
                 }
-                contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
+                contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Offer {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
                     OfferWhy(a, w, dollars));
                 form.Left.Add(contract);
                 var answer = new WorkFormBand { Title = w.T("reallife_work_their_answer", "Their answer") };

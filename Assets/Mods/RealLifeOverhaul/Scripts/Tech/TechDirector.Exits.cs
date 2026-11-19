@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Tech
             LoadExitJobs();
             _tenants.Clear();
             RebuildTenants();
+            _agreeTry = AnyAgreed();   // a sale agreed before the save was made completes at the first look outside
             try
             {
                 ExitBridges.Sessions?.Invoke(true);
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul.Tech
             {
                 Logger?.Error(e);
             }
+            DropAgreedHandler();
             _exits = null;
             _exitJobs = null;
             _tenants.Clear();
@@ -97,6 +99,7 @@ namespace RealLifeOverhaul.Tech
             }
             _exits.LastDay = day;
             PlacesDay(day);
+            AgreedDay(day);   // before the offers' own lapse: an agreement past its last day says so
             FirmExitsDay(day);
         }
 
@@ -323,6 +326,7 @@ namespace RealLifeOverhaul.Tech
             if (day > o.Lapse)
             {
                 e.Offers.Remove(o);
+                e.Agreed = ExitRules.IsAgreed(e, offerId) ? null : e.Agreed;
                 ChangedTech();
                 return false;
             }
@@ -330,6 +334,7 @@ namespace RealLifeOverhaul.Tech
             if (o.Buyer == 1 && (buyer == null || !buyer.Alive || buyer.Cash < o.Price))
             {
                 e.Offers.Remove(o);
+                e.Agreed = ExitRules.IsAgreed(e, offerId) ? null : e.Agreed;
                 Notifications.Show(NotificationType.Warning, "reallife_exit_note_buyer_gone", Data("firm", name, "buyer", o.Name), 8f, null, null, true, false);
                 ChangedTech();
                 return false;
@@ -387,6 +392,7 @@ namespace RealLifeOverhaul.Tech
                 _venture.Caps.Remove(c);
             }
             e.Offers.Clear();
+            e.Agreed = null;   // whichever way the sale was made, the one agreed is done
             e.SoldDay = day;
             e.SoldFor = r.Price;
             e.SoldTo = o.Name;
@@ -438,6 +444,7 @@ namespace RealLifeOverhaul.Tech
             if (o != null)
             {
                 e.Offers.Remove(o);
+                e.Agreed = ExitRules.IsAgreed(e, offerId) ? null : e.Agreed;   // turning down the offer a sale is agreed on ends it
                 ChangedTech();
             }
         }
@@ -449,7 +456,7 @@ namespace RealLifeOverhaul.Tech
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
             ExitOffer o = e != null ? e.OfferOf(offerId) : null;
             FirmPlace firm = FirmOf(place);
-            if (o == null || firm == null || Save == null || o.Countered)
+            if (o == null || firm == null || Save == null || o.Countered || ExitRules.IsAgreed(e, offerId))
             {
                 return -1;
             }
@@ -729,19 +736,37 @@ namespace RealLifeOverhaul.Tech
             string buyer = o.Name;
             if (choice == 0)
             {
-                // The session is held at a desk inside the firm and a business cannot change hands with its owner in it: say so before trying, once, with the way round.
-                string why = ExitBridges.WhyNotHand(place);
-                if (why != null)
+                if (e.Agreed != null)
                 {
-                    key = why == "reallife_svc_refuse_inside" ? "reallife_tech_desk_exit_why_inside" : why;
+                    key = "reallife_tech_desk_exit_already_agreed";
                     return false;
                 }
-                if (!ExitAccept(place, o.Id))
+                // The session is held at a desk inside the firm and a business cannot change hands with its owner in it: the player's word is kept and the sale completes
+                // when they step outside (ExitAgreed). Anything else in the way is named now.
+                string why = ExitBridges.WhyNotHand(place);
+                if (why == InsideRefusal)
+                {
+                    if (!ExitAgree(place, o))
+                    {
+                        key = "reallife_tech_desk_exit_why_blocked";
+                        return false;
+                    }
+                    key = "reallife_tech_desk_exit_offer_agreed";
+                }
+                else if (why != null)
+                {
+                    key = why;
+                    return false;
+                }
+                else if (!ExitAccept(place, o.Id))
                 {
                     key = "reallife_tech_desk_exit_why_blocked";
                     return false;
                 }
-                key = "reallife_tech_desk_exit_offer_accepted";
+                else
+                {
+                    key = "reallife_tech_desk_exit_offer_accepted";
+                }
             }
             else if (choice == 1)
             {

@@ -170,6 +170,10 @@ namespace RealLifeOverhaul.Tech
             if (_ventureOn)
             {
                 KeepMoney();
+                if (_exits != null)
+                {
+                    KeepAgreed();
+                }
             }
             if (!_peopleOn)
             {

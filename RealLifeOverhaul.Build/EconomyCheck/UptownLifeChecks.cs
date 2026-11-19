@@ -683,7 +683,7 @@ internal static partial class Program
 
         // Its place among the district save's features, and its own line kept by the save tools.
         string director = Read(@"Uptown\LifeDirector.cs");
-        Check(director.Contains("DistrictPlaces.Add(PlacesOwner, Fill, Early);") && director.Contains("DistrictSaveDirector.KeepsAlso(LifeStore.Key);")
+        Check(director.Contains("DistrictPlaces.Add(PlacesOwner, Fill, Early, Recorded);") && director.Contains("DistrictSaveDirector.KeepsAlso(LifeStore.Key);")
               && director.Contains("public const string PlacesOwner = \"uptown\";"),
             "uptown: it names its places to the district save with an early step, and the save tools keep its line with the district's records");
         string fill = MemberText(director, "private static void Fill(PlaceSet set)");

@@ -5,7 +5,8 @@ namespace RealLifeOverhaul.Tech
 {
     /// <summary>
     /// What exits keep in a save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h), the firms' exits (f), their
-    /// offers (o) and the city startups' founders (p). A save from before it has no line, and a firm then starts with nothing standing. The
+    /// offers (o), a sale agreed and waiting for the player to step outside (a) and the city startups' founders (p). A save from before it has no
+    /// line, and a firm then starts with nothing standing. The
     /// venture line (<see cref="VentureStore"/>) is untouched; an older RLO never reads this one.
     /// </summary>
     public static class ExitStore
@@ -36,6 +37,14 @@ namespace RealLifeOverhaul.Tech
                 foreach (ExitOffer o in e.Offers)
                 {
                     w.Record().Place(e.Place).Add(o.Id).Add(o.Kind).Add(o.Buyer).Add(o.BuyerId).Add(o.Name).Add(o.Price).Add(o.Made).Add(o.Lapse).Add(o.Countered);
+                }
+            }
+            w.Part('a');
+            foreach (FirmExit e in f.Firms)
+            {
+                if (e.Agreed != null)
+                {
+                    w.Record().Place(e.Place).Add(e.Agreed.Offer).Add(e.Agreed.Price).Add(e.Agreed.Lapse).Add(e.Agreed.Day).Add(e.Agreed.Name);
                 }
             }
             w.Part('p');
@@ -83,6 +92,12 @@ namespace RealLifeOverhaul.Tech
                     e.Offers.Add(o);
                     f.NextOffer = Math.Max(f.NextOffer, o.Id + 1);
                 }
+            }
+            foreach (Fields x in r.Records('a'))
+            {
+                FirmExit e = f.Exit(x.Place(), true);
+                var a = new ExitAgreed { Offer = x.Int(), Price = Math.Max(0L, x.Long()), Lapse = x.Int(), Day = x.Int(), Name = x.Text() };
+                e.Agreed = e.OfferOf(a.Offer) != null ? a : null;   // an agreement whose offer the save no longer holds has nothing to complete
             }
             foreach (Fields x in r.Records('p'))
             {

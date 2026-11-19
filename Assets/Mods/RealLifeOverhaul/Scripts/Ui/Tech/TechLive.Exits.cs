@@ -60,6 +60,14 @@ namespace RealLifeOverhaul.Ui
                         : r.Gap > 0 ? TechText.Fill("reallife_exit_offer_gap", "owed", Cents(_d.Level(r.Owed)), "paid", Cents(_d.Level(r.Paid)), "gap", Cents(_d.Level(r.Gap)))
                         : TechText.Fill("reallife_exit_offer_after", "investors", Cents(_d.Level(r.Paid)), "you", Cents(_d.Level(Math.Max(0L, r.Player))));
                     card.Say(after, r.Gap > 0 ? UiRole.WarnText : UiRole.None);
+                    if (ExitRules.IsAgreed(e, id))
+                    {
+                        // The player gave their word at a desk inside the firm: the sale completes when they step outside, until then they may call it off.
+                        card.Say(TechText.Fill("reallife_exit_agreed_line", "buyer", o.Name, "amount", Cents(_d.Level(e.Agreed.Price)), "firm", firm.File.Name,
+                            "day", e.Agreed.Lapse.ToString(Inv)), UiRole.OkText);
+                        card.Button(TechText.T("reallife_exit_button_call_off"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitCallOff(place)));
+                        continue;
+                    }
                     string title = TechText.Fill("reallife_exit_confirm_accept_title", "firm", firm.File.Name);
                     string body = TechText.Fill(o.Hire ? "reallife_exit_confirm_hire_body" : "reallife_exit_confirm_accept_body", "firm", firm.File.Name, "buyer", o.Name,
                         "amount", Cents(_d.Level(o.Price)));
@@ -68,7 +76,7 @@ namespace RealLifeOverhaul.Ui
                     card.Button(TechText.T("reallife_exit_button_decline"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitDecline(place, id)));
                 }
                 ExitOffer first = e.Offers[0];
-                if (!first.Countered && !first.Hire)
+                if (!first.Countered && !first.Hire && !ExitRules.IsAgreed(e, first.Id))
                 {
                     _counterStep = Math.Max(0, Math.Min(CounterKeys.Length - 1, _counterStep));
                     int at = _counterStep, offer = first.Id;

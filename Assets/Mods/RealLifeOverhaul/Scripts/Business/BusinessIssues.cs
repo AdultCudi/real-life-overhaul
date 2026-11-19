@@ -134,6 +134,20 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Whether one kind of issue may come up: its group's switch, and for the two that are staff pay and trouble (a rival's offer to an
+        /// employee, a strike threat) the option "Staff pay, raises, strikes and sick pay" too, so a player who switched staff trouble off gets none.
+        /// A comparison of two booleans, no allocation.
+        /// </summary>
+        public static bool KindOn(IssueDef def)
+        {
+            if (!GroupOn(def.Group))
+            {
+                return false;
+            }
+            return Settings.EconomyCompanyStaff || !BusinessCatalogue.NeedsStaffPay(def.Id);
+        }
+
         public static bool GroupOn(PressureGroup group)
         {
             switch (group)
