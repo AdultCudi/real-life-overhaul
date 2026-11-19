@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Tech
                 return null;
             }
             Cap c = _venture.CapOf(place);
-            if (c == null && make)
+            if (c == null && make && !Contracted(place))   // a firm a contract holds is its owner's: it raises nothing
             {
                 c = VentureRules.NewCap(place);
                 _venture.Caps.Add(c);

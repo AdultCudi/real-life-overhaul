@@ -266,6 +266,11 @@ namespace RealLifeOverhaul.Economy
         private bool MaySell(BuildingRegistration reg, int price, int parts, out SaleMoney m)
         {
             m = default(SaleMoney);
+            if (Held(reg))
+            {
+                Notifications.ShowError("reallife_svc_refuse_contract");
+                return false;
+            }
             SaleBlock block = ServicesGame.Blocked(reg);
             if (block != SaleBlock.None)
             {
@@ -377,6 +382,9 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
+        /// <summary>True while a business could be handed to a buyer as a sale ends one: the sales run, nothing of theirs is broken, and the player is no guest.</summary>
+        public bool CanHandOver() => _running && !_broken && !_saleBroken && !GoingPublic.InSession;
+
         /// <summary>
         /// A business handed over for no money as a takeover of the player's listed company completes (Markets/Listing), ended
         /// as in a sale with the staff going along. True once it is not the player's; false while it cannot be done yet.
@@ -388,9 +396,9 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             BuildingRegistration reg = ServicesGame.Find(place);
-            if (reg == null || !ServicesGame.IsSellable(reg))
+            if (reg == null || !ServicesGame.IsSellable(reg) || Held(reg))
             {
-                return true;   // not the player's business any more
+                return true;   // not the player's business any more (a contract's firm is its buyer's, and a takeover of the company leaves it be)
             }
             if (ServicesGame.Blocked(reg) != SaleBlock.None)
             {

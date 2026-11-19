@@ -40,6 +40,10 @@ namespace RealLifeOverhaul
                 ExitBridges.Practised = (skill, hours) => CareersDirector.Instance?.PractisedSkill(skill, hours);
                 ExitBridges.Sessions = Hold;
                 ExitBridges.Fixtures = Fixtures;
+                ExitBridges.ShareQuote = ShareQuote;
+                ExitBridges.ShareGrant = ShareGrant;
+                ExitBridges.HandOverReady = HandOverReady;
+                ServicesBridges.Contracted = place => TechDirector.Instance != null && TechDirector.Instance.Contracted(place);
                 CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
                 ExitJobLinks.Connect();
             }
@@ -48,6 +52,7 @@ namespace RealLifeOverhaul
             {
                 Hold(false);
                 ExitBridges.Reset();
+                ServicesBridges.Contracted = null;
                 CompanyBridges.StartupGains = null;
             }
 
@@ -153,6 +158,50 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("ExitLinks.HandOver", e);
+                    return false;
+                }
+            }
+
+            // The market's price of a listed company's share and a place for shares paid in a sale: the stock market's own, for the player who owns this save.
+            private static int ShareQuote(int stock)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null ? m.GrantPrice(stock) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.ShareQuote", e);
+                    return 0;
+                }
+            }
+
+            private static bool ShareGrant(int stock, long shares, int cents, int lockDay)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null && m.Grant(stock, shares, cents, lockDay);
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.ShareGrant", e);
+                    return false;
+                }
+            }
+
+            // A contract keeps the business until it ends and then hands it over as a sale does, which only the sales of businesses can do, and never in a Going Public session.
+            private static bool HandOverReady(string place)
+            {
+                try
+                {
+                    ServicesDirector services = ServicesDirector.Instance;
+                    return services != null && services.CanHandOver();
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.HandOverReady", e);
                     return false;
                 }
             }

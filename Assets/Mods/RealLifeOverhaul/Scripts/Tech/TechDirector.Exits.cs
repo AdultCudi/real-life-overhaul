@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Tech
             }
             _exits = file;
             LoadExitJobs();
+            LoadSaleTerms();
             _tenants.Clear();
             RebuildTenants();
             try
@@ -77,6 +78,7 @@ namespace RealLifeOverhaul.Tech
             }
             _exits = null;
             _exitJobs = null;
+            _terms = null;
             _tenants.Clear();
         }
 
@@ -86,6 +88,7 @@ namespace RealLifeOverhaul.Tech
             {
                 data[ExitStore.Key] = ExitStore.Write(_exits);
                 WriteExitJobs(data);
+                WriteSaleTerms(data);
             }
         }
 
@@ -98,6 +101,7 @@ namespace RealLifeOverhaul.Tech
             _exits.LastDay = day;
             PlacesDay(day);
             FirmExitsDay(day);
+            TermsDay(day);
         }
 
         // ---------------------------------------------------------------- the city's startups as real places
@@ -234,9 +238,9 @@ namespace RealLifeOverhaul.Tech
                     ChangedTech();
                 }
                 long mrr = FirmsRules.Arr(_firmsFile, place) / 12;
-                if (mrr < ExitCatalogue.OfferMrrLeast && !ExitRules.Failing(c, BurnOf(firm)))
+                if (Contracted(place) || (mrr < ExitCatalogue.OfferMrrLeast && !ExitRules.Failing(c, BurnOf(firm))))
                 {
-                    continue;
+                    continue;   // a firm held by a contract is its owner's: no one else bids for it
                 }
                 if (!gathered)
                 {
@@ -309,7 +313,7 @@ namespace RealLifeOverhaul.Tech
         /// An offer taken: the business passes to its buyer as the game's sale of a business ends one (the staff go along), the buyer's money comes in, and the
         /// investors' lines of the waterfall are paid out of it before the player has anything. Refused while the business cannot be handed over.
         /// </summary>
-        internal bool ExitAccept(string place, int offerId)
+        internal bool ExitAccept(string place, int offerId, TermChoice choice = default(TermChoice))
         {
             FirmPlace firm = FirmOf(place);
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
@@ -334,7 +338,12 @@ namespace RealLifeOverhaul.Tech
                 ChangedTech();
                 return false;
             }
-            string why = ExitBridges.WhyNotHand(place);   // the one thing in the way, named; a desk session sits inside the firm, so this is how it learns it must leave first
+            if (o.Hire || _terms == null)
+            {
+                choice = default(TermChoice);   // a team bought for its people is paid in cash, and with the terms off a sale is as it was
+            }
+            bool boss = choice.Kind == TermKind.Boss;   // a boss stays in the building: nothing has to be handed over until the contract ends
+            string why = boss ? null : ExitBridges.WhyNotHand(place);   // the one thing in the way, named; a desk session sits inside the firm, so this is how it learns it must leave first
             if (why != null)
             {
                 Notifications.ShowError(why);
@@ -344,11 +353,26 @@ namespace RealLifeOverhaul.Tech
             StockSyncFor(place, c, day);   // a firm whose shares trade: the cap table is what the stock says before the sale works out who is paid what
             bool funded = c != null && c.Acc.Open;
             int fixtures = ExitBridges.Fixtures != null ? Math.Max(0, ExitBridges.Fixtures(place)) : 0;   // read while the business is still the player's
+            TermPlan terms = TermPlanFor(place, o, choice, out _);
+            if (choice.Kind != TermKind.Cash)
+            {
+                if (!terms.Ok)
+                {
+                    Notifications.ShowError(terms.Why);
+                    return false;
+                }
+                if (boss && (ExitBridges.HandOverReady == null || !ExitBridges.HandOverReady(place)))
+                {
+                    Notifications.ShowError(SaleTermRules.WhyBoss);   // the contract ends by handing the business over, so it is not made where that cannot be done
+                    return false;
+                }
+            }
+            TermFigures(firm, out long takingsNow, out long customersNow);
             if (funded)
             {
                 c.Acc.Wound = true;   // before anything moves: while the firm is sold, the wallet's floor for it is settled by the sale and not counted again
             }
-            if (ExitBridges.HandOver == null || !ExitBridges.HandOver(place, o.Name))
+            if (!boss && (ExitBridges.HandOver == null || !ExitBridges.HandOver(place, o.Name)))
             {
                 if (funded)
                 {
@@ -359,7 +383,22 @@ namespace RealLifeOverhaul.Tech
             }
             long mrr = FirmsRules.Arr(_firmsFile, place) / 12;
             SaleResult r = ExitRules.Settle(c, o.Price, Base(VentureGame.Cash), day);
-            VentureGame.Give(Level(r.Price), VentureGame.ExitKey, name);
+            if (choice.Kind != TermKind.Cash)
+            {
+                // as the money will be: the same figures
+                terms = SaleTermRules.Plan(choice, o.Price, r.Player, takingsNow, customersNow, terms.Stock, terms.ShareCents, Prices.Level, _terms.OpenCount());
+                if (boss && !terms.Ok)
+                {
+                    if (funded)
+                    {
+                        c.Acc.Wound = false;   // nothing was handed over or paid: the sale is simply not made
+                    }
+                    Notifications.ShowError(terms.Why);
+                    return false;
+                }
+            }
+            long atOnce = choice.Kind != TermKind.Cash && terms.Ok ? terms.Now : r.Price;
+            VentureGame.Give(Level(atOnce), VentureGame.ExitKey, name);
             if (r.Paid > 0)
             {
                 VentureGame.Pay(Level(r.Paid), VentureGame.WindKey, name, null, true);
@@ -395,10 +434,18 @@ namespace RealLifeOverhaul.Tech
             ExitBridges.Practised?.Invoke(TalentCatalogue.Selling, 2);
             ExitBridges.Practised?.Invoke(TalentCatalogue.Analysis, 1);
             Story(o.Hire ? "reallife_tech_news_firm_hired" : "reallife_tech_news_firm_sold", "firm", name, "buyer", o.Name);
+            bool onTerms = choice.Kind != TermKind.Cash && terms.Ok;
+            if (onTerms)
+            {
+                TermsBegin(terms, choice, o, place, name, day, takingsNow, customersNow, Prices.Level);
+            }
             string key = r.Gap > 0 ? (r.Fraud ? "reallife_exit_note_sold_fraud" : "reallife_exit_note_sold_claim") : o.Hire ? "reallife_exit_note_hired" : "reallife_exit_note_sold";
-            Notifications.Show(r.Gap > 0 ? NotificationType.Error : NotificationType.Success, key,
-                Data("firm", name, "buyer", o.Name, "amount", TechText.Cents(Level(r.Price)), "investors", TechText.Cents(Level(r.Paid)), "you", TechText.Cents(Level(Math.Max(0L, r.Player))),
-                    "gap", TechText.Cents(Level(r.Gap))), 12f, null, null, true, false);
+            if (!onTerms || r.Gap > 0)
+            {
+                Notifications.Show(r.Gap > 0 ? NotificationType.Error : NotificationType.Success, key,
+                    Data("firm", name, "buyer", o.Name, "amount", TechText.Cents(Level(r.Price)), "investors", TechText.Cents(Level(r.Paid)), "you", TechText.Cents(Level(Math.Max(0L, r.Player))),
+                        "gap", TechText.Cents(Level(r.Gap))), 12f, null, null, true, false);
+            }
             GainNotice(name, gain);
             Logger?.Info("Tech: " + name + " " + (o.Hire ? "(its team) " : string.Empty) + "sold to " + o.Name + " on day " + day + " for " + TechText.Cents(Level(r.Price))
                 + ": the firm's account held "

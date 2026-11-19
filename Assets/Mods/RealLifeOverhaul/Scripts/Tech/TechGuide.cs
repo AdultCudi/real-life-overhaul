@@ -195,7 +195,17 @@ namespace RealLifeOverhaul.Tech
                 .Fact("vc_grant", () => Mille(VentureCatalogue.OptionGrant))
                 .Fact("vc_vest", () => Whole(VentureCatalogue.VestYears))
                 .Fact("vc_cliff", () => Whole(VentureCatalogue.CliffYears))
-                .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%");
+                .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%")
+                .Fact("terms_lock", () => Whole(SaleTermCatalogue.ShareLockDays))
+                .Fact("terms_slices", () => Mille(SaleTermCatalogue.SliceSteps[0]) + ", " + Mille(SaleTermCatalogue.SliceSteps[1]) + " or " + Mille(SaleTermCatalogue.SliceSteps[2]))
+                .Fact("terms_slice_years", () => Whole(SaleTermCatalogue.SliceTermDays / SaleTermCatalogue.YearDays))
+                .Fact("terms_minority", () => Mille(SaleTermCatalogue.MinorityDiscount))
+                .Fact("terms_earn_share", () => Mille(SaleTermCatalogue.EarnShare))
+                .Fact("terms_earn_days", () => Whole(SaleTermCatalogue.EarnDays))
+                .Fact("terms_boss_years", () => Whole(SaleTermCatalogue.BossYears[0]) + " or " + Whole(SaleTermCatalogue.BossYears[1]))
+                .Fact("terms_review", () => Whole(SaleTermCatalogue.ReviewDays))
+                .Fact("terms_keep", () => Mille(SaleTermCatalogue.KeepMille))
+                .Fact("terms_most", () => Whole(SaleTermCatalogue.OpenMost));
         }
 
         private static string Firms()

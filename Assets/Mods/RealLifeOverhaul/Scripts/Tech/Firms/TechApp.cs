@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>The Tech app in the game's frame (GameUi.AppShell), a table and the picked row's page on each tab. Nothing runs while it is closed.</summary>
     public sealed partial class TechApp
     {
-        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:", CentreRow = "dc:",
+        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", DealRow = "deal:", CapRow = "cap:", CentreRow = "dc:",
             CloudRow = "cloud", FitRow = "fit:";
         internal const string NewProductRow = "newprod:";
         private static readonly string[] TabKeys =

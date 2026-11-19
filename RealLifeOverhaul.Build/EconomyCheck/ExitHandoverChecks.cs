@@ -87,7 +87,7 @@ internal static partial class Program
         string app = ModSource(@"Tech\Venture\TechApp.Venture.cs"), page = ModSource(@"Tech\Venture\TechApp.Exits.cs");
         Check(app.Contains("Picked(_picked, TechDirector.ExitRow)") && app.Contains("WriteExits(box, picked)") && app.Contains("\"reallife_exit_button_page\""),
             "exit hand-over: the old Tech app lands a notice of an offer on the firm's page of exits and the firm's page has the Exits button");
-        Check(page.Contains("_director.ExitAccept(place, id)") && page.Contains("_director.ExitDecline(place, id)") && page.Contains("_director.ExitCounter(place, offer, at)")
+        Check(page.Contains("_director.ExitAccept(place, id, choice)") && page.Contains("_director.ExitDecline(place, id)") && page.Contains("_director.ExitCounter(place, offer, at)")
               && page.Contains("_director.ExitBankers(place, at)") && page.Contains("_director.ExitRoadshow(place, at)") && page.Contains("_director.ExitSell(place)"),
             "exit hand-over: the old page accepts, declines and counters an offer, sells shares and goes to market as the kit's does");
         Check(page.Contains("GameConfirm.Show(title, body"), "exit hand-over: accepting asks the game's own question first, as on the kit");
