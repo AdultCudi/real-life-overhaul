@@ -381,6 +381,7 @@
         public const string RivalsId = "rivals";
         public const string RivalsStrengthId = "rivals_strength";
         public const string RivalsFirstId = "rivals_first";
+        public const string RivalsHoldingsId = "rivals_holdings";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -827,6 +828,7 @@
         public static bool Rivals = true;                // rival tycoons (off: they stand still and do nothing; the save keeps them)
         public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless
         public static int RivalsFirst = 0;               // the worth the first rival comes forward at, a step of RivalCatalogue.FirstFromSteps: 0 is 5 million, as before, up to 4, 50 million
+        public static int RivalsHoldings = 1;            // rivals' buildings by their place in the ranking: 0 as the game deals them, 1 new games (the default), 2 every game, gently
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks
@@ -1292,6 +1294,7 @@
             Rivals = Bool(modId, RivalsId, Rivals);
             RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
             RivalsFirst = Int(modId, RivalsFirstId, RivalsFirst);
+            RivalsHoldings = Int(modId, RivalsHoldingsId, RivalsHoldings);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);

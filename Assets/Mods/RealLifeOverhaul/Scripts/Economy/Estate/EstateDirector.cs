@@ -296,6 +296,11 @@ namespace RealLifeOverhaul.Economy
                 EstateGame.ReadAgency(_state.Agency);
                 ApplyProperty(today);
             }
+            _holdingsDealt = RivalHoldingsStore.Read(save.modData);
+            if (On(EstatePart.Property))
+            {
+                HoldingsDay(today);   // a new game is dealt at once, before the player has looked at the Rivals app
+            }
             EstateExtraStore.Read(_state, save.modData);
             ReadHotels(today);
             if (On(EstatePart.Hire))
@@ -542,6 +547,7 @@ namespace RealLifeOverhaul.Economy
                 if (On(EstatePart.Property))
                 {
                     QueueRents(day);
+                    HoldingsDay(day);
                 }
                 Part(EstatePart.Hotel, "the day", () => HotelDay(day));
                 if (On(EstatePart.Hire) || _state.Hire.Cars.Count > 0)
@@ -661,6 +667,7 @@ namespace RealLifeOverhaul.Economy
             }
             save.modData[EstateStore.Key] = EstateStore.Write(_state);
             EstateExtraStore.Write(_state, save.modData);
+            RivalHoldingsStore.Write(save.modData, _holdingsDealt);
             if (_beforeTests != null)
             {
                 save.modData[EstateStore.TestKey] = _beforeTests;
@@ -697,6 +704,7 @@ namespace RealLifeOverhaul.Economy
             }
             _state = null;
             _beforeTests = null;
+            _holdingsDealt = false;
         }
     }
 }

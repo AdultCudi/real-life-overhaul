@@ -6,6 +6,7 @@ using BigAmbitions.Rivals;
 using EnhancedUI.EnhancedScroller;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.Rivals;
 using Streets;
 using UI.Components;
 using UI.Smartphone.Apps.MarketInsider;
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul.Ui
         private long _seen;
         private int _tab, _selected, _reveal = -1, _focus = -1;
         private float _offset;
+        private long[] _worths = new long[24];   // the rivals' fortunes in the game's order, for their places
 
         public RivalsScreen(RivalsApp app)
         {
@@ -366,7 +368,19 @@ namespace RealLifeOverhaul.Ui
                     District = string.IsNullOrEmpty(d.mostActiveNeighborhood) ? null : UiText.T(d.mostActiveNeighborhood)
                 });
                 _lines.Add(line);
+                if (!you && !d.isDefeated)
+                {
+                    RivalEntry e = _league[_league.Count - 1];
+                    RivalFortune f = RivalFortuneGame.Of(d.rivalId, d.ownedBuildings, d.weeklyIncome, today);   // (kept for the day: a redraw reads nothing again)
+                    e.HasFortune = true;
+                    e.Buildings = f.Buildings;
+                    e.Property = f.Property;
+                    e.RentWeek = f.RentWeek;
+                    e.Fortune = f.Worth;
+                    _league[_league.Count - 1] = e;
+                }
             }
+            Places();
             RivalsSeen.SeenDirector seenBy = seenId != null && chosen < _league.Count ? RivalsSeen.SeenDirector.Instance : null;
             if (seenBy != null && seenBy.Owner(seenId, out string car, out string found))   // (made again only when what it says has changed: RivalsSeen/SeenPage)
             {
@@ -377,6 +391,40 @@ namespace RealLifeOverhaul.Ui
             }
             _v.League = _league.ToArray();
             _v.Chosen = chosen;
+        }
+
+        // Each rival's place by fortune among the rivals, beside its place in the game's ranking (the league's order): the game ranks by weekly income alone.
+        private void Places()
+        {
+            int rivals = 0;
+            for (int i = 0; i < _league.Count; i++)
+            {
+                rivals += _league[i].HasFortune ? 1 : 0;
+            }
+            if (_worths.Length < _league.Count)
+            {
+                _worths = new long[_league.Count];
+            }
+            int n = 0, place = 0;
+            for (int i = 0; i < _league.Count; i++)
+            {
+                if (_league[i].HasFortune)
+                {
+                    _worths[n++] = _league[i].Fortune;
+                }
+            }
+            for (int i = 0; i < _league.Count; i++)
+            {
+                RivalEntry e = _league[i];
+                if (!e.HasFortune)
+                {
+                    continue;
+                }
+                e.RivalPlace = ++place;
+                e.FortunePlace = RivalFortuneRules.PlaceByFortune(_worths, n, place - 1);
+                e.Rivals = rivals;
+                _league[i] = e;
+            }
         }
 
         /// <summary>A weekly income's figure from about a week before today in the game's history of it, or NaN with none.</summary>

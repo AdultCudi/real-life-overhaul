@@ -35,6 +35,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Giving](giving.md): gifts to the city's charities, money given or lent to people, the deduction on the tax return and the people who ask.
 - [Insurance](insurance.md): a tier for each car's policy, a policy for each home, and one app for those, the health plan and the business cover, with claims taken off the bill.
 - [Health](health.md): illnesses and injuries that can turn serious, the doctor's appointment, hospital stays, health plans, medical debt and sick leave, for the player, their staff, the rivals and the city.
+- [The rivals' buildings and their fortune](rivals-property.md): the game's rivals own buildings by their place in the Rivals app, dealt at once in a new game and moved gently in one under way, and their pages count what they own.
 - [Rivals seen around the city](rivals-seen.md): rival owners and tycoons at places that fit how their business is doing, their cars, a greeting, sightings on Flare and in the paper.
 - [Dynasty](dynasty.md): a will, estate tax, retiring and an heir who carries on; the rivals' lines and the city's estates.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.

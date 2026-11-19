@@ -231,8 +231,9 @@ internal static partial class Program
         UiRivalsModel league = UiSamples.Rivals(en, "league");
         Check(league.Table.Selected == 1 && league.ProfileActions.Length == 1 && league.ProfileActions[0].Key == UiAction.Option && league.Profile.Ring == UiRole.None,
             "rivals: the chosen rival is the league's chosen row, Open in Contacts on P, and no mood ring on a rival's face");
-        Check(league.Table.Rows[0].Tones[4] == UiRole.Danger && league.Table.Rows[2].Tones[4] == UiRole.Ok && league.Table.Rows[0].Values[4] == 1
-              && league.Table.Columns[2].Kind == UiCellKind.Money && league.Table.Columns[4].Kind == UiCellKind.Trend,
+        int change = RivalsViews.ColumnChange;
+        Check(league.Table.Rows[0].Tones[change] == UiRole.Danger && league.Table.Rows[2].Tones[change] == UiRole.Ok && league.Table.Rows[0].Values[change] == 1
+              && league.Table.Columns[2].Kind == UiCellKind.Money && league.Table.Columns[change].Kind == UiCellKind.Trend,
             "rivals: good and bad are the player's: a rival's rise reads bad, the player's own good");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
         Check(businesses.RowActions.Length == 2 && businesses.RowActions[1].Key == UiAction.Alt && businesses.RowLink != null && businesses.Table.Columns[0].Kind == UiCellKind.Tile,

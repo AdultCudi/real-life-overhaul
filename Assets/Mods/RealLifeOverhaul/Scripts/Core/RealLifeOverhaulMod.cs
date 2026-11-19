@@ -813,6 +813,9 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.RivalsFirstId, "reallife_rival_first",
                     new[] { "reallife_rival_first_5", "reallife_rival_first_10", "reallife_rival_first_20", "reallife_rival_first_30", "reallife_rival_first_50" }, Settings.RivalsFirst,
                     v => Settings.RivalsFirst = v)
+                .AddDropdown(Settings.RivalsHoldingsId, "reallife_rival_holdings",
+                    new[] { "reallife_rival_holdings_game", "reallife_rival_holdings_new", "reallife_rival_holdings_all" }, Settings.RivalsHoldings,
+                    v => Settings.RivalsHoldings = v)
                 .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
                 .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
                 .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
@@ -824,6 +827,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
                 .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
                 .AddButton("reallife_rival_test_first", () => Rivals.RivalDirector.Instance?.TestFirst())
+                .AddButton("reallife_rival_test_holdings", () => Economy.EstateDirector.Instance?.TestHoldings())
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
