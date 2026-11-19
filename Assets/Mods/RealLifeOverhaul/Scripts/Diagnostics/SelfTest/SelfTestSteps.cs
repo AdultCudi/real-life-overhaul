@@ -54,6 +54,15 @@ namespace RealLifeOverhaul.SelfTest
                 case "assert_notice": return new AssertNoticeStep();
                 case "write_wav": return new WriteWavStep();
                 case "set_year": return new SetYearStep();
+                case "kit_commands": return new KitCommandsStep();
+                case "confirm": return new ConfirmStep();
+                case "enter_building": return new EnterBuildingStep();
+                case "leave_building": return new LeaveBuildingStep();
+                case "set_day": return new SetDayStep();
+                case "find_place": return new FindPlaceStep();
+                case "assert_home": return new AssertHomeStep();
+                case "call": return new CallStep();
+                case "read": return new ReadStep();
                 case "note": return new NoteStep();
             }
             return null;

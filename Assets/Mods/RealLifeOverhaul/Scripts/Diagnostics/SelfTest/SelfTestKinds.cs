@@ -91,12 +91,17 @@ namespace RealLifeOverhaul.SelfTest
                 "Walks the whole registry: opens each screen that can be opened from a running city, a picture and the fault check for each; the others are listed as skipped, with why.",
                 null,
                 new[] { "settle:n", "shots:b", "skip:s", "only:s" }),
-            new SelfTestKind("kit_press", 60, "Presses a command of the showing kit screen with an argument, the way a click or the pad does.", new[] { "command:i" }, new[] { "arg:i", "screen:s" }),
+            new SelfTestKind("kit_press", 60,
+                "Presses a target of the showing kit screen the way a click does: by the name of a command constant or a number (command, with arg), by the words on "
+                + "the target (text, nth) or by a text key (key).",
+                null, new[] { "command:s", "arg:i", "text:s", "key:s", "nth:i", "screen:s", "settle:n" }),
             new SelfTestKind("kit_type", 60, "Types a text into the showing kit screen's field, the way the keyboard does.", new[] { "text:s" }, new[] { "screen:s", "submit:b" }),
             new SelfTestKind("kit_scroll", 60, "Turns the wheel over a scroll region of the showing kit screen.", new[] { "clip:i", "notches:n" }, new[] { "screen:s" }),
             new SelfTestKind("press_button", 120,
-                "Presses a button of the mod's options page (Options, Tests) by the key of its label (the button argument); run an event, a gig, a session or an incident the mod has a test for.",
-                new[] { "button:s" }, new[] { "settle:n" }),
+                "Presses a button of the mod's options page (Options, Tests) by the key of its label (the button argument), then reads what it said (the notices and log lines it caused). "
+                + "It passes only on an expectation: expect_text (a notice or log line holds the words), expect_log (a log line does); refuse words fail it; with none "
+                + "it is a skip that quotes what was said.",
+                new[] { "button:s" }, new[] { "settle:n", "expect_text:s", "expect_log:s", "refuse:s" }),
             new SelfTestKind("list_buttons", 30, "Writes the keys of every button of the mod's options page into the results.", null, null),
 
             // The game's own debug code paths
@@ -152,6 +157,27 @@ namespace RealLifeOverhaul.SelfTest
                 + "delete true removes it, bad true writes a file that is not a wav.",
                 new[] { "path:s" }, new[] { "seconds:n", "hz:n", "delete:b", "bad:b" }),
             new SelfTestKind("set_year", 10, "Sets the length of the game's year in days for the running game (a long year, for the terms that read it).", new[] { "days:i" }, null),
+            new SelfTestKind("kit_commands", 30,
+                "Writes every showing kit screen's pressable targets into the results: number, command constant name, argument, words and whether enabled.",
+                null, new[] { "screen:s", "most:n" }),
+            new SelfTestKind("confirm", 30,
+                "Waits for the game's question box and answers it (answer yes, the default, or no); fails if none opens.",
+                null, new[] { "answer:s", "wait:n", "settle:n" }),
+            new SelfTestKind("enter_building", 60, "Walks the player into the building at an address by the game's own EnterBuilding and waits until he is inside.", new[] { "address:s" }, null),
+            new SelfTestKind("leave_building", 60, "Takes the player out of the building he is in by the game's own exit; passes if he is outdoors already.", null, null),
+            new SelfTestKind("set_day", 900, "Skips to the next given weekday (Monday to Sunday) at an hour through the game's time machine.", new[] { "weekday:s", "hour:i" }, null),
+            new SelfTestKind("find_place", 30,
+                "Finds an address the city holds (precinct: the mod's nearest police station; office_free; residential_flats) and puts it in a variable (as) that later steps read as {name}.",
+                new[] { "kind:s", "as:s" }, null),
+            new SelfTestKind("assert_home", 30, "Asserts the player has a home (the game's no-home mood is off); absent true asserts he has none.", null, new[] { "absent:b" }),
+            new SelfTestKind("call", 60,
+                "Calls a method of one of the mod's classes by name (static, or on the class's Instance) with arguments given as words separated by | (args); the "
+                + "result may go in a variable (as) and be checked (expect).",
+                new[] { "type:s", "method:s" }, new[] { "args:s", "as:s", "expect:s", "settle:n" }),
+            new SelfTestKind("read", 30,
+                "Reads a field or property of one of the mod's classes by name (a dotted member path walks on) and checks it (expect words, atleast a number; a "
+                + "collection reads as its count); the value may go in a variable (as).",
+                new[] { "type:s", "member:s" }, new[] { "as:s", "expect:s", "atleast:n" }),
             new SelfTestKind("note", 10, "Writes a line into the results.", new[] { "text:s" }, null),
         };
 

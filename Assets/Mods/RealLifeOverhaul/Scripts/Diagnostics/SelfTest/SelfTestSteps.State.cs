@@ -155,6 +155,10 @@ namespace RealLifeOverhaul.SelfTest
                 while (true)
                 {
                     int found = 0;
+                    foreach (string shown in c.Runner.Watch.NoticeLines(from))
+                    {
+                        found += shown.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 0;
+                    }
                     foreach (Notification n in SaveGameManager.Current.notifications)
                     {
                         if (n != null && n.key != null && n.key.IndexOf(key, StringComparison.Ordinal) >= 0 && n.date != null && n.date.GetTotalMinutes() >= since)

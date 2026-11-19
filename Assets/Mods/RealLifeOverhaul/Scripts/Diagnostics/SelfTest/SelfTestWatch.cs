@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using RealLifeOverhaul.Ui;
+using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.SelfTest
@@ -29,6 +30,10 @@ namespace RealLifeOverhaul.SelfTest
         private readonly Dictionary<string, float> _minutesAt = new Dictionary<string, float>(StringComparer.Ordinal);
         private readonly Dictionary<string, float> _moneyAt = new Dictionary<string, float>(StringComparer.Ordinal);
         private float _windowMinutes, _windowMoney;
+        private readonly List<string> _notices = new List<string>(64);   // every notice shown since the plan began: "[Type] key: its words"
+        private readonly Dictionary<string, int> _noticeStarts = new Dictionary<string, int>(StringComparer.Ordinal);
+        private int _noticeWindow;
+        private Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool> _onNotice, _noticeSeen;
         private int _windowStart;   // where in _all the assert window began
         private bool _hooked;
         private Application.LogCallback _onLog;   // made once: the same delegate is put on the game's log and taken off it
@@ -44,6 +49,8 @@ namespace RealLifeOverhaul.SelfTest
                 _hooked = true;
                 _onLog = _onLog ?? OnLog;
                 Application.logMessageReceived += _onLog;
+                _onNotice = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(OnNotice);
+                EventHold.Keep(ref Notifications.onShow, _onNotice, ref _noticeSeen);
             }
         }
 
@@ -53,6 +60,7 @@ namespace RealLifeOverhaul.SelfTest
             {
                 _hooked = false;
                 Application.logMessageReceived -= _onLog;
+                Notifications.onShow = (Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>)Delegate.Remove(Notifications.onShow, _onNotice);
             }
         }
 
@@ -113,11 +121,17 @@ namespace RealLifeOverhaul.SelfTest
         public void Begin(string label, bool assert)
         {
             _starts[label] = _all.Count;
+            if (_onNotice != null)
+            {
+                EventHold.Keep(ref Notifications.onShow, _onNotice, ref _noticeSeen);   // the game clears its event hubs on every load
+            }
+            _noticeStarts[label] = _notices.Count;
             float minutes = SelfTestGame.Minutes(), money = SelfTestGame.MoneyNow();
             _minutesAt[label] = minutes;
             _moneyAt[label] = money;
             if (!assert)
             {
+                _noticeWindow = _notices.Count;
                 _windowMinutes = minutes;
                 _windowMoney = money;
             }
@@ -166,6 +180,38 @@ namespace RealLifeOverhaul.SelfTest
                 }
             }
             return false;
+        }
+
+        private void OnNotice(NotificationType type, string key, Dictionary<string, string> data, float seconds, string duplicate, Action click, bool sound, bool tracked)
+        {
+            string words = UiText.T(key);
+            if (data != null)
+            {
+                foreach (KeyValuePair<string, string> pair in data)
+                {
+                    words = words.Replace("{" + pair.Key + "}", pair.Value);
+                }
+            }
+            _notices.Add("[" + type + "] " + key + ": " + (words.Length > 200 ? words.Substring(0, 200) + "..." : words));
+        }
+
+        /// <summary>The notices shown since the named step began (else the assert window), each "[Type] key: words".</summary>
+        public List<string> NoticeLines(string fromLabel)
+        {
+            int from = fromLabel != null && _noticeStarts.TryGetValue(fromLabel, out int at) ? at : _noticeWindow;
+            return _notices.GetRange(Math.Min(from, _notices.Count), _notices.Count - Math.Min(from, _notices.Count));
+        }
+
+        /// <summary>The log lines since the named step began, the mod's own and the game's, at most that many, each shortened.</summary>
+        public List<string> LogLinesSince(string fromLabel, int most)
+        {
+            int from = fromLabel != null && _starts.TryGetValue(fromLabel, out int at) ? at : _windowStart;
+            var lines = new List<string>(most);
+            for (int i = from; i < _all.Count && lines.Count < most; i++)
+            {
+                lines.Add(_all[i].Length > 200 ? _all[i].Substring(0, 200) + "..." : _all[i]);
+            }
+            return lines;
         }
 
         /// <summary>The game's minutes when the named step began, else when the assert window began.</summary>

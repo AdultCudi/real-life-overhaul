@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.SelfTest
         {
             var labels = new HashSet<string>(StringComparer.Ordinal);
             var marks = new HashSet<string>(StringComparer.Ordinal);
+            var variables = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < plan.Steps.Count; i++)
             {
                 SelfTestStepSpec step = plan.Steps[i];
@@ -137,6 +138,28 @@ namespace RealLifeOverhaul.SelfTest
                 if (since != null && !marks.Contains(since))
                 {
                     errors.Add("step " + (i + 1) + " (" + step.Kind + "): since '" + since + "' was marked by no earlier measure step");
+                }
+                foreach (KeyValuePair<string, string> pair in step.Args)
+                {
+                    int open = pair.Value.IndexOf('{');
+                    while (open >= 0)
+                    {
+                        int close = pair.Value.IndexOf('}', open);
+                        string name = close > open ? pair.Value.Substring(open + 1, close - open - 1) : null;
+                        if (name == null)
+                        {
+                            break;
+                        }
+                        if (!variables.Contains(name))
+                        {
+                            errors.Add("step " + (i + 1) + " (" + step.Kind + "): {" + name + "} is set by no earlier find_place, call or read step (its as)");
+                        }
+                        open = pair.Value.IndexOf('{', close);
+                    }
+                }
+                if ((step.Kind == "find_place" || step.Kind == "call" || step.Kind == "read") && step.Arg("as") != null)
+                {
+                    variables.Add(step.Arg("as"));
                 }
                 labels.Add(step.Label);
                 if (step.Arg("mark") != null)

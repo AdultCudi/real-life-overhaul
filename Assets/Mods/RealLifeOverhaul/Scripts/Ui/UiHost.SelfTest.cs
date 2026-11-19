@@ -111,6 +111,82 @@ namespace RealLifeOverhaul.Ui
             return _scene == null ? "no scene" : _scene.NodeCount + " targets, " + _scene.ClipCount + " scroll regions, " + _scene.ItemCount + " items";
         }
 
+        /// <summary>The words of a target: the first text item that belongs to it, else the text of its face; empty when it has none.</summary>
+        internal string SelfTestLabelOf(int node)
+        {
+            if (_scene == null || node < 0 || node >= _scene.NodeCount)
+            {
+                return string.Empty;
+            }
+            int face = _scene.Nodes[node].Face;
+            if (face >= 0 && face < _scene.ItemCount && !string.IsNullOrEmpty(_scene.Items[face].Text))
+            {
+                return _scene.Items[face].Text;
+            }
+            for (int i = 0; i < _scene.ItemCount; i++)
+            {
+                if (_scene.Items[i].Node == node && !string.IsNullOrEmpty(_scene.Items[i].Text))
+                {
+                    return _scene.Items[i].Text;
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>Presses the nth (from 1) target whose words hold the text (any case), topmost layer last; false, with why, when there is none or it is disabled.</summary>
+        internal bool SelfTestPressText(string text, int nth, out string label, out string why)
+        {
+            label = null;
+            why = null;
+            int seen = 0, found = -1;
+            for (int i = 0; _scene != null && i < _scene.NodeCount; i++)
+            {
+                if (_scene.Nodes[i].Handle)
+                {
+                    continue;
+                }
+                string words = SelfTestLabelOf(i);
+                if (words.Length > 0 && words.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 && ++seen == Math.Max(1, nth))
+                {
+                    found = i;
+                    label = words;
+                    break;
+                }
+            }
+            if (found < 0)
+            {
+                why = "no target whose words hold '" + text + "' (" + seen + " found, wanted number " + Math.Max(1, nth) + "); kit_commands lists the targets";
+                return false;
+            }
+            if (_scene.Nodes[found].Disabled)
+            {
+                why = "the target '" + label + "' is there but disabled";
+                return false;
+            }
+            PressNode(found, Time.unscaledTime);
+            if (!_lastPressDone)
+            {
+                why = "the screen answered false to the press of '" + label + "' (a refusal: Player.log names the control and why)";
+            }
+            return _lastPressDone;
+        }
+
+        /// <summary>One line a target of the laid screen: its number, command (by the name the caller gives it), argument, words and whether it is enabled.</summary>
+        internal void SelfTestTargets(System.Text.StringBuilder into, Func<int, string> nameOf, int most)
+        {
+            for (int i = 0; _scene != null && i < _scene.NodeCount && i < most; i++)
+            {
+                UiNode n = _scene.Nodes[i];
+                if (n.Handle)
+                {
+                    continue;
+                }
+                string words = SelfTestLabelOf(i);
+                into.Append("  [").Append(i).Append("] ").Append(nameOf(n.Command)).Append('/').Append(n.Arg).Append(n.Disabled ? " DISABLED" : string.Empty)
+                    .Append(words.Length > 0 ? " '" + (words.Length > 60 ? words.Substring(0, 60) : words).Replace('\n', ' ') + "'" : string.Empty).Append('\n');
+            }
+        }
+
         private int Find(int command, int arg)
         {
             if (_scene == null)

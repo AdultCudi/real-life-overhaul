@@ -58,33 +58,6 @@ namespace RealLifeOverhaul.SelfTest
             }
         }
 
-        /// <summary>The "press_button" step (SelfTestKinds has its words).</summary>
-        internal sealed class PressButtonStep : SelfTestStep
-        {
-            public override string Name => "press_button";
-
-            public override IEnumerator Run(SelfTestContext c)
-            {
-                if (!SelfTestUi.PressButton(c.Arg("button"), out string why))
-                {
-                    c.Fail(why);
-                    yield break;
-                }
-                string sceneBefore = SelfTestDiag.Scenes(), showBefore = SelfTestGame.ShowingWords();
-                c.Waiting = "the button's work to settle";
-                yield return new WaitForSecondsRealtime(c.Number("settle", 1.5f));
-                bool effect = SelfTestGame.ShowingWords() != showBefore || SelfTestDiag.Scenes() != sceneBefore || c.Runner.Watch.LogHas("", c.Spec.Label, out string line);
-                if (effect)
-                {
-                    c.Pass("pressed " + c.Arg("button") + " and something changed; " + SelfTestGame.ShowingWords());
-                }
-                else
-                {
-                    c.Skip("pressed " + c.Arg("button") + " but no screen, scene or log line changed (the test may only show a notice): " + SelfTestGame.ShowingWords());
-                }
-            }
-        }
-
         /// <summary>The "list_buttons" step (SelfTestKinds has its words).</summary>
         internal sealed class ListButtonsStep : SelfTestStep
         {
@@ -397,31 +370,6 @@ namespace RealLifeOverhaul.SelfTest
                 {
                     c.Pass(words);
                 }
-            }
-        }
-
-        /// <summary>A press, typed words and the wheel, sent to the host of the showing kit screen by the paths a click, the keyboard and the mouse wheel use.</summary>
-        internal sealed class KitPressStep : SelfTestStep
-        {
-            public override string Name => "kit_press";
-
-            public override IEnumerator Run(SelfTestContext c)
-            {
-                UiHost host = SelfTestGame.Target(c.Arg("screen"));
-                if (host == null)
-                {
-                    c.Fail("no kit screen" + (c.Arg("screen") != null ? " '" + c.Arg("screen") + "'" : string.Empty) + " shows: " + SelfTestGame.ShowingWords());
-                    yield break;
-                }
-                string id = host.Screen.Id;
-                int arg = (int)c.Number("arg", -1f);
-                if (!host.SelfTestPress((int)c.Number("command", 0f), arg, out string why))
-                {
-                    c.Fail("on '" + id + "': " + why);
-                    yield break;
-                }
-                yield return new WaitForSecondsRealtime(0.5f);
-                c.Pass("pressed command " + c.Arg("command") + (arg >= 0 ? " argument " + arg : string.Empty) + " on '" + id + "'; it has " + host.SelfTestShape());
             }
         }
 

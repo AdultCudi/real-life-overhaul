@@ -127,6 +127,12 @@ internal static partial class Program
             + "{\"do\":\"assert_notice\",\"key\":\"n\",\"absent\":true},{\"do\":\"assert_owns\",\"address\":\"1 Main Street\"},{\"do\":\"set_year\",\"days\":365},{\"do\":\"write_wav\",\"path\":\"Busking/a.wav\",\"hz\":440}]}]}", out errors);
         Check(plan != null && errors.Count == 0 && plan.Steps.Count == 16 && plan.Steps[3].Arg("from") == "c_r1" && plan.Steps[10].Arg("from") == "c_r2",
             "selftest plan: inside a repeat a from names the same round's label, and the money, bank line, notice, owns, year and wav steps read with their arguments (" + (plan != null ? plan.Steps.Count : -1) + " steps)");
+        Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"teleport\",\"address\":\"{precinct}\"}]}", "set by no earlier"), "selftest plan: a {variable} that no earlier find_place, call or read set is refused when the plan is read");
+        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"find_place\",\"kind\":\"precinct\",\"as\":\"p\"},{\"do\":\"enter_building\",\"address\":\"{p}\"},{\"do\":\"leave_building\"},"
+            + "{\"do\":\"kit_press\",\"command\":\"Row\",\"arg\":2,\"screen\":\"estate\"},{\"do\":\"kit_press\",\"key\":\"reallife_flat_btn_buy_cash\"},{\"do\":\"kit_commands\"},{\"do\":\"confirm\",\"answer\":\"no\"},{\"do\":\"set_day\",\"weekday\":\"Monday\",\"hour\":9},"
+            + "{\"do\":\"assert_home\"},{\"do\":\"call\",\"type\":\"X\",\"method\":\"Y\",\"args\":\"1|a\",\"as\":\"r\"},{\"do\":\"read\",\"type\":\"X\",\"member\":\"Book.Count\",\"atleast\":1,\"expect\":\"count\"},"
+            + "{\"do\":\"press_button\",\"button\":\"b\",\"expect_text\":\"x\",\"expect_log\":\"y\",\"refuse\":\"z\"}]}", out errors);
+        Check(plan != null && errors.Count == 0 && plan.Steps.Count == 12 && plan.Steps[1].Arg("address") == "{p}", "selftest plan: the new play steps (find_place, enter and leave, kit_press by name, text or key, kit_commands, confirm, set_day, assert_home, call, read, press_button with expectations) read with their arguments");
         Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"since\":\"never\"}]}", "marked by no earlier"), "selftest plan: a since that no earlier measure marked is refused");
         Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\"}]}", "mark"), "selftest plan: a measure that names no mark and no moment to measure from is refused");
         plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"mark\":\"a\"},{\"do\":\"measure\",\"since\":\"a\",\"as\":\"load\"},"
@@ -283,7 +289,7 @@ internal static partial class Program
             "selftest source: the new game passes only after the loading flag was seen and the loaded scenes changed, and fails within 90 s naming the screen it stuck at");
         string kit = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Kit.cs");
         string world = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.World.cs");
-        Check(saves.Contains("SelfTestDiag.Scenes() == before") && kit.Contains("neither the phone's menu nor any kit screen shows") && kit.Contains("c.Skip(\"pressed \"") && world.Contains("did not move from")
+        Check(saves.Contains("SelfTestDiag.Scenes() == before") && kit.Contains("neither the phone's menu nor any kit screen shows") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Play.cs").Contains("nothing was asserted") && world.Contains("did not move from")
               && SelfTestMod(@"Diagnostics\SelfTest\SelfTestWorld.cs").Contains("reads back as") && world.Contains("left \" + (long)") && world.Contains("the console refused"),
             "selftest source: load_save, open_app, press_button, teleport, found_business, set_money and console each wait for what they caused and say what they waited for");
         Check(runner.Contains("-fail") && runner.Contains("SelfTestDiag.Dump()") && runner.Contains("Time.realtimeSinceStartup - wrote > 5f") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestDiag.cs").Contains("showing canvases"),
@@ -309,6 +315,14 @@ internal static partial class Program
         string state = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.State.cs");
         Check(state.Contains("Path.GetFullPath(Path.Combine(Application.persistentDataPath, \"RealLifeOverhaul\", \"GigMusic\"))") && state.Contains("rel.Contains(\"..\")") && state.Contains("StartsWith(root"),
             "selftest source: the wav step writes only inside RealLifeOverhaul/GigMusic of the game's data folder, never up a path");
+        string play = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Play.cs");
+        Check(play.Contains("refused ('") && play.Contains("expect_text") && play.Contains("expect_log") && play.Contains("c.Skip(\"pressed \" + c.Arg(\"button\") + \", said: \"") && play.Contains("c.Pass(\"pressed \" + c.Arg(\"button\") + \", said: \""),
+            "selftest source: a test button's press fails on a refusal, passes only on what the plan expects of the notices and log lines it caused, and is a skip quoting what was said when nothing is expected");
+        Check(play.Contains("SelfTestReflect.Command(") && play.Contains("SelfTestPressText(") && play.Contains("class KitCommandsStep") && play.Contains("HudConfirm.isOpen") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestRunner.cs").Contains("private bool Substitute("),
+            "selftest source: kit_press by a command constant's name or the words on a target, kit_commands, confirm and the {name} variables are there");
+        string watchText = SelfTestMod(@"Diagnostics\SelfTest\SelfTestWatch.cs");
+        Check(watchText.Contains("Notifications.onShow") && watchText.Contains("EventHold.Keep(ref Notifications.onShow") && watchText.Contains("public List<string> NoticeLines"),
+            "selftest source: the notices a press caused are kept from the game's own notification event, joined and kept attached as the mod's other hooks are, only while a plan runs");
         // The screens table against the registry and the options page.
         string mod = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");
         bool ids = true, labels = true;

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.Tags;
 using Buildings;
 using Helpers;
@@ -68,6 +70,107 @@ namespace RealLifeOverhaul.SelfTest
                 why = "inside works with an address only";
                 return false;
             }
+            return true;
+        }
+
+        /// <summary>Walks the player into the building at an address by the game's own EnterBuilding.</summary>
+        public static bool Enter(int number, string street)
+        {
+            Building building = BuildingHelper.GetBuilding(new Address(street, number));
+            BuildingManager bm = InstanceBehavior<BuildingManager>.Instance;
+            if (building == null || bm == null)
+            {
+                return false;
+            }
+            bm.EnterBuilding(building);
+            return true;
+        }
+
+        /// <summary>Takes the player out of the building by the game's own exit (the first door).</summary>
+        public static void Leave()
+        {
+            BuildingManager bm = InstanceBehavior<BuildingManager>.Instance;
+            if (bm != null)
+            {
+                bm.ExitFromBuilding(0);
+            }
+        }
+
+        /// <summary>The first day from now (today only if the hour is still ahead) that is the named weekday; -1 for a name that is none.</summary>
+        public static int NextWeekday(string name, int hour)
+        {
+            if (!Enum.TryParse(name, true, out DayOfWeekOrdered want))
+            {
+                return -1;
+            }
+            int today = SaveGameManager.Current.Day;
+            for (int d = today; d <= today + 7; d++)
+            {
+                if (TimeHelper.GetDayOfWeek(d) == want && (d > today || hour > SaveGameManager.Current.Hour))
+                {
+                    return d;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// An address the city holds, by what the plan needs: a free office for a firm, a residential building with units to buy as flats, or the
+        /// police station nearest the player (the mod's own, read by name).
+        /// </summary>
+        public static bool FindPlace(string kind, out string address, out string why)
+        {
+            address = null;
+            why = null;
+            if (kind == "precinct")
+            {
+                Type law = SelfTestReflect.FindType("LawDirector", out why);
+                MethodInfo near = law != null ? law.GetMethod("NearestPrecinct", BindingFlags.Public | BindingFlags.Static) : null;
+                object precinct = near != null ? near.Invoke(null, new object[] { PlayerAt() }) : null;
+                FieldInfo field = precinct != null ? precinct.GetType().GetField("Address") : null;
+                string kept = field != null ? field.GetValue(precinct) as string : null;   // "street|number", as the save keeps it
+                if (string.IsNullOrEmpty(kept) || kept.IndexOf('|') < 0)
+                {
+                    why = why ?? "the mod has no police station near the player (is the police option on, and is this a city with precincts?)";
+                    return false;
+                }
+                address = kept.Substring(kept.IndexOf('|') + 1) + " " + kept.Substring(0, kept.IndexOf('|'));
+                return true;
+            }
+            string type = kind == "office_free" ? "ba:buildingtype_office" : kind == "residential_flats" ? "ba:buildingtype_residential" : null;
+            if (type == null)
+            {
+                why = "'" + kind + "' is not a kind of place (precinct, office_free, residential_flats)";
+                return false;
+            }
+            Building best = null;
+            float bestRent = float.MaxValue;
+            List<Building> all = BuildingHelper.allBuildings;
+            for (int i = 0; i < all.Count; i++)
+            {
+                Building b = all[i];
+                BuildingRegistration reg = b != null ? b.GetRegistration() : null;
+                if (reg == null || reg.RentedByPlayer || reg.BuildingOwnedByPlayer || b.BuildingType != type || GameDlc.Gated(b) || b.IsHamptonsHouse())
+                {
+                    continue;
+                }
+                if (kind == "office_free" && !reg.AvailableForRent)
+                {
+                    continue;
+                }
+                float rent = b.GetBuildingDailyMarketRent();
+                if (rent < bestRent)
+                {
+                    bestRent = rent;
+                    best = b;
+                }
+            }
+            if (best == null)
+            {
+                why = "the city holds no '" + kind + "' place the player does not have";
+                return false;
+            }
+            address = best.Address.streetNumber + " " + best.Address.streetName;
             return true;
         }
 

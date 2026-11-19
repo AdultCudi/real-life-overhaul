@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.SelfTest
         private string _lastPicture;
         private bool _pictureMissing;
         private int _modsSeen = -1;
+        private readonly Dictionary<string, string> _vars = new Dictionary<string, string>(StringComparer.Ordinal);   // what find_place, call and read put by name, read by later steps as {name}
         private readonly Dictionary<string, float> _marks = new Dictionary<string, float>(StringComparer.Ordinal);   // named moments of the run, for measure
 
         /// <summary>Reads the trigger file, removes it, and starts the plan; a plan that cannot be read is said in Player.log.</summary>
@@ -97,7 +98,11 @@ namespace RealLifeOverhaul.SelfTest
             float wrote = began;
             _results.Current = (_results.Steps.Count + 1) + "/" + _plan.Steps.Count + " " + spec.Label + " (limit " + spec.Limit + " s): starting";
             Write();
-            if (step == null)
+            if (!Substitute(spec, out string varWhy))
+            {
+                ctx.Fail(varWhy);
+            }
+            else if (step == null)
             {
                 ctx.Fail("no step class for '" + spec.Kind + "'");
             }
@@ -220,6 +225,37 @@ namespace RealLifeOverhaul.SelfTest
                 }
                 yield return null;
             }
+        }
+
+        internal void SetVar(string name, string value) => _vars[name] = value ?? string.Empty;
+
+        /// <summary>The step's arguments with every {name} replaced by what an earlier step put there; false, with why, for one nothing set.</summary>
+        private bool Substitute(SelfTestStepSpec spec, out string why)
+        {
+            why = null;
+            foreach (string key in new List<string>(spec.Args.Keys))
+            {
+                string value = spec.Args[key];
+                int open = value.IndexOf('{');
+                while (open >= 0)
+                {
+                    int close = value.IndexOf('}', open);
+                    if (close < 0)
+                    {
+                        break;
+                    }
+                    string name = value.Substring(open + 1, close - open - 1);
+                    if (!_vars.TryGetValue(name, out string got))
+                    {
+                        why = "the variable {" + name + "} was set by no earlier step that ran";
+                        return false;
+                    }
+                    value = value.Substring(0, open) + got + value.Substring(close + 1);
+                    open = value.IndexOf('{', open + got.Length);
+                }
+                spec.Args[key] = value;
+            }
+            return true;
         }
 
         /// <summary>Notes a named moment now.</summary>
