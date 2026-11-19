@@ -118,9 +118,14 @@ namespace RealLifeOverhaul
             }
             _left = _boxes;
             _carry = new JobCarry(Ctx.Logger);
-            if (!JobSites.RandomClient(Ctx, Def, _boxes, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.ShopClient, out _client) || !StandPile())
+            if (!JobSites.RandomClient(Ctx, Def, _boxes, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.ShopClient, out _client, out string why, HasPileSpot))
             {
-                Refusal = "reallife_job_no_client";
+                Refusal = why;
+                return false;
+            }
+            if (!StandPile())
+            {
+                Refusal = ClientRules.NoneFound;
                 return false;
             }
             _clientName = JobSites.NameOf(_client);
@@ -149,36 +154,56 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The delivery stands a little to one side of the door, on pavement with room, out of the doorway.
-        private bool StandPile()
+        /// <summary>
+        /// Whether a shop of this kind could be offered at all here: the same search the job makes, so the Gig Line never offers a shelf
+        /// gig that cannot begin. The reason as a key when not.
+        /// </summary>
+        public static bool CanBegin(Vector3 from, JobDef def, int boxes, out string why)
         {
-            Vector3 front = _client.Front;
+            return JobSites.Probe(from, def, boxes, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.ShopClient, HasPileSpot, out why);
+        }
+
+        private static bool HasPileSpot(DoorSpot client) => PileSite(client.Front, out _, out _);
+
+        // The delivery stands a little to one side of the door, on pavement with room, out of the doorway.
+        private static bool PileSite(Vector3 front, out Vector3 at, out Quaternion turn)
+        {
+            at = default;
+            turn = Quaternion.identity;
             if (!CitySpots.Along(front, out Vector3 along))
             {
                 return false;
             }
             for (int side = -1; side <= 1; side += 2)
             {
-                if (!CitySpots.Stand(front + along * (side * 2.3f), 0.75f, out Vector3 at)
-                    || !CitySpots.OnPavement(at + along * 0.6f, out _) || !CitySpots.OnPavement(at - along * 0.6f, out _))
+                if (CitySpots.Stand(front + along * (side * 2.3f), 0.75f, out at)
+                    && CitySpots.OnPavement(at + along * 0.6f, out _) && CitySpots.OnPavement(at - along * 0.6f, out _))
                 {
-                    continue;
+                    turn = Quaternion.LookRotation(Vector3.Cross(along, Vector3.up));
+                    return true;
                 }
-                _pileAt = at;
-                Quaternion turn = Quaternion.LookRotation(Vector3.Cross(along, Vector3.up));
-                for (int i = 0; i < _boxes; i++)
-                {
-                    _pile[i] = Ctx.Props.Take(BoxProp);
-                    if (_pile[i] == null)
-                    {
-                        return false;   // End gives back whatever was already taken
-                    }
-                    _pile[i].SetPositionAndRotation(at + turn * PilePlaces[i], turn * Quaternion.Euler(0f, (i * 37) % 11 - 5f, 0f));
-                }
-                _left = _boxes;
-                return true;
             }
             return false;
+        }
+
+        private bool StandPile()
+        {
+            if (!PileSite(_client.Front, out Vector3 at, out Quaternion turn))
+            {
+                return false;
+            }
+            _pileAt = at;
+            for (int i = 0; i < _boxes; i++)
+            {
+                _pile[i] = Ctx.Props.Take(BoxProp);
+                if (_pile[i] == null)
+                {
+                    return false;   // End gives back whatever was already taken
+                }
+                _pile[i].SetPositionAndRotation(at + turn * PilePlaces[i], turn * Quaternion.Euler(0f, (i * 37) % 11 - 5f, 0f));
+            }
+            _left = _boxes;
+            return true;
         }
 
         public override void Tick(float now)

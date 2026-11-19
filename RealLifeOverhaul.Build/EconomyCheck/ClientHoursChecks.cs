@@ -11,12 +11,34 @@ internal static partial class Program
         string mod = FilePath.GetFullPath(FilePath.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Assets", "Mods", "RealLifeOverhaul"));
         string jobs = FilePath.Combine(mod, "Scripts", "Jobs");
         string sites = File.ReadAllText(FilePath.Combine(jobs, "JobSites.cs"));
-        string pick = MemberText(sites, "public static bool RandomClient(");
-        Check(pick.Contains("i < ClientPicks") && pick.Contains("out DoorSpot found, only, 1")
-              && pick.Contains("JobSpots.Flat(ctx.PlayerPosition, found.Front) * secondsPerMetre")
-              && pick.Contains("Mathf.Max(seconds * speed + walk, walk + units * ShiftRates.Minutes(def)) + ClosingMargin")
+        string pick = MemberText(sites, "private static bool Find(");
+        Check(pick.Contains("for (int i = 0; i < buildings.Length; i++)") && !sites.Contains("ClientPicks")
+              && pick.Contains("ClientRules.Needed(seconds, speed, Mathf.Sqrt(sqr), secondsPerMetre, units, ShiftRates.Minutes(def), ClosingMargin)")
               && pick.Contains("if (open < needed)") && sites.Contains("ClosingMargin = 15;"),
-            "client hours: bounded picks reserve the walk and the longer of hand work or the clock, with a closing margin, at the game's speed");
+            "client hours: every building in reach is looked at, not a few random picks of the whole city, and the walk and the longer of hand work or the clock are reserved with a closing margin at the game's speed");
+        Check(RealLifeOverhaul.ClientRules.Needed(300f, 1f, 100f, 0.5f, 6, 40, 15) == 365f && RealLifeOverhaul.ClientRules.Needed(300f, 1f, 100f, 0.5f, 8, 40, 15) == 385f
+              && RealLifeOverhaul.ClientRules.Needed(300f, 2f, 100f, 0.5f, 6, 40, 15) == 715f,
+            "client hours: the open time a client needs is the walk plus the longer of the hand work and the clock, and a margin");
+        string probe = MemberText(sites, "public static bool Probe(");
+        string random = MemberText(sites, "public static bool RandomClient(");
+        Check(probe.Contains("return Find(from, def, units,") && random.Contains("return Find(ctx.PlayerPosition, def, units,"),
+            "client hours: the Gig Line's offer and the gig's start search with the one Find");
+        string director = File.ReadAllText(FilePath.Combine(jobs, "JobDirector.cs"));
+        string offerCheck = MemberText(director, "private static bool ClientFor(");
+        Check(MemberText(director, "private bool Available(JobDef def, bool heavy, out string reasonKey)").Contains("!ClientFor(def, out reasonKey)")
+              && offerCheck.Contains("StockerJob.CanBegin(") && offerCheck.Contains("CleanerJob.CanBegin(")
+              && offerCheck.Contains("JobState.LeftToday(def)") && offerCheck.Contains("GigOffers.Draw("),
+            "client hours: the Gig Line offers a shelf or a cleaning gig only where the gig's own search finds a client, for the size the offer draws");
+        string stocker = File.ReadAllText(FilePath.Combine(jobs, "Kinds", "StockerJob.cs"));
+        Check(MemberText(stocker, "public static bool CanBegin(").Contains("JobSites.Probe(from, def, boxes, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.ShopClient, HasPileSpot, out why)")
+              && MemberText(stocker, "protected override bool OnBegin(").Contains("JobSites.ShopClient, out _client, out string why, HasPileSpot)")
+              && MemberText(stocker, "protected override bool OnBegin(").Contains("Refusal = why;")
+              && MemberText(stocker, "private static bool HasPileSpot(").Contains("PileSite(client.Front"),
+            "client hours: a shop is chosen only where the delivery has a place on its pavement, in the offer and in the start alike");
+        Check(RealLifeOverhaul.ClientRules.Reason(0, 0) == "reallife_job_no_client_near" && RealLifeOverhaul.ClientRules.Reason(3, 0) == "reallife_job_no_client_hours"
+              && RealLifeOverhaul.ClientRules.Reason(3, 2) == "reallife_job_no_client"
+              && RealLifeOverhaul.ClientRules.IsNoClient("reallife_job_no_client_hours") && !RealLifeOverhaul.ClientRules.IsNoClient("reallife_job_no_daily"),
+            "client hours: the refusal names the real reason: none near, none open long enough, none with a place");
         string hours = MemberText(sites, "private static float OpenMinutes(");
         Check(hours.Contains("registration.temporarilyClosed") && hours.Contains("registration.scheduleDays")
               && hours.Contains("TimeHelper.GetDayOfWeek(day)") && hours.Contains("!schedule.IsOpenAtHour(hour)")
@@ -42,7 +64,7 @@ internal static partial class Program
             string act = MemberText(source, "private void Act(");
             string units = kind == "Cleaner" ? "_units" : "_boxes";
             string client = kind == "Cleaner" ? "AnyClient" : "ShopClient";
-            Check(begin.Contains("JobSites.RandomClient(Ctx, Def, " + units + ", ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites." + client + ", out _client)")
+            Check(begin.Contains("JobSites.RandomClient(Ctx, Def, " + units + ", ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites." + client + ", out _client, out string why")
                   && begin.Contains("canWork: ClientOpen") && source.Contains("private bool ClientOpen() => !ClientClosed(_client);"),
                 "client hours: " + kind + " uses its whole offer and shares the closure check with its clock");
             int check = tick.IndexOf("if (!ClientOpen())", StringComparison.Ordinal);
