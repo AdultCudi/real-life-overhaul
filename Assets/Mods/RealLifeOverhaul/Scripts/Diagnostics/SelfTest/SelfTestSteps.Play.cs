@@ -90,9 +90,46 @@ namespace RealLifeOverhaul.SelfTest
                     text = UiText.T(c.Arg("key"));
                 }
                 string pressed;
-                if (text != null)
+                if (c.Spec.Args.ContainsKey("row"))
                 {
-                    if (!host.SelfTestPressText(text, (int)c.Number("nth", 1f), out string label, out why))
+                    bool rowDone;
+                    float rowUntil = Time.realtimeSinceStartup + c.Number("wait", 3f);
+                    while (true)
+                    {
+                        host = SelfTestGame.Target(c.Arg("screen")) ?? host;
+                        rowDone = host.SelfTestPressRow((int)c.Number("row", 0f), out string rowLabel, out why);
+                        if (rowDone || Time.realtimeSinceStartup > rowUntil)
+                        {
+                            break;
+                        }
+                        c.Waiting = "row " + c.Arg("row") + " on '" + id + "'";
+                        yield return new WaitForSecondsRealtime(0.3f);
+                    }
+                    if (!rowDone)
+                    {
+                        c.Fail("on '" + id + "': " + why);
+                        yield break;
+                    }
+                    pressed = "row " + c.Arg("row");
+                }
+                else if (text != null)
+                {
+                    string label = null;
+                    string where = text;
+                    bool done = false;
+                    float until = Time.realtimeSinceStartup + c.Number("wait", 3f);
+                    while (true)
+                    {
+                        host = SelfTestGame.Target(c.Arg("screen")) ?? host;
+                        done = host.SelfTestPressText(text, (int)c.Number("nth", 1f), out label, out why);
+                        if (done || Time.realtimeSinceStartup > until || why.Contains("disabled") || why.Contains("answered false"))
+                        {
+                            break;
+                        }
+                        c.Waiting = "a target with the words '" + where + "' on '" + id + "'";
+                        yield return new WaitForSecondsRealtime(0.3f);
+                    }
+                    if (!done)
                     {
                         c.Fail("on '" + id + "': " + why);
                         yield break;
@@ -116,7 +153,7 @@ namespace RealLifeOverhaul.SelfTest
                 }
                 else
                 {
-                    c.Fail("name a command (a constant's name or a number), the words on the target (text) or a text key (key)");
+                    c.Fail("name a row, a command (a constant's name or a number), the words on the target (text) or a text key (key)");
                     yield break;
                 }
                 yield return new WaitForSecondsRealtime(c.Number("settle", 0.6f));

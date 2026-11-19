@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.SelfTest
             for (int i = hosts.Count - 1; i >= 0; i--)
             {
                 UiScreenDef def = UiScreens.Find(hosts[i].Screen.Id);
-                if (def == null || def.Template != UiTemplate.Hud)
+                if (def == null || (def.Template != UiTemplate.Hud && def.Template != UiTemplate.Phone))
                 {
                     return hosts[i];
                 }

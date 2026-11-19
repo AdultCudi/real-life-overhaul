@@ -133,7 +133,32 @@ namespace RealLifeOverhaul.Ui
             return string.Empty;
         }
 
-        /// <summary>Presses the nth (from 1) target whose words hold the text (any case), topmost layer last; false, with why, when there is none or it is disabled.</summary>
+        /// <summary>All the words of a target: its own label, and the text of every item laid inside its rectangle (a table row's other cells).</summary>
+        internal string SelfTestWordsOf(int node)
+        {
+            if (_scene == null || node < 0 || node >= _scene.NodeCount)
+            {
+                return string.Empty;
+            }
+            UiNode n = _scene.Nodes[node];
+            var sb = new System.Text.StringBuilder(SelfTestLabelOf(node));
+            for (int i = 0; i < _scene.ItemCount; i++)
+            {
+                UiItem it = _scene.Items[i];
+                if (string.IsNullOrEmpty(it.Text) || it.Clip != n.Clip || it.Layer != n.Layer)
+                {
+                    continue;
+                }
+                float cx = it.X + it.W * 0.5f, cy = it.Y + it.H * 0.5f;
+                if (cx >= n.X && cx <= n.X + n.W && cy >= n.Y && cy <= n.Y + n.H)
+                {
+                    sb.Append(" | ").Append(it.Text);
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Presses the nth (from 1) target whose words, or a cell inside it, hold the text (any case); false, with why, when there is none or it is disabled.</summary>
         internal bool SelfTestPressText(string text, int nth, out string label, out string why)
         {
             label = null;
@@ -145,11 +170,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                string words = SelfTestLabelOf(i);
+                string words = SelfTestWordsOf(i);
                 if (words.Length > 0 && words.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 && ++seen == Math.Max(1, nth))
                 {
                     found = i;
-                    label = words;
+                    label = SelfTestLabelOf(i).Length > 0 ? SelfTestLabelOf(i) : words;
                     break;
                 }
             }
@@ -158,6 +183,30 @@ namespace RealLifeOverhaul.Ui
                 why = "no target whose words hold '" + text + "' (" + seen + " found, wanted number " + Math.Max(1, nth) + "); kit_commands lists the targets";
                 return false;
             }
+            return PressFound(found, label, out why);
+        }
+
+        /// <summary>Presses the row (from 0) of the screen's list: the target that is that row.</summary>
+        internal bool SelfTestPressRow(int row, out string label, out string why)
+        {
+            label = null;
+            why = null;
+            for (int i = 0; _scene != null && i < _scene.NodeCount; i++)
+            {
+                UiNode n = _scene.Nodes[i];
+                if (!n.Handle && n.List >= 0 && n.Index == row)
+                {
+                    label = SelfTestWordsOf(i);
+                    return PressFound(i, label, out why);
+                }
+            }
+            why = "the screen has no list row " + row + " (kit_commands lists the targets)";
+            return false;
+        }
+
+        private bool PressFound(int found, string label, out string why)
+        {
+            why = null;
             if (_scene.Nodes[found].Disabled)
             {
                 why = "the target '" + label + "' is there but disabled";

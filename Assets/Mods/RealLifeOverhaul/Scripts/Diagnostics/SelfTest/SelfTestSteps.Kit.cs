@@ -200,7 +200,8 @@ namespace RealLifeOverhaul.SelfTest
                     string kit = apps[i].Value;
                     bool kitShows = kit != null && SelfTestGame.IsShowing(kit);
                     bool expected = kit != null && UiDirector.On && UiScreenSwitches.On(kit);
-                    bool anything = SelfTestGame.PhoneOpen() || SelfTestGame.Standing(null) != null;
+                    bool anything = SelfTestGame.PhoneOpen() || SelfTestGame.Standing(null) != null || SelfTestGame.MapOpen()
+                        || PhoneApp.SelfTestShowing(app);   // an app may take the whole screen (the map, the camera)
                     string faults = c.Runner.Watch.FaultWords();
                     if (!anything)
                     {

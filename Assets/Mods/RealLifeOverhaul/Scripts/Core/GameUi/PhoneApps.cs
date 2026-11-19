@@ -697,6 +697,12 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>True while the mod's app of that id has its own panel showing (for the self-test: an app that takes the whole screen counts as shown).</summary>
+        internal static bool SelfTestShowing(string id)
+        {
+            return id != null && ById.TryGetValue(id, out PhoneApp app) && app != null && app.Showing;
+        }
+
         /// <summary>Opens the mod's app of that id as its button does; false, with nothing done, when it is not on the phone.</summary>
         public static bool OpenById(string id)
         {

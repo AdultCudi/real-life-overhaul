@@ -321,6 +321,9 @@ internal static partial class Program
         Check(state.Contains("Path.GetFullPath(Path.Combine(Application.persistentDataPath, \"RealLifeOverhaul\", \"GigMusic\"))") && state.Contains("rel.Contains(\"..\")") && state.Contains("StartsWith(root"),
             "selftest source: the wav step writes only inside RealLifeOverhaul/GigMusic of the game's data folder, never up a path");
         string play = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Play.cs");
+        Check(play.Contains("SelfTestPressRow(") && play.Contains("until = Time.realtimeSinceStartup + c.Number(\"wait\", 3f)") && SelfTestKinds.Find("kit_press").TypeOf("row") == "i" && SelfTestKinds.Find("kit_press").TypeOf("wait") == "n"
+              && SelfTestMod(@"Ui\UiHost.SelfTest.cs").Contains("SelfTestWordsOf") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestGame.cs").Contains("UiTemplate.Phone"),
+            "selftest source: kit_press presses a table row by index or by the words of any of its cells, waits for the target to appear, and the HUD and the folded phone are the resting state");
         Check(play.Contains("refused ('") && play.Contains("expect_text") && play.Contains("expect_log") && play.Contains("c.Skip(\"pressed \" + c.Arg(\"button\") + \", said: \"") && play.Contains("c.Pass(\"pressed \" + c.Arg(\"button\") + \", said: \""),
             "selftest source: a test button's press fails on a refusal, passes only on what the plan expects of the notices and log lines it caused, and is a skip quoting what was said when nothing is expected");
         Check(play.Contains("SelfTestReflect.Command(") && play.Contains("SelfTestPressText(") && play.Contains("class KitCommandsStep") && play.Contains("HudConfirm.isOpen") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestRunner.cs").Contains("private bool Substitute("),
@@ -382,6 +385,10 @@ internal static partial class Program
         {
             files.AddRange(Directory.GetFiles(IoPath.Combine(folder, "plans"), "*.json"));
         }
+        string betaTexts = @"D:\BigAmbitionsMod\wt-living\Assets\Mods\RealLifeOverhaul\Locales\en.json";
+        JObject texts = File.Exists(betaTexts) ? JObject.Parse(File.ReadAllText(betaTexts).TrimStart('\uFEFF')) : null;
+        string gameFile = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\locale\en.json";
+        JObject gameTexts = File.Exists(gameFile) ? JObject.Parse(File.ReadAllText(gameFile).TrimStart('\uFEFF')) : new JObject();
         string beta = @"D:\BigAmbitionsMod\wt-living\Assets\Mods\RealLifeOverhaul\Scripts\Core\RealLifeOverhaulMod.cs";
         string buttons = File.Exists(beta) ? File.ReadAllText(beta) : string.Empty;   // the beta's page, where the new features' buttons are
         string buttonsHere = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");
@@ -390,6 +397,27 @@ internal static partial class Program
             SelfTestPlan plan = SelfTestRead(File.ReadAllText(file), out List<string> errors);
             Check(plan != null && errors.Count == 0 && plan.Steps.Count > 0, "selftest plans: " + IoPath.GetFileName(file) + " reads against the table" + (errors.Count > 0 ? ": " + string.Join("; ", errors) : string.Empty));
             Check(plan == null || plan.OwnerSaves == (IoPath.GetFileName(file) == "smoke.json"), "selftest plans: " + IoPath.GetFileName(file) + " loads only the self-test's own saves (only smoke.json may take the owner's)");
+            var unknown = new List<string>();
+            for (int i = 0; plan != null && texts != null && i < plan.Steps.Count; i++)
+            {
+                string key = plan.Steps[i].Arg("key");
+                if (key == null || (plan.Steps[i].Kind != "kit_press" && plan.Steps[i].Kind != "assert_notice" && plan.Steps[i].Kind != "assert_text"))
+                {
+                    continue;
+                }
+                string bare = key.TrimEnd(':');
+                bool exact = texts.ContainsKey(bare) || gameTexts.ContainsKey(bare);
+                bool prefix = false;
+                foreach (KeyValuePair<string, JToken> pair in texts)
+                {
+                    prefix |= pair.Key.StartsWith(bare, StringComparison.Ordinal);
+                }
+                if (!(plan.Steps[i].Kind == "assert_notice" ? exact || prefix || bare.Length < 6 : exact))
+                {
+                    unknown.Add(key);
+                }
+            }
+            Check(unknown.Count == 0, "selftest plans: " + IoPath.GetFileName(file) + " presses and asserts only by text keys that exist in the texts (" + string.Join(", ", unknown) + ")");
             var missing = new List<string>();
             for (int i = 0; plan != null && i < plan.Steps.Count; i++)
             {

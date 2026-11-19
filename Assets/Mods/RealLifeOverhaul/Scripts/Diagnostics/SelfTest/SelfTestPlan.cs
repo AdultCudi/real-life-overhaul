@@ -117,7 +117,8 @@ namespace RealLifeOverhaul.SelfTest
                 string save = step.Kind == "load_save" ? step.Arg("save", "newest") : step.Kind == "save_game" ? step.Arg("name") : null;
                 if (save != null && !plan.OwnerSaves && !save.StartsWith(SavePrefix, StringComparison.Ordinal))
                 {
-                    errors.Add("step " + (i + 1) + " (" + step.Kind + "): the save '" + save + "' is not one of the self-test's own (its name must begin \"" + SavePrefix + "\"), unless the plan sets \"owner_saves\": true");
+                    errors.Add("step " + (i + 1) + " (" + step.Kind + "): the save '" + save + "' is not one of the self-test's own ("
+                        + "its name must begin \"" + SavePrefix + "\"), unless the plan sets \"owner_saves\": true");
                 }
             }
         }

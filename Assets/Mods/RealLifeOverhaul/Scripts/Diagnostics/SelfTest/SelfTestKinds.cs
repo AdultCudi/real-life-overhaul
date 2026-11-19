@@ -93,8 +93,9 @@ namespace RealLifeOverhaul.SelfTest
                 new[] { "settle:n", "shots:b", "skip:s", "only:s" }),
             new SelfTestKind("kit_press", 60,
                 "Presses a target of the showing kit screen the way a click does: by the name of a command constant or a number (command, with arg), by the words on "
-                + "the target (text, nth) or by a text key (key).",
-                null, new[] { "command:s", "arg:i", "text:s", "key:s", "nth:i", "screen:s", "settle:n" }),
+                + "the target (text, nth) by a text key (key), or by the row of a list (row, from 0). The target is waited for up to wait seconds (default 3). "
+                + "A table row also answers to the words of any of its cells.",
+                null, new[] { "command:s", "arg:i", "text:s", "key:s", "nth:i", "row:i", "wait:n", "screen:s", "settle:n" }),
             new SelfTestKind("kit_type", 60, "Types a text into the showing kit screen's field, the way the keyboard does.", new[] { "text:s" }, new[] { "screen:s", "submit:b" }),
             new SelfTestKind("kit_scroll", 60, "Turns the wheel over a scroll region of the showing kit screen.", new[] { "clip:i", "notches:n" }, new[] { "screen:s" }),
             new SelfTestKind("press_button", 120,
