@@ -620,7 +620,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EstateHolding h = _state.Flats.Flats[i].Hold;
                 waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, Save.Day);
-                waiting += Duties && h.Managed && h.Manager != (int)EstateManager.Manager ? EstateRules.CallsWaiting(h) : 0;
+                waiting += Duties && h.Managed && !EstateRules.Runs(h) ? EstateRules.CallsWaiting(h) : 0;
             }
             return waiting;
         }

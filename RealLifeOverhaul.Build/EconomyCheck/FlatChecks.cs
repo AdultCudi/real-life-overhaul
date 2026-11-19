@@ -494,8 +494,44 @@ internal static partial class Program
 
     private static string FlatSource(string relative) => ModSource(relative);
 
+    // A flat under the player's own agency (manager value 3), as a building is: the selector offers it only while the agency is open, the agents' hours count the flat's one unit, and
+    // the agency's cover, its closing and the calls waiting are asked of every let holding, flats included.
+    private static void FlatAgencyChecks()
+    {
+        string old = FlatSource(@"Economy\Estate\EstateApp.Flats.cs"), kit = FlatSource(@"Ui\Estate\EstateLive.Flats.cs"), book = FlatSource(@"Economy\Estate\EstateDirector.Book.cs");
+        string flats = FlatSource(@"Economy\Estate\EstateDirector.Flats.cs"), duties = FlatSource(@"Economy\Estate\EstateDirector.Duties.cs");
+        Check(old.Contains("_director.AgencyOpen || h.Manager == (int)EstateManager.Agency ? EstateCatalogue.Managers : EstateCatalogue.Managers - 1")
+              && old.Contains("box.Selector(choices, h.Manager, EstateText.Manager, i => _director.SetManager(key, i))"),
+            "flats under the agency: the old page's manager selector offers your own agency while it is open, or while the flat is under it already, as a building's does");
+        Check(kit.Contains("EstateCatalogue.Managers - (_d.AgencyOpen ? 1 : 2)") && kit.Contains("manager < most"),
+            "flats under the agency: the kit's manager step reaches your own agency only while it is open, as a building's does");
+        Check(book.Contains("for (int i = 0; Duties && i < _state.LetCount; i++)") && Occurs(book, "_state.LetAt(i)") == 3 && !book.Contains("_state.Holdings[i]"),
+            "flats under the agency: the agents' hours, each holding's cover and the agency's closing look at the buildings and the flats alike");
+        Check(duties.Contains("to == (int)EstateManager.Agency && !AgencyOpen") && duties.Contains("AgencyCover();") && flats.Contains("!EstateRules.Runs(h) ? EstateRules.CallsWaiting(h)")
+              && duties.Contains("h.Manager != (int)EstateManager.Manager"),
+            "flats under the agency: the same refusal while the agency is shut, cover worked out after a change, no fee taken and no call left waiting for a flat the agents cover");
+        var hold = new EstateHolding { Manager = (int)EstateManager.Agency, Covered = true };
+        Check(EstateRules.Runs(hold) && EstateCatalogue.Managers == 4 && FlatStoreManagerKept(), "flats under the agency: a covered flat is run as a manager runs it, and its manager value 3 is kept in the save");
+    }
+
+    // The save's manager value of a flat survives a round trip as 3 (the agency).
+    private static bool FlatStoreManagerKept()
+    {
+        var book = new FlatBook();
+        var flat = new OwnedFlat { Place = "Main~1", Slot = 0, Kind = 0, Units = 4, Paid = 1000, BoughtDay = 5 };
+        flat.Hold.Place = FlatRules.Key(flat.Place, 0);
+        flat.Hold.Manager = (int)EstateManager.Agency;
+        book.Flats.Add(flat);
+        var data = new System.Collections.Generic.Dictionary<string, string>();
+        FlatStore.Save(book, data);
+        var back = new FlatBook();
+        FlatStore.Load(back, data);
+        return back.Flats.Count == 1 && back.Flats[0].Hold.Manager == (int)EstateManager.Agency;
+    }
+
     private static void FlatSourceChecks()
     {
+        FlatAgencyChecks();
         string director = FlatSource(@"Economy\Estate\EstateDirector.Flats.cs");
         string game = FlatSource(@"Economy\Estate\EstateGame.Flats.cs");
         string desk = FlatSource(@"Economy\Banking\Desk\CreditDesk.Flats.cs");

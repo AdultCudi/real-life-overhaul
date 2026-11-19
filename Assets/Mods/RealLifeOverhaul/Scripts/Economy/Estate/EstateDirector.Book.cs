@@ -34,13 +34,13 @@ namespace RealLifeOverhaul.Economy
             return _landlords;
         }
 
-        // The units of the player's own buildings under the agency, for the agents' hours.
+        // The units of the player's own buildings and flats under the agency, for the agents' hours.
         private int OwnUnitsUnderAgency()
         {
             int units = 0;
-            for (int i = 0; Duties && i < _state.Holdings.Count; i++)
+            for (int i = 0; Duties && i < _state.LetCount; i++)
             {
-                EstateHolding h = _state.Holdings[i];
+                EstateHolding h = _state.LetAt(i);
                 units += h.Managed && h.Manager == (int)EstateManager.Agency ? h.Units.Count : 0;
             }
             return units;
@@ -52,9 +52,9 @@ namespace RealLifeOverhaul.Economy
             AgencyFile agency = _state.Agency;
             int own = agency.Running ? OwnUnitsUnderAgency() : 0;
             AgencyBookRules.Allocate(agency, own);
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateHolding h = _state.Holdings[i];
+                EstateHolding h = _state.LetAt(i);   // a flat under the agency takes its hours as a building's units do
                 bool covered = Duties && agency.Running && h.Managed && h.Manager == (int)EstateManager.Agency && !agency.Book.OwnPaused;
                 if (h.Manager == (int)EstateManager.Agency && h.Covered != covered && Verbose)
                 {
@@ -75,9 +75,9 @@ namespace RealLifeOverhaul.Economy
                 any = agency.Book.Blocks[i].Stage != (int)BlockStage.Lost;
             }
             bool own = false;
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateHolding h = _state.Holdings[i];
+                EstateHolding h = _state.LetAt(i);
                 if (h.Manager == (int)EstateManager.Agency)
                 {
                     h.Manager = (int)EstateManager.Self;

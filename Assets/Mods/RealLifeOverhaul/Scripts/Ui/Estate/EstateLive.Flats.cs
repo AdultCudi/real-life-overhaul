@@ -279,7 +279,8 @@ namespace RealLifeOverhaul.Ui
                 if (h.Managed && _d.On(EstatePart.Duties))
                 {
                     int manager = h.Manager;
-                    own.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager), null, manager > 0, manager < EstateCatalogue.Managers - 1,
+                    int most = EstateCatalogue.Managers - (_d.AgencyOpen ? 1 : 2);   // your own agency is a choice only while it is open, as for a building
+                    own.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager), null, manager > 0, manager < most,
                         () => Show(() => _d.SetManager(key, manager - 1)), () => Show(() => _d.SetManager(key, manager + 1))));
                 }
                 if (h.Cond < EstateCatalogue.ConditionNew && !h.Busy && h.SaleDay == 0)

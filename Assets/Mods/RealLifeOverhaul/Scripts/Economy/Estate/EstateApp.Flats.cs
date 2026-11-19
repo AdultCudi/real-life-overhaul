@@ -276,7 +276,8 @@ namespace RealLifeOverhaul.Economy
             }
             if (h.Managed && _director.On(EstatePart.Duties) && box.HasSelector)
             {
-                if (!box.Selector(EstateCatalogue.Managers, h.Manager, EstateText.Manager, i => _director.SetManager(key, i)))
+                int choices = _director.AgencyOpen || h.Manager == (int)EstateManager.Agency ? EstateCatalogue.Managers : EstateCatalogue.Managers - 1;   // your own agency only while it is open, as for a building
+                if (!box.Selector(choices, h.Manager, EstateText.Manager, i => _director.SetManager(key, i)))
                 {
                     box.Line(EstateText.Manager(h.Manager));
                 }
