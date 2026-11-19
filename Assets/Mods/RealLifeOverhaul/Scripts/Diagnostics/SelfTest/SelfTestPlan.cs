@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.SelfTest
         public string Output;
         public bool Quit;
         public bool KeepOptions;
+        public bool OwnerSaves;   // the plan may load a save that is not one of the self-test's own (names beginning "selftest-")
         public readonly List<SelfTestStepSpec> Steps = new List<SelfTestStepSpec>();
     }
 
@@ -74,7 +75,8 @@ namespace RealLifeOverhaul.SelfTest
                 Name = SelfTestRules.SafeName(root.Value<string>("name"), "plan"),
                 Output = root.Value<string>("output"),
                 Quit = root["quit"] == null || root.Value<bool>("quit"),
-                KeepOptions = root["keep_options"] != null && root.Value<bool>("keep_options")
+                KeepOptions = root["keep_options"] != null && root.Value<bool>("keep_options"),
+                OwnerSaves = root["owner_saves"] != null && root.Value<bool>("owner_saves")
             };
             if (string.IsNullOrWhiteSpace(plan.Output))
             {
@@ -99,8 +101,25 @@ namespace RealLifeOverhaul.SelfTest
                     plan.Steps[i].Label += "_" + (i + 1);   // two steps of one name keep their files apart
                 }
             }
+            CheckSaves(plan, errors);
             CheckNames(plan, errors);
             return errors.Count == 0 ? plan : null;
+        }
+
+        public const string SavePrefix = "selftest-";   // the saves a plan may load or write unless it says owner_saves
+
+        // A plan never loads or writes the owner's own saves by accident: a save is named, and its name begins "selftest-", unless the plan says owner_saves.
+        private static void CheckSaves(SelfTestPlan plan, List<string> errors)
+        {
+            for (int i = 0; i < plan.Steps.Count; i++)
+            {
+                SelfTestStepSpec step = plan.Steps[i];
+                string save = step.Kind == "load_save" ? step.Arg("save", "newest") : step.Kind == "save_game" ? step.Arg("name") : null;
+                if (save != null && !plan.OwnerSaves && !save.StartsWith(SavePrefix, StringComparison.Ordinal))
+                {
+                    errors.Add("step " + (i + 1) + " (" + step.Kind + "): the save '" + save + "' is not one of the self-test's own (its name must begin \"" + SavePrefix + "\"), unless the plan sets \"owner_saves\": true");
+                }
+            }
         }
 
         // A "from" names the label of an earlier step of the plan (the label as the results spell it: letters, digits, dash and underscore),

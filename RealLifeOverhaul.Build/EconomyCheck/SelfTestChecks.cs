@@ -76,14 +76,14 @@ internal static partial class Program
     // The plan: read, and every fault of one is a line that refuses it.
     private static void SelfTestPlans()
     {
-        string ok = "{\"kind\":\"rlo-selftest\",\"name\":\"t\",\"output\":\"D:/o\",\"steps\":[{\"do\":\"wait_menu\"},{\"do\":\"load_save\",\"save\":\"newest\",\"limit\":90},{\"do\":\"open_screen\",\"id\":\"contacts\",\"shot\":false,\"settle\":2.5}]}";
+        string ok = "{\"kind\":\"rlo-selftest\",\"name\":\"t\",\"output\":\"D:/o\",\"steps\":[{\"do\":\"wait_menu\"},{\"do\":\"load_save\",\"save\":\"selftest-a\",\"limit\":90},{\"do\":\"open_screen\",\"id\":\"contacts\",\"shot\":false,\"settle\":2.5}]}";
         SelfTestPlan plan = SelfTestRead(ok, out List<string> errors);
         Check(plan != null && errors.Count == 0 && plan.Steps.Count == 3 && plan.Name == "t" && plan.Output == "D:/o" && plan.Quit && !plan.KeepOptions, "selftest plan: a plan is read: its steps, name, output, quit on by default");
         Check(plan != null && plan.Steps[0].Limit == SelfTestKinds.Find("wait_menu").Limit && plan.Steps[1].Limit == 90, "selftest plan: a step has its kind's time limit unless the plan names one");
-        Check(plan != null && plan.Steps[2].Flag("shot", true) == false && Math.Abs(plan.Steps[2].Number("settle", 0) - 2.5) < 1e-9 && plan.Steps[1].Arg("save") == "newest", "selftest plan: arguments are read as the kind types them");
+        Check(plan != null && plan.Steps[2].Flag("shot", true) == false && Math.Abs(plan.Steps[2].Number("settle", 0) - 2.5) < 1e-9 && plan.Steps[1].Arg("save") == "selftest-a", "selftest plan: arguments are read as the kind types them");
         Check(plan != null && plan.Steps[0].Label == "wait_menu" && plan.Steps[2].Label == "open_screen", "selftest plan: a step with no label is called by its kind");
-        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"save_game\",\"name\":\"my save\",\"label\":\"first save\"},{\"do\":\"screenshot\",\"name\":\"city\"}]}", out errors);
-        Check(plan != null && plan.Steps[0].Label == "first_save" && plan.Steps[0].Arg("name") == "my save" && plan.Steps[1].Arg("name") == "city" && plan.Steps[1].Label == "screenshot",
+        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"save_game\",\"name\":\"selftest-my\",\"label\":\"first save\"},{\"do\":\"screenshot\",\"name\":\"city\"}]}", out errors);
+        Check(plan != null && plan.Steps[0].Label == "first_save" && plan.Steps[0].Arg("name") == "selftest-my" && plan.Steps[1].Arg("name") == "city" && plan.Steps[1].Label == "screenshot",
             "selftest plan: a step's label names it in the results and its name argument (a save, a picture, a business) is its own");
 
         Check(SelfTestRefused("not json at all", "not JSON"), "selftest plan: text that is not JSON is refused");
@@ -134,6 +134,11 @@ internal static partial class Program
             + "{\"do\":\"press_button\",\"button\":\"b\",\"expect_text\":\"x\",\"expect_log\":\"y\",\"refuse\":\"z\"}]}", out errors);
         Check(plan != null && errors.Count == 0 && plan.Steps.Count == 12 && plan.Steps[1].Arg("address") == "{p}", "selftest plan: the new play steps (find_place, enter and leave, kit_press by name, text or key, kit_commands, confirm, set_day, assert_home, call, read, press_button with expectations) read with their arguments");
         Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"since\":\"never\"}]}", "marked by no earlier"), "selftest plan: a since that no earlier measure marked is refused");
+        Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"load_save\",\"save\":\"My Game\"}]}", "self-test's own") && SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"load_save\"}]}", "newest")
+              && SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"save_game\",\"name\":\"Owner Save\"}]}", "self-test's own"),
+            "selftest plan: a plan may load only saves whose names begin selftest-, never 'newest', and may write only such saves, unless it sets owner_saves");
+        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"owner_saves\":true,\"steps\":[{\"do\":\"load_save\"},{\"do\":\"load_save\",\"save\":\"selftest-x\"}]}", out errors);
+        Check(plan != null && plan.OwnerSaves && plan.Steps.Count == 2, "selftest plan: owner_saves lets a plan load the newest save of the owner's");
         Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\"}]}", "mark"), "selftest plan: a measure that names no mark and no moment to measure from is refused");
         plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"mark\":\"a\"},{\"do\":\"measure\",\"since\":\"a\",\"as\":\"load\"},"
             + "{\"do\":\"assert_log_has\",\"text\":\"Uptown check\",\"absent\":false,\"wait\":4},{\"do\":\"game_open\",\"what\":\"help\"},{\"do\":\"monologue\"}]}", out errors);
@@ -384,6 +389,7 @@ internal static partial class Program
         {
             SelfTestPlan plan = SelfTestRead(File.ReadAllText(file), out List<string> errors);
             Check(plan != null && errors.Count == 0 && plan.Steps.Count > 0, "selftest plans: " + IoPath.GetFileName(file) + " reads against the table" + (errors.Count > 0 ? ": " + string.Join("; ", errors) : string.Empty));
+            Check(plan == null || plan.OwnerSaves == (IoPath.GetFileName(file) == "smoke.json"), "selftest plans: " + IoPath.GetFileName(file) + " loads only the self-test's own saves (only smoke.json may take the owner's)");
             var missing = new List<string>();
             for (int i = 0; plan != null && i < plan.Steps.Count; i++)
             {
