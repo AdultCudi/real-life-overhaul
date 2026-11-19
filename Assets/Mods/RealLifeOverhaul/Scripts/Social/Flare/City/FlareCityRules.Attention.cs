@@ -132,15 +132,17 @@ namespace RealLifeOverhaul.Flare
         {
             int n = Math.Min(c.BusinessCount, s.Businesses.Count);
             BusinessTable bt = s.Businesses;
+            // the pass runs in slices, so the table can have grown since the day's pools were made: a business past the pools' rows has no lift yet
+            int rows = dd != null ? dd.Weight.Length / PopulationCatalogue.Classes : 0;
             bool exact = c.HabitFor >= 0 && c.HabitBefore.Length >= n * PopulationCatalogue.Classes;
             var moneyOut = new long[PopulationCatalogue.Classes];
             var scratch = new long[(dd != null ? dd.Districts : 1) + 1];
-            for (int b = 0; b < n; b++)
+            for (int b = 0; b < c.BusinessCount; b++)
             {
                 c.Lift[b] = 0;
                 c.LiftVisits[b] = 0;
-                int given = c.Given[b];
-                if (given == 0 || dd == null || dd.Day < 0 || !Sells(bt, b) || bt.District[b] >= dd.Districts)
+                int given = b < n ? c.Given[b] : 0;
+                if (given == 0 || b >= rows || dd == null || dd.Day < 0 || !Sells(bt, b) || bt.District[b] >= dd.Districts)
                 {
                     continue;
                 }
@@ -165,6 +167,11 @@ namespace RealLifeOverhaul.Flare
             c.HabitFor = lastLived;
         }
 
+        // A business the table gained after the snapshot or the day's pools were sized has no row in them: it had no habit and no weight then.
+        private static int HabitAt(FlareCityState c, int index) => index >= 0 && index < c.HabitBefore.Length ? c.HabitBefore[index] : 0;
+
+        private static long WeightAt(PoolRules.DemandDay dd, int index) => index >= 0 && index < dd.Weight.Length ? dd.Weight[index] : 0;
+
         /// <summary>
         /// One business's lift, cents, worked out exactly from the pools: each business's own share of its pool recovered from its weight and the
         /// habit share it came in with (the population blends the two by its kind's habit), the business's own share taken back to what it is
@@ -182,7 +189,7 @@ namespace RealLifeOverhaul.Flare
             for (int cls = 0; cls < C; cls++)
             {
                 long total = dd.WeightTotal[dd.TotalIndex(db, cls, k)];
-                long w = dd.Weight[b * C + cls];
+                long w = WeightAt(dd, b * C + cls);
                 if (total <= 0 || w <= 0)
                 {
                     continue;
@@ -199,7 +206,7 @@ namespace RealLifeOverhaul.Flare
                 long past = 0;
                 for (int i = 0; i < pool.Count; i++)
                 {
-                    past += c.HabitBefore[pool[i] * C + cls];
+                    past += HabitAt(c, pool[i] * C + cls);
                 }
                 int h = past > 0 ? PopulationCatalogue.Habit[k] : 0;
                 // each business's own share (millionths of the pool) from its blended weight: w = (own * (1000 - h) + before * h) / 1000
@@ -207,7 +214,7 @@ namespace RealLifeOverhaul.Flare
                 for (int i = 0; i < pool.Count; i++)
                 {
                     int j = pool[i];
-                    long own = Own(dd.Weight[j * C + cls], c.HabitBefore[j * C + cls], past, h);
+                    long own = Own(WeightAt(dd, j * C + cls), HabitAt(c, j * C + cls), past, h);
                     ownSum += own;
                     if (j == b)
                     {
@@ -220,9 +227,9 @@ namespace RealLifeOverhaul.Flare
                 for (int i = 0; i < pool.Count; i++)
                 {
                     int j = pool[i];
-                    long own = j == b ? ownBOut : Own(dd.Weight[j * C + cls], c.HabitBefore[j * C + cls], past, h);
+                    long own = j == b ? ownBOut : Own(WeightAt(dd, j * C + cls), HabitAt(c, j * C + cls), past, h);
                     long share = own * ownSum / norm;
-                    long before = past > 0 ? (long)c.HabitBefore[j * C + cls] * PoolRules.WeightScale / past : 0;
+                    long before = past > 0 ? (long)HabitAt(c, j * C + cls) * PoolRules.WeightScale / past : 0;
                     long wj = (share * (1000 - h) + before * h) / 1000;
                     totalOut += wj;
                     if (j == b)
