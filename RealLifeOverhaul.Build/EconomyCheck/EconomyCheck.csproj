@@ -187,6 +187,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyLeaseLive.cs" Link="Mod\Company\CompanyLeaseLive.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Rota.cs" Link="Mod\Company\CompanyFace.Rota.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Tax.cs" Link="Mod\Company\CompanyFace.Tax.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Rows.cs" Link="Mod\Company\CompanyFace.Rows.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyScreen.cs" Link="Mod\Company\CompanyScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />

@@ -350,77 +350,75 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.Chip + UiTokens.S2;
             float footer = UiTokens.PairRow + UiTokens.S4 + (UnmetIn(people) ? UiTokens.PairRow + UiTokens.S2 : 0f);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - footer) / rowH));
-            int shown = Math.Min(people.Length, fit);
-            for (int i = 0; i < shown; i++)
+            // The people the page has no room for scroll with the week: a person left out of the grid is a rota the owner cannot read.
+            CompanyRows crew = BeginRows(s, at, lay, CompanyLayout.SlotGrid, x, cy, width, rowH, people.Length, fit);
+            UiAt rowsAt = crew.At;
+            float lx = crew.X(x);
+            for (int i = crew.First; i <= crew.Last; i++)
             {
+                float ry = crew.Y(i);
                 ref CompanyRotaPerson pr = ref people[i];
-                float size = UiTokens.AvatarRow - UiTokens.S2, faceY = cy + Mid(rowH, UiTokens.AvatarRow) + UiTokens.S1;
+                float size = UiTokens.AvatarRow - UiTokens.S2, faceY = ry + Mid(rowH, UiTokens.AvatarRow) + UiTokens.S1;
                 if (pr.ToHire)
                 {
-                    int t = UiDraw.Tile(s, at, x + UiTokens.S1, faceY, size, UiRole.Muted, false);
-                    UiDraw.Icon(s, at.In(t), x + UiTokens.S1 + (size - UiTokens.Icon) / 2f, faceY + (size - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Plus, UiRole.Muted,
+                    int t = UiDraw.Tile(s, rowsAt, lx + UiTokens.S1, faceY, size, UiRole.Muted, false);
+                    UiDraw.Icon(s, rowsAt.In(t), lx + UiTokens.S1 + (size - UiTokens.Icon) / 2f, faceY + (size - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Plus, UiRole.Muted,
                         UiFlags.Middle | UiFlags.Centre, true);
                 }
                 else
                 {
-                    UiDraw.Portrait(s, at, x + UiTokens.S1, faceY, size, pr.Name, pr.Hue, pr.Ring);
+                    UiDraw.Portrait(s, rowsAt, lx + UiTokens.S1, faceY, size, pr.Name, pr.Hue, pr.Ring);
                 }
-                float tx = x + UiTokens.AvatarRow + UiTokens.S2, tw = personW - UiTokens.AvatarRow - UiTokens.S2;
+                float tx = lx + UiTokens.AvatarRow + UiTokens.S2, tw = personW - UiTokens.AvatarRow - UiTokens.S2;
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
                 // A long role takes the two lines under the name when the row has them, rather than ending in an ellipsis.
                 string role = pr.Role ?? string.Empty;
                 float roleH = UiDraw.Snap(UiTextRules.WrappedHeight(role, UiStyle.Small, tw, 2));
                 bool twoLines = roleH > sh + 1f && th + roleH <= rowH;   // inside its own row: a longer text would run into the name of the row below
-                float top = cy + UiDraw.SnapDown((rowH - th - (twoLines ? roleH : sh)) / 2f);
-                UiDraw.TextMiddle(s, at, tx, top, th, tw, UiStyle.Title, UiRole.Text, pr.Name ?? string.Empty, UiFlags.Truncate);
+                float top = ry + UiDraw.SnapDown((rowH - th - (twoLines ? roleH : sh)) / 2f);
+                UiDraw.TextMiddle(s, rowsAt, tx, top, th, tw, UiStyle.Title, UiRole.Text, pr.Name ?? string.Empty, UiFlags.Truncate);
                 if (twoLines)
                 {
-                    UiDraw.Text(s, at, tx, top + th, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Wrap | UiFlags.Truncate, 2);
+                    UiDraw.Text(s, rowsAt, tx, top + th, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Wrap | UiFlags.Truncate, 2);
                 }
                 else
                 {
-                    UiDraw.TextMiddle(s, at, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, rowsAt, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Truncate);
                 }
                 float dh = rowH >= 88f ? UiTokens.Control : UiTokens.ControlSmall;
                 for (int d = 0; d < 7; d++)
                 {
                     string shift = pr.Shifts != null && d < pr.Shifts.Length ? pr.Shifts[d] : null;
-                    float dx = x + personW + d * dayW + UiTokens.S1, dw = dayW - UiTokens.S2;
-                    float dy = cy + Mid(rowH, dh);
+                    float dx = lx + personW + d * dayW + UiTokens.S1, dw = dayW - UiTokens.S2;
+                    float dy = ry + Mid(rowH, dh);
                     bool warn = pr.Tones != null && d < pr.Tones.Length && pr.Tones[d] != UiRole.None;
                     if (string.IsNullOrEmpty(shift))
                     {
-                        UiDraw.TextMiddle(s, at, dx, dy, dh, dw, UiStyle.Small, UiRole.Muted, w.T("reallife_rota_day_off", "off"), UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, rowsAt, dx, dy, dh, dw, UiStyle.Small, UiRole.Muted, w.T("reallife_rota_day_off", "off"), UiFlags.Centre | UiFlags.Truncate);
                         continue;
                     }
                     // A day split in runs ("07-11, 13-17") stands as one run a line in a taller cell: both on one line they were cut to "07-11...".
                     string[] runs = shift.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
                     float cellH = runs.Length > 1 ? Math.Min(rowH - UiTokens.S1, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)) * 2f + UiTokens.S2) : dh;
-                    float cellY = cy + Mid(rowH, cellH);
-                    int cell = UiDraw.Box(s, at, dx, cellY, dw, cellH, warn ? UiRole.WarnSoft : press && d == day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
+                    float cellY = ry + Mid(rowH, cellH);
+                    int cell = UiDraw.Box(s, rowsAt, dx, cellY, dw, cellH, warn ? UiRole.WarnSoft : press && d == day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
                     UiRole ink = warn ? UiRole.WarnText : UiRole.Text;
                     if (runs.Length > 1)
                     {
                         float lineH = (cellH - UiTokens.S1) / 2f;
                         string second = runs.Length > 2 ? runs[1] + " +" + (runs.Length - 2) : runs[1];
-                        UiDraw.TextMiddle(s, at.In(cell), dx, cellY + UiTokens.S1 / 2f, lineH, dw, UiStyle.SmallStrong, ink, runs[0], UiFlags.Centre | UiFlags.Truncate);
-                        UiDraw.TextMiddle(s, at.In(cell), dx, cellY + UiTokens.S1 / 2f + lineH, lineH, dw, UiStyle.SmallStrong, ink, second, UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, rowsAt.In(cell), dx, cellY + UiTokens.S1 / 2f, lineH, dw, UiStyle.SmallStrong, ink, runs[0], UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, rowsAt.In(cell), dx, cellY + UiTokens.S1 / 2f + lineH, lineH, dw, UiStyle.SmallStrong, ink, second, UiFlags.Centre | UiFlags.Truncate);
                     }
                     else
                     {
-                        UiDraw.TextMiddle(s, at.In(cell), dx, dy, dh, dw, UiStyle.SmallStrong, ink, shift, UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, rowsAt.In(cell), dx, dy, dh, dw, UiStyle.SmallStrong, ink, shift, UiFlags.Centre | UiFlags.Truncate);
                     }
                 }
-                UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, rowH, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty,
+                UiDraw.TextMiddle(s, rowsAt, lx + personW + dayW * 7f, ry, rowH, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty,
                     UiFlags.Right | UiFlags.Truncate);
-                cy += rowH;
             }
-            if (shown < people.Length)
-            {
-                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (people.Length - shown).ToString()),
-                    UiFlags.Truncate);
-                cy += UiTokens.PairRow;
-            }
+            cy = EndRows(s, at, crew);
             // The day's hours, and the total.
             UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, personW, UiStyle.Body, UiRole.Text2, w.T("reallife_rota_staff_hours", "Staff hours"), UiFlags.Label | UiFlags.Truncate);
             for (int d = 0; d < 7 && d < dayTotals.Length; d++)
@@ -665,18 +663,13 @@ namespace RealLifeOverhaul.Ui
             if (p.Folk.Length > 0 && cy + UiTokens.PairRow + ListRow <= bottom)
             {
                 cy = Section(s, atM, lay, x, cy + UiTokens.S2, width, p.FolkTitle);
-                int room = (int)Math.Max(1f, Math.Floor((bottom - cy - besideH - (p.Folk.Length > 1 ? UiTokens.PairRow : 0f)) / (ListRow + ListGap))), shown = Math.Min(p.Folk.Length, room);
-                for (int i = 0; i < shown && cy + ListRow <= bottom; i++)
+                int room = (int)Math.Max(1f, Math.Floor((bottom - cy - besideH) / (ListRow + ListGap)));
+                CompanyRows folk = BeginRows(s, atM, lay, CompanyLayout.SlotLog, x, cy, width, ListRow + ListGap, p.Folk.Length, room);
+                for (int i = folk.First; i <= folk.Last; i++)
                 {
-                    FolkRow(s, atM, ref p.Folk[i], x, cy, width);
-                    cy += ListRow + ListGap;
+                    FolkRow(s, folk.At, ref p.Folk[i], folk.X(x), folk.Y(i), width);
                 }
-                if (shown < p.Folk.Length && cy + UiTokens.PairRow <= bottom)
-                {
-                    UiDraw.TextMiddle(s, atM, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (p.Folk.Length - shown).ToString()),
-                        UiFlags.Truncate);
-                    cy += UiTokens.PairRow;
-                }
+                cy = EndRows(s, atM, folk);
             }
             for (int i = 0; i < p.Beside.Length && cy < bottom; i++)
             {

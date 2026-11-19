@@ -104,11 +104,11 @@ namespace RealLifeOverhaul.Ui
             bool showManager = !compact && width >= 640f;
             float managerW = showManager ? Math.Min(UiDraw.SnapDown(width * 0.2f), 168f) : 0f;
             float stateW = Math.Min(UiDraw.SnapDown(width * (compact ? 0.3f : 0.2f)), 176f), dayW = compact ? 0f : 76f;
-            int rows = Math.Min(t.Licences.Length, fit);
+            int all = t.Licences.Length;
             // The name of a licence keeps the room it needs, whole: the manager's column gives way to it (down to a portrait and a short name), and where even that is too little the column goes (the
             // licence's own page says who handles it). "Licença de armazen..." said nothing.
             float nameNeed = 0f, actNeed = 0f;
-            for (int i = 0; i < rows; i++)
+            for (int i = 0; i < all; i++)
             {
                 float named = UiTextRules.Width(t.Licences[i].Name ?? string.Empty, UiStyle.Title), placed = UiTextRules.Width(t.Licences[i].Place ?? string.Empty, UiStyle.Small);
                 nameNeed = Math.Max(nameNeed, Math.Max(named, placed) + UiTokens.S1);
@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Ui
             }
             // The button's column is as wide as the widest button of the rows in view, so that the manager, the state and the day stand in the same place in every row.
             float actCol = 0f;
-            for (int i = 0; i < rows; i++)
+            for (int i = 0; i < all; i++)
             {
                 if (!compact && t.Licences[i].HasAction)
                 {
@@ -140,8 +140,14 @@ namespace RealLifeOverhaul.Ui
                     actCol = Math.Max(actCol, Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys)));
                 }
             }
-            for (int i = 0; i < rows; i++)
+            // Rows that do not all fit scroll, so that no licence is out of reach (one of them may be the one to renew).
+            CompanyRows rowsOf = BeginRows(s, at, lay, CompanyLayout.SlotLicences, x, cy, width, LicenceRow, all, fit);
+            UiAt rowsAt = rowsOf.At;
+            float lx = rowsOf.X(x);
+            short lst = rowsOf.List;
+            for (int i = rowsOf.First; i <= rowsOf.Last; i++)
             {
+                float ry = rowsOf.Y(i);
                 ref CompanyLicence l = ref t.Licences[i];
                 float actW = 0f;
                 if (!compact && l.HasAction)
@@ -149,51 +155,44 @@ namespace RealLifeOverhaul.Ui
                     actW = Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(l.Action.Kind, l.Action.Label, l.Action.Icon, l.Action.Key, keys));
                 }
                 bool open = compact && string.Equals(l.Id, v.Picked, StringComparison.Ordinal);
-                int face = UiDraw.Box(s, at, x, cy, width, LicenceRow, open ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, open ? UiFlags.Selected : UiFlags.None);
-                UiAt inside = at.In(face);
+                int face = UiDraw.Box(s, rowsAt, lx, ry, width, LicenceRow, open ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, open ? UiFlags.Selected : UiFlags.None);
+                UiAt inside = rowsAt.In(face);
                 float size = UiTokens.IconTile;
-                int tile = UiDraw.Tile(s, inside, x + UiTokens.S1, cy + Mid(LicenceRow, size), size, UiRole.None, false);
+                int tile = UiDraw.Tile(s, inside, lx + UiTokens.S1, ry + Mid(LicenceRow, size), size, UiRole.None, false);
                 float g = UiTokens.S6;
-                UiDraw.Icon(s, inside.In(tile), x + UiTokens.S1 + (size - g) / 2f, cy + (LicenceRow - g) / 2f, g, l.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-                float right = x + width - UiTokens.S2;
+                UiDraw.Icon(s, inside.In(tile), lx + UiTokens.S1 + (size - g) / 2f, ry + (LicenceRow - g) / 2f, g, l.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                float right = lx + width - UiTokens.S2;
                 float rx = right - actCol - (actCol > 0f ? UiTokens.S3 : 0f) - dayW;
                 float sx = rx - UiTokens.S2 - stateW;
                 float mx = sx - UiTokens.S3 - managerW;
-                float tx = x + UiTokens.S1 + size + UiTokens.S3, tw = (showManager ? mx : sx) - UiTokens.S3 - tx;
+                float tx = lx + UiTokens.S1 + size + UiTokens.S3, tw = (showManager ? mx : sx) - UiTokens.S3 - tx;
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-                float top = cy + UiDraw.SnapDown((LicenceRow - th - sh) / 2f);
+                float top = ry + UiDraw.SnapDown((LicenceRow - th - sh) / 2f);
                 UiDraw.TextMiddle(s, inside, tx, top, th, tw, UiStyle.Title, UiRole.Text, l.Name ?? string.Empty, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, open ? UiRole.Text : UiRole.Text2, l.Place ?? string.Empty, UiFlags.Truncate);
                 if (showManager && !string.IsNullOrEmpty(l.Manager))
                 {
                     float ps = UiTokens.AvatarSmall - UiTokens.S2;
-                    UiDraw.Portrait(s, inside, mx, cy + Mid(LicenceRow, ps), ps, l.Manager, l.ManagerHue, UiRole.None);
-                    UiDraw.TextMiddle(s, inside, mx + ps + UiTokens.S2, cy, LicenceRow, managerW - ps - UiTokens.S2, UiStyle.Small, UiRole.Text2, l.Manager, UiFlags.Truncate);
+                    UiDraw.Portrait(s, inside, mx, ry + Mid(LicenceRow, ps), ps, l.Manager, l.ManagerHue, UiRole.None);
+                    UiDraw.TextMiddle(s, inside, mx + ps + UiTokens.S2, ry, LicenceRow, managerW - ps - UiTokens.S2, UiStyle.Small, UiRole.Text2, l.Manager, UiFlags.Truncate);
                 }
-                UiDraw.Chip(s, inside, sx, cy + (LicenceRow - UiTokens.Badge - UiTokens.S1) / 2f, l.State ?? string.Empty, l.StateTone, stateW);
+                UiDraw.Chip(s, inside, sx, ry + (LicenceRow - UiTokens.Badge - UiTokens.S1) / 2f, l.State ?? string.Empty, l.StateTone, stateW);
                 if (dayW > 0f)
                 {
-                    UiDraw.TextMiddle(s, inside, rx, cy, LicenceRow, dayW, UiStyle.Small, UiRole.Text2, l.Day ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, rx, ry, LicenceRow, dayW, UiStyle.Small, UiRole.Text2, l.Day ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 }
                 if (l.Open.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = l.Name, Act = l.Open });
-                    UiDraw.Node(s, at, x, cy, width - actCol - (actCol > 0f ? UiTokens.S4 : 0f), LicenceRow, Act, index, face);
+                    UiDraw.Node(s, rowsAt, lx, ry, width - actCol - (actCol > 0f ? UiTokens.S4 : 0f), LicenceRow, Act, index, face, false, lst, i);
                 }
                 if (actW > 0f)
                 {
                     CompanyButton b = l.Action;
-                    Button(s, inside, lay, v, ref b, right - actW, cy + Mid(LicenceRow, UiTokens.Control), actW, keys);
+                    Button(s, inside, lay, v, ref b, right - actW, ry + Mid(LicenceRow, UiTokens.Control), actW, keys);
                 }
-                cy += LicenceRow;
             }
-            if (rows < t.Licences.Length)
-            {
-                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (t.Licences.Length - rows).ToString()),
-                    UiFlags.Truncate);
-                cy += UiTokens.PairRow;
-            }
-            cy += UiTokens.S4;
+            cy = EndRows(s, at, rowsOf) + UiTokens.S4;
             if (t.ComingUp.Length > 0 && bottom - cy >= UiTokens.PairRow + UiTokens.S1 + DoneRow)
             {
                 cy = Section(s, at, lay, x, cy, width, w.T("reallife_co_coming_up", "Coming up"));
@@ -282,18 +281,13 @@ namespace RealLifeOverhaul.Ui
             if (t.Tools.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
             {
                 cy = Section(s, at, lay, x, cy, width, t.ToolsTitle);
-                int tools = 0;
-                for (; tools < t.Tools.Length && cy + LineRow <= bottom - (tools + 1 < t.Tools.Length ? UiTokens.PairRow : 0f); tools++)
+                int room = (int)Math.Max(1f, Math.Floor((bottom - cy) / LineRow));
+                CompanyRows tools = BeginRows(s, at, lay, CompanyLayout.SlotPage, x, cy, width, LineRow, t.Tools.Length, room, UiTokens.S2);
+                for (int i = tools.First; i <= tools.Last; i++)
                 {
-                    cy += LineItem(s, at, lay, ref t.Tools[tools], x, cy, width);
+                    LineItem(s, tools.At, lay, ref t.Tools[i], tools.X(x), tools.Y(i), width, tools.List, i);
                 }
-                if (tools < t.Tools.Length)
-                {
-                    // Said, not dropped: a list the frame cuts short ends in how many it leaves out.
-                    UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted,
-                        w.F("reallife_co_and_more", "and {count} more", "count", (t.Tools.Length - tools).ToString()), UiFlags.Truncate);
-                    cy += UiTokens.PairRow;
-                }
+                cy = EndRows(s, at, tools);
                 cy += UiTokens.S3 + air;
             }
             if (!termsLeft && t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
@@ -326,7 +320,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A compact line: its words at the left, a chip, its figure at the right; a target when it opens something.
-        private static float LineItem(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float width)
+        private static float LineItem(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float width, short list = -1, int listIndex = 0)
         {
             bool press = it.Press && it.Act.Do != CompanyDo.None;
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, width + UiTokens.S4, LineRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
@@ -355,7 +349,7 @@ namespace RealLifeOverhaul.Ui
             if (press)
             {
                 int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
-                UiDraw.Node(s, at, x - UiTokens.S2, y, width + UiTokens.S4, LineRow, Item, index, face);
+                UiDraw.Node(s, at, x - UiTokens.S2, y, width + UiTokens.S4, LineRow, Item, index, face, false, list, listIndex);
             }
             return LineRow;
         }
