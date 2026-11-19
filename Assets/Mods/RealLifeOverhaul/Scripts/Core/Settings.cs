@@ -160,6 +160,8 @@
         public const string JobPayId = "job_pay";
         public const string JobTaxiEasyId = "job_taxi_easy";
         public const string JobCartSoundsId = "job_cart_sounds";
+        public const string GigMusicId = "gig_music";
+        public const string GigMusicOrderId = "gig_music_order";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
         public const string UtilitiesNetSpeedId = "utilities_net_speed";
@@ -587,6 +589,8 @@
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool JobCartSounds = true;         // the drinks cart heard: a customer's voice at the counter, a reminder, the till (VendorJob.Sounds); off, the cart is silent as before
+        public static bool GigMusic = false;             // the player's own music files play in gigs in place of the game's sound (GigMusic); off, gigs sound as before
+        public static int GigMusicOrder = 0;             // ...0 in order by file name, 1 shuffled by the save's seed
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power, water and internet bills and plans, the utilities office and the Utilities app
         public static bool UtilitiesNetSpeed = true;     // ...a connection's speed sets how fast tech firms work and how many orders a shop takes; off, only having one counts
@@ -1067,6 +1071,8 @@
             JobPay = Int(modId, JobPayId, JobPay);
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             JobCartSounds = Bool(modId, JobCartSoundsId, JobCartSounds);
+            GigMusic = Bool(modId, GigMusicId, GigMusic);
+            GigMusicOrder = Int(modId, GigMusicOrderId, GigMusicOrder);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
             UtilitiesNetSpeed = Bool(modId, UtilitiesNetSpeedId, UtilitiesNetSpeed);

@@ -174,6 +174,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--gig-music")
+        {
+            GigMusic();   // the player's own gig music: the folder's files, limits, order, shuffle, fallback, fade and texts alone (GigMusicChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-screens")
         {
             UiScreenChecks();   // the kit screens' layout checks alone: RLO_UI_ONLY=<screen id> keeps one screen
@@ -1730,6 +1736,7 @@ internal static partial class Program
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
+        GigMusic();     // the player's own gig music (GigMusicChecks.cs)
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)

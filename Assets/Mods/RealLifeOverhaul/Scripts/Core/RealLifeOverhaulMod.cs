@@ -359,6 +359,12 @@ namespace RealLifeOverhaul
                     v => Settings.JobTaxiEasy = v)
                 .AddToggle(Settings.JobCartSoundsId, "reallife_jobs_cart_sounds", Settings.JobCartSounds,
                     v => Settings.JobCartSounds = v)
+                .AddToggle(Settings.GigMusicId, "reallife_gig_music_enabled", Settings.GigMusic,
+                    v => Settings.GigMusic = v)
+                .AddDropdown(Settings.GigMusicOrderId, "reallife_gig_music_order",
+                    new[] { "reallife_gig_music_order_0", "reallife_gig_music_order_1" }, Settings.GigMusicOrder,
+                    v => Settings.GigMusicOrder = v)
+                .AddButton("reallife_gig_music_folder", GigMusicGame.OpenFolder)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))

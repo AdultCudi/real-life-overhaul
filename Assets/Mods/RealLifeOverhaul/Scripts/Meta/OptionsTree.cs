@@ -349,8 +349,8 @@ namespace RealLifeOverhaul.Meta
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
-                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds")
-                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till"),
+                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds", "gig_music").Opt("gig_music_order", "gig_music").Buttons("reallife_gig_music_folder")
+                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till busking busker music own songs mp3 folder"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("sidejobs").For("side_jobs").Opt("side_jobs", "jobs")
                     .Also("taxi cab driver delivery parcel parcels courier food own car vehicle shift desk depot dispatch office fare fares meter tips"),
