@@ -322,6 +322,12 @@ internal static partial class Program
               && ModSource(@"Meta\FeatureList.Economy.cs").Contains("Settings.EconomyCompanyMatchRivalsId") && tree.Contains(".Opt(\"economy_company_match_rivals\", \"economy_company_staff\")"),
             "match rivals: the option is off by default, kept, written from the page too, listed with the Company and needs staff pay on");
         string notice = ModSource(@"Core\RivalMatches.cs");
+        string game = MemberText(notice, "private static void MatchGameOffers(int day)");
+        Check(game.Contains("RivalMatchRules.WithinOffer(was, asked, limit)") && game.Contains("RivalOfferGuard.OfferOpen(e)") && game.Contains("Accept.Invoke(e, null);")
+              && game.Contains("!Settings.EconomyCompanyMatchRivals") && game.Contains("limit <= 0") && game.Contains("GoingPublic.InSession && !GoingPublic.Mine(at)")
+              && game.Contains("Matched(day,") && !game.Contains("Notifications") && notice.Contains("MatchGameOffers(day);")
+              && ModSource(@"Core\GameContract.cs").Contains("\"AcceptPoachPayRaise\""),
+            "match rivals, the game's own offers: answered through the game's own Accept, only inside the limit, only the player's own staff, counted in the same one notice, hourly and never per frame");
         Check(notice.Contains("\"reallife_rival_matches_notice\"") && Occurs(notice, "Notifications.Show(") == 1, "match rivals: one notice for the day's matches, from one place");
     }
 

@@ -54,7 +54,7 @@ The core calls a part's day inside its own `try`: a fault there switches that pa
   against the pay for staff, `WithinBp` for a professional's basis points over it). With that limit at 0 nothing is matched. An offer to staff that a manager answers is left to the manager.
 - The matches of a night are told once: each adds its extra cost a month to `RivalMatches` (a 40 hour week over the days of the save's month), and the first hour of the day says "N kept, about X a month more". The Company's hourly pass and
   the professionals' hourly pass both flush it, so one notice comes whichever runs.
-- The game's own rival offers (the messages with Accept and Decline) are the game's and are not answered by this.
+- The game's own rival offers (the messages with Accept and Decline) are answered too, hourly, through the game's own Accept call (`RivalMatches.MatchGameOffers`), within the same limit and only for the player's own staff; above it they keep their buttons.
 - The switch is also on the Team page of Open Roles. Checks: `--options4`.
 
 ## What the game already had, and what was therefore built
