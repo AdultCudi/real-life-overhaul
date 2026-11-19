@@ -212,6 +212,6 @@ internal static partial class Program
         Check(en.TryGetValue("reallife_tech_note_moved", out string note) && note.Length <= 240 && en["reallife_tech_move_customers"].Contains("{lost}") && en["reallife_tech_move_customers"].Contains("{kept}")
               && en["reallife_tech_move_work"].Contains("{points}") && en["reallife_tech_move_days"].Contains("{days}") && en["reallife_tech_move_aware"].Contains("{aware}"),
             "segment: the lines name the work, the days off sale, the customers who leave and stay, and the awareness it starts from");
-        Check(en.TryGetValue("reallife_changes_next", out string next) && next.Contains("AI model can now be made"), "segment: What's new tells of the segment choice and the re-launch");
+        Check(WhatsNewHas(en, "AI model can now be made"), "segment: What's new tells of the segment choice and the re-launch");
     }
 }
