@@ -70,9 +70,18 @@ namespace RealLifeOverhaul.SelfTest
                     c.Fail(why);
                     yield break;
                 }
+                string sceneBefore = SelfTestDiag.Scenes(), showBefore = SelfTestGame.ShowingWords();
                 c.Waiting = "the button's work to settle";
                 yield return new WaitForSecondsRealtime(c.Number("settle", 1.5f));
-                c.Pass("pressed " + c.Arg("button") + "; " + SelfTestGame.ShowingWords());
+                bool effect = SelfTestGame.ShowingWords() != showBefore || SelfTestDiag.Scenes() != sceneBefore || c.Runner.Watch.LogHas("", c.Spec.Label, out string line);
+                if (effect)
+                {
+                    c.Pass("pressed " + c.Arg("button") + " and something changed; " + SelfTestGame.ShowingWords());
+                }
+                else
+                {
+                    c.Skip("pressed " + c.Arg("button") + " but no screen, scene or log line changed (the test may only show a notice): " + SelfTestGame.ShowingWords());
+                }
             }
         }
 
@@ -160,7 +169,12 @@ namespace RealLifeOverhaul.SelfTest
                     c.Capture(app);
                     yield return c.PictureWritten();
                 }
-                c.Pass(app + " opened; " + SelfTestGame.ShowingWords());
+                if (!SelfTestGame.PhoneOpen() && SelfTestGame.Standing(null) == null)
+                {
+                    c.Fail("the app '" + app + "' was asked for but neither the phone's menu nor any kit screen shows: " + SelfTestDiag.Dump());
+                    yield break;
+                }
+                c.Pass(app + " opened (phone menu open " + SelfTestGame.PhoneOpen() + "); " + SelfTestGame.ShowingWords());
             }
         }
 
@@ -213,8 +227,14 @@ namespace RealLifeOverhaul.SelfTest
                     string kit = apps[i].Value;
                     bool kitShows = kit != null && SelfTestGame.Showing(kit) != null;
                     bool expected = kit != null && UiDirector.On && UiScreenSwitches.On(kit);
+                    bool anything = SelfTestGame.PhoneOpen() || SelfTestGame.Standing(null) != null;
                     string faults = c.Runner.Watch.FaultWords();
-                    if (faults != before)
+                    if (!anything)
+                    {
+                        bad++;
+                        lines.Append(app).Append(": asked for but neither the phone menu nor a kit screen shows; ");
+                    }
+                    else if (faults != before)
                     {
                         bad++;
                         lines.Append(app).Append(": FAULT ").Append(faults).Append("; ");

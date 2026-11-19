@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.SelfTest
                     yield break;
                 }
                 string before = SelfTestGame.CityWords();
+                float startMinutes = SelfTestGame.Minutes();
                 if (!SelfTestTime.Skip(span))
                 {
                     c.Fail("the game's time machine would not start for '" + span + "'");
@@ -121,7 +122,12 @@ namespace RealLifeOverhaul.SelfTest
                     yield return new WaitForSecondsRealtime(0.5f);
                 }
                 yield return new WaitForSecondsRealtime(1.5f);   // its end: the screens it hid come back, the midnight's work runs
-                c.Pass("skipped " + span + ": " + before + " to " + SelfTestGame.CityWords());
+                if (SelfTestGame.Minutes() <= startMinutes)
+            {
+                c.Fail("the time machine ended but the clock did not move: " + before + " to " + SelfTestGame.CityWords());
+                yield break;
+            }
+            c.Pass("skipped " + span + ": " + before + " to " + SelfTestGame.CityWords());
             }
         }
 

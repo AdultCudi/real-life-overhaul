@@ -106,7 +106,12 @@ namespace RealLifeOverhaul.SelfTest
                     yield break;
                 }
                 yield return new WaitForSecondsRealtime(c.Number("settle", 1.5f));
-                c.Pass("opened " + c.Arg("what") + "; " + SelfTestGame.ShowingWords());
+                if (!SelfTestWorld.GameWindowUp(c.Arg("what")))
+                {
+                    c.Fail("the game's " + c.Arg("what") + " was asked for but is not up: " + SelfTestDiag.Dump());
+                    yield break;
+                }
+                c.Pass("opened " + c.Arg("what") + " and it is up; " + SelfTestGame.ShowingWords());
             }
         }
 

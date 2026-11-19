@@ -188,6 +188,11 @@ internal static partial class Program
             "selftest results: a step has its outcome, words, pictures and new log errors (quotes kept)");
         Check(json["mods"][0].Value<string>().Contains("Real Life Overhaul") && json.Value<string>("game_build") == "build 3682", "selftest results: the loaded mods and the game's build are in the file");
         Check(json["measures"].Value<double>("load_seconds_1") == 12.34, "selftest results: a figure a measure step recorded is in the file by its name, in seconds, so two builds can be compared");
+                b.Diagnostics = "scenes: Intro | isLoading True";
+        results.Current = "3/19 new_game (limit 600 s, 40 s in): the game to leave the character screen";
+        JObject withDiag = JObject.Parse(results.ToJson());
+        Check(withDiag["steps"][1].Value<string>("diagnostics").Contains("scenes: Intro") && withDiag.Value<string>("current").Contains("new_game") && withDiag["steps"][0]["diagnostics"] == null,
+            "selftest results: a failed step carries the diagnostics, and the file says which step is under way and what it waits for");
                 Check(results.DoneLine() == "SELFTEST DONE passed 1 failed 1", "selftest results: the last line counts what passed and failed");
 
         string folder = IoPath.Combine(IoPath.GetTempPath(), "rlo-selftest-check-" + Guid.NewGuid().ToString("N"));
@@ -258,6 +263,26 @@ internal static partial class Program
         Check(en.IndexOf("selftest", StringComparison.OrdinalIgnoreCase) < 0 && en.IndexOf("self-test", StringComparison.OrdinalIgnoreCase) < 0, "selftest source: no text of the mod, the Guide included, names the self-test");
         string settings = SelfTestMod(@"Core\Settings.cs") + SelfTestMod(@"Meta\OptionsTree.cs") + SelfTestMod(@"Meta\FeatureList.cs");
         Check(settings.IndexOf("selftest", StringComparison.OrdinalIgnoreCase) < 0, "selftest source: no setting, option or feature list names the self-test");
+
+        // A step passes on evidence: the new game only when the loading began and the scenes changed, through the screen's own button.
+        string saves = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Saves.cs");
+        int ng = saves.IndexOf("class NewGameStep", StringComparison.Ordinal);
+        string newGame = ng >= 0 ? saves.Substring(ng, saves.IndexOf("class SaveGameStep", ng, StringComparison.Ordinal) - ng) : string.Empty;
+        Check(newGame.Contains("SelfTestSaves.StartButton(screen)") && newGame.Contains("start.onClick.Invoke()") && newGame.Contains("start.interactable") && newGame.Contains("HasANameSet") && newGame.Contains("AnswerQuestion()"),
+            "selftest source: the new game waits for the character screen's Start button to be interactive, types the name, presses the button's own handler and answers the game's questions");
+        int pass = newGame.IndexOf("c.Pass(", StringComparison.Ordinal);
+        Check(pass > 0 && newGame.LastIndexOf("if (loadingSeen && SelfTestDiag.Scenes() != before)", pass, StringComparison.Ordinal) > 0 && newGame.Contains("since > 90f") && newGame.Contains("stuck at the character creation screen"),
+            "selftest source: the new game passes only after the loading flag was seen and the loaded scenes changed, and fails within 90 s naming the screen it stuck at");
+        string kit = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Kit.cs");
+        string world = SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.World.cs");
+        Check(saves.Contains("SelfTestDiag.Scenes() == before") && kit.Contains("neither the phone's menu nor any kit screen shows") && kit.Contains("c.Skip(\"pressed \"") && world.Contains("did not move from")
+              && SelfTestMod(@"Diagnostics\SelfTest\SelfTestWorld.cs").Contains("reads back as") && world.Contains("left \" + (long)") && world.Contains("the console refused"),
+            "selftest source: load_save, open_app, press_button, teleport, found_business, set_money and console each wait for what they caused and say what they waited for");
+        Check(runner.Contains("-fail") && runner.Contains("SelfTestDiag.Dump()") && runner.Contains("Time.realtimeSinceStartup - wrote > 20f") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestDiag.cs").Contains("showing canvases"),
+            "selftest source: a failed step takes a picture and writes the scenes, loading flag and showing canvases and kit screens into the results; a running step rewrites the file every 20 s");
+        string runPath = @"D:\BigAmbitionsMod\not-in-repo\tools\selftest\run.sh";
+        string runSh = File.Exists(runPath) ? File.ReadAllText(runPath) : "STALLED at step live.py -gt 180";
+        Check(runSh.Contains("STALLED at step") && runSh.Contains("live.py") && runSh.Contains("-gt 180"), "selftest tools: run.sh prints each step as it lands and stops the game as STALLED when results.json does not change for 3 minutes");
 
         // The screens table against the registry and the options page.
         string mod = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");

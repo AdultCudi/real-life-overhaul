@@ -8,6 +8,7 @@ using Intro;
 using TMPro;
 using UI.Load;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealLifeOverhaul.SelfTest
 {
@@ -98,6 +99,42 @@ namespace RealLifeOverhaul.SelfTest
                 }
             }
             return null;
+        }
+
+        /// <summary>The character screen's Start button: the button whose click handler is that screen's StartGame; null when there is none.</summary>
+        public static Button StartButton(IntroCharacterCustomizer screen)
+        {
+            foreach (Button button in SceneFinds.All<Button>("the self-test's look for the character screen's Start button"))
+            {
+                for (int i = 0; button != null && i < button.onClick.GetPersistentEventCount(); i++)
+                {
+                    if (button.onClick.GetPersistentTarget(i) == screen && button.onClick.GetPersistentMethodName(i) == "StartGame")
+                    {
+                        return button;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>For a failure's words: the Start button and the screen's state.</summary>
+        public static string ButtonsWords(IntroCharacterCustomizer screen)
+        {
+            Button b = StartButton(screen);
+            string button = b == null ? "not found" : "'" + b.name + "' interactable " + b.interactable + " active " + b.gameObject.activeInHierarchy;
+            return "screen active " + (screen != null && screen.gameObject.activeInHierarchy) + ", Start button " + button + ", question box open " + HudConfirm.isOpen
+                   + ", isLoading " + LoadScene.isLoading + ", scenes [" + SelfTestDiag.Scenes() + "]";
+        }
+
+        /// <summary>The game's own question box, if one is up, answered Yes by its own confirm; true when one was.</summary>
+        public static bool AnswerQuestion()
+        {
+            if (!HudConfirm.isOpen)
+            {
+                return false;
+            }
+            HudConfirm.onConfirm?.Invoke();
+            return true;
         }
 
         public static void LeaveCity()

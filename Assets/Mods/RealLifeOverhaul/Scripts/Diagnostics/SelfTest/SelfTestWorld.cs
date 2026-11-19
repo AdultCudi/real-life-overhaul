@@ -71,6 +71,26 @@ namespace RealLifeOverhaul.SelfTest
             return true;
         }
 
+        /// <summary>Whether a window opened by game_open is up now.</summary>
+        public static bool GameWindowUp(string what)
+        {
+            switch (what)
+            {
+                case "help": return HelpSystem.IsVisible;
+                case "blueprints":
+                    UIs uis = InstanceBehavior<UIs>.Instance;
+                    return uis != null && uis.miniMenuUI != null && uis.miniMenuUI.blueprintsPanel != null && uis.miniMenuUI.blueprintsPanel.gameObject.activeInHierarchy;
+                default: return SelfTestGame.PhoneOpen();
+            }
+        }
+
+        /// <summary>Where the player stands, or zero with no player.</summary>
+        public static Vector3 PlayerAt()
+        {
+            GameManager gm = InstanceBehavior<GameManager>.Instance;
+            return gm != null && gm.playerController != null ? gm.playerController.transform.position : Vector3.zero;
+        }
+
         /// <summary>A monologue put on the game's own speech card, through the game's own queue.</summary>
         public static bool Monologue(string key)
         {
@@ -187,7 +207,12 @@ namespace RealLifeOverhaul.SelfTest
             InstanceBehavior<CityManager>.Instance.FindCityBuildingController(reg.Address)?.UpdatePoi();
             InstanceBehavior<UIs>.Instance.mapFilters.ApplyFilters();
             GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);
-            words = "'" + name + "' started as a " + type + " at " + reg.Address.ToFormattedString();
+            if (reg.businessTypeName != type || reg.BusinessName != name || !reg.RentedByPlayer)
+            {
+                words = "the game's registration reads back as '" + reg.BusinessName + "', type " + reg.businessTypeName + ", rented by the player " + reg.RentedByPlayer + ", not as asked";
+                return false;
+            }
+            words = "'" + name + "' started as a " + type + " at " + reg.Address.ToFormattedString() + " and read back from the game's registration";
             return true;
         }
 

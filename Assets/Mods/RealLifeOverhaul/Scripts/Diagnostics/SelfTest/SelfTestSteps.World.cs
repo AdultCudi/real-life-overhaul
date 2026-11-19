@@ -33,7 +33,12 @@ namespace RealLifeOverhaul.SelfTest
                     yield break;
                 }
                 yield return new WaitForSecondsRealtime(c.Number("settle", 1f));
-                c.Pass("ran: " + c.Arg("command") + "; " + SelfTestGame.CityWords());
+                if (c.Runner.Watch.LogHas("ERROR:", c.Spec.Label, out string refused))
+                {
+                    c.Fail("the console refused '" + c.Arg("command") + "': " + refused);
+                    yield break;
+                }
+                c.Pass("ran: " + c.Arg("command") + " (the console wrote no refusal); " + SelfTestGame.CityWords());
             }
         }
 
@@ -51,7 +56,12 @@ namespace RealLifeOverhaul.SelfTest
                 }
                 SelfTestWorld.SetMoney(c.Number("amount", 0f));
                 yield return new WaitForSecondsRealtime(0.5f);
-                c.Pass("money set by the game's own SetMoney: " + SelfTestGame.CityWords());
+                if (System.Math.Abs(SaveGameManager.Current.Money - c.Number("amount", 0f)) > 1f)
+                {
+                    c.Fail("the game's SetMoney left " + (long)SaveGameManager.Current.Money + ", not " + c.Number("amount", 0f));
+                    yield break;
+                }
+                c.Pass("money set by the game's own SetMoney and read back: " + SelfTestGame.CityWords());
             }
         }
 
@@ -74,14 +84,24 @@ namespace RealLifeOverhaul.SelfTest
                     yield break;
                 }
                 yield return SelfTestGame.Close();
+                Vector3 from = SelfTestWorld.PlayerAt();
                 if (!SelfTestWorld.Teleport(address, business, c.Flag("inside", false), out string why))
                 {
                     c.Fail(why);
                     yield break;
                 }
-                c.Waiting = "the player to arrive";
-                yield return new WaitForSecondsRealtime(3f);
-                c.Pass("the player was sent to " + (address ?? business) + (c.Flag("inside", false) ? " (inside)" : string.Empty));
+                float until = Time.realtimeSinceStartup + 15f;
+                while ((SelfTestWorld.PlayerAt() - from).sqrMagnitude < 1f && !(c.Flag("inside", false) && BuildingManager.IsInsideBuilding))
+                {
+                    c.Waiting = "the player to arrive at " + (address ?? business);
+                    if (Time.realtimeSinceStartup > until)
+                    {
+                        c.Fail("the player did not move from " + from + " within 15 s of the teleport to " + (address ?? business));
+                        yield break;
+                    }
+                    yield return new WaitForSecondsRealtime(0.5f);
+                }
+                c.Pass("the player moved from " + from + " to " + SelfTestWorld.PlayerAt() + " (" + (address ?? business) + (c.Flag("inside", false) ? ", inside" : string.Empty) + ")");
             }
         }
 

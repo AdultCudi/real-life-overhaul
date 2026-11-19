@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.SelfTest
         public string Words;
         public double Seconds;
         public readonly List<string> Shots = new List<string>();     // file names in the output folder
+        public string Diagnostics;                                  // set when the step failed: scenes, loading flag, canvases and kit screens showing
         public readonly List<string> LogErrors = new List<string>(); // new error lines of the game's log, each with whose it is
     }
 
@@ -35,6 +36,7 @@ namespace RealLifeOverhaul.SelfTest
         // figures a measure step recorded, in seconds, so that two builds can be compared
         public readonly SortedDictionary<string, double> Measures = new SortedDictionary<string, double>(StringComparer.Ordinal);
         public readonly List<SelfTestStepResult> Steps = new List<SelfTestStepResult>();
+        public string Current;       // the step under way and what it waits for, rewritten as a heartbeat while it runs ("" between steps)
         public int Total;            // the plan's steps, so a half-written file says how far it got
 
         public int Count(SelfTestOutcome outcome)
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul.SelfTest
                 w.WritePropertyName("game_build"); w.WriteValue(GameBuild);
                 w.WritePropertyName("mod_version"); w.WriteValue(ModVersion);
                 w.WritePropertyName("steps_planned"); w.WriteValue(Total);
+                w.WritePropertyName("current"); w.WriteValue(Current ?? string.Empty);
                 w.WritePropertyName("passed"); w.WriteValue(Count(SelfTestOutcome.Pass));
                 w.WritePropertyName("failed"); w.WriteValue(Count(SelfTestOutcome.Fail));
                 w.WritePropertyName("skipped"); w.WriteValue(Count(SelfTestOutcome.Skipped));
@@ -88,6 +91,10 @@ namespace RealLifeOverhaul.SelfTest
                     w.WritePropertyName("seconds"); w.WriteValue(Math.Round(s.Seconds, 2));
                     Strings(w, "screenshots", s.Shots);
                     Strings(w, "log_errors", s.LogErrors);
+                    if (s.Diagnostics != null)
+                    {
+                        w.WritePropertyName("diagnostics"); w.WriteValue(s.Diagnostics);
+                    }
                     w.WriteEndObject();
                 }
                 w.WriteEndArray();

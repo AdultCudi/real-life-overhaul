@@ -94,6 +94,9 @@ namespace RealLifeOverhaul.SelfTest
             Watch.Begin(spec.Label, spec.Kind.StartsWith("assert_", StringComparison.Ordinal));
             float began = Time.realtimeSinceStartup;
             var stack = new Stack<IEnumerator>(4);
+            float wrote = began;
+            _results.Current = (_results.Steps.Count + 1) + "/" + _plan.Steps.Count + " " + spec.Label + " (limit " + spec.Limit + " s): starting";
+            Write();
             if (step == null)
             {
                 ctx.Fail("no step class for '" + spec.Kind + "'");
@@ -108,6 +111,13 @@ namespace RealLifeOverhaul.SelfTest
                 {
                     ctx.Fail("timed out after " + spec.Limit + " s while " + ctx.Waiting);
                     break;
+                }
+                if (Time.realtimeSinceStartup - wrote > 20f)
+                {
+                    wrote = Time.realtimeSinceStartup;   // a heartbeat: a results file that stops changing means the game itself is stuck
+                    _results.Current = (_results.Steps.Count + 1) + "/" + _plan.Steps.Count + " " + spec.Label + " (limit " + spec.Limit + " s, "
+                                       + (int)(wrote - began) + " s in): " + ctx.Waiting;
+                    Write();
                 }
                 bool more;
                 try
@@ -137,9 +147,25 @@ namespace RealLifeOverhaul.SelfTest
             {
                 ctx.Pass("done");
             }
+            if (result.Outcome == SelfTestOutcome.Fail)
+            {
+                // A failure leaves what is needed to read it from the results alone: a picture, and where the game stood.
+                yield return new WaitForEndOfFrame();
+                Capture(spec.Label + "-fail", result);
+                yield return PictureWritten();
+                try
+                {
+                    result.Diagnostics = SelfTestDiag.Dump();
+                }
+                catch (Exception e)
+                {
+                    result.Diagnostics = "the diagnostics could not be read: " + e.GetType().Name + " " + e.Message;
+                }
+            }
             result.Seconds = Time.realtimeSinceStartup - began;
             Watch.StepLines(result.LogErrors);
             _results.Steps.Add(result);
+            _results.Current = string.Empty;
             Debug.Log("SELFTEST step " + _results.Steps.Count + "/" + _plan.Steps.Count + " " + result.Name + ": " + result.Outcome + " - " + result.Words);
             Write();
         }
