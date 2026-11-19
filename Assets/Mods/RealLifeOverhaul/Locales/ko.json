@@ -38560,5 +38560,11 @@
   "reallife_police_desk_cases": "사건 처리하기",
   "reallife_police_desk_cases_detail": "목격자 면담, 현장 확인이나 서류 작성: 사건마다 한 가지 행동, 근무마다 몇 가지를 할 수 있습니다.",
   "reallife_ui_rivals_week_change": "7일 변동",
-  "reallife_rota_failed": "플래너가 지금은 이 사업체의 근무표를 계산하지 못했습니다. 작업 자리, 직원 또는 요일이 바뀌면 다시 시도합니다. 자세한 내용은 Player.log에 있습니다."
+  "reallife_rota_failed": "플래너가 지금은 이 사업체의 근무표를 계산하지 못했습니다. 작업 자리, 직원 또는 요일이 바뀌면 다시 시도합니다. 자세한 내용은 Player.log에 있습니다.",
+  "reallife_flat_tenant_home": "여기 거주 중",
+  "reallife_flat_tenant_empty": "비어 있음",
+  "reallife_ui_estate_roll_sub_flats": "건물 {buildings}동과 호실 {flats}개, 전체 {units}개 단위",
+  "reallife_ui_estate_roll_waiting": "사용자를 기다리는 것 {waiting}건",
+  "reallife_ui_estate_roll_waiting_clear": "사용자를 기다리는 것 없음",
+  "reallife_opt_sec_estateflats": "아파트와 원룸"
 }

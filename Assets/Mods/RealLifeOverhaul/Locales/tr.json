@@ -38560,5 +38560,11 @@
   "reallife_police_desk_cases": "Davalarınızla ilgilenin",
   "reallife_police_desk_cases_detail": "Bir tanığı sorgulayın, olay yerini inceleyin ya da dosyayı yazıya dökün: bir davada bir işlem, bir vardiyada birkaç işlem.",
   "reallife_ui_rivals_week_change": "7 günlük değişim",
-  "reallife_rota_failed": "Planlayıcı bu işletmeyi şu an hesaplayamadı. İş istasyonları, personel ya da gün değiştiğinde yeniden dener. Ayrıntılar Player.log dosyasında."
+  "reallife_rota_failed": "Planlayıcı bu işletmeyi şu an hesaplayamadı. İş istasyonları, personel ya da gün değiştiğinde yeniden dener. Ayrıntılar Player.log dosyasında.",
+  "reallife_flat_tenant_home": "Burada oturuyorsunuz",
+  "reallife_flat_tenant_empty": "Boş",
+  "reallife_ui_estate_roll_sub_flats": "{buildings} bina ve {flats} daire, toplam {units} birim",
+  "reallife_ui_estate_roll_waiting": "sizi bekleyen {waiting}",
+  "reallife_ui_estate_roll_waiting_clear": "sizi bekleyen bir şey yok",
+  "reallife_opt_sec_estateflats": "Daireler ve stüdyolar"
 }

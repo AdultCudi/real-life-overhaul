@@ -38560,5 +38560,11 @@
   "reallife_police_desk_cases": "Работа с делами",
   "reallife_police_desk_cases_detail": "Опросите свидетеля, осмотрите место или оформите материалы: одно действие по делу и несколько за смену.",
   "reallife_ui_rivals_week_change": "Изм. за 7 дн.",
-  "reallife_rota_failed": "Планировщик пока не смог рассчитать этот бизнес. Он попробует снова, когда изменятся рабочие места, персонал или день. Подробности есть в Player.log."
+  "reallife_rota_failed": "Планировщик пока не смог рассчитать этот бизнес. Он попробует снова, когда изменятся рабочие места, персонал или день. Подробности есть в Player.log.",
+  "reallife_flat_tenant_home": "Вы живете здесь",
+  "reallife_flat_tenant_empty": "Пусто",
+  "reallife_ui_estate_roll_sub_flats": "Зданий: {buildings}, квартир: {flats}, всего помещений: {units}",
+  "reallife_ui_estate_roll_waiting": "ждут вас: {waiting}",
+  "reallife_ui_estate_roll_waiting_clear": "ничего не ждет вас",
+  "reallife_opt_sec_estateflats": "Квартиры и студии"
 }

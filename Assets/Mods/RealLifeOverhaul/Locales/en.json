@@ -38597,5 +38597,10 @@
   "reallife_rota_failed": "The planner could not work out this business just now. It tries again when the stations, the staff or the day change. Player.log has the detail.",
   "reallife_opt_sec_estateflats": "Flats and studios",
   "reallife_changes_100_18_title": "1.0.18",
-  "reallife_changes_100_18": "Fixed: a business with no work stations no longer drops out of the staff rota planner. Flare's city layer no longer stops for the session when a business is founded while the residents' day is being worked out, and it tries again on its own after any other error."
+  "reallife_changes_100_18": "Fixed: a business with no work stations no longer drops out of the staff rota planner. Flare's city layer no longer stops for the session when a business is founded while the residents' day is being worked out, and it tries again on its own after any other error.",
+  "reallife_flat_tenant_home": "You live here",
+  "reallife_flat_tenant_empty": "Empty",
+  "reallife_ui_estate_roll_sub_flats": "{buildings} building(s) and {flats} flat(s), {units} unit(s) in all",
+  "reallife_ui_estate_roll_waiting": "{waiting} waiting for you",
+  "reallife_ui_estate_roll_waiting_clear": "nothing waiting for you"
 }

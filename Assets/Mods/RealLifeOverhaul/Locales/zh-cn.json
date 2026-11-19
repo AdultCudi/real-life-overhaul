@@ -38597,5 +38597,10 @@
   "reallife_rota_failed": "排班规划器这会儿算不出这家企业的排班。工位、员工或日期一变，它就会重试。详情见Player.log。",
   "reallife_opt_sec_estateflats": "公寓和工作室",
   "reallife_changes_100_18_title": "1.0.18",
-  "reallife_changes_100_18": "已修复：没有工位的企业不再从员工排班规划器中消失。在有企业开业而居民的一天还在计算时，Flare的城市图层不再在本局游戏中停止，并且遇到任何其他错误后会自行重试。"
+  "reallife_changes_100_18": "已修复：没有工位的企业不再从员工排班规划器中消失。在有企业开业而居民的一天还在计算时，Flare的城市图层不再在本局游戏中停止，并且遇到任何其他错误后会自行重试。",
+  "reallife_flat_tenant_home": "你住在这里",
+  "reallife_flat_tenant_empty": "空置",
+  "reallife_ui_estate_roll_sub_flats": "{buildings}栋建筑和{flats}套公寓，共{units}个单元",
+  "reallife_ui_estate_roll_waiting": "{waiting}个等待你处理",
+  "reallife_ui_estate_roll_waiting_clear": "没有等待你处理的事项"
 }

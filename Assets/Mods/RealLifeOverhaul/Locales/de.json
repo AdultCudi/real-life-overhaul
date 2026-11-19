@@ -38560,5 +38560,11 @@
   "reallife_police_desk_cases": "Deine Fälle bearbeiten",
   "reallife_police_desk_cases_detail": "Einen Zeugen befragen, den Tatort prüfen oder die Akte schreiben: eine Aktion pro Fall und ein paar pro Schicht.",
   "reallife_ui_rivals_week_change": "Änderung 7 Tage",
-  "reallife_rota_failed": "Der Dienstplaner konnte dieses Unternehmen gerade nicht berechnen. Er versucht es erneut, wenn sich die Arbeitsplätze, das Personal oder der Tag ändern. Player.log enthält die Einzelheiten."
+  "reallife_rota_failed": "Der Dienstplaner konnte dieses Unternehmen gerade nicht berechnen. Er versucht es erneut, wenn sich die Arbeitsplätze, das Personal oder der Tag ändern. Player.log enthält die Einzelheiten.",
+  "reallife_flat_tenant_home": "Du wohnst hier",
+  "reallife_flat_tenant_empty": "Leer",
+  "reallife_ui_estate_roll_sub_flats": "{buildings} Gebäude und {flats} Wohnung(en), insgesamt {units} Einheit(en)",
+  "reallife_ui_estate_roll_waiting": "{waiting} warten auf dich",
+  "reallife_ui_estate_roll_waiting_clear": "nichts wartet auf dich",
+  "reallife_opt_sec_estateflats": "Wohnungen und Studios"
 }

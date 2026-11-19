@@ -38597,5 +38597,10 @@
   "reallife_rota_failed": "O planejador não conseguiu montar a escala desta empresa agora. Ele tenta de novo quando os postos, a equipe ou o dia mudam. O Player.log tem os detalhes.",
   "reallife_opt_sec_estateflats": "Apartamentos e estúdios",
   "reallife_changes_100_18_title": "1.0.18",
-  "reallife_changes_100_18": "Corrigido: uma empresa sem postos de trabalho não sai mais do planejador de escalas da equipe. A camada de cidade do Flare não para mais durante a sessão quando uma empresa é aberta enquanto o dia dos moradores está sendo calculado, e ela tenta de novo sozinha depois de qualquer outro erro."
+  "reallife_changes_100_18": "Corrigido: uma empresa sem postos de trabalho não sai mais do planejador de escalas da equipe. A camada de cidade do Flare não para mais durante a sessão quando uma empresa é aberta enquanto o dia dos moradores está sendo calculado, e ela tenta de novo sozinha depois de qualquer outro erro.",
+  "reallife_flat_tenant_home": "Você mora aqui",
+  "reallife_flat_tenant_empty": "Vazio",
+  "reallife_ui_estate_roll_sub_flats": "{buildings} prédio(s) e {flats} apartamento(s), {units} unidade(s) no total",
+  "reallife_ui_estate_roll_waiting": "{waiting} esperando por você",
+  "reallife_ui_estate_roll_waiting_clear": "nada esperando por você"
 }
