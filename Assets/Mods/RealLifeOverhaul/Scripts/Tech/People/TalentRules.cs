@@ -261,6 +261,15 @@ namespace RealLifeOverhaul.Tech
             return p.Burnout <= TalentCatalogue.BurnoutSick ? 0 : (p.Burnout - TalentCatalogue.BurnoutSick) / 2;
         }
 
+        /// <summary>
+        /// True if the professional goes off sick for the day: only while the option "Staff pay, raises, strikes and sick pay" is on (a sick day is staff trouble, so a
+        /// player who switched staff trouble off has none), and then by their burnout and the day's seeded roll.
+        /// </summary>
+        public static bool GoesSick(bool staffPay, int seed, Profile p, int day)
+        {
+            return staffPay && TechRandom.Mille(seed, TechRandom.Of(p.Id), day, 91) < SickChance(p);
+        }
+
         /// <summary>True if burnout makes them hand in their notice today.</summary>
         public static bool BurnsOut(int seed, Profile p, int day)
         {

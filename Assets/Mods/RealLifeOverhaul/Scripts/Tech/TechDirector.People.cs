@@ -559,7 +559,8 @@ namespace RealLifeOverhaul.Tech
             Mentors(day);
             int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0, reviewsMore = 0, offersMore = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
-            bool staffPay = Settings.EconomyCompanyStaff;   // the one option for raises asked, rivals' offers, strikes and sick pay: off, professionals ask for nothing and no rival approaches them
+            // The one option for raises asked, rivals' offers, strikes and sick days: off, professionals ask for nothing, no rival approaches them and nobody goes off sick.
+            bool staffPay = Settings.EconomyCompanyStaff;
             for (int i = 0; i < _people.Count; i++)
             {
                 Person person = _people[i];
@@ -592,7 +593,7 @@ namespace RealLifeOverhaul.Tech
                     TalentGame.Mood(person.Game, TalentRules.GameMood(p, person.Game.satisfaction));
                 }
                 p.Sick = false;
-                if (TechRandom.Mille(Seed, TechRandom.Of(p.Id), day, 91) < TalentRules.SickChance(p))
+                if (TalentRules.GoesSick(staffPay, Seed, p, day))   // sick days are staff trouble: none with the staff pay option off
                 {
                     sick++;
                     if (person.Game != null)
