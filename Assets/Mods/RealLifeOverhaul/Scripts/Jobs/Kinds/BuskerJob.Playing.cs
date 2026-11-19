@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
     public sealed partial class BuskerJob
     {
         private AudioSource _music;
+        private GigMusic _own;                // the player's own music for this set (GigMusic), or null: the game's clip plays
         private StreetPerformerData _act;     // the game's own performance for the look and the music, or null
 
         // One of the game's own street performances that the player's animator can play, or null.
@@ -83,6 +84,10 @@ namespace RealLifeOverhaul
             {
                 if (!on)
                 {
+                    if (_own != null && _own.Stop(_music))
+                    {
+                        return;   // the player's file fades out and lets go of itself
+                    }
                     if (_music != null)
                     {
                         _music.Stop();
@@ -90,9 +95,7 @@ namespace RealLifeOverhaul
                     }
                     return;
                 }
-                StreetPerformerData sound = _act ?? GameAct(PermanentAnimationType.PlayingGuitar);
-                AudioClip clip = sound != null ? sound.clip : null;
-                if (clip == null)
+                if (_own == null && GameClip() == null)
                 {
                     return;
                 }
@@ -120,12 +123,42 @@ namespace RealLifeOverhaul
                     }
                 }
                 _music.transform.position = Ctx.Player.transform.position + Vector3.up * 1.2f;
+                if (_own != null)
+                {
+                    _own.Play(_music, PlayGameClip);   // the game's clip takes over if no file of the player's can be played
+                    return;
+                }
+                PlayGameClip();
+            }
+            catch (Exception e)
+            {
+                Ctx.Logger?.Error(e);   // silent busking is still busking
+            }
+        }
+
+        private AudioClip GameClip()
+        {
+            StreetPerformerData sound = _act ?? GameAct(PermanentAnimationType.PlayingGuitar);
+            return sound != null ? sound.clip : null;
+        }
+
+        // The game's own clip for the act, looped on the busker's source.
+        private void PlayGameClip()
+        {
+            try
+            {
+                AudioClip clip = GameClip();
+                if (clip == null || _music == null)
+                {
+                    return;
+                }
+                _music.loop = true;
                 _music.clip = clip;
                 _music.Play();
             }
             catch (Exception e)
             {
-                Ctx.Logger?.Error(e);   // silent busking is still busking
+                Ctx.Logger?.Error(e);
             }
         }
     }

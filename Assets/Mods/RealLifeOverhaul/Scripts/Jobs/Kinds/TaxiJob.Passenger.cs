@@ -9,6 +9,15 @@ namespace RealLifeOverhaul
     /// <summary>Ride-hail: the passenger getting in, getting out, and walking off.</summary>
     public sealed partial class TaxiJob
     {
+        // The player's own file if there is one ready, else the game's own door sound.
+        private void DoorHeard(Vector3 at)
+        {
+            if (_door == null || !_door.Play(at))
+            {
+                JobCast.DoorSound(at);
+            }
+        }
+
         private void Boarding(float now)
         {
             if (_passenger == null || !_passenger.IsValid)
@@ -37,7 +46,7 @@ namespace RealLifeOverhaul
             bool there = now - _stepFrom > 0.6f && _passenger.HasArrived && gap < 1.3f;
             if (!moved && (there || (now > _stepEnd && gap < 3f)))
             {
-                JobCast.DoorSound(_boardSpot);
+                DoorHeard(_boardSpot);
                 // With the clip, and only from its place (nobody is slid the last step), they turn, open the door and get in.
                 bool atDoor = _doorClip && gap < DoorExact;
                 Vector3 here = _passenger.Position;
@@ -108,7 +117,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             _rider = null;
-            JobCast.DoorSound(spot);
+            DoorHeard(spot);
             float getOut = 0f;
             if (atDoor)
             {

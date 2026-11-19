@@ -28,6 +28,9 @@ namespace RealLifeOverhaul
         private int _tillWanted;
         private int _tills;
 
+        private GigEffect _calls;       // the player's own files for a customer's voice and for the till, or null (GigEffect)
+        private GigEffect _till;
+
         private bool Audible => CartSoundRules.Audible(Settings.JobCartSounds, Time.timeScale, _skip != null, _ending);
 
         // The customer is at the counter and their order's clock has started.
@@ -73,7 +76,11 @@ namespace RealLifeOverhaul
                 return;
             }
             _tillWanted++;
-            if (SoundsReady(out SfxManager sounds) && _tillHere)
+            if (_till != null && _till.Play(_cartAt + Vector3.up * CounterHeight))
+            {
+                _tills++;   // the player's own till
+            }
+            else if (SoundsReady(out SfxManager sounds) && _tillHere)
             {
                 // The player's own sale, as the game's petrol pumps and boat dealer play it.
                 sounds.PlayAudio(SoundType.PurchaseSuccess, _cartAt + Vector3.up * CounterHeight, 1f, isPlayerCreatedSound: true);
@@ -87,6 +94,10 @@ namespace RealLifeOverhaul
 
         private bool Voice(StreetActor person)
         {
+            if (person != null && person.IsValid && _calls != null && _calls.Play(person.Position))
+            {
+                return true;   // the player's own voice for the customer
+            }
             if (person == null || !person.IsValid || !SoundsReady(out SfxManager sounds) || !_voicesHere)
             {
                 SoundMissing("a customer's voice");

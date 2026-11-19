@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
         private Vector3 _triedAt;           // where the car stood when no door could be reached
         private bool _tried;
         private Vector3 _boardSpot;
+        private GigEffect _door;   // the player's own car door sound, or null (GigEffect)
         private Vector3 _boardCarAt;
         private float _nextHail;
         private bool _hailed;
@@ -160,6 +161,7 @@ namespace RealLifeOverhaul
                 Ctx.Logger?.Info("Jobs: taxi: shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the shift's figures are not shown)")
                                  + ", " + MissesAllowed + " missed fares end the shift, no clock offered (the car would have to be moved).");
             }
+            _door = GigEffect.Open(GigSound.TaxiDoor, Ctx.Director, Ctx.Logger);   // the folder is read now, once
             return true;
         }
 
@@ -611,6 +613,7 @@ namespace RealLifeOverhaul
             _rider = null;
             _leaving = null;
             _car = null;
+            _door?.Close();
             Unsign();
         }
     }

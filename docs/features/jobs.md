@@ -298,6 +298,26 @@ Not checked in the game (nothing here has been run): any of the above.
 
 In particular where each panel stands and how it reads, that the box follows a walking passer-by, that the canvasser and cleaner outfits fit, that the clock runs in a shop and on the open street without the player being moved, that the busker's idle pose and the stand sit well with the game's guitar performance, and the amounts the clock pays.
 
+## The player's own gig music (`GigMusicRules`, `GigMusic`, `GigMusicGame`)
+
+A player asked for gigs to take their own music files, as the game's custom radio does. With "Play your own music in gigs" on (off by default) busking plays the player's files in place of the game's clip for the act; the second option, "Your gig music order", plays them by name or shuffled. The button "Your gig music folder" makes `RealLifeOverhaul/GigMusic` in the game's data folder (`Application.persistentDataPath`), one folder for each kind of gig sound (only `Busking` so far; `GigSound` in `GigMusicRules` lists them) and a `README.txt` saying what goes where, then opens it in the explorer. It never changes a file already there, the note included.
+
+**Which files.** The folder is read once, as a set begins (`GigMusic.Open`, with the option off nothing is read), through `IGigMusicFiles` so the rules run offline against a made-up disc. The types are the ones the game's radio reads (`AudioFileFormatHelper`): wav, ogg, aiff, aif, flac, mp3, mp2. Hidden files (a leading dot or tilde), the note, empty files and other types are left out, and the game's own unsupported list (m4a, aac, wma, opus, mid) is named in the log. The limits are checked from the folder's list and each file's size before anything is opened: at most 24 files taken (the first 24 by name, the rest named in the log) and 40 MB each, which is about 40 minutes of mp3 at 128 kbps or 4 minutes of CD quality wav.
+
+**Order.** By file name without regard to case, or shuffled by a Fisher-Yates over a small generator of the mod's own, seeded from the save (`StreetGame.SaveSeed`, the hash of the character id) and the kind of gig. The same save hears the same mix on every run and machine, and nothing uses the game's random sequence.
+
+**Playing.** Each file is opened as a stream (`DownloadHandlerAudioClip.streamAudio`) when its turn comes, on the busker's own audio source (the same place, loudness and mixer group as the game's clip), and the clip and its reader are destroyed as soon as it ends or the set stops, so no song is held in memory afterwards. One file only plays over again, with more the next one plays. A coroutine looks at the source every half second; nothing is per frame and nothing runs when idle.
+
+**The gig's own timing.** The strum prompts, the length of a song and a set and the pay never read a file: the music starts and stops exactly where the game's clip did (`BuskerJob.Music`). A file longer than the set is faded out over 0.8 s (eight steps) when the music stops, whether the set ended, the player left the pitch or the clock took over.
+
+**Fallback.** With no file taken, a notice says once a session that the folder is empty. A file that cannot be opened or decoded, or ends as it starts, is named once in a notice and skipped; when none can be played the game's own clip plays instead. Each outcome is one log line.
+
+**Short sounds.** The same folder holds one folder for each sound the gigs play at a moment: `Cart/Calls` (the customer's voice as an order starts, and the reminder), `Cart/Till` (a drink paid for) and `Taxi/Door` (a passenger getting in or out), played by `GigEffect` in place of the game's own effect (`VendorJob.Sounds`, `TaxiJob.Passenger.DoorHeard`). Same types and the same two options, but smaller limits: 8 files of 1 MB each, and each is cut after 8 seconds. They are read and loaded once as the gig starts (`GigEffect.Open`), decoded whole, and destroyed when it ends (`Close`). Each moment plays the next file, round and round, in the read's order (by name or by the save's seed). If none is ready or every file failed, the game's own effect plays; failures and an empty folder are said once in a notice. No other gig in `Kinds/` plays a sound of its own (the others only play animation clips).
+
+**Going Public.** The files, their names and the choice are local: nothing is saved in the game's save, shared or sent, so other players neither hear nor receive them. Nothing of anyone's music is bundled or downloaded.
+
+`EconomyCheck --gig-music` (`GigMusicChecks.cs`) holds the folder rules (which files are taken, the limits, the order, the shuffle by seed, the choice and fallback, the fade, the folder made with its note), and that the sources keep to the above.
+
 ## A shift across a save (`JobSave`, `PaySlip`)
 
 The game saves by itself every few minutes and at midnight (`GameManager.CheckAutoSave`), so a save in the middle of a shift is ordinary.
