@@ -184,7 +184,7 @@ namespace RealLifeOverhaul.Tech
         {
             Id = p.Id, Place = p.Place, Name = p.Name, Kind = p.Kind, Segment = p.Segment, Stage = p.Stage, Features = p.Features, Progress = p.Progress, Bugs = p.Bugs, Users = p.Users,
             Free = p.Free, Tier = p.Tier, Marketing = p.Marketing, Share = p.Share, Launched = p.Launched, Hype = p.Hype, Scope = p.Scope, Revenue = p.Revenue,
-            RivalFeatures = p.RivalFeatures, RivalTier = p.RivalTier, LastRelease = p.LastRelease, Carry = p.Carry, Compute = p.Compute, Train = p.Train
+            RivalFeatures = p.RivalFeatures, RivalTier = p.RivalTier, LastRelease = p.LastRelease, Carry = p.Carry, Compute = p.Compute, Train = p.Train, Moving = p.Moving, Owe = p.Owe
         };
 
         // What a firm's own record holds, but not its place, kind or the day-by-day takings the new record already counts from the rebuilt day.

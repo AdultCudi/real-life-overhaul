@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     {
         // What a new product has chosen and not yet started: the kind, the segment and the size, kept over the page's writing.
         private static int _newKind = -1, _newSegment = 1, _newScope;
+        private static int _moveTo = -1, _moveFor;   // the segment an AI model's page offers to move it to (SegmentRules), for the product _moveFor
         private static string _newName;   // the name typed for it; none: the one the page offers
         private static int _newTurn;      // which of the offered names the page shows: "suggest" moves to the next
         private static readonly int[] Shares = { 0, 25, 50, 75, 100 };
@@ -114,7 +115,7 @@ namespace RealLifeOverhaul.Ui
                 return list;
             }
 
-            private static string State(Product p)
+            private string State(Product p)
             {
                 if (p.Stage == 2)
                 {
@@ -122,19 +123,24 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (p.Stage == 1)
                 {
+                    if (SegmentRules.Moving(p, _day))
+                    {
+                        return TechText.T("reallife_tech_state_relaunch");   // off sale while an AI model is re-launched for another segment
+                    }
                     return TechText.T("reallife_tech_state_on_sale");
                 }
                 return FirmsRules.CanLaunch(p) ? TechText.T("reallife_tech_state_ready") : TechText.T("reallife_tech_state_building");
             }
 
-            private static UiRole StateTone(Product p) => p.Stage == 2 ? UiRole.Warn : p.Stage == 1 ? UiRole.Ok : FirmsRules.CanLaunch(p) ? UiRole.Ok : UiRole.Notice;
+            private UiRole StateTone(Product p) =>
+                p.Stage == 2 ? UiRole.Warn : p.Stage == 1 ? (SegmentRules.Moving(p, _day) ? UiRole.Notice : UiRole.Ok) : FirmsRules.CanLaunch(p) ? UiRole.Ok : UiRole.Notice;
 
             private UiDataRow ProductDataRow(Product p)
             {
                 FirmPlace firm = _d.FirmOf(p.Place);
                 UiDataRow row = Row(8);
                 row.Cells[0] = p.Name;
-                row.Sub = TechText.ProductName(p.K) + (p.K == ProductKind.Saas ? ", " + TechText.SegmentName(p.S) : string.Empty);
+                row.Sub = TechText.ProductName(p.K) + (p.K == ProductKind.Saas || p.K == ProductKind.Model ? ", " + TechText.SegmentName(p.S) : string.Empty);
                 row.Values[0] = (int)TechGlyphs.Of(TechGlyphs.Product, p.Kind);
                 row.Cells[1] = firm != null ? firm.File.Name : "-";
                 row.Cells[2] = State(p);
@@ -214,7 +220,42 @@ namespace RealLifeOverhaul.Ui
                 var now = new TechCard(_runs, TechText.T("reallife_ibox_sec_now"));
                 ProductLines(now, p, firm);
                 _m.Left = new[] { now.Build() };
-                _m.Right = new[] { ProductSettings(p) };
+                UiFactCardModel move = p.K == ProductKind.Model ? MoveCard(p) : null;
+                _m.Right = move != null ? new[] { ProductSettings(p), move } : new[] { ProductSettings(p) };
+            }
+
+            // An AI model's change of who it is sold to: the segment to move to as a step, what the re-launch costs and brings before anything is pressed, and the button that asks the
+            // game's question. A re-launch under way says so instead; a model that cannot move gets no card.
+            private UiFactCardModel MoveCard(Product p)
+            {
+                ViewLine going = _d.MoveUnderWay(p);
+                if (going != null)
+                {
+                    return new TechCard(_runs, TechText.T("reallife_tech_move_section")).Say(Words(going), UiRole.WarnText).Build();
+                }
+                if (!_d.CanMove(p))
+                {
+                    return null;
+                }
+                int[] targets = TechDirector.MoveTargets(p);
+                if (_moveFor != p.Id || Array.IndexOf(targets, _moveTo) < 0)
+                {
+                    _moveFor = p.Id;
+                    _moveTo = targets[0];
+                }
+                int at = Array.IndexOf(targets, _moveTo), id = p.Id, to = _moveTo;
+                var card = new TechCard(_runs, TechText.T("reallife_tech_move_section"));
+                card.Say(TechText.Fill("reallife_tech_move_about", "from", TechText.SegmentName(p.S)), UiRole.Text2);
+                card.Step(TechText.T("reallife_tech_move_label"), TechText.SegmentName((Segment)to), null, at > 0, at < targets.Length - 1,
+                    Go(v => _moveTo = targets[Math.Max(0, at - 1)]), Go(v => _moveTo = targets[Math.Min(targets.Length - 1, at + 1)]));
+                List<ViewLine> lines = _d.MoveLines(p, to);
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    card.Say(Words(lines[i]), Ink(lines[i].Tone));
+                }
+                _d.MoveQuestion(p, to, out string title, out string body);
+                card.Button(TechText.T("reallife_tech_button_move"), UiButtonKind.Secondary, UiAction.Count, Ask(title, body, () => _d.ChangeSegment(id, to)));
+                return card.Build();
             }
 
             // A name asked for in the game's own text box, which the kit draws on its own card where that option is on: what is typed goes to the
@@ -396,11 +437,20 @@ namespace RealLifeOverhaul.Ui
                     card.Row(TechText.T("reallife_ui_tech_segment"), TechText.SegmentName((Segment)forced));
                     card.Say(TechText.Fill("reallife_tech_new_niche_made", "niche", TechText.T(NicheCatalogue.NameKey(niche)), "who", TechText.SegmentName((Segment)forced)), UiRole.Text2);
                 }
-                else if (kind == ProductKind.Saas)
+                else if (kind == ProductKind.Saas || kind == ProductKind.Model)
                 {
                     int s = _newSegment;
                     int n = (int)Segment.Count;
                     card.Step(TechText.T("reallife_ui_tech_segment"), TechText.SegmentName((Segment)s), null, true, true, Go(v => _newSegment = (s + n - 1) % n), Go(v => _newSegment = (s + 1) % n));
+                    // who it is sold to fixes its list price, its churn and its support: the three are written out before the choice is made, the chosen one first in ink
+                    for (int k = 0; k < n; k++)
+                    {
+                        card.Say(TechText.SegmentMeans((Segment)k, Cents(_d.Level(FirmsCatalogue.Price[k]))), k == s ? UiRole.None : UiRole.Text2);
+                    }
+                    if (kind == ProductKind.Model)
+                    {
+                        card.Say(TechText.T("reallife_tech_new_segment_model"), UiRole.Text2);
+                    }
                 }
                 if (kind == ProductKind.Game)
                 {

@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Utilities
             if (a.Service == Utilities.Service.Internet)
             {
                 Provider p = InternetRules.Get(a.Provider);
-                return p != null ? T(p.NameKey) : T("reallife_net_none");
+                return p != null ? T(p.NameKey) : LeasedLineRules.Has(a) ? T("reallife_net_provider_leased") : T("reallife_net_none");   // a hall with only a leased line
             }
             return T(a.Service == Utilities.Service.Power ? "reallife_util_provider_power" : "reallife_util_provider_water");
         }
@@ -110,6 +110,12 @@ namespace RealLifeOverhaul.Utilities
         public static string Hour(int hour)
         {
             return (((hour % 24) + 24) % 24).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + ":00";
+        }
+
+        /// <summary>A speed of a leased line as the plans write it: 5 Gbps, or 2.5 Gbps.</summary>
+        public static string Gbps(int mbps)
+        {
+            return T("reallife_net_gbps", "gbps", (mbps / 1000f).ToString("0.#", Culture));
         }
 
         public static string Day(int day)

@@ -490,6 +490,7 @@ namespace RealLifeOverhaul.Utilities
                     if (a.Service == Service.Internet)
                     {
                         InternetRules.AddDay(a, billing, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
+                        LeasedLineRules.AddDay(a, d, billing, level);
                     }
                 }
                 _company.Day(d, level, billing);

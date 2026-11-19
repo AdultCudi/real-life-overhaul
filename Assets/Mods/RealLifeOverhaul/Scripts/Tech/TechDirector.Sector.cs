@@ -318,9 +318,9 @@ namespace RealLifeOverhaul.Tech
             int before = p.Features;
             FirmsRules.Build(file, p, building, give, testing, SectorCatalogue.FeaturesMost, SectorRules.ProductBoost(c), SectorRules.SprintFocus(sf, file.Focus, day));
             built = p.Features > before;
-            if (!p.Live)
+            if (!p.Live || SegmentRules.Moving(p, day))
             {
-                return default(ProductDay);
+                return default(ProductDay);   // off sale for a re-launch (SegmentRules): nothing is won, lost or taken meanwhile
             }
             int m = SectorRules.MarketOf(p);
             long users = p.Users;

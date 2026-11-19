@@ -151,6 +151,16 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_infra_centre_racks", "racks", d.Racks.ToString(), "gpu", d.GpuRacks.ToString(), "room", InfraRules.Room(d).ToString(), "let", d.Colo.ToString(),
                 "book", TechText.Cents(_director.Level(d.Book))));
             Owed(box, _director.Infra);
+            // the connection, and the way to grow it: a leased line from the Utilities app
+            CentreLimits lim = InfraLimits.Of(d, TechBridges.CentreMbps(TalentGame.Find(place)));
+            bool tight = InfraLimits.Percent(lim.NetUse, lim.NetCap) >= 90;
+            box.Line(TechText.Fill("reallife_infra_centre_connection", "use", lim.NetUse.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+                "cap", lim.NetCap.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)), tight ? CellTone.Yellow : CellTone.Plain);
+            string[] linePairs = _director.LinePairs();
+            if (linePairs != null)
+            {
+                box.Line(TechText.Fill("reallife_infra_centre_line", linePairs));
+            }
             if (share > 0)
             {
                 box.Line(TechText.Fill("reallife_endscale_infra_crews", "operators", d.Crew[InfraCatalogue.Operators].ToString(),
@@ -183,6 +193,10 @@ namespace RealLifeOverhaul.Tech
             {
                 int next = d.Tier + 1;
                 InfoBox.Button(more, InfoBox.Additional, "reallife_infra_button_upgrade", () => Do(() => _director.Upgrade(place, next)));
+            }
+            if (linePairs != null)
+            {
+                InfoBox.Button(more, InfoBox.Additional, "reallife_infra_button_line", () => Do(() => _director.OpenInternet()));
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_infra_button_hire", () =>
             {

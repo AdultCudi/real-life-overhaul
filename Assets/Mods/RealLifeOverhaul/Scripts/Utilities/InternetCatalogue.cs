@@ -63,6 +63,23 @@ namespace RealLifeOverhaul.Utilities
         };
 
         /// <summary>
+        /// The carriers' business fibre for data centres, as a provider of its own so the plan pickers list it like the others: it reaches every district, a
+        /// district a free update adds too (the install is what costs more where no fibre runs: <see cref="LeasedLineCatalogue"/>). It stands outside
+        /// <see cref="InternetRules.Count"/>: it has no outages to draw and no month of promotions, and a place has it beside its plan, never in place of it.
+        /// </summary>
+        public static readonly Provider Leased = new Provider
+        {
+            Id = "leased", NameKey = "reallife_net_provider_leased", KindKey = "reallife_net_kind_leased", Districts = Everywhere, OutagePerMille = 0,
+            Mbps = LeasedLineCatalogue.Mbps, MonthCents = LeasedLineCatalogue.MonthCents
+        };
+
+        /// <summary>The leased lines' place among the providers a picker offers; never an account's own provider.</summary>
+        public const int LeasedIndex = 99;
+
+        /// <summary>The providers that fix what a district has today: Kestrel's cable and Brightvein's fibre (indexes of <see cref="Providers"/>, held by a check).</summary>
+        public const int CableIndex = 0, FibreIndex = 1;
+
+        /// <summary>
         /// True for a provider that reaches every district of the city: it reaches a district the catalogue does not know
         /// too (one a free update adds), so a business there can still be connected.
         /// </summary>

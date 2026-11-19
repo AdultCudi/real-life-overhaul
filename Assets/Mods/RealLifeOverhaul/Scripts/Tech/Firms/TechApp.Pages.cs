@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly int[] Bids = { 800, 900, 1000, 1100, 1200 };
 
         private int _newKind = -1, _newSegment = 1, _newScope, _bid = 2, _bidFirm;
+        private int _moveTo = -1, _moveFor;   // the segment an AI model's page offers to move it to (SegmentRules), for the product _moveFor
         private string _newName;   // the name typed for the product about to be started; none: the one the page offers
         private int _newTurn;      // which of the offered names the page shows: "suggest" moves to the next
         private readonly List<FirmPlace> _takers = new List<FirmPlace>(8), _makers = new List<FirmPlace>(8);
@@ -396,9 +397,18 @@ namespace RealLifeOverhaul.Tech
                     box.Row("reallife_ui_tech_segment", TechText.SegmentName((Segment)forced));
                     box.Note(TechText.Fill("reallife_tech_new_niche_made", "niche", TechText.T(NicheCatalogue.NameKey(niche)), "who", TechText.SegmentName((Segment)forced)));
                 }
-                else if (kind == ProductKind.Saas)
+                else if (kind == ProductKind.Saas || kind == ProductKind.Model)
                 {
+                    // who it is sold to fixes its list price, its churn and its support: the three are written out before the choice is made
                     box.Selector((int)Segment.Count, _newSegment, i => TechText.SegmentName((Segment)i), i => Set(() => _newSegment = i));
+                    for (int s = 0; s < (int)Segment.Count; s++)
+                    {
+                        box.Line(TechText.SegmentMeans((Segment)s, TechText.Cents(Level(FirmsCatalogue.Price[s]))), s == _newSegment ? CellTone.Green : CellTone.Plain);
+                    }
+                    if (kind == ProductKind.Model)
+                    {
+                        box.Note(TechText.T("reallife_tech_new_segment_model"));
+                    }
                 }
                 if (kind == ProductKind.Game)
                 {
@@ -458,8 +468,8 @@ namespace RealLifeOverhaul.Tech
                 TableRow row = Row(ProductRow + p.Id);
                 row.Set(0, p.Name);
                 row.Set(1, firm != null ? firm.File.Name : "-");
-                row.Set(2, TechText.ProductName(p.K) + (p.K == ProductKind.Saas ? ", " + TechText.SegmentName(p.S) : string.Empty));
-                row.Set(3, State(p), FirmsRules.CanLaunch(p) ? TableRow.Green : TableRow.Plain);
+                row.Set(2, TechText.ProductName(p.K) + (p.K == ProductKind.Saas || p.K == ProductKind.Model ? ", " + TechText.SegmentName(p.S) : string.Empty));
+                row.Set(3, State(p, day), FirmsRules.CanLaunch(p) || SegmentRules.Moving(p, day) ? TableRow.Green : TableRow.Plain);
                 row.Set(4, p.K == ProductKind.Game ? TechText.Mille((int)System.Math.Min(1000L, (long)p.Progress * 1000 / FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)]))
                     : TechText.T("reallife_tech_row_features", "ours", p.Features.ToString(), "theirs", p.RivalFeatures.ToString()), p.Features,
                         p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
@@ -512,7 +522,7 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Products;
         }
 
-        private static string State(Product p)
+        private static string State(Product p, int day)
         {
             if (p.Stage == 2)
             {
@@ -520,6 +530,10 @@ namespace RealLifeOverhaul.Tech
             }
             if (p.Stage == 1)
             {
+                if (SegmentRules.Moving(p, day))
+                {
+                    return TechText.T("reallife_tech_state_relaunch");   // off sale while an AI model is re-launched for another segment
+                }
                 return TechText.T("reallife_tech_state_on_sale");
             }
             return FirmsRules.CanLaunch(p) ? TechText.T("reallife_tech_state_ready") : TechText.T("reallife_tech_state_building");
@@ -534,8 +548,8 @@ namespace RealLifeOverhaul.Tech
             FirmPlace firm = _director.FirmOf(p.Place);
             int id = p.Id;
             box.Title(p.Name);
-            box.Subtitle(TechText.ProductName(p.K));
-            box.Chip(State(p));
+            box.Subtitle(TechText.ProductName(p.K) + (p.K == ProductKind.Model ? ", " + TechText.SegmentName(p.S) : string.Empty));
+            box.Chip(State(p, day));
             box.Section("reallife_ibox_sec_now");
             if (p.K == ProductKind.Game)
             {
@@ -630,6 +644,10 @@ namespace RealLifeOverhaul.Tech
                 }
                 box.Selector(Shares.Length, at, i => TechText.T("reallife_tech_product_share", "share", TechText.Percent(Shares[i])), i => Do(() => _director.SetProduct(id, -1, -1, Shares[i])));
             }
+            if (p.K == ProductKind.Model)
+            {
+                WriteMove(box, p);
+            }
             Transform buttons = box.ButtonRow();
             if (FirmsRules.CanLaunch(p))
             {
@@ -647,6 +665,43 @@ namespace RealLifeOverhaul.Tech
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, SectorGuide);
+        }
+
+        // An AI model's change of who it is sold to: the segment to move to, what the re-launch costs and brings before anything is pressed, and the button that asks the game's question.
+        private void WriteMove(InfoBox box, Product p)
+        {
+            ViewLine going = _director.MoveUnderWay(p);
+            if (going != null)
+            {
+                box.Line(TechText.Say(going), CellTone.Yellow);
+                return;
+            }
+            if (!_director.CanMove(p))
+            {
+                return;
+            }
+            int[] targets = TechDirector.MoveTargets(p);
+            if (_moveFor != p.Id || System.Array.IndexOf(targets, _moveTo) < 0)
+            {
+                _moveFor = p.Id;
+                _moveTo = targets[0];
+            }
+            int to = _moveTo, id = p.Id;
+            box.Section("reallife_tech_move_section");
+            box.Line(TechText.Fill("reallife_tech_move_about", "from", TechText.SegmentName(p.S)));
+            if (box.HasSelector)
+            {
+                box.Selector(targets.Length, System.Array.IndexOf(targets, to), i => TechText.Fill("reallife_tech_move_to", "segment", TechText.SegmentName((Segment)targets[i])),
+                    i => Set(() => _moveTo = targets[i]));
+            }
+            List<ViewLine> lines = _director.MoveLines(p, to);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                box.Line(TechText.Say(lines[i]), lines[i].Tone == ViewTone.Warn ? CellTone.Yellow : CellTone.Plain);
+            }
+            _director.MoveQuestion(p, to, out string title, out string body);
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_tech_button_move", () => GameConfirm.Show(title, body,
+                () => UiClone.Safe(() => Do(() => _director.ChangeSegment(id, to))), null, null, null, true, true));
         }
 
         // A name asked for in the game's own text box, as the cloud's is (GameUi.TextBox; the RLO interface draws it on its own card where that
