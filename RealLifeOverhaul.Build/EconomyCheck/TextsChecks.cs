@@ -295,6 +295,29 @@ internal static partial class Program
               && TextCheck.JudgeShared(": Lovely", reply) == TextVerdict.Empty && TextCheck.JudgeShared("Lovely", null) == TextVerdict.Empty,
             "texts, the checker: a guest checks the host's words again on arrival (untidy, dashes or an unknown intent refused)");
         TextsCheckerMachine();
+        TextsCheckerBirthday();
+    }
+
+    // A player saw Bao, whose own birthday it was, text "happy birthday Bao": the friend's card is about their own day, so a wish from them is from the wrong side.
+    private static void TextsCheckerBirthday()
+    {
+        var who = new TextWho { First = "Bao", Handle = "@bao", Age = 30, District = "Midtown", Mood = "fine", Style = "warm", When = "Monday 10:00" };
+        foreach (string key in new[] { "friend.birthday_own", "friend.birthday_missed" })
+        {
+            TextIntent intent = TextIntents.Find(key);
+            var sheet = new TextSheet();
+            TextIntents.Build(intent, who, new TextSlots(), new List<TextSaid>(), sheet);
+            string card = TextCard.Card(sheet);
+            Check(TextCheck.Judge("Just wanted to say happy birthday Bao, hope you have a lovely day", intent, sheet, card, null) == TextVerdict.Side
+                  && TextCheck.Judge("Many happy returns to me, I suppose.", intent, sheet, card, null) == TextVerdict.Side
+                  && TextCheck.Judge("It's my birthday and nobody has rung yet.", intent, sheet, card, null) == TextVerdict.Ok
+                  && TextCheck.JudgeShared("Happy belated birthday!", intent) != TextVerdict.Ok
+                  && TextCheck.JudgeSix("Feliz cumpleaños, Bao.", intent, sheet, card, null, "es", false, null, false) == TextVerdict.Side,
+                "texts, the checker: a friend writing of their own birthday never wishes the player a happy one (" + key + ")");
+        }
+        TextIntent inlaws = TextIntents.Find("inlaws.birthday");
+        Check(!TextCheck.WishesOwnDay("Happy birthday to you.", inlaws) && !TextCheck.WishesOwnDay("Happy birthday to you.", TextIntents.Find("mom.grandchild_birthday")),
+            "texts, the checker: where the speaker really wishes the player a happy birthday (the in-laws, Grandma) the wish stands");
     }
 
     // The speaker never calls itself an AI, a bot, an assistant or a language model (the 2B model of data v3 wrote "I'd blush,

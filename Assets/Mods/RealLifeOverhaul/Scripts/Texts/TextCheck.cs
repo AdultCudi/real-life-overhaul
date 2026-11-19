@@ -23,7 +23,8 @@ namespace RealLifeOverhaul.Texts
         Capital,     // data v6: a sentence that starts with a small letter, in a language that has capitals
         Article,     // data v6: "a" before a vowel or "an" before a consonant, in English
         Name,        // data v6: the player's name from somebody the card says does not know it
-        Cut          // data v6: the reply ran to its most tokens and was cut off
+        Cut,         // data v6: the reply ran to its most tokens and was cut off
+        Side         // a friend writing of their own birthday wishes the player a happy birthday: the words are from the wrong side
     }
 
     /// <summary>
@@ -167,6 +168,10 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextVerdict.Machine;
             }
+            if (WishesOwnDay(words, intent))
+            {
+                return TextVerdict.Side;
+            }
             if (recent != null)
             {
                 for (int i = 0; i < recent.Count; i++)
@@ -239,7 +244,25 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextVerdict.Machine;   // without the card, any machine word of the speaker's is refused
             }
+            if (WishesOwnDay(words, intent))
+            {
+                return TextVerdict.Side;
+            }
             return OtherScript(words) ? TextVerdict.Language : TextVerdict.Ok;
+        }
+
+        // The card says it is the friend's own birthday (or was, yesterday), and the model has them wish the player a happy one:
+        // a message written from the wrong side, shown as the person wishing themselves well. The written line is used instead.
+        private static readonly Regex BirthdayWish = new Regex(
+            @"happy\s+(?:belated\s+)?(?:b-?day|birthday)|many\s+happy\s+returns|\bhbd\b|feliz\s+(?:cumplea|anivers)|parab[eé]ns|alles\s+gute\s+zum\s+geburtstag|herzlichen\s+gl[uü]ckwunsch"
+            + @"|joyeux\s+anniversaire|bon\s+anniversaire|с\s+д[нё]е?м\s+рождения|生日快乐|祝你生日|gelukkige\s+verjaardag|gefeliciteerd|do[gğ]um\s+g[uü]n",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        /// <summary>True for a birthday wish in the words of a card that is about the speaker's own birthday.</summary>
+        public static bool WishesOwnDay(string words, TextIntent intent)
+        {
+            return intent != null && !string.IsNullOrEmpty(words) && (intent.Key == "friend.birthday_own" || intent.Key == "friend.birthday_missed")
+                   && BirthdayWish.IsMatch(words);
         }
 
         // Every run of digits, with the commas and points inside it, appears on the card.
