@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         public string Sizes;         // building sizes that will do, by their last letter, best first
         public float RateFactor;     // the district's own level
         public bool Doorman;
-        public string[] Anchors;     // no building of its own: "street|number" of buildings to stand its board by, best first
+        public string[] Anchors;     // no building of its own: "street|number" of residential buildings of its neighbourhood to stand its board by, best first
     }
 
     /// <summary>Real: in the game's world (the Hamptons). Abstract: played in cards. Business: a trade fair, in cards.</summary>
@@ -155,7 +155,7 @@ namespace RealLifeOverhaul
             new HotelSlot
             {
                 Id = HamptonsSlot, NameKey = "reallife_travel_hotel_hamptons_cottages", Tier = HotelTier.Cottage, Neighbourhood = Hamptons, RateFactor = 1f,
-                Anchors = new[] { "ba:street_oceancrestroad|1", "ba:street_harborstreet|1", "ba:street_seventhavenue|5" }
+                Anchors = new[] { "ba:street_cottageroad|1", "ba:street_cottageroad|3", "ba:street_cottageroad|4", "ba:street_cottageroad|2", "ba:street_cottageroad|6" }
             }
         };
 

@@ -21,5 +21,50 @@ internal static partial class Program
                                 "subir a tu habitación de hotel con el juego en pausa", "подняться в номер отеля, пока игра на паузе",
                                 "naar je hotelkamer gaan terwijl het spel is gepauzeerd", "oyun duraklatılmışken artık otel odanıza çıkabilirsiniz"),
             "travel fix: What's new has the paused room's line, with its fix mark, in some row of every language");
+        TravelBoards();
+    }
+
+    // A player was sent to the Hamptons cottages and the map put them at a theatre: the board stood by the first of three anchors, which were a theatre,
+    // a cinema and a furniture shop. Every anchor is a house of the slot's own district, and every other hotel has houses to be chosen from.
+    private static void TravelBoards()
+    {
+        var city = new System.Collections.Generic.Dictionary<string, string[]>();
+        foreach (string row in System.IO.File.ReadAllLines(PopulationFile))
+        {
+            string[] c = row.Split('|');
+            if (c.Length > 5 && c[0] == "B")
+            {
+                city[c[1] + "|" + c[2]] = c;
+            }
+        }
+        string wrong = string.Empty;
+        int anchors = 0;
+        foreach (RealLifeOverhaul.HotelSlot slot in RealLifeOverhaul.TravelCatalogue.Hotels)
+        {
+            if (slot.Anchors == null)
+            {
+                bool any = false;
+                foreach (string[] c in city.Values)
+                {
+                    any |= c[3] == slot.Neighbourhood && c[4] == "ba:buildingtype_residential" && (slot.Sizes == null || slot.Sizes.IndexOf(c[5][c[5].Length - 1]) >= 0);
+                }
+                Check(any, "travel board: " + slot.Id + " has a house of its own district and sizes to be chosen from");
+                continue;
+            }
+            foreach (string anchor in slot.Anchors)
+            {
+                anchors++;
+                if (!city.TryGetValue(anchor, out string[] c) || c[3] != slot.Neighbourhood || c[4] != "ba:buildingtype_residential")
+                {
+                    wrong += " " + anchor + (c != null ? " (" + c[4] + ")" : " (not in the city)");
+                }
+            }
+        }
+        Check(anchors > 0 && wrong.Length == 0, "travel board: every anchor of the cottages' board is a house of their own district, never a shop or a theatre (wrong:" + wrong + ")");
+        string hotels = ModSource(@"Travel\Hotels.cs");
+        string anchor2 = MemberText(hotels, "private static CityBuildingController Anchor(");
+        Check(anchor2.Contains("IsCottage(controller.building, slot)") && anchor2.Contains("!Mine(controller.building)")
+              && MemberText(hotels, "public void Keep()").Contains("site.Slot.Anchors != null ? Anchor(city, site.Slot)"),
+            "travel board: the board is put by a house nobody has bought, checked in the game's own data, and moves off one that is bought");
     }
 }
