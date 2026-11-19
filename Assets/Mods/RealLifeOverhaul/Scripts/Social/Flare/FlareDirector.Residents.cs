@@ -22,6 +22,8 @@ namespace RealLifeOverhaul.Flare
         private readonly FlareCityPass _cityPass = new FlareCityPass();
         private DistrictSaveZip _cityZip;
         private bool _cityReading, _cityBroken, _cityQueued;
+        private int _cityFaults;                       // faults in a row, none between them a day done
+        private const int CityFaultsAllowed = 3;
         private volatile bool _cityReadDone;
         private volatile FlareCityState _cityRead;
         private string _cityWhy;
@@ -164,11 +166,13 @@ namespace RealLifeOverhaul.Flare
                     return false;
                 }
                 _cityQueued = false;
+                _cityFaults = 0;
                 CityDayDone();
                 return true;
             }
             catch (Exception e)
             {
+                _cityPass.Stop();
                 _cityQueued = false;
                 CityFault("the residents' day", e);
                 return true;
@@ -980,10 +984,17 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        // A fault of the mod's own is met by trying again on the next pass (the next day of the population); only a run of faults, which a retry
+        // does not mend, switches the layer off for the session.
         private void CityFault(string where, Exception e)
         {
-            _cityBroken = true;
             Logger?.Error(e);
+            if (++_cityFaults < CityFaultsAllowed)
+            {
+                Logger?.Warn("Flare in the city: an error in " + where + " (" + _cityFaults + " of " + CityFaultsAllowed + "); the residents' day is tried again on the population's next day.");
+                return;
+            }
+            _cityBroken = true;
             try
             {
                 CityStop(false, "a fault");
@@ -1001,6 +1012,7 @@ namespace RealLifeOverhaul.Flare
             CityStop(false, "forgotten");
             FlareCityGame.Data()?.Remove(FlareCityStore.Key);
             _cityBroken = false;
+            _cityFaults = 0;
         }
     }
 }
