@@ -264,6 +264,11 @@ internal static partial class Program
               && row.Contains("if (_line == null || _button == null)") && !row.Contains("Update()") && ModSource(@"RivalsSeen\SeenDirector.cs").Contains("SeenAppRow.Keep();") && ModSource(@"RivalsSeen\SeenDirector.cs").Contains("SeenAppRow.Stop();")
               && ModSource(@"Core\GameContract.Persona.cs").Contains("\"neighborhoodLocalization\""),
             "head offices: the game's own Rivals app gets a head office line and Show on map on the old interface, copied once beside the game's own district text and Open in Contacts button, written on the game's own event for a rival chosen, never per frame, and the copies go with the feature and with the layout the kit hides");
+        string shown = MemberText(row, "private static void Shown()"), writes = MemberText(row, "private static void Write(SeenDirector seen, RivalsApp app)");
+        Check(shown.Contains("InstanceBehavior<RivalsApp>.Instance") && shown.Contains("isActiveAndEnabled") && shown.Contains("_paged = false;") && shown.Contains("Write(seen, app);")
+              && row.Contains("Shown();") && MemberText(row, "public static void Keep()").Contains("Shown();") && writes.Contains("app.selectedRival") && MemberText(row, "private static void OnEvent(string name)").Contains("Write(seen, app);")
+              && !shown.Contains("FindObject"),
+            "head offices: the game's own Rivals app writes the head office row for the rival already selected when its page is first shown, once an opening and on the one-second look, as well as on the event of a click");
         string game = ModSource(@"RivalsSeen\SeenGame.cs"), map = ModSource(@"RivalsSeen\SeenMap.cs"), head = ModSource(@"RivalsSeen\SeenDirector.Head.cs"), dir = ModSource(@"RivalsSeen\SeenDirector.cs");
         Check(game.Contains("SpecialBuildings.Holds(c)") && game.Contains("SpecialBuildings.TakenBy(r) != null") && game.Contains("SpecialBuildings.Players(r)") && game.Contains("GoingPublic.Mine(r)") && game.Contains("GameDlc.Open("),
             "head offices: an office the mod keeps, one the player has, one of another player's in a Going Public session and one a DLC keeps are never a rival's head office");

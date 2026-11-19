@@ -94,6 +94,8 @@ namespace RealLifeOverhaul.Ui
                 "Photos/Cinematic/CineGame.cs"),
             Row("The car's speed and service readings", SweepState.Follows, "item_panel", "the vehicle panel's rows are read, any row a mod copied in among them",
                 "Driving/SpeedReading.cs", "Transport/CarDash.cs"),
+            Row("A rival's head office in the game's Rivals app", SweepState.Follows, "rivals", "a line and a button copied beside the game's own in its selected rival's panel; the kit hides that panel and its own page shows the head office",
+                "RivalsSeen/SeenAppRow.cs"),
             Row("Dance in the loudspeaker's panel", SweepState.Follows, "world_overlay_click", "a button of the radio panel, so the card lists it", "Meals/DanceButton.cs"),
             Row("Eat at a seat in the activity panel", SweepState.Follows, "activity_panel", "a button of the activity panel, so the card and the strip list it", "Meals/TakeoutButton.cs"),
             Row("Cook and Family in the fridge, the computer's buttons", SweepState.Follows, "world_overlay_click", "every button of the game's panel is listed on the card",
