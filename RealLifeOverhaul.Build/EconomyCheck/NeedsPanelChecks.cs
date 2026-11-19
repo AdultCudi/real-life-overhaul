@@ -35,6 +35,12 @@ internal static partial class Program
     {
         string offers = ModSource(@"Home\HomeDirector.Offers.cs"), director = ModSource(@"Home\HomeDirector.cs"), bar = ModSource(@"Home\HomeNeedsBar.cs");
 
+        // Every copy of the date's label drops its children, or another mod's piece under it (Alcware's season line) is cloned along and stays frozen.
+        Check(Occurs(bar, "Instantiate(word.gameObject") == 2 && Regex.IsMatch(bar, @"Instantiate\(word\.gameObject, one, false\);\r?\n\s+Plain\(label\);")
+              && Regex.IsMatch(bar, @"Instantiate\(word\.gameObject, tab\.transform, false\);\r?\n\s+Plain\(note\);")
+              && MethodText(bar, "private static void Plain(GameObject copy)").Contains("DestroyImmediate(copy.transform.GetChild(i).gameObject)"),
+            "needs panel source: the words copied from the date's label lose every child, so another mod's season line is not cloned under Hygiene, Stress or Home");
+
         // The decision: the rule's answer, and only that, between the bars and the Hide that takes them down. The player met "at home, hygiene
         // under 35, stress over 65 or ill" here, so none of those may stand in front of the Hide again.
         string strip = MethodText(offers, "private void Strip()");
