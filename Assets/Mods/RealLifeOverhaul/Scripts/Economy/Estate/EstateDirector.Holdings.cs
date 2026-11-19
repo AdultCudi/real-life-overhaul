@@ -76,7 +76,8 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// "Test: the rivals' buildings": one gentle day's step now whatever the option says, and a notice of what the first and the last rival
-        /// hold against their shares. Puts a few buildings of the rivals up for sale and lets rivals buy others, as the day does; never one of the player's, a rival's head office or a block's building.
+        /// hold against their shares. Puts a few buildings of the rivals up for sale and lets rivals buy others, as the day does; never one of the player's, a rival's head
+        /// office or a block's building.
         /// </summary>
         public void TestHoldings()
         {
