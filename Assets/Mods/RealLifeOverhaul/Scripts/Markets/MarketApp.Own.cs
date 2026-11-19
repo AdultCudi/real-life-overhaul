@@ -393,7 +393,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly int[] TopSectors = new int[3], TopBps = new int[3];   // SectorLine's scratch
 
         // The sector it is listed in, what it earns in lately and when the sector is next reviewed.
-        private static string SectorLine(MarketState s, Stock k)
+        internal static string SectorLine(MarketState s, Stock k)
         {
             string sector = MarketText.Sector(k.Sector), day = ListingSector.NextReview(s.Day, s.YearDays).ToString();
             int n = ListingSector.Top(k.Own, TopSectors, TopBps);

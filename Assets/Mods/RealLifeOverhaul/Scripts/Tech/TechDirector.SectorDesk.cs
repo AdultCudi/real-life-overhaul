@@ -609,7 +609,8 @@ namespace RealLifeOverhaul.Tech
             SectorMarketDay md = _sector.Markets[SectorRules.MarketOf(p)], frame = null;
             int at = _firmsFile.Products.IndexOf(p);
             int appeal = at >= 0 && at < _appeals.Length && _appeals[at] > 0 ? _appeals[at] : firm != null ? SectorRules.Appeal(p, firm.File, firm.Crew, md) : 0;
-            int aware = at >= 0 && at < _aware.Length && _aware[at] > 0 ? _aware[at] : 0;
+            // awareness is worked out in the day's pass and the arrays start empty at a load, so until the next pass the page shows what the last pass saved
+            int aware = at >= 0 && at < _aware.Length && _aware[at] > 0 ? _aware[at] : _sector.ProductAt(p.Id)?.Known ?? 0;
             int selling = firm != null ? firm.Crew.Selling : -1;
             if (firm != null && p.Live && _founding != null && md.Buyers > 0)
             {
@@ -621,7 +622,18 @@ namespace RealLifeOverhaul.Tech
                     selling = crew.Selling;
                 }
             }
-            return SectorViews.Market(_sector, p, appeal, aware, fmt, selling, frame);
+            ViewSection section = SectorViews.Market(_sector, p, appeal, aware, fmt, selling, frame);
+            FoundedFirm founded = firm != null && _founding != null ? _founding.Of(p.Place) : null;
+            if (founded != null && founded.Counts && founded.Niche >= 0 && p.Live && (p.K == ProductKind.Saas || p.K == ProductKind.Model) && !NicheServes(founded, p))
+            {
+                // a product made for the other segment is never sold into the niche the firm was founded in: say so where its takings are read, instead of leaving the niche to look idle
+                section.Lines.Insert(0, new ViewLine
+                {
+                    Key = "reallife_tech_mkt_product_niche_off", Tone = ViewTone.Warn,
+                    Pairs = new[] { "niche", TechText.T(NicheCatalogue.NameKey(founded.Niche)), "who", TechText.SegmentName(p.S) }
+                });
+            }
+            return section;
         }
 
         /// <summary>The data centres' markets as a section of the Infra tab under the sector; null while the sector is off.</summary>

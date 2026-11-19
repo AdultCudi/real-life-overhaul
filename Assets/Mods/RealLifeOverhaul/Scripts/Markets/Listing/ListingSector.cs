@@ -5,14 +5,16 @@ namespace RealLifeOverhaul.Markets
     /// <summary>
     /// The sector a player's company is listed in, from what it earns now: its takings by trade followed over about a quarter
     /// (<see cref="OwnListing.Mix"/>), and a review at each quarter's turn that moves it to the sector that leads them. A sector
-    /// it no longer earns anything in is left at the next review; one that only leads must lead by <see cref="LeadShare"/> at
-    /// <see cref="LeadReviews"/> reviews in a row, so a company split near evenly between two sectors stays where it is. One
+    /// it no longer earns anything in is left at the next review; one that only leads must lead by <see cref="LeadShare"/> of the
+    /// takings, so a company split near evenly between two sectors stays where it is. One
     /// sector, not a blend: the sector indices, the sector news, the options' spread and every page read one sector a company.
     /// Game-free and the same on every machine. Costs a pass over the trades once a market morning and at a review.
     /// </summary>
     public static class ListingSector
     {
-        public const int LeadReviews = 2;      // reviews in a row a sector must lead the one the company is in, before it moves...
+        // The mix already averages over about a quarter, so the margin alone keeps a near even company still; asking the lead to hold at a second review as well put a company
+        // whose largest takings had changed half a year behind the quarter's report it was meant to follow.
+        public const int LeadReviews = 1;      // reviews in a row a sector must lead the one the company is in, before it moves...
         public const double LeadShare = 0.1;   // ...by at least this share of the takings
         private const int Sectors = (int)MarketSector.Count;
 

@@ -390,7 +390,13 @@ namespace RealLifeOverhaul.Ui
                     card.Step(TechText.T("reallife_ui_tech_kind"), TechText.ProductName(kind), null, true, true, Go(v => _newKind = kinds[(at + kinds.Count - 1) % kinds.Count]),
                         Go(v => _newKind = kinds[(at + 1) % kinds.Count]));
                 }
-                if (kind == ProductKind.Saas)
+                int forced = _d.NicheSegment(place, kind, out int niche), shown = forced >= 0 ? forced : _newSegment;
+                if (forced >= 0)
+                {
+                    card.Row(TechText.T("reallife_ui_tech_segment"), TechText.SegmentName((Segment)forced));
+                    card.Say(TechText.Fill("reallife_tech_new_niche_made", "niche", TechText.T(NicheCatalogue.NameKey(niche)), "who", TechText.SegmentName((Segment)forced)), UiRole.Text2);
+                }
+                else if (kind == ProductKind.Saas)
                 {
                     int s = _newSegment;
                     int n = (int)Segment.Count;
@@ -403,7 +409,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 // what it will be called: the name typed, else one made up for its kind, which "suggest" changes for the next
                 int turn = _newTurn;
-                string typed = _newName, called = string.IsNullOrEmpty(typed) ? _d.SuggestTitle(kind, _newSegment, turn) : typed;
+                string typed = _newName, called = string.IsNullOrEmpty(typed) ? _d.SuggestTitle(kind, shown, turn) : typed;
                 card.Row(TechText.T("reallife_tech_label_name"), called);
                 card.Say(TechText.T(string.IsNullOrEmpty(typed) ? "reallife_tech_name_suggested" : "reallife_tech_name_typed"), UiRole.Text2);
                 if (room == FirmsRules.RoomYes)
@@ -426,7 +432,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 card.Say(Need(kind));
                 card.Say(TechText.T(Mod + "_tech_new_about_" + kind.ToString().ToLowerInvariant()));
-                int segment = _newSegment, scope = _newScope;
+                int segment = shown, scope = _newScope;
                 if (room == FirmsRules.RoomYes)
                 {
                     _m.HeadActions = new[]

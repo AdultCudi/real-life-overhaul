@@ -384,13 +384,19 @@ namespace RealLifeOverhaul.Tech
             int at = Mathf.Max(0, kinds.IndexOf(_newKind));
             _newKind = kinds[at];
             var kind = (ProductKind)_newKind;
+            int forced = _director.NicheSegment(place, kind, out int niche), shown = forced >= 0 ? forced : _newSegment;
             if (box.HasSelector)
             {
                 if (kinds.Count > 1)
                 {
                     box.Selector(kinds.Count, at, i => TechText.ProductName((ProductKind)kinds[i]), i => Set(() => _newKind = kinds[i]));
                 }
-                if (kind == ProductKind.Saas)
+                if (forced >= 0)
+                {
+                    box.Row("reallife_ui_tech_segment", TechText.SegmentName((Segment)forced));
+                    box.Note(TechText.Fill("reallife_tech_new_niche_made", "niche", TechText.T(NicheCatalogue.NameKey(niche)), "who", TechText.SegmentName((Segment)forced)));
+                }
+                else if (kind == ProductKind.Saas)
                 {
                     box.Selector((int)Segment.Count, _newSegment, i => TechText.SegmentName((Segment)i), i => Set(() => _newSegment = i));
                 }
@@ -401,11 +407,11 @@ namespace RealLifeOverhaul.Tech
             }
             // what it will be called: the name typed, else one made up for its kind, which "suggest" changes for the next
             int turn = _newTurn;
-            string typed = _newName, called = string.IsNullOrEmpty(typed) ? _director.SuggestTitle(kind, _newSegment, turn) : typed;
+            string typed = _newName, called = string.IsNullOrEmpty(typed) ? _director.SuggestTitle(kind, shown, turn) : typed;
             box.Row("reallife_tech_label_name", called);
             box.Note(TechText.T(string.IsNullOrEmpty(typed) ? "reallife_tech_name_suggested" : "reallife_tech_name_typed"));
             Transform buttons = box.ButtonRow();
-            int segment = _newSegment, scope = _newScope;
+            int segment = shown, scope = _newScope;
             if (room == FirmsRules.RoomYes)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_start", () => Do(() =>

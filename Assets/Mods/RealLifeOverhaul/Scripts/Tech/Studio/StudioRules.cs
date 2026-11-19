@@ -379,6 +379,17 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The bugs a game holds before reviews see them in full: more for a bigger game.</summary>
         public static int BugRoom(GameDev g) => 10 + (int)Math.Min(int.MaxValue / 2, Math.Max(0L, g.Work) * StudioCatalogue.BugRoom / 1000);
 
+        /// <summary>
+        /// Whether a game's playtest is worth a desk session: it is being built, past pre-production, and the bugs hiding in it are more than a tenth of what the work built so far
+        /// holds. Weighed against the work done and not the whole plan: a big game's plan is many times a small one's, so against the plan its hidden bugs reached the bar only late
+        /// in the build and the session was never offered for it.
+        /// </summary>
+        public static bool PlaytestWorth(GameDev g)
+        {
+            return g != null && g.Building && Progress(g) >= StudioCatalogue.PhaseShare[0]
+                && g.Hidden > (10 + (int)Math.Min(int.MaxValue / 2, Math.Max(0L, g.Done) * StudioCatalogue.BugRoom / 1000)) / 10;
+        }
+
         /// <summary>Points off the reviews for the bugs it ships with, found or not: up to the most at its room.</summary>
         public static int BugPenalty(GameDev g)
         {

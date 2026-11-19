@@ -84,7 +84,7 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
 
 - **The sector** (`ListingSector`): the one the company earns most in now, never its first business's for good.
   On the way to the market it follows the last quarter's takings by trade (`MarketBridges.TradeTakings`, every business of the player's) until the prospectus is out.
-  Listed, each market morning adds yesterday's takings by trade (the day's `MarketEnv.TradeOf`, already on the tape) to a mix that forgets over about a quarter, and at each quarter's turn a review moves it: at once when it earned nothing in its sector since the last review, else when another sector leads by 10% of the takings at two reviews in a row, so a company split near evenly never flickers.
+  Listed, each market morning adds yesterday's takings by trade (the day's `MarketEnv.TradeOf`, already on the tape) to a mix that forgets over about a quarter, and at each quarter's turn a review moves it: at once when it earned nothing in its sector since the last review, else when another sector leads by 10% of the takings, so a company split near evenly never flickers; the mix is already a quarter's average, so one review is enough.
   A trade's sector is the catalogue's first company in it; the tech sector's five firms count as web development (software).
   A move keeps the sector indices level, remakes the company's profile for the new sector with its own margin and debt, and is news (`OwnSector`): a notice and a City Ledger line. A company listed before this is moved by its last quarter's books at the load, once.
 
