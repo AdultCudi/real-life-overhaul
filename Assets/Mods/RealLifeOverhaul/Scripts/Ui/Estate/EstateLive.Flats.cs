@@ -47,25 +47,62 @@ namespace RealLifeOverhaul.Ui
                 }
             }
 
-            // The rent roll's rows: a row a flat held, which opens its page.
-            private void FlatHeld(List<UiDataRow> rows, List<string> keys)
+            // The rent roll's rows: a row a flat held, which opens its page. Each is a unit of the roll, so a let or empty one is added to the head's sums too. Returns how many.
+            private int FlatHeld(List<UiDataRow> rows, List<string> keys, List<RollLine> lines)
             {
                 FlatBook book = _d.On(EstatePart.Flats) ? _d.Flats : null;
+                int count = 0;
                 for (int i = 0; book != null && i < book.Flats.Count; i++)
                 {
                     OwnedFlat f = book.Flats[i];
                     string name = EstateDirector.FlatName(f.Name, f.Kind);
-                    int income = f.Let && f.Unit.Paying ? f.Unit.Rent : 0;
                     var card = new UiDataCard
                     {
                         Column = 3, Title = name,
                         Labels = new[] { EstateText.T("reallife_estate_col_worth"), EstateText.T("reallife_estate_col_paid") },
                         Values = new[] { Money(f.Value), Money(f.Paid) }
                     };
-                    rows.Add(OtherRow(UiIcon.Home, name, FlatLine(f), income, EstateText.T("reallife_flat_kind_filter"), f.Let && f.Unit.Arrears > 0 ? UiRole.Danger : UiRole.None,
-                        EstateTables.OwnFlat, card));
+                    EstateHolding h = f.Hold;
+                    UiDataRow row;
+                    if (h.Managed)
+                    {
+                        EstateUnit u = f.Unit;
+                        lines.Add(new RollLine { Let = u.Let, RentDay = u.Rent, Arrears = u.Arrears, AskDay = u.Let ? 0 : EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask) });
+                        row = UnitRow(h, 0);   // a let flat reads as any let unit: its tenant, its lease, its rent, its state and its tenant's satisfaction
+                        row.Cells[0] = name;
+                        row.Values[0] = (int)UiIcon.Home;
+                    }
+                    else
+                    {
+                        row = new UiDataRow
+                        {
+                            Cells = new[] { name, EstateText.T("reallife_flat_tenant_home"), "-", "-", string.Empty, string.Empty },
+                            Values = new[] { (int)UiIcon.Home, UiDataTable.NoFace, 0, 0, 0, -1 },
+                            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, UiRole.None, UiRole.None },
+                            Subs = new string[6],
+                            SortKeys = new[] { N, N, N, N, N, N }, Kinds = new[] { EstateTables.OwnFlat }
+                        };
+                        row.Cells[4] = EstateText.T("reallife_flat_state_home");
+                    }
+                    if (h.SaleDay > 0)
+                    {
+                        row.Cells[4] = EstateText.T("reallife_ibox_chip_sold");
+                        row.Tones[4] = UiRole.Warn;
+                    }
+                    if (!h.Managed || !f.Unit.Let)
+                    {
+                        row.Cells[1] = h.Managed ? EstateText.T("reallife_flat_tenant_empty") : row.Cells[1];
+                        row.Values[1] = UiDataTable.NoFace;   // no portrait for nobody: only a tenant has a face
+                    }
+                    row.Subs[0] = EstateText.Pair(EstateText.T("reallife_flat_kind_filter"), EstateText.District(f.District));
+                    row.Subs[1] = h.Managed && f.Unit.Let ? row.Subs[1] : null;
+                    row.Kinds = new[] { EstateTables.OwnFlat };
+                    row.Card = card;
+                    rows.Add(row);
                     keys.Add(FlatPick + f.Key);
+                    count++;
                 }
+                return count;
             }
 
             private static string FlatLine(OwnedFlat f)

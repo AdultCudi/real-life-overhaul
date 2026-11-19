@@ -150,16 +150,48 @@ internal static partial class UiSamples
     // A building the game lets: its own row, its income a month in the muted ink since it is not part of what is due.
     private static UiDataRow GameRow(UiWords t, EBuilding b) => new UiDataRow
     {
-        Cells = new[] { b.Place, W(t, "reallife_estate_kind_building", "building"), "-", Mo(b.GameNight), b.Self ? W(t, "reallife_estate_state_self", "you use it") : W(t, "reallife_estate_state_game", "let by the game"), string.Empty },
-        Values = new[] { (int)UseGlyphOf(b.Use), 0, 0, 0, 0, -1 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, UiRole.None, UiRole.None },
-        Subs = new[] { b.District, UseWordOf(t, b.Use), null, null, null, null }
+        Cells = new[] { b.Place, "-", "-", Mo(b.GameNight), b.Self ? W(t, "reallife_estate_state_self", "you use it") : W(t, "reallife_estate_state_game", "let by the game"), string.Empty },
+        Values = new[] { (int)UseGlyphOf(b.Use), UiDataTable.NoFace, 0, 0, 0, -1 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, UiRole.None, UiRole.None },
+        Subs = new[] { Fx(W(t, "reallife_ui_estate_pair", "{first}, {second}"), "first", W(t, "reallife_estate_kind_building", "building"), "second", b.District), null, null, null, null, null }
     };
 
-    private static UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone) => new UiDataRow
+    // A hotel or the lot: nobody in the tenant column, and the state chip empty or one short word (the live page's own shape).
+    private static UiDataRow OtherRow(UiIcon icon, string name, string sub, int perDay, string chip, UiRole tone) => new UiDataRow
     {
-        Cells = new[] { name, kind, "-", perDay != 0 ? Mo(perDay) : "-", line, string.Empty }, Values = new[] { (int)icon, 0, 0, 0, 0, -1 },
-        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone == UiRole.None ? UiRole.Muted : tone, UiRole.None, UiRole.None }, Subs = new[] { kind, string.Empty, null, null, null, null }
+        Cells = new[] { name, "-", "-", perDay != 0 ? Mo(perDay) : "-", chip, string.Empty }, Values = new[] { (int)icon, UiDataTable.NoFace, 0, 0, 0, -1 },
+        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone == UiRole.None ? UiRole.Muted : tone, UiRole.None, UiRole.None }, Subs = new[] { sub, null, null, null, null, null }
     };
+
+    // A flat or studio held: lived in (the words "You live here", no portrait) or let (a unit's row, with its tenant's portrait).
+    private static UiDataRow FlatRow(UiWords t, EFlat f)
+    {
+        string kind = W(t, "reallife_flat_kind_filter", "Flats and studios");
+        UiDataRow row;
+        if (f.Unit == null)
+        {
+            row = new UiDataRow
+            {
+                Cells = new[] { f.Name, W(t, "reallife_flat_tenant_home", "You live here"), "-", "-", W(t, "reallife_flat_state_home", "Your home"), string.Empty },
+                Values = new[] { (int)UiIcon.Home, UiDataTable.NoFace, 0, 0, 0, -1 },
+                Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, UiRole.None, UiRole.None }, Subs = new string[6]
+            };
+        }
+        else
+        {
+            var b = new EBuilding { Place = f.Name, District = f.District, Use = 'h' };
+            b.Units.Add(f.Unit);
+            row = UnitRow(t, b, 0);
+            row.Values[0] = (int)UiIcon.Home;
+            if (!f.Unit.Let)
+            {
+                row.Cells[1] = W(t, "reallife_flat_tenant_empty", "Empty");
+                row.Values[1] = UiDataTable.NoFace;
+                row.Subs[1] = null;
+            }
+        }
+        row.Subs[0] = Fx(W(t, "reallife_ui_estate_pair", "{first}, {second}"), "first", kind, "second", f.District);
+        return row;
+    }
 
     private static EstateModel EstateBase(UiWords t, EstateWorldData w)
     {
@@ -356,7 +388,17 @@ internal static partial class UiSamples
         }
         foreach (EHotel h in w.Hotels)
         {
-            rows.Add(OtherRow(UiIcon.Building, h.Name, W(t, "reallife_estate_row_hotel_owned", "hotel, owned"), h.Takings - h.Costs, W(t, "reallife_estate_kind_hotel", "hotel"), h.Takings < h.Costs ? UiRole.Danger : UiRole.None));
+            rows.Add(OtherRow(UiIcon.Building, h.Name, W(t, "reallife_estate_row_hotel_owned", "hotel, owned"), h.Takings - h.Costs, string.Empty, h.Takings < h.Costs ? UiRole.Danger : UiRole.None));
+        }
+        var flatLines = RollLines(w);
+        foreach (EFlat f in w.Flats)
+        {
+            rows.Add(FlatRow(t, f));
+            units++;
+            if (f.Unit != null)
+            {
+                flatLines.Add(new RealLifeOverhaul.Ui.RollLine { Let = f.Unit.Let, RentDay = f.Unit.RentDay, Arrears = f.Unit.Arrears, AskDay = f.Unit.Let ? 0 : f.Unit.AskDay });
+            }
         }
         if (w.Fleet.Count > 0)
         {
@@ -365,14 +407,18 @@ internal static partial class UiSamples
             {
                 outNow += c.Out ? 1 : 0;
             }
-            rows.Add(OtherRow(UiIcon.Car, w.HireLot, Fx(W(t, "reallife_estate_row_lot", "hire lot, {out} of {count} out"), "out", outNow.ToString(), "count", w.Fleet.Count.ToString()), 0, W(t, "reallife_estate_kind_lot", "hire lot"), UiRole.None));
+            rows.Add(OtherRow(UiIcon.Car, w.HireLot, Fx(W(t, "reallife_estate_row_lot", "hire lot, {out} of {count} out"), "out", outNow.ToString(), "count", w.Fleet.Count.ToString()), 0, string.Empty, UiRole.None));
         }
-        RollTotals roll = EstateFigures.Roll(RollLines(w), MonthDays);
+        RollTotals roll = EstateFigures.Roll(flatLines, MonthDays);
         int waiting = WaitingOf(w);
         m.Shape = EstateShape.Roll;
         m.HeadIcon = UiIcon.Home;
         m.HeadTitle = W(t, "reallife_ui_estate_roll_title", "The rent roll");
-        m.HeadSub = waiting > 0 ? Fx(W(t, "reallife_ui_estate_roll_sub", "{units} unit(s) in {buildings} building(s), {waiting} waiting for you"), "units", units.ToString(), "buildings", buildings.ToString(), "waiting", waiting.ToString())
+        m.HeadSub = w.Flats.Count > 0
+            ? Fx(W(t, "reallife_ui_estate_pair", "{first}, {second}"), "first", Fx(W(t, "reallife_ui_estate_roll_sub_flats", "{buildings} building(s) and {flats} flat(s), {units} unit(s) in all"),
+                "units", units.ToString(), "buildings", buildings.ToString(), "flats", w.Flats.Count.ToString()), "second",
+                waiting > 0 ? Fx(W(t, "reallife_ui_estate_roll_waiting", "{waiting} waiting for you"), "waiting", waiting.ToString()) : W(t, "reallife_ui_estate_roll_waiting_clear", "nothing waiting for you"))
+            : waiting > 0 ? Fx(W(t, "reallife_ui_estate_roll_sub", "{units} unit(s) in {buildings} building(s), {waiting} waiting for you"), "units", units.ToString(), "buildings", buildings.ToString(), "waiting", waiting.ToString())
             : Fx(W(t, "reallife_ui_estate_roll_sub_clear", "{units} unit(s) in {buildings} building(s), nothing waiting for you"), "units", units.ToString(), "buildings", buildings.ToString());
         m.HeadSub = w.Buildings.Count == 0 ? null : m.HeadSub;
         m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_due", "Due"), W(t, "reallife_ui_estate_fig_collected", "Collected"), W(t, "reallife_ui_estate_fig_arrears", "In arrears"), W(t, "reallife_ui_estate_fig_empty", "Empty, asking") };
