@@ -27,6 +27,12 @@ namespace RealLifeOverhaul.Calendar
         public string App;           // the id of the mod's app that deals with it; null for none
         public bool Done;            // dealt with already (a Planner note ticked off): the day's header counts it
 
+        /// <summary>The source id the Planner's dates are written under (Wiring's PlannerDays adds the Planner's own source after it: "planner:event").</summary>
+        public const string PlannerSource = "planner";
+
+        /// <summary>True for an entry that is the Planner's own date written as a day of the calendar: the Planner holds it too, so a list of both takes it once.</summary>
+        public bool FromPlanner => Source != null && (Source == PlannerSource || Source.StartsWith(PlannerSource + ":", System.StringComparison.Ordinal));
+
         /// <summary>A copy that stays what it was when the list is begun again and its objects are reused.</summary>
         internal CalendarEntry Clone() => (CalendarEntry)MemberwiseClone();
 

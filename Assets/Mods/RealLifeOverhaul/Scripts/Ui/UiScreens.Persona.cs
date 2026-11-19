@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_rivals_strength", "reallife_ui_rivals_drives", "reallife_ui_rivals_found", "reallife_ui_rivals_head", "reallife_career_button_map",
                     "reallife_ui_rivals_fortune", "reallife_ui_rivals_property", "reallife_ui_rivals_property_one", "reallife_ui_rivals_property_many", "reallife_ui_rivals_rent",
                     "reallife_ui_rivals_by_fortune", "reallife_ui_rivals_by_fortune_value",
-                    "open_in_contacts", "common_name", "reallife_ui_rivals_week", "reallife_ui_rivals_week_from", "reallife_ui_rivals_none", "reallife_ui_rivals_none_body", "common_business_name",
+                    "open_in_contacts", "common_name", "reallife_ui_rivals_week_change", "reallife_ui_rivals_none", "reallife_ui_rivals_none_body", "common_business_name",
                     "common_business_type", "common_address", "reallife_ui_rivals_no_businesses", "reallife_ui_rivals_no_businesses_body", "common_show_on_map",
                     "reallife_ui_rivals_open", "common_setdestination", "common_neighborhood", "common_building_type", "bizman_building_total_size",
                     "real_estate_estimated_value", "common_price", "reallife_ui_market_not_for_sale", "reallife_ui_rivals_no_buildings",

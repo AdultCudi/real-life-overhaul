@@ -218,6 +218,25 @@ internal static partial class UiSamples
             Rival("Carmen Ortega", -4100f, 8700f, 0, null, 63, false, false, true),
         };
         v.Chosen = state == "league_quiet" ? 3 : state == "league_faces" ? 5 : 1;
+        for (int i = 0; i < v.League.Length; i++)
+        {
+            // The mod's fortune beside the game's figures; the chosen rival's is the long case the game cut: 183 buildings worth eleven digits, a head office and a car.
+            ref RivalEntry r = ref v.League[i];
+            if (r.You || r.Defeated)
+            {
+                continue;
+            }
+            bool big = i == v.Chosen;
+            r.HasFortune = true;
+            r.Buildings = big ? 183 : 3 + i;
+            r.Property = big ? 29691160576L : 1500000L * (3 + i);
+            r.RentWeek = big ? 633171L : 12000L * (3 + i);
+            r.Fortune = big ? 29691160576L : r.Property + 400000L;
+            r.FortunePlace = big ? 1 : i + 1;
+            r.RivalPlace = i + 1;
+            r.Rivals = v.League.Length;
+            r.Head = "45 3rd Street, Garment District";
+        }
         v.Contacts = state != "league_quiet" && state != "league_faces";
         v.Filters = new[] { t("common_weekly_income", "Weekly Income"), t("common_businesses", "Businesses") };
         v.Filter = 0;

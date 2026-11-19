@@ -250,6 +250,7 @@ namespace RealLifeOverhaul.Ui
                 p.FactLabels[at] = t("reallife_ui_rivals_head", "Head office");
                 p.FactValues[at] = who.Head;
             }
+            p.Wrap = true;   // the buildings' count and worth, the car and the head office are long: they run on to a second row instead of being cut
             p.RatingLabel = t("reallife_ui_rivals_strength", "Strength");
             p.Rating = chosen >= 0 ? Stars(chosen, v.League.Length, who.Defeated) : -1;
             var actions = new System.Collections.Generic.List<UiActionModel>(2);
@@ -305,31 +306,42 @@ namespace RealLifeOverhaul.Ui
         // player's: their own rise is good, a rival's rise is bad for them, so a rival's arrow reads the other way.
         private static void LeagueTable(UiDataTableModel table, UiWords t, RivalsView v, int chosen)
         {
-            table.Columns = new[]
+            // The week's column is drawn only from the day the game has a week to compare: before it every row of it would be empty.
+            bool week = WeekShown(v.Today);
+            var columns = new System.Collections.Generic.List<UiDataColumn>
             {
                 new UiDataColumn { Title = "#", Kind = UiCellKind.Figure, Width = 40f },
                 new UiDataColumn { Title = t("common_name", "Name"), Kind = UiCellKind.Person },
                 new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Money, Width = 136f },
                 new UiDataColumn { Title = t("common_businesses", "Businesses"), Kind = UiCellKind.Figure, Width = 104f },
                 new UiDataColumn { Title = t("reallife_ui_rivals_fortune", "Fortune"), Kind = UiCellKind.Money, Width = 128f },
-                new UiDataColumn { Title = WeekTitle(t, v.Today), Kind = UiCellKind.Trend, Width = 104f },
             };
+            if (week)
+            {
+                columns.Add(new UiDataColumn { Title = t("reallife_ui_rivals_week_change", "7 day change"), Kind = UiCellKind.Trend, Width = 120f });
+            }
+            table.Columns = columns.ToArray();
             table.Rows = new UiDataRow[v.League.Length];
             int rank = 0;
             for (int i = 0; i < v.League.Length; i++)
             {
                 ref RivalEntry e = ref v.League[i];
                 rank++;
-                float change = WeekShown(v.Today) ? Change(e.WeeklyIncome, e.WeekAgo) : float.NaN;   // no week before day 8: no figure rather than a made one
+                float change = week ? Change(e.WeeklyIncome, e.WeekAgo) : float.NaN;
+                string[] cells = { e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses), e.HasFortune ? Money(v, e.Fortune) : string.Empty, string.Empty };
+                var values = new[] { -1, -1, -1, -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change) };
+                var tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger };
+                if (!float.IsNaN(change))
+                {
+                    cells[5] = PersonaViews.Signed((int)Math.Round(change * 100f));
+                }
+                int kept = columns.Count;
+                Array.Resize(ref cells, kept);
+                Array.Resize(ref values, kept);
+                Array.Resize(ref tones, kept);
                 table.Rows[i] = new UiDataRow
                 {
-                    Cells = new[]
-                    {
-                        e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses), e.HasFortune ? Money(v, e.Fortune) : string.Empty,
-                        float.IsNaN(change) ? string.Empty : PersonaViews.Signed((int)Math.Round(change * 100f))
-                    },
-                    Values = new[] { -1, -1, -1, -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change) },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger },
+                    Cells = cells, Values = values, Tones = tones,
                     Sub = e.Defeated ? t("reallife_ui_rivals_defeated", "Defeated") : e.You ? t("reallife_ui_rivals_you", "You") : e.District,
                     Hue = UiColour.HueOf(e.Name ?? string.Empty), Ring = UiRole.None
                 };
@@ -340,10 +352,6 @@ namespace RealLifeOverhaul.Ui
             table.EmptyTitle = t("reallife_ui_rivals_none", "No rivals yet");
             table.EmptyBody = t("reallife_ui_rivals_none_body", "The city's other tycoons show here once rivals are on in this game, ranked with you by their weekly income.");
         }
-
-        // The week column's title: what it compares, or from which day it starts while the game has no week of history to compare.
-        private static string WeekTitle(UiWords t, int today) => WeekShown(today) ? t("reallife_ui_rivals_week", "Week")
-            : StaffViews.Fill(t("reallife_ui_rivals_week_from", "From day {day}"), "day", Whole(WeekFrom));
 
         private static void BusinessTable(UiRivalsModel m, UiWords t, RivalsView v)
         {

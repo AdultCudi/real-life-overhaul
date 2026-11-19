@@ -1501,11 +1501,13 @@ internal static partial class Program
     {
         UiWords en = UiWords("en");
         UiRivalsModel league = UiSamples.Rivals(en, "league");
-        Check(league.Profile.FactLabels.Length == 2 && league.Profile.FactLabels[0] == "Drives" && league.Profile.FactValues[0] == "Mersaidi S500" && league.Profile.FactLabels[1] == "Usually"
-              && league.Profile.FactValues[1] == "Out most days", "rivals seen page: the chosen rival's head in the Rivals app says what they drive and where they are usually found");
+        int drives = Array.IndexOf(league.Profile.FactLabels, "Drives");   // after the fortune's facts, which the sample's rivals have too
+        Check(drives >= 0 && league.Profile.FactValues[drives] == "Mersaidi S500" && league.Profile.FactLabels[drives + 1] == "Usually"
+              && league.Profile.FactValues[drives + 1] == "Out most days", "rivals seen page: the chosen rival's head in the Rivals app says what they drive and where they are usually found");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
-        Check(businesses.Profile.FactLabels.Length == 3 && businesses.Profile.FactLabels[0] == "Weekly Income" && businesses.Profile.FactLabels[1] == "Drives"
-              && businesses.Profile.FactValues.Length == 3,
+        int drove = Array.IndexOf(businesses.Profile.FactLabels, "Drives");
+        Check(businesses.Profile.FactLabels[0] == "Weekly Income" && drove > 0 && businesses.Profile.FactLabels[drove + 1] == "Usually"
+              && businesses.Profile.FactValues.Length == businesses.Profile.FactLabels.Length,
             "rivals seen page: beside their tables the weekly income stays first and the two facts follow");
         var v = new RivalsView
         {
