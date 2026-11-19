@@ -622,12 +622,12 @@ internal static partial class Program
             "titles sources: the firms' own pages name their products with the kind beside, and the rival studios' games by name");
         // the typed name: asked on both faces for a new product, a product's page, a concept and a game, and given to the director alone
         Check(old.Contains("_director.NewProduct(place, kind, (Segment)segment, scope, typed, turn)") && old.Contains("AskName(now, false, text => _director.RenameProduct(id, text))")
-              && old.Contains("_director.SuggestTitle(kind, _newSegment, turn)") && old.Contains("_director.TypedTitle(text, out string name) == TitleRules.Ok")
+              && old.Contains("_director.SuggestTitle(kind, shown, turn)") && old.Contains("_director.TypedTitle(text, out string name) == TitleRules.Ok")
               && old.Contains("GameUi.TextBox.Ask(\"reallife_tech_name_placeholder\", \"common_confirm\"")
               && old.Replace("\r\n", "\n").Contains("allowEmpty,\n                TitleCatalogue.Most);"),
             "titles sources: the older pages ask for a new product's name and a rename in the game's text box, at most the longest name");
         Check(kit.Contains("_d.NewProduct(place, kind, (Segment)segment, scope, typed, turn)") && kit.Contains("NameRun(p.Name, false, text => _d.RenameProduct(pid, text))")
-              && kit.Contains("_d.SuggestTitle(kind, _newSegment, turn)") && kit.Contains("_d.TypedTitle(text, out string name) == TitleRules.Ok")
+              && kit.Contains("_d.SuggestTitle(kind, shown, turn)") && kit.Contains("_d.TypedTitle(text, out string name) == TitleRules.Ok")
               && kit.Contains("GameUi.TextBox.Ask(\"reallife_tech_name_placeholder\", \"common_confirm\"") && kit.Contains("allowEmpty, TitleCatalogue.Most);"),
             "titles sources: the kit's pages ask for a new product's name and a rename in the same box, at most the longest name");
         Check(studioOld.Contains("case StudioAct.Name:") && studioOld.Contains("AskName(_director.TitleOf(id), false, text => _director.RenameProduct(id, text))")
