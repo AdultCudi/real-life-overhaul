@@ -38256,7 +38256,7 @@
   "reallife_ui_rivals_by_fortune_value": "第{place}名，共{count}家，游戏中为{game}",
   "reallife_rival_kind_property": "房产",
   "reallife_rival_property_note": "{count}座建筑，价值{value}。每周租金{rent}。每周营业额{trade}。",
-  "reallife_rival_test_holdings": "测试：对手的建筑",
+  "reallife_rival_test_holdings": "对手的建筑",
   "reallife_estate_test_rivals": "对手的建筑：{sold}座挂牌出售，{bought}座被买下。排名第一和最后的对手分别拥有{held}。",
   "reallife_estate_test_rivals_off": "现在无法读取对手的建筑。游戏中的对手已关闭，或当前是Going Public会话。",
   "reallife_estate_manager_agency": "你自己的中介",
@@ -38326,7 +38326,7 @@
   "reallife_estate_block_fee_rate": "你的费用",
   "reallife_estate_block_earned": "累计赚取的费用",
   "reallife_estate_block_missed": "租户连续{count}个月，共{most}个月，未达到业主的标准。",
-  "reallife_estate_block_held_what": "每月结转时，你可获得所收租金的一部分；你每重新出租一套公寓，还可获得{days}天的租金。月度满意度低于业主标准，将扣除该月费用的{share}，连续多次则会终止管理。",
+  "reallife_estate_block_held_what": "每月结转时，你可获得所收租金的一部分。你每重新出租一套公寓，还可获得{days}天的租金。月度满意度低于业主标准，将扣除该月费用的{share}，连续多次则会终止管理。",
   "reallife_estate_btn_pitch": "按其要价竞标",
   "reallife_estate_btn_undercut": "压价竞标",
   "reallife_estate_btn_withdraw": "撤回竞标",
@@ -38409,8 +38409,8 @@
   "reallife_transaction_flat_tax_label": "公寓物业税",
   "reallife_transaction_flat_rent": "公寓租金：{name}",
   "reallife_transaction_flat_rent_label": "公寓租金",
-  "reallife_flat_test_buy": "测试：购买最便宜的待售公寓",
-  "reallife_flat_test_bills": "测试：收取本月的公寓费用",
+  "reallife_flat_test_buy": "购买最便宜的待售公寓",
+  "reallife_flat_test_bills": "收取本月的公寓费用",
   "reallife_flat_test_none": "目前没有公寓在出售。",
   "reallife_flat_name": "{address}，{kind}",
   "reallife_flat_kind_studio": "单间",
@@ -38594,5 +38594,6 @@
   "reallife_police_desk_cases": "办理你的案件",
   "reallife_police_desk_cases_detail": "询问证人、检查现场或整理案卷：每个案件每次一项行动，每班可进行几项。",
   "reallife_ui_rivals_week_change": "7天变化",
-  "reallife_rota_failed": "规划器暂时无法为这家企业排出班表。当工作站、员工或日期变化时它会再试一次。详情见 Player.log。"
+  "reallife_rota_failed": "规划器暂时无法为这家企业排出班表。当工作站、员工或日期变化时它会再试一次。详情见 Player.log。",
+  "reallife_opt_sec_estateflats": "公寓和工作室"
 }

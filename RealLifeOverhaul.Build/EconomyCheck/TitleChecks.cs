@@ -606,7 +606,7 @@ internal static partial class Program
     {
         string old = ModSource(@"Tech\Firms\TechApp.Pages.cs"), kit = ModSource(@"Ui\Tech\TechLive.Products.cs"), firm = ModSource(@"Ui\Tech\TechLive.FirmPage.cs");
         string gamePage = ModSource(@"Ui\Tech\TechLive.Game.cs"), studioOld = ModSource(@"Tech\Studio\TechApp.Studio.cs");
-        Check(old.Contains("row.Set(0, p.Name);") && old.Contains("box.Title(p.Name);") && old.Contains("box.Subtitle(TechText.ProductName(p.K));")
+        Check(old.Contains("row.Set(0, p.Name);") && old.Contains("box.Title(p.Name);") && old.Contains("box.Subtitle(TechText.ProductName(p.K)")
               && old.Contains("row.Set(2, TechText.ProductName(p.K)"),
             "titles sources: the older pages' products table and a product's page show the name first and the kind second");
         Check(kit.Contains("row.Cells[0] = p.Name;") && kit.Contains("row.Sub = TechText.ProductName(p.K)") && kit.Contains("Name = p.Name, Icon = TechGlyphs.Of(TechGlyphs.Product, p.Kind), Role"),

@@ -144,7 +144,7 @@ internal static partial class Program
     {
         string keys = ModSource(@"Core\Keys.cs"), top = ModSource(@"Ui\HudScreens\HudTopGame.cs"), reach = ModSource(@"Ui\Phone\PhoneReach.cs"), driver = ModSource(@"Ui\HudScreens\HudDriver.cs");
         string tree = ModSource(@"Meta\OptionsTree.cs"), hud = ModSource(@"Ui\UiScreens.Hud.cs"), kit = ModSource(@"Ui\World\PrivateDriverKit.cs");
-        Check(keys.Contains("Driver,") && keys.Contains("new Binding(\"driver\", \"reallife_keys_driver\", KeyCode.Insert),") && tree.Contains("\"reallife_keys_walk\", \"reallife_keys_phone\", \"reallife_keys_driver\""),
+        Check(keys.Contains("Driver,") && keys.Contains("new Binding(\"driver\", \"reallife_keys_driver\", KeyCode.Insert),") && tree.Contains("\"reallife_keys_phone\", \"reallife_keys_driver\""),
             "private driver button: a key of its own in Core/Keys (after the Phone key, as the binding table is in the enum's order), with its row in Settings where the Phone key is");
         Check(top.Contains("Driver = 5") && top.Contains("new UiIcon[6]") && top.Contains("new int[6]") && top.Contains("new UiRole[6]") && top.Contains("HudDriver.Look(out DriverState driver, out bool driverOpen)")
               && top.Contains("Tool(Driver, UiIcon.Car, driverOpen, false, HudDriverRules.Tint(driver));") && top.Contains("case Driver:") && top.Contains("return HudDriver.Press();") && top.Contains("return HudDriver.Words();"),

@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Careers
             CustomerService = 8, DigitalMarketing = 9;
         public const int Electrician = 10, Plumber = 11, Carpenter = 12, Chef = 13, Hairdresser = 14, Beautician = 15, CareWorker = 16, ItSupport = 17;
         public const int Bricklaying = 18, CraneTicket = 19, ConstructionManagement = 34, ArchitectLicence = 62;   // the building trades' (Scripts/BuildTrades)
-        public const int PoliceAcademy = 35;   // the police career's entry exam (Careers/Police): the cadet rung asks it
+        public const int PoliceAcademy = 36;   // the police career's entry exam (Careers/Police): the cadet rung asks it; 35 was the dance class, which saves may still hold, so it is not reused
         public const int ComputerScience = 20, SoftwareEngineering = 21, DataScience = 22, Cybersecurity = 23, Business = 24, Accounting = 25, Finance = 26, Law = 27,
             Marketing = 28, Architecture = 29, CivilEngineering = 30, Nursing = 31, Teaching = 32, Design = 33;
         public const int Mba = 40, MscComputing = 41, LegalPractice = 42, Pgce = 43;
@@ -191,16 +191,16 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(PrivacyProfessional, "privacy_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 1050, TalentCatalogue.Law, 8, TalentCatalogue.SecurityOps, 8, -1, 9),
             new CourseDef(TestingProfessional, "testing_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 500, TalentCatalogue.Testing, 12, TalentCatalogue.Coding, 5, -1, 11),
 
+            // the police career's (Scripts/Careers/Police): its exam is the course's own, like every diploma's
+            new CourseDef(PoliceAcademy, "police_academy", CourseKind.Vocational, Campus.School, 5, 2, 4, Mon | Wed | Fri, 9, 1600, Skills.Guarding, 40, Skills.FirstAid, 20, Diploma),
+
             // the building trades' (Scripts/BuildTrades): last, so every course before keeps its room at the university and its place in a list
             new CourseDef(Bricklaying, "bricklaying", CourseKind.Vocational, Campus.School, 6, 3, 4, Tue | Thu | Sat, 13, 2400, Skills.Masonry, 45, TalentCatalogue.Structures, 5, Diploma),
             new CourseDef(CraneTicket, "crane_ticket", CourseKind.Short, Campus.School, 3, 1, 3, Mon | Thu, 13, 650, Skills.Handling, 25, Skills.Driving, 5),
             new CourseDef(ConstructionManagement, "construction_management", CourseKind.Degree, Campus.University, 10, 5, 4, Mon | Tue | Thu, 14, 9800, TalentCatalogue.Delivery, 35,
                 TalentCatalogue.Planning, 25, Bachelor),
             new CourseDef(ArchitectLicence, "architect_licence", CourseKind.Certificate, Campus.Online, 0, 10, 0, 0, 0, 1600, TalentCatalogue.Planning, 12,
-                TalentCatalogue.Structures, 8, -1, -1, false, new[] { Architecture }),
-
-            // the police career's (Scripts/Careers/Police): its exam is the course's own, like every diploma's
-            new CourseDef(PoliceAcademy, "police_academy", CourseKind.Vocational, Campus.School, 5, 2, 4, Mon | Wed | Fri, 9, 1600, Skills.Guarding, 40, Skills.FirstAid, 20, Diploma)
+                TalentCatalogue.Structures, 8, -1, -1, false, new[] { Architecture })
         };
 
         public const int ArriveEarlyMinutes = 30;     // a class can be joined this long before it starts

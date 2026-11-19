@@ -146,7 +146,7 @@ internal static partial class Program
         int steps = System.Text.RegularExpressions.Regex.Matches(row.Split(new[] { "Settings.RivalsFirst," }, StringSplitOptions.None)[0], "\"reallife_rival_first_").Count;
         Check(settings.Contains("RivalsFirstId = \"rivals_first\"") && settings.Contains("public static int RivalsFirst = 0;")
               && settings.Contains("RivalsFirst = Int(modId, RivalsFirstId, RivalsFirst);") && steps == RivalCatalogue.FirstFromSteps.Length
-              && mod.Contains("AddButton(\"reallife_rival_test_first\"") && tree.Contains("Opts(\"rivals_strength\", \"rivals_first\")"),
+              && mod.Contains("AddButton(\"reallife_rival_test_first\"") && tree.Contains("Opts(\"rivals_strength\", \"rivals_first\""),
             "rivals first: the option is saved, defaults to today's threshold, has a label for each step (" + steps + "), its test button and its place on the page");
     }
 

@@ -38256,7 +38256,7 @@
   "reallife_ui_rivals_by_fortune_value": "{place} of {count}, the game's {game}",
   "reallife_rival_kind_property": "Property",
   "reallife_rival_property_note": "{count} buildings worth {value}. Rent {rent} a week. Takings {trade} a week.",
-  "reallife_rival_test_holdings": "Test: the rivals' buildings",
+  "reallife_rival_test_holdings": "The rivals' buildings",
   "reallife_estate_test_rivals": "The rivals' buildings: {sold} put up for sale and {bought} bought. The top and the last rival own {held}.",
   "reallife_estate_test_rivals_off": "The rivals' buildings cannot be read now. The game's rivals are off or this is a Going Public session.",
   "reallife_estate_manager_agency": "Your own agency",
@@ -38409,8 +38409,8 @@
   "reallife_transaction_flat_tax_label": "Flat property tax",
   "reallife_transaction_flat_rent": "Rent for a flat: {name}",
   "reallife_transaction_flat_rent_label": "Flat rent",
-  "reallife_flat_test_buy": "Test: buy the cheapest flat for sale",
-  "reallife_flat_test_bills": "Test: take this month's flat charges",
+  "reallife_flat_test_buy": "Buy the cheapest flat for sale",
+  "reallife_flat_test_bills": "Take this month's flat charges",
   "reallife_flat_test_none": "No flat is for sale now.",
   "reallife_flat_name": "{address}, {kind}",
   "reallife_flat_kind_studio": "studio",
@@ -38594,5 +38594,6 @@
   "reallife_police_desk_cases": "Work your cases",
   "reallife_police_desk_cases_detail": "Interview a witness, check the scene or write a file up: one action a case and a few a shift.",
   "reallife_ui_rivals_week_change": "7 day change",
-  "reallife_rota_failed": "The planner could not work out this business just now. It tries again when the stations, the staff or the day change. Player.log has the detail."
+  "reallife_rota_failed": "The planner could not work out this business just now. It tries again when the stations, the staff or the day change. Player.log has the detail.",
+  "reallife_opt_sec_estateflats": "Flats and studios"
 }

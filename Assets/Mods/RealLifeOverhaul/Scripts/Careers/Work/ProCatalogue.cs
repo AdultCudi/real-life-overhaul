@@ -306,10 +306,11 @@ namespace RealLifeOverhaul.Careers
                 new ProRank(-1, TalentCatalogue.Junior, 70, 10, 0, Q(StudyCatalogue.Forklift)),
                 new ProRank(-1, TalentCatalogue.Mid, 95, 30, 45),
                 new ProRank(-1, TalentCatalogue.Senior, 140, 45, 90)),
-            // A public service on the nurses' scale: the cadet's diploma is the academy's, and the pay climbs from 70 as the nurse's does. The week is Tuesday to
+            // A public service on the nurses' scale: the cadet's diploma is the academy's, so the cadet starts at 80, the pay of every rung after a
+            // diploma (a nurse's 70 is for a care worker's course plus first aid), and climbs as the nurse's does. The week is Tuesday to
             // Saturday on the afternoon shift (Careers/Police): the city has most to answer then, and its patrol is the work, not a desk.
             new Profession(Police, "police", -1, Skills.Guarding, TalentCatalogue.Relationships, null, Workplace.Precinct, false, Tue | Wed | Thu | Fri | Sat, PoliceRules.Hour, PoliceRules.Hours,
-                new ProRank(-1, TalentCatalogue.Junior, 70, 10, 0, Q(StudyCatalogue.PoliceAcademy)),
+                new ProRank(-1, TalentCatalogue.Junior, 80, 10, 0, Q(StudyCatalogue.PoliceAcademy)),
                 new ProRank(-1, TalentCatalogue.Junior, 120, 30, 30),
                 new ProRank(-1, TalentCatalogue.Mid, 170, 46, 90),
                 new ProRank(-1, TalentCatalogue.Senior, 220, 60, 120),

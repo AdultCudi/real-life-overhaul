@@ -93,8 +93,16 @@ namespace RealLifeOverhaul
             // The partner's age as People shows it, for the header of a talk with them.
             private static string PartnerAgeWords()
             {
-                SocialPerson p = PeopleOn ? SocialState.Partner : null;
-                return p != null && p.Met ? SocialTalk.AgeWords(p) : null;
+                try
+                {
+                    SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                    return p != null && p.Met ? SocialTalk.AgeWords(p) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("FamilyLinks.PartnerAgeWords", e);
+                    return null;
+                }
             }
 
             private static PersonInfo Info(SocialPerson p)

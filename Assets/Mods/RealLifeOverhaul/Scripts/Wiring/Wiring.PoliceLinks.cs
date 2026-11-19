@@ -217,28 +217,44 @@ namespace RealLifeOverhaul
 
             private static Law.Bridges.DutyDeskView DeskView()
             {
-                CareersDirector director = CareersDirector.Instance;
-                if (director == null || !director.DutyDesk(out bool on, out string why, out string hours))
+                try
                 {
+                    CareersDirector director = CareersDirector.Instance;
+                    if (director == null || !director.DutyDesk(out bool on, out string why, out string hours))
+                    {
+                        return default;
+                    }
+                    bool cases = director.CaseDesk(out bool caseCan, out string caseWhy);
+                    return new Law.Bridges.DutyDeskView
+                    {
+                        CaseOffered = cases, CaseCan = caseCan, CaseTitle = CareersText.T("reallife_police_desk_cases"),
+                        CaseDetail = caseWhy != null ? CareersText.T(caseWhy) : CareersText.T("reallife_police_desk_cases_detail"),
+                        Offered = true, Can = on || why == null,
+                        Title = CareersText.T(on ? "reallife_police_desk_entry_end" : "reallife_police_desk_entry"),
+                        Detail = on ? CareersText.T("reallife_police_desk_entry_end_detail")
+                            : why != null ? CareersText.T(why) : CareersText.T("reallife_police_desk_entry_detail", "hours", hours)
+                    };
+                }
+                catch (Exception e)
+                {
+                    Fault("PoliceLinks.DeskView", e);
                     return default;
                 }
-                bool cases = director.CaseDesk(out bool caseCan, out string caseWhy);
-                return new Law.Bridges.DutyDeskView
-                {
-                    CaseOffered = cases, CaseCan = caseCan, CaseTitle = CareersText.T("reallife_police_desk_cases"),
-                    CaseDetail = caseWhy != null ? CareersText.T(caseWhy) : CareersText.T("reallife_police_desk_cases_detail"),
-                    Offered = true, Can = on || why == null,
-                    Title = CareersText.T(on ? "reallife_police_desk_entry_end" : "reallife_police_desk_entry"),
-                    Detail = on ? CareersText.T("reallife_police_desk_entry_end_detail")
-                        : why != null ? CareersText.T(why) : CareersText.T("reallife_police_desk_entry_detail", "hours", hours)
-                };
             }
 
             private static string CasePress()
             {
-                CareersDirector director = CareersDirector.Instance;
-                string why = director != null ? director.CasePress() : "reallife_study_test_off";
-                return why == null ? null : CareersText.T(why);
+                try
+                {
+                    CareersDirector director = CareersDirector.Instance;
+                    string why = director != null ? director.CasePress() : "reallife_study_test_off";
+                    return why == null ? null : CareersText.T(why);
+                }
+                catch (Exception e)
+                {
+                    Fault("PoliceLinks.CasePress", e);
+                    return CareersText.T("reallife_study_test_off");   // a refusal, so a fault never reads as a case worked
+                }
             }
 
             // The district of the precinct nearest the player, by the name key the places are named by.
@@ -259,9 +275,17 @@ namespace RealLifeOverhaul
 
             private static string DeskPress()
             {
-                CareersDirector director = CareersDirector.Instance;
-                string why = director != null ? director.DutyPress() : "reallife_study_test_off";
-                return why == null ? null : CareersText.T(why);
+                try
+                {
+                    CareersDirector director = CareersDirector.Instance;
+                    string why = director != null ? director.DutyPress() : "reallife_study_test_off";
+                    return why == null ? null : CareersText.T(why);
+                }
+                catch (Exception e)
+                {
+                    Fault("PoliceLinks.DeskPress", e);
+                    return CareersText.T("reallife_study_test_off");   // a refusal, so a fault never reads as a duty started
+                }
             }
         }
     }

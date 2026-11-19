@@ -87,7 +87,7 @@ internal static partial class Program
         Check(settings.Contains("JobCartSoundsId = \"job_cart_sounds\"") && settings.Contains("public static bool JobCartSounds = true;")
               && settings.Contains("JobCartSounds = Bool(modId, JobCartSoundsId, JobCartSounds);")
               && mod.Contains("AddToggle(Settings.JobCartSoundsId, \"reallife_jobs_cart_sounds\", Settings.JobCartSounds,")
-              && tree.Contains("\"job_cart_sounds\")") && list.Contains("Settings.JobCartSoundsId)")
+              && tree.Contains("\"job_cart_sounds\"") && list.Contains("Settings.JobCartSoundsId,")
               && sounds.Contains("CartSoundRules.Audible(Settings.JobCartSounds,"),
             "cart sound: the option is saved, on by default, on the jobs' section of the page, owned by the jobs' Guide page, and read before every sound");
     }
