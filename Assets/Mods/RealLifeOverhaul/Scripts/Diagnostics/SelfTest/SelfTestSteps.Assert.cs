@@ -93,9 +93,11 @@ namespace RealLifeOverhaul.SelfTest
                 {
                     bool none = id == "none";
                     UiHost host = none ? SelfTestGame.Standing(null) : SelfTestGame.Showing(id);
-                    if (none ? host == null : host != null)
+                    bool shows = none ? host == null : SelfTestGame.IsShowing(id);
+                    if (shows)
                     {
-                        c.Pass(none ? "no kit screen shows" : "the kit screen '" + id + "' shows (" + host.SelfTestShape() + ")");
+                        c.Pass(none ? "no kit screen stands over the HUD; " + SelfTestGame.ShowingWords()
+                            : "the kit screen '" + id + "' shows (" + (host != null ? host.SelfTestShape() : "a piece of the HUD") + "); " + SelfTestGame.ShowingWords());
                         yield break;
                     }
                     c.Waiting = none ? "the kit screens to go" : "the kit screen '" + id + "' to show";

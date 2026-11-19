@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.SelfTest
                     ctx.Fail("timed out after " + spec.Limit + " s while " + ctx.Waiting);
                     break;
                 }
-                if (Time.realtimeSinceStartup - wrote > 20f)
+                if (Time.realtimeSinceStartup - wrote > 5f)
                 {
                     wrote = Time.realtimeSinceStartup;   // a heartbeat: a results file that stops changing means the game itself is stuck
                     _results.Current = (_results.Steps.Count + 1) + "/" + _plan.Steps.Count + " " + spec.Label + " (limit " + spec.Limit + " s, "

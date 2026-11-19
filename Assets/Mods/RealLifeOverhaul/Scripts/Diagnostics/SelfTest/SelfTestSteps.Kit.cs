@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.SelfTest
                         yield return c.PictureWritten();
                     }
                     string kit = apps[i].Value;
-                    bool kitShows = kit != null && SelfTestGame.Showing(kit) != null;
+                    bool kitShows = kit != null && SelfTestGame.IsShowing(kit);
                     bool expected = kit != null && UiDirector.On && UiScreenSwitches.On(kit);
                     bool anything = SelfTestGame.PhoneOpen() || SelfTestGame.Standing(null) != null;
                     string faults = c.Runner.Watch.FaultWords();
@@ -332,28 +332,42 @@ namespace RealLifeOverhaul.SelfTest
                 var skipped = new StringBuilder(1024);
                 var failed = new StringBuilder(512);
                 int nOk = 0, nSkip = 0, nBad = 0;
-                UiScreenDef[] all = UiScreens.All;
-                for (int i = 0; i < all.Length; i++)
+                List<string> order = SelfTestUi.Ordered(UiScreens.All);   // plain apps first, then the screens a test button opens, the situations last
+                var notAlone = new StringBuilder(256);
+                var residues = new StringBuilder(256);
+                for (int i = 0; i < order.Count; i++)
                 {
-                    string id = all[i].Id;
+                    string id = order[i];
                     if (!SelfTestUi.Wanted(id, c.Arg("only"), c.Arg("skip")))
                     {
                         continue;
                     }
-                    yield return SelfTestGame.Close();
+                    yield return SelfTestGame.Close();   // nothing of the last screen is left over this one
                     string before = c.Runner.Watch.FaultWords();
                     var how = new SelfTestUi.Opening();
-                    c.Waiting = "the screen '" + id + "' (" + (i + 1) + " of " + all.Length + ") to open";
+                    c.Waiting = "screen " + (i + 1) + " of " + order.Count + ": '" + id + "' to open (" + nOk + " shown, " + nSkip + " skipped so far)";
                     yield return SelfTestUi.Open(id, c.Number("settle", 1.5f), how);
                     string faults = c.Runner.Watch.FaultWords();
+                    string with = SelfTestGame.Others(id);
+                    string listed = SelfTestGame.ShowingWords();
                     if (how.Shown && c.Flag("shots", true))
                     {
+                        yield return new WaitForEndOfFrame();
                         c.Capture(id);
                         yield return c.PictureWritten();
+                    }
+                    if (how.Shown && with.Length > 0)
+                    {
+                        notAlone.Append(id).Append(" with ").Append(with).Append("; ");   // it could not be shown alone
                     }
                     if (how.Opener)
                     {
                         SelfTestUi.Undo(id);
+                    }
+                    yield return SelfTestGame.Close();
+                    if (SelfTestGame.Residue.Length > 0)
+                    {
+                        residues.Append("after ").Append(id).Append(": ").Append(SelfTestGame.Residue).Append("; ");
                     }
                     if (faults != before)
                     {
@@ -363,7 +377,7 @@ namespace RealLifeOverhaul.SelfTest
                     else if (how.Shown)
                     {
                         nOk++;
-                        ok.Append(id).Append(' ');
+                        ok.Append(id).Append(" [").Append(listed.Replace("kit screens showing: ", string.Empty)).Append("] ");
                     }
                     else
                     {
@@ -372,7 +386,9 @@ namespace RealLifeOverhaul.SelfTest
                     }
                 }
                 yield return SelfTestGame.Close();
-                string words = nOk + " screens shown, " + nSkip + " skipped, " + nBad + " with a fault. Shown: " + ok + "Skipped: " + skipped + (nBad > 0 ? "BAD: " + failed : string.Empty);
+                string words = nOk + " screens shown, " + nSkip + " skipped, " + nBad + " with a fault. Shown (with the ids showing for each): " + ok + "Skipped: " + skipped
+                    + (notAlone.Length > 0 ? "NOT SHOWN ALONE: " + notAlone : string.Empty)
+                    + (residues.Length > 0 ? "LEFT OPEN: " + residues : string.Empty) + (nBad > 0 ? "BAD: " + failed : string.Empty);
                 if (nBad > 0 || nOk == 0)
                 {
                     c.Fail(words);

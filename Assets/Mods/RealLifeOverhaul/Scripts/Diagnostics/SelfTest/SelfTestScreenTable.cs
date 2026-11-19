@@ -65,6 +65,22 @@ namespace RealLifeOverhaul.SelfTest
             "shell_frame"
         };
 
+        /// <summary>
+        /// Where a screen stands in the walk of the registry: 0 for one an app opens, 2 for a situation (a toggling test, a world box, the
+        /// HUD's pieces, build mode, the designer, tooltips, a question), 1 for the rest.
+        /// </summary>
+        public static int Rank(string id, bool opensByApp)
+        {
+            if (opensByApp)
+            {
+                return 0;
+            }
+            bool situation = Toggles(id) || id.StartsWith("world_", StringComparison.Ordinal) || id.StartsWith("hud_", StringComparison.Ordinal) || id.EndsWith("_box", StringComparison.Ordinal)
+                             || id == "build_mode" || id == "designer" || id == "tooltips" || id == "scenes" || id == "time_skip" || id == "monologue" || id == "funeral" || id == "activity_panel"
+                             || id == "session_panel" || id == "checkout" || id == "vehicle_purchase" || id == "item_panel" || id == "manage_cargo" || id == "wardrobe" || id == "garage_shop";
+            return situation ? 2 : 1;
+        }
+
         /// <summary>True when the test button that opens the screen is a toggle: pressed again it takes the screen away.</summary>
         public static bool Toggles(string id)
         {

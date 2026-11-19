@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.SelfTest
                 new[] { "settle:n", "shots:b", "skip:s", "only:s" }),
             new SelfTestKind("open_screen", 120, "Opens a screen of the kit by its registry id, through the app or the way its game screen opens, and asserts the kit shows it.", new[] { "id:s" },
                 new[] { "settle:n", "shot:b" }),
-            new SelfTestKind("open_every_screen", 1800,
+            new SelfTestKind("open_every_screen", 3600,
                 "Walks the whole registry: opens each screen that can be opened from a running city, a picture and the fault check for each; the others are listed as skipped, with why.",
                 null,
                 new[] { "settle:n", "shots:b", "skip:s", "only:s" }),

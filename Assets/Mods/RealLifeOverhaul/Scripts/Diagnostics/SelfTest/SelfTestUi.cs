@@ -59,10 +59,36 @@ namespace RealLifeOverhaul.SelfTest
 
         private static bool OpenModApp(string id) => PhoneApp.OpenById(id);
 
+        /// <summary>
+        /// The registry's ids in the order open_every_screen walks them: screens an app opens first (the plain windows), then those a test
+        /// button opens, then the situations (a door's prompt, pickers, build mode, the world's boxes), each group in the registry's order.
+        /// </summary>
+        public static List<string> Ordered(UiScreenDef[] all)
+        {
+            var ranked = new List<KeyValuePair<int, string>>(all.Length);
+            for (int i = 0; i < all.Length; i++)
+            {
+                bool app = SelfTestScreenTable.AppOf(all[i].Id) != null || ModAppOf(all[i].Id) != null;
+                ranked.Add(new KeyValuePair<int, string>(SelfTestScreenTable.Rank(all[i].Id, app), all[i].Id));
+            }
+            var order = new List<string>(all.Length);
+            for (int rank = 0; rank <= 2; rank++)
+            {
+                for (int i = 0; i < ranked.Count; i++)
+                {
+                    if (ranked[i].Key == rank)
+                    {
+                        order.Add(ranked[i].Value);
+                    }
+                }
+            }
+            return order;
+        }
+
         /// <summary>The screen opened by the way that fits it, then settled; fills what was done and whether the kit shows it.</summary>
         public static IEnumerator Open(string id, float settle, Opening into)
         {
-            if (SelfTestGame.Showing(id) != null)
+            if (SelfTestGame.IsShowing(id))
             {
                 into.Shown = true;
                 into.Opener = true;
@@ -112,7 +138,7 @@ namespace RealLifeOverhaul.SelfTest
                 yield break;
             }
             yield return new WaitForSecondsRealtime(settle);
-            into.Shown = SelfTestGame.Showing(id) != null;
+            into.Shown = SelfTestGame.IsShowing(id);
         }
 
         /// <summary>Takes a toggling test's screen away again (the button pressed a second time); the others close by Back.</summary>

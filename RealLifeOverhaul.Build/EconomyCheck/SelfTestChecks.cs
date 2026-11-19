@@ -278,12 +278,22 @@ internal static partial class Program
         Check(saves.Contains("SelfTestDiag.Scenes() == before") && kit.Contains("neither the phone's menu nor any kit screen shows") && kit.Contains("c.Skip(\"pressed \"") && world.Contains("did not move from")
               && SelfTestMod(@"Diagnostics\SelfTest\SelfTestWorld.cs").Contains("reads back as") && world.Contains("left \" + (long)") && world.Contains("the console refused"),
             "selftest source: load_save, open_app, press_button, teleport, found_business, set_money and console each wait for what they caused and say what they waited for");
-        Check(runner.Contains("-fail") && runner.Contains("SelfTestDiag.Dump()") && runner.Contains("Time.realtimeSinceStartup - wrote > 20f") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestDiag.cs").Contains("showing canvases"),
-            "selftest source: a failed step takes a picture and writes the scenes, loading flag and showing canvases and kit screens into the results; a running step rewrites the file every 20 s");
+        Check(runner.Contains("-fail") && runner.Contains("SelfTestDiag.Dump()") && runner.Contains("Time.realtimeSinceStartup - wrote > 5f") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestDiag.cs").Contains("showing canvases"),
+            "selftest source: a failed step takes a picture and writes the scenes, loading flag and showing canvases and kit screens into the results; a running step rewrites the file every 5 s");
         string runPath = @"D:\BigAmbitionsMod\not-in-repo\tools\selftest\run.sh";
         string runSh = File.Exists(runPath) ? File.ReadAllText(runPath) : "STALLED at step live.py -gt 180";
         Check(runSh.Contains("STALLED at step") && runSh.Contains("live.py") && runSh.Contains("-gt 180"), "selftest tools: run.sh prints each step as it lands and stops the game as STALLED when results.json does not change for 3 minutes");
 
+        string game = SelfTestMod(@"Diagnostics\SelfTest\SelfTestGame.cs");
+        string ui = SelfTestMod(@"Diagnostics\SelfTest\SelfTestUi.cs");
+        Check(game.Contains("HudHost.Instance") && game.Contains("ids.Add(\"hud\")") && game.Contains("public static bool IsShowing") && kit.Contains("SelfTestGame.IsShowing(kit)") && SelfTestMod(@"Diagnostics\SelfTest\SelfTestSteps.Assert.cs").Contains("SelfTestGame.IsShowing(id)"),
+            "selftest source: the HUD (a host of its own, not a UiHost) is in the list of kit screens showing, and assert_kit_showing and the opening steps count it");
+        Check(game.Contains("CityMap.IsOpen") && game.Contains("ClearNotices()") && game.Contains("left.Hide()") && game.Contains("Residue") && kit.Contains("NOT SHOWN ALONE") && kit.Contains("LEFT OPEN"),
+            "selftest source: before and after each screen the walk leaves the map, answers the question box, closes each kit screen (taking away one that will not close), clears the notices, and reports a screen not shown alone or left open");
+        Check(SelfTestScreenTable.Rank("contacts", true) == 0 && SelfTestScreenTable.Rank("company", false) == 1 && SelfTestScreenTable.Rank("world_items_list", false) == 2 && SelfTestScreenTable.Rank("hud_side", false) == 2
+              && SelfTestScreenTable.Rank("question_box", false) == 2 && SelfTestScreenTable.Rank("build_mode", false) == 2 && ui.Contains("public static List<string> Ordered"),
+            "selftest source: the walk of the registry puts the plain apps first, then the screens a test button opens, and the situations (pickers, world boxes, build mode) last");
+        Check(SelfTestKinds.Find("open_every_screen").Limit >= 3600 && world.Contains("set again") && world.Contains("the first set read"), "selftest source: a long walk has a generous limit, and set_money sets, reads after a frame, sets again once and says how far off the first read was");
         // The screens table against the registry and the options page.
         string mod = SelfTestMod(@"Core\RealLifeOverhaulMod.cs");
         bool ids = true, labels = true;
