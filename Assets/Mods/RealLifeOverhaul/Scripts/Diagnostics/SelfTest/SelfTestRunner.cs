@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.SelfTest
         private string _lastPicture;
         private bool _pictureMissing;
         private int _modsSeen = -1;
+        private readonly Dictionary<string, float> _marks = new Dictionary<string, float>(StringComparer.Ordinal);   // named moments of the run, for measure
 
         /// <summary>Reads the trigger file, removes it, and starts the plan; a plan that cannot be read is said in Player.log.</summary>
         internal static void Begin(string path, IModLogger logger)
@@ -90,7 +91,7 @@ namespace RealLifeOverhaul.SelfTest
             var result = new SelfTestStepResult { Name = spec.Label, Kind = spec.Kind };
             var ctx = new SelfTestContext(spec, result, this);
             SelfTestStep step = SelfTestSteps.Make(spec.Kind);
-            Watch.Begin(spec.Kind.StartsWith("assert_", StringComparison.Ordinal));
+            Watch.Begin(spec.Label, spec.Kind.StartsWith("assert_", StringComparison.Ordinal));
             float began = Time.realtimeSinceStartup;
             var stack = new Stack<IEnumerator>(4);
             if (step == null)
@@ -194,6 +195,15 @@ namespace RealLifeOverhaul.SelfTest
                 yield return null;
             }
         }
+
+        /// <summary>Notes a named moment now.</summary>
+        internal void Mark(string name) => _marks[name] = Time.realtimeSinceStartup;
+
+        /// <summary>Seconds since a named moment, or -1 when it was never noted.</summary>
+        internal float Since(string name) => _marks.TryGetValue(name, out float at) ? Time.realtimeSinceStartup - at : -1f;
+
+        /// <summary>Records a measured figure in the results.</summary>
+        internal void Measured(string name, double seconds) => _results.Measures[name] = Math.Round(seconds, 2);
 
         /// <summary>True when the last picture asked for never reached the disk.</summary>
         internal bool PictureMissing => _pictureMissing;

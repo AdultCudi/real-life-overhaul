@@ -71,6 +71,51 @@ namespace RealLifeOverhaul.SelfTest
             return true;
         }
 
+        /// <summary>A monologue put on the game's own speech card, through the game's own queue.</summary>
+        public static bool Monologue(string key)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.monologueUI == null)
+            {
+                return false;
+            }
+            uis.monologueUI.EnqueueMonologue(key, null, null);
+            return true;
+        }
+
+        /// <summary>A window of the game's own opened by its own call: help, blueprints or the phone's menu.</summary>
+        public static bool GameOpen(string what, out string why)
+        {
+            why = null;
+            switch (what)
+            {
+                case "help":
+                    HelpSystem help = InstanceBehavior<HelpSystem>.Instance;
+                    if (help != null)
+                    {
+                        help.Toggle(true);
+                        return true;
+                    }
+                    break;
+                case "blueprints":
+                    UIs uis = InstanceBehavior<UIs>.Instance;
+                    if (uis != null && uis.miniMenuUI != null && uis.miniMenuUI.blueprintsPanel != null)
+                    {
+                        uis.miniMenuUI.blueprintsPanel.Show();
+                        return true;
+                    }
+                    break;
+                case "phone":
+                    SelfTestGame.OpenPhone();
+                    return true;
+                default:
+                    why = "'" + what + "' is not one of help, blueprints, phone";
+                    return false;
+            }
+            why = "the game has no '" + what + "' built in this scene";
+            return false;
+        }
+
         public static bool ParseAddress(string text, out int number, out string street)
         {
             number = 0;

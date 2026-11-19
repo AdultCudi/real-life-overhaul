@@ -197,6 +197,11 @@ namespace RealLifeOverhaul.SelfTest
             {
                 spec.Limit = (int)Math.Min(MostLimit, spec.Number("seconds", 0) + 30);
             }
+            if (ok && kind.Name == "measure" && !spec.Args.ContainsKey("mark") && !spec.Args.ContainsKey("since"))
+            {
+                errors.Add(where + ": needs a \"mark\" to note or a \"since\" to measure from");
+                ok = false;
+            }
             return ok ? spec : null;
         }
 

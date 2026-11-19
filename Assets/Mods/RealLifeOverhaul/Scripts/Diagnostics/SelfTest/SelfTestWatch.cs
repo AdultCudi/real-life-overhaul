@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using RealLifeOverhaul.Ui;
@@ -15,6 +16,7 @@ namespace RealLifeOverhaul.SelfTest
     {
         private static readonly FeatureGuard LogGuard = Guard.For("diagnostics", "SelfTestWatch.OnLog", typeof(SelfTestWatch));   // the log event's handler (Core/Guard)
 
+        private const int MostAll = 40000;    // log lines of every kind kept for assert_log_has; the rest of a very long run are not
         private const int MostLines = 60;     // error lines kept in a window; the rest are counted
         private const int Longest = 300;      // characters of a line kept
 
@@ -22,6 +24,9 @@ namespace RealLifeOverhaul.SelfTest
         private readonly List<string> _window = new List<string>(8);
         private readonly List<string> _windowRlo = new List<string>(8);
         private int _stepMore, _windowMore;
+        private readonly List<string> _all = new List<string>(1024);   // every line of the log since the plan began, for assert_log_has
+        private readonly Dictionary<string, int> _starts = new Dictionary<string, int>(StringComparer.Ordinal);   // where in _all each step began
+        private int _windowStart;   // where in _all the assert window began
         private bool _hooked;
         private Application.LogCallback _onLog;   // made once: the same delegate is put on the game's log and taken off it
 
@@ -52,6 +57,10 @@ namespace RealLifeOverhaul.SelfTest
         {
             try
             {
+                if (_all.Count < MostAll)
+                {
+                    _all.Add(condition ?? string.Empty);
+                }
                 if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert)
                 {
                     return;
@@ -98,14 +107,16 @@ namespace RealLifeOverhaul.SelfTest
         }
 
         /// <summary>A step begins: its own window is cleared; the assert window too when the step is not an assert, and the fault marks are taken.</summary>
-        public void Begin(bool assert)
+        public void Begin(string label, bool assert)
         {
+            _starts[label] = _all.Count;
             _step.Clear();
             _stepMore = 0;
             if (assert)
             {
                 return;
             }
+            _windowStart = _all.Count;
             _window.Clear();
             _windowRlo.Clear();
             _windowMore = 0;
@@ -129,6 +140,25 @@ namespace RealLifeOverhaul.SelfTest
             into.AddRange(from);
             return from.Count + (rloOnly ? 0 : _windowMore);
         }
+
+        /// <summary>True when a log line since a step began (the named step's label, else the last step that is not an assert) holds the text.</summary>
+        public bool LogHas(string text, string fromLabel, out string found)
+        {
+            found = null;
+            int from = fromLabel != null && _starts.TryGetValue(fromLabel, out int at) ? at : _windowStart;
+            for (int i = from; i < _all.Count; i++)
+            {
+                if (_all[i].IndexOf(text, StringComparison.Ordinal) >= 0)
+                {
+                    found = _all[i].Length > 240 ? _all[i].Substring(0, 240) + "..." : _all[i];
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>True when the step of that label has begun.</summary>
+        public bool Knows(string label) => _starts.ContainsKey(label);
 
         public int OtherWindowLines() => _window.Count + _windowMore - _windowRlo.Count;
 

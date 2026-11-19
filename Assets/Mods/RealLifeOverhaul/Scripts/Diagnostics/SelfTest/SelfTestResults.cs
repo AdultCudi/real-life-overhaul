@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.SelfTest
         public string ModVersion;
         public readonly List<string> Mods = new List<string>();   // the loaded mods as the game reports them: "name (id) version"
         public readonly List<string> Notes = new List<string>();  // what ran outside a step: options put back, a plan refused
+        // figures a measure step recorded, in seconds, so that two builds can be compared
+        public readonly SortedDictionary<string, double> Measures = new SortedDictionary<string, double>(StringComparer.Ordinal);
         public readonly List<SelfTestStepResult> Steps = new List<SelfTestStepResult>();
         public int Total;            // the plan's steps, so a half-written file says how far it got
 
@@ -65,6 +67,14 @@ namespace RealLifeOverhaul.SelfTest
                 w.WritePropertyName("skipped"); w.WriteValue(Count(SelfTestOutcome.Skipped));
                 Strings(w, "mods", Mods);
                 Strings(w, "notes", Notes);
+                w.WritePropertyName("measures");
+                w.WriteStartObject();
+                foreach (KeyValuePair<string, double> m in Measures)
+                {
+                    w.WritePropertyName(m.Key);
+                    w.WriteValue(m.Value);
+                }
+                w.WriteEndObject();
                 w.WritePropertyName("steps");
                 w.WriteStartArray();
                 for (int i = 0; i < Steps.Count; i++)

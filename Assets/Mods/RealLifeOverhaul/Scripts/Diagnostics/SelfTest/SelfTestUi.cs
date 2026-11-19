@@ -70,6 +70,12 @@ namespace RealLifeOverhaul.SelfTest
                 yield break;
             }
             string refused = null;
+            string never = SelfTestScreenTable.Why(id);
+            if (never != null)
+            {
+                into.Why = never;
+                yield break;
+            }
             string app = SelfTestScreenTable.AppOf(id);
             string modApp = ModAppOf(id);
             string test = SelfTestScreenTable.TestOf(id);
@@ -83,6 +89,16 @@ namespace RealLifeOverhaul.SelfTest
                 into.Opener = true;
                 into.How = "the mod's app " + modApp;
             }
+            else if (SelfTestScreenTable.GameOpenOf(id) != null && SelfTestWorld.GameOpen(SelfTestScreenTable.GameOpenOf(id), out refused))
+            {
+                into.Opener = true;
+                into.How = "the game's own " + SelfTestScreenTable.GameOpenOf(id) + " window";
+            }
+            else if (id == "monologue" && SelfTestWorld.Monologue("common_close"))
+            {
+                into.Opener = true;
+                into.How = "the game's own monologue queue";
+            }
             else if (test != null && PressButton(test, out refused))
             {
                 into.Opener = true;
@@ -91,11 +107,22 @@ namespace RealLifeOverhaul.SelfTest
             else
             {
                 into.Why = test != null ? "its options button '" + test + "' could not be pressed: " + refused
-                    : "no app and no options test button opens it: it stands in the game only in a situation (a desk, a door, a funeral, another screen's page) or is a template's sample";
+                    : "no app, test button or call of the game's opens it: it is a page inside another screen (open that one and kit_press its tab) "
+                    + "or a mod page opened from a button of another window";
                 yield break;
             }
             yield return new WaitForSecondsRealtime(settle);
             into.Shown = SelfTestGame.Showing(id) != null;
+        }
+
+        /// <summary>Takes a toggling test's screen away again (the button pressed a second time); the others close by Back.</summary>
+        public static void Undo(string id)
+        {
+            string test = SelfTestScreenTable.TestOf(id);
+            if (test != null && SelfTestScreenTable.Toggles(id) && PressButton(test, out string unused))
+            {
+                return;
+            }
         }
 
         private static string ModAppOf(string screenId)

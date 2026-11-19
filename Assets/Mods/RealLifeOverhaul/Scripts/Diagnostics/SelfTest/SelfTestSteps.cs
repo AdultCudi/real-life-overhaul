@@ -44,6 +44,10 @@ namespace RealLifeOverhaul.SelfTest
                 case "assert_kit_showing": return new AssertKitShowingStep();
                 case "assert_text": return new AssertTextStep();
                 case "assert_mod_loaded": return new AssertModLoadedStep();
+                case "assert_log_has": return new AssertLogHasStep();
+                case "measure": return new MeasureStep();
+                case "monologue": return new MonologueStep();
+                case "game_open": return new GameOpenStep();
                 case "note": return new NoteStep();
             }
             return null;

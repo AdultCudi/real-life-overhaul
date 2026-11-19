@@ -95,8 +95,8 @@ namespace RealLifeOverhaul.SelfTest
             new SelfTestKind("kit_type", 60, "Types a text into the showing kit screen's field, the way the keyboard does.", new[] { "text:s" }, new[] { "screen:s", "submit:b" }),
             new SelfTestKind("kit_scroll", 60, "Turns the wheel over a scroll region of the showing kit screen.", new[] { "clip:i", "notches:n" }, new[] { "screen:s" }),
             new SelfTestKind("press_button", 120,
-                "Presses a button of the mod's options page (Options, Tests) by the key of its label; run an event, a gig, a session or an incident the mod has a test for.",
-                new[] { "label:s" }, new[] { "settle:n" }),
+                "Presses a button of the mod's options page (Options, Tests) by the key of its label (the button argument); run an event, a gig, a session or an incident the mod has a test for.",
+                new[] { "button:s" }, new[] { "settle:n" }),
             new SelfTestKind("list_buttons", 30, "Writes the keys of every button of the mod's options page into the results.", null, null),
 
             // The game's own debug code paths
@@ -121,6 +121,19 @@ namespace RealLifeOverhaul.SelfTest
             new SelfTestKind("assert_mod_loaded", 30,
                 "Asserts a mod is loaded, by a part of its name as the game reports it; fails with the list when it is absent.",
                 new[] { "name:s" }, new[] { "skip_if_absent:b" }),
+            new SelfTestKind("assert_log_has", 90,
+                "Asserts a line of the game's log written since the last step that is not an assert (or since the step of the label named by from) holds the text; "
+                + "absent true asserts it does not. It waits up to wait seconds for the line.",
+                new[] { "text:s" }, new[] { "from:s", "absent:b", "wait:n" }),
+            new SelfTestKind("measure", 30,
+                "Notes a named moment (mark) and/or records the seconds since a named moment (since) into the results under a name (as), so two builds can be compared.",
+                null, new[] { "mark:s", "since:s", "as:s" }),
+            new SelfTestKind("monologue", 60,
+                "Puts a monologue of the game's own on screen (its speech card, the kit's monologue screen) from a text key of the game's, then waits settle seconds.",
+                null, new[] { "key:s", "settle:n" }),
+            new SelfTestKind("game_open", 60,
+                "Opens a window of the game's own by its own call: help (the F1 help), blueprints (the pause menu's Blueprints), phone (the full menu).",
+                new[] { "what:s" }, new[] { "settle:n" }),
             new SelfTestKind("note", 10, "Writes a line into the results.", new[] { "text:s" }, null),
         };
 

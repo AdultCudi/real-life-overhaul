@@ -65,14 +65,14 @@ namespace RealLifeOverhaul.SelfTest
 
             public override IEnumerator Run(SelfTestContext c)
             {
-                if (!SelfTestUi.PressButton(c.Arg("label"), out string why))
+                if (!SelfTestUi.PressButton(c.Arg("button"), out string why))
                 {
                     c.Fail(why);
                     yield break;
                 }
                 c.Waiting = "the button's work to settle";
                 yield return new WaitForSecondsRealtime(c.Number("settle", 1.5f));
-                c.Pass("pressed " + c.Arg("label") + "; " + SelfTestGame.ShowingWords());
+                c.Pass("pressed " + c.Arg("button") + "; " + SelfTestGame.ShowingWords());
             }
         }
 
@@ -272,6 +272,10 @@ namespace RealLifeOverhaul.SelfTest
                     c.Capture(id);
                     yield return c.PictureWritten();
                 }
+                if (how.Opener)
+                {
+                    SelfTestUi.Undo(id);
+                }
                 if (how.Shown)
                 {
                     c.Pass("the kit shows '" + id + "' (" + how.How + ")");
@@ -326,6 +330,10 @@ namespace RealLifeOverhaul.SelfTest
                     {
                         c.Capture(id);
                         yield return c.PictureWritten();
+                    }
+                    if (how.Opener)
+                    {
+                        SelfTestUi.Undo(id);
                     }
                     if (faults != before)
                     {

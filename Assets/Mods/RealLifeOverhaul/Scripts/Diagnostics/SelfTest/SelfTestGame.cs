@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.SelfTest
             List<UiHost> hosts = KitHosts();
             for (int i = hosts.Count - 1; i >= 0; i--)
             {
-                if (string.IsNullOrEmpty(id) || hosts[i].Screen.Id == id)
+                if (string.IsNullOrEmpty(id) || hosts[i].Screen.Id == id || hosts[i].Scene.Name == id)   // a piece's layout is named for the id when its host carries another's
                 {
                     return hosts[i];
                 }

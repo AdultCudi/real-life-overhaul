@@ -34,8 +34,18 @@ namespace RealLifeOverhaul.SelfTest
             SettingsTable.Write(info, now);
             UnityEngine.PlayerPrefs.Save();
             Settings.Reload();
+            AppliedDev(id);
             words = id + " is " + SettingsTable.Current(info) + " (it was " + Original[id] + ")";
             return SettingsTable.Current(info) == now;
+        }
+
+        // The diagnostics switch changes what the log gets, so the mod's own reading of it is brought in line as the options page does.
+        private static void AppliedDev(string id)
+        {
+            if (id == Settings.DevDiagnosticsId)
+            {
+                Meta.Dev.Apply();
+            }
         }
 
         public static bool Value(string id, out int value)
@@ -78,6 +88,7 @@ namespace RealLifeOverhaul.SelfTest
             {
                 UnityEngine.PlayerPrefs.Save();
                 Settings.Reload();
+                Meta.Dev.Apply();
             }
             return n;
         }

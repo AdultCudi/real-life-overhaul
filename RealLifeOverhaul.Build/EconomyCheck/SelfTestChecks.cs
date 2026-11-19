@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using IoPath = System.IO.Path;
 using Newtonsoft.Json.Linq;
 using RealLifeOverhaul.SelfTest;
@@ -119,6 +120,11 @@ internal static partial class Program
 
         plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"quit\":false,\"keep_options\":true,\"steps\":[{\"do\":\"wait_seconds\",\"seconds\":120}]}", out errors);
         Check(plan != null && !plan.Quit && plan.KeepOptions && plan.Steps[0].Limit == 150, "selftest plan: quit and keep_options are read, and a wait's limit grows with its seconds");
+        Check(SelfTestRefused("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\"}]}", "mark"), "selftest plan: a measure that names no mark and no moment to measure from is refused");
+        plan = SelfTestRead("{\"kind\":\"rlo-selftest\",\"output\":\"o\",\"steps\":[{\"do\":\"measure\",\"mark\":\"a\"},{\"do\":\"measure\",\"since\":\"a\",\"as\":\"load\"},"
+            + "{\"do\":\"assert_log_has\",\"text\":\"Uptown check\",\"from\":\"x\",\"absent\":false,\"wait\":4},{\"do\":\"game_open\",\"what\":\"help\"},{\"do\":\"monologue\"}]}", out errors);
+        Check(plan != null && plan.Steps.Count == 5 && plan.Steps[1].Arg("as") == "load" && plan.Steps[2].Arg("text") == "Uptown check" && !plan.Steps[2].Flag("absent", true) && plan.Steps[2].Number("wait", 0) == 4,
+            "selftest plan: measure, assert_log_has, game_open and monologue read with their arguments");
     }
 
     // The step table: names unique, limits sane, every kind has its class on the game side and the other way round.
@@ -169,6 +175,7 @@ internal static partial class Program
         b.Shots.Add("open_screen.png");
         b.LogErrors.Add("exception (RLO): boom \"quoted\"");
         var c = new SelfTestStepResult { Name = "x", Kind = "note", Outcome = SelfTestOutcome.Skipped, Words = "MOD ABSENT" };
+        results.Measures["load_seconds_1"] = 12.34;
         results.Steps.Add(a);
         Check(!JObject.Parse(results.ToJson()).Value<bool>("done") && results.Count(SelfTestOutcome.Pass) == 1, "selftest results: a run under way says it is not done");
         results.Steps.Add(b);
@@ -180,7 +187,8 @@ internal static partial class Program
         Check(second.Value<string>("outcome") == "fail" && second.Value<string>("words") == "does not show" && second["screenshots"][0].Value<string>() == "open_screen.png" && second["log_errors"][0].Value<string>().Contains("\"quoted\""),
             "selftest results: a step has its outcome, words, pictures and new log errors (quotes kept)");
         Check(json["mods"][0].Value<string>().Contains("Real Life Overhaul") && json.Value<string>("game_build") == "build 3682", "selftest results: the loaded mods and the game's build are in the file");
-        Check(results.DoneLine() == "SELFTEST DONE passed 1 failed 1", "selftest results: the last line counts what passed and failed");
+        Check(json["measures"].Value<double>("load_seconds_1") == 12.34, "selftest results: a figure a measure step recorded is in the file by its name, in seconds, so two builds can be compared");
+                Check(results.DoneLine() == "SELFTEST DONE passed 1 failed 1", "selftest results: the last line counts what passed and failed");
 
         string folder = IoPath.Combine(IoPath.GetTempPath(), "rlo-selftest-check-" + Guid.NewGuid().ToString("N"));
         try
@@ -265,7 +273,30 @@ internal static partial class Program
         }
         Check(ids, "selftest source: every screen in the opening table is in the kit's registry");
         Check(labels, "selftest source: every options button the opening table presses is on the mod's options page");
-        Check(SelfTestScreenTable.AppOf("contacts") == "Contacts" && SelfTestScreenTable.TestOf("gallery") == "reallife_ui_test_gallery" && SelfTestScreenTable.AppOf("gallery") == null && SelfTestScreenTable.TestOf("nope") == null,
+        bool reg = true, labelsOk = true;
+        foreach (string id in SelfTestScreenTable.Unopenable)
+        {
+            reg &= RealLifeOverhaul.Ui.UiScreens.Find(id) != null && SelfTestScreenTable.Why(id) != null;
+        }
+        foreach (string[] row in SelfTestScreenTable.GameOpens)
+        {
+            reg &= RealLifeOverhaul.Ui.UiScreens.Find(row[0]) != null && new[] { "help", "blueprints", "phone" }.Contains(row[1]);
+        }
+        foreach (string[] row in SelfTestScreenTable.Tests)
+        {
+            labelsOk &= row.Length == 2 || (row.Length == 3 && row[2] == "toggle");
+        }
+        Check(reg && labelsOk, "selftest source: the screens no step can open and the game's own windows it opens by a call are all in the registry, each unopenable one with its reason");
+        bool overlap = false;
+        foreach (string id in SelfTestScreenTable.Unopenable)
+        {
+            overlap |= SelfTestScreenTable.TestOf(id) != null || SelfTestScreenTable.AppOf(id) != null;
+        }
+        Check(!overlap, "selftest source: no screen is both opened by a button and listed as one no step can open");
+        Check(SelfTestScreenTable.Toggles("world_prompt") && SelfTestScreenTable.Toggles("hud_side") && !SelfTestScreenTable.Toggles("contacts") && !SelfTestScreenTable.Toggles("gallery"),
+            "selftest source: the tests that toggle (a door's prompt, a desk's list, the HUD's sample pieces) are pressed again to take their screen away");
+        Check(SelfTestScreenTable.Tests.Length >= 70, "selftest source: the opening table covers the situations (a door, a desk, a custody list, the bus, the HUD's pieces, tooltips, build mode, the designer) as well as the apps (" + SelfTestScreenTable.Tests.Length + " rows)");
+                Check(SelfTestScreenTable.AppOf("contacts") == "Contacts" && SelfTestScreenTable.TestOf("gallery") == "reallife_ui_test_gallery" && SelfTestScreenTable.AppOf("gallery") == null && SelfTestScreenTable.TestOf("nope") == null,
             "selftest source: the opening table answers by a screen's id");
     }
 
@@ -277,7 +308,12 @@ internal static partial class Program
         {
             return;
         }
-        foreach (string file in Directory.GetFiles(folder, "*.json"))
+        var files = new List<string>(Directory.GetFiles(folder, "*.json"));
+        if (Directory.Exists(IoPath.Combine(folder, "plans")))
+        {
+            files.AddRange(Directory.GetFiles(IoPath.Combine(folder, "plans"), "*.json"));
+        }
+        foreach (string file in files)
         {
             SelfTestPlan plan = SelfTestRead(File.ReadAllText(file), out List<string> errors);
             Check(plan != null && errors.Count == 0 && plan.Steps.Count > 0, "selftest plans: " + IoPath.GetFileName(file) + " reads against the table" + (errors.Count > 0 ? ": " + string.Join("; ", errors) : string.Empty));
