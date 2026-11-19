@@ -37989,5 +37989,6 @@
   "reallife_svc_rsale_where": "주소",
   "reallife_svc_rsale_shown": "{business}은(는) {address}에 있습니다. 목적지로 표시되어 있습니다.",
   "reallife_tech_new_niche_made": "{niche}을(를) 위해 만들어졌습니다: 고객은 {who}이므로, 정가로 그들에게 판매합니다.",
-  "reallife_tech_mkt_product_niche_off": "이 제품은 {who}을(를) 위해 만들어졌습니다. {niche}은(는) 이를 사지 않으므로 전체 시장에 팔리며, 틈새 시장은 이 제품을 계산하지 않습니다. 거기서 팔려면 {niche}을(를) 위해 만든 제품을 시작하세요."
+  "reallife_tech_mkt_product_niche_off": "이 제품은 {who}을(를) 위해 만들어졌습니다. {niche}은(는) 이를 사지 않으므로 전체 시장에 팔리며, 틈새 시장은 이 제품을 계산하지 않습니다. 거기서 팔려면 {niche}을(를) 위해 만든 제품을 시작하세요.",
+  "reallife_texts_rule_side": "엉뚱한 쪽에서 온 축하"
 }

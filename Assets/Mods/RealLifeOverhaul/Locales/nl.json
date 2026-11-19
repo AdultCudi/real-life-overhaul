@@ -37989,5 +37989,6 @@
   "reallife_svc_rsale_where": "Adres",
   "reallife_svc_rsale_shown": "{business} staat op {address}. Het is aangegeven als je bestemming.",
   "reallife_tech_new_niche_made": "Gemaakt voor {niche}: de klanten zijn {who}, dus die kopen het tegen de lijstprijs.",
-  "reallife_tech_mkt_product_niche_off": "Dit product is gemaakt voor {who}, die {niche} niet inkoopt, dus het wordt op de hele markt verkocht en de niche telt er niet voor mee. Begin met een product voor {niche} om daar te verkopen."
+  "reallife_tech_mkt_product_niche_off": "Dit product is gemaakt voor {who}, die {niche} niet inkoopt, dus het wordt op de hele markt verkocht en de niche telt er niet voor mee. Begin met een product voor {niche} om daar te verkopen.",
+  "reallife_texts_rule_side": "een wens van de verkeerde kant"
 }

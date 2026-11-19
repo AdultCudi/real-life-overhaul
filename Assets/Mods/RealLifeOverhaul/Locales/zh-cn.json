@@ -38021,5 +38021,6 @@
   "reallife_svc_rsale_where": "地址",
   "reallife_svc_rsale_shown": "{business}位于{address}。已标记为你的目的地。",
   "reallife_tech_new_niche_made": "专为{niche}制作：其客户是{who}，因此按挂牌价向他们销售。",
-  "reallife_tech_mkt_product_niche_off": "这款产品专为{who}制作，而{niche}不购买这类产品，因此它面向整个市场销售，细分市场对它不起作用。请开发一款专为{niche}制作的产品，才能在那里销售。"
+  "reallife_tech_mkt_product_niche_off": "这款产品专为{who}制作，而{niche}不购买这类产品，因此它面向整个市场销售，细分市场对它不起作用。请开发一款专为{niche}制作的产品，才能在那里销售。",
+  "reallife_texts_rule_side": "祝福来自错误的一方"
 }

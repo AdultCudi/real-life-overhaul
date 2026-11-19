@@ -38021,5 +38021,6 @@
   "reallife_svc_rsale_where": "Endereço",
   "reallife_svc_rsale_shown": "{business} fica em {address}. Está marcado como seu destino.",
   "reallife_tech_new_niche_made": "Feito para {niche}: seus clientes são {who}, então vende a eles pelo preço de tabela.",
-  "reallife_tech_mkt_product_niche_off": "Este produto é feito para {who}, que {niche} não compra, então ele vende para o mercado inteiro e o nicho não conta para ele. Comece um produto feito para {niche} para vender ali."
+  "reallife_tech_mkt_product_niche_off": "Este produto é feito para {who}, que {niche} não compra, então ele vende para o mercado inteiro e o nicho não conta para ele. Comece um produto feito para {niche} para vender ali.",
+  "reallife_texts_rule_side": "um desejo do lado errado"
 }

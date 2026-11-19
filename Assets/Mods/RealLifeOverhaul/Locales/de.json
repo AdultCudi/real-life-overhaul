@@ -37989,5 +37989,6 @@
   "reallife_svc_rsale_where": "Adresse",
   "reallife_svc_rsale_shown": "{business} liegt bei {address}. Es ist als dein Ziel markiert.",
   "reallife_tech_new_niche_made": "Gemacht für {niche}: Die Kunden sind {who}, deshalb verkauft es an sie zum Listenpreis.",
-  "reallife_tech_mkt_product_niche_off": "Dieses Produkt ist für {who} gemacht, was {niche} nicht einkauft. Deshalb verkauft es sich an den gesamten Markt, und die Nische zählt dafür nicht. Starte ein Produkt für {niche}, um dort zu verkaufen."
+  "reallife_tech_mkt_product_niche_off": "Dieses Produkt ist für {who} gemacht, was {niche} nicht einkauft. Deshalb verkauft es sich an den gesamten Markt, und die Nische zählt dafür nicht. Starte ein Produkt für {niche}, um dort zu verkaufen.",
+  "reallife_texts_rule_side": "ein Glückwunsch von der falschen Seite"
 }

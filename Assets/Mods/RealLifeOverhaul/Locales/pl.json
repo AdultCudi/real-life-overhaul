@@ -37989,5 +37989,6 @@
   "reallife_svc_rsale_where": "Adres",
   "reallife_svc_rsale_shown": "{business} znajduje się pod adresem {address}. Oznaczono go jako twój cel.",
   "reallife_tech_new_niche_made": "Stworzone dla niszy {niche}: jej klienci to {who}, więc sprzedaje im po cenie z cennika.",
-  "reallife_tech_mkt_product_niche_off": "Ten produkt jest stworzony dla: {who}. {niche} nie robi tu zakupów, więc produkt sprzedaje się na cały rynek, a nisza go nie liczy. Aby sprzedawać w niszy, uruchom produkt stworzony dla {niche}."
+  "reallife_tech_mkt_product_niche_off": "Ten produkt jest stworzony dla: {who}. {niche} nie robi tu zakupów, więc produkt sprzedaje się na cały rynek, a nisza go nie liczy. Aby sprzedawać w niszy, uruchom produkt stworzony dla {niche}.",
+  "reallife_texts_rule_side": "życzenia od złej strony"
 }

@@ -38021,5 +38021,6 @@
   "reallife_svc_rsale_where": "Address",
   "reallife_svc_rsale_shown": "{business} is at {address}. It is marked as your destination.",
   "reallife_tech_new_niche_made": "Made for {niche}: its customers are {who}, so it sells to them at their list price.",
-  "reallife_tech_mkt_product_niche_off": "This product is made for {who}, which {niche} does not buy in, so it sells to the whole market and the niche does not count for it. Start a product made for {niche} to sell there."
+  "reallife_tech_mkt_product_niche_off": "This product is made for {who}, which {niche} does not buy in, so it sells to the whole market and the niche does not count for it. Start a product made for {niche} to sell there.",
+  "reallife_texts_rule_side": "a wish from the wrong side"
 }

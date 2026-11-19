@@ -37989,5 +37989,6 @@
   "reallife_svc_rsale_where": "Adres",
   "reallife_svc_rsale_shown": "{business} işletmesi {address} adresinde. Hedefiniz olarak işaretlendi.",
   "reallife_tech_new_niche_made": "{niche} için yapıldı: müşterileri {who}, bu yüzden onlara liste fiyatından satar.",
-  "reallife_tech_mkt_product_niche_off": "Bu ürün {who} için yapıldı. {niche} bu ürünü almadığı için tüm pazara satılır ve niş ona katkı yapmaz. Orada satmak için {niche} için yapılmış bir ürün başlatın."
+  "reallife_tech_mkt_product_niche_off": "Bu ürün {who} için yapıldı. {niche} bu ürünü almadığı için tüm pazara satılır ve niş ona katkı yapmaz. Orada satmak için {niche} için yapılmış bir ürün başlatın.",
+  "reallife_texts_rule_side": "yanlış taraftan bir dilek"
 }
