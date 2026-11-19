@@ -253,18 +253,13 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Section(s, at, lay, x, cy, lw, w.T("reallife_co_also_waiting", "Also waiting"), o.WaitingCount);
                 int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - doneNeed - UiTokens.S5) / WaitingRow));
-                int rows = Math.Min(o.Waiting.Length, fit);
-                for (int i = 0; i < rows; i++)
+                // What waits for the owner scrolls where the column has no room for it all: each one is something to answer.
+                CompanyRows waiting = BeginRows(s, at, lay, CompanyLayout.SlotWaiting, x, cy, lw, WaitingRow, o.Waiting.Length, fit, UiTokens.S2);
+                for (int i = waiting.First; i <= waiting.Last; i++)
                 {
-                    cy += WaitingLine(s, at, lay, ref o.Waiting[i], x, cy, lw, keys);
+                    WaitingLine(s, waiting.At, lay, ref o.Waiting[i], waiting.X(x), waiting.Y(i), lw, keys, waiting.List, i);
                 }
-                if (rows < o.Waiting.Length && cy + UiTokens.PairRow <= bottom)
-                {
-                    // What waits and has no room is counted, so that the list never says fewer than it holds; it comes up as the ones above are answered.
-                    UiDraw.TextMiddle(s, at, x + UiTokens.AvatarRow + UiTokens.S3, cy, UiTokens.PairRow, lw - UiTokens.AvatarRow - UiTokens.S3, UiStyle.Small, UiRole.Muted,
-                        w.F("reallife_co_and_more", "and {count} more", "count", (o.Waiting.Length - rows).ToString()), UiFlags.Truncate);
-                    cy += UiTokens.PairRow;
-                }
+                cy = EndRows(s, at, waiting);
                 cy += UiTokens.S4;
             }
             if (doneNeed > 0f && bottom - cy >= UiTokens.PairRow + UiTokens.S1 + DoneRow)
@@ -329,7 +324,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row of "also waiting": the one who asks in their ring, who and what, and the link that opens it.
-        private static float WaitingLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyWaiting row, float x, float y, float w, IUiKeys keys)
+        private static float WaitingLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyWaiting row, float x, float y, float w, IUiKeys keys, short list = -1, int listIndex = 0)
         {
             int index = lay.Add(new CompanyButton { Label = row.OpenLabel, Act = row.Open, Kind = UiButtonKind.Quiet });
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
@@ -356,7 +351,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, inside, x + w - UiTokens.IconSmall - UiDraw.LinkGap - ow - UiTokens.S1, y, WaitingRow, ow + UiTokens.S1, UiStyle.BodyStrong, UiRole.AccentText, open, UiFlags.Right);
             UiDraw.Icon(s, inside, x + w - UiTokens.IconSmall, y + (WaitingRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText,
                 UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
-            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, Act, index, face);
+            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, Act, index, face, false, list, listIndex);
             return WaitingRow;
         }
 
@@ -446,35 +441,33 @@ namespace RealLifeOverhaul.Ui
             float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (managersLeft ? 0f : o.Managers.Length > 0
                 ? PersonRow * Math.Min(3, o.Managers.Length) : UiTokens.Control);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - TableRow - below) / TableRow));
-            int shown = Math.Min(o.Businesses.Length, fit);
-            for (int i = 0; i < shown; i++)
+            // The businesses the column has no room for scroll: the table holds every one, as the head's badges (which run out) do not.
+            CompanyRows rows = BeginRows(s, at, lay, CompanyLayout.SlotBusinesses, x, cy, rw, TableRow, o.Businesses.Length, fit, UiTokens.S2);
+            UiAt rowsAt = rows.At;
+            float lx = rows.X(x);
+            for (int i = rows.First; i <= rows.Last; i++)
             {
+                float ry = rows.Y(i);
                 ref CompanyBusiness b = ref o.Businesses[i];
-                int face = UiDraw.Box(s, at, x - UiTokens.S2, cy, rw + UiTokens.S4, TableRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                UiAt inside = at.In(face);
-                Mark(s, inside, x, cy + (TableRow - BadgeMark) / 2f, BadgeMark, b.Mark, UiStyle.Badge);
-                UiDraw.TextMiddle(s, inside, x + BadgeMark + UiTokens.S3, cy, TableRow, nameW - BadgeMark - UiTokens.S3, UiStyle.Body, UiRole.Text, b.Name ?? string.Empty, UiFlags.Truncate);
+                int face = UiDraw.Box(s, rowsAt, lx - UiTokens.S2, ry, rw + UiTokens.S4, TableRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                UiAt inside = rowsAt.In(face);
+                Mark(s, inside, lx, ry + (TableRow - BadgeMark) / 2f, BadgeMark, b.Mark, UiStyle.Badge);
+                UiDraw.TextMiddle(s, inside, lx + BadgeMark + UiTokens.S3, ry, TableRow, nameW - BadgeMark - UiTokens.S3, UiStyle.Body, UiRole.Text, b.Name ?? string.Empty, UiFlags.Truncate);
                 string nobooks = w.T("reallife_co_no_books", "no books");
                 if (b.HasBooks)
                 {
-                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3, cy, TableRow, colW, UiStyle.Body, UiRole.Text, b.Takings ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
-                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3 + colW, cy, TableRow, colW, UiStyle.Body, UiRole.Text, b.Costs ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
-                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3 + colW * 2f, cy, TableRow, colW, UiStyle.BodyStrong, ToneInk(b.ResultTone), b.Result ?? string.Empty,
+                    UiDraw.TextMiddle(s, inside, lx + nameW + UiTokens.S3, ry, TableRow, colW, UiStyle.Body, UiRole.Text, b.Takings ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, lx + nameW + UiTokens.S3 + colW, ry, TableRow, colW, UiStyle.Body, UiRole.Text, b.Costs ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, lx + nameW + UiTokens.S3 + colW * 2f, ry, TableRow, colW, UiStyle.BodyStrong, ToneInk(b.ResultTone), b.Result ?? string.Empty,
                         UiFlags.Right | UiFlags.Truncate);
                 }
                 else
                 {
-                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3, cy, TableRow, colW * 3f, UiStyle.Body, UiRole.Muted, nobooks, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, lx + nameW + UiTokens.S3, ry, TableRow, colW * 3f, UiStyle.Body, UiRole.Muted, nobooks, UiFlags.Right | UiFlags.Truncate);
                 }
-                UiDraw.Node(s, at, x - UiTokens.S2, cy, rw + UiTokens.S4, TableRow, Badge, i, face);
-                cy += TableRow;
+                UiDraw.Node(s, rowsAt, lx - UiTokens.S2, ry, rw + UiTokens.S4, TableRow, Badge, i, face, false, rows.List, i);
             }
-            if (shown < o.Businesses.Length)
-            {
-                UiDraw.TextMiddle(s, at, x + BadgeMark + UiTokens.S3, cy, UiTokens.PairRow, rw, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count",
-                    (o.Businesses.Length - shown).ToString()), UiFlags.Truncate);
-                cy += UiTokens.PairRow;
-            }
+            cy = EndRows(s, at, rows);
             if (!string.IsNullOrEmpty(o.TotalResult))
             {
                 Pair(s, at, x, cy, TableRow, nameW, UiStyle.BodyStrong, UiRole.Text, string.IsNullOrEmpty(o.TotalLabel) ? w.T("reallife_co_all_businesses", "All businesses") : o.TotalLabel,

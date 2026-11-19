@@ -202,6 +202,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_group_find", "reallife_work_group_policy", "reallife_work_group_staff", "reallife_work_group_stores",
                 "reallife_work_haggle", "reallife_work_haggle_kicker", "reallife_work_haggle_line", "reallife_work_haggled_out",
                 "reallife_work_head_line", "reallife_work_head_skill_line", "reallife_work_helper_fee", "reallife_work_hire_at",
+                "reallife_work_offer_waiting", "reallife_work_offer_countered", "reallife_work_offer_ended",
                 "reallife_work_hired_month", "reallife_work_hired_on", "reallife_work_hired_via_ad", "reallife_work_hiring_now",
                 "reallife_work_homework", "reallife_work_hours", "reallife_work_how_it_does", "reallife_work_how_it_goes", "reallife_work_in_n_days",
                 "reallife_work_interviewed", "reallife_work_job_line", "reallife_work_kid_age", "reallife_work_kid_school",

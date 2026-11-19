@@ -460,9 +460,12 @@ namespace RealLifeOverhaul.Ui
                 case BizManRules.Pricing:
                 {
                     InventoryProductsScrollerController table = b.bizManInventoryPricing != null ? b.bizManInventoryPricing.inventoryProductsScrollerController : null;
+                    string district = b.building != null && !string.IsNullOrEmpty(b.building.Neighbourhood) ? b.building.Neighbourhood : null;
                     for (int i = 0; table != null && i < table.data.Count; i++)
                     {
-                        sig = sig * 31 + (table.data[i] != null && table.data[i].RetailPriceReference != null ? table.data[i].RetailPriceReference.price.GetHashCode() : 0);
+                        InventoryProductCellView.InventoryProductModel g = table.data[i];
+                        // The lowest price too: it moves with an edit, and when the game clears the day's prices, and the page shows it.
+                        sig = sig * 31 + (g != null && g.RetailPriceReference != null ? g.RetailPriceReference.price.GetHashCode() + Lowest(g, district).GetHashCode() * 7 : 0);
                     }
                     return sig;
                 }

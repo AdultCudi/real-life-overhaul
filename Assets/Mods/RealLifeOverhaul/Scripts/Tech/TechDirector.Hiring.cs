@@ -632,15 +632,20 @@ namespace RealLifeOverhaul.Tech
             return _interview.Begin(a, s, _hiring.AdOf(a.Ad));
         }
 
-        /// <summary>An offer made at a pay; they answer the next day.</summary>
-        internal void MakeOffer(int id, int cents)
+        /// <summary>An offer made at a pay; they answer the next day. False, and nothing changed, when one cannot be made (it is made already, answered or over).</summary>
+        internal bool MakeOffer(int id, int cents)
         {
             Applicant a = ApplicantOf(id);
-            if (a != null && a.Live && a.Stage < (int)ApplyStage.Offered && Save != null && cents > 0)
+            Seeker s = a != null ? _hiring.SeekerOf(a.Seeker) : null;
+            if (a == null || s == null || !a.Live || a.Stage >= (int)ApplyStage.Offered || Save == null || cents <= 0)
             {
-                HiringRules.Offer(a, cents, Save.Day);
-                Changed();
+                return false;
             }
+            HiringRules.Offer(a, cents, Save.Day);
+            // The offer is not the hire: the answer comes the next day, and a press that shows nothing reads as a button that did nothing.
+            Tell(NotificationType.Info, "reallife_hire_note_offered", Data("name", s.P.Name, "amount", TechText.Rate(cents)), TabApplicants, RolesApp.ApplicantRow + a.Id);
+            Changed();
+            return true;
         }
 
         /// <summary>Their counter taken: the offer is raised to it and they accept at once.</summary>
