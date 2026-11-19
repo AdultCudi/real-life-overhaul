@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
         public const int TaxiHeldDays = 7;           // a car licence held this long...
         public const int TaxiMostPoints = 5;         // ...with no more points than this
         public static int RenewalFee => Prices.At(90);
-        public const int ValidDays = 120;            // about an in-game year
+        public const int ValidDays = 120;            // days, as every text and the written test say: two of the game's own 60-day years, and not stretched by a longer year
         public const int RenewFromDays = 14;         // renewable from this many days before it runs out
         public const int LapsedAfterDays = 30;       // expired longer than this: theory and practical again
         public const int RetestWaitDays = 1;

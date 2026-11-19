@@ -55,6 +55,17 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True when the applicant's offer beats the rival's: at least their bid.</summary>
         public static bool Beats(Applicant a, int cents) => a.RivalBid <= 0 || cents >= a.RivalBid;
 
+        public const int CanOffer = 0, OfferWaiting = 1, OfferCountered = 2, OfferTaken = 3, OfferEnded = 4;
+
+        /// <summary>
+        /// Whether an offer can be made to the applicant now: <see cref="CanOffer"/> before one is made, else why not (made and waiting for the next day's answer, answered with a counter,
+        /// accepted or started, or over). TechDirector.MakeOffer takes an offer only before one is made, so a button that offers must be held in every other state.
+        /// </summary>
+        public static int OfferState(Applicant a) => a.Stage < (int)ApplyStage.Offered ? CanOffer
+            : a.Stage == (int)ApplyStage.Offered ? OfferWaiting
+            : a.Stage == (int)ApplyStage.Countered ? OfferCountered
+            : a.Stage == (int)ApplyStage.Accepted || a.Stage == (int)ApplyStage.Started ? OfferTaken : OfferEnded;
+
         /// <summary>The day's turn for rivals' offers: new ones are made, a deadline passed takes the applicant, a hire by the player ends one.</summary>
         public static void Day(HiringFile f, int day, IList<string> rivals)
         {

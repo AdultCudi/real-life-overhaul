@@ -139,13 +139,33 @@ namespace RealLifeOverhaul.Ui
     /// <summary>Where the layout put each scrolling block and each target's action, so the wheel, a focus and a press reach what they belong to. Written back by every layout.</summary>
     public sealed class CompanyLayout
     {
-        public const int Slots = 6;   // the list, the tree, the card, the page's own scroll, the grid, the log
+        public const int Slots = 9;   // the list, the tree, the card, the page's own scroll, the grid, the log, the licences, the overview's waiting rows, its businesses
         public readonly float[] Offset = new float[Slots];
-        public readonly int[] Reveal = { -1, -1, -1, -1, -1, -1 };
-        public readonly short[] List = { -1, -1, -1, -1, -1, -1 };
-        public readonly short[] Clip = { -1, -1, -1, -1, -1, -1 };
+        public readonly int[] Reveal = Minus(Slots);
+        public readonly short[] List = MinusShort(Slots);
+        public readonly short[] Clip = MinusShort(Slots);
 
-        public const int SlotList = 0, SlotTree = 1, SlotCard = 2, SlotPage = 3, SlotGrid = 4, SlotLog = 5;
+        public const int SlotList = 0, SlotTree = 1, SlotCard = 2, SlotPage = 3, SlotGrid = 4, SlotLog = 5, SlotLicences = 6, SlotWaiting = 7, SlotBusinesses = 8;
+
+        private static int[] Minus(int n)
+        {
+            var a = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                a[i] = -1;
+            }
+            return a;
+        }
+
+        private static short[] MinusShort(int n)
+        {
+            var a = new short[n];
+            for (int i = 0; i < n; i++)
+            {
+                a[i] = -1;
+            }
+            return a;
+        }
 
         /// <summary>The actions of the page as laid out, by the index a target carries; the main and second ones that the keys run.</summary>
         public CompanyButton[] Acts = new CompanyButton[64];

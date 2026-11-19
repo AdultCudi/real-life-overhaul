@@ -14,6 +14,20 @@ namespace RealLifeOverhaul.Ui
             return new WorkAct { Kind = kind, Arg = arg, Label = label, Style = style, Icon = icon, Opens = opens, Why = why };
         }
 
+        // Why the button that makes the offer is held, or null while it may be pressed. The director takes an offer only before one is made, so a press in any other state
+        // did nothing and said nothing.
+        private static string OfferWhy(Applicant a, UtilitiesWords w, int dollars)
+        {
+            switch (HireOffers.OfferState(a))
+            {
+                case HireOffers.OfferWaiting: return w.F("reallife_work_offer_waiting", "Your offer of {pay} an hour is made. They answer tomorrow.", "pay", TechText.Rate(a.Offer));
+                case HireOffers.OfferCountered: return w.T("reallife_work_offer_countered", "They answered with a counter offer. Take it or let them go.");
+                case HireOffers.OfferTaken: return w.T("reallife_work_already_hired", "They have already accepted.");
+                case HireOffers.OfferEnded: return w.T("reallife_work_offer_ended", "They are no longer available.");
+                default: return !HireOffers.Beats(a, dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null;
+            }
+        }
+
         private static string StageName(Applicant a)
         {
             switch (a.At)
@@ -171,10 +185,8 @@ namespace RealLifeOverhaul.Ui
                     t.Amounts.Add(new WorkAmount { Id = 0, Value = dollars, Min = 1, Max = 200, Figure = "$" + dollars.ToString(Inv) + " " + w.T("reallife_work_an_hour", "an hour") });
                 }
                 r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
-                bool done = a.Stage >= (int)ApplyStage.Accepted;
                 r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
-                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a,
-                        dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null));
+                    OfferWhy(a, w, dollars)));
                 r.Acts.Add(a.Stage == (int)ApplyStage.Countered ? Act(Counter, a.Id, w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Secondary, UiIcon.Check)
                     : Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, false,
                         a.Stage == (int)ApplyStage.Shortlisted ? w.T("reallife_work_already_shortlisted", "Already on your shortlist.") : null));
@@ -295,10 +307,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_rival_bid", "Rival's offer"), Value = a.RivalBy + ", " + TechText.Rate(a.RivalBid) });
                 }
-                bool done = a.Stage >= (int)ApplyStage.Accepted;
                 contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
-                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a,
-                        dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null);
+                    OfferWhy(a, w, dollars));
                 form.Left.Add(contract);
                 var answer = new WorkFormBand { Title = w.T("reallife_work_their_answer", "Their answer") };
                 if (a.Stage == (int)ApplyStage.Countered)
@@ -1020,8 +1030,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         return false;
                     }
-                    d.MakeOffer(act.Arg, Math.Max(1, view.Get(0, (HireOffers.Competing(a, SaveGameManager.Current.Day) ? Math.Max(a.RivalBid, s.Ask) : s.Ask) / 100)) * 100);
-                    return true;
+                    return d.MakeOffer(act.Arg, Math.Max(1, view.Get(0, (HireOffers.Competing(a, SaveGameManager.Current.Day) ? Math.Max(a.RivalBid, s.Ask) : s.Ask) / 100)) * 100);
                 }
                 case Counter: d.TakeCounter(act.Arg); return true;
                 case Walk: d.WalkAway(act.Arg); view.Sub = 0; return true;

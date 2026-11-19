@@ -284,6 +284,23 @@ namespace RealLifeOverhaul.Tech
             return NicheRules.Market(into, f, p, firm.File, md, today, _sector.ProductAt(p.Id), RivalryOn ? _world : null, day, pulled, founder, ref appeal, ref aware, ref crew, out served);
         }
 
+        /// <summary>
+        /// The segment a founded firm's product of a kind is made for, or -1 when its own choice stands (no niche, a placed firm not yet taking its niche up, an app, a game or a licence).
+        /// A niche's businesses buy in one segment only (small businesses, or large companies for the big ones: NicheRules.Serves), and a product's price is its segment's list price,
+        /// so a product made for another segment sells to the whole market at that other price and the niche the firm chose never counts for it.
+        /// </summary>
+        internal int NicheSegment(string place, ProductKind kind, out int niche)
+        {
+            niche = -1;
+            FoundedFirm f = _founding != null ? _founding.Of(place) : null;
+            if (f == null || !f.Counts || f.Niche < 0 || kind != ProductKind.Saas && kind != ProductKind.Model)
+            {
+                return -1;
+            }
+            niche = f.Niche;
+            return NicheCatalogue.Def(f.Niche).Buyers == (int)SectorBuyers.Enterprises ? (int)Segment.Enterprise : (int)Segment.Business;
+        }
+
         private static bool NicheServes(FoundedFirm f, Product p)
         {
             int market = SectorRules.MarketOf(p);

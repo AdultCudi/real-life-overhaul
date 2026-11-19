@@ -251,6 +251,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--kit-lists")
+        {
+            KitListsAll();   // the kit's lists that ran past their room, a delivery's typed amount, the lowest price and the hire button (KitListsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizman-goods")
         {
             BizManGoodsAll();   // BizMan's Browse Store Inventory and Show employees on the kit, and the shift card's components (BizManGoodsChecks.cs)
@@ -654,6 +660,15 @@ internal static partial class Program
             DealerWave4();
             EstateRun();
             DealerRun();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--city-life")
+        {
+            ClientHours();
+            TextsCheckerBirthday();
+            TextsCitySix();
+            TravelFixes();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1796,6 +1811,7 @@ internal static partial class Program
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
         CompanyAll();   // the Company app on the kit: its new answers, hand down, late days, leases, rota plans, the tax reserve, licences and the screens (CompanyRunChecks.cs)
+        KitListsAll();  // the kit's lists that ran past their room, a delivery's typed amount, the lowest price and the hire button (KitListsChecks.cs)
         RotaFixes();    // the staff rota planner: a choice kept, a job never stuck, raises in the stamp, a confirmed plan as confirmed, the goods, the ladder, the page (RotaFixChecks.cs)
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
         ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)
@@ -1853,7 +1869,7 @@ internal static partial class Program
         LineNeedRule(); // random lines only when what they take for granted is the player's: a fridge, a flat, a landlord, a car; every random line's English read for it (LineNeedChecks.cs)
         PremiseChecks(); // no notice of a rival's attack or ask for a tour without a business, no line twice running from one person, standing sites on pavement only, every sent line's premise (PremiseChecks.cs)
         VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
-        TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
+        TravelFixes();  // travel: the hotel room refused while the game was paused, the cottages' board by a house (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
         FrameFixes();   // the first car's and the street chess stutters: What's new in all eleven languages (FrameFixChecks.cs)
         ContactsTalk();   // the Contacts thread keeps a call's conversation: the history's order, caps, save, the places that keep and read it, What's new in all eleven languages (ContactsTalkChecks.cs)

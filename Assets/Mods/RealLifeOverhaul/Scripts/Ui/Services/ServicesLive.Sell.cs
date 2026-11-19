@@ -440,6 +440,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiFactLine.Row(ServicesText.T("reallife_svc_bid_price"), Money(v.Price)),
                     UiFactLine.Row(ServicesText.T("reallife_ui_svc_col_takings_week"), Money(v.Weekly)),
+                    UiFactLine.Row(ServicesText.T("reallife_svc_rsale_where"), ServicesGame.Where(v.Place)),
                     UiFactLine.Say(ServicesText.T(v.Buyer.Length > 0 ? "reallife_svc_rsale_then" : "reallife_svc_rsale_keeps", "day", v.Deadline.ToString(Inv), "buyer",
                         v.BuyerName, "seller", v.SellerName),
                         UiRole.WarnText),
@@ -448,7 +449,11 @@ namespace RealLifeOverhaul.Ui
                 p.Accept = new UiFactCardModel
                 {
                     Title = ServicesText.T("reallife_svc_rsale_title", "business", v.Business), Heading = true, Lines = lines.ToArray(),
-                    Actions = new[] { _runs.Button(ServicesText.T("reallife_svc_rsale_buy"), UiButtonKind.Primary, UiIcon.None, UiAction.Alt, () => _d.BuyRival(id2)) }
+                    Actions = new[]
+                    {
+                        _runs.Button(ServicesText.T("reallife_svc_rsale_buy"), UiButtonKind.Primary, UiIcon.None, UiAction.Alt, () => _d.BuyRival(id2)),
+                        _runs.Button(ServicesText.T("reallife_career_button_map"), UiButtonKind.Secondary, UiIcon.Locate, UiAction.Option, () => _d.ShowRival(id2))
+                    }
                 };
             }
 

@@ -102,6 +102,10 @@ namespace RealLifeOverhaul.Ui
             {
                 notes.Add(StockStatus(s));   // the old ticket says what is held, or else the company's state
             }
+            if (s.Own != null && !s.Own.Firm && MarketBots.Mine(state, s))
+            {
+                notes.Add(MarketApp.SectorLine(state, s));   // the player's company: its sector, what it earns in lately and the day its sector is next reviewed, as the old page says
+            }
             string trust = TrustWords(s);
             if (trust != null)
             {

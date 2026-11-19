@@ -564,6 +564,13 @@ namespace RealLifeOverhaul.Ui
             if (Field(_typeCommand, _typeArg) is TMP_InputField f)
             {
                 UiWidgets.Type(f, text, false);   // its change listeners run as typing into it would run them
+                if (_typeCommand == BizManPages.Goods + UiDataTable.Type && _shown == BizManRules.Deliveries
+                    && int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.CurrentCulture, out _))
+                {
+                    // A delivery's amount is taken by the game's cell when its field is left (a price is taken as it changes), so each figure typed is that end here: without it the box showed
+                    // the figure and the order never held it.
+                    f.onEndEdit?.Invoke(f.text);
+                }
                 if (_typeCommand == UiDataTable.First + UiDataTable.Search)
                 {
                     ShopsTable?.RefreshFilters();   // the list filtered again even while its filter panel, which hears its field, is closed

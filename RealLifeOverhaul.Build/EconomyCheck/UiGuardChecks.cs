@@ -534,8 +534,34 @@ internal static partial class Program
         Check(StatementsInOrder(slow, "if (!UiPieces.Off(_playedPiece))", "try", "PlayTime.Tick();", "catch (Exception e)", "PieceFailed(_playedPiece, e);", "if (!UiPieces.Off(_worthPiece))", "try",
                   "Economy.WorthWatch.Tick();", "catch (Exception e)", "PieceFailed(_worthPiece, e);", "if (!On)"),
             "guard look: the time played and the day's net worth are counted with the interface on or off, each in a try of its own");
-        Check(StatementsInOrder(slow, "if (!city)", "RemoveAll(\"no city\");", "RearmOne(RemoveOrder[i]);", "UiPieces.Rearm();", "return;"),
+        Check(StatementsInOrder(slow, "if (!city)", "RemoveAll(\"no city\");", "ForgetCity();", "return;")
+              && StatementsInOrder(MemberText(director, "private static void ForgetCity()"), "RearmOne(RemoveOrder[i]);", "catch (Exception e)", "PieceFailed(PieceOf[RemoveOrder[i]], e);", "UiPieces.Rearm();", "_letGo = false;"),
             "guard look: a new city asks again a piece that failed once");
+
+        // The menu tick that asked again never runs in the menu: the city's director goes with the city. A second load in one session therefore
+        // starts from what the first left unless the director asks again as it starts and as its city ends (a player's report of the game's own
+        // screens after loading another save with the RLO interface on).
+        Check(StatementsInOrder(MemberText(director, "private void Awake()"), "_ending = false;", "ForgetCity();", "UiFonts.Said =")
+              && StatementsInOrder(MemberText(director, "private void OnDestroy()"), "LetGoAll(\"the mod unloading\");", "Quietly(ForgetCity);")
+              && StatementsInOrder(MemberText(director, "internal static void CityEnds(string why)"), "_ending = true;", "LetGoAll(why);", "ForgetCity();")
+              && StatementsInOrder(MemberText(director, "private IEnumerator Tick()"), "yield return second;", "if (_ending)", "continue;", "if (Stopped)"),
+            "load again: the director forgets the last city as it starts and as its city ends, and its tick puts nothing back once the city is ending");
+        string mod = ModSource(@"Core\RealLifeOverhaulMod.cs");
+        string cityUnload = mod.Substring(mod.IndexOf("[ModEntryOnCityLoad]", StringComparison.Ordinal));
+        Check(StatementsInOrder(MemberText(cityUnload, "public Task OnUnloadAsync()"), "Ui.UiDirector.CityEnds(", "GameUi.WorldPanel.CityEnds()", "Wiring.Disconnect()", "UnityEngine.Object.Destroy(_root);"),
+            "load again: the city part's unload gives the kit's screens and the panel box back while the game's interface stands, before its root is destroyed");
+        string gameHost = ModSource(@"Ui\Host\UiGameHost.cs");
+        Check(StatementsInOrder(MemberText(gameHost, "public void Remove(string why)"), "ReferenceEquals(_root, null)", "ReferenceEquals(_host, null)", "_conceal.Count == 0", "!_classic", "!_held", "!_underMenu", "_back == null", "!_shown", "return;", "_conceal.Clear();")
+              && StatementsInOrder(MemberText(gameHost, "public void Install()"), "if (_root != null)", "if (!ReferenceEquals(_root, null) || !ReferenceEquals(_found, null))", "Remove(\"the city was unloaded\");", "_screen.Find();"),
+            "load again: a screen whose objects went with their scene still gives back its flags and its hold, so the next bind does not inherit them");
+        string worldPanel = ModSource(@"Core\GameUi\WorldPanel.cs"), beside = ModSource(@"Core\GameUi\WorldPanel.Beside.cs");
+        Check(StatementsInOrder(MemberText(worldPanel, "public bool Show()"), "OverlayUI.IsVisible && box.GetCurrentOverlayType == null", "ClearFlag();", "if (_slotsChanged)")
+              && StatementsInOrder(MemberText(worldPanel, "public static void CityEnds()"), "panel.Hide();", "_current = null;", "Watch(false);", "ClearFlag();", "ForgetBox();")
+              && MemberText(beside, "private static void ForgetBox()").Contains("_resumeBox = null;"),
+            "load again: the game's box flag a city leaves set is cleared, so the mod's panels at the driving school and elsewhere are not left waiting on a box nothing holds");
+        string notices = ModSource(@"Ui\Shell\ShellNotices.cs");
+        Check(StatementsInOrder(MemberText(notices, "public static void Remove(string why)"), "try", "Cards.Remove(why);", "List.Remove(why);", "finally", "_live = null;", "Leave();"),
+            "load again: the notice cards give the game's toast event back even when a host could not give its screen back whole");
 
         // The pieces that stand themselves up each second tell the same breaker.
         string live = ModSource(@"Ui\HudScreens\HudLive.cs"), hud = ModSource(@"Ui\Hud\HudHost.cs"), world = ModSource(@"Ui\World\WorldHost.cs");

@@ -38,6 +38,27 @@ internal static partial class Program
         string hold = ModSource(@"Ui\Host\UiConceal.cs");
         Check(hold.Contains("Dictionary<CanvasGroup, Hold> Holds") && hold.Contains("Release(l.Group)"),
             "map leak: a leaf two screens hide (the building box, under the street's card and the map's dock) is given back only when the last of them lets go");
+        // The kit draws plain text: a text with a tag in it (the game's "Estimated Valuation: <b>$1</b>") is drawn without it, whichever path it came by.
+        var tagged = new UiScene();
+        tagged.Begin("tags", 100f, 100f, false);
+        var tagItem = new UiItem { Kind = UiKind.Text, Text = "Estimated Valuation: <b>$2,301,893</b>" };
+        int tagAt = tagged.Add(ref tagItem);
+        var plainItem = new UiItem { Kind = UiKind.Text, Text = "Under 5 < 6 minutes" };
+        int plainAt = tagged.Add(ref plainItem);
+        Check(tagged.Items[tagAt].Text == "Estimated Valuation: $2,301,893" && tagged.Items[plainAt].Text == "Under 5 < 6 minutes",
+            "map leak: a text with a bold tag reaches the kit's scene without it, and a lone less-than sign stays");
+        Check(ModSource(@"Ui\BizMan\BizFacts.cs").Contains("MapText.Plain(UiText.Fill(\"bizman_estimated_valuation\"") && ModSource(@"Ui\UiScene.cs").Contains("item.Text = MapText.Plain(item.Text)"),
+            "map leak: the door card's valuation line and every kit text have the game's tags taken out");
+
+        // The world prompt hides every piece of the game's box, its own picture (the grey shadow with the pointer) too, not only the header and the buttons.
+        string promptSource = ModSource(@"Ui\World\WorldPrompt.cs");
+        Check(promptSource.Contains("_conceal.Add(box.GetChild(i))") && promptSource.Contains("_conceal.Add(own)"),
+            "map leak: the world prompt conceals every child and the picture of the game's box, so no grey box stands behind the card");
+
+        // The HUD's popups (dances, accessories) are over the minimap's card: it goes back under the kit's canvas while one is open.
+        Check(ModSource(@"Navigation\NavHud.cs").Contains("bool over = up.Up && !up.Under") && ModSource(@"Wiring\NavLinks.cs").Contains("Under = host.PopupUp")
+            && ModSource(@"Ui\HudScreens\HudLive.cs").Contains("host.PopupUp = popups > 0"),
+            "map leak: the minimap's card is drawn under the HUD's popup while one is open");
         Check(lines.Contains("GetComponentsInChildren<CityMapFilterCategory>(true)") && lines.Contains("LinesOf(group)") && actions.Contains("Toggle"),
             "map leak: the kit's rows are read from the game's groups and their lines, and a switch is the game's own toggle");
 

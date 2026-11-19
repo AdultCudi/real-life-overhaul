@@ -150,12 +150,11 @@ namespace RealLifeOverhaul
             for (int i = 0; city != null && i < _sites.Count; i++)
             {
                 HotelSite site = _sites[i];
-                if (site.Slot.Anchors != null || site.Building == null || !Mine(site.Building.building)
-                    || (TravelState.InRoom && TravelState.HotelId == site.Slot.Id))
+                if (site.Building == null || !Mine(site.Building.building) || (TravelState.InRoom && TravelState.HotelId == site.Slot.Id))
                 {
                     continue;
                 }
-                CityBuildingController next = Pick(city, site.Slot, site.Slot.Sizes) ?? Pick(city, site.Slot, null);
+                CityBuildingController next = site.Slot.Anchors != null ? Anchor(city, site.Slot) : Pick(city, site.Slot, site.Slot.Sizes) ?? Pick(city, site.Slot, null);
                 if (next == null || !Door(next, out Vector3 door))
                 {
                     continue;   // nowhere else in its district: it stays, under the game's own name while it is the player's
@@ -177,7 +176,10 @@ namespace RealLifeOverhaul
                 site.Front = door;
                 site.Dressed = false;
                 site.HasDoormanSpot = false;
-                SpecialBuildings.Set("hotel_" + site.Slot.Id, next, SpecialKind.Hotel, site.Slot.NameKey, "reallife_map_card_hotel", () => Settings.Hotels);
+                if (site.Slot.Anchors == null)
+                {
+                    SpecialBuildings.Set("hotel_" + site.Slot.Id, next, SpecialKind.Hotel, site.Slot.NameKey, "reallife_map_card_hotel", () => Settings.Hotels);
+                }
                 Moves++;
                 _logger?.Info("Travel: " + site.Slot.Id + " was at " + was + ", which is the player's now; it has moved to "
                               + next.building.StreetName + " " + next.building.StreetNumber + ".");
@@ -295,7 +297,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The cottages have no building of their own: their board stands by the first of these that is there.
+        // The cottages have no building of their own: their board stands by the first of these that is there, a house of their own
+        // district that nobody has bought, and never a shop or a theatre.
         private static CityBuildingController Anchor(CityManager city, HotelSlot slot)
         {
             foreach (string anchor in slot.Anchors)
@@ -304,13 +307,20 @@ namespace RealLifeOverhaul
                 if (bar > 0 && int.TryParse(anchor.Substring(bar + 1), out int number))
                 {
                     CityBuildingController controller = city.FindCityBuildingController(new Address(anchor.Substring(0, bar), number));
-                    if (controller != null && controller.building != null && !GameDlc.Gated(controller) && Door(controller, out _))
+                    if (controller != null && controller.building != null && !GameDlc.Gated(controller) && IsCottage(controller.building, slot) && !Mine(controller.building)
+                        && Door(controller, out _))
                     {
                         return controller;
                     }
                 }
             }
             return null;
+        }
+
+        /// <summary>Whether a building is a house of the slot's own district: the only kind a cottage board stands by.</summary>
+        internal static bool IsCottage(Building building, HotelSlot slot)
+        {
+            return building != null && building.BuildingType == Residential && building.Neighbourhood == slot.Neighbourhood;
         }
 
         /// <summary>Where a building's first entrance door is; false if it has none.</summary>

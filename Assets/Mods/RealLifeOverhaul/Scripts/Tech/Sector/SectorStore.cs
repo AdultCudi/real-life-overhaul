@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Tech
             w.Part('p');
             foreach (SectorProduct p in f.Products)
             {
-                w.Record().Add(p.Id).Add(p.Benchmark).Add(p.Generation).Add(p.BoostUntil).Add(p.Boost).Add(p.DiscountUntil).Add(p.TrainedDay).Add(p.Data);
+                w.Record().Add(p.Id).Add(p.Benchmark).Add(p.Generation).Add(p.BoostUntil).Add(p.Boost).Add(p.DiscountUntil).Add(p.TrainedDay).Add(p.Data).Add(p.Known);
             }
             return w.ToString();
         }
@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Tech
                 var p = new SectorProduct
                 {
                     Id = x.Int(), Benchmark = SectorRules.Clamp(x.Int(), 0, 100), Generation = Math.Max(0, x.Int()), BoostUntil = x.Int(), Boost = Math.Max(0, x.Int()),
-                    DiscountUntil = x.Int(), TrainedDay = x.Int(-1000), Data = Math.Max(0, x.Int())
+                    DiscountUntil = x.Int(), TrainedDay = x.Int(-1000), Data = Math.Max(0, x.Int()), Known = Math.Max(0, x.Int())
                 };
                 if (f.Products.Count < FirmsCatalogue.ProductsStored)
                 {

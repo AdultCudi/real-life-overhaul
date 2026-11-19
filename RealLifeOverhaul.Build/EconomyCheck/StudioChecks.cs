@@ -313,6 +313,17 @@ internal static partial class Program
         g.Hype = 100;
         StudioRules.ApplyPlaytest(g, StudioRules.OpenBeta, StudioRules.ShipThem, 1000, 1, 301, out int moved);
         Check(g.Fix == 0 && moved == (StudioRules.Quality(g) * StudioCatalogue.BacklashPerQuality - 100) / 2, "studio: an open beta moves hype half way to what the game carries, and shipping the bugs fixes none");
+        // a big game's plan is many times a small one's, but what it has built is what holds its bugs: the playtest is offered at the same point in the build for both
+        foreach (int scale in new[] { 1, 20 })
+        {
+            GameDev t = MadeGame(50 + scale, Genre.Action, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 60, 0, 0);
+            t.Phase = (int)GamePhase.Production;
+            t.Work = 10000L * scale;
+            t.Done = t.Work / 5;
+            t.Hidden = (int)(t.Done * 30 / 2000);
+            Check(StudioRules.PlaytestWorth(t) && !StudioRules.PlaytestWorth(new GameDev { Phase = (int)GamePhase.Production, Work = t.Work, Done = t.Done, Hidden = 0 }),
+                "studio: a playtest is offered for a game of " + t.Work + " work points once its hidden bugs are a tenth of what its built work holds, and not before");
+        }
         g.Phase = (int)GamePhase.Live;
         g.Launched = 400;
         g.Reported = StudioRules.BugRoom(g) / 5;

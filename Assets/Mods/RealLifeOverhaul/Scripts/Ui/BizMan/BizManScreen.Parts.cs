@@ -436,7 +436,7 @@ namespace RealLifeOverhaul.Ui
             RivalGoods(district);
             for (int i = 0; i < n; i++)
             {
-                t.Rows[i] = Good(table.data[i], managed);
+                t.Rows[i] = Good(table.data[i], managed, district);
             }
             t.RowCount = n;
             t.Hover = _goodHover < n ? _goodHover : -1;
@@ -462,10 +462,16 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The lowest price in the good's district as the game holds it now. The model keeps the figure read when the table was built, while the game's own cell takes it again after each
+        // price edit (a forced read that also renews the game's cache, which this reads), and the game clears that cache daily: reading the model showed one figure for good.
+        private static float Lowest(InventoryProductCellView.InventoryProductModel g, string district) =>
+            g.Item == null || g.Item.HasTag(TagRef.Itemtag.isbag) || g.Item.HasTag(TagRef.Itemtag.isshoppingcontainer) || string.IsNullOrEmpty(district)
+                ? g.MarketPrice : ItemHelper.GetLowestMarketPrice(g.Item.itemName, district);
+
         // A good's row as the game's own price cell shows it: a bag's price fixed at nothing, a container's market price and a
         // service's stock as a dash, the price held while a pricing manager sets it, and the price marked yellow above the
         // market and red at twice the usual price, by the game's own rule (InventoryProductCellView.SetData).
-        private UiDataRow Good(InventoryProductCellView.InventoryProductModel g, bool managed)
+        private UiDataRow Good(InventoryProductCellView.InventoryProductModel g, bool managed, string district)
         {
             if (g == null || g.Item == null || g.RetailPriceReference == null)
             {
@@ -475,7 +481,7 @@ namespace RealLifeOverhaul.Ui
             bool bag = item.HasTag(TagRef.Itemtag.isbag);
             bool service = (item.type & ItemType.ServiceProduct) != 0;
             float price = g.RetailPriceReference.price;
-            float dear = _rivalGoods.Contains(item.itemName) ? Math.Min(item.DefaultMarketPrice, g.MarketPrice) : item.DefaultMarketPrice;
+            float lowest = Lowest(g, district), dear = _rivalGoods.Contains(item.itemName) ? Math.Min(item.DefaultMarketPrice, lowest) : item.DefaultMarketPrice;
             UiRole mark = bag ? UiRole.None : price != 0f && price >= item.DefaultMarketPrice * 2f ? UiRole.Danger : price > dear ? UiRole.Warn : UiRole.None;
             int steps = bag || managed ? 0 : (price > 0f ? UiDataTable.CanLess : 0) | UiDataTable.CanMore;
             return new UiDataRow
@@ -483,7 +489,7 @@ namespace RealLifeOverhaul.Ui
                 Cells = new[]
                 {
                     g.ProductName, UiText.Whole(g.SoldLastWeek), service ? "-" : UiText.Whole(g.StockCount),
-                    item.HasTag(TagRef.Itemtag.isshoppingcontainer) ? "-" : g.MarketPrice.ToCurrencyFormat(), bag ? "0" : price.ToCurrencyFormat()
+                    item.HasTag(TagRef.Itemtag.isshoppingcontainer) ? "-" : lowest.ToCurrencyFormat(), bag ? "0" : price.ToCurrencyFormat()
                 },
                 Values = new[] { 0, -1, -1, 0, steps },
                 Tones = new[] { UiRole.None, UiRole.None, !service && g.StockCount <= 0 ? UiRole.DangerText : UiRole.None, UiRole.None, mark },

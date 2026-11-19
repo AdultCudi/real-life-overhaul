@@ -288,6 +288,7 @@ namespace RealLifeOverhaul
                         }
                     }
                     GameObject label = UnityEngine.Object.Instantiate(word.gameObject, one, false);
+                    Plain(label);
                     label.name = "Word";
                     var labelRect = (RectTransform)label.transform;
                     labelRect.anchorMin = Vector2.zero;
@@ -317,6 +318,7 @@ namespace RealLifeOverhaul
                 copyRect.anchoredPosition = new Vector2(Pad - firstLeft, 4f);   // (the game's tab keeps its content 4 above its middle: the sprite has a shadow below)
 
                 GameObject note = UnityEngine.Object.Instantiate(word.gameObject, tab.transform, false);
+                Plain(note);
                 note.name = "Note";
                 var noteRect = (RectTransform)note.transform;
                 noteRect.anchorMin = noteRect.anchorMax = new Vector2(0f, 0.5f);
@@ -373,6 +375,16 @@ namespace RealLifeOverhaul
                 }
                 Forget();
                 return false;
+            }
+        }
+
+        // The date's label carries other mods' pieces as children (Alcware Seasons hangs its season line under it), and a copy of it brings them
+        // along as frozen duplicates that never update. Only the words are wanted, so every child goes.
+        private static void Plain(GameObject copy)
+        {
+            for (int i = copy.transform.childCount - 1; i >= 0; i--)
+            {
+                UnityEngine.Object.DestroyImmediate(copy.transform.GetChild(i).gameObject);
             }
         }
 

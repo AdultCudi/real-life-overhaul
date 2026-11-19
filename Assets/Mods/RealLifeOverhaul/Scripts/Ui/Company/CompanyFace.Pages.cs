@@ -695,17 +695,51 @@ namespace RealLifeOverhaul.Ui
             float line = (float)Math.Ceiling(UiTextRules.LineHeight(UiStyle.Small) / 4f) * 4f;   // a whole step of the grid, so the taller row stays on it
             var heights = new float[total];
             int rows = 0;
-            float used = 0f;
+            float used = 0f, all = 0f;
             for (int i = 0; i < total; i++)
             {
                 ref CompanyItem item = ref b.Items[i];
                 heights[i] = !string.IsNullOrEmpty(item.Sub) && UiTextRules.Width(item.Sub, UiStyle.Small) > RowWordsWidth(cw, item.Figure, item.Note) ? ListRow + line : ListRow;
-                if (y + used + heights[i] > bottom)
+                all += heights[i] + ListGap;
+                if (rows == i && y + used + heights[i] <= bottom)
                 {
-                    break;
+                    used += heights[i] + ListGap;
+                    rows++;   // the rows that fit the room
                 }
-                used += heights[i] + ListGap;
-                rows++;   // the rows that fit the room
+            }
+            // Rows that do not all fit scroll in a region of their own (one the page has not given to another list), so that none is out of reach; a page that has no region left
+            // ends in how many it leaves out.
+            int slot = total > rows && rows > 0 ? FreeSlot(lay) : -1;
+            if (slot >= 0)
+            {
+                float viewH = Math.Max(ListRow, bottom - y), offset = lay.Offset[slot];
+                int reveal = lay.Reveal[slot];
+                lay.Reveal[slot] = -1;
+                if (reveal >= 0 && reveal < total)
+                {
+                    float top = 0f;
+                    for (int i = 0; i < reveal; i++)
+                    {
+                        top += heights[i] + ListGap;
+                    }
+                    offset = Math.Max(Math.Min(offset, top), top + heights[reveal] - viewH);   // the row the pad came to, brought into view
+                }
+                offset = Math.Max(0f, Math.Min(offset, Math.Max(0f, all - ListGap - viewH)));
+                lay.Offset[slot] = offset;
+                short clip = s.AddClip(x, y, cw, viewH, offset);
+                s.Clips[clip].ContentHeight = all - ListGap;
+                lay.Clip[slot] = clip;
+                short list = s.AddList(total, 0, total, clip, -1);
+                lay.List[slot] = list;
+                var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+                float ry = 0f;
+                for (int i = 0; i < total; i++)
+                {
+                    ItemRow(s, inClip.Arriving(i), lay, ref b.Items[i], 0f, ry, cw, heights[i], list, i);
+                    ry += heights[i] + ListGap;
+                }
+                UiDraw.ScrollThumb(s, at, x + cw - UiTokens.S1, y, viewH, offset, all - ListGap);
+                return y + viewH + UiTokens.S2;
             }
             bool rest = rows < total;
             if (rest && rows > 1 && bottom - (y + used) < UiTokens.PairRow)
@@ -714,15 +748,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < rows; i++)
             {
-                ref CompanyItem it = ref b.Items[i];
-                int face = UiDraw.Box(s, at, x, y, cw, heights[i], UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                RowFace(s, at.In(face), x, y, cw, heights[i], it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
-                    false, false, it.FaceName, true);
-                if (it.Press && it.Act.Do != CompanyDo.None)
-                {
-                    int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
-                    UiDraw.Node(s, at, x, y, cw, heights[i], Item, index, face);
-                }
+                ItemRow(s, at, lay, ref b.Items[i], x, y, cw, heights[i], -1, i);
                 y += heights[i] + ListGap;
             }
             if (rest && rows > 0 && bottom - y >= UiTokens.PairRow)
@@ -734,6 +760,32 @@ namespace RealLifeOverhaul.Ui
                 y += UiTokens.PairRow;
             }
             return y + UiTokens.S2;
+        }
+
+        // The region of the layout no list of the page has taken yet (the card's, then the page's, the grid's and the log's); -1 when all are taken.
+        private static int FreeSlot(CompanyLayout lay)
+        {
+            int[] order = { CompanyLayout.SlotCard, CompanyLayout.SlotPage, CompanyLayout.SlotGrid, CompanyLayout.SlotLog };
+            for (int i = 0; i < order.Length; i++)
+            {
+                if (lay.Clip[order[i]] < 0)
+                {
+                    return order[i];
+                }
+            }
+            return -1;
+        }
+
+        private static void ItemRow(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float cw, float h, short list, int index)
+        {
+            int face = UiDraw.Box(s, at, x, y, cw, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            RowFace(s, at.In(face), x, y, cw, h, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
+                false, false, it.FaceName, true);
+            if (it.Press && it.Act.Do != CompanyDo.None)
+            {
+                int act = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
+                UiDraw.Node(s, at, x, y, cw, h, Item, act, face, false, list, index);
+            }
         }
 
         // A switch with what it decides: the words and the line under them at the left, the switch at the right (its state in words, or who decides).

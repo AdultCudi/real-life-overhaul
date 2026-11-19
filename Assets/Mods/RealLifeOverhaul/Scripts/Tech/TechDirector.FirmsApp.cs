@@ -141,6 +141,11 @@ namespace RealLifeOverhaul.Tech
                 return null;   // the page does not offer the button then, and says which limit it is
             }
             FirmsRules.TrimWithdrawn(_firmsFile);
+            int forced = NicheSegment(place, kind, out _);
+            if (forced >= 0)
+            {
+                segment = (Segment)forced;   // made for the buyers of the niche the firm was founded in
+            }
             string name = TitleRules.Clean(typed);
             if (name.Length == 0 || TitleSet(0, null).Contains(TitleRules.Key(name)))
             {

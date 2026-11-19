@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Tech
         public int DiscountUntil;             // a big customer's discount runs until this day
         public int TrainedDay = -1000;        // the day of its last training run at the desk
         public int Data;                      // the data its last run was trained on (SectorRules.Data*), for its next benchmark
+        public int Known;                     // thousandths of its market that knew of it at the last day's pass: saved so a page read before the next pass (a load) shows what it showed
     }
 
     /// <summary>One shared market on a day: its buyers and everything sold into it, worked out each day and never saved.</summary>

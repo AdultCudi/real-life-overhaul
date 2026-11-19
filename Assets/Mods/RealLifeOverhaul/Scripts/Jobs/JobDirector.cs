@@ -346,6 +346,9 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_job_no_record";
             }
+            else if (!heavy && !ClientFor(def, out reasonKey))
+            {
+            }
             else if (heavy && NearestHeavy(60f) == null)
             {
                 _rental.CanHire(false, true, out reasonKey);   // no heavy truck of their own near: one can be hired, if they can pay for it
@@ -355,6 +358,27 @@ namespace RealLifeOverhaul
                 _rental.CanHire(false, out reasonKey);   // no car near: a van can be hired, if they can pay for it
             }
             return reasonKey == null;
+        }
+
+        // A gig worked in somebody's shop is offered only where the same search the gig makes would find that shop.
+        private static bool ClientFor(JobDef def, out string reasonKey)
+        {
+            reasonKey = null;
+            bool shelves = def.Id == JobCatalogue.Stocker;
+            if (!shelves && def.Id != JobCatalogue.Cleaner)
+            {
+                return true;
+            }
+            GigOffer offer = GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky());
+            int units = Mathf.Min(offer.Units > 0 ? offer.Units : def.ShiftUnits, JobState.LeftToday(def));
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null)
+            {
+                return true;
+            }
+            var car = gm.selectedVehicle as CarController;
+            Vector3 from = car != null ? car.transform.position : gm.playerController.transform.position;
+            return shelves ? StockerJob.CanBegin(from, def, units, out reasonKey) : CleanerJob.CanBegin(from, def, units, out reasonKey);
         }
 
         /// <summary>

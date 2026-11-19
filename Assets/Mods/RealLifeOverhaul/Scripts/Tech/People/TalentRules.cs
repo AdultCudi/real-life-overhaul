@@ -591,6 +591,17 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// A request for a rise and a rival's offer in hand called off, for the option that switches raises and rivals' offers off:
+        /// nobody is refused or lets go for it. The rest after an offer is kept, so that none follows the day the option is on again.
+        /// </summary>
+        public static void StandDown(Profile p)
+        {
+            p.RaiseAsk = 0;
+            p.AskEnd = 0;
+            p.PoachBp = 0;
+        }
+
         /// <summary>The rival's offer answered: matched with a rise, or not and they hand in their notice.</summary>
         public static void Answer(Profile p, bool match, int day, int year)
         {
