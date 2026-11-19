@@ -93,24 +93,21 @@ internal static partial class Program
         }
         Check(moves == 0 && sec == (int)MarketSector.Specialists, "listing review: 52 to 48 one quarter and 48 to 52 the next, twelve quarters: never moved (" + moves + ")");
 
-        // A lead must hold at two reviews in a row; one lead and back is not enough.
+        // A lead of a tenth of the takings moves it at the first review that sees it: the quarter's report is followed, and the margin is what keeps an even company still.
         var lead = new OwnListing { Mixed = true };
         LQuarter(lead, ("ba:businesstype_jewelrystore", 5000), ("ba:businesstype_clothingstore", 5000));
         int first = ListingSector.Review(lead, (int)MarketSector.Specialists, false, out int _);
         LQuarter(lead, ("ba:businesstype_jewelrystore", 3000), ("ba:businesstype_clothingstore", 7000));
-        int second = ListingSector.Review(lead, (int)MarketSector.Specialists, false, out int _);
-        Check(first < 0 && second < 0 && lead.Lead == (int)MarketSector.Stores && lead.LeadCount == 1, "listing review: a tie stays, and a first lead only counts");
-        LQuarter(lead, ("ba:businesstype_jewelrystore", 3000), ("ba:businesstype_clothingstore", 7000));
-        Check(ListingSector.Review(lead, (int)MarketSector.Specialists, false, out int t2) == (int)MarketSector.Stores && t2 == Trade("clothing"),
-            "listing review: a lead held at a second review moves it");
-        var back = new OwnListing { Mixed = true };
-        LQuarter(back, ("ba:businesstype_jewelrystore", 3000), ("ba:businesstype_clothingstore", 7000));
-        int once = ListingSector.Review(back, (int)MarketSector.Specialists, false, out int _);
-        LQuarter(back, ("ba:businesstype_jewelrystore", 9000), ("ba:businesstype_clothingstore", 1000));
-        int after = ListingSector.Review(back, (int)MarketSector.Specialists, false, out int _);
-        LQuarter(back, ("ba:businesstype_jewelrystore", 3000), ("ba:businesstype_clothingstore", 7000));
-        Check(once < 0 && after < 0 && ListingSector.Review(back, (int)MarketSector.Specialists, false, out int _) < 0,
-            "listing review: a lead that falls back starts its count again");
+        int second = ListingSector.Review(lead, (int)MarketSector.Specialists, false, out int t2);
+        Check(first < 0 && second == (int)MarketSector.Stores && t2 == Trade("clothing") && ListingSector.LeadReviews == 1,
+            "listing review: a tie stays, and a lead of a tenth of the takings moves it at the first review that sees it");
+        var thin = new OwnListing { Mixed = true };
+        LQuarter(thin, ("ba:businesstype_jewelrystore", 4700), ("ba:businesstype_clothingstore", 5300));
+        Check(ListingSector.Review(thin, (int)MarketSector.Specialists, false, out int _) < 0, "listing review: a lead under a tenth of the takings does not move it");
+
+        // The kit's page of the player's own company says the sector, what it earns in and the day of the next review, as the old page does.
+        Check(ModSource(@"Ui\Stocks\StocksBuild.Company.cs").Contains("notes.Add(MarketApp.SectorLine(state, s));") && ModSource(@"Markets\MarketApp.Own.cs").Contains("internal static string SectorLine(MarketState s, Stock k)"),
+            "listing sector: the stocks page of the player's own company carries the sector line with the next review's day");
 
         // Nothing earned, or a company whose mix is not followed (listed by an older version): nothing moves.
         var idle = new OwnListing { Mixed = true };
