@@ -189,7 +189,11 @@ internal static partial class Program
         Equal("tenants: the late payers listed are the late rows", tenants.Related.Length, CountRows(tenantRows, r => unitLet(r) && HasDigit(r.Cells[4])));
         Equal("tenants: the roll and the tenants agree on the owed", Fig(rollStd, 2), Fig(tenants, 2));
         Equal("tenants: the sidebar counts the let units", Num(rollStd.Nav[1].Count), Fig(tenants, 0));
-        Equal("tenants: the roll's total row counts the let units", Num(rollStd.Table.TotalsLabel), Fig(tenants, 0));
+        // A flat held is a unit of the roll that the Tenants tab does not list (its tenant is on the flat's own page), so the roll's let count and its DUE hold it beside the tenants'.
+        Func<UiDataRow, bool> flatRow = r => r.Subs[0] != null && r.Subs[0].Contains(En("reallife_flat_kind_filter"));
+        long flatsLet = CountRows(rollStd.Table.Rows, r => flatRow(r) && r.Tones[3] == UiRole.None && r.Cells[3] != "-" && r.Cells[3].Length > 0);
+        long flatsDue = SumCol(rollStd.Table.Rows, 3, r => flatRow(r) && r.Tones[3] == UiRole.None && r.Cells[3] != "-" && r.Cells[3].Length > 0);
+        Equal("tenants: the roll's total row counts the let units and the flats let", Num(rollStd.Table.TotalsLabel), Fig(tenants, 0) + flatsLet);
         // Works: the heads count the rows.
         UiDataRow[] workRows = works.Table.Rows;
         Func<UiDataRow, bool> callRow = r => r.Values[0] == (int)UiIcon.Wrench;
@@ -244,7 +248,7 @@ internal static partial class Program
         Equal("rents: the mean flat rent is the roll's chart last month", Num(rentsView.Rents.Rows[0].Value), LastPoint(rollStd.Lower));
         Equal("rents: YOUR UNITS, LET is the tenants' let", Num(rentsView.Rents.Rows[6].Value), Fig(tenants, 0));
         Equal("rents: of all the units you let yourself", Num(rentsView.Rents.Rows[6].Value.Substring(rentsView.Rents.Rows[6].Value.IndexOf(' '))), Fig(tenants, 0) + Fig(tenants, 1));
-        Equal("rents: YOUR MEAN RENT is DUE over the let units", Num(rentsView.Rents.Rows[7].Value), Fig(rollStd, 0) / Math.Max(1, Fig(tenants, 0)));
+        Equal("rents: YOUR MEAN RENT is DUE over the let units", Num(rentsView.Rents.Rows[7].Value), (Fig(rollStd, 0) - flatsDue) / Math.Max(1, Fig(tenants, 0)));
         // The listing page says what the table says, in the same unit.
         EstateModel listing = PM("listing");
         UiDataRow listed = FindRow(market.Table.Rows, listing.DetailTitle);

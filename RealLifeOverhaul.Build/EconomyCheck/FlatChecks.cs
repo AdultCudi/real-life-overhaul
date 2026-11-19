@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Ui;
 
 // Flats and studios to buy as a home (run with --flats; Scripts/Economy/Estate/Flat*.cs): a building's value split over its units by floor area, a studio the smallest
 // share, the shares adding up to the building's value to the dollar; the price of a long lease and what it comes to in every district of the game's own figures (a
@@ -25,6 +27,7 @@ internal static partial class Program
         FlatRefusalChecks();
         FlatStoreChecks();
         FlatSourceChecks();
+        FlatRollChecks();
     }
 
     // The game's own figures (Build 3682): a residential building's floor, and the price of a square metre of its district (the base price 20,554 times residential's 1.5
@@ -596,5 +599,70 @@ internal static partial class Program
         Check(!langs.Take(1).Any(l => l.Values.Any(v => v.Contains("—") && v.Contains("reallife_flat"))), "flats: no dash in the texts");
         bool dashes = en.Where(kv => kv.Key.StartsWith("reallife_flat_", StringComparison.Ordinal) || kv.Key.StartsWith("reallife_transaction_flat_", StringComparison.Ordinal)).All(kv => !kv.Value.Contains('—') && !kv.Value.Contains('–') && !kv.Value.Contains('!'));
         Check(dashes, "flats: no dash and no exclamation mark in the flats' texts");
+    }
+
+    // The rent roll's columns hold what they are for: a person cell draws a portrait, so only a tenant's name may stand in one with a face, and a chip cell is a short state that
+    // fits its column. A flat lived in and a flat let are rows of the sample roll in every language, as a unit that is not a building.
+    private static void FlatRollChecks()
+    {
+        string stray = "none", wide = "none";
+        int rolls = 0, flatRows = 0, faceless = 0, tenants = 0;
+        foreach (string lang in ModLanguages.All)
+        {
+            UiWords t = UiWords(lang);
+            var plain = new HashSet<string>(StringComparer.Ordinal)
+            {
+                string.Empty, "-", t("reallife_flat_kind_filter", "x1"), t("reallife_flat_tenant_home", "x2"), t("reallife_flat_tenant_empty", "x3"), t("reallife_estate_row_nobody", "x4"),
+                t("reallife_estate_kind_building", "x5"), t("reallife_estate_kind_hotel", "x6"), t("reallife_estate_kind_lot", "x7"), t("reallife_space_kind", "x8"), t("reallife_estate_state_self", "x9"),
+                t("reallife_estate_state_game", "x10"), t("reallife_estate_row_hotel_owned", "x11"), t("reallife_estate_row_hotel_leased", "x12"), t("reallife_flat_state_home", "x13")
+            };
+            foreach (string state in new[] { "roll", "roll_twenty" })
+            {
+                UiDataTableModel table = UiSamples.Estate(t, state).Table;
+                rolls++;
+                for (int r = 0; r < table.RowCount; r++)
+                {
+                    UiDataRow row = table.Rows[r];
+                    for (int c = 0; c < table.Columns.Length; c++)
+                    {
+                        string words = row.Cells[c];
+                        int value = row.Values[c];
+                        if (table.Columns[c].Kind == UiCellKind.Person)
+                        {
+                            bool face = value != UiDataTable.NoFace && value > UiDataTable.GlyphFaceBase;
+                            if (face && plain.Contains(words) && stray == "none")
+                            {
+                                stray = lang + " " + state + " row " + r + ": \"" + words + "\" has a portrait";
+                            }
+                            if (face && !string.IsNullOrEmpty(row.Subs[0]) && row.Subs[0].Contains(t("reallife_flat_kind_filter", "x1")))
+                            {
+                                tenants++;
+                            }
+                            if (!face && row.Subs[0] != null && row.Subs[0].Contains(t("reallife_flat_kind_filter", "x1")))
+                            {
+                                faceless++;
+                            }
+                        }
+                        else if (table.Columns[c].Kind == UiCellKind.Chip && !string.IsNullOrEmpty(words) && row.Values[1] == UiDataTable.NoFace && words != t("reallife_estate_state_game", "x10") && words != t("reallife_estate_state_self", "x9"))   // a unit's late chip and a game-let building's chip are older and may widen their column in a long language
+                        {
+                            float need = UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot
+                                + UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1);
+                            if (need > table.Columns[c].Width && wide == "none")
+                            {
+                                wide = lang + " " + state + " row " + r + ": \"" + words + "\" needs " + need + " px of " + table.Columns[c].Width;
+                            }
+                        }
+                    }
+                    flatRows += row.Subs[0] != null && row.Subs[0].Contains(t("reallife_flat_kind_filter", "x1")) ? 1 : 0;
+                }
+            }
+        }
+        Check(stray == "none", "flats: no cell of the rent roll's tenant column holds a kind, a state or a word for nobody with a portrait (" + stray + ")");
+        Check(wide == "none", "flats: every chip of a building, hotel, lot or home row of the rent roll fits its 144 px column in every language (" + wide + ")");
+        Check(flatRows == rolls * 2 && faceless == rolls && tenants == rolls, "flats: the sample roll holds a flat lived in (no portrait) and a flat let (its tenant's portrait) in every language (" + flatRows + " rows, " + faceless + " without a face, " + tenants + " with)");
+        string mine = ModSource(@"Ui\Estate\EstateLive.Mine.cs"), flats = ModSource(@"Ui\Estate\EstateLive.Flats.cs");
+        Check(!mine.Contains("Cells = new[] { name, kind,") && !mine.Contains("Cells = new[] { h.Name, EstateText.T(\"reallife_estate_kind_building\")") && CountOfText(mine, "UiDataTable.NoFace") >= 2
+              && flats.Contains("UiDataTable.NoFace") && mine.Contains("int flats = FlatHeld(rows, keys, lines);") && mine.Contains("units += flats;") && flats.Contains("lines.Add(new RollLine"),
+            "flats: the live roll puts the kind under the unit, nobody's tenant cell without a face, and counts a held flat among the units and the let ones");
     }
 }

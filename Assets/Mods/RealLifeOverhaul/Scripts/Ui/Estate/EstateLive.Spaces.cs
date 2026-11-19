@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Ui
                         Labels = new[] { EstateText.T("reallife_estate_col_worth"), EstateText.T("reallife_estate_col_paid") },
                         Values = new[] { SpaceGame.Money(d.BackFor(h)), SpaceGame.Money(h.Paid) }
                     };
-                    rows.Add(OtherRow(UiIcon.Car, spaceName, SpaceText.Tenure(h), 0, SpaceText.T("reallife_space_kind"), UiRole.None, EstateTables.OwnSpace, held));
+                    rows.Add(OtherRow(UiIcon.Car, spaceName, EstateText.Pair(SpaceText.T("reallife_space_kind"), SpaceText.Tenure(h)), 0, string.Empty, UiRole.None, EstateTables.OwnSpace, held));
                     keys.Add(SpacePick + p.Number.ToString(Inv));
                 }
             }
