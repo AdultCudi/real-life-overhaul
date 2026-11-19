@@ -416,8 +416,15 @@ namespace RealLifeOverhaul.Economy
                     return Holdings[i];
                 }
             }
-            return null;
+            // A flat's key finds its one-unit holding, so a tenancy, a call or a sale is looked up as a building's is.
+            OwnedFlat flat = FlatRules.IsKey(place) ? Flats.Find(place) : null;
+            return flat != null ? flat.Hold : null;
         }
+
+        /// <summary>The buildings the player holds and then the flats, as one list for what both let: tenants, calls, inspections.</summary>
+        public int LetCount => Holdings.Count + Flats.Flats.Count;
+
+        public EstateHolding LetAt(int i) => i < Holdings.Count ? Holdings[i] : Flats.Flats[i - Holdings.Count].Hold;
 
         public HotelFile Hotel(string slot)
         {

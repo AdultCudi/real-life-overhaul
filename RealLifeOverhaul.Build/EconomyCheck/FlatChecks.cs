@@ -21,6 +21,7 @@ internal static partial class Program
         FlatFoldChecks();
         FlatSaleChecks();
         FlatLetChecks();
+        FlatMoreChecks();
         FlatRefusalChecks();
         FlatStoreChecks();
         FlatSourceChecks();
@@ -396,6 +397,101 @@ internal static partial class Program
         Check(state.Flats != null && state.Flats.Flats.Count == 0 && FlatStore.Key != EstateStore.Key && FlatStore.Key != EstateExtraStore.TenantsKey, "flats: the line is its own, beside the Estate's and never inside it");
     }
 
+    // The mod's own districts, from their own figures (Scripts/Uptown/DistrictSplit): a residential building there is a size of the game's laid on a lot in storeys (the floor is the
+    // size's square metres times its storeys, a unit one storey), at the district's square metre (the base price times residential's 1.5 times its real estate multiplier). The
+    // cheapest is the game's smallest residential size (54 m2, three storeys, the fewest units that split) on its quietest street (the traffic factor 0.4 the game's cheapest has).
+    private static int FlatMineStudio(int district, out string detail)
+    {
+        RealLifeOverhaul.Uptown.DistrictFigures f = RealLifeOverhaul.Uptown.DistrictSplit.Figures(district);
+        int best = int.MaxValue;
+        detail = string.Empty;
+        for (int storeys = 3; storeys <= 10; storeys++)
+        {
+            for (int lot = 1; lot <= 40; lot++)
+            {
+                string place = "reallife%3Astreet_test" + district + "~" + lot;
+                int value = EstateRules.Value((int)(54 * storeys * f.BasePrice * 1.5 * f.RealEstate * 0.4), EstateCatalogue.RealStart, EstateCatalogue.IndexStart, EstateCatalogue.IncomeMiddle, 300, 0);
+                int[] w = FlatRules.Weights(place, storeys, EstateCatalogue.IncomeMiddle);
+                int[] shares = FlatRules.Freehold(value, w);
+                for (int i = 0; i < storeys; i++)
+                {
+                    if (w[i] == FlatCatalogue.KindWeight[0] && FlatRules.Lease(shares[i]) < best)
+                    {
+                        best = FlatRules.Lease(shares[i]);
+                        detail = storeys + " storeys worth " + value;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    private static void FlatMoreChecks()
+    {
+        string detail, detail2;
+        int uptown = FlatMineStudio(0, out detail), cedar = FlatMineStudio(1, out detail2);
+        Check(uptown == 47350 && cedar == 28710 && ProductTerms.Deposit(cedar, ProductCatalogue.HomeDepositLeast) == 5742,
+            "flats: the cheapest studio in Uptown is " + uptown + " (" + detail + "), deposit " + ProductTerms.Deposit(uptown, ProductCatalogue.HomeDepositLeast)
+            + "; in Cedar Heights " + cedar + " (" + detail2 + "), deposit " + ProductTerms.Deposit(cedar, ProductCatalogue.HomeDepositLeast));
+        // The duties of a landlord, on a flat's one unit, by the rules a building's units have.
+        var s = new EstateState { Seed = 99 };
+        var f = new OwnedFlat { Place = "Duty~5", Slot = 1, Units = 6, Paid = 30000, Value = 30000 };
+        f.Hold.Place = f.Key; f.Hold.Use = (int)EstateUse.Homes; f.Hold.Base = 30000; f.Hold.Cond = 900; f.Hold.Managed = true; f.Hold.Income = 1000;
+        s.Flats.Flats.Add(f);
+        Check(ReferenceEquals(s.Holding(f.Key), f.Hold) && s.Holding("Duty~5") == null && s.LetCount == 1 && ReferenceEquals(s.LetAt(0), f.Hold),
+            "flats: a flat's key finds its holding, so a tenancy, a call and a sale are looked up as a building's are, and the buildings and the flats are one list for what both let");
+        EstateClimate c = EstateClimate.Steady;
+        RentApplicant a = null;
+        for (int day = 1; day < 200 && a == null; day++)
+        {
+            a = EstateRules.Apply(f.Hold, 0, 99, day, c);
+        }
+        Check(a != null && EstateRules.Accept(f.Hold, a.Id, 10), "flats: a flat lets to an applicant");
+        int calls = 0, inspected = 0;
+        for (int day = 11; day < 500 && f.Hold.Units[0].Let; day++)
+        {
+            DutyDay d = EstateRules.Duty(f.Hold, 0, 99, day, c);
+            calls += d.NewCall ? 1 : 0;
+            Inspection r = EstateDay.Inspect(s, f.Hold, day, c, false);
+            inspected += r.Done ? 1 : 0;
+            EstateDay.Unit(s, f.Hold, 0, day, c, true);
+            EstateRules.Wear(f.Hold);
+        }
+        Check(calls > 0 && inspected > 0, "flats: a let flat reports repairs and is inspected by the city by a building's own rules (" + calls + " calls, " + inspected + " inspections)");
+        f.Hold.Manager = (int)EstateManager.Manager;
+        f.Hold.Units[0].Ask = 1100;
+        f.Hold.Level = 2;
+        f.Hold.Units[0].Call = 3; f.Hold.Units[0].CallDay = 40; f.Hold.Units[0].CallCost = 80; f.Hold.Units[0].Happy = 640; f.Hold.InspectDay = 77; f.Hold.RentYear = 500; f.Hold.CostYear = 90;
+        var book = new FlatBook();
+        book.Flats.Add(f);
+        var back = new FlatBook();
+        FlatStore.Read(back, FlatStore.Write(book));
+        OwnedFlat g = back.Flats.Count == 1 ? back.Flats[0] : null;
+        Check(g != null && g.Hold.Manager == (int)EstateManager.Manager && g.Hold.Units[0].Call == 3 && g.Hold.Units[0].CallCost == 80 && g.Hold.Units[0].Happy == 640 && g.Hold.InspectDay == 77
+              && g.Hold.Level == 2 && g.Hold.RentYear == 500 && g.Hold.CostYear == 90 && FlatStore.Write(back) == FlatStore.Write(book),
+            "flats: the manager chosen, the open call, the mood, the inspection and the year's figures round trip through the save, the manager passing through untouched");
+        // A flat in a building the player rents is listed, and says so.
+        FlatBuilding b = FlatBlock("Rented~3");
+        b.Renting = true;
+        var into = new List<FlatListing>();
+        for (int day = 1; day < 400 && into.Count == 0; day += FlatCatalogue.ListWindow)
+        {
+            FlatRules.Listings(into, b, 5, day, null);
+        }
+        Check(into.Count > 0 && into.All(x => x.Renting), "flats: a unit of a building the player rents is listed, marked as the one they live in");
+        string game = ModSource(@"Economy\Estate\EstateGame.Flats.cs"), director = ModSource(@"Economy\Estate\EstateDirector.Flats.cs");
+        Check(game.Contains("reg.RentPerDay <= 0f || held.In(c.Place) > 0") && game.Contains("reg.RentPerDay = 0f;") && game.Contains("deposit = Mathf.Max(0, Mathf.FloorToInt(reg.lastDeposit));")
+              && director.Contains("Pay(back, EstateGame.FlatDepositKey"),
+            "flats: buying the flat one rents ends the rent and gives the deposit back, touching nothing inside; a building rented free or with a flat held is not listed again");
+        Check(ModSource(@"Economy\Estate\EstateDirector.App.cs").Contains("FlatNoticePick(ref tab, ref pick);") && director.Contains("private static void FlatNoticePick("),
+            "flats: a notice about a flat's unit, call or applicant opens the flat's page");
+        string tenants = ModSource(@"Economy\Estate\EstateApp.Property.cs"), works = ModSource(@"Ui\Estate\EstateLive.Works.cs"), alerts = ModSource(@"Economy\Estate\EstateDirector.Property.cs");
+        Check(MemberText(tenants, "private void WriteTenants(").Contains("state.LetAt(i)") && works.Contains("_s.LetAt(i)") && alerts.Contains("EstateHolding h = _state.LetAt(i);")
+              && MemberText(director, "private void FlatLetDay(").Contains("DutiesMorning(h, day)"),
+            "flats: a let flat is in the Tenants tab, the calls, the Planner's rows and the badge on both interfaces, and has the landlord's morning");
+        Check(FlatCatalogue.LeaseShare > 0 && FlatCatalogue.LeaseShare < 1000 && !ModSource(@"Economy\Estate\FlatRules.cs").Contains("150"), "flats: the lease's share is one constant and nothing else writes it");
+    }
+
     private static string FlatSource(string relative) => ModSource(relative);
 
     private static void FlatSourceChecks()
@@ -413,7 +509,7 @@ internal static partial class Program
             "flats: in a Going Public session no building is read for sale and none is made the player's home: a unit is the buying player's only, nothing is sent");
         Check(director.Contains("GoingPublic.InSession") && MemberText(director, "internal static int FlatSecurityState(").Contains("GoingPublic.InSession"),
             "flats: a session leaves every mortgage on a flat as it is and completes no sale");
-        Check(game.Contains("BuildingHelper.RentBuilding(b, 0f, 0f)") && game.Contains("reg.RentedByPlayer || reg.BuildingOwnedByPlayer"),
+        Check(MemberText(game, "public static bool TakeHome(").Contains("BuildingHelper.RentBuilding(b, 0f, 0f)") && MemberText(game, "public static bool TakeHome(").Contains("reg.BuildingOwnedByPlayer"),
             "flats: a flat becomes the player's home through the game's own RentBuilding at no rent, as a rented apartment does, and never for a building the player rents or owns");
         Check(!Regex.IsMatch(director + game + desk, @"void (Update|LateUpdate|FixedUpdate)\b") && !director.Contains("FindObjectsByType"), "flats: no Update and no search of the scene: the listing is drawn when the day, the app or a purchase asks");
         Check(MemberText(director, "private void FlatsDay(").Contains("FlatRules.BillDue(f.BilledMonth, month)") && MemberText(director, "private void FlatBills(").Contains("f.BilledMonth = month;")

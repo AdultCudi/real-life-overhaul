@@ -202,9 +202,9 @@ namespace RealLifeOverhaul.Ui
             public UiNavEntry[] Nav()
             {
                 int units = 0, let = 0, calls = 0, works = 0;
-                for (int i = 0; i < _s.Holdings.Count; i++)
+                for (int i = 0; i < _s.LetCount; i++)
                 {
-                    EstateHolding h = _s.Holdings[i];
+                    EstateHolding h = _s.LetAt(i);
                     if (!h.Managed)
                     {
                         units++;

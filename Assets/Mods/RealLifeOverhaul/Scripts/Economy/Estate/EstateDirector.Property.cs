@@ -578,9 +578,9 @@ namespace RealLifeOverhaul.Economy
 
         partial void PropertyAlerts(int day)
         {
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateHolding h = _state.Holdings[i];
+                EstateHolding h = _state.LetAt(i);
                 int id = EstateRules.Hash(h.Place);
                 // A building's units make one row of each kind, at the earliest day.
                 int waiting = 0, lapse = int.MaxValue, owed = 0, behind = 0, answer = 0, court = int.MaxValue, notice = int.MaxValue;

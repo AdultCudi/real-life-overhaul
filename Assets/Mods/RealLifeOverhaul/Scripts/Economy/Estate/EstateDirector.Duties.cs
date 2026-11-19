@@ -285,9 +285,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            for (int i = 0; i < _state.Holdings.Count; i++)
+            for (int i = 0; i < _state.LetCount; i++)
             {
-                EstateRules.DutiesOff(_state.Holdings[i], day);
+                EstateRules.DutiesOff(_state.LetAt(i), day);
             }
             CloseVisit();
             _visitPlace = null;

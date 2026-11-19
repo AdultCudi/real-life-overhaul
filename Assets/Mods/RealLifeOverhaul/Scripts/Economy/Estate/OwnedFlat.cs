@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Economy
         public int Sqm;             // its floor, square metres
         public int TaxYear;         // the game's property tax on it for a year (RealEstate.TaxesAmount)
         public string Landlord;     // the rival that owns it as the game names them; empty for the city's own landlord
+        public bool Renting;        // the player rents the building now, at a rent: buying a unit of it ends that rent
     }
 
     /// <summary>One unit of a building for sale: what it is, its share of the building by floor area, and its price as the listing rule makes it. Never saved: drawn again from the building.</summary>
@@ -24,6 +25,7 @@ namespace RealLifeOverhaul.Economy
         public int Price;           // what a long lease of it costs: the share at the lease's share of the freehold
         public int Share;           // the unit's share of the building's floor, millionths
         public int TaxYear;         // the building's property tax for a year, whole building
+        public bool Renting;        // the player rents the building (their home with a rent): the purchase ends the rent
         public string Key => FlatRules.Key(Place, Slot);
     }
 

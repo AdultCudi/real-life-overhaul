@@ -46,6 +46,14 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 string place = Picked(pick, "own:");
+                if (place != null && FlatRules.IsKey(place))
+                {
+                    _v.Pick = FlatPick + place;   // a flat is looked after on its own page
+                    if (FlatPage())
+                    {
+                        return;
+                    }
+                }
                 h = place != null ? _s.Holding(place) : null;
                 if (h != null)
                 {

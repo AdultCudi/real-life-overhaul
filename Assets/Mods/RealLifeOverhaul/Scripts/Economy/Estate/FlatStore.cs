@@ -42,6 +42,11 @@ namespace RealLifeOverhaul.Economy
                     t.Append(a > 0 ? "," : string.Empty).Append(r.Id.ToString(Inv)).Append('.').Append(r.Kind.ToString(Inv)).Append('.').Append(r.Offer.ToString(Inv)).Append('.')
                         .Append(r.Record.ToString(Inv)).Append('.').Append(r.Term.ToString(Inv)).Append('.').Append(r.Lapse.ToString(Inv));
                 }
+                // The landlord's duties and works, at the record's end: a line from before them reads as none.
+                t.Append('|');
+                Ints(t, h.Manager, h.InspectDay, h.OrderDay, h.Strikes, u.Happy, u.Call, u.CallDay, u.CallCost, u.CallAnswer, u.CallDue, u.Moans, u.Reminded ? 1 : 0, u.PlanAsked ? 1 : 0,
+                    u.OnPlan ? 1 : 0, u.PlanEach, u.QuitDay, h.Level, h.Work, h.WorkEnd, h.WorkCost, h.WorkTo, h.RentYear, h.CostYear, h.CallsYear, h.FeesYear, h.FinesYear,
+                    h.LastInspectDay, h.LastInspectScore, h.LastInspect);
             }
             return t.ToString();
         }
@@ -152,6 +157,39 @@ namespace RealLifeOverhaul.Economy
                         Term = Math.Max(1, I(q, 4)), Lapse = I(q, 5)
                     });
                 }
+            }
+            int d = at + 1;
+            if (d < c.Length)
+            {
+                h.Manager = EstateCatalogue.Clamp(I(c, d++), 0, EstateCatalogue.Managers - 1);
+                h.InspectDay = Math.Max(0, I(c, d++));
+                h.OrderDay = Math.Max(0, I(c, d++));
+                h.Strikes = Math.Max(0, I(c, d++));
+                u.Happy = I(c, d++, -1);
+                u.Call = EstateCatalogue.Clamp(I(c, d++), 0, EstateCatalogue.CallKinds);
+                u.CallDay = I(c, d++);
+                u.CallCost = Math.Max(0, I(c, d++));
+                u.CallAnswer = Math.Max(0, I(c, d++));
+                u.CallDue = I(c, d++);
+                u.Moans = Math.Max(0, I(c, d++));
+                u.Reminded = I(c, d++) != 0;
+                u.PlanAsked = I(c, d++) != 0;
+                u.OnPlan = I(c, d++) != 0;
+                u.PlanEach = Math.Max(0, I(c, d++));
+                u.QuitDay = Math.Max(0, I(c, d++));
+                h.Level = EstateCatalogue.Clamp(I(c, d++), 0, EstateCatalogue.LevelMost);
+                h.Work = Math.Max(0, I(c, d++));
+                h.WorkEnd = Math.Max(0, I(c, d++));
+                h.WorkCost = Math.Max(0, I(c, d++));
+                h.WorkTo = I(c, d++);
+                h.RentYear = I(c, d++);
+                h.CostYear = I(c, d++);
+                h.CallsYear = I(c, d++);
+                h.FeesYear = I(c, d++);
+                h.FinesYear = I(c, d++);
+                h.LastInspectDay = Math.Max(0, I(c, d++));
+                h.LastInspectScore = I(c, d++);
+                h.LastInspect = EstateCatalogue.Clamp(I(c, d++), 0, 2);
             }
             return f;
         }

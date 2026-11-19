@@ -156,6 +156,10 @@ namespace RealLifeOverhaul.Ui
                     costs.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_col_rent_month"), Month(rent)));
                     costs.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_yield"), YieldOne((int)((long)rent * _c.DaysPerYear * 10000 / Math.Max(1, price)))));
                 }
+                if (l.Renting)
+                {
+                    costs.Add(UiFactLine.Say(EstateText.T("reallife_flat_renting"), UiRole.OkText));
+                }
                 costs.Add(UiFactLine.Say(EstateText.T("reallife_flat_how"), UiRole.Muted));
                 costs.Add(UiFactLine.Say(GuideNote(EstateDirector.TabMarket, FlatPick), UiRole.Muted));   // a decision card has no free foot to hold the window's guide line
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_flat_sec_bills"), Heading = true, Lines = costs.ToArray() } };
@@ -271,6 +275,22 @@ namespace RealLifeOverhaul.Ui
                     {
                         actions.Add(_runs.Button(EstateText.T("reallife_flat_btn_stop_let"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _d.LetFlat(key, false))));
                     }
+                }
+                if (h.Managed && _d.On(EstatePart.Duties))
+                {
+                    int manager = h.Manager;
+                    own.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager), null, manager > 0, manager < EstateCatalogue.Managers - 1,
+                        () => Show(() => _d.SetManager(key, manager - 1)), () => Show(() => _d.SetManager(key, manager + 1))));
+                }
+                if (h.Cond < EstateCatalogue.ConditionNew && !h.Busy && h.SaleDay == 0)
+                {
+                    own.Add(UiFactLine.Say(EstateText.T("reallife_flat_repair_what", "amount", Money(EstateRules.Quote(h, EstateWork.Repair, -1, _c)), "condition", EstateText.Level(h.Cond))));
+                    actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_repair"), UiButtonKind.Secondary, UiIcon.Wrench, UiAction.Option,
+                        () => Show(() => _d.StartWork(key, EstateWork.Repair, -1))));
+                }
+                else if (h.Busy)
+                {
+                    own.Add(UiFactLine.Say(EstateText.T("reallife_estate_state_works", "work", EstateText.Work(h.Work), "day", h.WorkEnd.ToString(Inv))));
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_flat_sec_yours"), Heading = true, Lines = own.ToArray(), Actions = actions.ToArray() } };
                 var sell = new List<UiFactLine>(6);

@@ -150,9 +150,9 @@ namespace RealLifeOverhaul.Ui
                 int let = 0, empty = 0, owed = 0;
                 var places = new List<string>(8);   // the buildings that have rows, for the second filter
                 var buildings = new List<string>(8);
-                for (int i = 0; i < _s.Holdings.Count; i++)
+                for (int i = 0; i < _s.LetCount; i++)
                 {
-                    EstateHolding h = _s.Holdings[i];
+                    EstateHolding h = _s.LetAt(i);
                     if (!h.Managed)
                     {
                         continue;
@@ -223,11 +223,11 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_satisfaction"), Kind = UiCellKind.Meter, Width = 128f }
                 };
                 var happy = new List<int>(24);   // the tenants' satisfaction as the rows show it, for the head's mean
-                for (int i = 0; i < _s.Holdings.Count; i++)
+                for (int i = 0; i < _s.LetCount; i++)
                 {
-                    for (int n = 0; _s.Holdings[i].Managed && n < _s.Holdings[i].Units.Count; n++)
+                    for (int n = 0; _s.LetAt(i).Managed && n < _s.LetAt(i).Units.Count; n++)
                     {
-                        EstateUnit hu = _s.Holdings[i].Units[n];
+                        EstateUnit hu = _s.LetAt(i).Units[n];
                         happy.Add(hu.Let ? hu.Happy : -1);
                     }
                 }
@@ -273,9 +273,9 @@ namespace RealLifeOverhaul.Ui
             private void NeedsYou()
             {
                 var needs = new List<EstateRow>(4);
-                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
+                for (int i = 0; Duties && i < _s.LetCount; i++)
                 {
-                    EstateHolding h = _s.Holdings[i];
+                    EstateHolding h = _s.LetAt(i);
                     for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
@@ -428,9 +428,9 @@ namespace RealLifeOverhaul.Ui
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
                 var locate = new List<int>(16);
-                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
+                for (int i = 0; Duties && i < _s.LetCount; i++)
                 {
-                    EstateHolding h = _s.Holdings[i];
+                    EstateHolding h = _s.LetAt(i);
                     string callPlace = h.Place;
                     for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
@@ -487,9 +487,9 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = string.Empty, Kind = UiCellKind.Action, Width = 56f }
                 };
                 int open = 0, bookedCalls = 0, unfit = 0, callsCost = 0;
-                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
+                for (int i = 0; Duties && i < _s.LetCount; i++)
                 {
-                    EstateHolding h = _s.Holdings[i];
+                    EstateHolding h = _s.LetAt(i);
                     unfit += h.Cond < EstateCatalogue.ConditionUnfit ? 1 : 0;
                     for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {

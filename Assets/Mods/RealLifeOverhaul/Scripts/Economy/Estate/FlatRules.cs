@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Place = b.Place, Name = b.Name, District = b.District, Landlord = b.Landlord, Slot = slot, Kind = KindOf(b.Place, slot, b.Income), Units = b.Units,
                     Sqm = Sqm(b.Sqm, weights, slot), Cond = b.Cond, Income = b.Income, Freehold = freehold[slot], Price = Lease(freehold[slot]), Share = Share(weights, slot),
-                    TaxYear = b.TaxYear
+                    TaxYear = b.TaxYear, Renting = b.Renting
                 });
                 added++;
             }

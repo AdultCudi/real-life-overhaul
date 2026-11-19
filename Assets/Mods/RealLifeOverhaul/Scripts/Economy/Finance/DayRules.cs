@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             // a parking space bought, sold back or settled when its car park goes (its rent and the charges paid back are costs and count)
             "space_buy", "space_sold", "space_gone",
             // a flat bought, sold, or folded into a building bought whole (its service charge, tax and rent count)
-            "flat_buy", "flat_sold", "flat_fold"
+            "flat_buy", "flat_sold", "flat_fold", "flat_deposit"
         };
 
         /// <summary>The keys of EconoView's Investments and Loans categories that count: what a loan, a card or a share costs or pays, not the capital.</summary>

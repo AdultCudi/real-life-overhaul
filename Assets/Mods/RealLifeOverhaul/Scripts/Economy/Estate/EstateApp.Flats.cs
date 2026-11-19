@@ -125,6 +125,10 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(EstateText.T("reallife_flat_let_rent", "amount", EstateText.Money(rent), "yield", EstateText.Yield((int)((long)rent * c.DaysPerYear * 10000 / Math.Max(1, price)))));
             }
+            if (l.Renting)
+            {
+                box.Line(EstateText.T("reallife_flat_renting"), CellTone.Green);
+            }
             box.Section("reallife_flat_sec_mortgage");
             int least = ProductCatalogue.HomeDepositLeast, most = ProductCatalogue.HomeDepositMost, step = ProductCatalogue.HomeDepositStep;
             _flatPercent = EstateCatalogue.Clamp(_flatPercent, least, most);
@@ -269,6 +273,23 @@ namespace RealLifeOverhaul.Economy
                     }
                     InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_flat_btn_stop_let", () => _director.LetFlat(key, false));
                 }
+            }
+            if (h.Managed && _director.On(EstatePart.Duties) && box.HasSelector)
+            {
+                if (!box.Selector(EstateCatalogue.Managers, h.Manager, EstateText.Manager, i => _director.SetManager(key, i)))
+                {
+                    box.Line(EstateText.Manager(h.Manager));
+                }
+            }
+            if (h.Cond < EstateCatalogue.ConditionNew && !h.Busy && h.SaleDay == 0)
+            {
+                int repair = EstateRules.Quote(h, EstateWork.Repair, -1, c);
+                box.Line(EstateText.T("reallife_flat_repair_what", "amount", EstateText.Money(repair), "condition", EstateText.Level(h.Cond)));
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_estate_btn_repair", () => _director.StartWork(key, EstateWork.Repair, -1));
+            }
+            else if (h.Busy)
+            {
+                box.Line(EstateText.T("reallife_estate_state_works", "work", EstateText.Work(h.Work), "day", h.WorkEnd.ToString()));
             }
             box.Headline("reallife_estate_own_selling");
             int value = f.Value;

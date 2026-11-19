@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Economy
                 return _flatList;
             }
             _flatList.Clear();
-            EstateGame.ReadFlatBuildings(_state, _climate.Index, _flatBuildings);
+            EstateGame.ReadFlatBuildings(_state, _climate.Index, _flatBuildings, _state.Flats);
             FlatBook book = _state.Flats;
             for (int i = 0; i < _flatBuildings.Count; i++)
             {
@@ -138,7 +138,8 @@ namespace RealLifeOverhaul.Economy
                 Notifications.ShowInsufficientMoney();
                 return false;
             }
-            if (!EstateGame.TakeHome(place))
+            int back;
+            if (!EstateGame.TakeHome(place, out back))
             {
                 Pay(deposit, EstateGame.FlatBuyKey, name, null, "the deposit given back: the building could not be made the player's home");
                 TellRefusal(FlatRefusal.Gone);
@@ -159,6 +160,10 @@ namespace RealLifeOverhaul.Economy
             h.Managed = false;
             _state.Flats.Flats.Add(f);
             EstateGame.ReadFlat(f, _state);
+            if (back > 0)
+            {
+                Pay(back, EstateGame.FlatDepositKey, name, null, "the deposit of the rent the purchase ended");
+            }
             if (!cash && desk != null)
             {
                 desk.OpenFlatAccount(offer, l.Price, financed, term, f.Key, name);
@@ -206,6 +211,26 @@ namespace RealLifeOverhaul.Economy
         internal static readonly string[] FlatKindKeys = { "reallife_flat_kind_studio", "reallife_flat_kind_one", "reallife_flat_kind_two", "reallife_flat_kind_three" };
 
         internal static string FlatPick(OwnedFlat f) => "flt:" + f.Key;
+
+        /// <summary>
+        /// A notice about a unit, a call or an applicant of a flat (a pick of a building's own tabs, "unt:flat:...", "app:flat:...", "own:flat:...") opens the flat's page on the
+        /// Mine tab, where a flat is managed along with its tenants' and calls' rows on the Tenants and Works tabs.
+        /// </summary>
+        private static void FlatNoticePick(ref int tab, ref string pick)
+        {
+            if (pick == null || pick.Length < 9 || string.CompareOrdinal(pick, 4, "flat:", 0, 5) != 0)
+            {
+                return;
+            }
+            string key = pick.Substring(4);
+            if (!pick.StartsWith("own:", StringComparison.Ordinal))
+            {
+                int at = key.LastIndexOf(':');
+                key = at > 4 ? key.Substring(0, at) : key;   // "unit" or "applicant" after the flat's own key
+            }
+            tab = TabMine;
+            pick = "flt:" + key;
+        }
 
         private int MonthDaysNow => MacroCatalogue.MonthDays(Math.Max(1, _climate.DaysPerYear));
 
@@ -270,6 +295,7 @@ namespace RealLifeOverhaul.Economy
                     FlatBills(f, month);
                     billed++;
                 }
+                FlatWorks(f, day);
                 if (f.Hold.Managed)
                 {
                     FlatLetDay(f, day);
@@ -298,25 +324,48 @@ namespace RealLifeOverhaul.Economy
             f.Hold.CostYear += service + tax;
         }
 
+        /// <summary>
+        /// A flat's works end, whoever lives in it; the morning of a flat the player lets: wear, the tenant's day, the landlord's duties (satisfaction, repair
+        /// calls, the city's inspection, the manager chosen) by the rules a building's units have, then the applicants. The manager value passes through as it is.
+        /// </summary>
+        private void FlatWorks(OwnedFlat f, int day)
+        {
+            bool granted;
+            EstateWork done = EstateRules.Finish(f.Hold, _state.Seed, day, _climate, out granted);
+            if (done != EstateWork.None)
+            {
+                WorkDone(f.Hold, done, granted);
+            }
+        }
+
         private void FlatLetDay(OwnedFlat f, int day)
         {
             EstateHolding h = f.Hold;
             EstateUnit u = h.Units[0];
+            bool duties = Duties;
             string name = FlatName(f.Name, f.Kind), pick = FlatPick(f);
             EstateRules.Lapse(h, day);
+            EstateRules.Wear(h);
+            if (duties)
+            {
+                PeopleMorning(h, day);
+                ServicesMorning(h, day);
+            }
             int rent = u.Rent;
-            TenancyDay d = EstateDay.Unit(_state, h, 0, day, _climate, false);
+            TenancyDay d = EstateDay.Unit(_state, h, 0, day, _climate, duties);
             if (d.Lump > 0)
             {
                 Pay(d.Lump, EstateGame.FlatRentKey, name, null, "arrears paid");
                 h.RentYear += d.Lump;
+                ManagerCut(h, d.Lump, "arrears paid");
             }
             if (d.Pays && rent > 0)
             {
                 Pay(rent, EstateGame.FlatRentKey, name, null, "a day's rent of a flat let");
                 h.RentYear += rent;
+                ManagerCut(h, rent, "a day's rent");
             }
-            if (d.Evicted || d.Left)
+            if (d.Evicted || d.Left || d.Quit)
             {
                 Tell(NotificationType.Warning, d.Evicted ? "reallife_estate_note_evicted" : "reallife_estate_note_left",
                     Data("building", name, "amount", EstateText.Money(d.Lump), "lost", EstateText.Money(d.WrittenOff)), TabMine, pick);
@@ -325,10 +374,19 @@ namespace RealLifeOverhaul.Economy
             {
                 Tell(NotificationType.Warning, "reallife_estate_note_missed", Data("building", name, "amount", EstateText.Money(rent)), TabMine, pick);
             }
-            RentApplicant a = EstateRules.Apply(h, 0, _state.Seed, day, _climate);
+            if (duties)
+            {
+                DutiesMorning(h, day);
+            }
+            bool barred = duties && EstateRules.Barred(h);
+            RentApplicant a = barred ? null : EstateRules.Apply(h, 0, _state.Seed, day, _climate, false, duties ? EstateRules.ApplicantLift(h) : 1000);
             if (a != null)
             {
                 Tell(NotificationType.Info, "reallife_estate_note_applied", Data("building", name, "who", EstateText.Tenant(h.Use, a.Kind), "amount", EstateText.Money(a.Offer)), TabMine, pick);
+            }
+            if (duties && h.Manager != (int)EstateManager.Self)
+            {
+                AgentLets(h, day);
             }
         }
 
@@ -561,7 +619,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; FlatsOn && _state != null && i < _state.Flats.Flats.Count; i++)
             {
                 EstateHolding h = _state.Flats.Flats[i].Hold;
-                waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0);
+                waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, Save.Day);
+                waiting += Duties && h.Managed && h.Manager != (int)EstateManager.Manager ? EstateRules.CallsWaiting(h) : 0;
             }
             return waiting;
         }

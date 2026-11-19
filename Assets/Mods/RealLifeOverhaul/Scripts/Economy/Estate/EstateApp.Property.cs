@@ -281,9 +281,9 @@ namespace RealLifeOverhaul.Economy
             RentApplicant applicant = null;
             TableRow row;
             int let = 0, empty = 0, owed = 0, pickedUnit = 0, appliedUnit = 0;
-            for (int i = 0; i < state.Holdings.Count; i++)
+            for (int i = 0; i < state.LetCount; i++)
             {
-                EstateHolding h = state.Holdings[i];
+                EstateHolding h = state.LetAt(i);
                 if (!h.Managed)
                 {
                     continue;

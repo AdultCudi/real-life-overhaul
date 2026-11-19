@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Economy
         public const string FlatFoldKey = "reallife_transaction_flat_fold";        // a flat folded into a building bought whole: its share of the price given back
         public const string FlatServiceKey = "reallife_transaction_flat_service";  // a month's service charge to the building's owner
         public const string FlatTaxKey = "reallife_transaction_flat_tax";          // the unit's share of the building's property tax for a month
+        public const string FlatDepositKey = "reallife_transaction_flat_deposit";  // the deposit of the rent a purchase ended, given back
         public const string FlatRentKey = "reallife_transaction_flat_rent";        // a tenant's rent for a flat the player lets
 
         private static readonly Dictionary<(string, int), BuildingRegistration> FlatRegs = new Dictionary<(string, int), BuildingRegistration>(2048);
@@ -42,7 +43,7 @@ namespace RealLifeOverhaul.Economy
         /// The residential buildings the flats' rule may split: not the Hamptons' houses, not the player's (owned or rented) and none in a
         /// session. One walk of the city and one of the save's registrations, when a listing is rebuilt: never per frame.
         /// </summary>
-        public static void ReadFlatBuildings(EstateState s, int index, List<FlatBuilding> into)
+        public static void ReadFlatBuildings(EstateState s, int index, List<FlatBuilding> into, FlatBook held)
         {
             into.Clear();
             GameInstance save = Save;
@@ -69,14 +70,15 @@ namespace RealLifeOverhaul.Economy
                 }
                 BuildingRegistration reg;
                 FlatRegs.TryGetValue((c.B.StreetName, c.B.StreetNumber), out reg);
-                if (reg != null && (reg.RentedByPlayer || reg.BuildingOwnedByPlayer))
+                // A building the player rents at a rent is listed: the flat they buy is the one they live in. One rented free (a flat of it already held) or owned is not.
+                if (reg != null && (reg.BuildingOwnedByPlayer || (reg.RentedByPlayer && (reg.RentPerDay <= 0f || held.In(c.Place) > 0))))
                 {
                     continue;
                 }
                 into.Add(new FlatBuilding
                 {
                     Place = c.Place, Name = c.B.Address.ToFormattedString(), District = c.District, Value = Value(c, s, index), Cond = EstateRules.StreetCondition(s.Seed, c.Key),
-                    Income = Income(c.District), Units = c.Units, Sqm = c.Sqm, TaxYear = c.TaxYear,
+                    Income = Income(c.District), Units = c.Units, Sqm = c.Sqm, TaxYear = c.TaxYear, Renting = reg != null && reg.RentedByPlayer,
                     Landlord = reg != null && !string.IsNullOrEmpty(reg.buildingOwnerRivalId) ? RivalName(reg.buildingOwnerRivalId) : string.Empty
                 });
             }
@@ -97,7 +99,7 @@ namespace RealLifeOverhaul.Economy
             f.District = c.District;
             f.TaxYear = c.TaxYear;
             f.Hold.District = c.District;
-            f.Hold.Name = f.Name;
+            f.Hold.Name = EstateDirector.FlatName(f.Name, f.Kind);   // the tenants' pages name the flat, not the street alone
             int[] w = FlatRules.Weights(f.Place, f.Units, f.Hold.Income);
             f.Sqm = FlatRules.Sqm(c.Sqm, w, f.Slot);
             f.Share = FlatRules.Share(w, f.Slot);
@@ -151,8 +153,9 @@ namespace RealLifeOverhaul.Economy
         /// registration is the player's at no rent, so the home needs, the household and the bills read it as any home. False, with nothing
         /// done, if the building is rented or owned already or is not there.
         /// </summary>
-        public static bool TakeHome(string place)
+        public static bool TakeHome(string place, out int deposit)
         {
+            deposit = 0;
             Address address = AddressOf(place);
             Building b = address != null ? BuildingHelper.GetBuilding(address) : null;
             if (b == null || GoingPublic.InSession)
@@ -160,9 +163,21 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
-            if (reg == null || reg.RentedByPlayer || reg.BuildingOwnedByPlayer)
+            if (reg == null || reg.BuildingOwnedByPlayer)
             {
                 return false;
+            }
+            if (reg.RentedByPlayer)
+            {
+                if (reg.RentPerDay <= 0f)
+                {
+                    return false;
+                }
+                // The flat the player lives in: the rent ends and its deposit comes back; the registration, and all that is in it, stays as it is.
+                deposit = Mathf.Max(0, Mathf.FloorToInt(reg.lastDeposit));
+                reg.RentPerDay = 0f;
+                reg.lastDeposit = 0f;
+                return true;
             }
             BuildingHelper.RentBuilding(b, 0f, 0f);
             return true;
