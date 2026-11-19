@@ -263,6 +263,85 @@ namespace RealLifeOverhaul.SelfTest
             return true;
         }
 
+        private static object Get(object o, string name)
+        {
+            Type t = o.GetType();
+            PropertyInfo p = t.GetProperty(name, All);
+            if (p != null)
+            {
+                return p.GetValue(o);
+            }
+            FieldInfo f = t.GetField(name, All);
+            return f != null ? f.GetValue(o) : null;
+        }
+
+        /// <summary>
+        /// Takes a post the way the careers' own calls do (the same steps as the careers test that stages an offer, aimed at a post of a
+        /// profession named by its constant in ProCatalogue): the vacancies are looked at, the opening of that profession is found, an
+        /// application is made, offered and accepted through CareersDirector.Apply-free staging (Offer, then the director's own Accept).
+        /// The mod's careers classes are read by name; what they lack is named in the answer.
+        /// </summary>
+        public static bool TakePost(string profession, out string words)
+        {
+            words = null;
+            Type dirType = FindType("CareersDirector", out string why);
+            object dir = dirType != null ? Instance(dirType) : null;
+            if (dir == null)
+            {
+                words = why ?? "CareersDirector has no Instance (the careers are off, or no city stands)";
+                return false;
+            }
+            Type pro = FindType("ProCatalogue", out why);
+            FieldInfo constant = pro != null ? pro.GetField(profession, All) : null;
+            if (constant == null)
+            {
+                words = "ProCatalogue has no profession '" + profession + "'";
+                return false;
+            }
+            int wanted = (int)constant.GetValue(null);
+            int day = SaveGameManager.Current.Day;
+            MethodInfo vacancies = dirType.GetMethod("Vacancies", All);
+            vacancies?.Invoke(dir, new object[] { day });
+            object work = Get(dir, "Work");
+            System.Collections.IList openings = work != null ? Get(work, "Openings") as System.Collections.IList : null;
+            if (openings == null)
+            {
+                words = "the careers hold no work file or openings (WorkReady is false)";
+                return false;
+            }
+            object pick = null;
+            foreach (object o in openings)
+            {
+                if ((int)Get(o, "Prof") == wanted)
+                {
+                    pick = o;
+                    break;
+                }
+            }
+            if (pick == null)
+            {
+                words = "no vacancy of profession " + profession + " is open today (" + openings.Count + " openings in all)";
+                return false;
+            }
+            Type applicationType = dirType.Assembly.GetType("RealLifeOverhaul.Careers.Application");
+            object application = Activator.CreateInstance(applicationType);
+            applicationType.GetField("Day").SetValue(application, day);
+            applicationType.GetField("Score").SetValue(application, 90);
+            object post = applicationType.GetField("Post").GetValue(application);
+            pick.GetType().GetMethod("CopyTo").Invoke(pick, new[] { post });
+            dirType.GetMethod("Offer", All).Invoke(dir, new object[] { application, day });
+            ((System.Collections.IList)Get(work, "Applications")).Add(application);
+            int id = (int)Get(post, "Id");
+            object refused = dirType.GetMethod("Accept", All).Invoke(dir, new object[] { id });
+            if (refused != null)
+            {
+                words = "the careers refused the offer: " + refused;
+                return false;
+            }
+            words = "offered and accepted: opening " + id + " of " + profession;
+            return true;
+        }
+
         private static string Describe(object o)
         {
             if (o is string s)

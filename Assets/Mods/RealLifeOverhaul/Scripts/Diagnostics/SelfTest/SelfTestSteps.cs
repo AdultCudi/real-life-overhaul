@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.SelfTest
                 case "write_wav": return new WriteWavStep();
                 case "set_year": return new SetYearStep();
                 case "kit_commands": return new KitCommandsStep();
+                case "take_post": return new TakePostStep();
                 case "kit_choose": return new KitChooseStep();
                 case "confirm": return new ConfirmStep();
                 case "enter_building": return new EnterBuildingStep();

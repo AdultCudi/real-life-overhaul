@@ -162,6 +162,10 @@ namespace RealLifeOverhaul.SelfTest
                 "Sets a choice control to an option the way a player does: the control is named by its current words (control or control_key), the option by its words or text key. "
                 + "A choice that lists options is pressed once and the option pressed; one that steps to the next option on each press is pressed until it reads the option (at most max presses).",
                 null, new[] { "control:s", "control_key:s", "control_key2:s", "option:s", "option_key:s", "screen:s", "max:i" }),
+            new SelfTestKind("take_post", 60,
+                "Takes a post as the careers' own calls do, for a profession named by its constant in ProCatalogue (Police):"
+                + "the vacancy is found, offered and accepted through the director's own Offer and Accept.",
+                new[] { "profession:s" }, null),
             new SelfTestKind("kit_commands", 30,
                 "Writes every showing kit screen's pressable targets into the results: number, command constant name, argument, words and whether enabled.",
                 null, new[] { "screen:s", "most:n" }),

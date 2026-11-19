@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.SelfTest
                 said.AddRange(c.Runner.Watch.LogLinesSince(c.Spec.Label, 8));
                 string words = said.Count == 0 ? "nothing (no notice, no log line)" : string.Join(" | ", said);
                 string refuse = c.Arg("refuse"), expectText = c.Arg("expect_text"), expectLog = c.Arg("expect_log");
-                if (refuse != null && Holds(said, refuse))
+                if (refuse != null && HoldsAny(said, refuse))
                 {
                     c.Fail("refused ('" + refuse + "'): " + words);
                 }
@@ -55,6 +55,19 @@ namespace RealLifeOverhaul.SelfTest
                 {
                     c.Pass("pressed " + c.Arg("button") + ", said: " + words);
                 }
+            }
+
+            // refuse may name several refusals, written with | between them
+            private static bool HoldsAny(List<string> lines, string texts)
+            {
+                foreach (string text in texts.Split('|'))
+                {
+                    if (text.Length > 0 && Holds(lines, text))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private static bool Holds(List<string> lines, string text)
@@ -448,6 +461,28 @@ namespace RealLifeOverhaul.SelfTest
                     c.Fail(homeless ? "the player has no home: the game's no-home mood is still on" : "the player has a home, but none was wanted");
                 }
                 yield break;
+            }
+        }
+
+        /// <summary>The "take_post" step (SelfTestKinds has its words).</summary>
+        internal sealed class TakePostStep : SelfTestStep
+        {
+            public override string Name => "take_post";
+
+            public override IEnumerator Run(SelfTestContext c)
+            {
+                if (!SelfTestGame.CityUp())
+                {
+                    c.Fail("no city stands");
+                    yield break;
+                }
+                if (!SelfTestReflect.TakePost(c.Arg("profession"), out string words))
+                {
+                    c.Fail(words);
+                    yield break;
+                }
+                yield return new WaitForSecondsRealtime(1f);
+                c.Pass(words);
             }
         }
 
