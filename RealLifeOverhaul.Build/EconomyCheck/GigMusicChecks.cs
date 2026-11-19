@@ -260,7 +260,7 @@ internal static partial class Program
         Check(Times(playing, "GigMusic ") == 1, "gig music: the gig reaches the music only through its one player");
         Check(music.Contains("handler.streamAudio = true;") && music.Contains("UnityEngine.Object.Destroy(clip)") && music.Contains("request?.Dispose()"),
             "gig music: a file is played as a stream and the clip and its reader are let go when it ends or the set stops");
-        Check(music.Contains("Told.Add(path)") && music.Contains("\"reallife_gig_music_failed\"") && music.Contains("\"file\", name") && music.Contains("otherwise?.Invoke()") && music.Contains("_gaveUp = true;"),
+        Check(music.Contains("Told.Add(path)") && music.Contains("\"reallife_gig_music_failed\"") && music.Contains("\"file\", shown") && music.Contains("otherwise?.Invoke()") && music.Contains("_gaveUp = true;"),
             "gig music: a file that fails is named once in a notice, skipped, and with none left the game's own sound plays");
         Check(music.Contains("ToldEmpty.Add(kind)") && music.Contains("\"reallife_gig_music_empty\""), "gig music: an option on with no files is said once");
         Check(music.Contains("case \".flac\": return (AudioType)7;") && music.Contains("case \".wav\": return AudioType.WAV;") && music.Contains("case \".ogg\": return AudioType.OGGVORBIS;")

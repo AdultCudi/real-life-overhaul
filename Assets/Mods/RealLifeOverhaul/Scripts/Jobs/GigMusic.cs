@@ -278,7 +278,8 @@ namespace RealLifeOverhaul
             _log?.Warn("Gig music: " + GigMusicRules.Name(_kind) + ": '" + name + "' was left out: " + problem + ".");
             if (Told.Add(path))
             {
-                JobText.Toast(UI.Notification.NotificationType.Warning, "reallife_gig_music_failed", "file", name.Length > 60 ? name.Substring(0, 57) + "..." : name, "folder", GigMusicRules.Name(_kind), 9f);
+                string shown = name.Length > 60 ? name.Substring(0, 57) + "..." : name;   // a long name must not push the notice past its length
+                JobText.Toast(UI.Notification.NotificationType.Warning, "reallife_gig_music_failed", "file", shown, "folder", GigMusicRules.Name(_kind), 9f);
             }
         }
 
