@@ -38256,7 +38256,7 @@
   "reallife_ui_rivals_by_fortune_value": "{place} de {count}, o {game} do jogo",
   "reallife_rival_kind_property": "Imóveis",
   "reallife_rival_property_note": "{count} imóveis valendo {value}. Aluguel de {rent} por semana. Faturamento de {trade} por semana.",
-  "reallife_rival_test_holdings": "Teste: os imóveis dos rivais",
+  "reallife_rival_test_holdings": "Os imóveis dos rivais",
   "reallife_estate_test_rivals": "Os imóveis dos rivais: {sold} colocados à venda e {bought} comprados. O maior e o último rival têm {held}.",
   "reallife_estate_test_rivals_off": "Os imóveis dos rivais não podem ser lidos agora. Os rivais do jogo estão desligados ou esta é uma sessão Going Public.",
   "reallife_estate_manager_agency": "Sua própria imobiliária",
@@ -38409,8 +38409,8 @@
   "reallife_transaction_flat_tax_label": "Imposto predial do apartamento",
   "reallife_transaction_flat_rent": "Aluguel de um apartamento: {name}",
   "reallife_transaction_flat_rent_label": "Aluguel do apartamento",
-  "reallife_flat_test_buy": "Teste: comprar o apartamento mais barato à venda",
-  "reallife_flat_test_bills": "Teste: cobrar as taxas do apartamento deste mês",
+  "reallife_flat_test_buy": "Comprar o apartamento mais barato à venda",
+  "reallife_flat_test_bills": "Cobrar as taxas do apartamento deste mês",
   "reallife_flat_test_none": "Nenhum apartamento está à venda agora.",
   "reallife_flat_name": "{address}, {kind}",
   "reallife_flat_kind_studio": "kitnet",
@@ -38592,5 +38592,6 @@
   "reallife_police_line_case": "Força {strength}, ouvido no dia {day}",
   "reallife_police_file_cases": "Casos abertos",
   "reallife_police_desk_cases": "Trabalhe seus casos",
-  "reallife_police_desk_cases_detail": "Interrogue uma testemunha, examine a cena ou finalize um processo: uma ação por caso e algumas por turno."
+  "reallife_police_desk_cases_detail": "Interrogue uma testemunha, examine a cena ou finalize um processo: uma ação por caso e algumas por turno.",
+  "reallife_opt_sec_estateflats": "Apartamentos e estúdios"
 }

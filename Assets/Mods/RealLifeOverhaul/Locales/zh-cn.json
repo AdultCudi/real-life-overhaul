@@ -38256,7 +38256,7 @@
   "reallife_ui_rivals_by_fortune_value": "第{place}名，共{count}家，游戏中为{game}",
   "reallife_rival_kind_property": "房产",
   "reallife_rival_property_note": "{count}座建筑，价值{value}。每周租金{rent}。每周营业额{trade}。",
-  "reallife_rival_test_holdings": "测试：对手的建筑",
+  "reallife_rival_test_holdings": "对手的建筑",
   "reallife_estate_test_rivals": "对手的建筑：{sold}座挂牌出售，{bought}座被买下。排名第一和最后的对手分别拥有{held}。",
   "reallife_estate_test_rivals_off": "现在无法读取对手的建筑。游戏中的对手已关闭，或当前是Going Public会话。",
   "reallife_estate_manager_agency": "你自己的中介",
@@ -38409,8 +38409,8 @@
   "reallife_transaction_flat_tax_label": "公寓物业税",
   "reallife_transaction_flat_rent": "公寓租金：{name}",
   "reallife_transaction_flat_rent_label": "公寓租金",
-  "reallife_flat_test_buy": "测试：购买最便宜的待售公寓",
-  "reallife_flat_test_bills": "测试：收取本月的公寓费用",
+  "reallife_flat_test_buy": "购买最便宜的待售公寓",
+  "reallife_flat_test_bills": "收取本月的公寓费用",
   "reallife_flat_test_none": "目前没有公寓在出售。",
   "reallife_flat_name": "{address}，{kind}",
   "reallife_flat_kind_studio": "单间",
@@ -38592,5 +38592,6 @@
   "reallife_police_line_case": "证据强度{strength}，开庭于第{day}天",
   "reallife_police_file_cases": "未结案件",
   "reallife_police_desk_cases": "办理你的案件",
-  "reallife_police_desk_cases_detail": "询问证人、检查现场或整理案卷：每个案件每次一项行动，每班可进行几项。"
+  "reallife_police_desk_cases_detail": "询问证人、检查现场或整理案卷：每个案件每次一项行动，每班可进行几项。",
+  "reallife_opt_sec_estateflats": "公寓和工作室"
 }
