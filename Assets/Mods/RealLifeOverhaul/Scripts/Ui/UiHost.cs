@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
     /// by name for the session record (UiCost, Developer diagnostics on), with one Verbose line as it closes.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
-    public sealed class UiHost : MonoBehaviour
+    public sealed partial class UiHost : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiHost", typeof(UiHost));   // its Update (Core/Guard)
         private static readonly int HotUpdate = HotSpots.Slot("Ui: UiHost.Update");
@@ -715,6 +715,7 @@ namespace RealLifeOverhaul.Ui
             }
             using var cost = Measured(UiWork.Press);
             ref UiNode n = ref _scene.Nodes[node];
+            _lastPressDone = true;
             if (n.Disabled)
             {
                 _sound?.Play(UiCue.Error);
@@ -756,6 +757,7 @@ namespace RealLifeOverhaul.Ui
             }
             UiRefusals.Begin();
             bool done = _screen.Press(n.Command, n.Arg);
+            _lastPressDone = done;   // read by the developer self-test (Diagnostics/SelfTest)
             if (!done)
             {
                 // The error sound alone says nothing: the screen, the control and the reason go to Player.log, once.
