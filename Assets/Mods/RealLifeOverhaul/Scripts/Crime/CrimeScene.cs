@@ -34,6 +34,9 @@ namespace RealLifeOverhaul
         bool Indoors { get; }
         CrimeEntry Entry { get; }
 
+        /// <summary>An officer on a shift answered it with this move and it came to this (Careers/Police): the scene plays it out. False if it had nothing left to settle.</summary>
+        bool Duty(Careers.DutyMove move, Careers.DutyResult result, float now, Vector3 player);
+
         bool Begin(CrimeEntry entry, in CrimeSetup setup, float now);
         void Tick(float now, Vector3 player);
         /// <summary>The player called 911 about it. True if that changes anything.</summary>

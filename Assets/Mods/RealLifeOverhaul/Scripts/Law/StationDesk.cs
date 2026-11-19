@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Law
         private const string ButtonOpen = "reallife_law_list_open";
         private const string ButtonDo = "reallife_law_list_do";
 
-        internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back }
+        internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back, Duty }
 
         private readonly IModLogger _logger;
         private readonly DeskList _window = new DeskList("RealLifeOverhaul Law", 1100f, 150f);
@@ -219,6 +219,12 @@ namespace RealLifeOverhaul.Law
             }
             list.Begin("reallife_law_desk_title".Tr(), Greeting() + "\n<size=80%>" + _precinct.Name + "</size>");
             int count = 0;
+            Bridges.DutyDeskView duty = DutyView();
+            if (duty.Offered)
+            {
+                list.Add((int)Service.Duty, duty.Title, duty.Detail, ButtonDo, duty.Can);
+                count++;
+            }
             list.Add((int)Service.Report, "reallife_law_desk_report".Tr(), "reallife_law_list_report".Tr(), ButtonDo, true);
             count++;
             int owed = ModState.PendingFine;
@@ -276,6 +282,44 @@ namespace RealLifeOverhaul.Law
             return count + 1;
         }
 
+        // The police career's entry: only an officer has one. A bridge that fails offers nothing.
+        private Bridges.DutyDeskView DutyView()
+        {
+            try
+            {
+                Func<Bridges.DutyDeskView> ask = Bridges.Duty;
+                return ask != null ? ask() : default;
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+                return default;
+            }
+        }
+
+        // True if the patrol began or ended and the desk is closed; else the reason is said and the list stays.
+        private bool Duty()
+        {
+            string why = null;
+            try
+            {
+                why = Bridges.DutyPress?.Invoke();
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+                why = "reallife_law_desk_toast".Tr();
+            }
+            if (!string.IsNullOrEmpty(why))
+            {
+                Say(why);
+                return false;
+            }
+            _closing = "a patrol began or ended";
+            Close();
+            return true;
+        }
+
         private static string IncidentName()
         {
             switch (LawState.IncidentKind)
@@ -311,6 +355,12 @@ namespace RealLifeOverhaul.Law
                     case Service.Paper: Paper(); break;
                     case Service.TurnIn: TurnIn(); return;
                     case Service.Hours: Say("reallife_law_desk_hours_line".Tr()); break;
+                    case Service.Duty:
+                        if (Duty())
+                        {
+                            return;   // the patrol begins or ends: the list is closed and the player is let walk
+                        }
+                        break;
                     default: return;
                 }
                 if (IsOpen)

@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Careers
         // being the game's panel, never is.
         private string SeatWhy(bool game)
         {
-            if (SittingNow || _book.Count > 0)
+            if (SittingNow || _book.Count > 0 || _dutyOn)
             {
                 return "reallife_study_why_busy";
             }

@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Careers
 
         private void StopWork(bool unloading)
         {
+            DutyDown("the working life stopped");   // the uniform is the player's to have back whatever stops the working life
             if (!_workOn)
             {
                 return;
@@ -82,6 +83,11 @@ namespace RealLifeOverhaul.Careers
                 if (ProRules.DayOver(p, day, day, minute) && j.SettledDay < day && !Working)
                 {
                     SettleDay(j, day);
+                }
+                DutyHour(j);
+                if (DutyConduct(j, day))
+                {
+                    return;   // the service let them go: nothing more of the job is looked at
                 }
                 DeskHour(j, day, hour);
                 ShutAtStart(j, day, hour);
@@ -148,6 +154,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     EndJob((LeaveReason)Math.Max(1, j.Leaving), day, true);
                 }
+                else if (w.Job == j)
+                {
+                    DutyConduct(j, day);   // a stay in a cell or a conviction since they joined ends an officer's service at the day's turn as it does at the hour's
+                }
             }
             KeepShifts(day, false);   // after the days gone by are settled on the week they were worked on
             Applications(day);
@@ -182,7 +192,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _study.Work.DaysWorked++;
                 RecordShift(j, day, shiftMinutes);
-                CareersBridges.ShiftWorked?.Invoke(j.Def.SkillA);
+                CareersBridges.ShiftWorked?.Invoke(IsPolice(j) ? -1 : j.Def.SkillA);   // a patrol's dangers are its incidents' own (Police), never a day's draw as well
                 return;
             }
             // Health's sick leave settles the day first (the days running, the note, the paid days), then says below whether it is excused.
@@ -390,6 +400,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CloseSitting();
             }
+            DutyDown("the job ended");
             DeskRelease("the job ended");
             Spell s = ProRules.Spell(j, day, why);
             w.Remember(s);
@@ -419,6 +430,11 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_work_why_not_today";
             }
             int now = CareersGame.MinuteOfDay;
+            if (_dutyOn && IsPolice(j))
+            {
+                minutes = ProRules.Remaining(p, j, day, now);   // on patrol: the shift runs on, and its button ends it
+                return null;
+            }
             if (j.TodayDay == day && j.TodayMinutes > 0)
             {
                 minutes = ProRules.Remaining(p, j, day, now);
@@ -431,6 +447,15 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_work_why_not_hours";
             }
+            if (IsPolice(j))
+            {
+                if (!WorkGame.AtWork(p, j.Post))
+                {
+                    return "reallife_work_why_not_at_work";
+                }
+                string unfit = PoliceRules.ShiftWhy(CareersBridges.ConductOver(0));
+                return unfit ?? (CareersBridges.GigOnNow() ? "reallife_police_why_gig" : null);
+            }
             if (ProRules.FromHome((WorkMode)j.Work, day))
             {
                 return CareersGame.AtHome() ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : "reallife_work_why_home_day";
@@ -441,6 +466,15 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Starts the working day from the Career app, only where no desk could be had (<see cref="DeskFallback"/>).</summary>
         public string StartWorkDay()
         {
+            if (IsPolice(Work != null ? Work.Job : null))
+            {
+                if (_dutyOn)
+                {
+                    DutyStop(DutyEnd.Handed);   // the same button ends the patrol it began
+                    return null;
+                }
+                return DutyBegin();
+            }
             int minutes;
             bool late;
             string why = CanWork(out minutes, out late);
@@ -460,6 +494,13 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
+            WorkBanked(j, s.Kind == SittingKind.Overtime, minutes);
+        }
+
+        // Minutes worked, however they were: a sitting at a desk, or a police patrol's hour (Police/CareersDirector.Duty). Counted for the day and the week, paid,
+        // the two skills learnt from them, and the day settled if it is over.
+        private void WorkBanked(Job j, bool overtime, int minutes)
+        {
             int day = Save.Day;
             ProRules.Worked(j, day, minutes);
             Pay(j, minutes);
@@ -469,7 +510,7 @@ namespace RealLifeOverhaul.Careers
             int hours = Math.Max(1, minutes / 60);
             LearnAtWork(a, hours, day);
             LearnAtWork(b, hours, day);
-            WorkedMore(j, s, minutes, day);
+            WorkedMore(j, overtime, minutes, day);
             LadderWorked(j, minutes, day);
             if (ProRules.DayOver(p, day, day, CareersGame.MinuteOfDay) && j.SettledDay < day)
             {

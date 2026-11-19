@@ -103,7 +103,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_work_why_no_job";
             }
-            if (_book.Count > 0 || (_skip != null && _skip.Open))
+            if (_book.Count > 0 || _dutyOn || (_skip != null && _skip.Open))
             {
                 return "reallife_study_why_busy";
             }
@@ -276,7 +276,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             Profession p = j.Def;
-            bool there = ProRules.FromHome((WorkMode)j.Work, day) ? CareersGame.AtHome() : WorkGame.AtWork(p, j.Post);
+            bool there = _dutyOn || (ProRules.FromHome((WorkMode)j.Work, day) ? CareersGame.AtHome() : WorkGame.AtWork(p, j.Post));
             if (there)
             {
                 return;
@@ -299,6 +299,10 @@ namespace RealLifeOverhaul.Careers
         /// <summary>What and where the player's desk is: seen this visit or before, else what the job is to have.</summary>
         internal string DeskLine(Job j)
         {
+            if (IsPolice(j))
+            {
+                return DutyLine(j);
+            }
             string what = _deskWhat != null && _deskWhatOf == JobPlace(j) ? _deskWhat : DeskRules.Expected(j.Def);
             return CareersText.Fill("reallife_career_desk_at", "what", CareersText.T(what), "employer", CareersText.Employer(j.Post.Employer),
                 "address", WorkGame.Address(j.Post.Street, j.Post.Number));
@@ -311,6 +315,10 @@ namespace RealLifeOverhaul.Careers
             if (!ProRules.WorkDay(j.Def, day) || day < j.Hired || j.SettledDay >= day)
             {
                 return null;
+            }
+            if (IsPolice(j))
+            {
+                return CareersText.T(_dutyOn ? "reallife_police_desk_on" : "reallife_police_desk_today");
             }
             return CareersText.T(ProRules.FromHome((WorkMode)j.Work, day) ? "reallife_career_desk_home" : "reallife_career_desk_how");
         }

@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Careers
             CustomerService = 8, DigitalMarketing = 9;
         public const int Electrician = 10, Plumber = 11, Carpenter = 12, Chef = 13, Hairdresser = 14, Beautician = 15, CareWorker = 16, ItSupport = 17;
         public const int Bricklaying = 18, CraneTicket = 19, ConstructionManagement = 34, ArchitectLicence = 62;   // the building trades' (Scripts/BuildTrades)
+        public const int PoliceAcademy = 35;   // the police career's entry exam (Careers/Police): the cadet rung asks it
         public const int ComputerScience = 20, SoftwareEngineering = 21, DataScience = 22, Cybersecurity = 23, Business = 24, Accounting = 25, Finance = 26, Law = 27,
             Marketing = 28, Architecture = 29, CivilEngineering = 30, Nursing = 31, Teaching = 32, Design = 33;
         public const int Mba = 40, MscComputing = 41, LegalPractice = 42, Pgce = 43;
@@ -196,7 +197,10 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(ConstructionManagement, "construction_management", CourseKind.Degree, Campus.University, 10, 5, 4, Mon | Tue | Thu, 14, 9800, TalentCatalogue.Delivery, 35,
                 TalentCatalogue.Planning, 25, Bachelor),
             new CourseDef(ArchitectLicence, "architect_licence", CourseKind.Certificate, Campus.Online, 0, 10, 0, 0, 0, 1600, TalentCatalogue.Planning, 12,
-                TalentCatalogue.Structures, 8, -1, -1, false, new[] { Architecture })
+                TalentCatalogue.Structures, 8, -1, -1, false, new[] { Architecture }),
+
+            // the police career's (Scripts/Careers/Police): its exam is the course's own, like every diploma's
+            new CourseDef(PoliceAcademy, "police_academy", CourseKind.Vocational, Campus.School, 5, 2, 4, Mon | Wed | Fri, 9, 1600, Skills.Guarding, 40, Skills.FirstAid, 20, Diploma)
         };
 
         public const int ArriveEarlyMinutes = 30;     // a class can be joined this long before it starts

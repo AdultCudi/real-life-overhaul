@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
                 case ProCatalogue.HumanResources: return UiIcon.IdBadge;
                 case ProCatalogue.BarStaff: return UiIcon.Coffee;
                 case ProCatalogue.SecurityGuard: return UiIcon.Lock;
+                case ProCatalogue.Police: return UiIcon.ShieldCheck;
                 case ProCatalogue.Warehouse: return UiIcon.Package;
                 default: return UiIcon.Briefcase;
             }
@@ -78,7 +79,8 @@ namespace RealLifeOverhaul.Ui
                 case StudyCatalogue.Design: return UiIcon.PaintBrush;
                 case StudyCatalogue.CodingBootcamp: case StudyCatalogue.ComputerScience: case StudyCatalogue.SoftwareEngineering: case StudyCatalogue.MscComputing: return UiIcon.Code;
                 case StudyCatalogue.DataScience: case StudyCatalogue.DataAnalyst: case StudyCatalogue.MachineLearning: return UiIcon.Database;
-                case StudyCatalogue.Cybersecurity: case StudyCatalogue.SecurityPractitioner: case StudyCatalogue.PrivacyProfessional: case StudyCatalogue.SecurityLicence: return UiIcon.ShieldCheck;
+                case StudyCatalogue.Cybersecurity: case StudyCatalogue.SecurityPractitioner: case StudyCatalogue.PrivacyProfessional: case StudyCatalogue.SecurityLicence:
+                case StudyCatalogue.PoliceAcademy: return UiIcon.ShieldCheck;
                 case StudyCatalogue.ItSupport: case StudyCatalogue.NetworkProfessional: case StudyCatalogue.CloudAssociate: case StudyCatalogue.CloudArchitect: return UiIcon.Cpu;
                 case StudyCatalogue.TestingProfessional: return UiIcon.Bug;
                 case StudyCatalogue.Electrician: return UiIcon.Lightning;

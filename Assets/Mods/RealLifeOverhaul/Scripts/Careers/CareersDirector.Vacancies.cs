@@ -389,6 +389,7 @@ namespace RealLifeOverhaul.Careers
             {
                 case Workplace.Hospital: return CareersText.KeyName("reallife_work_employer_health");
                 case Workplace.School: return CareersText.KeyName("reallife_work_employer_school");
+                case Workplace.Precinct: return CareersText.KeyName("reallife_work_employer_police");
                 default: return CareersText.KeyName("reallife_work_employer_council");
             }
         }

@@ -20,6 +20,20 @@ namespace RealLifeOverhaul.Law
         /// </summary>
         public static Action<string, string> PoliceReport;
 
+        /// <summary>What the police career offers at the front desk (Wiring/PoliceLinks): the words of its entry and whether it can be pressed now.</summary>
+        public struct DutyDeskView
+        {
+            public bool Offered;        // false: the desk has no entry for it (the player is no officer, or the careers are away)
+            public bool Can;            // the entry's button is on
+            public string Title, Detail;
+        }
+
+        /// <summary>The police career's entry at the desk, read each time the list is filled. Null: none.</summary>
+        public static Func<DutyDeskView> Duty;
+
+        /// <summary>The entry pressed: begins the patrol or ends it. The line to say when it could not, else null.</summary>
+        public static Func<string> DutyPress;
+
         public const string BreakIn = "breakin";
         public const string CarBreakIn = "car";
         public const string Accident = "accident";
