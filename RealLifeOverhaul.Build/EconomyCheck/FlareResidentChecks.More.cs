@@ -190,6 +190,9 @@ internal static partial class Program
               && director.Contains("FlareCityStore.Line(_city, _cityZip)") && director.Contains("ThreadPool.QueueUserWorkItem") && director.Contains("SharedCity.Register(")
               && director.Contains("CityFault(") && !Regex.IsMatch(director, @"\bvoid\s+(?:Update|LateUpdate)\s*\("),
             "flare city sources: the director reads both options, spreads the day over frames in 2 ms slices, reads its line on a worker and saves it on the save's, registers its part and stands down alone on a fault");
+        Check(director.Contains("++_cityFaults < CityFaultsAllowed") && director.Contains("_cityFaults = 0;")
+              && Regex.IsMatch(director, @"_cityPass\.Stop\(\);\s*_cityQueued = false;\s*CityFault\("),
+            "flare city sources: a fault of the residents' day is tried again on the next pass, and the layer is switched off only after a run of faults");
         string main = File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "Flare", "FlareDirector.cs"));
         Check(main.Contains("CitySecond();") && main.Contains("CitySave();") && main.Contains("CityStop(keep,") && main.Contains("CityShareRegister();") && main.Contains("ForgetCity();"),
             "flare city sources: Flare's director starts, saves, stops and forgets the residents' side with its own");
