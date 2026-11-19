@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Law
         private const string ButtonOpen = "reallife_law_list_open";
         private const string ButtonDo = "reallife_law_list_do";
 
-        internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back, Duty }
+        internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back, Duty, Cases }
 
         private readonly IModLogger _logger;
         private readonly DeskList _window = new DeskList("RealLifeOverhaul Law", 1100f, 150f);
@@ -224,6 +224,11 @@ namespace RealLifeOverhaul.Law
             {
                 list.Add((int)Service.Duty, duty.Title, duty.Detail, ButtonDo, duty.Can);
                 count++;
+                if (duty.CaseOffered)
+                {
+                    list.Add((int)Service.Cases, duty.CaseTitle, duty.CaseDetail, ButtonOpen, duty.CaseCan);
+                    count++;
+                }
             }
             list.Add((int)Service.Report, "reallife_law_desk_report".Tr(), "reallife_law_list_report".Tr(), ButtonDo, true);
             count++;
@@ -297,6 +302,25 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        // A detective's cases: this list is closed first (it lets the player walk), then the officer's own list opens; a reason is said instead.
+        private void CaseWork()
+        {
+            string why = null;
+            Close();
+            try
+            {
+                why = Bridges.CasePress?.Invoke();
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+            }
+            if (!string.IsNullOrEmpty(why))
+            {
+                Say(why);
+            }
+        }
+
         // True if the patrol began or ended and the desk is closed; else the reason is said and the list stays.
         private bool Duty()
         {
@@ -355,6 +379,9 @@ namespace RealLifeOverhaul.Law
                     case Service.Paper: Paper(); break;
                     case Service.TurnIn: TurnIn(); return;
                     case Service.Hours: Say("reallife_law_desk_hours_line".Tr()); break;
+                    case Service.Cases:
+                        CaseWork();
+                        return;
                     case Service.Duty:
                         if (Duty())
                         {

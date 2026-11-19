@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Careers
                 return 0;
             }
             DutyFile f = Duty;
-            return f != null ? PoliceRules.ReviewBonus(f.Ring, f.Count) : 0;
+            return f != null ? PoliceRules.ReviewBonus(f.Ring, f.Count) - CaseRules.ThrownPenalty(f.Cases, Save != null ? Save.Day : 0, GameCalendar.DaysPerYear) : 0;
         }
 
         /// <summary>The rating a shift of a day is recorded with: today's while the file is for the day, else the quiet shift's.</summary>

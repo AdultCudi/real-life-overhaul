@@ -137,6 +137,9 @@ namespace RealLifeOverhaul.Careers
                 .Fact("police_back_off", () => Whole(PoliceRules.LossBackOff))
                 .Fact("police_start", () => Whole(PoliceRules.RatingStart))
                 .Fact("police_commend", () => Whole(PoliceRules.CommendRating))
+                .Fact("police_thrown_days", () => Whole(TalentCatalogue.Scaled(CaseRules.ThrownDays, GameCalendar.DaysPerYear)))
+                .Fact("police_detective", () => CareersText.Title(ProCatalogue.Police, CaseRules.DetectiveRank))
+                .Fact("police_actions", () => Whole(CaseRules.ActionsMost))
                 .Fact("police_fatal_one_in", () => Whole((long)System.Math.Round(1.0 / Permadeath.PermadeathRules.DutyOdds)));
             AddScoreFacts(f);
         }

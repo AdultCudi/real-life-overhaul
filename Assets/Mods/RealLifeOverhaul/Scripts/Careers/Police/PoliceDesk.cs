@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Careers
     /// <summary>One way to answer an incident as the list shows it.</summary>
     internal struct DutyEntry
     {
-        public DutyMove Move;
+        public int Id;             // what the pick hands back: a move, a case, an action
         public string Name, Detail;
         public bool Enabled;
     }
@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Careers
         private readonly Action _onClosed;
         private PlayerController _player;
         private bool _held;
-        private Action<DutyMove> _answer;
+        private Action<int> _answer;
         private Action _closed;
 
         public PoliceDesk()
@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Careers
         public bool IsOpen => _window.IsOpen;
 
         /// <summary>Opens the list; false if the game's window could not be copied (the officer is then told so and the incident is left).</summary>
-        public bool Open(string title, string info, List<DutyEntry> entries, Action<DutyMove> answer, Action closed)
+        public bool Open(string title, string info, List<DutyEntry> entries, Action<int> answer, Action closed)
         {
             if (IsOpen)
             {
@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < entries.Count; i++)
             {
                 DutyEntry e = entries[i];
-                list.Add((int)e.Move, e.Name, e.Detail, ButtonDo, e.Enabled);
+                list.Add(e.Id, e.Name, e.Detail, ButtonDo, e.Enabled);
             }
             list.Open(_onPick, _onClosed);
             return true;
@@ -106,10 +106,10 @@ namespace RealLifeOverhaul.Careers
 
         private void Picked(int id)
         {
-            Action<DutyMove> answer = _answer;
+            Action<int> answer = _answer;
             _closed = null;   // a pick is no dismissal
             Close();
-            answer?.Invoke((DutyMove)id);
+            answer?.Invoke(id);
         }
 
         private void Closed()

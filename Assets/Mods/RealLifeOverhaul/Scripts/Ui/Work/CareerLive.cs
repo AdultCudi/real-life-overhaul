@@ -262,6 +262,12 @@ namespace RealLifeOverhaul.Ui
             {
                 cj.Life.Add(new KeyValuePair<string, string>(words.T(file[i].Key, FileWords(file[i].Key)), file[i].Value));
             }
+            file.Clear();
+            CareersDirector.Instance?.DutyCaseLines(file);   // a detective's open cases, as final words
+            for (int i = 0; i < file.Count; i++)
+            {
+                cj.Life.Add(file[i]);
+            }
             cj.Burnout = Math.Max(0, Math.Min(100, j.Burnout / 10));
         }
 

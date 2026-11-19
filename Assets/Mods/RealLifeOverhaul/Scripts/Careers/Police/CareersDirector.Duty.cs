@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Careers
             _dutyTold = -1;
             _dutyQuiet = 0f;
             Array.Clear(_dutyKept, 0, _dutyKept.Length);
+            _caseBusyUntil = -1;
             return DutyDress(true);
         }
 
@@ -278,7 +279,11 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            if ((_dutyDesk != null && _dutyDesk.IsOpen) || Time.time < _dutyQuiet)
+            if ((_dutyDesk != null && _dutyDesk.IsOpen) || Time.time < _dutyQuiet || now < _caseBusyUntil)
+            {
+                return;   // a list is up, the officer closed one a moment ago, or is in court for the hour
+            }
+            if (CaseWitness(j, Save.Day))
             {
                 return;
             }
@@ -339,13 +344,13 @@ namespace RealLifeOverhaul.Careers
                 string key = move == DutyMove.Backup ? "reallife_police_list_backup" : hurt > 0 ? "reallife_police_list_odds" : "reallife_police_list_odds_safe";
                 _dutyEntries.Add(new DutyEntry
                 {
-                    Move = move, Name = CareersText.T(PoliceRules.MoveKeys[(int)move]), Enabled = true,
+                    Id = (int)move, Name = CareersText.T(PoliceRules.MoveKeys[(int)move]), Enabled = true,
                     Detail = CareersText.T(key, "chance", PoliceRules.Percent(success).ToString(), "risk", PoliceRules.Percent(hurt).ToString())
                 });
             }
             _dutyEntries.Add(new DutyEntry
             {
-                Move = DutyMove.BackOff, Name = CareersText.T(PoliceRules.MoveKeys[(int)DutyMove.BackOff]), Enabled = true,
+                Id = (int)DutyMove.BackOff, Name = CareersText.T(PoliceRules.MoveKeys[(int)DutyMove.BackOff]), Enabled = true,
                 Detail = CareersText.T("reallife_police_list_back_off", "points", (-PoliceRules.Change(DutyMove.BackOff, DutyResult.Failed, call.Danger)).ToString())
             });
             if (_dutyDesk == null)
@@ -355,7 +360,7 @@ namespace RealLifeOverhaul.Careers
             string title = CareersText.T(PoliceRules.KindKeys[(int)call.Kind]);
             string info = CareersText.T("reallife_police_list_info", "danger", CareersText.T(PoliceRules.DangerKeys[call.Danger]), "rating", Duty.Rating.ToString());
             _dutyOpen = call;
-            Action<DutyMove> answer = move => Guard.Step("answering an incident on duty", () => DutyAnswer(_dutyOpen, move));
+            Action<int> answer = id => Guard.Step("answering an incident on duty", () => DutyAnswer(_dutyOpen, (DutyMove)id));
             Action closed = () => _dutyQuiet = Time.time + PoliceRules.PromptGapSeconds;
             if (!_dutyDesk.Open(title, info, _dutyEntries, answer, closed))
             {
@@ -383,12 +388,14 @@ namespace RealLifeOverhaul.Careers
             }
             DutyLoad();
             DutyFile f = _duty;
-            int day = Save.Day, rank = j.Post.Rank;
+            int day = Save.Day, rank = j.Post.Rank, margin = 0;
             DutyResult result = DutyResult.Failed;
             if (move != DutyMove.BackOff)
             {
                 int roll = PoliceRules.Roll(StudySeed, day, f.Answered, rank);
                 result = PoliceRules.Result(move, call.Danger, rank, DutyPoints(move), roll);
+                PoliceRules.Odds(move, call.Danger, rank, DutyPoints(move), out int chance, out _, out _);
+                margin = chance - roll;   // how far under the chance the roll fell: the arrest's quality
             }
             f.Answered++;
             DutyKeep(call.Key);
@@ -408,6 +415,10 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             Count(f, move, result);
+            if (move == DutyMove.Arrest && result == DutyResult.Success && took && call.Source == DutySource.Crime)
+            {
+                CaseOpen(j, call, margin);   // the arrest's aftermath: a case in the officer's book
+            }
             Logger?.Info("Careers: an incident answered on duty (" + call.Kind + ", danger " + call.Danger + "): " + move + " -> " + result + ", rating " + f.Rating
                          + (took ? ", the scene took it." : ", the scene was gone or left alone."));
             DutyTell(move, result, call, f);

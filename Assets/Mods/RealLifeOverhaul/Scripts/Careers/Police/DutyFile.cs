@@ -23,6 +23,11 @@ namespace RealLifeOverhaul.Careers
         public int Rating = PoliceRules.RatingStart;   // today's shift rating
         public int Today;            // incidents answered today, so that a quiet shift is known for one
         public int Count;            // shift ratings in the ring
+        public int NextCase = 1;     // the number of the next case in the book
+        public int ActionsToday;     // a detective's actions this shift's day, over all cases
+        public int NoticeDay = -1;   // the last day a case notice was sent: one a day
+        public int PendOpened, PendReleased, PendConvicted, PendAcquitted, PendCommended;   // the day's case news, summed into the one notice
+        public readonly System.Collections.Generic.List<OfficerCase> Cases = new System.Collections.Generic.List<OfficerCase>(8);   // the case book
         public int RingDay = -1;     // the day of the rating the ring ends with: a shift begun again the same day is the same day's
         public readonly int[] Ring = new int[PoliceRules.RingSize];   // the ratings of the last shifts, oldest first
 
@@ -36,6 +41,7 @@ namespace RealLifeOverhaul.Careers
             Day = day;
             Rating = PoliceRules.RatingStart;
             Today = 0;
+            ActionsToday = 0;
         }
 
         /// <summary>The rating of a finished shift goes into the ring; the oldest goes when it is full.</summary>

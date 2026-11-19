@@ -260,6 +260,21 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True while one of the gig jobs (Scripts/Jobs) is on a shift: the two share the player's work clothes, so only one runs. Default: no.</summary>
         public static Func<bool> GigOn;
 
+        /// <summary>The district the player stands in, as a name key the places are named by (Law's nearest precinct's), for an arrest's case. Default: none.</summary>
+        public static Func<string> District;
+
+        public static string DistrictNow()
+        {
+            try
+            {
+                return District != null ? District() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static PoliceRules.Conduct ConductOver(int days)
         {
             try
@@ -304,6 +319,7 @@ namespace RealLifeOverhaul.Careers
             Settle = null;
             Hurt = null;
             GigOn = null;
+            District = null;
             DayMissed = null;
             ShiftWorked = null;
             Learners = null;

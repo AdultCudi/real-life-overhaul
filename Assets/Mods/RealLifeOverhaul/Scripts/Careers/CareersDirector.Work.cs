@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Careers
             int last = w.LastDay;
             w.LastDay = day;
             EmployerKeep(day, false);   // (the hour's look has seen it already; a morning with no hour event, a load across days, is caught here)
+            Guard.Step("the officer's cases' day", () => CaseDay(day));   // hearings behind are decided, and the day's one notice is sent
             Job j = w.Job;
             if (j != null)
             {

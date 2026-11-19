@@ -55,6 +55,12 @@ namespace RealLifeOverhaul.Careers
                 {
                     box.Row(_file[i].Key, _file[i].Value);
                 }
+                _file.Clear();
+                _director.DutyCaseLines(_file);   // a detective's open cases, as final words
+                for (int i = 0; i < _file.Count; i++)
+                {
+                    box.Line(_file[i].Key + ": " + _file[i].Value);
+                }
             }
         }
 

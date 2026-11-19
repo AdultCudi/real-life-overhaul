@@ -6,6 +6,8 @@ using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Permadeath;
 using RealLifeOverhaul.Tech;
 using Verdict = RealLifeOverhaul.Permadeath.Verdict;
+using JusticeLaw = RealLifeOverhaul.JusticeLaw;
+using ChargeDef = RealLifeOverhaul.ChargeDef;
 
 // The police career (Scripts/Careers/Police): who may join (a clean record over a stated time, no conviction, a licence, health), the outcome table of every
 // move across the ranks and the dangers (each row adding to a thousand, a routine incident never hurting anyone, a better rank or skill never worse, a
@@ -29,6 +31,7 @@ internal static partial class Program
         PoliceLadder();
         PoliceLeaving();
         PoliceFile();
+        PoliceCases();
         PoliceIncidents();
         PoliceSources();
         PoliceWords();
@@ -446,6 +449,229 @@ internal static partial class Program
               && PoliceRules.CasualtyDanger == PoliceRules.Tense, "police incidents: a slight crash is routine, a severe one risky, a person down tense");
     }
 
+    private static DutyFile CaseFile() => new DutyFile();
+
+    private static void PoliceCases()
+    {
+        bool sums = true, nonNegative = true, strongerConvicts = true, witnessHelps = true;
+        for (int w = -6; w <= 8; w += 2)
+        {
+            int lastConv = -1;
+            for (int s = 0; s <= 100; s++)
+            {
+                CaseRules.Odds(s, w, out int a, out int p, out int c);
+                sums &= a + p + c == 1000;
+                nonNegative &= a >= 0 && p >= 0 && c >= 0 && a >= CaseRules.AcquitLeast && a <= CaseRules.AcquitMost;
+                strongerConvicts &= a + p + c != 1000 || p + c >= lastConv;
+                lastConv = p + c;
+                if (w < 8)
+                {
+                    CaseRules.Odds(s, w + 2, out int a2, out _, out _);
+                    witnessHelps &= a2 <= a;
+                }
+            }
+        }
+        Check(sums, "police cases: every hearing's odds (acquitted, pleaded, convicted) add to exactly one, at every strength and every weight of evidence");
+        Check(nonNegative && strongerConvicts && witnessHelps, "police cases: no chance is negative, a stronger case never convicts less, and better evidence never acquits more");
+        bool charge = true;
+        int last = -1;
+        for (int q = 0; q <= 100; q++)
+        {
+            int cc = CaseRules.ChargeChance(q);
+            charge &= cc >= last && cc >= CaseRules.ChargeBase && cc <= 1000;
+            last = cc;
+        }
+        Check(charge && CaseRules.ChargeChance(100) < 1000, "police cases: a better arrest is never less likely to be charged, and none is certain");
+        Check(CaseRules.Quality(0, 0, 0) == CaseRules.QualityBase && CaseRules.Quality(900, 4, 100) > CaseRules.Quality(100, 1, 20) && CaseRules.Quality(9999, 9, 100) == 100
+              && CaseRules.Good(CaseRules.GoodAt) && !CaseRules.Good(CaseRules.GoodAt - 1) && CaseRules.Poor(CaseRules.PoorAt - 1) && !CaseRules.Poor(CaseRules.PoorAt) && CaseRules.PoorAt < CaseRules.GoodAt,
+            "police cases: the arrest's quality grows with the margin, the rank and the skill, and is good from " + CaseRules.GoodAt + " and poor under " + CaseRules.PoorAt);
+        // the court's own timings and words
+        Check(CaseRules.HearingDay(10, JusticeLaw.Theft) == 12 && CaseRules.HearingDay(10, JusticeLaw.Assault) == 13 && CaseRules.HearingDay(10, "nonsense") == 12,
+            "police cases: a case is heard in the days Justice's court takes for the offence's class (two for a theft, three for an assault)");
+        bool offences = true;
+        foreach (string id in new[] { "mugging", "holdup", "assault", "disturbance", "graffiti", "foot_chase", "snatch", "shoplifter", "car_breakin", "car_theft", "drug_deal", "nonsense", null })
+        {
+            ChargeDef def = JusticeLaw.Find(CaseRules.Offence(id));
+            offences &= def != null && def.NameKey.StartsWith("reallife_justice_charge_", StringComparison.Ordinal);
+        }
+        Check(offences, "police cases: every street crime's offence is a charge of Justice's own table, worded by its own text");
+        Check(CaseRules.Sentence(JusticeLaw.Assault, CaseEnd.Acquitted) == 0 && CaseRules.Sentence(JusticeLaw.Assault, CaseEnd.Released) == 0
+              && CaseRules.Sentence(JusticeLaw.Assault, CaseEnd.Convicted) == JusticeLaw.Find(JusticeLaw.Assault).PrisonDays
+              && CaseRules.Sentence(JusticeLaw.Assault, CaseEnd.Pleaded) <= CaseRules.Sentence(JusticeLaw.Assault, CaseEnd.Convicted),
+            "police cases: a sentence is Justice's prison days for the charge, less for a plea, and none for anyone not convicted");
+
+        // a case ends exactly once, and only on a day after its hearing
+        DutyFile f = CaseFile();
+        OfficerCase charged = null;
+        for (int id = 0; id < 400 && charged == null; id++)
+        {
+            OfficerCase c = CaseRules.Open(f, "Ash Lee", 7, JusticeLaw.Assault, "ba:neighborhood_x", 10, 80, 11);
+            if (c.Open)
+            {
+                charged = c;
+            }
+        }
+        Check(charged != null && charged.Hearing == 13 && charged.End == CaseEnd.Open && f.PendOpened >= 1, "police cases: a charged case waits for its hearing day");
+        Check(CaseRules.Advance(f, 13, 11) == 0 && charged.Open, "police cases: on the hearing day itself it is not yet decided (the evidence is given that day)");
+        int ended = CaseRules.Advance(f, 14, 11);
+        CaseEnd first = charged.End;
+        int convictedBefore = f.PendConvicted, acquittedBefore = f.PendAcquitted;
+        Check(ended >= 1 && first != CaseEnd.Open && first != CaseEnd.Released && charged.EndDay == 14, "police cases: the day after the hearing the case ends, acquitted, convicted or pleaded");
+        Check(CaseRules.Advance(f, 15, 11) == 0 && CaseRules.Advance(f, 30, 11) == 0 && charged.End == first && f.PendConvicted == convictedBefore && f.PendAcquitted == acquittedBefore,
+            "police cases: a case ends exactly once: later days change nothing and count nothing");
+        for (int i = 0; i < 30; i++)
+        {
+            CaseRules.Open(f, "Dee", 0, JusticeLaw.Theft, string.Empty, 10, 0, 100 + i);
+        }
+        bool released = false, hearingless = true;
+        foreach (OfficerCase c in f.Cases)
+        {
+            if (c.End == CaseEnd.Released)
+            {
+                released = true;
+                hearingless &= c.Hearing == 0 && c.EndDay == c.Day;
+            }
+        }
+        Check(released && hearingless, "police cases: a case never charged is released the day of the arrest, with no hearing");
+        // determinism and the frequency of the table
+        var a1 = new OfficerCase { Id = 5, Hearing = 12, Strength = 55, Witness = 2 };
+        Check(CaseRules.Decide(9, a1) == CaseRules.Decide(9, a1) && CaseRules.Decide(9, a1) != CaseEnd.Open && CaseRules.Decide(9, a1) != CaseEnd.Released, "police cases: the same case and seed always end the same way");
+        int acq = 0, plea = 0, conv = 0, n = 20000;
+        for (int i = 0; i < n; i++)
+        {
+            switch (CaseRules.Decide(3, new OfficerCase { Id = i, Hearing = 10 + i % 7, Strength = 50, Witness = 0 }))
+            {
+                case CaseEnd.Acquitted: acq++; break;
+                case CaseEnd.Pleaded: plea++; break;
+                default: conv++; break;
+            }
+        }
+        CaseRules.Odds(50, 0, out int oa, out int op, out int oc);
+        Check(Math.Abs(acq * 1000 / n - oa) <= 25 && Math.Abs(plea * 1000 / n - op) <= 25 && Math.Abs(conv * 1000 / n - oc) <= 25, "police cases: over twenty thousand hearings each end comes as often as the table says");
+
+        // one notice a day, the news summed
+        DutyFile g = CaseFile();
+        for (int i = 0; i < 6; i++)
+        {
+            CaseRules.Open(g, "Bo " + i, 0, JusticeLaw.Theft, string.Empty, 20, 90, 5);
+        }
+        Check(CaseRules.NoticeDue(g, 20) && g.PendOpened == 6, "police cases: the day's news is due as one notice");
+        CaseRules.TakeNotice(g, 20, out int op1, out int rel1, out int cv1, out int aq1, out int cm1);
+        Check(op1 == 6 && rel1 + CaseRules.OpenCount(g) == 6 && g.PendOpened == 0 && !CaseRules.NoticeDue(g, 20), "police cases: the notice sums every case of the day and clears the count (" + op1 + " opened)");
+        CaseRules.Open(g, "Cy", 0, JusticeLaw.Theft, string.Empty, 20, 90, 6);
+        Check(!CaseRules.NoticeDue(g, 20) && CaseRules.NoticeDue(g, 21), "police cases: never a second case notice in a day: it waits for the next");
+        CaseRules.Advance(g, 40, 5);
+        CaseRules.TakeNotice(g, 40, out _, out _, out int cv2, out int aq2, out _);
+        Check(CaseRules.OpenCount(g) == 0 && cv2 + aq2 == g.Cases.FindAll(c => c.End == CaseEnd.Convicted || c.End == CaseEnd.Pleaded || c.End == CaseEnd.Acquitted).Count,
+            "police cases: every charged case that ended in the days is told, once, in the next notice");
+
+        // commendations and the review's cost
+        DutyFile h = CaseFile();
+        h.Cases.Add(new OfficerCase { Id = 1, Offence = JusticeLaw.Theft, Hearing = 5, Quality = 80, Strength = 90 });
+        h.Cases.Add(new OfficerCase { Id = 2, Offence = JusticeLaw.Theft, Hearing = 5, Quality = 20, Strength = 90 });
+        CaseRules.Advance(h, 9, 1);
+        int fromGood = 0;
+        foreach (OfficerCase c in h.Cases)
+        {
+            fromGood += (c.End == CaseEnd.Convicted || c.End == CaseEnd.Pleaded) && CaseRules.Good(c.Quality) ? 1 : 0;
+        }
+        Check(h.Commendations == fromGood && h.PendCommended == fromGood && fromGood <= 1, "police cases: only a conviction after a good arrest earns a commendation (" + h.Commendations + ")");
+        var thrown = new List<OfficerCase>
+        {
+            new OfficerCase { Id = 1, End = CaseEnd.Released, EndDay = 50, Quality = 10 }, new OfficerCase { Id = 2, End = CaseEnd.Acquitted, EndDay = 50, Quality = 30 },
+            new OfficerCase { Id = 3, End = CaseEnd.Acquitted, EndDay = 50, Quality = 90 }, new OfficerCase { Id = 4, End = CaseEnd.Convicted, EndDay = 50, Quality = 10 },
+            new OfficerCase { Id = 5, End = CaseEnd.Released, EndDay = 50, Quality = 5 }, new OfficerCase { Id = 6, End = CaseEnd.Released, EndDay = 50, Quality = 5 }
+        };
+        Check(CaseRules.ThrownPenalty(thrown, 55, 60) == CaseRules.ThrownMost && CaseRules.ThrownPenalty(thrown.GetRange(2, 2), 55, 60) == 0 && CaseRules.ThrownPenalty(thrown, 50 + TalentCatalogue.Scaled(CaseRules.ThrownDays, 60) + 1, 60) == 0
+              && CaseRules.ThrownPenalty(null, 55, 60) == 0,
+            "police cases: a case thrown out for a poor arrest counts against reviews for a while and at most " + CaseRules.ThrownMost + " points; a good arrest acquitted or a conviction never does");
+
+        // the detective's work
+        var open = new OfficerCase { Id = 9, Hearing = 30, Strength = 50, Offence = JusticeLaw.Theft };
+        DutyFile k = CaseFile();
+        Check(CaseRules.ActionWhy(open, CaseAction.Scene, 20, 0, 1) == "reallife_police_why_case_rank" && CaseRules.ActionWhy(open, CaseAction.Scene, 20, 0, CaseRules.DetectiveRank) == null,
+            "police detective: only from the detective's rung are cases worked");
+        CaseRules.Work(open, CaseAction.Scene, 20, 40, 2, k);
+        Check(open.Strength > 50 && open.WorkedDay == 20 && k.ActionsToday == 1 && CaseRules.ActionWhy(open, CaseAction.Write, 20, k.ActionsToday, 2) == "reallife_police_why_case_worked"
+              && CaseRules.ActionWhy(open, CaseAction.Write, 21, k.ActionsToday, 2) == null && CaseRules.ActionWhy(open, CaseAction.Scene, 21, k.ActionsToday, 2) == "reallife_police_why_case_done",
+            "police detective: one action a shift on a case, and none done twice on it");
+        Check(CaseRules.ActionWhy(open, CaseAction.Write, 22, CaseRules.ActionsMost, 2) == "reallife_police_why_case_actions", "police detective: the shift's actions are capped at " + CaseRules.ActionsMost);
+        int worked = 0;
+        for (int i = 0; i < 10; i++)
+        {
+            var one = new OfficerCase { Id = 20 + i, Hearing = 40, Strength = 10 };
+            if (CaseRules.ActionWhy(one, CaseAction.Witness, 25, k.ActionsToday, 2) == null)
+            {
+                CaseRules.Work(one, CaseAction.Witness, 25, 50, 2, k);
+                worked++;
+            }
+        }
+        Check(worked == CaseRules.ActionsMost - 1 && k.ActionsToday == CaseRules.ActionsMost, "police detective: ten cases and a shift of three actions: only three are worked (" + k.ActionsToday + ")");
+        bool gains = true;
+        for (int pts = 0; pts < 100; pts += 10)
+        {
+            gains &= CaseRules.Gain(pts + 10, 2) >= CaseRules.Gain(pts, 2) && CaseRules.Gain(pts, 3) >= CaseRules.Gain(pts, 2) && CaseRules.Gain(pts, 4) <= CaseRules.GainMost && CaseRules.Gain(pts, 2) >= CaseRules.GainBase;
+        }
+        Check(gains, "police detective: an action adds more with more skill and rank, within the rule's bounds");
+        var full = new OfficerCase { Id = 30, Hearing = 40, Strength = 98 };
+        CaseRules.Work(full, CaseAction.Write, 26, 100, 4, CaseFile());
+        Check(full.Strength == 100, "police detective: a case's strength never passes one hundred");
+        CaseFile().Begin(1);
+        DutyFile reset = CaseFile();
+        reset.Begin(5);
+        reset.ActionsToday = 3;
+        reset.Begin(5);
+        Check(reset.ActionsToday == 3, "police detective: the same day's shift keeps its count");
+        reset.Begin(6);
+        Check(reset.ActionsToday == 0, "police detective: a new day's shift has its actions again");
+        Check(CaseRules.WitnessValue(WitnessChoice.Prepared, true) > CaseRules.WitnessValue(WitnessChoice.Prepared, false) && CaseRules.WitnessValue(WitnessChoice.Prepared, false) > CaseRules.WitnessValue(WitnessChoice.Plain, true)
+              && CaseRules.WitnessValue(WitnessChoice.Hold, true) < 0 && CaseRules.WitnessValue(WitnessChoice.Plain, false) == 0,
+            "police detective: evidence from a written file helps most, from one not written a little, saying little hurts");
+        var heard = new OfficerCase { Id = 40, Hearing = 12, Strength = 40, Witness = CaseRules.WitnessPrepared };
+        var unheard = new OfficerCase { Id = 40, Hearing = 12, Strength = 40, Witness = 0 };
+        CaseRules.Odds(heard.Strength, heard.Witness, out int ha, out _, out _);
+        CaseRules.Odds(unheard.Strength, unheard.Witness, out int ua, out _, out _);
+        Check(ha < ua, "police detective: giving evidence from a file moves the hearing's odds towards a conviction");
+
+        // the case book in the save
+        DutyFile book = CaseFile();
+        book.Cases.Add(new OfficerCase { Id = 3, Name = "Ash Lee", PersonId = 12, Offence = JusticeLaw.Assault, District = "ba:neighborhood_x", Day = 5, Hearing = 8, Quality = 71, Strength = 80, WorkedDay = 7, Done = 5, Witness = 8,
+            Summoned = true, End = CaseEnd.Convicted, EndDay = 9, Sentence = 4 });
+        book.NextCase = 4;
+        book.ActionsToday = 2;
+        book.NoticeDay = 9;
+        book.PendOpened = 1;
+        book.PendConvicted = 1;
+        book.PendCommended = 1;
+        DutyFile back = DutyStore.Read(DutyStore.Write(book), out _);
+        OfficerCase b = back.Cases.Count == 1 ? back.Cases[0] : null;
+        Check(b != null && b.Id == 3 && b.Name == "Ash Lee" && b.PersonId == 12 && b.Offence == JusticeLaw.Assault && b.District == "ba:neighborhood_x" && b.Day == 5 && b.Hearing == 8 && b.Quality == 71
+              && b.Strength == 80 && b.WorkedDay == 7 && b.Done == 5 && b.Witness == 8 && b.Summoned && b.End == CaseEnd.Convicted && b.EndDay == 9 && b.Sentence == 4
+              && back.NextCase == 4 && back.ActionsToday == 2 && back.NoticeDay == 9 && back.PendOpened == 1 && back.PendConvicted == 1 && back.PendCommended == 1,
+            "police cases: the case book and the day's news come back from the save, every field");
+        DutyFile older = DutyStore.Read(DutyStore.Write(new DutyFile { Arrests = 2 }), out _);
+        Check(older.Arrests == 2 && older.Cases.Count == 0 && older.NextCase == 1, "police cases: a file with no case book reads as an empty one");
+        DutyFile before = DutyStore.Read("v=1~h:3|1|0|0|0|0|0|0|1|4|9|60|1|2", out _);
+        Check(before != null && before.Arrests == 3 && before.Cases.Count == 0 && before.NextCase == 1 && before.NoticeDay == -1, "police cases: a save from before the book (a short record) reads, with no cases");
+        Check(back.Cases.Count <= CaseRules.Most, "police cases: the book keeps at most " + CaseRules.Most);
+        DutyFile big = CaseFile();
+        var opened = new List<OfficerCase>();
+        for (int i = 0; i < CaseRules.Most + 10; i++)
+        {
+            OfficerCase c = CaseRules.Open(big, "X", 0, JusticeLaw.Theft, string.Empty, 1, 0, i);
+            if (c.Open)
+            {
+                opened.Add(c);
+            }
+        }
+        bool keptOpen = true;
+        foreach (OfficerCase c in opened)
+        {
+            keptOpen &= big.Cases.Contains(c);
+        }
+        Check(big.Cases.Count <= CaseRules.Most && keptOpen, "police cases: past the limit only closed cases go, never an open one (" + big.Cases.Count + " kept)");
+    }
+
     private static string PoliceSource(string relative)
     {
         string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts", relative));
@@ -505,6 +731,18 @@ internal static partial class Program
         Check(law.Contains("Service.Duty") && law.Contains("Bridges.DutyPress") && law.Contains("Bridges.DutyDeskView"), "police sources: the front desk offers the patrol in its own list");
         Check(wiring.Contains("Step(\"the police career\", PoliceLinks.Connect)") && wiring.Contains("Step(\"the police career\", PoliceLinks.Disconnect)"), "police sources: the career's wiring is connected and disconnected with the others");
         Check(links.Contains("CareersBridges.GigOn = () => JobDirector.OnShift") && duty.Contains("CareersBridges.GigOnNow()"), "police sources: a gig shift and a patrol never share the player's work clothes");
+        string cases = PoliceSource("Careers/Police/CareersDirector.Cases.cs");
+        Check(Regex.IsMatch(work, "Guard\\.Step\\(\"the officer's cases' day\", \\(\\) => CaseDay\\(day\\)\\)") && cases.Contains("CaseRules.Advance(f, day, StudySeed)") && cases.Contains("CaseRules.TakeNotice("),
+            "police sources: the day's turn decides the hearings behind and sends the one notice");
+        Check(duty.Contains("CaseOpen(j, call, margin)") && duty.Contains("call.Source == DutySource.Crime") && cases.Contains("PeoplePool.For(") && cases.Contains("CareersBridges.DistrictNow()"),
+            "police sources: an arrest opens a case named as the city's people are, in the district it was made in");
+        Check(!Regex.IsMatch(cases, "\\b(Update|LateUpdate|FixedUpdate)\\s*\\(") && duty.Contains("if (CaseWitness(j, Save.Day))") && duty.Contains("now < _caseBusyUntil"),
+            "police sources: the cases cost nothing per frame: the hearing-day look rides the one-second timer and the hour in court holds incidents off");
+        Check(law.Contains("Service.Cases") && law.Contains("Bridges.CasePress") && links.Contains("Law.Bridges.CasePress = CasePress") && links.Contains("CaseOffered = cases"),
+            "police sources: the front desk's list has the cases entry for a detective");
+        Check(PoliceSource("Careers/CareerApp.Life.cs").Contains("_director.DutyCaseLines(_file)") && PoliceSource("Ui/Work/CareerLive.cs").Contains("CareersDirector.Instance?.DutyCaseLines(file)"),
+            "police sources: the open cases are on the Career page on both interfaces");
+        Check(PoliceSource("Careers/Police/CareersDirector.DutyFile.cs").Contains("CaseRules.ThrownPenalty("), "police sources: a case thrown out counts against the review");
         Check(PoliceSource("Careers/CareersDirector.Needs.cs").Contains("DutyEntryWhy(p)") && PoliceSource("Careers/CareersDirector.Applying.cs").Contains("DutyEntryWhy(a.Post.Def)")
               && PoliceSource("Careers/CareersDirector.Applying.cs").Contains("DutyEntryWhy(p) != null"), "police sources: the entry's asks are made where a post is applied for, listed as open, and taken");
         Check(work2.Contains("!IsPolice(j) && DeskGame.Inside"), "police sources: no desk of the player's is set up in a police station");
@@ -539,7 +777,7 @@ internal static partial class Program
         keys.AddRange(PoliceRules.KindKeys);
         string all = PoliceSource("Careers/Police/CareersDirector.Duty.cs") + PoliceSource("Careers/Police/PoliceRules.cs") + PoliceSource("Wiring/Wiring.PoliceLinks.cs") + PoliceSource("Careers/CareersDirector.Work.cs")
                      + PoliceSource("Careers/CareersDirector.Life.cs") + PoliceSource("Careers/CareersDirector.DeskDay.cs") + PoliceSource("Careers/CareersDirector.Desk.cs") + PoliceSource("Crime/PoliceAttention.Stop.cs")
-                     + PoliceSource("Careers/Police/PoliceDesk.cs") + PoliceSource("Ui/Work/CareerLive.cs") + PoliceSource("Core/RealLifeOverhaulMod.cs") + PoliceSource("Permadeath/PermadeathDirector.cs");
+                     + PoliceSource("Careers/Police/PoliceDesk.cs") + PoliceSource("Careers/Police/CareersDirector.Cases.cs") + PoliceSource("Ui/Work/CareerLive.cs") + PoliceSource("Core/RealLifeOverhaulMod.cs") + PoliceSource("Permadeath/PermadeathDirector.cs");
         foreach (Match m in Regex.Matches(all, "\"(reallife_(?:police|pd_near_duty)[a-z_]*)\""))
         {
             if (!keys.Contains(m.Groups[1].Value))
@@ -576,7 +814,7 @@ internal static partial class Program
               && english["reallife_police_note_call"].Contains("{kind}") && english["reallife_police_note_call"].Contains("{danger}") && english["reallife_police_note_call"].Contains("{metres}")
               && english["reallife_police_why_record"].Contains("{days}"), "police texts: the figures a line is told are in it");
         string guide = english.TryGetValue("reallife_guide_careers_jobs", out string g) ? g : string.Empty;
-        string[] facts = { "{police_clean_days}", "{police_from}", "{police_to}", "{police_crime_times}", "{police_back_off}", "{police_start}", "{police_commend}", "{police_fatal_one_in}" };
+        string[] facts = { "{police_clean_days}", "{police_from}", "{police_to}", "{police_crime_times}", "{police_back_off}", "{police_start}", "{police_commend}", "{police_fatal_one_in}", "{police_thrown_days}", "{police_detective}", "{police_actions}" };
         bool filled = true;
         foreach (string fact in facts)
         {

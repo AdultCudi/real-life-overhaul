@@ -39,6 +39,8 @@ namespace RealLifeOverhaul
                 CityWatch.OnDuty = () => CareersDirector.Instance != null && CareersDirector.Instance.DutyOn;
                 Law.Bridges.Duty = DeskView;
                 Law.Bridges.DutyPress = DeskPress;
+                Law.Bridges.CasePress = CasePress;
+                CareersBridges.District = District;
             }
 
             internal static void Disconnect()
@@ -52,6 +54,8 @@ namespace RealLifeOverhaul
                 CityWatch.OnDuty = null;
                 Law.Bridges.Duty = null;
                 Law.Bridges.DutyPress = null;
+                Law.Bridges.CasePress = null;
+                CareersBridges.District = null;
             }
 
             // ------------------------------------------------------------------------------------------------- the posts
@@ -218,13 +222,39 @@ namespace RealLifeOverhaul
                 {
                     return default;
                 }
+                bool cases = director.CaseDesk(out bool caseCan, out string caseWhy);
                 return new Law.Bridges.DutyDeskView
                 {
+                    CaseOffered = cases, CaseCan = caseCan, CaseTitle = CareersText.T("reallife_police_desk_cases"),
+                    CaseDetail = caseWhy != null ? CareersText.T(caseWhy) : CareersText.T("reallife_police_desk_cases_detail"),
                     Offered = true, Can = on || why == null,
                     Title = CareersText.T(on ? "reallife_police_desk_entry_end" : "reallife_police_desk_entry"),
                     Detail = on ? CareersText.T("reallife_police_desk_entry_end_detail")
                         : why != null ? CareersText.T(why) : CareersText.T("reallife_police_desk_entry_detail", "hours", hours)
                 };
+            }
+
+            private static string CasePress()
+            {
+                CareersDirector director = CareersDirector.Instance;
+                string why = director != null ? director.CasePress() : "reallife_study_test_off";
+                return why == null ? null : CareersText.T(why);
+            }
+
+            // The district of the precinct nearest the player, by the name key the places are named by.
+            private static string District()
+            {
+                try
+                {
+                    PlayerController player = PlayerHelper.PlayerController;
+                    Precinct near = player != null ? LawDirector.NearestPrecinct(player.transform.position) : null;
+                    return near != null ? near.District : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("PoliceLinks.District", e);
+                    return null;
+                }
             }
 
             private static string DeskPress()
