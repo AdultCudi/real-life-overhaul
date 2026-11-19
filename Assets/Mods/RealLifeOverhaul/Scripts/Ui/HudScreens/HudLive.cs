@@ -303,6 +303,7 @@ namespace RealLifeOverhaul.Ui
             {
                 host.Screen.PiecePressed = null;
                 Clear(host.Screen.Model);
+                host.PopupUp = false;
                 host.Hide();
             }
             if (why != null)
@@ -379,6 +380,7 @@ namespace RealLifeOverhaul.Ui
                 sig = HudTopGame.Look(m, Popups, ref popups);
                 m.Popups = Popups;
                 m.PopupCount = popups;
+                host.PopupUp = popups > 0;
                 sig = sig * 31 + (SampleSides != null ? SidesSample(m) : _sides ? HudSides.Look(m) : NoSides(m));
                 sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? m.AvoidY + UiMapChrome.RouteTop - UiTokens.S4 : 0f)) : NoGoals(m));
                 sig = sig * 31 + (_notes || SampleNote != null ? HudNotes.Look(m, _notes, SampleNote) : 0);

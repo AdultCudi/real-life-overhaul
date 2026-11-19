@@ -178,8 +178,20 @@ namespace RealLifeOverhaul.Ui
                 GameUi.UiClone.Fallback("the game's box over the world is not built as expected, so it stays the game's own");
                 return false;
             }
+            // Every piece of the game's box, not only its header and buttons: the box's own picture (the grey shadow with its pointer) is a sibling of
+            // those two and stood behind the card, taller than it, when only they were hidden (a player's busking card).
             _conceal.Add(_header.transform);
             _conceal.Add(_buttons.transform);
+            Transform box = _overlay.transform;
+            for (int i = 0; i < box.childCount; i++)
+            {
+                _conceal.Add(box.GetChild(i));
+            }
+            Graphic own = box.GetComponent<Graphic>();
+            if (own != null)
+            {
+                _conceal.Add(own);
+            }
             _state = "waiting for a box";
             return true;
         }

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
                     return new NavKitSpace
                     {
                         Up = true, BarTop = barTop, HasColumn = hasColumn, ColumnRight = columnRight, ColumnBottom = columnBottom, ChipsLeft = chipsLeft, ChipsTop = chipsTop,
-                        Order = Ui.UiHostRules.MinimapOrder(host.CanvasOrder)
+                        Order = Ui.UiHostRules.MinimapOrder(host.CanvasOrder), Under = host.PopupUp
                     };
                 }
                 catch (Exception e)
