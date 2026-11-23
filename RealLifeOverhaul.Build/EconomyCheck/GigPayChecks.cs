@@ -447,8 +447,8 @@ internal static partial class Program
         Check(en["reallife_gig_left"].Contains("{left}") && en["reallife_gig_left"].Contains("{most}") && en["reallife_gig_wear"].Contains("{done}") && en["reallife_gig_wear"].Contains("{share}")
               && en["reallife_gig_newhand"].Contains("{share}"), "gig pay: the offer's lines carry the figures they are filled with");
         Check(en["reallife_gig_rule_whole"].Contains("Waiting adds nothing") && en["reallife_gig_rule_hour"].Contains("for being there"), "gig pay: the two rules say what time does and does not pay");
-        string next = en.TryGetValue("reallife_changes_next", out string n) ? n : string.Empty;
-        Check(next.Contains("Gigs now pay by effort and skill") && !next.Contains("Fixed: Gigs now pay"), "gig pay: the What's new line is there and is a feature's, with no fix mark");
+        // Any row of What's new: the version step moves the next row's lines into the version's own row.
+        Check(WhatsNewHas(en, "Gigs now pay by effort and skill"), "gig pay: What's new tells of the pay by effort and skill");
         string words = ModSource(@"Jobs\GigWords.cs");
         foreach (string key in new[] { "reallife_gig_rule_whole", "reallife_gig_rule_hour", "reallife_gig_left", "reallife_gig_wear", "reallife_gig_newhand" })
         {
