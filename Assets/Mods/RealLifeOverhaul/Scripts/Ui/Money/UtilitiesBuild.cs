@@ -205,11 +205,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     m.PayAll = new UiActionModel
                     {
-                        Label = w.T("reallife_util_box_pay_all", "Pay all now"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin, Key = UiAction.Count, Command = UtilitiesFace.PayAllAction, Arg = 0
+                        Label = w.T("reallife_util_box_pay_all", "Pay all now"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Coin, Key = UiAction.Count, Command = UtilitiesFace.PayAllAction, Arg = 0
                     };
                 }
             }
-            if (rows.Length > 0)
+            if (rows.Length > 0 && !v.Picking)   // while bills are picked the table has the room, and its Pay ticked bills is the one main button
             {
                 m.AccountCard = AccountCard(f, list[m.Accounts.Selected], w);
             }
