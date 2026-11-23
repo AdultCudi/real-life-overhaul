@@ -282,6 +282,7 @@ namespace RealLifeOverhaul.Markets
                     t.Append("~v:").Append(string.Join(";", s.Listing.SuspendedFirms));   // their firms' stocks set aside the same way, a record each
                 }
             }
+            Segments(t, s);   // "~s:" the quarter's review (MarketStore.Segments.cs)
             if (!city && DeskStore.Any(s))
             {
                 t.Append("~z:");
@@ -300,7 +301,7 @@ namespace RealLifeOverhaul.Markets
             }
             var s = new MarketState();
             bool header = false;
-            string suspended = null, suspendedFirms = null, bots = null, worked = null;
+            string suspended = null, suspendedFirms = null, bots = null, worked = null, segments = null;
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
@@ -476,6 +477,9 @@ namespace RealLifeOverhaul.Markets
                             }
                         }
                         break;
+                    case 's':
+                        segments = body;
+                        break;
                     case 'z':
                         DeskStore.Read(s, body);   // a body this version does not know is ignored, and not written back
                         break;
@@ -509,6 +513,7 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             Repair(s);
+            ReadSegments(s, segments);   // after every company is back
             MarketLife.DayBases(s, s.InSession);   // a save made after a close by an old version has every company's at its close
             return s;
         }

@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Markets
                 .Check("reallife_stx_test_block", MarketDirector.TestExtrasBlock, "Stock extras check (a block quoted)", RunPlace.Here)
                 .Check("reallife_stx_test_rival", MarketDirector.TestExtrasRival, "Stock extras check (a rival looks at the market)", RunPlace.Here)
                 .Check("reallife_stx_test_bank", MarketDirector.TestExtrasBank, "Stock extras check (the bank's own books)", RunPlace.Here)
+                .Check("reallife_stx_test_segments", MarketDirector.TestExtrasSegments, "Stock extras check (the size segments reviewed at the next close)", RunPlace.Here)
                 .Fact("stx_split_from", () => MarketText.Price(ExtrasCatalogue.SplitLevelLeastCents))
                 .Fact("stx_split_to", () => MarketText.Price(MarketCatalogue.SplitAboveCents))
                 .Fact("stx_notice", () => Whole(MarketCatalogue.SplitNoticeDays))
@@ -31,6 +32,9 @@ namespace RealLifeOverhaul.Markets
                 .Fact("stx_fund_fee", () => Guide.Percent(ExtrasCatalogue.FundFeeBp / 10000f))
                 .Fact("stx_fund_most", () => Guide.Percent(ExtrasCatalogue.FundHoldingBp / 10000f))
                 .Fact("stx_disclose", () => Guide.Percent(ExtrasCatalogue.DiscloseStepBp / 10000f))
+                .Fact("stx_seg_large", () => MarketText.Large(MarketSegments.Band(MarketSegments.LargeFromM, 1000)))
+                .Fact("stx_seg_mid", () => MarketText.Large(MarketSegments.Band(MarketSegments.MidFromM, 1000)))
+                .Fact("stx_seg_hold", () => Guide.Percent(MarketSegments.HoldBp / 10000f))
                 .Fact("stx_block_days", () => Whole(ExtrasCatalogue.BlockListedDays))
                 .Fact("stx_bank_quarters", () => Whole(ExtrasCatalogue.BankQuartersLeast))
                 .Fact("stx_bank_book", () => ExtrasCatalogue.BankBookMost.ToString("0.#", Inv));

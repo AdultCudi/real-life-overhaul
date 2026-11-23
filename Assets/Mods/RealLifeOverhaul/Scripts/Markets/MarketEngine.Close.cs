@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Markets
             ExtrasDues(day);   // the fund's fee and the dividends its units are owed: before a company leaves on its record day (Extras/MarketEngine.Extras.cs)
             Corporate(day);
             ExtrasCorporate(day);   // splits by a board's own level and shares put together, decided after the companies' own lives
+            ExtrasSegments(day);    // the size segments, once a quarter (MarketEngine.Why.cs)
             BuildersClose(day);   // a listed builder's own news (MarketEngine.Builders.cs)
             Derivatives(day);   // the raw materials' prices, the futures and options (MarketEngine.Derivatives.cs)
             Variance();
@@ -577,6 +578,8 @@ namespace RealLifeOverhaul.Markets
             {
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.Sector, A = bestSector, B = bestBp });
             }
+            WhyNews(day, bestSector, bestBp, up, upBp, down, downBp);   // what the engine applied that moved them (MarketEngine.Why.cs)
+            _why.Clear(day + 1);   // a new day's record: what is heard from now on is tomorrow's
         }
     }
 }
