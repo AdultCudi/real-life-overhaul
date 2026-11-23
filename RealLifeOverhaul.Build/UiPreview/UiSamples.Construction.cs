@@ -276,7 +276,8 @@ internal static partial class UiSamples
         m.HeadSub = W(t, "reallife_bld_glance_client", "No company is needed to build: the city's builders can be hired.");
         m.Lead = new ConstructionLead
         {
-            Icon = UiIcon.Briefcase, Kicker = W(t, "reallife_ui_cons_lead_start", "Start your company"), Title = W(t, "reallife_bld_glance_found", "Found {name} as a builder").Replace("{name}", "Pioneer Construction"),
+            Icon = UiIcon.Briefcase, Kicker = W(t, "reallife_ui_cons_lead_start", "Start your company"), Title = W(t, "reallife_ui_cons_lead_office_title", "Open a Construction Company office"),
+            Body = W(t, "reallife_bld_glance_no_office", "Open an office as a Construction Company in BizMan, as any office business, then found your company here. Hire its designers and client staff the game's way."),
             Actions = new[]
             {
                 ConsButton(runs, W(t, "reallife_bld_button_found", "Found the company"), UiButtonKind.Primary, UiAction.Alt),

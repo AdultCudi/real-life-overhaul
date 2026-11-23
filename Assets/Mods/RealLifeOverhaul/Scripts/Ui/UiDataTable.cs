@@ -242,7 +242,25 @@ namespace RealLifeOverhaul.Ui
         private static float HeadLead(UiDataColumn col, float room)
         {
             float lead = FaceLead(col.Kind);
-            return lead > 0f && UiTextRules.Lines(col.Title, UiStyle.SectionHeader, room - lead, 0, out float _) > 2 ? 0f : lead;
+            return lead > 0f && (UiTextRules.Lines(col.Title, UiStyle.SectionHeader, room - lead, 0, out float _) > 2 || !WordsFit(col.Title, room - lead)) ? 0f : lead;
+        }
+
+        // Whether every word of a head's title fits the room whole: a word that does not is split mid-word when the title wraps.
+        private static bool WordsFit(string title, float room)
+        {
+            int start = 0;
+            for (int i = 0; title != null && i <= title.Length; i++)
+            {
+                if (i == title.Length || title[i] == ' ')
+                {
+                    if (i > start && UiTextRules.Width(title, start, i, UiStyle.SectionHeader) + UiTokens.S1 > room)
+                    {
+                        return false;
+                    }
+                    start = i + 1;
+                }
+            }
+            return true;
         }
 
         // The head's height: a compact row, or two lines' room when a shared column's title takes two in this language.
@@ -782,7 +800,17 @@ namespace RealLifeOverhaul.Ui
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
                     bool sub = !string.IsNullOrEmpty(line);
                     float top = ry + (rowH - lh - (sub ? sh : 0f)) / 2f;
-                    UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
+                    if (!sub && !UiTextRules.Fits(words, UiStyle.Title, tw) && UiTextRules.LineHeight(UiStyle.BodyStrong) * 2f <= rowH
+                        && UiTextRules.Lines(words, UiStyle.BodyStrong, tw, 0, out float _) <= 2)
+                    {
+                        // A name with no line under it that is wider than its room is set a size smaller on up to two lines, so a district is not cut to its first letters.
+                        float wh = UiDraw.Snap(UiTextRules.WrappedHeight(words, UiStyle.BodyStrong, tw, 2));
+                        UiDraw.Text(s, at, tx, ry + UiDraw.SnapDown((rowH - wh) / 2f), tw, UiStyle.BodyStrong, UiRole.Text, words, UiFlags.Label | UiFlags.Wrap, 2);
+                    }
+                    else
+                    {
+                        UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
+                    }
                     if (sub)
                     {
                         UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, line, UiFlags.Truncate | UiFlags.Middle);

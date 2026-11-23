@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_util_range", "reallife_ui_util_rival_line", "reallife_ui_util_sale_value", "reallife_ui_util_set_plans",
                 "reallife_ui_util_set_prices", "reallife_ui_util_sold_day", "reallife_ui_util_sold_title", "reallife_ui_util_state_first",
                 "reallife_ui_util_state_live", "reallife_ui_util_state_live_dig", "reallife_ui_util_state_none",
-                "reallife_ui_util_temporary", "reallife_ui_util_to_dig", "reallife_ui_util_total_live", "reallife_ui_util_unpaid",
+                "reallife_ui_util_temporary", "reallife_ui_util_to_dig", "reallife_ui_util_total_live", "reallife_ui_cell_none", "reallife_ui_util_unpaid",
                 "reallife_ui_util_used", "reallife_ui_util_your_plan", "reallife_ui_util_your_plans", "reallife_util_app",
                 "reallife_util_box_apply", "reallife_util_box_apply_cut", "reallife_util_box_apply_temporary", "reallife_util_box_debit",
                 "reallife_util_box_deposit_value", "reallife_util_box_last_value", "reallife_util_box_nothing_owed",
