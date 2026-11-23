@@ -20,7 +20,6 @@ namespace RealLifeOverhaul.Economy
         public const int CutKeep = 500;                                          // a cut keeps this share of the book, thousandths
         public const int CutMonths = 1;                                          // game months after a cut with no buying
         public const int Drift = 200;                                            // thousandths off its part before a holding is traded back, as the fund's
-        public const int PeakLeast = 100;                                        // a book under this share of its room has no peak worth guarding, thousandths
 
         // The market's activity as the desk reads it: thousandths of an ordinary day's (the market's own variance), within bounds.
         public const int ActivityLeast = 500, ActivityMost = 2500;
