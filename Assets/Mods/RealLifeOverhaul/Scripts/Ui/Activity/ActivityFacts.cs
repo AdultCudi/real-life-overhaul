@@ -98,6 +98,10 @@ namespace RealLifeOverhaul.Ui
             return rows.ToArray();
         }
 
+        // The employer's place as a player reads it: the address in the game's words, or the street's words alone for a post with no number.
+        private static string PostPlace(string street, int number) => number > 0
+            ? RealLifeOverhaul.Construction.ConstructionGame.AddressText(street, number) : RealLifeOverhaul.Construction.ConstructionGame.StreetWords(street);
+
         // A working day at a desk: the job's own figures, read from the careers' file as the job's pages show them.
         private static void Desk(DeskWork desk, UiActivityModel m)
         {
@@ -111,7 +115,7 @@ namespace RealLifeOverhaul.Ui
             int rate = Prices.At(j.Pay);   // cents an hour at today's prices
             m.Icon = UiIcon.Briefcase;
             m.Place = CareersText.Employer(j.Post.Employer);
-            m.PlaceLines = string.IsNullOrEmpty(j.Post.Street) ? new string[0] : new[] { j.Post.Number > 0 ? j.Post.Number + " " + j.Post.Street : j.Post.Street };
+            m.PlaceLines = string.IsNullOrEmpty(j.Post.Street) ? new string[0] : new[] { PostPlace(j.Post.Street, j.Post.Number) };
             if (m.State == UiActivityState.NotStarted)
             {
                 int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek())));

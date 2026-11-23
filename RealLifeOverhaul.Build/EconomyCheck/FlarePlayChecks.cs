@@ -92,7 +92,7 @@ internal static partial class Program
         // A composer chip opens the compose sheet on its part, the post goes to the business chosen there, a result is the
         // visitors the hours that ran have credited, the city's demand is its real trends, and a poll's yes and no are the model's.
         Check(screen.Contains("case FlareFace.ChipCommand: return OpenCompose(arg);") && screen.Contains("_compose.Place = shops[_place].Place;")
-              && screen.Contains("FlareUseRules.Credited(") && screen.Contains("StarsFor(") && screen.Contains("CityTrendsView()")
+              && screen.Contains("FlareUseRules.Credited(") && screen.Contains("CityStarsOf(") && screen.Contains("CityTrendsView()")
               && screen.Contains("FlareFeedRules.Poll(p, now, out int yes, out int votes)")
               && screen.IndexOf("Shops[0]", System.StringComparison.Ordinal) < 0
               && screen.IndexOf("\"@me\"", System.StringComparison.Ordinal) < 0
@@ -105,7 +105,7 @@ internal static partial class Program
         // answers, so the rating and the count are not empty over reviews the list below shows; and an empty list says how many visits bring a review.
         string stars = MemberText(use, "public FlareStarRow StarsWithPosts(string place, long now)");
         Check(stars.Contains("StarsFor(place)") && stars.Contains("p.Source != FlareSource.Review") && stars.Contains("p.Author == FlareAuthor.Player") && stars.Contains("p.At > now")
-              && stars.Contains("row ?? city") && screen.Contains("StarsWithPosts(shop.Place, now)") && screen.Contains("StarsWithPosts(shops[i].Place, _flare.Now)")
+              && stars.Contains("row ?? city") && screen.Contains("RatingOf(shop.Place, now)") && screen.Contains("RatingOf(shops[i].Place, _flare.Now)")
               && screen.Contains("reallife_flare_kit_no_reviews_wait") && screen.Contains("FlareCityCatalogue.VisitsPerReview"),
             "Flare play: a business's rating counts the city's reviews and the feed's, and an empty page says how many visits bring one");
     }

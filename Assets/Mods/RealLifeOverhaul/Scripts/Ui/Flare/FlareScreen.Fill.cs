@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.Ui
             List<FlareShop> shops = _flare.MyShops();
             for (int i = 0; i < shops.Count; i++)
             {
-                FlareStarRow row = _flare.StarsWithPosts(shops[i].Place, _flare.Now);
+                FlareStarRow row = _flare.RatingOf(shops[i].Place, _flare.Now);
                 if (row != null && row.Total > 0)
                 {
                     sum += (long)FlareReplyRules.Average(row) * row.Total;
