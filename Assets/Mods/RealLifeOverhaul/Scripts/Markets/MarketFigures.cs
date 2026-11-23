@@ -79,15 +79,17 @@ namespace RealLifeOverhaul.Markets
         public static int PageNews(MarketState s, Stock k, int day, int most, List<string> into)
         {
             int said = 0;
-            for (int i = s.News.Count - 1; i >= 0 && said < most; i--)
+            var all = new List<MarketNews>(s.News.Count + s.Derived.Count);
+            s.NewsAll(all);
+            for (int i = all.Count - 1; i >= 0 && said < most; i--)
             {
-                MarketNews n = s.News[i];
+                MarketNews n = all[i];
                 if (n.Day < day - MarketCatalogue.PageNewsDays)
                 {
                     break;
                 }
                 bool mine = n.Stock == k.Id && n.Kind != MarketNewsKind.Mover && n.Kind != MarketNewsKind.Paid;
-                bool sector = n.Kind == MarketNewsKind.Why && n.Stock == 0 && MarketWhy.SectorOf(n) == (int)k.Sector;
+                bool sector = n.Kind == DerivedNews.Why && n.Stock == 0 && MarketWhy.SectorOf(n) == (int)k.Sector;
                 if (!mine && !sector)
                 {
                     continue;

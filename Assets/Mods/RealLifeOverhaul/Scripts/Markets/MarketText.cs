@@ -220,12 +220,12 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Reverse:
                     data = new[] { "name", name, "ratio", n.A.ToString(), "day", n.B.ToString() };
                     return "reallife_mkt_news_reverse";
-                case MarketNewsKind.Why:
+                case DerivedNews.Why:
                 {
                     // Why a sector or a large company moved: only a cause the engine applied that day (MarketWhy).
                     return MarketWhyText.Line(n, s, out _, out data);
                 }
-                case MarketNewsKind.Segment:
+                case DerivedNews.Segment:
                     data = new[] { "name", name, "segment", Size((MarketSize)Math.Max(0, Math.Min((int)MarketSize.Small, n.A))), "worth", Large(n.C * 1000000.0) };
                     return n.A < n.B ? "reallife_mkt_news_segment_up" : "reallife_mkt_news_segment_down";
                 case MarketNewsKind.Block:

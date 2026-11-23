@@ -398,8 +398,6 @@ namespace RealLifeOverhaul.Markets
         Reverse = 34,       // shares to be put together (Extras/SplitRules): Stock, A how many old shares make one new, B the day
         Block = 35,         // a holding that passed a 5% step (Extras/BlockRules): Stock, A the holding in bp, B 1 bought or -1 sold,
                             // C 0 the player or the holding (its stock id) of the tycoon who dealt
-        Why = 36,           // why a sector or a large company moved (MarketWhy): Stock (0 for a sector), A the cause (WhyCause) with the sector above it, B the move in bp, C the cause's detail
-        Segment = 37,       // a company changed its size segment at the quarter's review (MarketSegments): Stock, A the new segment, B the old, C its market value in millions
         Count
     }
 
@@ -415,6 +413,28 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Everything the market keeps of a save: one line of save data (<see cref="MarketStore"/>) and the tape outside it. Game-free.</summary>
     public sealed class MarketState
     {
+        /// <summary>
+        /// Lines the market derives on each machine from what it has (why a sector or a company moved, a segment changed: <see cref="DerivedNews"/>). Never saved and never on the
+        /// tape or in a session's lines, so an older peer sees the same tape; a load starts with none.
+        /// </summary>
+        public readonly List<MarketNews> Derived = new List<MarketNews>(32);
+
+        /// <summary>The market's news and the derived lines together, oldest first, into <paramref name="into"/> (cleared): for a page, never per frame.</summary>
+        public void NewsAll(List<MarketNews> into)
+        {
+            into.Clear();
+            into.AddRange(News);
+            for (int i = 0; i < Derived.Count; i++)
+            {
+                int at = into.Count;
+                while (at > 0 && into[at - 1].Day > Derived[i].Day)
+                {
+                    at--;
+                }
+                into.Insert(at, Derived[i]);
+            }
+        }
+
         public ulong Id;                         // the playthrough's: the tape's name
         public int CreatedDay;
         public int YearDays = 60;                // the game's year, in days

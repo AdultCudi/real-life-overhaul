@@ -184,7 +184,7 @@ internal static partial class Program
             same &= !n.Scaled[x];
         }
         BbRules.Finish(n, 99);
-        for (int x = 0; x < Network.Districts; x++)
+        for (int x = 0; x < Network.Legacy; x++)
         {
             n.Share[x, Network.Own] = 200;
         }

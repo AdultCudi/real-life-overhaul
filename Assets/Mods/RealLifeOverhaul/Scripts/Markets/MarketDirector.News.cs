@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Reverse:
                     Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
-                case MarketNewsKind.Segment:
+                case DerivedNews.Segment:
                     Queue(NotificationType.Info, "reallife_mkt_note_segment", "name", name, "segment", MarketText.Size((MarketSize)Math.Max(0, Math.Min((int)MarketSize.Small, news.A))),
                         "worth", MarketText.Large(news.C * 1000000.0));
                     break;

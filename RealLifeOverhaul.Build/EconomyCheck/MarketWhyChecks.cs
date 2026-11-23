@@ -152,6 +152,7 @@ internal static partial class Program
     {
         var world = new MarketWorld(11);
         MarketEngine m = NewMarket(11, 60, 1, 0, world);
+        m.SegmentsOn = true;   // the director sets it from the option; an engine nobody asked never reviews
         int year = m.State.YearDays;
         int first = TradingOnOrAfter(1);
         var list = MarketWhyCompanies(m).Where(s => s.BidCents <= 0 && s.SplitDay <= 0).ToList();
@@ -174,8 +175,8 @@ internal static partial class Program
         }
         Check(changed >= movers.Count * 9 / 10 && movers.All(s => s.SizeQuarter == quarter), "segments: at the first close every company is reviewed and the ones over a band take its segment at the next moment (" + changed + " of " + movers.Count + ")");
         Check(worst < 1e-9, "segments: no price moves with a company's segment: the largest change of a price over the moment is " + worst.ToString("0.0E+0"));
-        int told = m.State.News.Count(n => n.Kind == MarketNewsKind.Segment);
-        Check(told >= changed - 1 && m.State.News.Where(n => n.Kind == MarketNewsKind.Segment).All(n => n.A != n.B && n.C >= 0 && (!from.ContainsKey(n.Stock) || n.B == (int)from[n.Stock])),
+        int told = m.State.Derived.Count(n => n.Kind == DerivedNews.Segment);
+        Check(told >= changed - 1 && m.State.Derived.Where(n => n.Kind == DerivedNews.Segment).All(n => n.A != n.B && n.C >= 0 && (!from.ContainsKey(n.Stock) || n.B == (int)from[n.Stock])),
             "segments: each change is in the news, from its old segment to the new, with the market value in millions (" + told + " pieces)");
         Check(list.All(s => s.SizeQuarter == quarter), "segments: every company is marked reviewed in its quarter");
         // once a quarter: nothing more in the middle of it, everything again at the next
@@ -188,11 +189,11 @@ internal static partial class Program
         Check(list.All(s => s.SizeQuarter == quarter + 1 || !s.Listed || s.BidCents > 0), "segments: at the first close of the next quarter every company is reviewed again");
         // the option off, nobody is reviewed
         var off = NewMarket(12, 60, 1, 0);
-        off.ExtrasOn = false;
+        off.ExtrasOn = true;   // the review follows its own switch, which an engine nobody asked leaves off
         int f = TradingOnOrAfter(1);
         RunTo(off, f, MarketCatalogue.PhaseClose);
         RunTo(off, TradingOnOrAfter(f + 1), MarketCatalogue.PhaseResults);
-        Check(off.State.Stocks.All(s => s.SizeQuarter == -1) && !off.State.News.Any(n => n.Kind == MarketNewsKind.Segment), "segments: with the extras option off nobody is reviewed and every company keeps its catalogue segment");
+        Check(off.State.Stocks.All(s => s.SizeQuarter == -1) && !off.State.Derived.Any(n => n.Kind == DerivedNews.Segment), "segments: an engine whose review is not switched on reviews nobody, and every company keeps its catalogue segment");
     }
 
     private static void MarketSegmentSaves()
@@ -223,13 +224,18 @@ internal static partial class Program
         MarketState clamped = MarketStore.Read(wrong, out _);
         Check(clamped != null && (int)clamped.Stock(a.Id).Size <= (int)MarketSize.Small, "segments: a segment out of range in a save is brought within it");
         // news of the two new kinds survives a save, in kinds the line knows
-        m.State.News.Add(new MarketNews { Day = 3, Kind = MarketNewsKind.Why, Stock = 0, A = (int)WhyCause.Weather | (7 << 8), B = -90, C = 2 });
-        m.State.News.Add(new MarketNews { Day = 3, Kind = MarketNewsKind.Segment, Stock = a.Id, A = 0, B = 2, C = 7500 });
-        MarketState news = MarketStore.Read(MarketStore.Write(m.State), out _);
-        Check(news.News.Any(n => n.Kind == MarketNewsKind.Why && n.A == ((int)WhyCause.Weather | (7 << 8)) && n.B == -90 && n.C == 2) && news.News.Any(n => n.Kind == MarketNewsKind.Segment && n.C == 7500),
-            "why: a piece of news that says why and one that says a segment changed survive the save");
-        Check((int)MarketNewsKind.Why == 36 && (int)MarketNewsKind.Segment == 37 && (int)MarketNewsKind.Count == 38 && MarketInputs.EventSegment == MarketInputs.EventSplit + 1 && MarketInputs.EventCount == MarketInputs.EventSegment + 1,
-            "why: the new kinds of news and of event are numbered after the others, never in their place");
+        m.State.Derived.Add(new MarketNews { Day = 3, Kind = DerivedNews.Why, Stock = 0, A = (int)WhyCause.Weather | (7 << 8), B = -90, C = 2 });
+        m.State.Derived.Add(new MarketNews { Day = 3, Kind = DerivedNews.Segment, Stock = a.Id, A = 0, B = 2, C = 7500 });
+        string with = MarketStore.Write(m.State);
+        MarketState news = MarketStore.Read(with, out _);
+        Check(news.Derived.Count == 0 && news.News.Count == m.State.News.Count,
+            "why: the lines derived on each machine are never in the saved line, so a load starts with none and the line is what it was");
+        var merged = new List<MarketNews>();
+        m.State.NewsAll(merged);
+        Check(merged.Count == m.State.News.Count + 2 && merged.Where((x, i) => i > 0 && merged[i - 1].Day > x.Day).Count() == 0, "why: the news and the derived lines read together in the order of their days");
+        Check((int)MarketNewsKind.Count == 36 && (int)DerivedNews.Why >= (int)MarketNewsKind.Count && (int)DerivedNews.Segment >= (int)MarketNewsKind.Count && MarketInputs.EventSegment == MarketInputs.EventSplit + 1
+              && MarketInputs.EventCount == MarketInputs.EventSegment + 1 && !(new MarketEngine(MarketStore.Read(with, out _), new MarketTape(1), new MarketWorld(1)).SegmentsOn),
+            "why: no new kind of news is on the tape or in a line (the derived kinds lie beyond them), the one new event comes after the others, and an engine nobody asked does not review");
     }
 
     private static void MarketWhyKicks()
@@ -372,7 +378,7 @@ internal static partial class Program
             "why: a company moving with its sector in the same direction by at least half as much carries its sector's cause; one that moved more than twice as much, the other way, or in no sector that moved, has none");
         // the piece of news
         MarketNews piece = MarketWhy.News(5, 0, (int)MarketSector.Insurance, -90, weather);
-        Check(piece.Kind == MarketNewsKind.Why && MarketWhy.CauseOf(piece) == WhyCause.Weather && MarketWhy.SectorOf(piece) == ins && piece.B == -90 && piece.C == 2 && piece.Stock == 0, "why: the piece of news keeps the cause, the sector, the move and the detail");
+        Check(piece.Kind == DerivedNews.Why && MarketWhy.CauseOf(piece) == WhyCause.Weather && MarketWhy.SectorOf(piece) == ins && piece.B == -90 && piece.C == 2 && piece.Stock == 0, "why: the piece of news keeps the cause, the sector, the move and the detail");
         Check(MarketWhy.CauseOf(new MarketNews { A = 255 }) == WhyCause.Count - 1 && MarketWhy.SectorOf(new MarketNews { A = 255 << 8 }) == (int)MarketSector.Count - 1, "why: a piece of news read from a save is brought within the causes and sectors there are");
     }
 
@@ -388,7 +394,7 @@ internal static partial class Program
             for (int day = 2; day <= 420; day += 7)
             {
                 RunTo(m, TradingOnOrAfter(day), MarketCatalogue.PhaseClose);
-                foreach (MarketNews n in m.State.News)
+                foreach (MarketNews n in m.State.News.Concat(m.State.Derived))
                 {
                     if (!all.Any(x => x.Day == n.Day && x.Kind == n.Kind && x.Stock == n.Stock && x.A == n.A && x.B == n.B && x.C == n.C))
                     {
@@ -400,7 +406,7 @@ internal static partial class Program
             if (round == 0)
             {
                 bool bounds = true, tape = true;
-                foreach (MarketNews n in all.Where(x => x.Kind == MarketNewsKind.Why))
+                foreach (MarketNews n in all.Where(x => x.Kind == DerivedNews.Why))
                 {
                     pieces++;
                     stockPieces += n.Stock > 0 ? 1 : 0;
@@ -457,7 +463,7 @@ internal static partial class Program
         string director = ModSource(@"Markets\MarketDirector.News.cs"), figures = ModSource(@"Markets\MarketFigures.cs"), store = ModSource(@"Markets\MarketStore.cs"), guide = ModSource(@"Markets\Extras\ExtrasGuide.cs");
         // the review is decided only where a close is played first, and put on the tape
         string review = MemberText(why, "private void ExtrasSegments(int day)");
-        Func<string, bool> gated = t => t.Contains("if (!ExtrasOn || State.Following || Replaying)") && t.Contains("Event(MarketInputs.EventSegment, s.Id, (int)next);");
+        Func<string, bool> gated = t => t.Contains("if (!SegmentsOn || State.Following || Replaying)") && t.Contains("Event(MarketInputs.EventSegment, s.Id, (int)next);");
         Check(gated(review) && !gated(review.Replace("State.Following || ", string.Empty)) && close.Contains("ExtrasSegments(day);"), "segments: the review is decided only where the close is played first (not a guest, not a replay, not with the option off) and put on the tape");
         Check(engine.Contains("SegmentEvent(e);") && MemberText(why, "private void SegmentEvent(in MarketEvent e)").Contains("Settle(s, State.Day);") && MemberText(why, "private void SegmentEvent(in MarketEvent e)").IndexOf("s.Size = next;", StringComparison.Ordinal)
               < MemberText(why, "private void SegmentEvent(in MarketEvent e)").IndexOf("Settle(s, State.Day);", StringComparison.Ordinal), "segments: a segment from the tape is applied and the price settled where it was, in that order");
@@ -467,7 +473,7 @@ internal static partial class Program
         Check(!why.Contains("MarketRandom") && !why.Contains("new Random") && !why.Contains("_secret"), "why: nothing is drawn in naming a cause, so the lines are the same on every machine");
         // both interfaces, the news, the paper and the notification
         Check(page.Contains("MarketFigures.Rows(") && kit.Contains("MarketFigures.Rows("), "why: the old page and the kit's Figures view both carry the segment, the news and the player's statement");
-        Check(text.Contains("case MarketNewsKind.Why:") && text.Contains("case MarketNewsKind.Segment:") && ledger.Contains("\"_mkt_news_why\"") && ledger.Contains("\"_mkt_news_segment\"") && director.Contains("case MarketNewsKind.Segment:"),
+        Check(text.Contains("case DerivedNews.Why:") && text.Contains("case DerivedNews.Segment:") && ledger.Contains("\"_mkt_news_why\"") && ledger.Contains("\"_mkt_news_segment\"") && director.Contains("case DerivedNews.Segment:"),
             "why: the news, the City Ledger and the notification know both new kinds");
         Check(figures.Contains("PageNews(s, k, day, NewsShown, news);") && figures.Contains("MarketStatement.Now(") && figures.Contains("MarketStatement.Next(") && figures.Contains("ListingSector.Top("), "why: the page's rows come from the market's own figures: the news, the mix by sector, the books' statement");
         Check(store.Contains("Segments(t, s);") && store.Contains("ReadSegments(s, segments);") && guide.Contains("stx_seg_large"), "segments: the save writes and reads the reviews, and the Guide's facts are the catalogue's bands");

@@ -579,6 +579,13 @@ namespace RealLifeOverhaul.Markets
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.Sector, A = bestSector, B = bestBp });
             }
             WhyNews(day, bestSector, bestBp, up, upBp, down, downBp);   // what the engine applied that moved them (MarketEngine.Why.cs)
+            for (int i = State.Derived.Count - 1; i >= 0; i--)
+            {
+                if (State.Derived[i].Day < day - 6)
+                {
+                    State.Derived.RemoveAt(i);
+                }
+            }
             _why.Clear(day + 1);   // a new day's record: what is heard from now on is tomorrow's
         }
     }

@@ -94,9 +94,11 @@ namespace RealLifeOverhaul.Markets
                 "inflation", (s.Env.InflationBp / 100f).ToString("0.0", CultureInfo.CurrentCulture) + "%"));
             box.Headline("reallife_mkt_box_news");
             int said = 0;
-            for (int i = s.News.Count - 1; i >= 0 && said < NewsInBox; i--)
+            var all = new List<MarketNews>(s.News.Count + s.Derived.Count);
+            s.NewsAll(all);
+            for (int i = all.Count - 1; i >= 0 && said < NewsInBox; i--)
             {
-                MarketNews n = s.News[i];
+                MarketNews n = all[i];
                 if (n.Kind == MarketNewsKind.Close || n.Kind == MarketNewsKind.Mover)
                 {
                     continue;

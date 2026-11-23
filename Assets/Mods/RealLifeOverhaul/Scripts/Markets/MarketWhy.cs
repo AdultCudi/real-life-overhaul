@@ -37,6 +37,13 @@ namespace RealLifeOverhaul.Markets
         Count
     }
 
+    /// <summary>The kinds of the lines derived on each machine (<see cref="MarketState.Derived"/>): beyond every kind of <see cref="MarketNewsKind"/>, so none is a new kind on the tape.</summary>
+    public static class DerivedNews
+    {
+        public const MarketNewsKind Why = (MarketNewsKind)100;       // Stock (0 for a sector), A the cause (WhyCause) with the sector above it, B the move in bp, C the cause's detail
+        public const MarketNewsKind Segment = (MarketNewsKind)101;   // Stock, A the new segment, B the old, C its market value in millions
+    }
+
     /// <summary>One cause picked: what it was, its detail and the move it applied, in basis points.</summary>
     public struct WhyPick
     {
@@ -305,7 +312,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>A piece of news saying why: the cause in the low byte of A and the sector above it, B the move in bp, C the cause's detail. Stock is 0 for a sector.</summary>
         public static MarketNews News(int day, int stock, int sector, int moveBp, in WhyPick pick)
         {
-            return new MarketNews { Day = day, Kind = MarketNewsKind.Why, Stock = stock, A = (int)pick.Cause | (sector << 8), B = moveBp, C = pick.Detail };
+            return new MarketNews { Day = day, Kind = DerivedNews.Why, Stock = stock, A = (int)pick.Cause | (sector << 8), B = moveBp, C = pick.Detail };
         }
 
         public static WhyCause CauseOf(in MarketNews n) => (WhyCause)Math.Max(0, Math.Min((int)WhyCause.Count - 1, n.A & 0xFF));

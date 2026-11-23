@@ -10,6 +10,23 @@ namespace RealLifeOverhaul.Markets
     public sealed partial class MarketEngine
     {
         private readonly WhyDay _why = new WhyDay();
+        /// <summary>
+        /// The size review's switch, set by the director from the extras option and off in an engine nobody asked: a market with no review (a save before it, a session peer that
+        /// never had one, the option off) plays bit for bit as it always did.
+        /// </summary>
+        public bool SegmentsOn;
+
+        // A line derived on this machine: kept beside the news, never on the tape or in the saved line (MarketState.Derived).
+        private void SayDerived(in MarketNews news)
+        {
+            State.Derived.Add(news);
+            if (State.Derived.Count > MarketCatalogue.NewsKept)
+            {
+                State.Derived.RemoveAt(0);
+            }
+            _world.Said(news);
+        }
+
         private MarketEnv _prevEnv;       // yesterday's city, for what its change was worth
         private bool _hasPrev;
 
@@ -51,7 +68,7 @@ namespace RealLifeOverhaul.Markets
                 given = MarketWhy.ForSector(State, _why, State.Env, _prevEnv, _hasPrev, sector, sectorBp, day, out sectorPick);
                 if (given)
                 {
-                    Say(MarketWhy.News(day, 0, sector, sectorBp, sectorPick));
+                    SayDerived(MarketWhy.News(day, 0, sector, sectorBp, sectorPick));
                 }
             }
             WhyOfStock(day, up, upBp, given, sectorPick, sector, sectorBp);
@@ -67,7 +84,7 @@ namespace RealLifeOverhaul.Markets
             bool same = given && (int)k.Sector == sector;
             if (MarketWhy.ForStock(State, k, bp, day, same, sectorPick, sectorBp, out WhyPick pick))
             {
-                Say(MarketWhy.News(day, k.Id, (int)k.Sector, bp, pick));
+                SayDerived(MarketWhy.News(day, k.Id, (int)k.Sector, bp, pick));
             }
         }
 
@@ -79,7 +96,7 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         private void ExtrasSegments(int day)
         {
-            if (!ExtrasOn || State.Following || Replaying)
+            if (!SegmentsOn || State.Following || Replaying)
             {
                 return;
             }
@@ -125,7 +142,7 @@ namespace RealLifeOverhaul.Markets
             {
                 Settle(s, State.Day);
             }
-            Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.Segment, Stock = s.Id, A = (int)next, B = (int)was, C = (int)Math.Min(int.MaxValue / 2, s.MarketValue / 1000000.0) });
+            SayDerived(new MarketNews { Day = State.Day, Kind = DerivedNews.Segment, Stock = s.Id, A = (int)next, B = (int)was, C = (int)Math.Min(int.MaxValue / 2, s.MarketValue / 1000000.0) });
         }
     }
 }
