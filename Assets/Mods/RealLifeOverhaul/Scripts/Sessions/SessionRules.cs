@@ -72,6 +72,9 @@ namespace RealLifeOverhaul.Sessions
         /// <summary>The sound choice at a step for a business, as a manager judges it (the step's index in, a choice's out); null: the first.</summary>
         public Func<SessionAsk, int, int> Pick;
 
+        /// <summary>What the session is about at a business, named on its page (a game, say): null or empty for nothing to name. A fault in it names nothing.</summary>
+        public Func<SessionAsk, string> Subject;
+
         public bool HeldAt(string type)
         {
             for (int i = 0; Types != null && i < Types.Length; i++)

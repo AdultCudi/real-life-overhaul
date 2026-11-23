@@ -15,6 +15,8 @@ namespace RealLifeOverhaul.Tech
         public int Breaches, Outages;
         public long RnD;                 // qualifying research and development costs of the open quarter, cents
         public int ReliefDay;            // the day the last relief was given
+        public bool Assign;              // its manager (or an executive) assigns its professionals to roles each morning (AssignRules); off until the player says
+        public string AssignedBy = string.Empty;   // who assigned yesterday's moves, and what they were: the Team page's line; not saved
         public long Revenue30;           // takings of the last 30 days, cents (rolled each day)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
         public long Prev30;              // the month before the ring's, cents: aged a day at a time (TechStatusRules.Age), so the table can say how takings moved
@@ -61,6 +63,8 @@ namespace RealLifeOverhaul.Tech
         public int Train;                     // how hard an AI model is trained, a level of InfraRules.TrainLevels: past 4 only with the player's own AI racks (InfraRules.TrainMost)
         public int Moving;                    // an AI model re-launched for another segment (SegmentRules): off sale until this day, 0 never
         public int Owe;                       // ...and the work points of that re-launch its engineers have still to put in before the next feature
+        public ProductDay Last;               // its last day on sale under the sector, for the page; not saved (empty until the next day after a load)
+        public int LastDay = -1;              // the day Last is of
 
         public ProductKind K => (ProductKind)Kind;
         public Segment S => (Segment)Segment;
@@ -99,6 +103,8 @@ namespace RealLifeOverhaul.Tech
     public struct ProductDay
     {
         public long Won, Lost, Takings, Hosting, Marketing;
+        public long LostChurn, LostDrift, LostIncident;   // Lost, by cause: churn, drifting to the rivals that took its share, an outage or breach (the sector's day only)
+        public int ChurnWhy;                              // bits of SectorRules.Why*: what made the churn higher than a sound, supported, current product's
         public bool Outage, Breach, RivalShipped;
         public long Affected, Fine;
     }

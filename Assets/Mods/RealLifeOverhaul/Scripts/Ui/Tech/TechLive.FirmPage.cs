@@ -199,6 +199,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Go(v => v.Open("tab:" + TabContracts));
                 }
+                if (act == StudioAct.Forget)
+                {
+                    return Ask("reallife_tech_confirm_forget_title", "reallife_tech_confirm_forget_body", () => _d.Forget(id));
+                }
                 if (act == StudioAct.Withdraw)
                 {
                     return Ask("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body", () => _d.Withdraw(id));
