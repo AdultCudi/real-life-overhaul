@@ -167,6 +167,8 @@ namespace RealLifeOverhaul
                     v => Settings.CharacterLighting = v)
                 .AddToggle(Settings.CharacterSkinId, "reallife_character_skin", Settings.CharacterSkin,
                     v => Settings.CharacterSkin = v)
+                .AddToggle(Settings.LampHazeId, "reallife_lamp_haze", Settings.LampHaze,
+                    v => Settings.LampHaze = v)
                 .AddSplitter()
                 .AddHeader("reallife_looks_header")
                 .AddToggle(Settings.CharacterNewLooksId, "reallife_character_new_looks", Settings.CharacterNewLooks,
