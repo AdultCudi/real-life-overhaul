@@ -570,7 +570,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                return HasSlider() ? ("common_hours", new { hours = _slide.Now }) : (null, null);
+                return HasSlider() ? StintInfo.Of(_slide) : (null, null);
             }
             catch (Exception fault)
             {

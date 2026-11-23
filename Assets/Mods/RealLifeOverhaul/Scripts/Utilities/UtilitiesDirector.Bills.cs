@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Utilities
         }
 
         /// <summary>What is owed on an account paid now; false without the cash (the game says so unless quiet).</summary>
-        public bool Pay(Account a, int today, bool quiet = false)
+        public bool Pay(Account a, int today, bool quiet = false, bool notify = true)
         {
             if (a == null || a.Owed <= 0)
             {
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Utilities
             }
             PlaceInfo? place = PlaceOf(a);
             string key = a.Service == Service.Power ? "reallife_transaction_util_power" : a.Service == Service.Water ? "reallife_transaction_util_water" : "reallife_transaction_util_net_bill";
-            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg, deductible: true))
+            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg, deductible: true, notify: notify))
             {
                 return false;
             }

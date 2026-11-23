@@ -532,7 +532,7 @@ internal static partial class Program
         // The home computer: its own button, then the game's panel with the hours slider, the walk and the seat on Start.
         string atComputer = MethodText(home, "internal string ContractAtComputer(ComputerController computer)");
         Check(home.Contains("internal bool OwnComputerWay => OwnWay && ComputerButtons.Installed && !ComputerButtons.Failed;") && atComputer.Contains("SeatBusy()") && atComputer.Contains("computer.FindChair() == null")
-              && atComputer.Contains("StartAtComputer(computer, ContractSitting(c, left), c.Client, slider)") && atComputer.Contains("new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen)")
+              && atComputer.Contains("StartAtComputer(computer, ContractSitting(c, left), c.Client, slider)") && atComputer.Contains("new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen, ContractPays(c))")
               && buttons.Contains("director.ComputerContract()") && buttons.Contains("director.ContractAtComputer(computer)") && buttons.Contains("\"RealLifeOverhaul Own Contract\"") && buttons.Contains("Show(_contract, contract != null);"),
             "own work sources: at home a contract has its own button on the computer's panel, which offers the game's work panel with the hours slider, as a day from home is begun at the computer");
         string pressed = MethodText(sitting, "private void Pressed()");
@@ -554,7 +554,7 @@ internal static partial class Program
               && contract.Contains("(\"common_hours\", new { hours = SlideNow })") && !contract.Contains("OwnHoursChosen"),
             "own work sources: the stint's length is the slider's, one hour to twelve or what the contract has left, in the game's own words for hours, and the slider alone decides which moves are kept");
         Check(MethodText(stint, "internal void OwnHoursChosen(int hours)").Contains("_ownHours = hours;") && stint.Contains("private int _ownHours = OwnRules.SittingHoursDefault;")
-              && offerStint.Contains("new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen)") && slider.Contains("_picked?.Invoke(hours);")
+              && offerStint.Contains("new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen, ContractPays(c))") && slider.Contains("_picked?.Invoke(hours);")
               && MethodText(slider, "public void Slide(int value)").Contains("if (!_slides || !_offered)"),
             "own work sources: the slider starts where the player left it, at three hours the first time, and the hours are kept only by the player's moves once the panel's offer is done");
 

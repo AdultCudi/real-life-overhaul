@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Careers
                 return "notification_need_empty_hands_to_interact";   // the game's own words, as its computer says them
             }
             int left = OwnRules.Left(c);
-            var slider = new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen);
+            var slider = new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen, ContractPays(c));
             string why = StartAtComputer(computer, ContractSitting(c, left), c.Client, slider);
             if (why == null && Verbose)
             {
