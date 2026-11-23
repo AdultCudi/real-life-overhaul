@@ -186,7 +186,11 @@ namespace RealLifeOverhaul.Economy
             f *= Policies(c, firm) / 1000.0;
             f *= 1.0 + Math.Max(0, b.LoanOffset[segment]) / 100.0 * OwnBankCatalogue.AdversePerPoint / 1000.0;
             f *= Noise(b.Seed, b.Month, segment) / 1000.0;
-            f = Math.Max(OwnBankCatalogue.FactorLeast / 1000.0, Math.Min(OwnBankCatalogue.FactorMost / 1000.0, f));
+            if (c.Risk > BankRisk.Off)
+            {
+                f *= StressFactor(c, b, segment) / 1000.0;   // the cycle itself, a kind of borrower in trouble, too much in one kind (Risk/OwnBankRules.Risk)
+            }
+            f = Math.Max(OwnBankCatalogue.FactorLeast / 1000.0, Math.Min((c.Risk > BankRisk.Off ? OwnBankCatalogue.FactorMostRisk : OwnBankCatalogue.FactorMost) / 1000.0, f));
             return (int)Math.Round(OwnBankCatalogue.DefaultBase[segment] * f);
         }
 
@@ -229,7 +233,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The capital as the regulator counts it: what was paid in and kept, and the fund's value over its cost.</summary>
         public static long CapitalNow(OwnBank b)
         {
-            return b.Capital + b.FundValue - b.FundCost;
+            return b.Capital + b.FundValue - b.FundCost + b.BookValue - b.BookCost;
         }
 
         public static long RiskWeighted(OwnBank b)
@@ -237,9 +241,10 @@ namespace RealLifeOverhaul.Economy
             long sum = 0;
             for (int j = 0; j < OwnBankCatalogue.Segments; j++)
             {
-                sum += b.Loans[j] * OwnBankCatalogue.LoanWeight[j] / 1000 + b.Arrears[j] * OwnBankCatalogue.ArrearsWeight / 1000;
+                sum += b.Loans[j] * OwnBankCatalogue.LoanWeight[j] / 1000 + b.Arrears[j] * OwnBankCatalogue.ArrearsWeight / 1000
+                       + b.CardBal[j] * CardTerms.CardWeight / 1000 + b.CardArr[j] * OwnBankCatalogue.ArrearsWeight / 1000;
             }
-            return sum + b.FundValue * OwnBankCatalogue.FundWeight / 1000;
+            return sum + (b.FundValue + b.BookValue) * OwnBankCatalogue.FundWeight / 1000 + b.OwnOwed * CardTerms.BlackWeight / 1000 + ConcentrationCharge(b);
         }
 
         /// <summary>The capital ratio, thousandths; RatioMost with nothing at risk.</summary>
@@ -255,13 +260,15 @@ namespace RealLifeOverhaul.Economy
 
         public static long ReserveNeed(OwnBank b)
         {
-            return b.Savings * OwnBankCatalogue.ReserveShare / 1000;
+            long need = b.Savings * ReserveShareOf(b) / 1000;
+            // With the risk on the bank also keeps the cash for a few days of a run, so that a bank that lends to its line is not at once short of what the city asks of it.
+            return RiskOf(b) > BankRisk.Off ? Math.Max(need, RunNeedDay(b) * (BankRisk.CoverWarnDays + BankRisk.CoverMargin) / 10) : need;
         }
 
-        /// <summary>True while reserves, loans, arrears and the fund at cost equal the deposits and the capital.</summary>
+        /// <summary>True while reserves, loans, arrears, the fund and the own book at cost, and the cards equal the deposits, the money borrowed and the capital.</summary>
         public static bool Balanced(OwnBank b)
         {
-            return b.Reserves + b.Lent + b.InArrears + b.FundCost == b.Savings + b.Capital;
+            return b.Reserves + b.Lent + b.InArrears + b.FundCost + b.OtherAssets == b.Savings + b.Capital + b.Interbank;
         }
 
         /// <summary>Whether the regulator's watch may be told again: once a month at most; <paramref name="told"/> is int.MinValue while never told.</summary>
@@ -277,7 +284,8 @@ namespace RealLifeOverhaul.Economy
             long cushion = ratio >= OwnBankCatalogue.WatchRatio ? 1000 : ratio >= OwnBankCatalogue.MinRatio ? OwnBankCatalogue.CushionWatch : OwnBankCatalogue.CushionBreach;
             long scare = 1000 - Clamp(b.Scare, 0, OwnBankCatalogue.ScareMost) / 2;
             long cycle = OwnBankCatalogue.CycleTrust[Cycle(c)];
-            return (int)(standing * cushion / 1000 * scare / 1000 * cycle / 1000);
+            long risk = b.Risk > BankRisk.Off ? RiskCushion(b) : 1000;   // with the bank risk on, the city also watches the cash and the losses
+            return (int)(standing * cushion / 1000 * scare / 1000 * cycle / 1000 * risk / 1000);
         }
 
         /// <summary>How far the city's savers trust the bank, thousandths: its confidence, and its name, earned over TrustMonths.</summary>
@@ -344,6 +352,7 @@ namespace RealLifeOverhaul.Economy
             b.FundLimit = 0;
             b.Rebalance = false;
             b.Holdings.Clear();
+            FoundNew(b);
             Array.Clear(b.Crew, 0, b.Crew.Length);
             b.CounterFees = 0;
             b.Public = 0;
@@ -400,7 +409,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static long MostOut(OwnBank b, int level)
         {
-            if (!b.Running || b.Stage == Regulator.Breach || b.Run || b.Test)
+            if (!b.Running || b.Stage == Regulator.Breach || b.Run || b.Test || WatchHeld(b))
             {
                 return 0;
             }
@@ -455,11 +464,9 @@ namespace RealLifeOverhaul.Economy
         /// The bank closed and wound up: its assets sold for what they fetch, its savers paid first, the regulator's charge on
         /// what is left. Returns the rest, the player's; nothing for a test's bank.
         /// </summary>
-        public static long WindUp(OwnBank b, int day, ClosedWhy why)
+        public static long WindUp(OwnBank b, int day, ClosedWhy why, int cycle = 1000)
         {
-            long assets = b.Reserves + Math.Max(0, b.CounterFees) + b.Lent * OwnBankCatalogue.WindPerforming / 1000 + b.InArrears * OwnBankCatalogue.WindArrears / 1000
-                          + b.FundValue * OwnBankCatalogue.WindFund / 1000;
-            long left = b.Test ? 0 : Math.Max(0, assets - b.Savings) * (1000 - OwnBankCatalogue.WindFee) / 1000;
+            long left = Resolve(b, cycle).Owner;
             End(b, OwnBankState.Closed, day, left, why);
             if (!b.Test)
             {
@@ -482,11 +489,32 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(b.Arrears, 0, b.Arrears.Length);
             Array.Clear(b.Recovering, 0, b.Recovering.Length);
             b.Holdings.Clear();
+            ClearNew(b);
             b.CounterFees = 0;   // charged at a counter on its last day: in what a winding up sold
             b.Run = false;
             b.Stage = Regulator.Clear;
             b.Deadline = b.Strikes = 0;
             b.MonthIncome = b.MonthCosts = b.PaidMonth = 0;
+        }
+
+        // What the risk, the cards and the desk hold goes with the bank (the owner's card stays the owner's debt: the director lets it go from the bank, OwnBankDirector.Cards).
+        private static void ClearNew(OwnBank b)
+        {
+            b.Interbank = 0;
+            b.InterbankDue = b.InterbankBp = 0;
+            b.CardsOn = false;
+            Array.Clear(b.CardHolders, 0, b.CardHolders.Length);
+            Array.Clear(b.CardBal, 0, b.CardBal.Length);
+            Array.Clear(b.CardArr, 0, b.CardArr.Length);
+            Array.Clear(b.CardQueue, 0, b.CardQueue.Length);
+            Array.Clear(b.CardFig, 0, b.CardFig.Length);
+            b.OwnCard = false;
+            b.OwnOwed = b.OwnLimit = 0;
+            b.OwnRateBp = 0;
+            b.OwnDrawn = b.OwnPaid = b.OwnInterest = b.OwnFees = b.OwnLost = 0;
+            b.DeskOn = false;
+            b.Book.Clear();
+            b.DeskPeak = 0;
         }
 
         internal static int Cycle(BankCity c)

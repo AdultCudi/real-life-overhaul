@@ -23,6 +23,9 @@ namespace RealLifeOverhaul
                 OwnBankBridges.Policy = Policy;
                 OwnBankBridges.Courts = Courts;
                 OwnBankBridges.Quotes = Quotes;
+                OwnBankBridges.DividendTax = DividendTax;
+                OwnBankBridges.Activity = Activity;
+                OwnBankBridges.Derivs = Derivs;
                 OwnBankBridges.Moved = Moved;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
@@ -93,6 +96,50 @@ namespace RealLifeOverhaul
                 {
                     Fault("OwnBankLinks.Quotes", e);
                     into.Clear();
+                    return false;
+                }
+            }
+
+            // The tax withheld from a dividend the bank pays its owner, in cents: the market's own rate for dividends (linear in the sum, so cents do as whole money).
+            private static long DividendTax(long cents)
+            {
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    return market != null ? market.StakeDividendTax(cents) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("OwnBankLinks.DividendTax", e);
+                    return 0L;
+                }
+            }
+
+            // How lively the stock market is (thousandths of an ordinary day's): what the bank's trading desk earns its clients' commission by.
+            private static int Activity()
+            {
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    return market != null ? market.ActivityMilli : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("OwnBankLinks.Activity", e);
+                    return 0;
+                }
+            }
+
+            private static bool Derivs()
+            {
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    return market != null && market.DerivativesOpen;
+                }
+                catch (Exception e)
+                {
+                    Fault("OwnBankLinks.Derivs", e);
                     return false;
                 }
             }

@@ -9,6 +9,22 @@ namespace RealLifeOverhaul.Markets
             return FirmsOpen ? _engine.GrantPrice(stockId) : 0;
         }
 
+        /// <summary>
+        /// How lively the market is, thousandths of an ordinary day's: its own variance today (the market's shocks against the usual). 0 while the market is not running.
+        /// The bank's trading desk earns its clients' commission by it (Economy/OwnBank/Desk).
+        /// </summary>
+        public int ActivityMilli
+        {
+            get
+            {
+                MarketState s = Running ? _engine.State : null;
+                return s != null ? (int)System.Math.Max(1.0, System.Math.Min(10000.0, System.Math.Round(s.Variance * 1000.0))) : 0;
+            }
+        }
+
+        /// <summary>True while the exchange prices raw materials and the market is running, so options and futures are there for a bank's clients too.</summary>
+        public bool DerivativesOpen => Running && _engine.DerivsOn;
+
         /// <summary>The tax withheld from a dividend of whole money paid to the player: the market's rate for dividends, moved by the council's
         /// business tax. Nothing while the market is off.</summary>
         public long StakeDividendTax(long money)

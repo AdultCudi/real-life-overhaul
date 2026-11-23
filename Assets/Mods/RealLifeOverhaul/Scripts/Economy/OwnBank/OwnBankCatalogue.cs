@@ -81,6 +81,7 @@ namespace RealLifeOverhaul.Economy
         public const int AdversePerPoint = 150;    // each point dearer than the rivals: the borrowers a dear lender gets are riskier
         public const int MonthNoiseLeast = 700, MonthNoiseMost = 1300;   // each month's luck by segment, from the bank's seed
         public const int FactorLeast = 400, FactorMost = 3000;
+        public const int FactorMostRisk = 8000;      // the most the defaults may swell to with the bank risk on: a recession, a shock and a lopsided book together
 
         // The council's levers on defaults (Civic), at +1 and at -1, thousandths.
         public static readonly int[] TaxOnFirms = { 120, -80 };
@@ -141,6 +142,16 @@ namespace RealLifeOverhaul.Economy
         public const string SaversRow = "reallife_books_ownbank_savers";
         public const string LossesRow = "reallife_books_ownbank_losses";
         public const string SystemsKey = "reallife_transaction_ownbank_systems";       // at the end game's scale: its systems, compliance and deposit insurance
+        public const string CardsKey = "reallife_transaction_ownbank_cards";           // takings: what its cards earn (Economy/OwnBank/Cards)
+        public const string DeskKey = "reallife_transaction_ownbank_desk";             // takings: the trading desk's commissions (Economy/OwnBank/Desk)
+        public const string CardCostsKey = "reallife_transaction_ownbank_cards_costs"; // a row among its goods: card balances written off, fraud, rewards and processing
+        public const string FundingKey = "reallife_transaction_ownbank_funding";       // a row among its goods: interest on money borrowed from other banks
+        public const string DeskCostsKey = "reallife_transaction_ownbank_desk_costs";  // a row among its goods: the desk's systems and analysts and its clients' failed margin
+        public const string DividendAutoKey = "reallife_transaction_ownbank_investment_dividend_auto";   // an automatic dividend paid to the owner
+        public const string DividendTaxKey = "reallife_transaction_ownbank_investment_dividend_tax";     // what is withheld from it, as the stock market's dividends are taxed
+        public const string CardsRow = "reallife_books_ownbank_cards";
+        public const string FundingRow = "reallife_books_ownbank_funding";
+        public const string DeskRow = "reallife_books_ownbank_desk";
 
         // At the end game's scale (Core/EndScale), mixed in by its share: crews by kind in place of a share of what it holds.
         public const long LicenceCentsScale = 6000000000L;        // $60,000,000, with the core banking systems and the branches
@@ -160,9 +171,10 @@ namespace RealLifeOverhaul.Economy
         public const int IncomeAtScale = 1000;                    // thousandths of what its loans earn at scale
 
         /// <summary>True for a transaction of the bank's that is takings at its headquarters.</summary>
-        public static bool IsTakings(string type) => type == TakingsKey;
+        public static bool IsTakings(string type) => type == TakingsKey || type == CardsKey || type == DeskKey;
 
         /// <summary>The row among its headquarters' goods a cost of the bank's is entered in; null for none.</summary>
-        public static string CostRow(string type) => type == SaversKey ? SaversRow : type == LossesKey ? LossesRow : null;
+        public static string CostRow(string type) => type == SaversKey ? SaversRow : type == LossesKey ? LossesRow : type == CardCostsKey ? CardsRow : type == FundingKey ? FundingRow
+            : type == DeskCostsKey ? DeskRow : null;
     }
 }

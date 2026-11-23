@@ -168,6 +168,54 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
+        /// <summary>A month run now in a recession with the bank risk at Hard, whatever the option says: credit risk, a kind in trouble, savers leaving, the regulator's ladder.</summary>
+        public void TestStress()
+        {
+            if (TestReady("A recession month at the hardest bank risk", true))
+            {
+                TestGuard("stress", () => TestDays(GameCalendar.MonthDays, true, "a month of days run now in a recession at the hardest bank risk", BankRisk.Hard));
+            }
+        }
+
+        /// <summary>The card business opened if it is not, and a month of days run now: applicants, the lines, what the cards earn and lose.</summary>
+        public void TestCards()
+        {
+            if (!TestReady("A month of the card business", true))
+            {
+                return;
+            }
+            TestGuard("cards", () =>
+            {
+                Keep();
+                _bank.CardsOn = true;
+                TestDays(GameCalendar.MonthDays, false, "the card business opened, and a month of days run now");
+            });
+        }
+
+        /// <summary>The trading desk opened with an index mandate and a tenth of the capital if it is not, and a month run now: the clients' commission and the own book.</summary>
+        public void TestDesk()
+        {
+            if (!TestReady("A month of the trading desk", true))
+            {
+                return;
+            }
+            TestGuard("desk", () =>
+            {
+                Keep();
+                _bank.DeskOn = true;
+                _bank.DeskDirty = true;
+                if (_bank.DeskMandate == BankDesk.None)
+                {
+                    _bank.DeskMandate = BankDesk.Index;
+                }
+                if (_bank.DeskShare <= 0)
+                {
+                    _bank.DeskShare = BankDesk.ShareDefault;
+                }
+                TestDays(GameCalendar.MonthDays, false, "the trading desk opened, and a month of days run now");
+            });
+        }
+
         public void TestFund()
         {
             if (!TestReady("The fund trades", true))
@@ -219,10 +267,14 @@ namespace RealLifeOverhaul.Economy
         }
 
         // Days run now and booked today, then the bank's clock set back by as many, so that what waits on a day has moved on.
-        private void TestDays(int days, bool hard, string what)
+        private void TestDays(int days, bool hard, string what, int risk = -1)
         {
             Keep();
             BankCity city = OwnBankGame.City();
+            if (risk >= 0)
+            {
+                city.Risk = risk;
+            }
             if (hard)
             {
                 city.Cycle = CycleState.Recession;
