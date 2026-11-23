@@ -523,7 +523,7 @@ The owner, 24 Oct 2026: "Need more special working buildings ... Make it a new p
 | --- | --- | --- |
 | Precincts | left out | six stations in New York's districts; its streets are served by the nearest |
 | Hotels | left out | every hotel slot is in one of New York's districts |
-| Broadband (the player's own network) | left out | the network is built district by district over New York's seven |
+| Broadband (the player's own network) | takes part | the network has a place for Uptown and Cedar Heights after New York's seven, sized by their households' connections (34,000 and 37,000) at the usual cost per connection |
 | Internet | takes part | wireless and copper reach every district, so they reach its businesses |
 | Civic wards | takes part | an eighth ward after the seven (Uptown) and a ninth (Cedar Heights), whose saved indices stay |
 | The city economy | takes part | its income starts from its own class shares (1,176, between its neighbours') |

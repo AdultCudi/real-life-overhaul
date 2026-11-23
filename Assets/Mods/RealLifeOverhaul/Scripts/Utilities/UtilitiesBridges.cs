@@ -43,12 +43,21 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
+        /// <summary>The homes and businesses the population counts in a district (by the game's id), for the size of a district the network had no place for;
+        /// -1 for none counted. Default: none.</summary>
+        public static Func<string, int> Homes;
+
+        /// <summary>A district's middle on the city's map, metres (x, then z), for its distance from the districts the catalogue lists; null for none known. Default: none.</summary>
+        public static Func<string, float[]> Middle;
+
         /// <summary>A district's homes and businesses against the anchor day's, thousandths, by the game's id (the living population); 0 for none, as before. Default: none.</summary>
         public static Func<string, int> Connections;
 
         public static void Reset()
         {
             Connections = null;
+            Homes = null;
+            Middle = null;
             Grade = null;
             Household = null;
             CloseFor = null;

@@ -73,8 +73,25 @@ namespace RealLifeOverhaul.Utilities
             Mbps = LeasedLineCatalogue.Mbps, MonthCents = LeasedLineCatalogue.MonthCents
         };
 
+        /// <summary>
+        /// The player's own broadband company's line for a data centre in a district it has dug, as a provider of its own so the plan pickers list it beside the carriers': the
+        /// carriers' sizes, at the company's own price and installation (<see cref="LeasedLineCatalogue.OwnPriceShare"/>), reaching where the network is open (BroadbandRules.Apply).
+        /// It stands outside <see cref="InternetRules.Count"/> like <see cref="Leased"/>, and is never an account's own provider.
+        /// </summary>
+        public static readonly Provider OwnLine = new Provider
+        {
+            Id = "ownline", NameKey = "reallife_net_provider_ownline", KindKey = "reallife_net_kind_leased", Districts = new string[0], OutagePerMille = 0,
+            Mbps = LeasedLineCatalogue.Mbps, MonthCents = LeasedLineCatalogue.MonthCents
+        };
+
         /// <summary>The leased lines' place among the providers a picker offers; never an account's own provider.</summary>
         public const int LeasedIndex = 99;
+
+        /// <summary>The company's own line's place among them, beside the carriers'.</summary>
+        public const int OwnLineIndex = 98;
+
+        /// <summary>True for a place in a picker that is a line for a data centre, the carriers' or the company's own.</summary>
+        public static bool IsLine(int provider) => provider == LeasedIndex || provider == OwnLineIndex;
 
         /// <summary>The providers that fix what a district has today: Kestrel's cable and Brightvein's fibre (indexes of <see cref="Providers"/>, held by a check).</summary>
         public const int CableIndex = 0, FibreIndex = 1;

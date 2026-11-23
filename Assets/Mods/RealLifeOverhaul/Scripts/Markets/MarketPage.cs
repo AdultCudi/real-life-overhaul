@@ -406,6 +406,14 @@ namespace RealLifeOverhaul.Markets
                     .Append("<pos=61%>").Append(beat ? "<color=#2EA05C>" : "<color=#D64040>").Append(MarketText.PerShare(r.Eps)).Append("</color><pos=75%>")
                     .Append(MarketText.PerShare(r.Consensus)).Append("<pos=89%>").Append(r.DpsCents > 0 ? MarketText.Price(r.DpsCents) : "-").Append('\n');
             }
+            // Beyond the figures: the segment, why it last moved and, for the player's own company, its takings by business line and its statements (MarketFigures).
+            var more = new System.Collections.Generic.List<FigureRow>(10);
+            MarketFigures.Rows(s, k, s.Env, s.Day, k.Own != null && MarketBots.Mine(s, k), more);
+            _text.Append('\n');
+            for (int i = 0; i < more.Count; i++)
+            {
+                Pair(more[i].Key, more[i].Value);
+            }
             UiClone.Words(_results, _text.ToString());
         }
 

@@ -859,6 +859,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--net-districts")
+        {
+            NetDistricts();   // (the player's own broadband network in every district, the mod's own and later ones, and its own line for a data centre alone: NetDistrictChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--market-why")
+        {
+            MarketWhySegments();   // (why the market moved, the size segments by market value and the player's statement alone: MarketWhyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--leased")
         {
             LeasedLines();   // (the data centres' leased lines alone: the table, a rack's profit at every step, who may have one, fees and waits, the line beside a plan, the limits, the save: LeasedLineChecks.cs)
@@ -1840,6 +1852,8 @@ internal static partial class Program
         Infra2();
         CloudTakings();   // a data centre's cloud takings in the company's sector, books and tape, and the centre's thirty days (CloudTakingsChecks.cs)
         LeasedLines();   // the data centres' leased lines: the table, a rack's profit, who may have one, fees and waits, the line beside a plan, the limits, the save (LeasedLineChecks.cs)
+        NetDistricts();   // the player's own network in every district and its own line for a data centre (NetDistrictChecks.cs)
+        MarketWhySegments();   // why the market moved, the size segments and the player's statement (MarketWhyChecks.cs)
         Segments();   // who an AI model is sold to: the choice at the start and the re-launch's cost, work, days, save and both interfaces (SegmentChecks.cs)
         AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();

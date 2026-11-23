@@ -265,7 +265,7 @@ internal static partial class Program
         Check(site.Contains("UtilitiesBridges.LineSite") && site.Contains("PlaceKind.Home") && site.Contains("place.Reg != null"), "leased: the site is asked of the tech sector's bridge, and a home or a place with no building never has one");
         Check(utilityLinks.Contains("UtilitiesBridges.LineSite = LineSite;") && Between(utilityLinks, "private static bool LineSite(", "private static bool Shops(").Contains("tech.IsCentre(reg)"),
             "leased: the bridge says a place is a site if it is one of the tech sector's data centres");
-        Check(internet.Contains("if (provider == InternetCatalogue.LeasedIndex)") && MemberText(internet, "public bool BuyNet(").IndexOf("BuyLine(", StringComparison.Ordinal)
+        Check(internet.Contains("if (InternetCatalogue.IsLine(provider))") && MemberText(internet, "public bool BuyNet(").IndexOf("BuyLine(", StringComparison.Ordinal)
             < MemberText(internet, "public bool BuyNet(").IndexOf("InternetRules.Reaches(", StringComparison.Ordinal), "leased: both interfaces buy a line through the plan purchase, which hands it to BuyLine first");
         // the speed the work and the limits read
         Check(MemberText(internet, "public int Speed(").Contains("LeasedLineRules.LineMbps(") && Between(links, "private static int Mbps(", "private static int LineMbps(").Contains("LeasedLineRules.LineMbps(")
@@ -278,9 +278,9 @@ internal static partial class Program
         Check(MemberText(internet, "public bool CancelNet(").Contains("LeasedLineRules.Drop(a);") && MemberText(internet, "public bool CancelLine(").Contains("LeasedLineRules.Drop(a);"), "leased: cancelling the connection or the line ends the line");
         Check(buy.Contains("reallife_transaction_util_net_line_install") && buy.Contains("deductible: true"), "leased: the installation is a deductible expense on the data centre's books");
         // both interfaces, and the way to grow named where a hall is full
-        Check(oldApp.Contains("_reach.Add(InternetCatalogue.LeasedIndex)") && oldApp.Contains("reallife_net_box_line_cancel") && oldApp.Contains("LineInstall(box, place, _plan, today)"),
+        Check(oldApp.Contains("_reach.Add(InternetCatalogue.LeasedIndex)") && oldApp.Contains("reallife_net_box_line_cancel") && oldApp.Contains("LineInstall(box, place, _plan, today, ownLine)"),
             "leased: the old Utilities app lists the line among a data centre's providers with its fee and wait, and can give it up");
-        Check(kitLive.Contains("Leased = true") && kitLive.Contains("InstallFee = d.LineFee(place, i)") && kitBuild.Contains("o.Leased && !same") && kitBuild.Contains("reallife_net_box_line_cancel"),
+        Check(kitLive.Contains("Leased = true") && kitLive.Contains("InstallFee = d.LineFee(place, i, own)") && kitBuild.Contains("o.Leased && !same") && kitBuild.Contains("reallife_net_box_line_cancel"),
             "leased: the kit's Internet page lists the lines for a data centre with the fee, the wait and what the district has, and can give one up");
         Check(infra.Contains("\"reallife_infra_note_limit_line\"") && infra.Contains("LinePairs()") && kitInfra.Contains("reallife_infra_centre_line") && oldInfra.Contains("reallife_infra_centre_line")
               && kitInfra.Contains("reallife_infra_button_line") && oldInfra.Contains("reallife_infra_button_line"), "leased: the refusal, the old hall page and the kit's hall page name the leased line as the way to grow");

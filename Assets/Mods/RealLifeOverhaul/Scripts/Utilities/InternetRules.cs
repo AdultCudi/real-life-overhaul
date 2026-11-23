@@ -32,6 +32,10 @@ namespace RealLifeOverhaul.Utilities
             {
                 return InternetCatalogue.Leased;   // what a picker lists for a data centre; no account has it as its provider
             }
+            if (provider == InternetCatalogue.OwnLineIndex)
+            {
+                return InternetCatalogue.OwnLine.Districts.Length > 0 ? InternetCatalogue.OwnLine : null;   // the company's own, where its network is open (not once it is sold)
+            }
             return provider == InternetCatalogue.OwnIndex && OwnReaches ? InternetCatalogue.Own : null;
         }
 
@@ -62,9 +66,9 @@ namespace RealLifeOverhaul.Utilities
             {
                 return 0;
             }
-            if (provider == InternetCatalogue.LeasedIndex)
+            if (InternetCatalogue.IsLine(provider))
             {
-                return LeasedLineRules.MonthCents(plan, level);   // business fibre is priced as sold: no home price to scale, no contract, no promotion
+                return LeasedLineRules.MonthCents(plan, level, provider == InternetCatalogue.OwnLineIndex);   // business fibre is priced as sold: no home price to scale, no contract, no promotion
             }
             int k = Math.Max(0, Math.Min(p.MonthCents.Length - 1, plan));
             long cents = p.MonthCents[k];

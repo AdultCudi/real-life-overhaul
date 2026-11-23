@@ -73,6 +73,13 @@ namespace RealLifeOverhaul.Ui
                 Tone = high ? UiRole.DangerText : some ? UiRole.WarnText : UiRole.None
             });
 
+            var more = new System.Collections.Generic.List<FigureRow>(10);
+            MarketFigures.Rows(state, k, state.Env, state.Day, k.Own != null && MarketBots.Mine(state, k), more);   // the segment, why it moved, the player's own statements
+            for (int i = 0; i < more.Count; i++)
+            {
+                right.Add(Row(words(more[i].Key, more[i].English), more[i].Value));
+            }
+
             int n = Math.Min(ResultsShown, k.Results.Count);
             var rows = new string[n][];
             var beat = new bool[n];

@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Markets
         private const string TestBlockName = "Stock extras check (a block quoted)";
         private const string TestRivalName = "Stock extras check (a rival looks at the market)";
         private const string TestBankName = "Stock extras check (the bank's own books)";
+        private const string TestSegmentsName = "Stock extras check (the size segments reviewed at the next close)";
 
         // The extras' tests: the market running and settled, the option on, and never in another player's city.
         private bool ExtrasTestReady(string test)
@@ -59,6 +60,36 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             return first;
+        }
+
+        /// <summary>Test: every company is due its size review at the next close, as at a new quarter; one whose market value is over its band changes
+        /// segment, the price staying where it closed.</summary>
+        public static void TestExtrasSegments()
+        {
+            Instance?.ExtrasSegmentsTest(TestSegmentsName);
+        }
+
+        private void ExtrasSegmentsTest(string test)
+        {
+            FinishMoment();
+            if (!ExtrasTestReady(test))
+            {
+                return;
+            }
+            MarketState s = _engine.State;
+            int due = 0, off = 0;
+            for (int i = 0; i < s.Stocks.Count; i++)
+            {
+                Stock k = s.Stocks[i];
+                if (k.Listed && k.BidCents <= 0 && !(k.Own != null && k.Own.Firm))
+                {
+                    off += MarketSegments.Review(k.Size, k.MarketValue, s.Env.PriceLevel) != k.Size ? 1 : 0;
+                    k.SizeQuarter = -1;
+                    due++;
+                }
+            }
+            Queue(NotificationType.Info, "reallife_stx_note_segments_test", "count", due.ToString(), "change", off.ToString());
+            Logger?.Info(test + ": " + due + " company(ies) due the review at the next close, " + off + " of them over a band their segment does not match; the price of each stays where it closes.");
         }
 
         /// <summary>Test: a company the player holds (else watches, else the first) splits two for one at the next open.</summary>

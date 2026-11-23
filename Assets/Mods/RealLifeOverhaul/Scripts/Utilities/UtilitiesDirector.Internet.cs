@@ -270,9 +270,10 @@ namespace RealLifeOverhaul.Utilities
         {
             why = null;
             int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
-            if (provider == InternetCatalogue.LeasedIndex)
+            if (InternetCatalogue.IsLine(provider))
             {
-                return BuyLine(place, plan, out why);   // the pickers list the carriers' fibre among the providers; it is bought beside the plan
+                // the pickers list the carriers' fibre and the company's own among the providers; it is bought beside the plan
+                return BuyLine(place, plan, out why, provider == InternetCatalogue.OwnLineIndex);
             }
             if (!InternetRules.Reaches(provider, GameRegistrations.District(place.Reg)))
             {
@@ -372,28 +373,42 @@ namespace RealLifeOverhaul.Utilities
             return site != null && place.Kind != PlaceKind.Home && place.Reg != null && site(place.Reg);
         }
 
-        /// <summary>The installation fee of a line at a place now, money (whole); the wait comes from <see cref="LineDays"/>.</summary>
-        public int LineFee(PlaceInfo place, int step)
+        /// <summary>The installation fee of a line at a place now, money (whole); the wait comes from <see cref="LineDays"/>. <paramref name="own"/>: the company's own line.</summary>
+        public int LineFee(PlaceInfo place, int step, bool own = false)
         {
-            return UtilitiesRules.Money(LeasedLineRules.InstallCents(step, GameRegistrations.District(place.Reg), Prices.Level));
+            return UtilitiesRules.Money(LeasedLineRules.InstallCents(step, GameRegistrations.District(place.Reg), Prices.Level, own));
         }
 
         /// <summary>The days from the order to a line being live at a place.</summary>
-        public int LineDays(PlaceInfo place, int step)
+        public int LineDays(PlaceInfo place, int step, bool own = false)
         {
-            return LeasedLineRules.InstallDays(step, GameRegistrations.District(place.Reg));
+            return LeasedLineRules.InstallDays(step, GameRegistrations.District(place.Reg), own);
+        }
+
+        /// <summary>
+        /// True if the player's own company can carry a place's line: it is running and its network is open in the place's district. The line is then the company's own
+        /// (<see cref="InternetCatalogue.OwnLine"/>), beside the carriers', which a data centre may still buy there.
+        /// </summary>
+        public bool OwnLineHere(PlaceInfo place)
+        {
+            return _state.Network.Running && InternetRules.Reaches(InternetCatalogue.OwnLineIndex, GameRegistrations.District(place.Reg));
         }
 
         /// <summary>
         /// A leased line ordered for a data centre: the installation fee now, the line live after its wait and billed with the month's internet from then. The plan stays;
         /// a line already running keeps running until a changed one is live. Refused anywhere that is not a data centre.
         /// </summary>
-        public bool BuyLine(PlaceInfo place, int step, out string why)
+        public bool BuyLine(PlaceInfo place, int step, out string why, bool own = false)
         {
             why = null;
             if (!LineSite(place))
             {
                 why = "reallife_net_line_site";
+                return false;
+            }
+            if (own && !OwnLineHere(place))
+            {
+                why = "reallife_net_line_own_none";
                 return false;
             }
             step = LeasedLineRules.Step(step);
@@ -403,12 +418,12 @@ namespace RealLifeOverhaul.Utilities
                 why = a.Owed > 0 ? "reallife_net_owed_first" : "reallife_net_line_cut";   // a cut connection is reconnected first, as for a plan
                 return false;
             }
-            if (LeasedLineRules.Ordered(a) == step + 1)
+            if (LeasedLineRules.Ordered(a) == step + 1 && LeasedLineRules.OrderedOwn(a) == own)
             {
                 why = "reallife_net_line_same";
                 return false;
             }
-            int today = UtilitiesGame.Today, fee = LineFee(place, step), days = LineDays(place, step);
+            int today = UtilitiesGame.Today, fee = LineFee(place, step, own), days = LineDays(place, step, own);
             if (fee > UtilitiesGame.Cash)
             {
                 why = "reallife_net_no_cash";
@@ -436,10 +451,11 @@ namespace RealLifeOverhaul.Utilities
                 a.OutageFrom = a.OutageUntil = 0;
                 a.Kind = place.Kind;
             }
-            LeasedLineRules.Order(a, step, GameRegistrations.District(place.Reg), today);
+            LeasedLineRules.Order(a, step, GameRegistrations.District(place.Reg), today, own);
             UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_line_bought", "place", place.Name, "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[step]),
                 "day", UtilitiesText.Day(today + days)), 10f);
-            Logger?.Info("Utilities: leased line at " + place.Place + ": step " + step + " (" + LeasedLineCatalogue.Mbps[step] + " Mbps), " + LeasedLineRules.MonthCents(step, Prices.Level)
+            Logger?.Info("Utilities: " + (own ? "own network" : "leased") + " line at " + place.Place + ": step " + step + " (" + LeasedLineCatalogue.Mbps[step] + " Mbps), "
+                         + LeasedLineRules.MonthCents(step, Prices.Level, own)
                          + " cents a month, installation " + fee + " money, live on day " + (today + days) + ".");
             Touch();
             return true;

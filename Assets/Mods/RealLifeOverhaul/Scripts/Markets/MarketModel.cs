@@ -117,6 +117,8 @@ namespace RealLifeOverhaul.Markets
         public int BidderId;                     // the listed company that bids, or 0 for a private buyer
         public int ResultsBoostDay;              // its own moves are larger on this day (its results)
         public int LowDays;                      // market days running it has closed under PennyCents
+        public int SizeQuarter = -1;             // the quarter its segment was last reviewed in (MarketSegments); -1 never: it has the catalogue's
+        public int SizeDay;                      // the day its segment last changed (0 never)
 
         public readonly Candle[] Bars = new Candle[MarketCatalogue.IntradayBars];   // today's, one a step
         public int BarCount;
@@ -396,6 +398,8 @@ namespace RealLifeOverhaul.Markets
         Reverse = 34,       // shares to be put together (Extras/SplitRules): Stock, A how many old shares make one new, B the day
         Block = 35,         // a holding that passed a 5% step (Extras/BlockRules): Stock, A the holding in bp, B 1 bought or -1 sold,
                             // C 0 the player or the holding (its stock id) of the tycoon who dealt
+        Why = 36,           // why a sector or a large company moved (MarketWhy): Stock (0 for a sector), A the cause (WhyCause) with the sector above it, B the move in bp, C the cause's detail
+        Segment = 37,       // a company changed its size segment at the quarter's review (MarketSegments): Stock, A the new segment, B the old, C its market value in millions
         Count
     }
 

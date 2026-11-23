@@ -220,6 +220,14 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Reverse:
                     data = new[] { "name", name, "ratio", n.A.ToString(), "day", n.B.ToString() };
                     return "reallife_mkt_news_reverse";
+                case MarketNewsKind.Why:
+                {
+                    // Why a sector or a large company moved: only a cause the engine applied that day (MarketWhy).
+                    return MarketWhyText.Line(n, s, out _, out data);
+                }
+                case MarketNewsKind.Segment:
+                    data = new[] { "name", name, "segment", Size((MarketSize)Math.Max(0, Math.Min((int)MarketSize.Small, n.A))), "worth", Large(n.C * 1000000.0) };
+                    return n.A < n.B ? "reallife_mkt_news_segment_up" : "reallife_mkt_news_segment_down";
                 case MarketNewsKind.Block:
                 {
                     // A holding that passed a 5% step: the player's is "a holder", a tycoon's is their holding by name.

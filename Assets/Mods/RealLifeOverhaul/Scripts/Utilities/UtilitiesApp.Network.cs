@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Utilities
             Network n = state.Network;
             int today = UtilitiesGame.Today, level = Prices.Level, picked = -1, open = 0;
             int scale = _director.Company != null ? _director.Company.ScaleNow() : 0, buy = EndScaleRules.Buying(Settings.EndScale);
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 string id = "bb|" + d;
                 TableRow row = Row(id);
@@ -29,10 +29,10 @@ namespace RealLifeOverhaul.Utilities
                 }
                 bool isOpen = n.Open(d, today), digging = n.Digging(d);
                 open += isOpen ? 1 : 0;
-                int connections = BroadbandRules.Connections(n, d), share = n.Exists ? n.Share[d, Network.Own] : 0, rivals = Rivals(d);
-                int cost = isOpen || digging ? n.Spent[d] : BroadbandRules.BuildCost(d, level, buy);
+                int connections = BroadbandRules.Connections(n, d), share = n.Exists ? n.Share[d, Network.Own] : 0, rivals = Rivals(n.Id[d]);
+                int cost = isOpen || digging ? n.Spent[d] : BroadbandRules.BuildCost(n, d, level, buy);
                 int market = MarketShown(n, d, buy, isOpen || digging);
-                row.Set(0, BroadbandCompany.District(d));
+                row.Set(0, BroadbandCompany.District(n, d));
                 row.Set(1, isOpen ? UtilitiesText.T("reallife_bb_state_open", "day", UtilitiesText.Day(n.Built[d]))
                     : digging ? UtilitiesText.T("reallife_bb_state_digging", "day", UtilitiesText.Day(n.ReadyDay(d))) : UtilitiesText.T("reallife_bb_state_none"),
                     isOpen ? TableRow.Green : digging ? TableRow.Yellow : TableRow.Plain);
@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Utilities
         // a district's connections the company reaches once dug, or would if dug now (at scale, the whole district)
         private static int MarketShown(Network n, int d, int scale, bool built)
         {
-            return built ? BroadbandRules.MarketOf(n, d) : (int)((long)EndScaleRules.Mix(BroadbandCatalogue.Market[d], BroadbandRules.MarketAtScale(d), scale) * BroadbandRules.PeopleOf(n, d) / 1000);
+            return BroadbandRules.MarketShown(n, d, scale, built);
         }
 
         private void WriteCompany(InfoBox box, Network n, int open, int level, int scale, int today, int buy)
@@ -140,8 +140,8 @@ namespace RealLifeOverhaul.Utilities
         private void WriteDistrict(InfoBox box, Network n, int d, int today, int level, int scale, int buy)
         {
             BroadbandCompany company = _director.Company;
-            box.Title(BroadbandCompany.District(d));
-            int cost = BroadbandRules.BuildCost(d, level, buy), extend = BroadbandRules.ExtendCost(n, d, level, today, buy);
+            box.Title(BroadbandCompany.District(n, d));
+            int cost = BroadbandRules.BuildCost(n, d, level, buy), extend = BroadbandRules.ExtendCost(n, d, level, today, buy);
             if (n.Open(d, today))
             {
                 box.Line(UtilitiesText.T("reallife_bb_box_district_open", "day", UtilitiesText.Day(n.Built[d]), "count", BroadbandRules.Connections(n, d).ToString("N0", UtilitiesText.Culture),
@@ -158,23 +158,23 @@ namespace RealLifeOverhaul.Utilities
             box.Row("reallife_bb_box_district_market", MarketShown(n, d, buy, n.Open(d, today) || n.Digging(d)).ToString("N0", UtilitiesText.Culture));
             if (extend > 0)
             {
-                box.Line(UtilitiesText.T("reallife_endscale_bb_district_old", "reach", BroadbandCatalogue.Market[d].ToString("N0", UtilitiesText.Culture),
-                    "all", BroadbandRules.MarketAtScale(d).ToString("N0", UtilitiesText.Culture), "cost", UtilitiesText.Money(extend)));
+                box.Line(UtilitiesText.T("reallife_endscale_bb_district_old", "reach", n.Size[d].ToString("N0", UtilitiesText.Culture),
+                    "all", BroadbandRules.MarketAtScale(n, d).ToString("N0", UtilitiesText.Culture), "cost", UtilitiesText.Money(extend)));
             }
             box.Row("reallife_bb_box_district_shares", Shares(n.Exists ? n : CityAsItIs(), d));
             Transform buttons = box.ButtonRow();
             if (extend > 0)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_endscale_bb_extend", () => Ask(
-                    "reallife_endscale_bb_confirm_extend_title".Localize(new { district = BroadbandCompany.District(d) }),
+                    "reallife_endscale_bb_confirm_extend_title".Localize(new { district = BroadbandCompany.District(n, d) }),
                     "reallife_endscale_bb_confirm_extend_body".Localize(new { cost = UtilitiesText.Money(extend) }), "reallife_endscale_bb_extend", false,
                     () => company.Extend(d, out string why) ? null : why));
             }
             if (n.Running && !n.Open(d, today) && !n.Digging(d))
             {
-                int upkeep = (int)EndScaleRules.Mix((long)BroadbandRules.BuildCost(d, level) * BroadbandCatalogue.UpkeepPerMille / 1000,
-                    (long)BroadbandRules.BuildCost(d, level, EndScaleRules.Full) * BroadbandCatalogue.UpkeepPerMilleScale / 1000, buy);
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bb_box_build", () => Ask("reallife_bb_confirm_build_title".Localize(new { district = BroadbandCompany.District(d) }),
+                int upkeep = (int)EndScaleRules.Mix((long)BroadbandRules.BuildCost(n, d, level) * BroadbandCatalogue.UpkeepPerMille / 1000,
+                    (long)BroadbandRules.BuildCost(n, d, level, EndScaleRules.Full) * BroadbandCatalogue.UpkeepPerMilleScale / 1000, buy);
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bb_box_build", () => Ask("reallife_bb_confirm_build_title".Localize(new { district = BroadbandCompany.District(n, d) }),
                     "reallife_bb_confirm_build_body".Localize(new { cost = UtilitiesText.Money(cost), months = BroadbandCatalogue.BuildMonths.ToString(), upkeep = UtilitiesText.Money(upkeep) }),
                     "reallife_bb_box_build", false, () => company.Build(d, out string why) ? null : why));
             }
@@ -236,12 +236,12 @@ namespace RealLifeOverhaul.Utilities
             return _cityAsItIs;
         }
 
-        private static int Rivals(int d)
+        private static int Rivals(string id)
         {
             int count = 0;
             for (int p = 0; p < InternetCatalogue.Providers.Length; p++)
             {
-                count += InternetRules.Reaches(p, BroadbandCatalogue.Districts[d]) ? 1 : 0;
+                count += InternetRules.Reaches(p, id) ? 1 : 0;
             }
             return count;
         }

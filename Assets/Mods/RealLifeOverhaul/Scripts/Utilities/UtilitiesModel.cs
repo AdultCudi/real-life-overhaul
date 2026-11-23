@@ -35,6 +35,8 @@ namespace RealLifeOverhaul.Utilities
         public int LineStep;             // a data centre's leased line (LeasedLineCatalogue): 0 none, else its step + 1; it stands beside the plan
         public int LineDay;              // the day the line goes live (LeasedLineRules.Order)
         public int LineNext, LineNextDay;   // a change to another step: its step + 1 and the day it takes over from the line that runs until then
+        // bits (LeasedLineRules.RunningOwn, NextOwn): the line is the player's own broadband company's, on its own fibre; a line ordered before it existed is the carriers'
+        public int LineOwn;
 
         public bool IsHome => Kind == PlaceKind.Home;
     }

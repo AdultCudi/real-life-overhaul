@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Markets
             }
             _openRate = State.RateSeenBp;
             _openIndex = State.IndexLast;
+            WhyOpen(day, env);   // yesterday's city, kept before today's takes its place
             State.Env = env;
             _openEnv = env;
             int from = State.BusinessDay > 0 ? State.BusinessDay + 1 : day;
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul.Markets
             if (State.ElectionsSeen >= 0 && env.Elections > State.ElectionsSeen)
             {
                 marketMood += MarketInputs.ElectionKickBp / 10000.0;
+                _why.Election = true;
             }
             State.ElectionsSeen = env.Elections;
             _openShut = shut;

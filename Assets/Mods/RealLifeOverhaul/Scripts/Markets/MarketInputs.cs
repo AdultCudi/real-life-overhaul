@@ -139,6 +139,22 @@ namespace RealLifeOverhaul.Markets
             return bp;
         }
 
+        /// <summary>
+        /// A sector's one-off move at the open apart into what made it, in bp: the sky, the spell, the street event, then the crimes, break-ins, fires and accidents reported
+        /// yesterday (the parts of <see cref="DayKickBp"/>, which they add up to), so a move can be said to be the weather's or a fire's.
+        /// </summary>
+        public static void DayKickParts(in MarketEnv env, MarketSector sector, int[] into)
+        {
+            int s = (int)sector;
+            into[0] = Row(SkyKick, env.Sky)[s];
+            into[1] = Row(SpellKick, env.Spell)[s];
+            into[2] = Row(StreetKick, env.Event)[s];
+            into[3] = Capped(env.Crimes * CrimeKick[s], 20);
+            into[4] = Capped(env.BreakIns * BreakInKick[s], 25);
+            into[5] = Capped(env.Fires * FireKick[s], 30);
+            into[6] = Capped(env.Accidents * AccidentKick[s], 15);
+        }
+
         private static readonly int[] CrimeKick = Row(G(MarketSector.Services, 3), G(MarketSector.Stores, -2), G(MarketSector.Specialists, -2), G(MarketSector.Insurance, -1));
         private static readonly int[] BreakInKick = Row(G(MarketSector.Services, 5), G(MarketSector.Insurance, -5), G(MarketSector.Stores, -2));
         private static readonly int[] FireKick = Row(G(MarketSector.Insurance, -10), G(MarketSector.Construction, 5));
@@ -157,7 +173,8 @@ namespace RealLifeOverhaul.Markets
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
             EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventBuilder = EventCompany + 1,
             EventSplit = EventBuilder + 1,   // a split by a board's own level, a consolidation or a founder's own (Extras): A the company, B the ratio, under nothing for old shares put together
-            EventCount = EventSplit + 1;
+            EventSegment = EventSplit + 1,   // a company's size segment changed at the quarter's review (MarketSegments): A the company, B the segment (MarketSize)
+            EventCount = EventSegment + 1;
 
         public const int CompanyMicrosMost = 50000;   // millionths of the log price, either way
 

@@ -35,5 +35,18 @@ namespace RealLifeOverhaul.Utilities
 
         /// <summary>Days added to the installation by what the district has: laying a fibre in an existing duct takes a week, digging a new route two.</summary>
         public static readonly int[] ExtraDays = { 0, 7, 14 };
+
+        // The player's own broadband company may carry its own data centre in a district it has dug (InternetCatalogue.OwnLine). The line is the carriers' sizes and steps, but it
+        // runs on the company's own fibre, so the carrier's dig is never needed: the district counts as fibre in the street. Its price is what the company pays for the capacity.
+
+        /// <summary>
+        /// Thousandths of a carrier's month price the company's own line costs the data centre: the company buys its upstream capacity from the carriers in bulk, a fifth under
+        /// what they sell a hall, and carries the hall on its own fibre at no more than that. Never under three quarters of the carriers' price (held by a check), so the
+        /// carriers' prices still mean something and a network is no way round them: a rack costs $128 a month on a 10 Gbps line here, $160 from a carrier, against $4,200 of takings.
+        /// </summary>
+        public const int OwnPriceShare = 800;
+
+        /// <summary>Thousandths of a carrier's installation fee for a line on the company's own fibre: its own engineers lay it in its own street, with no carrier's margin.</summary>
+        public const int OwnInstallShare = 600;
     }
 }
