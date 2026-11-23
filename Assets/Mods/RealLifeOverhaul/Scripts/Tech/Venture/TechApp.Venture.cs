@@ -123,6 +123,7 @@ namespace RealLifeOverhaul.Tech
                 Cents(row, 6, _director.Level(worth));
                 row.Set(7, d.Kind == TermKind.Shares ? TechText.Fill("reallife_terms_row_locked", "days", SaleTermRules.LockLeft(d, day).ToString())
                     : d.Kind == TermKind.Slice ? TechText.T("reallife_terms_row_paying")
+                    : d.Kind == TermKind.Boss && !d.Open ? TechText.T("reallife_terms_row_handing")
                     : d.Kind == TermKind.Boss && d.EarnState != 0 ? TechText.T("reallife_terms_row_contract")
                     : TechText.Fill("reallife_terms_row_target", "pct", TechText.Mille(aim > 0 ? (int)System.Math.Min(9990L, SaleTermRules.Progress(d, w) * 1000 / aim) : 0)),
                     d.Kind == TermKind.Boss && d.Strikes > 0 ? TableRow.Yellow : TableRow.Green);
@@ -212,8 +213,10 @@ namespace RealLifeOverhaul.Tech
                 long runway = profit < 0 ? VentureGame.Cash / -profit : -1;
                 TableRow row = Row(CapRow + firm.File.Place);
                 row.Set(0, firm.File.Name);
-                row.Set(1, c != null && c.Stage >= 0 ? TechText.RoundName((RoundStage)c.Stage) : TechText.T("reallife_vc_bootstrapped"), c != null ? c.Stage : -1);
-                int share = c != null ? VentureRules.PlayerShare(c) : 1000;
+                TermDeal held = _director.ContractOf(firm.File.Place);
+                row.Set(1, held != null ? TechText.T("reallife_terms_row_contract") : c != null && c.Stage >= 0 ? TechText.RoundName((RoundStage)c.Stage) : TechText.T("reallife_vc_bootstrapped"),
+                    c != null ? c.Stage : -1);
+                int share = _director.OwnShare(firm.File.Place);
                 row.Set(2, TechText.Mille(share), share);
                 Cents(row, 3, c != null ? _director.Level(c.Post) : 0);
                 long raised = 0;
@@ -264,10 +267,26 @@ namespace RealLifeOverhaul.Tech
         {
             string place = firm.File.Place;
             Cap c = _director.CapFor(place, false);
+            TermDeal contract = _director.ContractOf(place);
             box.Title(TechText.T("reallife_vc_cap_title", "firm", firm.File.Name));
             long profit = _director.FirmProfit(firm);
             box.Line(profit < 0 ? TechText.Fill("reallife_vc_cap_burn", "burn", TechText.Cents(-profit), "days", (VentureGame.Cash / -profit).ToString())
                 : TechText.T("reallife_vc_cap_profit", "profit", TechText.Cents(profit)));
+            if (contract != null)
+            {
+                // from the day of the sale the firm is the buyer's in every figure: the cap table the sale ended shows the buyer, whole, and the player's run of it
+                box.Row("reallife_vc_cap_holders", contract.Buyer + " " + TechText.Mille(1000));
+                box.Line(TechText.T("reallife_terms_cap_owner", "firm", firm.File.Name, "buyer", contract.Buyer));
+                Transform own = box.ButtonRow();
+                InfoBox.Button(own, InfoBox.Additional, "reallife_exit_button_page", () =>
+                {
+                    _page = PageExits;
+                    Refresh();
+                });
+                InfoBox.Button(own, InfoBox.Additional, "common_close", ClosePick);
+                Meta.Guide.Point(box, StartupsGuide);
+                return;
+            }
             if (c != null)
             {
                 long total = System.Math.Max(1, c.Total);
@@ -310,6 +329,10 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _chiefs.Count; i++)
             {
                 at = _chiefs[i].File.Id == ceo ? i + 1 : at;
+            }
+            if (_chiefs.Count > 0)
+            {
+                box.Line(TechText.T("reallife_vc_chief_help"));
             }
             if (box.HasSelector && _chiefs.Count > 0)
             {

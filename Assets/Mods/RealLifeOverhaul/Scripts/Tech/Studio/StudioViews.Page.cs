@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.Tech
                              || (g == TeamGroup.Support && s.Tickets > 0);
                 AddRole(page, r, g, needs);
             }
+            Fact(page, "reallife_tech_mkt_page_support", Cell(fmt, "reallife_tech_mkt_page_support_value", "have", fmt.Whole(s.Support), "need", fmt.Whole(StudioRules.SupportFor(s.Tickets))));
             Fact(page, P + "page_tickets", s.Tickets > 0
                 ? Cell(fmt, P + "page_tickets_value", "tickets", fmt.Whole(s.Tickets), "answered", fmt.Whole(Math.Min(s.Tickets, s.Answered))) : NoneWords(fmt));
             Fact(page, P + "page_pirated", fmt.Whole(pirated));

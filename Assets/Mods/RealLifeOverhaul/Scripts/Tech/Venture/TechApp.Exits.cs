@@ -37,10 +37,18 @@ namespace RealLifeOverhaul.Tech
             {
                 ExitOffers(box, firm, e);
             }
-            box.Section("reallife_ui_tech_exit_shares");
-            ExitShares(box, firm);
-            box.Section("reallife_ui_tech_exit_market");
-            ExitMarket(box, firm, e);
+            if (contract == null)
+            {
+                box.Section("reallife_ui_tech_exit_shares");
+                ExitShares(box, firm);
+                box.Section("reallife_ui_tech_exit_market");
+                ExitMarket(box, firm, e);
+            }
+            else
+            {
+                box.Section("reallife_ui_tech_exit_market");
+                box.Line(TechText.T("reallife_terms_exit_closed", "firm", firm.File.Name, "buyer", contract.Buyer));   // no listing, no bankers, no second sale: said, not offered
+            }
             ExitsBack(box);
             Meta.Guide.Point(box, StartupsGuide);
         }

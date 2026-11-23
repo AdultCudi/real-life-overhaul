@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("firms_small", () => Whole(SectorCatalogue.SmallLeast))
                 .Fact("firms_large", () => Whole(SectorCatalogue.LargeLeast))
                 .Fact("firms_anchor_days", () => Whole(SectorRules.AnchorDays))
+                .Fact("firms_features_ceiling", () => Whole(SectorCatalogue.FeaturesMost))
+                .Fact("firms_features_top", () => Mille(2 * SectorCatalogue.FeatureCurve))
                 .Fact("firms_products_firm", () => Whole(SectorCatalogue.ProductsPerFirm))
                 .Fact("firms_products_most", () => Whole(SectorCatalogue.ProductsMost))
                 .Fact("firms_contracts_most", () => Whole(SectorCatalogue.ContractsMost))

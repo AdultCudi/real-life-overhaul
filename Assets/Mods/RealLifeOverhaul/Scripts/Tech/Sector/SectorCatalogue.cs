@@ -89,7 +89,12 @@ namespace RealLifeOverhaul.Tech
         public const int ReliabilityHalf = 300;      // thousandths the people bring at which a service is half way from its base to sound: two engineers of average skill
         public const int SecurityHalf = 300;         // ...the same for analysts and security posture
 
-        /// <summary>A product's features have no cap under Living population: each costs more than the last (FirmsCatalogue.FeatureStep), so they grow slower as they go.</summary>
+        /// <summary>
+        /// A product's features have no cap under Living population: each costs more than the last (FirmsCatalogue.FeatureStep), so they grow slower as they go.
+        /// This number is only the bound the build loop and the rivals' counters are written against (an int that can never overflow a sum of features); it is no
+        /// practical limit, since the feature number n costs FeatureBase + FeatureStep x n work points (the hundredth costs 1,228 points, a thousand features about six million in all) and a
+        /// firm's engineers give a few hundred points a day. Players are told "no cap", never this figure.
+        /// </summary>
         public const int FeaturesMost = 100000;
 
         // Reputation: earned towards a target set by the quality of what a firm sells and does, with no top of 800; climbing gets slower near the top.

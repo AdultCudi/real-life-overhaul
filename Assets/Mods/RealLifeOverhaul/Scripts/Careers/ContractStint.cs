@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Careers
         // The slider moved: the slider keeps a move of the player's (and tells the director the hours), not the values the panel sets it up with; the panel's length follows.
         public void Slide(int value) => _slider.Slide(value);
 
-        public (string key, object arguments) SlideInfo() => ("common_hours", new { hours = SlideNow });
+        public (string key, object arguments) SlideInfo() => _slider.Slides ? StintInfo.Of(_slider) : ("common_hours", new { hours = SlideNow });
 
         public void SkipStarted() => _director.OwnStintStarted(this);
 

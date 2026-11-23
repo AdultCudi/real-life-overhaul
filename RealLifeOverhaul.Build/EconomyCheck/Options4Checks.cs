@@ -261,7 +261,7 @@ internal static partial class Program
         Check(kit.Contains("RaiseAll(d, view, t, w);") || kit.Contains("AddRaiseAll(d, view, t, w);"), "raise for all, kit: the Team page adds its raise");
         Check(kit.Contains("case RaiseAll: return AskRaiseAll(d, view);") && kit.Contains("case MatchRivals: Settings.SetMatchRivals(!Settings.EconomyCompanyMatchRivals); return true;")
               && MemberText(kit, "private bool AskRaiseAll(").Contains("\"reallife_roles_confirm_raise_body\".Localize(new { count, percent, total, extra })")
-              && MemberText(kit, "private bool AskRaiseAll(").Contains("d.GiveRaises(ids, bp);") && kitMain.Contains("RaiseAll = 150, MatchRivals = 151;")
+              && MemberText(kit, "private bool AskRaiseAll(").Contains("d.GiveRaises(ids, bp);") && kitMain.Contains("RaiseAll = 150, MatchRivals = 151,")
               && kit.Contains("t.Acts.Add(Act(MatchRivals, 0,") && kit.Contains("new WorkSection { Part = WorkPart.Amount, Title = w.T(\"reallife_roles_sec_raise\", \"Raise the team\"), Stepper = 0,"),
             "raise for all, kit: the Team page has the share, the stat for the monthly cost, a question with the same figures, and the switch as a button");
         bool keys = true;

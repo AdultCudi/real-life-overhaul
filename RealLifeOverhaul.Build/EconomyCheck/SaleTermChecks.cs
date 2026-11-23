@@ -22,6 +22,7 @@ internal static partial class Program
         SaleTermSaveChecks();
         SaleTermSourceChecks();
         SaleTermTextChecks();
+        SaleTermHeldChecks();   // a firm a boss contract holds is its buyer's until it has left the player (SaleTermHeldChecks.cs)
     }
 
     private const long TermPrice = 1000000000L;   // ten million, cents at the start's prices

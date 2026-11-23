@@ -140,6 +140,7 @@ namespace RealLifeOverhaul
                         break;
                 }
                 def.Blocked = ask => Blocked(kind, ask);
+                def.Subject = ask => TechDirector.Instance?.StudioSubject(kind, ask.Place);
                 def.Pick = (ask, step) => Pick(kind, ask, step);
                 def.Apply = (ask, choices) => Apply(kind, def, ask, choices);
                 return def;

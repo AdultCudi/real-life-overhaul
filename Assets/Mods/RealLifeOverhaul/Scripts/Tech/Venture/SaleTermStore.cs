@@ -17,12 +17,12 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The line, or null while there is nothing to keep.</summary>
         public static string Write(TermFile f)
         {
-            if (f == null || (f.Deals.Count == 0 && f.Held.Count == 0))
+            if (f == null || (f.Deals.Count == 0 && f.Held.Count == 0 && f.Mended == 0))
             {
                 return null;
             }
             var w = new TechWriter(Version);
-            w.Part('h').Record().Add(f.Seed).Add(f.Next);
+            w.Part('h').Record().Add(f.Seed).Add(f.Next).Add(f.Mended);
             w.Part('d');
             foreach (TermDeal d in f.Deals)
             {
@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Tech
             Fields h = r.One('h');
             f.Seed = h.Int();
             f.Next = Math.Max(1, h.Int(1));
+            f.Mended = Math.Max(0, h.Int());
             foreach (Fields x in r.Records('d'))
             {
                 if (f.Deals.Count >= SaleTermCatalogue.DealsMost)

@@ -199,6 +199,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Go(v => v.Open("tab:" + TabContracts));
                 }
+                if (act == StudioAct.Forget)
+                {
+                    return Ask("reallife_tech_confirm_forget_title", "reallife_tech_confirm_forget_body", () => _d.Forget(id));
+                }
                 if (act == StudioAct.Withdraw)
                 {
                     return Ask("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body", () => _d.Withdraw(id));
@@ -579,8 +583,9 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     Cap cap = venture.CapOf(place);
-                    raise.Row(TechText.T("reallife_vc_col_stage"), cap != null && cap.Stage >= 0 ? TechText.RoundName((RoundStage)cap.Stage) : TechText.T("reallife_vc_bootstrapped"));
-                    raise.Row(TechText.T("reallife_vc_col_share"), TechText.Mille(cap != null ? VentureRules.PlayerShare(cap) : 1000));
+                    raise.Row(TechText.T("reallife_vc_col_stage"), _d.ContractOf(place) != null ? TechText.T("reallife_terms_row_contract")
+                        : cap != null && cap.Stage >= 0 ? TechText.RoundName((RoundStage)cap.Stage) : TechText.T("reallife_vc_bootstrapped"));
+                    raise.Row(TechText.T("reallife_vc_col_share"), TechText.Mille(_d.OwnShare(place)));
                     raise.Go(TechText.T("reallife_ui_tech_open_funding"), Go(v => v.Open("tab:" + TabFunding)));
                 }
                 var right = new List<UiFactCardModel>(2) { raise.Build() };

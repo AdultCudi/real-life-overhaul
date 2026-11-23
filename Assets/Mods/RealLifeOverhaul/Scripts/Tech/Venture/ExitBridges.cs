@@ -64,6 +64,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True while a business could be handed to a buyer now as a sale ends one: the sales of businesses run and the player is not a guest. Default: none.</summary>
         public static Func<string, bool> HandOverReady;
 
+        /// <summary>True while a place is still a business of the player's. Default: none, which reads as gone.</summary>
+        public static Func<string, bool> StillHeld;
+
         public static string KeyOf(int startup) => "founder:" + startup.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         public static bool ResidentOf(int startup, out ResidentInfo info)
@@ -126,6 +129,7 @@ namespace RealLifeOverhaul.Tech
             ShareQuote = null;
             ShareGrant = null;
             HandOverReady = null;
+            StillHeld = null;
             DividendTax = null;
         }
     }

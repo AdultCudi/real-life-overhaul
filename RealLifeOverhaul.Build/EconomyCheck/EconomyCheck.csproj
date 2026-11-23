@@ -258,6 +258,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Save.cs" Link="Mod\JusticeState.Save.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Travel\TravelCatalogue.cs" Link="Mod\TravelCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EmpireMotorsLines.cs" Link="Mod\EmpireMotorsLines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BillPayRules.cs" Link="Mod\BillPayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCatalogue.cs" Link="Mod\UtilitiesCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesModel.cs" Link="Mod\UtilitiesModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesRules.cs" Link="Mod\UtilitiesRules.cs" />
@@ -755,6 +756,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsCatalogue.cs" Link="Mod\FirmsCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsModel.cs" Link="Mod\FirmsModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.cs" Link="Mod\FirmsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\AssignRules.cs" Link="Mod\AssignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\SegmentRules.cs" Link="Mod\SegmentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.Contracts.cs" Link="Mod\FirmsRules.Contracts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\ProductViews.cs" Link="Mod\ProductViews.cs" />

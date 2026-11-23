@@ -354,13 +354,13 @@ internal static partial class Program
         Check(StudioRules.BeatWhy(g, StudioRules.BeatTrailer, 20, 100, StudioYear) == "reallife_studio_beat_why_soon" && g.Spent == g.Budget + StudioCatalogue.TrailerCost[1],
             "studio: a trailer costs its scope's price and another waits its gap");
         int hype = g.Hype;
-        StudioRules.HypeDay(g, 12 + StudioCatalogue.HypeQuietDays);
+        StudioRules.HypeDay(g, 12 + StudioCatalogue.HypeQuietDays, -1);
         int same = g.Hype;
-        StudioRules.HypeDay(g, 13 + StudioCatalogue.HypeQuietDays);
+        StudioRules.HypeDay(g, 13 + StudioCatalogue.HypeQuietDays, -1);
         Check(same == hype && g.Hype < hype, "studio: hype holds through a quiet spell, then fades without news");
         g.Campaign = 3;
         g.CampaignSpent = 0;
-        long spend = StudioRules.HypeDay(g, 200);
+        long spend = StudioRules.HypeDay(g, 200, StudioCatalogue.CampaignDays / 2);
         Check(spend == g.Budget * 300 / 1000 / StudioCatalogue.CampaignDays && g.LastNews == 200, "studio: a campaign spends its share of the budget over its days and keeps hype rising");
         // the review
         int e0 = StudioRules.Expect((int)Genre.Rpg, 0, false, StudioYear), e5 = StudioRules.Expect((int)Genre.Rpg, StudioYear * 5, false, StudioYear);

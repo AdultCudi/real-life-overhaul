@@ -14,15 +14,16 @@ namespace RealLifeOverhaul.Utilities
 
         private static readonly string[] Kinds = { "reallife_util_kind_home", "reallife_util_kind_business" };
 
-        /// <summary>0 place, 1 service, 2 state, 3 this month so far, 4 owed, 5 due, 6 auto debit. Opens with what is owed most first.</summary>
+        /// <summary>0 place, 1 service, 2 state, 3 this month so far, 4 owed, 5 due, 6 auto debit, 7 ticked to be paid together. Opens with what is owed most first.</summary>
         public static readonly TableSpec Accounts = new TableSpec("Utilities", "Accounts")
             .Column("reallife_util_col_place", 440f, TableSort.Text, flexible: true)
             .Column("reallife_util_col_service", 200f, TableSort.Text)
-            .Column("reallife_util_col_state", 330f, TableSort.Text)
+            .Column("reallife_util_col_state", 300f, TableSort.Text)
             .Column("reallife_util_col_month", 230f, TableSort.Money, sums: true)
             .Column("reallife_util_col_owed", 200f, TableSort.Money, sums: true)
             .Column("reallife_util_col_due", 200f, TableSort.Date)
-            .Column("reallife_util_col_debit", 200f, TableSort.Text, right: true)
+            .Column("reallife_util_col_debit", 180f, TableSort.Text)
+            .Column("reallife_util_col_tick", 140f, TableSort.Text, right: true)
             .Filter("reallife_tab_all_kinds", Kinds)
             .Order(4, false)
             .Empty("reallife_util_empty");
@@ -77,6 +78,8 @@ namespace RealLifeOverhaul.Utilities
         private bool _choosing;                 // the internet box shows the plans to buy (no connection, or "Change plan")
         private int _provider, _plan;           // what is chosen there: an entry of _reach, and a plan of that provider
         private bool _contract = true;
+        private readonly HashSet<string> _ticked = new HashSet<string>(StringComparer.Ordinal);   // the accounts (place|service) ticked to be paid together; only ones that still owe stay
+        private readonly List<Account> _tickedNow = new List<Account>(8);                          // those, as the page was last written
 
         public UtilitiesApp(UtilitiesDirector director)
         {
@@ -228,8 +231,9 @@ namespace RealLifeOverhaul.Utilities
 
         private void WriteAccounts(InfoBox box, UtilitiesState state, ref string selected)
         {
-            int today = UtilitiesGame.Today, owed = 0, month = 0;
+            int today = UtilitiesGame.Today, owed = 0, month = 0, owing = 0, tickedSum = 0;
             Account picked = null;
+            _tickedNow.Clear();
             for (int i = 0; i < state.Accounts.Count; i++)
             {
                 Account a = state.Accounts[i];
@@ -244,7 +248,14 @@ namespace RealLifeOverhaul.Utilities
                 }
                 int sofar = UtilitiesRules.Money(a.Accrued);
                 owed += a.Owed;
+                owing += a.Owed > 0 ? 1 : 0;
                 month += sofar;
+                bool tick = a.Owed > 0 && _ticked.Contains(id);
+                if (tick)
+                {
+                    _tickedNow.Add(a);
+                    tickedSum += a.Owed;
+                }
                 bool late = a.Owed > 0 && a.DueDay > 0 && today > a.DueDay;
                 bool off = !UtilitiesRules.Supplied(a, today);
                 row.Set(0, _director.NameOf(a));
@@ -254,6 +265,15 @@ namespace RealLifeOverhaul.Utilities
                 row.Set(4, a.Owed > 0 ? UtilitiesText.Money(a.Owed) : "-", a.Owed, late ? TableRow.Red : TableRow.Plain);
                 row.Set(5, a.Owed > 0 && a.DueDay > 0 ? UtilitiesText.Day(a.DueDay) : "-", a.Owed > 0 && a.DueDay > 0 ? a.DueDay : double.NaN);
                 row.Set(6, UtilitiesText.T(a.AutoDebit ? "reallife_util_debit_on" : "reallife_util_debit_off"));
+                row.Set(7, tick ? UtilitiesText.T("reallife_util_ticked_yes") : "-");
+            }
+            if (_ticked.Count != _tickedNow.Count)
+            {
+                _ticked.Clear();   // a ticked bill that was paid, at the desk or by the auto debit, is no longer one
+                for (int i = 0; i < _tickedNow.Count; i++)
+                {
+                    _ticked.Add(_tickedNow[i].Place + "|" + (int)_tickedNow[i].Service);
+                }
             }
             UiClone.Words(_shell.Header, UtilitiesText.T("reallife_util_headline", "count", state.Accounts.Count.ToString(), "owed", UtilitiesText.Money(owed)));
             if (picked == null)
@@ -262,16 +282,48 @@ namespace RealLifeOverhaul.Utilities
                 box.Title(UtilitiesText.T("reallife_util_app"));
                 box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_util_box_owed", UtilitiesText.Money(owed));
+                TickedRow(box, tickedSum);
                 box.Row("reallife_util_box_month", UtilitiesText.Money(month));
                 box.Note(UtilitiesText.T("reallife_util_box_pick"));
                 box.Line(UtilitiesText.T(UtilitiesRules.Where("reallife_util_box_office", _director.ByPhone), "office", _director.OfficeName()));
+                if (owing > 0)
+                {
+                    PayTogether(box.ButtonRow(), owing);
+                }
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
-            WriteAccount(box, picked, today);
+            WriteAccount(box, picked, today, owing, tickedSum);
         }
 
-        private void WriteAccount(InfoBox box, Account a, int today)
+        // What the ticked bills come to, under what is owed in all; nothing while none is ticked.
+        private void TickedRow(InfoBox box, int tickedSum)
+        {
+            if (_tickedNow.Count > 0)
+            {
+                box.Row("reallife_util_box_ticked", UtilitiesText.T("reallife_util_box_ticked_value", "count", _tickedNow.Count.ToString(), "amount", UtilitiesText.Money(tickedSum)), CellTone.Yellow);
+            }
+        }
+
+        // Pay all now (every place's bills), Pay ticked and Clear ticks: each asks in the game's question box with the total before anything is paid.
+        private void PayTogether(Transform buttons, int owing)
+        {
+            if (owing > 0)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_util_box_pay_all", () => UiClone.Safe(() => _director.AskPayAll(null)));
+            }
+            if (_tickedNow.Count > 0)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_util_box_pay_ticked", () => UiClone.Safe(() => _director.AskPay(_tickedNow, null)));
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_util_box_clear_ticks", () => UiClone.Safe(() =>
+                {
+                    _ticked.Clear();
+                    Refresh();
+                }));
+            }
+        }
+
+        private void WriteAccount(InfoBox box, Account a, int today, int owing, int tickedSum)
         {
             box.Title(_director.NameOf(a));
             box.Chip(UtilitiesText.State(a, today), a.State == SupplyState.Cut ? CellTone.Red : a.State == SupplyState.Temporary ? CellTone.Yellow : CellTone.Green);
@@ -327,6 +379,23 @@ namespace RealLifeOverhaul.Utilities
                     Refresh();
                 }));
             }
+            if (a.Owed > 0)
+            {
+                string id = a.Place + "|" + (int)a.Service;
+                box.Switch("reallife_util_box_tick", _ticked.Contains(id), on => UiClone.Safe(() =>
+                {
+                    if (on)
+                    {
+                        _ticked.Add(id);
+                    }
+                    else
+                    {
+                        _ticked.Remove(id);
+                    }
+                    Refresh();
+                }));
+            }
+            TickedRow(box, tickedSum);
             Transform buttons = box.ButtonRow();
             if (a.Owed > 0)
             {
@@ -356,6 +425,10 @@ namespace RealLifeOverhaul.Utilities
                 }));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_util_box_back", Back);
+            if (owing > 0)
+            {
+                PayTogether(box.ButtonRow(), owing);
+            }
             Meta.Guide.Point(box, GuideTitle);
         }
 

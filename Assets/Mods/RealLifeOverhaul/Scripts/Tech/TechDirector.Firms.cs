@@ -386,6 +386,7 @@ namespace RealLifeOverhaul.Tech
             }
             float started = Time.realtimeSinceStartup;
             ReadFirms(day);
+            AssignDay(day);
             Crews();
             OwnShareChecked(day);
             _taken.Clear();

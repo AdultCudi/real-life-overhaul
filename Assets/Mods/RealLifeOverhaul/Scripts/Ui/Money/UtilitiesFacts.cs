@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
         public int LastBill, LastBillDay;
         public int Deposit, DepositLeft;
         public UtilityOffer Offer;
+        public bool Picked;             // picked to be paid together with others (only an account that owes can be)
         public int ApplyCost;           // what applying costs now, money
         public int ApplyDeposit, ApplyFee;
     }
@@ -185,7 +186,10 @@ namespace RealLifeOverhaul.Ui
         Prices,             // a: thousandths of the usual
         Maintenance,        // a: thousandths of the usual
         Marketing,          // a: the budget's index
-        Sell
+        Sell,
+        Pick,               // a: the account, b: 1 pick it, 0 leave it; b 2: pick every account that owes, b 3: leave every one
+        PayAll,             // pay what is owed everywhere, after the game's question
+        PayPicked           // pay the picked accounts' bills, after the game's question
     }
 
     /// <summary>Reads the facts from the save and carries the player's acts to the features that own them. The game sets it; a check stands one in.</summary>

@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Utilities
         }
 
         /// <summary>Money taken for a bill, fee or deposit, a business's deductible ones deducted by the game's tax; false if refused.</summary>
-        public static bool Pay(int amount, string key, BuildingRegistration reg, bool force = false, bool deductible = false)
+        public static bool Pay(int amount, string key, BuildingRegistration reg, bool force = false, bool deductible = false, bool notify = true)
         {
             if (amount <= 0)
             {
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 info.SetTaxDeductibleName(BillsDeductKey.GetLocalization());
             }
-            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force: force, showNotification: true);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force: force, showNotification: notify);
         }
 
         public static bool IsHome(BuildingRegistration reg)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 
@@ -720,9 +720,16 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--util-pay")
+        {
+            UtilitiesPayAll();    // Pay all now and paying ticked bills in the Utilities app: the rules, the questions, one bank line each, nothing twice (OwnWorkPayChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--own-work")
         {
             OwnWork();            // own work keeps up the skills of the work done, starts at a desk and has its hours picked (OwnWorkChecks.cs)
+            OwnWorkYield();       // (and its slider says what the hours picked will do before Start: OwnWorkPayChecks.cs)
             Own();                // (and the rules of working for oneself it builds on: OwnChecks.cs)
             OwnDesk();            // (the desk of one's own tech firm, whose learning it shares: OwnDeskChecks.cs)
             DeskSeat();           // (every seat held or given back, one more caller of it: DeskSeatChecks.cs)
@@ -1515,6 +1522,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech23")
+        {
+            Tech23();   // (the tech fixes of 23 Nov alone: licence page reasons, studio support, campaign, assignment, executives: Tech23Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech-points")
         {
             TechPoints();   // (a model's wait for its training and a product's reason for no customers alone: TechPointsChecks.cs)
@@ -1700,6 +1713,7 @@ internal static partial class Program
         TechStaff();   // every professional has a file, whatever their number, and a hire at a tech firm is seated: the seat rule, its option and texts (TechStaffChecks.cs)
         AiModels();   // Your own AI and the model names: each default held to the documentation, an unknown model told to the player (AiModelChecks.cs)
         Titles();       // products and games have names: typed ones cleaned and kept, made-up ones of their kind or genre, the rivals' too, none shared (TitleChecks.cs)
+        Tech23();   // the tech fixes of 23 Nov (Tech23Checks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
@@ -1722,6 +1736,8 @@ internal static partial class Program
         Banks();
         Calendar();
         Utilities();
+        UtilitiesPayAll();   // Pay all now and paying ticked bills: the rules, the questions, one bank line each, nothing twice (OwnWorkPayChecks.cs)
+        OwnWorkYield();      // own work's slider says what the hours picked will do before Start (OwnWorkPayChecks.cs)
         UtilitiesPhone();   // no office to visit: the app takes the desk's work by phone, each office text has its twin for the app, and the office comes back (UtilitiesPhoneChecks.cs)
         SpecialNames();
         StudyPrompts();

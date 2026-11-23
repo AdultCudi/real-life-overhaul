@@ -71,12 +71,16 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>Every line of what a choice of terms comes to for an offer, in the order a player reads them; empty for cash, whose lines the page already has.</summary>
-        public static List<string> Lines(TechDirector dir, TermPlan p, SaleResult r, ExitOffer o, int day)
+        public static List<string> Lines(TechDirector dir, TermPlan p, SaleResult r, ExitOffer o, int day, bool explain = true)
         {
             var lines = new List<string>(5);
             if (p.Kind == TermKind.Cash)
             {
                 return lines;
+            }
+            if (p.Kind == TermKind.Boss && explain)
+            {
+                lines.Add(TechText.Fill("reallife_terms_boss_what", "buyer", o.Name));   // what staying as the boss means, where the choice is made
             }
             if (!p.Ok)
             {
@@ -121,7 +125,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The body of the game's confirm box: the sale, then every line of its terms.</summary>
         public static string ConfirmBody(TechDirector dir, string firm, ExitOffer o, TermPlan p, SaleResult r, int day)
         {
-            List<string> lines = Lines(dir, p, r, o, day);
+            List<string> lines = Lines(dir, p, r, o, day, false);
             return TechText.Fill("reallife_terms_confirm_body", "firm", firm, "buyer", o.Name, "amount", TechText.Cents(dir.Level(o.Price)), "terms", string.Join("\n", lines.ToArray()));
         }
 
@@ -159,6 +163,10 @@ namespace RealLifeOverhaul.Tech
             }
             if (!d.Open)
             {
+                if (d.Kind == TermKind.Boss && !d.Handed)
+                {
+                    lines.Add(TechText.Fill("reallife_terms_deal_waiting", "buyer", d.Buyer));   // ended, not yet handed over: whose it is and who bears its costs until it is
+                }
                 lines.Add(TechText.T(d.State == TermState.Done ? "reallife_terms_deal_over_done" : d.State == TermState.Resigned ? "reallife_terms_deal_over_resigned"
                     : d.State == TermState.Dismissed ? "reallife_terms_deal_over_dismissed" : d.State == TermState.Gone ? "reallife_terms_deal_over_gone" : "reallife_terms_deal_over_lapsed"));
             }

@@ -23,6 +23,8 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private readonly List<Account> _accounts = new List<Account>(24);
+        private readonly HashSet<string> _picked = new HashSet<string>(StringComparer.Ordinal);   // the accounts (place|service) picked to be paid together; those that still owe
+        private readonly List<Account> _bills = new List<Account>(16);
         private readonly List<PlaceInfo> _places = new List<PlaceInfo>(16);
         private readonly int[] _raw = new int[60];
         private int _local;
@@ -103,6 +105,11 @@ namespace RealLifeOverhaul.Ui
                     DepositLeft = Math.Max(0, UtilitiesCatalogue.DepositBackBills - a.OnTime),
                     Offer = offer == AccountOffer.Reconnect ? UtilityOffer.Reconnect : offer == AccountOffer.None ? UtilityOffer.None : UtilityOffer.Apply
                 };
+                if (a.Owed <= 0)
+                {
+                    _picked.Remove(fact.Key);   // paid at the desk, by the auto debit or here: nothing is left to pick
+                }
+                fact.Picked = _picked.Contains(fact.Key);
                 if (a.Service != Service.Internet)
                 {
                     fact.Units = (a.Units / 1000f).ToString(a.Service == Service.Power ? "0.0" : "0.00", Inv);
@@ -409,6 +416,35 @@ namespace RealLifeOverhaul.Ui
             return done;
         }
 
+        private void Moved() => _local++;
+
+        // A bill picked or left, every bill that owes picked, or none: only a bill that is owed can be picked.
+        private bool PickBill(int a, int how)
+        {
+            if (how == 3)
+            {
+                _picked.Clear();
+                return true;
+            }
+            if (how == 2)
+            {
+                for (int i = 0; i < _accounts.Count; i++)
+                {
+                    if (_accounts[i].Owed > 0)
+                    {
+                        _picked.Add(_accounts[i].Place + "|" + (int)_accounts[i].Service);
+                    }
+                }
+                return true;
+            }
+            if (a < 0 || a >= _accounts.Count || _accounts[a].Owed <= 0)
+            {
+                return false;
+            }
+            string key = _accounts[a].Place + "|" + (int)_accounts[a].Service;
+            return how == 1 ? _picked.Add(key) : _picked.Remove(key);
+        }
+
         private bool Run(UtilitiesDirector director, UtilitiesAct act, int a, int b, int c, int d)
         {
             BroadbandCompany company = director.Company;
@@ -425,6 +461,22 @@ namespace RealLifeOverhaul.Ui
                     done = director.Pay(_accounts[a], today);
                     why = done ? null : "reallife_util_desk_no_cash";
                     break;
+                case UtilitiesAct.Pick:
+                    return PickBill(a, b);
+                case UtilitiesAct.PayAll:
+                    director.AskPayAll(Moved);   // asks first, in the game's question box; the page is read again when something was paid
+                    return false;
+                case UtilitiesAct.PayPicked:
+                    _bills.Clear();
+                    for (int i = 0; i < _accounts.Count; i++)
+                    {
+                        if (_accounts[i].Owed > 0 && _picked.Contains(_accounts[i].Place + "|" + (int)_accounts[i].Service))
+                        {
+                            _bills.Add(_accounts[i]);
+                        }
+                    }
+                    director.AskPay(_bills, Moved);
+                    return false;
                 case UtilitiesAct.Apply:
                     if (a < 0 || a >= _accounts.Count)
                     {

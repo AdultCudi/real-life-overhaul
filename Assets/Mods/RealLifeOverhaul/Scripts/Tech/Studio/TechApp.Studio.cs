@@ -109,7 +109,9 @@ namespace RealLifeOverhaul.Tech
                 ViewAction a = v.Others[i];
                 if (a.Danger)
                 {
-                    InfoBox.Button(rest, InfoBox.Negative, a.Key, () => GameConfirm.Show("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body",
+                    bool forget = a.Act == StudioAct.Forget;
+                    InfoBox.Button(rest, InfoBox.Negative, a.Key, () => GameConfirm.Show(forget ? "reallife_tech_confirm_forget_title" : "reallife_tech_confirm_withdraw_title",
+                        forget ? "reallife_tech_confirm_forget_body" : "reallife_tech_confirm_withdraw_body",
                         () => UiClone.Safe(() => Act(a.Act, place, id, a.Arg)), null, null, null, true, true));
                 }
                 else
@@ -175,6 +177,9 @@ namespace RealLifeOverhaul.Tech
                     return;
                 case StudioAct.Withdraw:
                     Do(() => _director.Withdraw(id));
+                    return;
+                case StudioAct.Forget:
+                    Do(() => _director.Forget(id));
                     return;
                 case StudioAct.Name:
                     // a game's own name on its page, or the concept's: an empty box hands the concept's name back to the studio

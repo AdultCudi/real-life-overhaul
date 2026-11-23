@@ -666,7 +666,7 @@ internal static partial class Program
         }
         ViewFigure takings = page.Figures.Count == 3 ? page.Figures[2] : null;
         Check(takings != null && takings.Wide && takings.Trend.Length == FirmsCatalogue.MonthDays - StudioViews.WeekDays + 1 && takings.Trend[takings.Trend.Length - 1] > takings.Trend[0]
-              && page.Main.Rows.Count == mine && page.Main.Rows.Count > 0 && page.More.Rows.Count == f.Rivals.Count && lacks && engineers && page.Facts.Count == 7 && page.Screen.Primary != null,
+              && page.Main.Rows.Count == mine && page.Main.Rows.Count > 0 && page.More.Rows.Count == f.Rivals.Count && lacks && engineers && page.Facts.Count == 8 && page.Screen.Primary != null,
             "studio pages: three figures with a week's takings for each day in a wide one, a row for each of the studio's games, the market's newest, the team with the support it lacks while players write in");
         Check(PageWords(page, out string missing), "studio pages: every word the page uses is written in English, Portuguese and Chinese (" + missing + ")");
     }
@@ -919,7 +919,7 @@ internal static partial class Program
                     StudioRules.ReportDay(g);
                     StudioRules.AfterLaunch(g, crew, 300, day + r);
                 }
-                StudioRules.HypeDay(g, day + r);
+                StudioRules.HypeDay(g, day + r, -1);
             }
         }
         return watch.Elapsed.TotalMilliseconds / rounds;
