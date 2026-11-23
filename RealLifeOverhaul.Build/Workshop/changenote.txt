@@ -1,4 +1,7 @@
-1.0.23
+1.0.24
 
 New
-- Your bank can now pay dividends every quarter, with the next sum shown and the tax taken. A new bank risk option adds slumps, runs and a stricter regulator, and the bank can open a credit card business with a Black card for you, and a trading desk.
+- Your broadband network can now be dug in Uptown and Cedar Heights and any district a game update adds, and a data centre there can take your own company's line. The Stocks app now says why a sector or a large company moved, sets each company's size by its market value every quarter, and your company's page shows your takings by business line and its statement for this quarter and the next. Gigs now pay by effort and skill, with less for each extra shift in a day and for your first week. A rota shift pays its whole basic wage as soon as the work is done, and every offer says how it is paid. Two options under the RLO interface make the needs bars larger and let you put them in a row along the top of the screen.
+
+Fixed
+- On the RLO interface a business's rating on Flare now shows what the old interface shows, and its address reads as a street name and not a raw key.
