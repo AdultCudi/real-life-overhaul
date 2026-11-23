@@ -114,6 +114,7 @@ namespace RealLifeOverhaul.Tech
         public const int HeldMost = 120, HeldKept = 800;   // lines kept, and the days a line stays: past the longest quarter and year the return can look back on
         public readonly List<HeldLine> Held = new List<HeldLine>(4);
         public int Seed, Next = 1;
+        public int Mended;   // what was put right once in a save: TermMend bits, so it never runs twice
         public readonly List<TermDeal> Deals = new List<TermDeal>(4);
 
         public TermDeal Of(int id)
@@ -150,6 +151,13 @@ namespace RealLifeOverhaul.Tech
             }
             return n;
         }
+    }
+
+    /// <summary>What a save from 1.0.19 had wrong with contracts, put right once at the first load.</summary>
+    public static class TermMend
+    {
+        public const int Handed = 1;   // a contract marked handed over though the business never left the player
+        public const int Fees = 2;     // bankers' retainers paid for a firm a contract held, given back
     }
 
     /// <summary>What the player picked on the page: the way to be paid, its size, and for an earn-out its target and what it counts.</summary>
@@ -468,7 +476,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (!w.FirmHere)
             {
-                End(d, TermState.Gone, TermEventKind.Gone, into);   // the business is no longer the player's: closed or sold by other means
+                End(d, TermState.Gone, TermEventKind.Gone, into, on);   // the business is no longer the player's: closed or sold by other means
                 d.Handed = true;
                 return;
             }
@@ -502,7 +510,7 @@ namespace RealLifeOverhaul.Tech
                     }
                     else if (++d.Strikes >= SaleTermCatalogue.StrikesMost)
                     {
-                        End(d, TermState.Dismissed, TermEventKind.Dismissed, into);
+                        End(d, TermState.Dismissed, TermEventKind.Dismissed, into, on);
                         into.Add(new TermEvent { Deal = d, Kind = TermEventKind.Remit });   // the month's profit is the owner's all the same
                         return;
                     }
@@ -513,7 +521,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (on >= d.EndDay)
                 {
-                    End(d, TermState.Done, TermEventKind.Ended, into);
+                    End(d, TermState.Done, TermEventKind.Ended, into, on);
                 }
             }
             into.Add(new TermEvent { Deal = d, Kind = TermEventKind.Remit });
@@ -523,14 +531,14 @@ namespace RealLifeOverhaul.Tech
         /// The contract ends otherwise than at its term: the pay stops, the years not yet vested and an earn-out not yet judged are lost, and the business is to be handed over.
         /// What was already paid stays the player's.
         /// </summary>
-        public static void End(TermDeal d, int state, TermEventKind why, List<TermEvent> into)
+        public static void End(TermDeal d, int state, TermEventKind why, List<TermEvent> into, int day = 0)
         {
             if (!d.Open)
             {
                 return;
             }
             d.State = state;
-            d.EndDay = Math.Min(d.EndDay, d.Seen);
+            d.EndDay = Math.Min(d.EndDay, day > 0 ? day : d.Seen);   // the day it ended: what the firm makes after it is the owner's to the last day, see Cover
             if (d.EarnState == 0)
             {
                 d.EarnState = 2;
@@ -594,14 +602,70 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>The player resigns a contract: the same ending as a dismissal, by the player's own word.</summary>
-        public static bool Resign(TermDeal d, List<TermEvent> into)
+        public static bool Resign(TermDeal d, List<TermEvent> into, int day = 0)
         {
             if (d == null || d.Kind != TermKind.Boss || !d.Open)
             {
                 return false;
             }
-            End(d, TermState.Resigned, TermEventKind.Ended, into);
+            End(d, TermState.Resigned, TermEventKind.Ended, into, day);
             return true;
+        }
+
+        /// <summary>
+        /// What the owner of a contract's firm pays of a loss over some days (cents, positive; 0 for a profit). While the contract runs the owner carries a loss up to
+        /// <paramref name="cap"/>, the boss the rest; the days after the contract ended (<paramref name="gapDays"/>, the firm not yet handed over) are the owner's whole, since the player is
+        /// no longer paid or bound to run it. <paramref name="sum"/> is the firm's profit over <paramref name="days"/> days, negative for a loss.
+        /// </summary>
+        public static long Cover(long sum, int days, int gapDays, long cap)
+        {
+            if (sum >= 0 || days <= 0)
+            {
+                return 0L;
+            }
+            gapDays = Math.Max(0, Math.Min(days, gapDays));
+            long inGap = -sum * gapDays / days;
+            long inTerm = -sum - inGap;
+            return inGap + Math.Min(inTerm, Math.Max(0L, cap));
+        }
+
+        /// <summary>The key of the short words that finish "it cannot pass yet, because ..." for what stands in the way of a hand-over (a refusal key of the sales of
+        /// businesses, or <see cref="WhyBoss"/>).</summary>
+        public static string WaitKey(string refusal)
+        {
+            string r = refusal ?? string.Empty;
+            if (r.EndsWith("_inside", StringComparison.Ordinal))
+            {
+                return "reallife_terms_wait_inside";
+            }
+            if (r.EndsWith("_vehicle", StringComparison.Ordinal))
+            {
+                return "reallife_terms_wait_vehicle";
+            }
+            if (r.EndsWith("_gift", StringComparison.Ordinal))
+            {
+                return "reallife_terms_wait_gift";
+            }
+            if (r.EndsWith("_busy", StringComparison.Ordinal))
+            {
+                return "reallife_terms_wait_busy";
+            }
+            if (r.EndsWith("_stock", StringComparison.Ordinal) || r.EndsWith("_lot", StringComparison.Ordinal))
+            {
+                return "reallife_terms_wait_stock";
+            }
+            return r == WhyBoss ? "reallife_terms_wait_off" : "reallife_terms_wait_other";
+        }
+
+        /// <summary>The days of a stretch (after <paramref name="since"/>, up to <paramref name="day"/>) that fall after a contract ended: its business was still the
+        /// player's but no longer under contract.</summary>
+        public static int GapDays(TermDeal d, int since, int day)
+        {
+            if (d == null || d.Open)
+            {
+                return 0;
+            }
+            return Math.Max(0, day - Math.Max(since, d.EndDay));
         }
 
         /// <summary>The most a finished or running deal may ever have paid: its written rules' most. Used by the checks and the director's log.</summary>

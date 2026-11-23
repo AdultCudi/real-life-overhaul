@@ -34,7 +34,16 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 TermDeal contract = _d.ContractOf(place);
-                _m.Left = contract != null ? new[] { ContractCard(contract), SharesCard(firm) } : new[] { OffersCard(firm, e), SharesCard(firm) };
+                if (contract != null)
+                {
+                    // a firm a contract holds is the buyer's: no offers, no shares to sell, no way to the market, said and not offered
+                    var closed = new TechCard(_runs, TechText.T("reallife_ui_tech_exit_market"));
+                    closed.Say(TechText.Fill("reallife_terms_exit_closed", "firm", firm.File.Name, "buyer", contract.Buyer));
+                    _m.Left = new[] { ContractCard(contract) };
+                    _m.Right = new[] { closed.Build() };
+                    return;
+                }
+                _m.Left = new[] { OffersCard(firm, e), SharesCard(firm) };
                 _m.Right = new[] { MarketCard(firm, e) };
             }
 

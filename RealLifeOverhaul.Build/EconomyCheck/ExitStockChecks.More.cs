@@ -285,8 +285,8 @@ internal static partial class Program
             "money: the older sale of a firm's shares and the offer's money are booked as they were");
         // the same takings never feed two stocks
         string links = ModSource(@"Wiring\ListingLinks.cs");
-        Check(Regex.IsMatch(links, @"private static void Mine\(\)[\s\S]{0,600}ExitStockLinks\.IsListed") && Regex.IsMatch(links, @"private static void Places\([\s\S]{0,500}ExitStockLinks\.IsListed")
-              && Regex.IsMatch(links, @"private static void TradeTakings[\s\S]{0,900}ExitStockLinks\.IsListed"),
+        Check(Regex.IsMatch(links, @"private static void Mine\(\)[\s\S]{0,600}!Apart\(") && Regex.IsMatch(links, @"private static void Places\([\s\S]{0,500}!Apart\(")
+              && Regex.IsMatch(links, @"private static void TradeTakings[\s\S]{0,900}!Apart\(") && Regex.IsMatch(links, @"private static bool Apart\([\s\S]{0,200}ExitStockLinks\.IsListed"),
             "money: a firm that listed on its own is kept out of the whole company's books, places and trades: its takings feed one stock, and a take over of the company does not hand it over");
         // the dividend stays the firm's: the stock keeps no reserve, so a dividend cannot be paid on the stock and on the firm's page
         SxFirm h = SxMake(7403);

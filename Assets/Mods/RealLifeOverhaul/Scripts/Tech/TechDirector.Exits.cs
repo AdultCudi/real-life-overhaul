@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Tech
             LoadSaleTerms();
             _tenants.Clear();
             RebuildTenants();
+            MendContracts();   // once in a save: what the first contracts left wrong is put right
             _agreeTry = AnyAgreed();   // a sale agreed before the save was made completes at the first look outside
             try
             {
@@ -218,6 +219,11 @@ namespace RealLifeOverhaul.Tech
                 string place = firm.File.Place;
                 FirmExit e = _exits.Exit(place, true);
                 Cap c = _venture.CapOf(place);
+                if (e.OnTheWay && Contracted(place))
+                {
+                    CancelWay(firm, e);   // a firm a contract holds is its owner's: a way to the market begun for it ends here, its retainer back
+                    continue;
+                }
                 ExitRules.Round(c, e, day);
                 if (ExitRules.Lapse(e, day) > 0)
                 {
@@ -226,9 +232,10 @@ namespace RealLifeOverhaul.Tech
                 ExitRules.Pricing priced = ExitRules.Price(_exits, e, day);
                 if (priced == ExitRules.Pricing.Priced && ExitStockRules.ListBlocked(c) != ExitStockRules.BlockedNone)
                 {
+                    long back = GiveFeeBack(firm.File.Name, firm.Reg, e);   // not the market's price: the retainer goes back
                     e.Stage = ListStage.CalledOff;   // money of the investors' is missing from the firm's account: the public is not sold shares of a firm that owes
                     e.Called = day;
-                    TellTech(NotificationType.Warning, "reallife_exit_note_called_off_owed", Data("firm", firm.File.Name), TabFunding, ExitRow + place);
+                    TellTech(NotificationType.Warning, "reallife_exit_note_called_off_owed", Data("firm", firm.File.Name, "fee", TechText.Cents(back)), TabFunding, ExitRow + place);
                     ChangedTech();
                 }
                 else if (priced == ExitRules.Pricing.Priced)
@@ -323,6 +330,13 @@ namespace RealLifeOverhaul.Tech
             ExitOffer o = e != null ? e.OfferOf(offerId) : null;
             if (firm == null || o == null || Save == null || firm.Reg == null)
             {
+                return false;
+            }
+            if (ContractRefused(place, firm.File.Name))
+            {
+                e.Offers.Clear();   // a firm already sold on a contract is sold once: any offer left standing for it goes
+                e.Agreed = null;
+                ChangedTech();
                 return false;
             }
             int day = Save.Day;
@@ -475,7 +489,7 @@ namespace RealLifeOverhaul.Tech
         internal void ListWholeCompany(string place)
         {
             FirmPlace firm = FirmOf(place);
-            if (firm == null)
+            if (firm == null || ContractRefused(place, firm.File.Name))
             {
                 return;
             }
@@ -566,9 +580,9 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = FirmOf(place);
             FirmExit e = _exits != null ? _exits.Exit(place, true) : null;
-            if (firm == null || e == null || Save == null || firm.Reg == null)
+            if (firm == null || e == null || Save == null || firm.Reg == null || ContractRefused(place, firm.File.Name))
             {
-                return false;
+                return false;   // before any fee: a firm a contract holds is its owner's and cannot be taken to the market
             }
             int owed = ExitStockRules.ListBlocked(_venture.CapOf(place));
             if (owed != ExitStockRules.BlockedNone)
@@ -603,7 +617,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = FirmOf(place);
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
-            if (firm == null || e == null || Save == null || e.Stage != ListStage.Bankers)
+            if (firm == null || e == null || Save == null || e.Stage != ListStage.Bankers || ContractRefused(place, firm.File.Name))
             {
                 return false;
             }
@@ -638,7 +652,8 @@ namespace RealLifeOverhaul.Tech
             Cap c = CapFor(place, true);
             if (c == null)
             {
-                e.Stage = ListStage.None;
+                // The firm cannot take the listing (a contract holds it): the way ends here and the bankers' retainer goes back, never kept for a listing that did not happen.
+                CancelWay(firm, e);
                 return;
             }
             long net = ExitRules.List(c, e, day);
@@ -653,6 +668,13 @@ namespace RealLifeOverhaul.Tech
                 + "): the public bought " + ExitCatalogue.FloatBp
                          + " bp for " + TechText.Cents(Level(e.Gross)) + ", " + TechText.Cents(Level(net)) + " reached the firm; the player's shares are locked up to day " + e.LockTo + ".");
             ChangedTech();
+        }
+
+        // A way to the market that cannot go on: the retainer is paid back, the way is closed, and the player is told.
+        private void CancelWay(FirmPlace firm, FirmExit e)
+        {
+            long back = GiveFeeBack(firm.File.Name, firm.Reg, e);
+            TellTech(NotificationType.Warning, "reallife_exit_note_way_ended", Data("firm", firm.File.Name, "fee", TechText.Cents(back)), TabFunding, ExitRow + firm.File.Place);
         }
 
         /// <summary>The days the player's shares stay locked up after a listing; 0 when they are free.</summary>
@@ -750,6 +772,10 @@ namespace RealLifeOverhaul.Tech
             if (e == null || FirmOf(place) == null)
             {
                 return "reallife_tech_desk_exit_why_none";
+            }
+            if (Contracted(place))
+            {
+                return "reallife_terms_why_contract_desk";   // a firm a contract holds has no offer to hear and no listing to hold
             }
             return which == 0 ? (e.Offers.Count > 0 ? null : "reallife_tech_desk_exit_why_none") : (e.Stage == ListStage.Bankers ? null : "reallife_tech_desk_exit_why_none");
         }
