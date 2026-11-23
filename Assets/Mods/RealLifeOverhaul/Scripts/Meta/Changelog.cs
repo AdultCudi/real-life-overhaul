@@ -20,10 +20,10 @@ namespace RealLifeOverhaul.Meta
     public static class Changelog
     {
         /// <summary>The version this table was last brought up to; used when the assembly carries no version of its own.</summary>
-        public const string Latest = "1.0.21";
+        public const string Latest = "1.0.22";
 
         /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
-        public const int Unnumbered = 100215;   // Latest's order + 5: it moves up with Latest
+        public const int Unnumbered = 100225;   // Latest's order + 5: it moves up with Latest
 
         public sealed class Entry
         {
@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Meta
         public static readonly Entry[] All =
         {
             new Entry(Unnumbered, "reallife_changes_next_title", "reallife_changes_next"),
+            new Entry(100220, "reallife_changes_100_22_title", "reallife_changes_100_22"),
             new Entry(100210, "reallife_changes_100_21_title", "reallife_changes_100_21"),
             new Entry(100200, "reallife_changes_100_20_title", "reallife_changes_100_20"),
             new Entry(100190, "reallife_changes_100_19_title", "reallife_changes_100_19"),
