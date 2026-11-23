@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Tech
                     .Add(p.Joined).Add(p.LevelDay).Add(p.ReviewDay).Add(p.Rating).Add(p.LowRuns).Add(p.Work).Add(p.NonCompete).Add(p.NoticeEnd).Add(p.Leaving)
                     .Add(p.CourseSkill).Add(p.CourseEnd).Add(p.Exam).Add(p.RaiseAsk).Add(p.RecognisedDay).Add(p.PoachDay).Add(p.PoachBp).Add(p.PoachBy).Place(p.Place)
                     .Add(p.Options).Add(p.Record).Add(p.Name).Add(p.Wage).Add(p.Female).Add(p.Age).Add(p.Sick).Add(p.AskEnd)
-                    .Add(p.WorkDay).Add(p.WorkHours).Add(p.PrevDay).Add(p.PrevHours);
+                    .Add(p.WorkDay).Add(p.WorkHours).Add(p.PrevDay).Add(p.PrevHours).Add(p.Pinned);
             }
             w.Part('m');
             for (int i = 0; i < f.Moves.Count && i < MoveRules.RecordsMost; i++)
@@ -96,7 +96,8 @@ namespace RealLifeOverhaul.Tech
                     WorkDay = x.Int(-1),
                     WorkHours = Math.Max(0, x.Int()),
                     PrevDay = x.Int(-1),
-                    PrevHours = Math.Max(0, x.Int())
+                    PrevHours = Math.Max(0, x.Int()),
+                    Pinned = x.Bool()   // appended last: a save from before it has nobody pinned
                 };
                 if (p.Id.Length > 0 && seen.Add(p.Id))
                 {

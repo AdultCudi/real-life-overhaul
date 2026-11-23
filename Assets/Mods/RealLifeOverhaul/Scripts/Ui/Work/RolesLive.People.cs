@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.Tech;
@@ -846,6 +846,14 @@ namespace RealLifeOverhaul.Ui
             string why = plan.Any ? null : w.T(ids.Count == 0 ? "reallife_roles_raise_nobody" : "reallife_roles_raise_none",
                 "Nobody shown can be raised now: each was raised lately, is on notice or is at the top of the pay scale.");
             t.Acts.Add(Act(RaiseAll, 0, w.F("reallife_work_raise_all", "Raise everyone by {percent}", "percent", percent), UiButtonKind.Primary, UiIcon.Check, false, why));
+            for (int i = 0; i < d.FirmPlaces.Count && i < 6; i++)
+            {
+                FirmPlace fp = d.FirmPlaces[i];
+                bool assigns = fp.File.Assign;
+                t.Acts.Add(Act(AssignRoles, i, TechText.Fill(assigns ? "reallife_tech_assign_on" : "reallife_tech_assign_off", "firm", fp.File.Name),
+                    assigns ? UiButtonKind.Primary : UiButtonKind.Secondary, assigns ? UiIcon.Check : UiIcon.Close, false,
+                    assigns && d.Assigner(fp.File.Place) == null ? TechText.T("reallife_tech_assign_nobody") : null));
+            }
             bool on = Settings.EconomyCompanyMatchRivals;
             t.Acts.Add(Act(MatchRivals, 0, w.T(on ? "reallife_work_match_on" : "reallife_work_match_off", on ? "Matching rivals' offers: on" : "Matching rivals' offers: off"),
                 on ? UiButtonKind.Primary : UiButtonKind.Secondary, on ? UiIcon.Check : UiIcon.Close));
@@ -958,6 +966,16 @@ namespace RealLifeOverhaul.Ui
                         w.T("reallife_work_set_role", "Set this role"), UiButtonKind.Secondary, UiIcon.Check,
                         false, moves[at] == p.Role ? w.T("reallife_work_already_set", "It is set so.") : null) });
                 }
+                if (d.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
+                {
+                    career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_tech_assign_label", "Role assigned"),
+                        Value = TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support",
+                            "by", assignedBy, "day", assignedDay.ToString()) });
+                }
+                career.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_tech_pin_label", "Role"), Act = Act(PinRole, 0,
+                    w.T(p.Pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off",
+                        p.Pinned ? "Kept by you: unpin" : "Let the manager assign: pin it"), UiButtonKind.Secondary,
+                        p.Pinned ? UiIcon.Check : UiIcon.Close) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_experience", "Experience"),
                     Value = TechText.Years(p.YearsDays + (day - p.Joined) * 365 / Math.Max(60, year)) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_school", "Schooling"), Value = TechText.School(p.School) });
@@ -1160,6 +1178,16 @@ namespace RealLifeOverhaul.Ui
                 case BriefCrew: return BriefCrewSearch(d, view);
                 case RaiseAll: return AskRaiseAll(d, view);
                 case MatchRivals: Settings.SetMatchRivals(!Settings.EconomyCompanyMatchRivals); return true;
+                case AssignRoles:
+                {
+                    string at = act.Arg >= 0 && act.Arg < d.FirmPlaces.Count ? d.FirmPlaces[act.Arg].File.Place : null;
+                    if (at != null)
+                    {
+                        d.SetAssign(at, !d.AssignOn(at));
+                    }
+                    return at != null;
+                }
+                case PinRole: d.SetPinned(key, !(person != null && person.File.Pinned)); return key != null;
                 case Match: d.AnswerRival(key, true); return true;
                 case LetThem: d.AnswerRival(key, false); return true;
                 case GiveRise: return key != null && d.GiveRise(key, act.Arg);

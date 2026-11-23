@@ -134,6 +134,15 @@ namespace RealLifeOverhaul.Tech
                     Refresh();
                 });
             }
+            for (int i = 0; box.HasSwitch && i < _director.FirmPlaces.Count && i < 6; i++)
+            {
+                string place = _director.FirmPlaces[i].File.Place;
+                box.Switch(TechText.Fill("reallife_tech_assign_switch", "firm", _director.FirmPlaces[i].File.Name), _director.AssignOn(place), on =>
+                {
+                    _director.SetAssign(place, on);
+                    Refresh();
+                });
+            }
             int limit = RivalMatchRules.Limit(Settings.EconomyCompanyAgreeUpTo, Economy.CompanyCatalogue.AgreeUpToMost);
             box.Note(limit > 0 ? TechText.Fill("reallife_roles_match_note", "limit", limit + "%") : TechText.T("reallife_roles_match_note_off"));
         }
@@ -320,6 +329,12 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Role(p.Role));
             }
+            if (_director.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
+            {
+                box.Line(TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support", "by", assignedBy, "day", assignedDay.ToString()));
+            }
+            bool pinned = p.Pinned;
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off", () => Do(() => _director.SetPinned(key, !pinned)));
             bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
             box.Line(promote
                 ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))
