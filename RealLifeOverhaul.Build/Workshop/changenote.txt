@@ -1,4 +1,7 @@
-1.0.20
+1.0.21
+
+New
+- Giving now has seven causes, from a night shelter to a district's upkeep, gifts as big as your cash allows, names on halls and the deduction carried forward over years. On a call or a person's page, Help with money lets you pay a rent, clear a debt, back a business, pay for a course or buy a car or a home, and some people will say no.
 
 Fixed
-- A help-wanted board stays at the building it first stood at instead of moving across the map, a friend's meeting place is given as its address with the district, and nobody is thrown down when you get on a bicycle. A business's rating and review count on Flare now keep every review that went up, with its stars, instead of losing them when the feed clears old posts. A listed company's sector is read from the quarter's own takings, reviewed once when you load, and its page shows what the last review saw and what a change needs.
+- The purchasing tab in BizMan now says why no plan can be added (one plan each, started by phoning an importer) and what to do. Hovering a shift or a name on the schedule, the picker, or the Company app's Staff and Rota shows the employee's card with their asks. Several screens no longer cut text or show empty columns. Hair is drawn after the street light glow so it no longer looks bald in the haze, and a new option, Street light haze, switches that glow off.
