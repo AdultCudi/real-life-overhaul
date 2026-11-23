@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "괜찮아요. 다음에 또 해요.",
   "reallife_social_favour_refused": "괜찮아요. 다른 사람한테 물어볼게요.",
   "reallife_social_lift_nocar": "차를 안 갖고 왔어? 괜찮아, 지하철 탈게. 어쨌든 고마워.",
-  "reallife_social_lift_coming": "살려 줘서 고마워. {place} 앞에 있을게. 찾아봐.",
-  "reallife_social_moving_agreed": "최고예요. {time}에 {place} 앞에서요. 피자 한 판 빚질게요.",
+  "reallife_social_lift_coming": "살려 주셔서 감사합니다. 지금 {place} 앞에 있습니다. 지도의 행사 안내 아래에 표시해 두었습니다. 기다리겠습니다.",
+  "reallife_social_moving_agreed": "정말 최고십니다. {place} 앞, {time}에 뵙겠습니다. 지도의 행사 안내 아래에 표시해 두었습니다. 피자 한 판 빚지겠습니다.",
   "reallife_social_loan_ask_1": "좀 어색한데, 이번 달에 돈이 모자라. {amount} 빌려줄 수 있어? 일주일쯤 뒤에 꼭 갚을게.",
   "reallife_social_loan_ask_2": "부탁하기 싫은데, {amount} 빌려 줄 수 있을까? 급한 일이 생겼는데 월급일은 일주일 뒤야.",
   "reallife_social_loan_thanks_1": "고마워. 정말로. 꼭 갚을게, 약속해.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "테스트 실패: 도시의 사업체 순회가 건물이 없는 기록에 걸렸습니다. 로그에 어느 것인지 나옵니다.",
   "reallife_hire_test_orphan_off": "먼저 저장 파일을 불러오세요. 이 테스트는 Going Public 세션에서는 실행되지 않습니다.",
   "reallife_changes_next_title": "다음 버전",
-  "reallife_changes_next": "아직 없음.",
+  "reallife_changes_next": "수정: 구인 게시판은 지도를 가로질러 옮겨 가지 않고 처음 서 있던 건물에 그대로 남아 있으며, 친구와 만나기로 한 장소는 주소와 구역으로 표시되고, 자전거에 올라타도 아무도 내던져지지 않습니다. Flare에서 사업체의 평점과 리뷰 수는 이제 오른 리뷰를 별점과 함께 모두 보관하며, 피드가 오래된 글을 정리할 때 잃지 않습니다. 상장 회사의 분야는 분기 매출 자체에서 읽히고 불러올 때 한 번 검토되며, 회사 페이지에는 마지막 검토가 본 내용과 변화에 필요한 조건이 표시됩니다.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "수정: 공공사업소를 가질 수 있는 건물이 모두 내 것일 때, 전기와 수도 계정은 같은 요금으로 공공요금 앱에서 전화로 신청하고 다시 연결하며, 알림이 그렇다고 말합니다. 건물이 비면 사업소가 다시 열리며 앱이 그곳을 알려 줍니다. 수정: 지원을 철회한 뒤 같은 직책에 다시 지원하면 커리어 앱이 철회된 지원을 열었고 면접에 닿을 수 없었습니다. 이제 지원마다 자기 줄이 있으며, 면접, 제안, 철회는 살아 있는 지원에 갑니다. 수정: 도시에 없는 건물을 가리키는 사업체 기록 (다른 모드가 남겨 둘 수 있음)이 있는 저장 파일은 불러올 때마다 테크 업계를 끄지 않습니다. 이제 모드는 도시의 사업체를 읽는 곳마다 그런 기록을 빼고, 주소를 로그에 한 번 적고, 그 기록은 아무것도 바꾸지 않습니다.",
   "reallife_co_mass_raise": "임금 인상하기",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "비어 있음",
   "reallife_ui_estate_roll_sub_flats": "건물 {buildings}동과 호실 {flats}개, 전체 {units}개 단위",
   "reallife_ui_estate_roll_waiting": "사용자를 기다리는 것 {waiting}건",
-  "reallife_ui_estate_roll_waiting_clear": "사용자를 기다리는 것 없음"
+  "reallife_ui_estate_roll_waiting_clear": "사용자를 기다리는 것 없음",
+  "reallife_lst_box_seen": "지난 검토는 {day}일에 {seen}의 매출을 기록했습니다. {sector} 분야는 다른 분야가 분기 매출에서 {need}포인트 앞설 때에만 바뀝니다.",
+  "reallife_lst_box_seen_none": "이 회사의 매출은 아직 어떤 검토에서도 확인되지 않았습니다. {sector} 분야는 다른 분야가 분기 매출에서 {need}포인트 앞설 때에만 바뀝니다.",
+  "reallife_lst_box_seen_short": "그때 {leader} 분야가 {gap}포인트 앞섰지만, 필요한 {need}포인트에는 못 미쳤습니다."
 }

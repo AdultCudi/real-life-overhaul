@@ -9,6 +9,21 @@ namespace RealLifeOverhaul
     /// <summary>The relationship model's rules: what each thing is worth in points of 0 to 100, when a stage is reached and lost, neglect.</summary>
     public static class SocialRules
     {
+        /// <summary>
+        /// A meeting place as somebody can find it on the map: the address as the game writes it (number and street) with its district,
+        /// and the business's name before it when there is one, as the game composes a business's name ("Name (address)"). A name alone,
+        /// or a name with a bare number, is not a place anybody can search for.
+        /// </summary>
+        public static string PlaceWords(string business, string address, string district)
+        {
+            string where = string.IsNullOrEmpty(district) ? address ?? string.Empty : string.IsNullOrEmpty(address) ? district : address + ", " + district;
+            if (string.IsNullOrEmpty(business) || business == address)
+            {
+                return where;
+            }
+            return string.IsNullOrEmpty(where) ? business : business + " (" + where + ")";
+        }
+
         public const int BaseCast = 8;                // people a save starts with: Mom, Alex and one for each of six places
         public const int MaxCast = 400;               // people a save can ever know; past it nobody new comes
         public const int MeetGapDays = 1;             // game days at least between two new faces

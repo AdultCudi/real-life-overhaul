@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "Geen probleem. Misschien de volgende keer.",
   "reallife_social_favour_refused": "Dat is prima. Ik vraag het wel rond.",
   "reallife_social_lift_nocar": "Je hebt de auto niet bij je? Maakt niet uit, ik pak de metro. Bedankt toch.",
-  "reallife_social_lift_coming": "Je bent een redder in nood. Ik ben buiten {place}. Ik houd mijn ogen open.",
-  "reallife_social_moving_agreed": "Je bent de beste. Buiten {place}, {time}. Ik ben je een pizza verschuldigd.",
+  "reallife_social_lift_coming": "Je bent een redder in nood. Ik sta buiten {place}. Het staat op je kaart onder Wat is er te doen. Ik hou een oogje voor je open.",
+  "reallife_social_moving_agreed": "Je bent de beste. Buiten {place}, {time}. Het staat op je kaart onder Wat is er te doen. Ik ben je een pizza verschuldigd.",
   "reallife_social_loan_ask_1": "Dit is ongemakkelijk. Ik kom deze maand tekort. Kun je me {amount} lenen? Ik betaal het over een week of zo terug.",
   "reallife_social_loan_ask_2": "Ik haat het om te vragen, maar kan ik {amount} lenen? Er is iets tussengekomen en de betaaldag is pas over een week.",
   "reallife_social_loan_thanks_1": "Dank je. Echt waar. Je krijgt het terug, ik beloof het.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test mislukt: een ronde langs de bedrijven van de stad struikelde over een record zonder gebouw. Het logboek zegt welke.",
   "reallife_hire_test_orphan_off": "Laad eerst een savegame. Deze test draait niet in een sessie van Going Public.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: een vacaturebord blijft staan bij het gebouw waar het eerst stond in plaats van over de kaart te verhuizen, de ontmoetingsplek van een vriend wordt gegeven als adres met de wijk erbij, en niemand wordt van de fiets gegooid als je op een fiets stapt. De beoordeling en het aantal reviews van een bedrijf op Flare bewaren nu elke review die omhoog ging, met de sterren erbij, in plaats van ze kwijt te raken als de feed oude berichten wist. De sector van een beursgenoteerd bedrijf wordt afgeleid van de omzet van het kwartaal zelf, eenmaal beoordeeld bij het laden, en de pagina toont wat de laatste beoordeling zag en wat een verandering nodig heeft.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Opgelost: als alle gebouwen die het nutsbedrijf kunnen huisvesten van jou zijn, vraag je stroom- en wateraansluitingen aan en laat je ze weer aansluiten in de Nutsvoorzieningen-app, telefonisch, voor dezelfde prijzen, en de meldingen zeggen dat; zodra een gebouw vrij is, gaat het kantoor weer open en zegt de app waar. Opgelost: na het intrekken van een sollicitatie en opnieuw solliciteren op dezelfde functie opende de Carrière-app de ingetrokken sollicitatie en was het gesprek niet te bereiken. Elke sollicitatie heeft nu een eigen regel, en het gesprek, het aanbod en het intrekken gaan naar de lopende. Opgelost: een opslag met een bedrijfsrecord waarvan de stad het gebouw niet heeft (een andere mod kan er een achterlaten) zet de techsector niet meer bij elke keer laden uit. De mod slaat zo'n record nu over overal waar hij de bedrijven van de stad leest, noemt het adres één keer in het logboek en verandert er niets aan.",
   "reallife_co_mass_raise": "Een loonsverhoging geven",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "Leeg",
   "reallife_ui_estate_roll_sub_flats": "{buildings} gebouw(en) en {flats} flat(s), {units} eenheid(en) in totaal",
   "reallife_ui_estate_roll_waiting": "{waiting} wacht(en) op jou",
-  "reallife_ui_estate_roll_waiting_clear": "niets wacht op jou"
+  "reallife_ui_estate_roll_waiting_clear": "niets wacht op jou",
+  "reallife_lst_box_seen": "De laatste kwartaalbeoordeling, op dag {day}, zag een omzet van {seen}. {sector} verandert alleen als een andere sector het met {need} punten omzet over het kwartaal overtreft.",
+  "reallife_lst_box_seen_none": "Nog geen beoordeling heeft de omzet van dit bedrijf gezien. {sector} verandert alleen als een andere sector het met {need} punten omzet over het kwartaal overtreft.",
+  "reallife_lst_box_seen_short": "{leader} liep toen met {gap} punten voor, minder dan de {need} die nodig was."
 }

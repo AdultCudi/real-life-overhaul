@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Markets
         // whose largest takings had changed half a year behind the quarter's report it was meant to follow.
         public const int LeadReviews = 1;      // reviews in a row a sector must lead the one the company is in, before it moves...
         public const double LeadShare = 0.1;   // ...by at least this share of the takings
+        public const int RuleVersion = 2;      // 2: a review reads the quarter's own takings, not the average that still holds the old mix; a company under an older rule is reviewed once at the load
+        public const int QuarterDaysMin = 5;   // market mornings of its own takings a review needs to read them instead of the average
         private const int Sectors = (int)MarketSector.Count;
 
         // Trades no catalogue company is in, and the sector the market files them under.
@@ -137,6 +139,7 @@ namespace RealLifeOverhaul.Markets
             {
                 o.Mix[t] *= keep;
             }
+            o.QuarterDays++;
             if (env.TradeOf == null || env.TradeSales == null)
             {
                 return;
@@ -148,6 +151,7 @@ namespace RealLifeOverhaul.Markets
                 if (t >= 0 && t < o.Mix.Length && env.TradeSales[i] > 0)
                 {
                     o.Mix[t] += add * env.TradeSales[i];
+                    o.Quarter[t] += env.TradeSales[i];
                     o.Had |= 1 << (int)OfTrade[t];
                 }
             }
@@ -189,6 +193,8 @@ namespace RealLifeOverhaul.Markets
             o.Mixed = true;
             o.Lead = -1;
             o.LeadCount = 0;
+            Array.Clear(o.Quarter, 0, o.Quarter.Length);
+            o.QuarterDays = 0;
             return true;
         }
 
@@ -196,7 +202,7 @@ namespace RealLifeOverhaul.Markets
         /// A review: the sector the company moves to, or -1 to stay, and the trade it is then most in. With
         /// <paramref name="books"/> a quarter's books already stand behind the mix, so a lead needs no second review.
         /// </summary>
-        public static int Review(OwnListing o, int current, bool books, out int trade)
+        public static int Review(OwnListing o, int current, bool books, out int trade, int day = -1)
         {
             trade = -1;
             if (o == null || !o.Mixed)
@@ -204,11 +210,18 @@ namespace RealLifeOverhaul.Markets
                 return -1;
             }
             var bySector = new double[Sectors];
-            double all = BySector(o.Mix, bySector);
+            // The quarter's own takings when a few days stand behind them: the average still holds a tail of what the company earned before, so a company
+            // that had been mostly in one sector for a whole quarter could still show a lead of a few points, short of a tenth, in its old sector.
+            double[] read = o.QuarterDays >= QuarterDaysMin ? (double[])o.Quarter.Clone() : o.Mix;   // a copy: the quarter starts afresh below
+            double all = BySector(read, bySector);
             int had = o.Had;
             o.Had = 0;
+            Array.Clear(o.Quarter, 0, o.Quarter.Length);
+            o.QuarterDays = 0;
+            o.Rule = RuleVersion;
+            Saw(o, bySector, all, day);
             // Only a sector it earned in since the last review can lead: what it used to earn is fading from the mix.
-            int leader = Leading(o.Mix, out int top, had);
+            int leader = Leading(read, out int top, had);
             bool inSector = current >= 0 && current < Sectors;
             if (all <= 0.0 || leader < 0 || leader == current)
             {
@@ -234,6 +247,73 @@ namespace RealLifeOverhaul.Markets
             o.LeadCount = 0;
             trade = top;
             return leader;
+        }
+
+        // What the review saw, for the company's page: each sector's share of the takings, in bp.
+        private static void Saw(OwnListing o, double[] bySector, double all, int day)
+        {
+            if (all <= 0.0)
+            {
+                return;
+            }
+            o.SeenDay = Math.Max(0, day);
+            for (int sec = 0; sec < Sectors; sec++)
+            {
+                o.SeenBp[sec] = (int)Math.Round(bySector[sec] / all * 10000.0);
+            }
+        }
+
+        /// <summary>The sectors the last review saw takings in, the most first, up to as many as <paramref name="sectors"/> holds; how many. Nothing before a review has seen any.</summary>
+        public static int SeenTop(OwnListing o, int[] sectors, int[] bps)
+        {
+            if (o == null || o.SeenDay < 0)
+            {
+                return 0;
+            }
+            var left = (int[])o.SeenBp.Clone();
+            int n = 0;
+            while (n < sectors.Length && n < bps.Length)
+            {
+                int best = -1;
+                for (int sec = 0; sec < Sectors; sec++)
+                {
+                    if (left[sec] > 0 && (best < 0 || left[sec] > left[best]))
+                    {
+                        best = sec;
+                    }
+                }
+                if (best < 0)
+                {
+                    break;
+                }
+                sectors[n] = best;
+                bps[n++] = left[best];
+                left[best] = 0;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// The sector that led the company's at the last review by less than a move needs, and its lead in bp. False when none did (the company was
+        /// in the lead, or it moved).
+        /// </summary>
+        public static bool SeenShort(OwnListing o, int current, out int leader, out int gapBp)
+        {
+            leader = -1;
+            gapBp = 0;
+            if (o == null || o.SeenDay < 0 || current < 0 || current >= Sectors)
+            {
+                return false;
+            }
+            for (int sec = 0; sec < Sectors; sec++)
+            {
+                if (sec != current && o.SeenBp[sec] - o.SeenBp[current] > gapBp)
+                {
+                    leader = sec;
+                    gapBp = o.SeenBp[sec] - o.SeenBp[current];
+                }
+            }
+            return leader >= 0 && gapBp < (int)Math.Round(LeadShare * 10000.0);
         }
 
         /// <summary>The sector a quarter's books (takings by trade) put a company in, from the one it is in: as a review with them does.</summary>
@@ -317,6 +397,56 @@ namespace RealLifeOverhaul.Markets
                     t.Append(',').Append(i.ToString(inv)).Append(':').Append(v.ToString("R", inv));
                 }
             }
+            // After what an older version reads: its reader skips a token whose name is not a trade's number.
+            t.Append(",R:").Append(o.Rule.ToString(inv)).Append(",n:").Append(o.QuarterDays.ToString(inv));
+            if (o.SeenDay >= 0)
+            {
+                t.Append(",D:").Append(o.SeenDay.ToString(inv));
+                for (int sec = 0; sec < o.SeenBp.Length; sec++)
+                {
+                    if (o.SeenBp[sec] > 0)
+                    {
+                        t.Append(",S").Append(sec.ToString(inv)).Append(':').Append(o.SeenBp[sec].ToString(inv));
+                    }
+                }
+            }
+            for (int i = 0; i < o.Quarter.Length; i++)
+            {
+                double v = o.Quarter[i];
+                if (v > 0.0 && !double.IsNaN(v) && !double.IsInfinity(v))
+                {
+                    t.Append(",q").Append(i.ToString(inv)).Append(':').Append(v.ToString("R", inv));
+                }
+            }
+        }
+
+        // One of the tokens after the mix: the rule's version, the quarter's days and takings, the last review's day and shares.
+        private static void ReadKept(string name, string value, OwnListing o)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var integer = System.Globalization.NumberStyles.Integer;
+            if (name == "R" && int.TryParse(value, integer, inv, out int rule))
+            {
+                o.Rule = Math.Max(0, Math.Min(RuleVersion, rule));
+            }
+            else if (name == "n" && int.TryParse(value, integer, inv, out int days))
+            {
+                o.QuarterDays = Math.Max(0, Math.Min(1000, days));
+            }
+            else if (name == "D" && int.TryParse(value, integer, inv, out int day))
+            {
+                o.SeenDay = day >= 0 ? day : -1;
+            }
+            else if (name.Length > 1 && name[0] == 'S' && int.TryParse(name.Substring(1), integer, inv, out int sec) && sec >= 0 && sec < Sectors
+                     && int.TryParse(value, integer, inv, out int bp))
+            {
+                o.SeenBp[sec] = Math.Max(0, Math.Min(10000, bp));
+            }
+            else if (name.Length > 1 && name[0] == 'q' && int.TryParse(name.Substring(1), integer, inv, out int trade) && trade >= 0 && trade < o.Quarter.Length
+                     && double.TryParse(value, System.Globalization.NumberStyles.Float, inv, out double v) && v > 0.0 && !double.IsInfinity(v))
+            {
+                o.Quarter[trade] = v;
+            }
         }
 
         /// <summary>The mix read back; an empty or damaged part leaves it not followed.</summary>
@@ -325,6 +455,10 @@ namespace RealLifeOverhaul.Markets
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             o.Mixed = false;
             Array.Clear(o.Mix, 0, o.Mix.Length);
+            Array.Clear(o.Quarter, 0, o.Quarter.Length);
+            Array.Clear(o.SeenBp, 0, o.SeenBp.Length);
+            o.QuarterDays = o.Rule = 0;
+            o.SeenDay = -1;
             if (string.IsNullOrEmpty(text))
             {
                 return;
@@ -345,6 +479,10 @@ namespace RealLifeOverhaul.Markets
                     && double.TryParse(f[i].Substring(colon + 1), System.Globalization.NumberStyles.Float, inv, out double v) && v > 0.0 && !double.IsInfinity(v))
                 {
                     o.Mix[trade] = v;
+                }
+                else if (colon > 0)
+                {
+                    ReadKept(f[i].Substring(0, colon), f[i].Substring(colon + 1), o);
                 }
             }
             o.Mixed = true;

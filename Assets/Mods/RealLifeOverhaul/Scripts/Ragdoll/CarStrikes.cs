@@ -35,6 +35,7 @@ namespace RealLifeOverhaul
         private VehicleController _car;
         private bool _twoWheeler;       // the game's scooter, or a bicycle or motorbike on it
         private int _measureAgain;      // looks left in which a two-wheeler's box is measured again
+        private const float MountGrace = 2f;        // seconds after getting on a two-wheeler in which it knocks nobody down: the game's mount settles its body with a jolt that is no ride
         private const int MeasureLooks = 4;   // lookups (two seconds): the mod dresses a bike within a second and seats its rider among its children
         private Rigidbody _body;
         private Vector3 _centre;        // of the car's body, in the car's own space
@@ -42,6 +43,7 @@ namespace RealLifeOverhaul
         private PedestrianSpawner _spawner;
         private float _nextLookup;
         private bool _driving;
+        private float _boardedAt = float.NegativeInfinity;   // Time.time the player began driving this vehicle
         private bool _skip;
 
         private sealed class Watched
@@ -328,6 +330,10 @@ namespace RealLifeOverhaul
             Vector3 velocity = body.velocity;
             float sqrSpeed = velocity.x * velocity.x + velocity.z * velocity.z;
             bool player = (object)traffic == null;
+            if (player && _twoWheeler && now - _boardedAt < MountGrace)
+            {
+                return;   // somebody standing where the bike is mounted is no strike
+            }
             float least = player ? MinSpeed : SolidRules.BumpFrom;   // a traffic car bumps people from a slower pace
             if (sqrSpeed < least * least)
             {
@@ -508,7 +514,12 @@ namespace RealLifeOverhaul
             VehicleController selected = gm != null ? gm.selectedVehicle : null;
             bool twoWheeler = selected is ScooterController;
             VehicleController car = selected is CarController || twoWheeler ? selected : null;
+            bool wasDriving = _driving;
             _driving = car != null && PlayerHelper.IsUsingVehicle;
+            if (_driving && (!wasDriving || car != _car))
+            {
+                _boardedAt = Time.time;
+            }
             if (car != _car)
             {
                 _car = car;

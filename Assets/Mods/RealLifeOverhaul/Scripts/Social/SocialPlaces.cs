@@ -542,10 +542,24 @@ namespace RealLifeOverhaul
             venue.Door = door.position;
             venue.Street = building.building.Address.streetName;
             venue.Number = building.building.Address.streetNumber;
-            venue.Name = registration != null && !string.IsNullOrEmpty(registration.BusinessName)
-                ? registration.BusinessName
-                : building.building.Address.ToFormattedString();
+            venue.Name = Say(building, registration != null ? registration.BusinessName : null);
             return true;
+        }
+
+        /// <summary>A building as a place to meet is told: its address as the game writes it, with its district, behind the business's name if it has one.</summary>
+        internal static string Say(CityBuildingController building, string business)
+        {
+            Address at = building.building.Address;
+            string district = null;
+            try
+            {
+                string key = building.building.Neighbourhood;
+                district = string.IsNullOrEmpty(key) ? null : key.GetLocalization();
+            }
+            catch (Exception)
+            {
+            }
+            return SocialRules.PlaceWords(business, Construction.ConstructionGame.AddressText(at.streetName, at.streetNumber), district);
         }
 
         private static Transform DoorOf(CityBuildingController building)

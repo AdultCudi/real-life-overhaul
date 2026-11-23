@@ -122,6 +122,7 @@ namespace RealLifeOverhaul.Flare
                     _file.Net.Going.RemoveAt(i);
                 }
             }
+            CountReviews();   // before the day's round trims the feed
             ReadFacts(day);
             bool newDay = _file.Net.CityDay != day;
             int made = FlareLiveRules.CityDay(_file, _facts, _citizens, _made);

@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "Kein Problem. Vielleicht beim nächsten Mal.",
   "reallife_social_favour_refused": "Schon gut. Ich frage herum.",
   "reallife_social_lift_nocar": "Du hast das Auto nicht dabei? Macht nichts, ich nehme die U-Bahn. Trotzdem danke.",
-  "reallife_social_lift_coming": "Du bist ein Lebensretter. Ich bin vor {place}. Ich halte nach dir Ausschau.",
-  "reallife_social_moving_agreed": "Du bist der Beste. Vor {place}, {time}. Ich schulde dir eine Pizza.",
+  "reallife_social_lift_coming": "Du bist mein Retter. Ich stehe draußen bei {place}. Auf deiner Karte steht es unter Was ist los. Ich halte Ausschau nach dir.",
+  "reallife_social_moving_agreed": "Du bist der Beste. Draußen bei {place}, {time}. Auf deiner Karte steht es unter Was ist los. Ich schulde dir eine Pizza.",
   "reallife_social_loan_ask_1": "Das ist peinlich. Ich bin diesen Monat knapp. Könntest du mir {amount} leihen? Ich gebe es dir in etwa einer Woche zurück.",
   "reallife_social_loan_ask_2": "Ich hasse es zu fragen, aber könnte ich mir {amount} leihen? Es ist etwas dazwischengekommen, und der Zahltag ist noch eine Woche weg.",
   "reallife_social_loan_thanks_1": "Danke. Wirklich. Du bekommst es zurück, versprochen.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test fehlgeschlagen: Ein Rundgang durch die Unternehmen der Stadt ist über einen Eintrag ohne Gebäude gestolpert. Das Log sagt welchen.",
   "reallife_hire_test_orphan_off": "Lade zuerst einen Spielstand. Dieser Test läuft nicht in einer Going-Public-Sitzung.",
   "reallife_changes_next_title": "Nächste Version",
-  "reallife_changes_next": "Noch nichts.",
+  "reallife_changes_next": "Behoben: Ein Aushang für offene Stellen bleibt an dem Gebäude, an dem er zuerst stand, statt über die Karte zu wandern, der Treffpunkt eines Freundes wird mit Adresse und Bezirk angegeben, und niemand wird abgeworfen, wenn du dich aufs Fahrrad setzt. Die Bewertung und die Anzahl der Rezensionen eines Betriebs auf Flare behalten jetzt jede hinzugekommene Rezension samt Sternen, statt sie zu verlieren, wenn der Feed alte Beiträge entfernt. Die Branche eines gelisteten Unternehmens wird aus den Einnahmen des laufenden Quartals bestimmt, beim Laden einmal geprüft, und seine Seite zeigt, was die letzte Prüfung ergab und was eine Änderung braucht.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Behoben: Gehören dir alle Gebäude, die das Versorgungsamt aufnehmen könnten, werden Strom- und Wasserkonten in der Versorger-App telefonisch beantragt und wieder angeschlossen, zu denselben Preisen, und die Hinweise sagen das; sobald ein Gebäude frei ist, öffnet das Amt wieder und die App sagt, wo. Behoben: Nach dem Zurückziehen einer Bewerbung und einer neuen Bewerbung auf dieselbe Stelle öffnete die Karriere-App die zurückgezogene, und das Vorstellungsgespräch war nicht erreichbar. Jede Bewerbung hat jetzt ihre eigene Zeile, und Gespräch, Angebot und Rückzug gehen an die aktive. Behoben: Ein Spielstand mit einem Geschäftseintrag, dessen Gebäude es in der Stadt nicht gibt (eine andere Mod kann so einen hinterlassen), schaltet den Techniksektor nicht mehr bei jedem Laden ab. Die Mod lässt solch einen Eintrag jetzt überall aus, wo sie die Geschäfte der Stadt liest, nennt seine Adresse einmal im Log und ändert nichts daran.",
   "reallife_co_mass_raise": "Gehaltserhöhung geben",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "Leer",
   "reallife_ui_estate_roll_sub_flats": "{buildings} Gebäude und {flats} Wohnung(en), insgesamt {units} Einheit(en)",
   "reallife_ui_estate_roll_waiting": "{waiting} warten auf dich",
-  "reallife_ui_estate_roll_waiting_clear": "nichts wartet auf dich"
+  "reallife_ui_estate_roll_waiting_clear": "nichts wartet auf dich",
+  "reallife_lst_box_seen": "Die letzte Prüfung am Tag {day} ergab Einnahmen von {seen}. {sector} ändert sich nur, wenn eine andere Branche sie im Quartal um {need} Punkte bei den Einnahmen überholt.",
+  "reallife_lst_box_seen_none": "Bisher hat keine Prüfung die Einnahmen dieser Firma erfasst. {sector} ändert sich nur, wenn eine andere Branche sie im Quartal um {need} Punkte bei den Einnahmen überholt.",
+  "reallife_lst_box_seen_short": "{leader} lag damals um {gap} Punkte vorn, zu wenig für die nötigen {need}."
 }

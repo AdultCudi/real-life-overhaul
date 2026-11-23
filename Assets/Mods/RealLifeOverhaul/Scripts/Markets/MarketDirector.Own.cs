@@ -95,14 +95,17 @@ namespace RealLifeOverhaul.Markets
         private void SectorAtLoad(int day)
         {
             Stock own = _engine.MineListed();
-            if (own == null || own.Own.Mixed)
+            if (own == null || (own.Own.Mixed && own.Own.Rule >= ListingSector.RuleVersion))
             {
                 return;
             }
+            // A company followed under an older rule is looked at once, by the last quarter's books, so a fix to the rule does not wait for the next quarter's turn.
+            bool again = own.Own.Mixed;
             MarketSector was = own.Sector;
             bool any = Takings(day, out int days);
-            bool moved = _engine.SectorFromBooks(own, _takings, days, false);
-            Logger?.Info("Listing: " + own.Name + "'s business is followed from now" + (moved ? "; by the last " + days + " days' takings it moves from " + was + " to " + own.Sector
+            bool moved = _engine.SectorFromBooks(own, _takings, days, again);
+            Logger?.Info("Listing: " + own.Name + "'s business is " + (again ? "reviewed once under the quarter's own takings" : "followed from now")
+                + (moved ? "; by the last " + days + " days' takings it moves from " + was + " to " + own.Sector
                 : any ? "; the last " + days + " days' takings keep it in " + was : "; nothing in its books yet, it stays in " + was) + ".");
         }
 

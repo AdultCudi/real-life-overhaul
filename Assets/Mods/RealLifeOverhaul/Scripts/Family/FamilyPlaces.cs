@@ -148,7 +148,8 @@ namespace RealLifeOverhaul.Family
             string name = registration != null && !string.IsNullOrEmpty(registration.BusinessName) ? registration.BusinessName
                 : building.building.SpecialService != null && !string.IsNullOrEmpty(building.building.SpecialService.businessName)
                     ? FamilyText.T(building.building.SpecialService.businessName)
-                    : building.building.Address.ToFormattedString();
+                    : null;
+            name = SocialPlaces.Say(building, name);   // a place to go to is told by its address too, which is what the map searches
             return new Venue { Building = building, Door = door, Name = name, Street = building.building.StreetName, Number = building.building.StreetNumber };
         }
 

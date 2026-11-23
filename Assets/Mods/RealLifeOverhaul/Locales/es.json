@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "No pasa nada. Quizá la próxima vez.",
   "reallife_social_favour_refused": "Vale. Preguntaré por ahí.",
   "reallife_social_lift_nocar": "¿No tienes el coche contigo? No pasa nada, cogeré el metro. Gracias de todos modos.",
-  "reallife_social_lift_coming": "Eres un salvavidas. Estoy delante de {place}. Estaré pendiente de ti.",
-  "reallife_social_moving_agreed": "Eres el mejor. Delante de {place}, {time}. Te debo una pizza.",
+  "reallife_social_lift_coming": "Me salvas la vida. Estoy fuera de {place}. Está marcado en tu mapa en Programación. Estaré pendiente de ti.",
+  "reallife_social_moving_agreed": "Eres el mejor. Fuera de {place}, {time}. Está marcado en tu mapa en Programación. Te debo una pizza.",
   "reallife_social_loan_ask_1": "Qué incómodo. Este mes voy justo. ¿Me prestas {amount}? Te lo devuelvo en una semana más o menos.",
   "reallife_social_loan_ask_2": "Odio pedirlo, pero ¿me prestas {amount}? Ha surgido algo y el día de cobro queda a una semana.",
   "reallife_social_loan_thanks_1": "Gracias. De verdad. Te lo devuelvo, te lo prometo.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Prueba fallida: un recorrido por los negocios de la ciudad tropezó con un registro sin edificio. El registro dice cuál.",
   "reallife_hire_test_orphan_off": "Carga primero una partida. Esta prueba no se ejecuta en una sesión de Going Public.",
   "reallife_changes_next_title": "Próxima versión",
-  "reallife_changes_next": "Nada todavía.",
+  "reallife_changes_next": "Corregido: un tablón de ofertas de trabajo se queda en el edificio donde estaba al principio en lugar de desplazarse por el mapa, el punto de encuentro de un amigo se muestra con su dirección y su barrio, y nadie sale despedido cuando te subes a una bicicleta. La valoración y el número de reseñas de un negocio en Flare ahora conservan todas las reseñas publicadas, con sus estrellas, en lugar de perderlas cuando el feed borra publicaciones antiguas. El sector de una empresa cotizada se calcula a partir de los ingresos del propio trimestre, se revisa una vez al cargar, y su página muestra lo que vio la última revisión y lo que necesita un cambio.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corregido: cuando todos los edificios que podrían albergar la oficina de servicios públicos son tuyos, las cuentas de luz y agua se solicitan y se reconectan en la app Suministros, por teléfono, a los mismos precios, y los avisos lo dicen; en cuanto un edificio queda libre, la oficina vuelve a abrir y la app dice dónde. Corregido: tras retirar una solicitud y volver a solicitar el mismo puesto, la app Carrera abría la retirada y no se podía llegar a la entrevista. Cada solicitud tiene ahora su propia fila, y la entrevista, la oferta y la retirada van a la activa. Corregido: una partida con un registro de negocio cuyo edificio no existe en la ciudad (otro mod puede dejar uno atrás) ya no apaga el sector tecnológico en cada carga. El mod ahora deja fuera ese registro en todas partes donde lee los negocios de la ciudad, nombra su dirección una vez en el registro y no cambia nada de él.",
   "reallife_co_mass_raise": "Dar un aumento",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "Vacío",
   "reallife_ui_estate_roll_sub_flats": "{buildings} edificio(s) y {flats} piso(s), {units} unidad(es) en total",
   "reallife_ui_estate_roll_waiting": "{waiting} esperando por ti",
-  "reallife_ui_estate_roll_waiting_clear": "nada esperando por ti"
+  "reallife_ui_estate_roll_waiting_clear": "nada esperando por ti",
+  "reallife_lst_box_seen": "La última revisión, el día {day}, vio ingresos de {seen}. {sector} solo cambia cuando otro sector lo supera por {need} puntos de ingresos durante el trimestre.",
+  "reallife_lst_box_seen_none": "Ninguna revisión ha visto todavía los ingresos de esta empresa. {sector} solo cambia cuando otro sector lo supera por {need} puntos de ingresos durante el trimestre.",
+  "reallife_lst_box_seen_short": "{leader} iba por delante por {gap} puntos en ese momento, por debajo de los {need} necesarios."
 }
