@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "Taille des barres de besoins",
   "reallife_opt_tip_ui_needs_size": "Taille des barres de besoins sur l'interface RLO. 0 correspond à la taille qu'elles ont toujours eue, 4 la plus grande, avec leurs noms et leurs chiffres.",
   "reallife_ui_needs_place": "Emplacement des barres de besoins",
-  "reallife_opt_tip_ui_needs_place": "Où se trouvent les barres de besoins sur l'interface RLO : dans la barre au pied de l'écran, ou dans une rangée à part en haut, aussi large que l'écran et sur deux rangées là où une seule serait trop courte.",
+  "reallife_opt_tip_ui_needs_place": "Emplacement des barres de besoins : dans la barre en bas de l'écran, ou sur une rangée à part en haut.",
   "reallife_ui_needs_place_0": "Dans la barre",
   "reallife_ui_needs_place_1": "En haut",
   "reallife_flare_kit_rating_game": "{stars} selon les visites",

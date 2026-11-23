@@ -38856,7 +38856,7 @@
   "reallife_ui_needs_size": "Needs bars size",
   "reallife_opt_tip_ui_needs_size": "How large the needs bars are on the RLO interface. 0 is the size they have always been, 4 the largest, with their names and figures.",
   "reallife_ui_needs_place": "Needs bars place",
-  "reallife_opt_tip_ui_needs_place": "Where the needs bars stand on the RLO interface: in the bar at the foot of the screen, or in a row of their own along the top, as wide as the screen and on two rows where one is too short.",
+  "reallife_opt_tip_ui_needs_place": "Where the needs bars stand: in the bar at the foot of the screen, or in a row of their own along the top.",
   "reallife_ui_needs_place_0": "In the bar",
   "reallife_ui_needs_place_1": "Along the top",
   "reallife_flare_kit_rating_game": "{stars} from visits",

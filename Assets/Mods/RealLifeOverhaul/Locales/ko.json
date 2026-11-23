@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "욕구 막대 크기",
   "reallife_opt_tip_ui_needs_size": "RLO 인터페이스에서 욕구 막대가 얼마나 큰지입니다. 0은 항상 있던 크기, 4는 가장 큰 크기이며, 이름과 수치가 함께 나옵니다.",
   "reallife_ui_needs_place": "욕구 막대 위치",
-  "reallife_opt_tip_ui_needs_place": "RLO 인터페이스에서 욕구 막대가 놓이는 곳입니다: 화면 아래쪽의 막대 안이나, 화면 위쪽에 화면 너비만큼 따로 한 줄로 두며, 한 줄에 다 들어가지 않으면 두 줄로 둡니다.",
+  "reallife_opt_tip_ui_needs_place": "욕구 막대의 위치: 화면 하단의 막대에 두거나, 화면 상단에 따로 한 줄로 둡니다.",
   "reallife_ui_needs_place_0": "막대 안",
   "reallife_ui_needs_place_1": "위쪽에",
   "reallife_flare_kit_rating_game": "방문 기준 {stars}",

@@ -38856,7 +38856,7 @@
   "reallife_ui_needs_size": "需求条大小",
   "reallife_opt_tip_ui_needs_size": "RLO 界面上需求条的大小。0 是它们一直以来的大小，4 最大，并会显示名称和数值。",
   "reallife_ui_needs_place": "需求条位置",
-  "reallife_opt_tip_ui_needs_place": "需求条在 RLO 界面上的位置：屏幕底部的条内，或屏幕顶部单独的一行，宽度与屏幕相同；如果一行太短，则分成两行。",
+  "reallife_opt_tip_ui_needs_place": "需求条的位置：可以放在屏幕底部的横条中，也可以单独放在屏幕顶部的一排里。",
   "reallife_ui_needs_place_0": "在底部条内",
   "reallife_ui_needs_place_1": "沿屏幕顶部",
   "reallife_flare_kit_rating_game": "来自访问的 {stars}",

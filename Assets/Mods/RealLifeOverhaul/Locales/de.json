@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "Größe der Bedürfnisleisten",
   "reallife_opt_tip_ui_needs_size": "Wie groß die Bedürfnisleisten auf der RLO-Oberfläche sind. 0 ist die Größe, die sie immer hatten, 4 die größte, mit ihren Namen und Zahlen.",
   "reallife_ui_needs_place": "Position der Bedürfnisleisten",
-  "reallife_opt_tip_ui_needs_place": "Wo die Bedürfnisleisten auf der RLO-Oberfläche stehen: in der Leiste am unteren Bildschirmrand oder in einer eigenen Reihe oben, so breit wie der Bildschirm und zweireihig, wo eine Reihe zu kurz ist.",
+  "reallife_opt_tip_ui_needs_place": "Wo die Bedürfnisleisten stehen: in der Leiste am unteren Bildschirmrand oder in einer eigenen Reihe oben.",
   "reallife_ui_needs_place_0": "In der Leiste",
   "reallife_ui_needs_place_1": "Oben entlang",
   "reallife_flare_kit_rating_game": "{stars} aus Besuchen",

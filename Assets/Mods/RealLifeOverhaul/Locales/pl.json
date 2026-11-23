@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "Rozmiar pasków potrzeb",
   "reallife_opt_tip_ui_needs_size": "Jak duże są paski potrzeb w interfejsie RLO. 0 to rozmiar, jaki zawsze miały, 4 największy, z ich nazwami i liczbami.",
   "reallife_ui_needs_place": "Miejsce pasków potrzeb",
-  "reallife_opt_tip_ui_needs_place": "Gdzie stoją paski potrzeb w interfejsie RLO: w pasku u dołu ekranu albo w rzędzie na górze, na całą szerokość ekranu, a gdy jeden rząd jest za krótki, na dwóch rzędach.",
+  "reallife_opt_tip_ui_needs_place": "Gdzie znajdują się paski potrzeb: na pasku u dołu ekranu albo we własnym rzędzie u góry.",
   "reallife_ui_needs_place_0": "W pasku",
   "reallife_ui_needs_place_1": "Na górze",
   "reallife_flare_kit_rating_game": "{stars} z wizyt",

@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "İhtiyaç çubuklarının boyutu",
   "reallife_opt_tip_ui_needs_size": "RLO arayüzündeki ihtiyaç çubuklarının ne kadar büyük olduğu. 0 her zaman sahip oldukları boyut, 4 en büyüğü ve adları ile rakamları gösterir.",
   "reallife_ui_needs_place": "İhtiyaç çubuklarının yeri",
-  "reallife_opt_tip_ui_needs_place": "İhtiyaç çubuklarının RLO arayüzünde nerede durduğu: ekranın altındaki çubukta ya da ekranın üstünde kendi satırında, ekran genişliğinde ve biri çok kısa olduğunda iki satırda.",
+  "reallife_opt_tip_ui_needs_place": "İhtiyaç çubuklarının yeri: ekranın altındaki çubukta ya da en üstte kendi satırında.",
   "reallife_ui_needs_place_0": "Çubukta",
   "reallife_ui_needs_place_1": "Üstte",
   "reallife_flare_kit_rating_game": "Ziyaretlerden {stars}",

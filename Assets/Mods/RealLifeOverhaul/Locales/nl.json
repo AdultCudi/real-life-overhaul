@@ -38812,7 +38812,7 @@
   "reallife_ui_needs_size": "Grootte behoeftebalken",
   "reallife_opt_tip_ui_needs_size": "Hoe groot de behoeftebalken zijn in de RLO-interface. 0 is de grootte die ze altijd hebben gehad, 4 de grootste, met hun namen en cijfers.",
   "reallife_ui_needs_place": "Plaats behoeftebalken",
-  "reallife_opt_tip_ui_needs_place": "Waar de behoeftebalken staan in de RLO-interface: in de balk onderaan het scherm, of in een eigen rij bovenaan, even breed als het scherm en op twee rijen waar één te kort is.",
+  "reallife_opt_tip_ui_needs_place": "Waar de behoeftebalken staan: in de balk onderaan het scherm, of in een eigen rij bovenaan.",
   "reallife_ui_needs_place_0": "In de balk",
   "reallife_ui_needs_place_1": "Bovenaan",
   "reallife_flare_kit_rating_game": "{stars} van bezoeken",
