@@ -218,6 +218,8 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             card.Owed += amount + fee;
+            OwnCardSink.Moved(card.Own, OwnCardSink.Drawn, amount);
+            OwnCardSink.Moved(card.Own, OwnCardSink.Fee, fee);
             return true;
         }
 
@@ -230,6 +232,7 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             a.Owed -= used;
+            OwnCardSink.Moved(a.Own, OwnCardSink.Paid, used);
             a.StatementLeft = Math.Max(0, a.StatementLeft - used);
             a.MinimumLeft = Math.Max(0, a.MinimumLeft - used);
             a.Ladder.PlanLeft = Math.Min(a.Ladder.PlanLeft, a.Owed);
@@ -365,6 +368,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         o.Fee = LateFee(o.Missed, level);
                         a.Owed = WholeMoney.Add(a.Owed, o.Fee);
+                        OwnCardSink.Moved(a.Own, OwnCardSink.Fee, o.Fee);
                     }
                 }
             }
@@ -454,6 +458,7 @@ namespace RealLifeOverhaul.Economy
                     a.Charged = true;
                     o.Interest = Interest(Math.Min(a.StatementLeft, a.Owed), a.RateNow, DaysPerYear, ProductCatalogue.CardStatementDays, ref a.Carry);
                     a.Owed = WholeMoney.Add(a.Owed, o.Interest);
+                    OwnCardSink.Moved(a.Own, OwnCardSink.Interest, o.Interest);
                 }
                 if (a.MinimumLeft == 0)
                 {

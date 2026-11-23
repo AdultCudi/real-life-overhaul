@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Economy
         public long[] BranchCostDay = new long[0];
         public bool[] BranchOpen = new bool[0];
         public int[] BranchTellers = new int[0], BranchStaff = new int[0];
+        public Func<long, long> Tax;    // the tax withheld from a dividend of so many cents paid to the owner; null: none (the market is not running)
     }
 
     /// <summary>
@@ -42,7 +43,7 @@ namespace RealLifeOverhaul.Economy
     /// figures. Game-free, so the offline checks run it over a bank a seeded city has run for days, and the live screen runs it over the
     /// real one. Cost: a pass over the bank's few rows, when the screen is filled.
     /// </summary>
-    public static class OwnBankReader
+    public static partial class OwnBankReader
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -218,6 +219,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     case BankTiers.PayHeldBreach: f.PayHeld = say.F("reallife_ob_pay_held_breach", "amount", amount); break;
                     case BankTiers.PayHeldRun: f.PayHeld = say.F("reallife_ob_pay_held_run", "amount", amount); break;
+                    case BankTiers.PayHeldWatch: f.PayHeld = say.F("reallife_ob_pay_held_watch", "amount", amount); break;
                     case BankTiers.PayHeldReserves: f.PayHeld = say.F("reallife_ob_pay_held_reserves", "amount", amount, "reserve", Ratio(OwnBankCatalogue.ReserveShare)); break;
                     default: f.PayHeld = say.F("reallife_ob_pay_held_capital", "amount", amount); break;
                 }
@@ -327,6 +329,7 @@ namespace RealLifeOverhaul.Economy
                 f.BranchLoans = worth.Loans;
                 f.BranchMargin = worth.DayCents;
             }
+            ReadGrowth(f, b, c, world, say);
         }
 
         private static string Ratio(int thousandths) => (thousandths / 10.0).ToString("0.#", Inv) + "%";

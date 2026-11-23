@@ -164,7 +164,10 @@ namespace RealLifeOverhaul.Ui
         // Banks
         Pay = 1, PayOff, PayOverdue, Plan, CannotPay, DailyPayment, Draw, PayMinimum, Close, OpenOverdraft, OpenCard, ApplyLoan, ApplyBusiness, ApproveFinance, CancelApproval, Consolidate,
         // Your bank
-        Found = 30, PutIn, TakeOut, Sell, SaverRate, LoanRate, Lending, Strategy, FundLimit, PayMode, PayShare, PayFixed, DividendEvery, DividendShare, MoveUp
+        Found = 30, PutIn, TakeOut, Sell, SaverRate, LoanRate, Lending, Strategy, FundLimit, PayMode, PayShare, PayFixed, DividendEvery, DividendShare, MoveUp,
+        // Your bank: the cards, the trading desk and the risk's tools
+        CardsOn = 50, CardIssue, CardLimit, CardRate, CardFee, CardAuto, CardBelow, CardApprove, CardRefuse, OwnCardOpen, OwnCardClose,
+        DeskOn, DeskMandate, DeskShare, DeskLimit, SellLoans, Borrow, Repay
     }
 
     /// <summary>What a step of a card does: a view's field set to its next or previous value, or an act of the game with the value it asks for.</summary>
@@ -183,7 +186,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The player's choices on a bank page (the host's: a fill reads them, a press writes them).</summary>
     public sealed class MoneyView
     {
-        public const int FBank = 0, FProduct = 1, FAmount = 2, FDeposit = 3, FTerm = 4, FShop = 5, FPay = 6, FPeriod = 7, FDraw = 8, FPut = 9, FTake = 10, FCount = 11;
+        public const int FBank = 0, FProduct = 1, FAmount = 2, FDeposit = 3, FTerm = 4, FShop = 5, FPay = 6, FPeriod = 7, FDraw = 8, FPut = 9, FTake = 10,
+            FSale = 11, FBorrow = 12, FOwnLimit = 13, FCount = 14;
 
         public const int DefaultPeriod = 1;   // the statement opens on the week (CashFlow.Week)
 

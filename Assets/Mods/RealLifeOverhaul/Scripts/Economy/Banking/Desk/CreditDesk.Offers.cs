@@ -151,6 +151,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return ProductAnswer.TooLittle;
             }
+            if (card.Own && !OwnCardSink.CanFund(amount + fee))
+            {
+                return ProductAnswer.TooMuch;   // the owner's bank has not the cash to lend it over its reserve
+            }
             if (!AccountRules.Draw(card, amount, out fee))
             {
                 return ProductAnswer.TooMuch;

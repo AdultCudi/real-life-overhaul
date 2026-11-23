@@ -224,7 +224,7 @@ internal static partial class Program
         Check(old != null && old.DivEvery == BankDividends.Off && old.DivAll == 0 && old.DivFrom == old.LastDay + 1 && old.PayWanted == b.PayWanted,
             "own bank's dividends: a line written before them reads as off, its time starting after its last day run");
         OwnBank odd = OwnBankStore.Read(line.Substring(0, head + 3) + string.Join("|", fields, 0, fields.Length - 9) + "|9|333|5|0|0|10|50|99|0" + line.Substring(end), out _);
-        Check(odd != null && odd.DivEvery == BankDividends.Yearly && odd.DivShare == 300 && odd.DivPaid == 10 && odd.DivWhy == BankDividends.WhyMost,
+        Check(odd != null && odd.DivEvery == BankDividends.Count - 1 && odd.DivShare == 300 && odd.DivPaid == 10 && odd.DivWhy == BankDividends.WhyMost,
             "own bank's dividends: a line read back is put inside its bounds and on its step");
         OwnBank t = TierBank(c, BankTiers.Regional, 12);
         OwnBankRules.SetDividends(t, BankDividends.Weekly, 300, 1);
@@ -238,14 +238,15 @@ internal static partial class Program
     private static void DividendSources()
     {
         string game = MemberText(EconomySource(@"OwnBank\OwnBankGame.cs"), "public static void BookDay(");
-        Check(game.Contains("Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false)"),
-            "own bank's dividends: booked with the day into the player's cash as a dividend, under the bank's name");
+        Check(game.Contains("Book(paid, OwnBankCatalogue.DividendAutoKey, hq, bank, null, day, false, false)") && game.Contains("long paid = Owner(d.PaidOut);")
+              && game.Contains("Book(-tax, OwnBankCatalogue.DividendTaxKey, hq, bank, null, day, false, true)"),
+            "own bank's dividends: booked with the day into the player's cash as a line of their own under the bank's name, the tax withheld on a line of its own");
         string director = EconomySource(@"OwnBank\Dividends\OwnBankDirector.Dividends.cs"), run = MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "private void RunDay(");
         Check(run.Contains("TellDividend(day);") && director.Contains("reallife_ob_toast_div_paid") && director.Contains("reallife_ob_toast_div_short") && director.Contains("reallife_ob_toast_div_none")
               && director.Contains("Own bank check (dividend"),
             "own bank's dividends: the day tells a dividend paid, paid short or skipped, and writes its check line");
         string tiers = EconomySource(@"OwnBank\Tiers\OwnBankApp.Tiers.cs"), page = EconomySource(@"OwnBank\Dividends\OwnBankApp.Dividends.cs");
-        Check(tiers.Contains("DividendRow(b);") && tiers.Contains("WriteDividends(box, b, c);") && page.Contains("box.Slider(\"reallife_ob_div_share\"") && page.Contains("box.Selector(BankDividends.Count")
+        Check(tiers.Contains("DividendRow(b);") && tiers.Contains("WriteDividends(box, b, c);") && page.Contains("box.Slider(\"reallife_ob_div_share\"") && page.Contains("box.Selector(BankDividends.Order.Length")
               && page.Contains("box.Line(DividendShort(b), CellTone.Yellow)") && EconomySource(@"OwnBank\OwnBankApp.cs").Contains("_divSlid = i => _director.SetDividendShare("),
             "own bank's dividends: a row of the Bank tab opens its page, with the game's own selector and slider as the pay's page has, and what held it back on a line of its own");
         string mod = System.IO.File.ReadAllText(System.IO.Path.Combine(DesignScripts, "Core", "RealLifeOverhaulMod.cs"));

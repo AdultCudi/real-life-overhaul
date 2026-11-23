@@ -1,7 +1,4 @@
-1.0.22
+1.0.23
 
 New
-- Own work shows what the hours you pick will do, and the Utilities app has Pay all now and a way to tick several bills and pay them together, each with the total shown first.
-
-Fixed
-- A firm sold with you staying as the boss now shows the buyer as its owner from the day of the sale, takes no offers, rounds or listing, and is handed over for real when you resign or the contract ends. A listing that cannot happen no longer keeps the bankers' fee, and fees already lost this way are paid back once. Executives answer your staff's offers and requests where no manager does, and say what they did each morning. The page of each company rule says what has to be so for it to act. A product's page says why customers left and what more features do, a licence's page no longer asks for marketing or a lower price it already has, and a studio's post-launch review names its game. Game studio support tickets, campaigns and the people a budget needs are easier to read and fairer, and withdrawn games can be removed from the list. A firm's manager can assign roles by the firm's needs.
+- Your bank can now pay dividends every quarter, with the next sum shown and the tax taken. A new bank risk option adds slumps, runs and a stricter regulator, and the bank can open a credit card business with a Black card for you, and a trading desk.

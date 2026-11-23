@@ -1111,6 +1111,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyBank = v)
                 .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
                     v => Settings.EconomyBranch = v)
+                .AddDropdown(Settings.EconomyBankRiskId, "reallife_ob_risk", new[] { "reallife_ob_risk_0", "reallife_ob_risk_1", "reallife_ob_risk_2" }, Settings.EconomyBankRisk,
+                    v => Settings.EconomyBankRisk = v)
                 .AddToggle(Settings.EndScaleId, "reallife_endscale_enabled", Settings.EndScale,
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
@@ -1343,6 +1345,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
                 .AddButton("reallife_ob_test_level", () => Economy.OwnBankDirector.Instance?.TestTierReady())
                 .AddButton("reallife_ob_test_div", () => Economy.OwnBankDirector.Instance?.TestDividend())
+                .AddButton("reallife_ob_test_stress", () => Economy.OwnBankDirector.Instance?.TestStress())
+                .AddButton("reallife_ob_test_cards", () => Economy.OwnBankDirector.Instance?.TestCards())
+                .AddButton("reallife_ob_test_desk", () => Economy.OwnBankDirector.Instance?.TestDesk())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
                 .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
                 .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())

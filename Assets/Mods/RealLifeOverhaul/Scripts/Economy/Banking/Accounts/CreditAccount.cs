@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy
         public bool Frozen;             // in a debt arrangement: no interest, no payment due, no steps; it can still be paid by hand
         public bool Closed;
         public bool Test;               // made by a test tool: "Test: put everything back" removes it
+        public bool Own;                // the owner's own card from their own bank (Economy/OwnBank/Cards): the bank's books follow it (OwnCardSink)
         public readonly LadderState Ladder = new LadderState();
 
         public string Key => ProductCatalogue.KindSources[(int)Kind];

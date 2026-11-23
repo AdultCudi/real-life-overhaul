@@ -262,6 +262,7 @@
         public const string OfficeConversionId = "office_conversion";
         public const string EconomyBankId = "economy_bank";
         public const string EconomyBranchId = "economy_bank_branch";
+        public const string EconomyBankRiskId = "economy_bank_risk";
         public const string EndScaleId = "economy_endscale";
         public const string LivingPopulationId = "living_population";
         public const string LivingDesksId = "living_desks";
@@ -700,6 +701,7 @@
         public static bool EconomySale = true;           // selling a business (off: nothing is offered, paid or charged by it)
         public static bool EconomyBank = true;           // the player's own bank (off: it stands still, nothing is run, booked or charged)
         public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
+        public static int EconomyBankRisk = 0;           // how hard the player's bank is held to the economy: 0 off (as before), 1 standard, 2 hard
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
         public static bool UiInterface = false;          // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off, as shipped since 1.0.3: the game's own screens)
@@ -1201,6 +1203,7 @@
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBranch = Bool(modId, EconomyBranchId, EconomyBranch);
+            EconomyBankRisk = Int(modId, EconomyBankRiskId, EconomyBankRisk);
             EndScale = Bool(modId, EndScaleId, EndScale);
             LivingPopulation = Bool(modId, LivingPopulationId, LivingPopulation);
             LivingDesks = Bool(modId, LivingDesksId, LivingDesks);

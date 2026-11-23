@@ -154,23 +154,29 @@ namespace RealLifeOverhaul.Ui
             }
             int seg = int.Parse(m.View.Row.Substring(2), Inv);
             OwnSegmentFact pick = f.Segments[Math.Max(0, Math.Min(f.Segments.Length - 1, seg))];
-            var steps = new[] { OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, f.LoanLeast, f.LoanMost, f.LoanStep, f.LoanFloorBp, MoneyAct.LoanRate,
-                seg, out MoneyStep move) };
+            var stepList = new List<UtilitiesStep>(2)
+            {
+                OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, f.LoanLeast, f.LoanMost, f.LoanStep, f.LoanFloorBp, MoneyAct.LoanRate, seg, out MoneyStep move)
+            };
+            var moveList = new List<MoneyStep>(2) { move };
+            var actionList = new List<UiActionModel>(1);
+            var lineList = new List<UtilitiesLine>(8)
+            {
+                BankParts.Pair(w.T("reallife_ob_box_lent", "Lent:"), C(w, pick.Lent)),
+                BankParts.Pair(w.T("reallife_ob_box_arrears", "In arrears:"), w.F("reallife_ob_box_arrears_value", "{arrears}, and {back} written off still to come back", "arrears", C(w,
+                    pick.Arrears), "back", C(w, pick.Recovering))),
+                BankParts.Pair(w.T("reallife_ob_box_defaults", "Defaults a year:"), w.F("reallife_ob_box_defaults_value", "{rate} now ({usual} in a steady city)", "rate",
+                    Pct(pick.DefaultPerMille), "usual", Pct(pick.DefaultUsual))),
+                BankParts.Pair(w.T("reallife_ob_box_wanted", "Where it is heading:"), C(w, pick.Wanted))
+            };
+            SaleControls(m.View, f, w, pick, seg, cards.Next, lineList, stepList, moveList, actionList);
             cards.Add(new UtilitiesCard
             {
                 Title = pick.Name, Sub = f.Name, Chip = pick.Lends ? w.T("reallife_ibox_chip_lending", "Lending") : w.T("reallife_ibox_chip_stopped", "Stopped"),
                     ChipTone = pick.Lends ? UiRole.Ok : UiRole.Warn,
-                Lines = new[]
-                {
-                    BankParts.Pair(w.T("reallife_ob_box_lent", "Lent:"), C(w, pick.Lent)),
-                    BankParts.Pair(w.T("reallife_ob_box_arrears", "In arrears:"), w.F("reallife_ob_box_arrears_value", "{arrears}, and {back} written off still to come back", "arrears", C(w,
-                        pick.Arrears), "back", C(w, pick.Recovering))),
-                    BankParts.Pair(w.T("reallife_ob_box_defaults", "Defaults a year:"), w.F("reallife_ob_box_defaults_value", "{rate} now ({usual} in a steady city)", "rate",
-                        Pct(pick.DefaultPerMille), "usual", Pct(pick.DefaultUsual))),
-                    BankParts.Pair(w.T("reallife_ob_box_wanted", "Where it is heading:"), C(w, pick.Wanted))
-                },
-                Steps = steps, SwitchLabel = w.T("reallife_ob_box_lend_switch", "Lend to them"), SwitchOn = pick.Lends
-            }, new[] { move }, MoneyAct.Lending);
+                Lines = lineList.ToArray(), Actions = actionList.ToArray(),
+                Steps = stepList.ToArray(), SwitchLabel = w.T("reallife_ob_box_lend_switch", "Lend to them"), SwitchOn = pick.Lends
+            }, moveList.ToArray(), MoneyAct.Lending);
         }
 
         // ------------------------------------------------------------------------------------------------- Fund

@@ -338,6 +338,7 @@ namespace RealLifeOverhaul.Economy
             _claimedToday = true;
             if (debt.Account != null)
             {
+                OwnCardSink.Moved(debt.Account.Own, OwnCardSink.Lost, debt.Account.Owed);   // the owner's bank writes the card off
                 debt.Account.Owed = 0;
                 AccountRules.Unsecure(debt.Account);
                 Closed(debt.Account);

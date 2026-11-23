@@ -53,7 +53,8 @@ namespace RealLifeOverhaul.Economy
         public const int PayHeldRun = 2;         // a run: nothing is paid out
         public const int PayHeldReserves = 3;    // its cash over the reserve kept against its savings was short
         public const int PayHeldCapital = 4;     // its capital over its level's least and its lending line was short
-        public const int PayHeldMost = PayHeldCapital;
+        public const int PayHeldWatch = 5;       // watched by the regulator with the bank risk on: nothing is paid out
+        public const int PayHeldMost = PayHeldWatch;
 
         // The aims EconomyCheck holds the table to.
         public const int PaybackMonthsMost = 12;          // game months a community bank takes at most to pay its licence back from its profit
