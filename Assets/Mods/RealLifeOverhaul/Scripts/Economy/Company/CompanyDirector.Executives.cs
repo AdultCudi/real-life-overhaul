@@ -306,6 +306,137 @@ namespace RealLifeOverhaul.Economy
             _hier.MonthFrom = _mgr.MonthFrom;
         }
 
+        // The people chief in post answers what waits at a place no manager answers it at (nobody at work, or without that work), by the rules a manager would: the policy's switch
+        // for the kind, the pay band (and the room past it where the chief is the one named to approve), the largest raise and the days between raises, once it has waited the
+        // policy's days. "Match rivals' offers automatically" goes first: an offer within its limit is matched the moment it is made, so what is left here is only what it left,
+        // and the chief leaves an offer it would take. One offer therefore never has two answers. Places with a manager are the manager's (and, escalated, the chief's by the round).
+        private void ExecutivesCover(int day)
+        {
+            ExecutiveFile chro = ExecutiveAtWork(ExecSeat.Chro);
+            if (chro == null || !On(CompanyPart.Staff))
+            {
+                return;
+            }
+            int limit = RivalMatchRules.Limit(Settings.EconomyCompanyAgreeUpTo, CompanyCatalogue.AgreeUpToMost);
+            int answered = 0;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                StaffFile f = _state.Staff[i];
+                ManagedPlace mp = ManagedAt(f.Place);
+                if (mp == null || OpenExceptionFor(f.Id))
+                {
+                    continue;
+                }
+                int unmet = Rule(mp, PolicyField.UnmetDays), band = Rule(mp, PolicyField.PayBand);
+                if (f.AskDay > 0 && Rule(mp, PolicyField.AutoRaises) == 1 && !Manages(f.Place, ManagerTask.Raises, f.Id) && EscalationRules.UnmetDue(f.AskDay, day, unmet))
+                {
+                    int most = Rule(mp, PolicyField.RaiseMost), every = Rule(mp, PolicyField.RaiseEvery);
+                    int ceiling = PolicyRules.RaiseDue(LastRaise(mp, f.Id), day, every) ? PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most) : f.Paid;
+                    StaffRules.Answer(f, ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false), day);
+                    answered++;
+                }
+                if (f.PoachDay > 0 && !f.GameOffer && !f.Held && Rule(mp, PolicyField.AutoOffers) == 1 && !Manages(f.Place, ManagerTask.Offers,
+                    f.Id) && EscalationRules.UnmetDue(f.PoachDay, day, unmet))
+                {
+                    if (Settings.EconomyCompanyMatchRivals && RivalMatchRules.WithinOffer(f.Paid, f.PoachOffer, limit))
+                    {
+                        continue;   // the option's: an offer it can match is matched when it is made, never here
+                    }
+                    int ceiling = ManagerRules.Ceiling(f.Going, band);
+                    int past = PolicyRules.ExceptionCeiling(f.Going, band, Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.ExceptionMargin));
+                    if (PolicyCatalogue.Value(PolicyField.Approver, Rule(mp, PolicyField.Approver)) == PolicyCatalogue.ApprovePeople)
+                    {
+                        ceiling = Math.Max(ceiling, past);
+                    }
+                    StaffRules.OfferAnswer(f, ManagerRules.Match(f.PoachOffer, ceiling, false), day);
+                    answered++;
+                }
+            }
+            if (answered > 0)
+            {
+                Recount();
+                HierarchyEntry entry = _hier.Log(HierarchyLog.Settled, (int)Rung.Executive, chro.Name, string.Empty, day, Save.Hour);
+                entry.A = 0;
+                entry.B = (int)EscalationKind.Demand;
+                entry.C = answered;
+                chro.Decided++;
+                Logger?.Info("Company: " + chro.Name + " (people chief) answered " + answered + " request(s) or offer(s) waiting at places with nobody managing them, by the policy.");
+            }
+        }
+
+        /// <summary>What an executive did since a day, from the log: matters settled, and those they could not settle and passed up.</summary>
+        internal void ExecutiveDid(ExecutiveFile x, int from, out int settled, out int passed)
+        {
+            settled = passed = 0;
+            for (int i = 0; _hier != null && x != null && i < _hier.Entries.Count; i++)
+            {
+                HierarchyEntry e = _hier.Entries[i];
+                if (e.Day < from || !string.Equals(e.Who, x.Name, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                settled += e.Kind == (int)HierarchyLog.Settled ? Math.Max(1, e.C > 0 && e.A == 0 ? e.C : 1) : 0;
+                passed += e.Kind == (int)HierarchyLog.Passed ? 1 : 0;
+            }
+        }
+
+        /// <summary>
+        /// Why an executive had nothing to do, in words' key: the seat waits; no place of the player's has a manager at work (nothing is raised to an executive from a place without
+        /// one); the company's rules send nothing their way; or nothing waited. Null when they did something.
+        /// </summary>
+        internal string ExecutiveIdle(ExecutiveFile x, int did)
+        {
+            if (did > 0 || x == null)
+            {
+                return null;
+            }
+            if (!x.Seen)
+            {
+                return "reallife_hier_seat_waits_line";
+            }
+            bool manager = false;
+            for (int i = 0; i < _managed.Count && !manager; i++)
+            {
+                manager = Working(_managed[i].Own) != null;
+            }
+            if (!manager && (ExecSeat)x.Area != ExecSeat.Chro)
+            {
+                return "reallife_hier_exec_idle_nomanager";
+            }
+            if ((ExecSeat)x.Area == ExecSeat.Coo && PolicyCatalogue.Value(PolicyField.Sources, Rule(null, PolicyField.Sources)) < PolicyCatalogue.SourceRegion)
+            {
+                return "reallife_hier_exec_idle_sources";
+            }
+            return "reallife_hier_exec_idle_none";
+        }
+
+        // One notice a day of what the executives did that morning, unless the policy reports only what needs the owner.
+        private void ExecutivesTell(int day)
+        {
+            if (PolicyCatalogue.Value(PolicyField.Reports, Rule(null, PolicyField.Reports)) != PolicyCatalogue.ReportDaily)
+            {
+                return;
+            }
+            string who = string.Empty;
+            int total = 0;
+            for (int i = 0; i < _hier.Executives.Count; i++)
+            {
+                ExecutiveFile x = _hier.Executives[i];
+                ExecutiveDid(x, day, out int settled, out int passed);
+                if (settled + passed == 0)
+                {
+                    continue;
+                }
+                total += settled;
+                who += (who.Length > 0 ? ", " : string.Empty) + x.Name + " " + CompanyText.T("reallife_hier_exec_did", "settled", settled.ToString(), "passed", passed.ToString());
+            }
+            if (who.Length > 0)
+            {
+                Notify(NotificationType.Info, "reallife_hier_note_exec_day", new Dictionary<string, string> { { "count", total.ToString() }, { "who",
+                    who.Length > 150 ? who.Substring(0, 147) + "..." : who } }, 10f);
+            }
+        }
+
         /// <summary>An executive's allowance a day at their going rate now (HierarchyRules.ExecutiveAllowance).</summary>
         internal static int AllowanceOf(ExecutiveFile x)
         {

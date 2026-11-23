@@ -56,6 +56,8 @@ namespace RealLifeOverhaul.Economy
                 RegionRound(day, Save.Hour);   // the regional managers appoint and replace before the escalations are handled
                 int handed = CompanyDay.HandDownRound(this, CompanyText.T("reallife_hier_you"), day, Save.Hour);
                 int settled = CompanyDay.HandleRound(this, day, Save.Hour, false);
+                ExecutivesCover(day);   // the people chief answers what waits at a place with nobody managing it, by the rules
+                ExecutivesTell(day);    // one notice of what the executives did
                 Week(day);
                 TellOwner();
                 if (Verbose)
