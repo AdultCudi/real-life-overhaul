@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Ui;
 using RealLifeOverhaul.Utilities;
+using UAccount = RealLifeOverhaul.Utilities.Account;
 
 // Two things players asked for and the owner said yes to. Own work: the hours slider of a contract's stint says what the hours picked will do before Start (the time it ends at, the part
 // of the contract left, the fee when it finishes the contract), at a desk and at the computer at home alike. The Utilities app: "Pay all now" and a way to tick several bills and pay them,
@@ -51,9 +52,9 @@ internal static partial class Program
         Check(texts && en["reallife_own_slider_part"].Contains("{left}"), "own work yield texts: the slider's two lines are in en.json with the hours, the time and the fee to fill in");
     }
 
-    private static Account Bill(string place, Service service, int owed, int due, bool auto = true)
+    private static UAccount Bill(string place, Service service, int owed, int due, bool auto = true)
     {
-        return new Account { Place = place, Service = service, State = SupplyState.Active, Owed = owed, DueDay = due, AutoDebit = auto, OnTime = 0 };
+        return new UAccount { Place = place, Service = service, State = SupplyState.Active, Owed = owed, DueDay = due, AutoDebit = auto, OnTime = 0 };
     }
 
     private static void UtilitiesPayAll()
@@ -64,7 +65,7 @@ internal static partial class Program
         state.Accounts.Add(Bill("B~2", Service.Power, 40, 18));
         state.Accounts.Add(Bill("B~2", Service.Internet, 60, 0));
         state.Accounts.Add(Bill("C~3", Service.Water, 25, 18));
-        var owing = new List<Account>();
+        var owing = new List<UAccount>();
         BillPayRules.Owing(state, owing);
         Check(owing.Count == 4 && owing[0].Place == "A~1" && owing[0].Service == Service.Power, "pay all: every account of every place that owes is gathered, the one that owes nothing is left out");
 
@@ -84,21 +85,21 @@ internal static partial class Program
         Check(broke.FitCount == 0 && broke.Short == 215 && !broke.Covered, "pay all: no cash covers nothing");
         BillQuote debt = BillPayRules.Quote(owing, -50);
         Check(debt.Cash == 0 && debt.FitCount == 0 && debt.Short == 215, "pay all: a negative cash counts as none");
-        Check(BillPayRules.Quote(new List<Account>(), 500).Count == 0 && !BillPayRules.Quote(new List<Account>(), 500).Covered, "pay all: with nothing owed there is nothing to ask about");
+        Check(BillPayRules.Quote(new List<UAccount>(), 500).Count == 0 && !BillPayRules.Quote(new List<UAccount>(), 500).Covered, "pay all: with nothing owed there is nothing to ask about");
 
-        var pay = new List<Account>();
+        var pay = new List<UAccount>();
         BillPayRules.Choose(owing, 1000, false, pay);
         Check(pay.Count == 4 && pay[0].Place == "B~2", "pay all: choosing all takes every bill, earliest due first");
         BillPayRules.Choose(owing, 150, true, pay);
         Check(pay.Count == 3 && pay[0].Place == "B~2" && pay[1].Place == "C~3" && pay[2].Service == Service.Internet, "pay all: choosing what the cash covers takes those three in due order");
 
         // Ticked bills: the same rules for a part of them.
-        var ticked = new List<Account> { owing[2], owing[0] };
+        var ticked = new List<UAccount> { owing[2], owing[0] };
         BillQuote some = BillPayRules.Quote(ticked, 100);
         Check(some.Count == 2 && some.Total == 130 && some.Short == 30 && some.FitCount == 1 && some.FitTotal == 40, "pay ticked: two ticked bills are quoted and ordered on their own");
 
         // A bill with nothing owed or an account gone is never asked for.
-        var odd = new List<Account> { null, Bill("D~4", Service.Power, 0, 5), Bill("E~5", Service.Water, 12, 5) };
+        var odd = new List<UAccount> { null, Bill("D~4", Service.Power, 0, 5), Bill("E~5", Service.Water, 12, 5) };
         BillPayRules.DueOrder(odd);
         Check(odd.Count == 1 && odd[0].Place == "E~5", "pay all: an empty or missing account is dropped from the order");
 
@@ -123,7 +124,7 @@ internal static partial class Program
         {
             big.Accounts.Add(Bill("P~" + i, Service.Power, 10 + i % 7, 40 - i % 30));
         }
-        var list = new List<Account>();
+        var list = new List<UAccount>();
         var watch = System.Diagnostics.Stopwatch.StartNew();
         BillPayRules.Owing(big, list);
         BillQuote q = BillPayRules.Quote(list, 500);
@@ -145,8 +146,8 @@ internal static partial class Program
         string game = ModSource(@"Utilities\UtilitiesGame.cs"), director = ModSource(@"Utilities\UtilitiesDirector.cs");
         Check(many.Length > 0 && bills.Length > 0 && app.Length > 0 && live.Length > 0 && screen.Length > 0 && build.Length > 0 && face.Length > 0 && game.Length > 0 && director.Length > 0, "pay all sources: the sources are read");
 
-        string ask = MethodText(many, "private void Ask(List<Account> bills, Action done)");
-        string pay = MethodText(many, "public void PayBills(List<Account> bills, bool whatCashCovers, Action done)");
+        string ask = MethodText(many, "private void Ask(List<UAccount> bills, Action done)");
+        string pay = MethodText(many, "public void PayBills(List<UAccount> bills, bool whatCashCovers, Action done)");
         Check(ask.Contains("BillPayRules.Quote(bills, UtilitiesGame.Cash)") && ask.Contains("GameConfirm.Show(\"reallife_util_pay_title\".Localize()") && ask.Contains("if (q.Covered)")
               && ask.Contains("q.FitCount == 0") && ask.Contains("\"reallife_util_pay_short\"") && ask.Contains("\"reallife_util_pay_part_title\".Localize()") && ask.Contains("PayBills(list, true, done)")
               && ask.Contains("PayBills(list, false, done)") && ask.Contains("lack = shortBy") && ask.Contains("total, cash"),
@@ -154,7 +155,7 @@ internal static partial class Program
         Check(pay.Contains("BillPayRules.Choose(bills, UtilitiesGame.Cash, whatCashCovers, _toPay)") && pay.Contains("Pay(_toPay[i], today, true, false)") && pay.Contains("_paying = true;")
               && pay.Contains("_paying = false;") && ComesBefore(pay, "Pay(_toPay[i], today, true, false)", "_view?.Changed();") && pay.Contains("break;"),
             "pay all sources: each bill is paid by the one Pay (its own bank line, the account cleared), the cash read again, the page written once at the end, and a refusal stops the run");
-        Check(bills.Contains("public bool Pay(Account a, int today, bool quiet = false, bool notify = true)") && bills.Contains("notify: notify") && game.Contains("bool deductible = false, bool notify = true)")
+        Check(bills.Contains("public bool Pay(UAccount a, int today, bool quiet = false, bool notify = true)") && bills.Contains("notify: notify") && game.Contains("bool deductible = false, bool notify = true)")
               && game.Contains("showNotification: notify") && director.Contains("if (!_paying)"),
             "pay all sources: paying by hand and the auto debit keep their notices, a run of bills pays without one each and the page is not rewritten per bill");
         Check(MethodText(bills, "private void Dues(int today)").Contains("a.Owed > 0 && a.AutoDebit && a.DueDay > 0 && today >= a.DueDay"), "pay all sources: the auto debit takes only a bill still owed, so a bill paid here is not taken again");
