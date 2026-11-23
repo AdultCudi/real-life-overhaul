@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 w.Record().Place(m.Place).Add(m.Kind).Add(m.Founded).Add(m.Focus).Add(m.Debt).Add(m.Reputation).Add(m.RegisteredUntil).Add(m.Breaches).Add(m.Outages).Add(m.RnD).Add(m.ReliefDay)
                     .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes).Add(m.Prev30).Add(m.PrevDays)
-                    .Add(selfDays.ToString()).Add(m.Self30).Add(m.SelfPrev30);
+                    .Add(selfDays.ToString()).Add(m.Self30).Add(m.SelfPrev30).Add(m.Assign);
             }
             w.Part('p');
             foreach (Product p in f.Products)
@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 m.Self30 = Math.Max(0, x.Long());
                 m.SelfPrev30 = Math.Max(0, x.Long());
+                m.Assign = x.Bool();   // appended last: a save from before it has no firm assigned by its manager
                 if (f.Firms.Count < 32)
                 {
                     f.Firms.Add(m);

@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Tech
         public int Engineering, Design, Product, Testing;   // the day's work points (output, hours, the office's spare time and connection, the week's meeting counted)
         public int CraftEngineering, CraftDesign, CraftProduct, CraftTesting;   // 0 to 100, weighed by each person's points
         public int Faults;                                   // thousandths: how often their work needs doing again (TalentRules.Faults)
-        public int Support;                                  // support people at work (each answers FirmsCatalogue.TicketsPerPerson tickets a day)
+        public int Support;                                  // support people at work (each answers StudioCatalogue.TicketsPerSupport tickets a day)
     }
 
     /// <summary>
@@ -90,6 +90,35 @@ namespace RealLifeOverhaul.Tech
                 work = work * StudioCatalogue.OwnEngineWork / 1000;
             }
             return Math.Max(100L, work);
+        }
+
+        /// <summary>
+        /// Days until a game that is not out launches: the work left at its pace, and the release day set if later; 0 when it is ready and waits for nothing, -1 when it is built
+        /// by nobody (no launch in view) and for a game already out.
+        /// </summary>
+        public static int LaunchIn(GameDev g, int day, long pointsADay)
+        {
+            if (g.Launched >= 0)
+            {
+                return -1;
+            }
+            int build = 0;
+            if (g.Building)
+            {
+                if (pointsADay <= 0)
+                {
+                    return -1;
+                }
+                build = DaysLeft(g.Work - g.Done, pointsADay);
+            }
+            return Math.Max(build, g.ReleaseDay > day ? g.ReleaseDay - day : 0);
+        }
+
+        /// <summary>The mid-level people who would build so much work in a year of <paramref name="yearDays"/> days: what a budget asks of a studio's desks.</summary>
+        public static int PeopleFor(long work, int yearDays)
+        {
+            long perPerson = (long)FirmsCatalogue.PointsPerDay * Math.Max(1, yearDays);
+            return (int)Math.Min(100000L, (Math.Max(0L, work) + perPerson - 1) / perPerson);
         }
 
         /// <summary>Days a team of so many points a day takes over the work left; 0 with no points (the page says nobody builds it).</summary>
@@ -587,13 +616,16 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// A day of hype: a running campaign keeps it rising, and a quiet spell with no news lets it fade. Returns the
         /// campaign's spend of the day, cents at the start's prices (spread over its days until its share of the budget is spent).
+        /// <paramref name="daysToLaunch"/> is the days the game still takes to launch (<see cref="LaunchIn"/>), -1 for not in view.
         /// </summary>
-        public static long HypeDay(GameDev g, int day)
+        public static long HypeDay(GameDev g, int day, int daysToLaunch)
         {
             long total = g.Budget * StudioCatalogue.CampaignShare[Clamp(g.Campaign, 0, StudioCatalogue.CampaignShare.Length - 1)] / 1000;
             bool windowOver = g.Launched >= 0 && day - g.Launched >= StudioCatalogue.WindowDays;
+            // it starts in the last CampaignDays before launch, so what it buys is there at launch; with no launch in view (nobody builds it) it waits
+            bool due = g.Launched >= 0 || daysToLaunch >= 0 && daysToLaunch <= StudioCatalogue.CampaignDays;
             long spend = 0;
-            if (total > g.CampaignSpent && !windowOver && g.Phase != (int)GamePhase.Ended)
+            if (total > g.CampaignSpent && due && !windowOver && g.Phase != (int)GamePhase.Ended)
             {
                 spend = Math.Min(total - g.CampaignSpent, Math.Max(1L, total / StudioCatalogue.CampaignDays));
                 g.CampaignSpent += spend;

@@ -218,6 +218,27 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// A withdrawn product taken out of the firms' list for good (a game's record with it): it sells nothing and builds nothing, so the list only keeps it
+        /// for its history. The oldest of them go by themselves past <see cref="FirmsCatalogue.WithdrawnKept"/>; this is the player's way to clear one sooner.
+        /// </summary>
+        internal void Forget(int id)
+        {
+            Product p = _firmsOn ? _firmsFile.ProductOf(id) : null;
+            if (p == null || p.Stage < 2)
+            {
+                return;
+            }
+            _firmsFile.Products.Remove(p);
+            GameDev g = _studioOn ? _studio.GameOf(id) : null;
+            if (g != null)
+            {
+                _studio.Games.Remove(g);
+            }
+            SyncProducts();
+            ChangedTech();
+        }
+
         internal void SetFocus(string place, int focus)
         {
             FirmPlace firm = FirmOf(place);

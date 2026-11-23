@@ -419,7 +419,7 @@ namespace RealLifeOverhaul.Tech
                     built += g.Building ? 0 : (long)crew.Engineering * share / 1000;   // patches and projects are research and development too
                 }
                 rndPoints += built;
-                long campaign = StudioRules.HypeDay(g, day);
+                long campaign = StudioRules.HypeDay(g, day, StudioRules.LaunchIn(g, day, points * share / 1000));
                 marketing += campaign;
                 g.Spent += campaign;
                 if (day < g.BoostUntil && g.Building)
@@ -437,7 +437,7 @@ namespace RealLifeOverhaul.Tech
             }
             // the players' tickets: what the support people leave unanswered costs the studio's name
             _studioTickets[file.Place] = tickets;
-            file.Reputation = Math.Max(0, file.Reputation - StudioRules.TicketToll(tickets, (long)firm.Crew.Support * FirmsCatalogue.TicketsPerPerson));
+            file.Reputation = Math.Max(0, file.Reputation - StudioRules.TicketToll(tickets, StudioRules.Answers(firm.Crew.Support)));
             SyncProducts();
         }
 

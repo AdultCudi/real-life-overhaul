@@ -216,8 +216,10 @@ namespace RealLifeOverhaul.Tech
         public const int HypeQuietDays = 21;        // days without news before hype fades...
         public const int HypeFade = 30;             // ...thousandths of it a day
         public static readonly int[] CampaignShare = { 0, 100, 200, 300, 500, 800 };   // a paid campaign: thousandths of the budget spent, through ScaleRules.Reach
-        public const int CampaignDays = 90;         // ...spread over this many days, sixty before launch and the launch window
-        public const int CampaignHype = 2;          // hype a day of campaign adds per step
+        // The campaign is spent over the last days before launch (StudioRules.HypeDay): started the day it was picked, a game with a year of work left spent it all in
+        // its first three months and the hype it bought had faded (a quiet spell fades it) long before launch, so the money did nothing at launch.
+        public const int CampaignDays = 60;         // ...spread over this many days before launch
+        public const int CampaignHype = 3;          // hype a day of campaign adds per step: a step's whole campaign adds the same as before (180 a step, three a day over sixty days, two over ninety)
         public const int HypeReach = 1000;          // thousandths more reach at full hype (twice the reach): the excited tell others
         public const int BacklashPerQuality = 9;    // hype a game's quality carries (quality x this): above it the critics punish the gap...
         public const int BacklashStep = 50;         // ...a point for each this much over...
@@ -259,7 +261,12 @@ namespace RealLifeOverhaul.Tech
         public const int EarlyPrice = 750;          // thousandths of the price while in early access
         public const int EarlyFrom = 600;           // thousandths of the work done before a game can go out in early access
         public const int EarlyRelaunch = 600;       // thousandths of a full launch's window that the full release of an early access game brings
-        public const int TicketsPerThousand = 5;    // support tickets a day per thousand active players
+        public const int TicketsPerThousand = 5;    // support tickets a day per thousand active players of an online, free or subscription game
+        // A game bought once and played alone has no accounts, servers or billing to write in about: its players write in about bugs and little else, a fifth of an online game's tickets.
+        public const int TicketsPerThousandOnce = 1;
+        // A support person answers about a ticket every eight minutes of a working day, twice the software firms' 30: a game's players write in by the thousand, and half the rate
+        // left a hit game's tickets needing more support staff than a studio has desks.
+        public const int TicketsPerSupport = 60;
         public const int TicketReputationStep = 200; // a point of the studio's reputation lost a day for each fifth of its tickets left unanswered
 
         // ---------------------------------------------------------------- after launch

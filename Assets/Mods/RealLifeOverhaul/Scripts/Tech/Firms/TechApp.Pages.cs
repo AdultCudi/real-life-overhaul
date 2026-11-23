@@ -663,6 +663,11 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_withdraw", () => GameConfirm.Show("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body",
                     () => UiClone.Safe(() => Do(() => _director.Withdraw(id))), null, null, null, true, true));
             }
+            else
+            {
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_forget", () => GameConfirm.Show("reallife_tech_confirm_forget_title", "reallife_tech_confirm_forget_body",
+                    () => UiClone.Safe(() => Do(() => _director.Forget(id))), null, null, null, true, true));
+            }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, SectorGuide);
         }

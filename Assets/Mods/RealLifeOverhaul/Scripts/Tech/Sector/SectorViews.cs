@@ -320,12 +320,20 @@ namespace RealLifeOverhaul.Tech
                 Line(sec, target > have ? P + "product_heading_up" : target < have ? P + "product_heading_down" : P + "product_heading_flat",
                     target > have ? ViewTone.Good : target < have ? ViewTone.Warn : ViewTone.Plain, "share", fmt.Mille(share), "heading", fmt.Mille(heading), "target", fmt.Whole(target));
             }
+            if (p.Live && counted)
+            {
+                Yesterday(sec, f, p, m, sold, frame, fmt);
+            }
             Line(sec, P + "product_known", awareness < 200 ? ViewTone.Warn : ViewTone.Plain, "known", fmt.Mille(awareness), "appeal", fmt.Mille(appeal));
             Line(sec, p.Features < md.Average ? P + "product_going_behind" : P + "product_going", p.Features < md.Average ? ViewTone.Warn : ViewTone.Plain,
                 "features", fmt.Whole(p.Features), "going", fmt.Whole(md.Average), "price", fmt.Mille(FirmsCatalogue.PriceTiers[SectorRules.Clamp(p.Tier, 0, 2)]), "going_price", fmt.Mille(md.Going));
             if (p.K == ProductKind.Licence && p.Live && counted && selling >= 0)
             {
-                Deals(sec, sold, p, appeal, target, selling, fmt);
+                Deals(sec, sold, p, appeal, awareness, target, selling, fmt);
+            }
+            if (p.Live && counted)
+            {
+                MoreFeatures(sec, sold, p, appeal, awareness, attraction, target, have, fmt);
             }
             Rivals(sec, f, m, fmt);
             Line(sec, P + "product_no_cap", ViewTone.Plain);
@@ -334,11 +342,22 @@ namespace RealLifeOverhaul.Tech
 
         // A licence sells a deal at a time, at the pace its appeal, the economy and its sellers give while it holds fewer companies than its pull earns it; once it holds them
         // the section says what it has and what earns it more (a pull that earns less than one company says so, rather than leaving a product with no customers and no reason).
-        private static void Deals(ViewSection sec, SectorMarketDay sold, Product p, int appeal, long target, int selling, IStudioFormat fmt)
+        private static void Deals(ViewSection sec, SectorMarketDay sold, Product p, int appeal, int awareness, long target, int selling, IStudioFormat fmt)
         {
             if (target <= p.Users)
             {
-                Line(sec, P + "product_deals_full", ViewTone.Warn, "target", fmt.Whole(target), "have", fmt.Whole(p.Users), "who", fmt.Text(BuyersKey(sold.Who)));
+                // the levers still to pull: a product with its marketing at the top and its price at the lowest is not told to market and price more
+                bool marketing = p.Marketing >= FirmsCatalogue.MarketingDay.Length - 1 || awareness >= ScaleCatalogue.ReachMost, price = p.Tier == 0;
+                string key = marketing && price ? "_both" : marketing ? "_marketing" : price ? "_price" : string.Empty;
+                if (marketing)
+                {
+                    Line(sec, P + "product_deals_full" + key, ViewTone.Warn, "target", fmt.Whole(target), "have", fmt.Whole(p.Users), "who", fmt.Text(BuyersKey(sold.Who)),
+                        "reach", fmt.Mille(ScaleCatalogue.ReachMost));
+                }
+                else
+                {
+                    Line(sec, P + "product_deals_full" + key, ViewTone.Warn, "target", fmt.Whole(target), "have", fmt.Whole(p.Users), "who", fmt.Text(BuyersKey(sold.Who)));
+                }
                 return;
             }
             long rate = SectorRules.LicenceRate(appeal, sold.Spend, selling);
@@ -346,6 +365,69 @@ namespace RealLifeOverhaul.Tech
             {
                 Line(sec, Prod + (selling > 0 ? "deals" : "deals_none"), ViewTone.Plain, "days", fmt.Whole(FirmsRules.LicenceDealDays(rate)));
             }
+        }
+
+        // Yesterday's change in a product's customers, in words with figures: what it won, what it lost and to what, and what is left of its market. A product
+        // not yet through a day of the sector (a save just loaded) says nothing, as its heading does.
+        private static void Yesterday(ViewSection sec, SectorFile f, Product p, int market, SectorMarketDay sold, SectorMarketDay frame, IStudioFormat fmt)
+        {
+            if (p.LastDay < 0)
+            {
+                return;
+            }
+            ProductDay d = p.Last;
+            Line(sec, P + "product_yesterday", ViewTone.Plain, "won", fmt.Whole(d.Won), "lost", fmt.Whole(d.Lost), "churn", fmt.Whole(d.LostChurn), "drift", fmt.Whole(d.LostDrift),
+                "incident", fmt.Whole(d.LostIncident));
+            if (d.LostChurn > 0 || d.ChurnWhy != 0)
+            {
+                if (d.ChurnWhy != 0)
+                {
+                    Line(sec, P + "product_why", ViewTone.Warn, "why", WhyWords(d.ChurnWhy, fmt));
+                }
+                else
+                {
+                    Line(sec, P + "product_why_base", ViewTone.Plain);
+                }
+            }
+            long rivals = 0;
+            for (int i = 0; i < f.Rivals.Count; i++)
+            {
+                RivalProduct r = f.Rivals[i];
+                bool here = frame != null ? ReferenceEquals(r.View, frame) || ReferenceEquals(r.Frame, frame) : r.Market == market && r.View == null;
+                rivals += here ? Math.Max(0L, r.Customers) : 0;
+            }
+            long mine = SectorRules.Have(p);
+            Line(sec, P + "product_left", ViewTone.Plain, "buyers", fmt.Whole(sold.Buyers), "mine", fmt.Whole(mine), "rivals", fmt.Whole(rivals),
+                "left", fmt.Whole(Math.Max(0L, sold.Buyers - mine - rivals)));
+        }
+
+        // The causes of a product's higher churn, in one phrase: "bugs it has not fixed, too few support people".
+        private static string WhyWords(int why, IStudioFormat fmt)
+        {
+            string words = string.Empty;
+            string[] keys = { P + "why_bugs", P + "why_support", P + "why_behind", P + "why_price" };
+            for (int i = 0; i < keys.Length; i++)
+            {
+                if ((why & (1 << i)) != 0)
+                {
+                    words += (words.Length > 0 ? ", " : string.Empty) + fmt.Text(keys[i]);
+                }
+            }
+            return words;
+        }
+
+        // What one more feature does for a product, and what features can never do: they count in its appeal up to twice the market's usual number and no more, so once its
+        // market is taken more of them only win a larger share of it.
+        private static void MoreFeatures(ViewSection sec, SectorMarketDay sold, Product p, int appeal, int awareness, long attraction, long target, long have, IStudioFormat fmt)
+        {
+            int going = Math.Max(1, sold.Average);
+            int now = SectorRules.FeatureAppeal(p.Features, going), next = SectorRules.FeatureAppeal(p.Features + 1, going);
+            long nextAppeal = (long)appeal * next / Math.Max(1, now);
+            long nextPull = SectorRules.Attraction((int)Math.Min(int.MaxValue / 4, nextAppeal), awareness);
+            long all = Math.Max(0L, sold.All - attraction) + nextPull;   // the rest of the pool stays as it is
+            long nextTarget = sold.Buyers * ScaleRules.Share(nextPull, all) / 1000;
+            Line(sec, target <= have ? P + "product_features_taken" : P + "product_features_room", ViewTone.Plain, "now", fmt.Mille(now), "top", fmt.Mille(2 * SectorCatalogue.FeatureCurve),
+                "target", fmt.Whole(target), "next", fmt.Whole(nextTarget));
         }
 
         // The rivals in a market with the most customers, three at most.

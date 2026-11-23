@@ -90,6 +90,30 @@ namespace RealLifeOverhaul.Tech
             return best;
         }
 
+        /// <summary>The game a kind of session is about at a studio, named on the desk page: a studio with several games out cannot tell which one a review is for. Empty for none.</summary>
+        internal string StudioSubject(int kind, string place)
+        {
+            if (!_studioOn || _firmsFile == null || Save == null)
+            {
+                return string.Empty;
+            }
+            switch (kind)
+            {
+                case StudioRules.SessionPitch:
+                    GameDraft d = _studio.DraftAt(place);
+                    return d != null ? DraftTitle(d, out _) : string.Empty;
+                case StudioRules.SessionMilestone:
+                    GameDev m = MilestoneGame(place);
+                    return m != null ? NameOf(m.Id) : string.Empty;
+                case StudioRules.SessionPlaytest:
+                    GameDev t = TestGame(place);
+                    return t != null ? NameOf(t.Id) : string.Empty;
+                default:
+                    GameDev l = LiveGame(place);
+                    return l != null ? NameOf(l.Id) : string.Empty;
+            }
+        }
+
         /// <summary>The sound choice at a step of a kind, as a manager judges it at a studio.</summary>
         internal int StudioPick(int kind, string place, int step)
         {
@@ -297,6 +321,7 @@ namespace RealLifeOverhaul.Tech
                 case StudioAct.OpenEarly: OpenEarly(g, day); break;
                 case StudioAct.Project: Project(g, value); break;
                 case StudioAct.Withdraw: Withdraw(id); break;
+                case StudioAct.Forget: Forget(id); break;
                 case StudioAct.BuildEngine:
                     if (_studio.EngineAt(place) == null)
                     {
@@ -423,7 +448,8 @@ namespace RealLifeOverhaul.Tech
             s.Reputation = firm.File.Reputation;
             s.Desks = TechBridges.DesksNow();
             s.Tickets = StudioTicketsAt(s.Place);
-            s.Answered = (long)firm.Crew.Support * FirmsCatalogue.TicketsPerPerson;
+            s.Support = firm.Crew.Support;
+            s.Answered = StudioRules.Answers(firm.Crew.Support);
             s.GameName = NameOf;
             return s;
         }

@@ -176,10 +176,23 @@ namespace RealLifeOverhaul.Tech
             if (person != null && (person.Game == null ? !r.InGame || r.GameSkill == person.Skill : r.GameSkill == person.Skill))
             {
                 TalentRules.Move(person.File, role);
+                person.File.Pinned = true;   // put in their role by hand: the firm's manager leaves them there
+                _assigned.Remove(id);
                 if (!r.Remote && person.File.Work == (int)Arrangement.Remote)
                 {
                     person.File.Work = (int)Arrangement.Hybrid;
                 }
+                Changed();
+            }
+        }
+
+        /// <summary>A person's role pinned (the manager never moves them) or let go to the manager's assignment.</summary>
+        internal void SetPinned(string id, bool on)
+        {
+            Person person = PersonOf(id);
+            if (person != null && person.File.Pinned != on)
+            {
+                person.File.Pinned = on;
                 Changed();
             }
         }

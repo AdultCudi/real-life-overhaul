@@ -563,6 +563,7 @@ namespace RealLifeOverhaul.Economy
             box.Subtitle(CompanyText.T(PolicyCatalogue.CategoryKeys[(int)d.Category]) + ", " + ScopeTitle());
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", () => Go("pc:"));
             box.Note(CompanyText.T(d.TextKey + "_what", "score", RegionCatalogue.ReplaceScore.ToString()));   // only the region rule's text has the {score}
+            box.Note(CompanyText.T(d.TextKey + "_when"));   // what has to be so for it to act
             bool company = kind == CompanyDirector.ScopeCompany;
             if (!company && d.Way == PolicyWay.CompanyOnly)
             {

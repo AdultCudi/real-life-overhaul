@@ -862,7 +862,8 @@ namespace RealLifeOverhaul.Ui
                 Kicker = CompanyText.T(PolicyCatalogue.CategoryKeys[(int)def.Category]) + ", " + ScopeName(d, kind, scope), Title = CompanyApp.RuleName(field), Icon = CompanyGlyphs.Policy((int)field),
                 Back = BackTo(w, back, CompanyView.SubPolicy)
             };
-            var blocks = new List<CompanyBlock>(8) { Note(CompanyText.T(def.TextKey + "_what", "score", RegionCatalogue.ReplaceScore.ToString())) };
+            var blocks = new List<CompanyBlock>(8) { Note(CompanyText.T(def.TextKey + "_what", "score", RegionCatalogue.ReplaceScore.ToString())),
+                Note(CompanyText.T(def.TextKey + "_when"), UiRole.Text2) };
             bool company = kind == CompanyDirector.ScopeCompany;
             if (!company && def.Way == PolicyWay.CompanyOnly)
             {

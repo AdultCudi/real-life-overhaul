@@ -205,6 +205,11 @@ namespace RealLifeOverhaul.Ui
                     actions.Add(Button(TechText.T("reallife_tech_button_withdraw"), UiButtonKind.Destructive, UiAction.Count,
                         Ask("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body", () => _d.Withdraw(pid))));
                 }
+                else
+                {
+                    actions.Add(Button(TechText.T("reallife_tech_button_forget"), UiButtonKind.Destructive, UiAction.Count,
+                        Ask("reallife_tech_confirm_forget_title", "reallife_tech_confirm_forget_body", () => _d.Forget(pid))));
+                }
                 if (FirmsRules.CanLaunch(p))
                 {
                     actions.Add(Button(TechText.T("reallife_tech_button_launch"), UiButtonKind.Primary, UiAction.Alt, Do(() => _d.Launch(pid))));
