@@ -43,7 +43,6 @@ namespace RealLifeOverhaul
         private const float UnderlayGloss = 0.04f;       // the scalp underlay's two highlight strengths: all but matt
         private const float UnderlayGlossMin = 0.15f;    // and its gloss range
         private const float UnderlayGlossMax = 0.25f;
-        private const int UnderlayQueue = 2998;          // before every layer of the game's hair (3000 and up)
         private const float UnderlaySort = -2f;
 
         /// <summary>What a finish does; the defaults are the values chosen in the preview.</summary>
@@ -91,10 +90,12 @@ namespace RealLifeOverhaul
             /// </summary>
             public bool KeepCover;
             /// <summary>
-            /// The render queue of the lamp glow the game draws over the street (<see cref="QueueAfter"/>); 0 = none known.
-            /// A layer is drawn after it where both are in the same transparent pass, so a cone blended over the scene never covers hair.
+            /// The render queue of the lamp glow the game draws over the street (<see cref="QueueFor"/>); 0 = none known.
+            /// A layer is drawn before a glow that writes depth and after one that does not, where both are in the same transparent pass.
             /// </summary>
-            public int AfterQueue;
+            public int GlowQueue;
+            /// <summary>Whether that glow writes depth: <see cref="HairRules.GlowWrites"/>, <see cref="HairRules.GlowLeaves"/> or <see cref="HairRules.GlowUnknown"/>.</summary>
+            public int GlowDepth;
 
             public static Settings Default => new Settings
             {
@@ -131,10 +132,10 @@ namespace RealLifeOverhaul
             return HairRules.PassOf(queue);
         }
 
-        /// <summary>The queue a hair layer is drawn at so that it comes after a lamp glow of queue <paramref name="glow"/>: <see cref="HairRules.QueueAfter"/>.</summary>
-        public static int QueueAfter(int queue, int glow)
+        /// <summary>The queue a hair layer is drawn at against a lamp glow of queue <paramref name="glow"/>: <see cref="HairRules.QueueFor"/>.</summary>
+        public static int QueueFor(int queue, int glow, int depth)
         {
-            return HairRules.QueueAfter(queue, glow);
+            return HairRules.QueueFor(queue, glow, depth);
         }
 
         public static bool IsHair(Material material)
@@ -178,7 +179,7 @@ namespace RealLifeOverhaul
             {
                 // Exactly the keyword set of a material in the build: no variant is asked for that the game lacks.
                 finished.shaderKeywords = template.shaderKeywords;
-                finished.renderQueue = QueueAfter(layer.renderQueue, settings.AfterQueue);
+                finished.renderQueue = QueueFor(layer.renderQueue, settings.GlowQueue, settings.GlowDepth);
 
                 finished.SetFloat(AlphaCutoffEnableId, 1f);
                 finished.SetFloat(AlphaClipId, settings.EdgeAlpha);
@@ -409,11 +410,11 @@ namespace RealLifeOverhaul
         /// (At first it kept the game's orange back-light: with a lamp behind the head its outline glowed
         /// orange under the hair.) Numbers only; no keyword is touched. Returns what was set.
         /// </summary>
-        public static HairRules.Finish Underlay(Material material, Color colour)
+        public static HairRules.Finish Underlay(Material material, Color colour, int glow = 0, int glowDepth = HairRules.GlowUnknown)
         {
             if (material.IsKeywordEnabled(TransparentKeyword))
             {
-                material.renderQueue = UnderlayQueue;
+                material.renderQueue = HairRules.UnderlayFor(glow, glowDepth);   // under the hair layers, which may stand before a lamp glow
                 if (material.HasProperty(SortPriorityId))
                 {
                     material.SetFloat(SortPriorityId, UnderlaySort);

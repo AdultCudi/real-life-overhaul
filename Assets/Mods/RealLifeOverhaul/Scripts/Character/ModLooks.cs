@@ -452,7 +452,7 @@ namespace RealLifeOverhaul
                     {
                         // A surface on the skull, not strands: drawn before every layer of the game's hair, matt, and
                         // letting no light through (HairFinish.Underlay; numbers only, no keyword is touched).
-                        HairFinish.Underlay(material, colour);
+                        HairFinish.Underlay(material, colour, LampHaze.GlowQueue(), LampHaze.GlowDepth());
                     }
                     else
                     {
@@ -641,7 +641,7 @@ namespace RealLifeOverhaul
             {
                 // Scalp first, then the body of the hair, then the loose strands over it.
                 int order = layer.Role == LayerRole.Scalp ? 0 : layer.Role == LayerRole.Bulk ? 1 : 2;
-                material.renderQueue = HairFinish.QueueAfter((int)RenderQueue.Transparent + order, LampHaze.GlowQueue());
+                material.renderQueue = HairFinish.QueueFor((int)RenderQueue.Transparent + order, LampHaze.GlowQueue(), LampHaze.GlowDepth());
                 if (material.HasProperty(SortPriorityId))
                 {
                     material.SetFloat(SortPriorityId, order);
