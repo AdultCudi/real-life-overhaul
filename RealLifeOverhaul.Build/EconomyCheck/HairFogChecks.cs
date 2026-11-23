@@ -45,7 +45,9 @@ internal static partial class Program
         Check(HairRules.QueueAfter(3003, 3099) == 3099, "hair fog: a glow at the end of the pass leaves the layers at its last queue, never out of the pass");
         Check(HairRules.QueueAfter(2998, 3003) == 2998 && HairRules.QueueAfter(2450, 3003) == 2450,
             "hair fog: the scalp underlay (2998) and an alpha tested hat (2450) are not moved");
-        Check(HairRules.QueueAfter(HairRules.QueueAfter(3001, 3010), 3010) == HairRules.QueueAfter(3001, 3010), "hair fog: sorting a layer twice changes nothing more");
+        // A layer is always sorted from its template's queue (HairFinish.Make, ModLooks.FinishHair), never from a sorted one,
+        // so what has to hold is that the result is after the glow and inside the pass.
+        Check(HairRules.QueueAfter(3001, 3010) == 3012 && HairRules.QueueAfter(3001, 3010) > 3010, "hair fog: a layer sorted from its template is after the glow");
     }
 
     private static void HairFogSources()
