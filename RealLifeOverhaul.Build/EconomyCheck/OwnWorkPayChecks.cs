@@ -107,7 +107,7 @@ internal static partial class Program
         int back = 0;
         for (int i = 0; i < pay.Count; i++)
         {
-            back += UtilitiesRules.Paid(pay[i], 19);
+            back += UtilitiesRules.Paid(pay[i], 18);
         }
         Check(back == 0 && pay[0].Owed == 0 && pay[0].DueDay == 0 && pay[0].OnTime == 1, "pay all: a bill paid is cleared at once as paying it by hand clears it, and counts as paid on time");
         bool debitTakes = false;
@@ -146,8 +146,8 @@ internal static partial class Program
         string game = ModSource(@"Utilities\UtilitiesGame.cs"), director = ModSource(@"Utilities\UtilitiesDirector.cs");
         Check(many.Length > 0 && bills.Length > 0 && app.Length > 0 && live.Length > 0 && screen.Length > 0 && build.Length > 0 && face.Length > 0 && game.Length > 0 && director.Length > 0, "pay all sources: the sources are read");
 
-        string ask = MethodText(many, "private void Ask(List<UAccount> bills, Action done)");
-        string pay = MethodText(many, "public void PayBills(List<UAccount> bills, bool whatCashCovers, Action done)");
+        string ask = MethodText(many, "private void Ask(List<Account> bills, Action done)");
+        string pay = MethodText(many, "public void PayBills(List<Account> bills, bool whatCashCovers, Action done)");
         Check(ask.Contains("BillPayRules.Quote(bills, UtilitiesGame.Cash)") && ask.Contains("GameConfirm.Show(\"reallife_util_pay_title\".Localize()") && ask.Contains("if (q.Covered)")
               && ask.Contains("q.FitCount == 0") && ask.Contains("\"reallife_util_pay_short\"") && ask.Contains("\"reallife_util_pay_part_title\".Localize()") && ask.Contains("PayBills(list, true, done)")
               && ask.Contains("PayBills(list, false, done)") && ask.Contains("lack = shortBy") && ask.Contains("total, cash"),
@@ -155,7 +155,7 @@ internal static partial class Program
         Check(pay.Contains("BillPayRules.Choose(bills, UtilitiesGame.Cash, whatCashCovers, _toPay)") && pay.Contains("Pay(_toPay[i], today, true, false)") && pay.Contains("_paying = true;")
               && pay.Contains("_paying = false;") && ComesBefore(pay, "Pay(_toPay[i], today, true, false)", "_view?.Changed();") && pay.Contains("break;"),
             "pay all sources: each bill is paid by the one Pay (its own bank line, the account cleared), the cash read again, the page written once at the end, and a refusal stops the run");
-        Check(bills.Contains("public bool Pay(UAccount a, int today, bool quiet = false, bool notify = true)") && bills.Contains("notify: notify") && game.Contains("bool deductible = false, bool notify = true)")
+        Check(bills.Contains("public bool Pay(Account a, int today, bool quiet = false, bool notify = true)") && bills.Contains("notify: notify") && game.Contains("bool deductible = false, bool notify = true)")
               && game.Contains("showNotification: notify") && director.Contains("if (!_paying)"),
             "pay all sources: paying by hand and the auto debit keep their notices, a run of bills pays without one each and the page is not rewritten per bill");
         Check(MethodText(bills, "private void Dues(int today)").Contains("a.Owed > 0 && a.AutoDebit && a.DueDay > 0 && today >= a.DueDay"), "pay all sources: the auto debit takes only a bill still owed, so a bill paid here is not taken again");
