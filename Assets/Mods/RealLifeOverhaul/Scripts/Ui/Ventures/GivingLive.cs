@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
             GivePages.Fill(m, v, _facts, this, _words);
         }
 
-        public void Give(int charity, int step)
+        public void Give(int charity, int step, int district)
         {
             GivingDirector d = GivingDirector.Instance;
             if (d == null)
@@ -48,8 +48,13 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             int amount = GivingRules.StepNow(step, GivingGame.Level);
-            GiveResult r = d.GiveToCharity((Charity)Math.Max(0, Math.Min((int)Charity.Count - 1, charity)), amount);
-            if (GivingResults.Moved(r))
+            GiveResult r = d.GiveToCharity((Charity)Math.Max(0, Math.Min((int)Charity.Count - 1, charity)), amount, district);
+            if (r == GiveResult.Named)
+            {
+                GivingGame.Tell(NotificationType.Success, "reallife_giving_named", GivingGame.Data("amount", GivingGame.Money(amount), "charity", GivingText.Charity(charity),
+                    "naming", d.LastNaming));
+            }
+            else if (GivingResults.Moved(r))
             {
                 GivingGame.Tell(NotificationType.Info, "reallife_giving_gave", GivingGame.Data("amount", GivingGame.Money(amount), "charity", GivingText.Charity(charity)));
             }
@@ -60,14 +65,14 @@ namespace RealLifeOverhaul.Ui
             _local++;
         }
 
-        public void Monthly(int charity, int step)
+        public void Monthly(int charity, int step, int district)
         {
             GivingDirector d = GivingDirector.Instance;
             if (d == null)
             {
                 return;
             }
-            bool set = d.SetStanding((Charity)Math.Max(0, Math.Min((int)Charity.Count - 1, charity)), step);
+            bool set = d.SetStanding((Charity)Math.Max(0, Math.Min((int)Charity.Count - 1, charity)), step, district);
             GivingGame.Tell(set ? NotificationType.Info : NotificationType.Warning, set ? "reallife_giving_monthly_set" : "reallife_giving_monthly_full",
                 GivingGame.Data("amount", GivingGame.Money(GivingRules.StepNow(step, GivingGame.Level)), "charity", GivingText.Charity(charity)));
             _local++;

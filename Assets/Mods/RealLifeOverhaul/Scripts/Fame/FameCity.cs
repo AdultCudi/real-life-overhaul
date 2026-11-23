@@ -279,6 +279,9 @@ namespace RealLifeOverhaul.Fame
             return changed;
         }
 
+        /// <summary>More custom in every shop of a district for some days, as a sponsored event gives: held with the others to <see cref="BoostMost"/>.</summary>
+        public static void DistrictBoost(FameFile f, string district, int percent, int until) => Boost(f, null, district, percent, until);
+
         private static void Boost(FameFile f, string place, string district, int percent, int until)
         {
             FameRules.MakeRoom(f.Boosts, BoostsMost, x => true);

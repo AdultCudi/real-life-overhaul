@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Localizor;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Giving;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -238,10 +239,9 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("family");
             }
-            if (Giver != null && Giving.GivingDirector.CauseWhy == 0)
+            if (GivingTalk.Offered)
             {
-                _actions.Add("give");   // Giving: money for them, given or lent; offered only where the city's people are there to receive it (not in a session, not with them off)
-                _actions.Add("lend");
+                _actions.Add("help");   // Giving: money for them, in the ways Giving's talk lists; offered only where the city's people are there to receive it (not in a session, not with them off)
             }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)
             {
@@ -283,13 +283,9 @@ namespace RealLifeOverhaul
                     entry.OnConfirm = Borrow;
                     entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_ask_in", "amount", SocialLife.Money(BorrowAmount()));
                     break;
-                case "give":
-                    entry.ConfirmTextOverride = "reallife_giving_btn_give".Localize();
-                    entry.OnConfirm = () => GiveFlow(false, 0);
-                    break;
-                case "lend":
-                    entry.ConfirmTextOverride = "reallife_giving_btn_lend".Localize();
-                    entry.OnConfirm = () => GiveFlow(true, 0);
+                case "help":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_help".Localize();
+                    entry.OnConfirm = () => Talk.Menu(0);
                     break;
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();

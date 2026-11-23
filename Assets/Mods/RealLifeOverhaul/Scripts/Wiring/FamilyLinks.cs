@@ -41,6 +41,9 @@ namespace RealLifeOverhaul
                 HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
                 PhoneContacts.MomsDinner = () => FamilyApi.MomsDinner;   // Mom's own call offers today's dinner at hers
                 PhoneContacts.GoToMoms = FamilyApi.GoToMoms;
+                // Giving's Help with money: a car for the partner, the family's own conversation.
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarCan = p => p != null && PeopleOn && p == SocialState.Partner && RealLifeOverhaul.Family.PartnerCar.CanGift;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarOffer = RealLifeOverhaul.Family.PartnerCar.Offer;
             }
 
             internal static void Disconnect()
@@ -56,6 +59,8 @@ namespace RealLifeOverhaul
                 HomeFridgeButton.FamilyClicked = null;
                 PhoneContacts.MomsDinner = null;
                 PhoneContacts.GoToMoms = null;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarCan = null;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarOffer = null;
                 FamilyBridges.Reset();
             }
 

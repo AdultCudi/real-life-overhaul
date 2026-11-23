@@ -235,6 +235,117 @@ namespace RealLifeOverhaul.Giving
             return helped;
         }
 
+        /// <summary>
+        /// The shelter's month: tenants of the city's landlords whose rent takes more than the line past which, with nothing cheaper to be had, the population drives a household out
+        /// of the city (<see cref="PopulationCatalogue.RentBurdenLeave"/>), the worst first. The shelter pays the gap between their rent and what they can bear for a few months, and
+        /// their tenancy is held at that rent, as the regulated tenancies the population already has are (<see cref="HouseholdFlags.Regulated"/>: kept, never past the market's, until
+        /// the household moves). It stops them looking for another flat, which is how a household ends up on the street. Returns how many it kept; <paramref name="spent"/> is what it paid.
+        /// </summary>
+        public static int PayShelter(PopulationState s, long budget, int level, out long spent)
+        {
+            spent = 0;
+            if (budget <= 0)
+            {
+                return 0;
+            }
+            HouseholdTable hh = s.Households;
+            _best = 0;
+            for (int h = 0; h < hh.Count; h++)
+            {
+                if (!Helpable(s, h) || hh.Landlord[h] != Landlords.City || (hh.Flags[h] & HouseholdFlags.Regulated) != 0)
+                {
+                    continue;
+                }
+                int burden = RentBurden(s, h);
+                if (burden >= PopulationCatalogue.RentBurdenLeave)
+                {
+                    Keep(h, burden);
+                }
+            }
+            int monthDays = Math.Max(1, GenerateRules.MonthDays(s.YearDays));
+            long cap = GivingRules.At(GivingCatalogue.ShelterMost, level);
+            int kept = 0;
+            for (int i = 0; i < _best && spent < budget; i++)
+            {
+                int h = BestSlot[i];
+                long bearable = MonthIncome(s, h) * PopulationCatalogue.RentBurdenMove / 1000;   // whole money a month
+                long bearableDaily = Math.Max(1L, bearable * 100 / monthDays);                      // cents a day
+                long gapMonth = Math.Max(0L, ((long)hh.Rent[h] - bearableDaily) * monthDays / 100);
+                if (gapMonth <= 0)
+                {
+                    continue;
+                }
+                long months = Math.Min(GivingCatalogue.ShelterMonths, cap / gapMonth);
+                long cost = gapMonth * months;
+                if (months < 1 || cost > budget - spent)
+                {
+                    continue;
+                }
+                hh.Rent[h] = (int)Math.Min(hh.Rent[h], bearableDaily);
+                hh.Flags[h] = (byte)((hh.Flags[h] | HouseholdFlags.Regulated) & ~HouseholdFlags.WantsMove);
+                hh.Content[h] = (byte)GivingCatalogue.Clamp(hh.Content[h] + GivingCatalogue.ShelterContent, 0, 100);
+                spent += cost;
+                kept++;
+            }
+            return kept;
+        }
+
+        /// <summary>
+        /// The school fund's month: households with a pupil or a student that are in debt, a student's household first and the worst off first. The grant goes against the debt, and
+        /// each student of the household gains a little skill, so the pay they leave university at is better (<see cref="LabourRules.PayFor"/> follows skill). Returns how many
+        /// households it reached; <paramref name="spent"/> is what it paid.
+        /// </summary>
+        public static int PayScholars(PopulationState s, long budget, int level, out long spent)
+        {
+            spent = 0;
+            if (budget <= 0)
+            {
+                return 0;
+            }
+            HouseholdTable hh = s.Households;
+            PersonTable pt = s.People;
+            _best = 0;
+            for (int h = 0; h < hh.Count; h++)
+            {
+                if (!Helpable(s, h) || hh.Debt[h] <= 0)
+                {
+                    continue;
+                }
+                bool student = false, pupil = false;
+                for (int p = hh.First[h]; p >= 0; p = pt.Next[p])
+                {
+                    student |= pt.Status[p] == (byte)Status.Student;
+                    pupil |= pt.Status[p] == (byte)Status.Pupil;
+                }
+                if (student || pupil)
+                {
+                    Keep(h, (student ? 1000000L : 0L) + hh.Debt[h] * 1000L / (MonthIncome(s, h) + 100));
+                }
+            }
+            long most = GivingRules.At(GivingCatalogue.ScholarMost, level);
+            int helped = 0;
+            for (int i = 0; i < _best && spent < budget; i++)
+            {
+                int h = BestSlot[i];
+                long pay = Math.Min(Math.Min(hh.Debt[h], most), budget - spent);
+                if (pay <= 0)
+                {
+                    continue;
+                }
+                Help(s, h, pay, out _, out _);
+                for (int p = hh.First[h]; p >= 0; p = pt.Next[p])
+                {
+                    if (pt.Status[p] == (byte)Status.Student)
+                    {
+                        pt.Skill[p] = (byte)Math.Min(100, pt.Skill[p] + GivingCatalogue.ScholarSkill);
+                    }
+                }
+                spent += pay;
+                helped++;
+            }
+            return helped;
+        }
+
         // The worst-off households paid in order, each what the charity's help for that house is, until the money is gone.
         private static int Pay(PopulationState s, long budget, int most, int level, int kind, out long spent)
         {

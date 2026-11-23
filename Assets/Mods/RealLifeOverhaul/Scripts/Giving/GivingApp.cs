@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Giving
     {
         public static readonly TableSpec Off = new TableSpec("Giving", "Off").Column("reallife_giving_col_name", 600f, TableSort.None, flexible: true);
 
-        /// <summary>Charities: 0 name, 1 held now, 2 helped this year, 3 given by you this year.</summary>
+        /// <summary>Causes: 0 name, 1 held now, 2 helped this year, 3 given by you this year.</summary>
         public static readonly TableSpec Charities = new TableSpec("Giving", "Charities")
             .Column("reallife_giving_col_name", 420f, TableSort.Text, flexible: true)
             .Column("reallife_giving_col_held", 240f, TableSort.Money, sums: true)
@@ -27,6 +27,15 @@ namespace RealLifeOverhaul.Giving
             .Column("reallife_giving_col_state", 220f, TableSort.Text, right: true)
             .Empty("reallife_giving_empty_loans");
 
+        /// <summary>People: 0 person, 1 given in all, 2 what they are short of, 3 owes you, 4 how they lean on you.</summary>
+        public static readonly TableSpec People = new TableSpec("Giving", "People")
+            .Column("reallife_giving_col_person", 380f, TableSort.Text, flexible: true)
+            .Column("reallife_giving_col_given", 220f, TableSort.Money, sums: true)
+            .Column("reallife_giving_col_need", 260f, TableSort.Text)
+            .Column("reallife_giving_col_owes", 220f, TableSort.Money, sums: true)
+            .Column("reallife_giving_col_lean", 240f, TableSort.Text, right: true)
+            .Empty("reallife_giving_empty_people");
+
         /// <summary>This year: 0 charity, 1 paid out, 2 helped.</summary>
         public static readonly TableSpec Year = new TableSpec("Giving", "This year")
             .Column("reallife_giving_col_name", 460f, TableSort.Text, flexible: true)
@@ -40,14 +49,14 @@ namespace RealLifeOverhaul.Giving
     /// </summary>
     public sealed class GivingApp
     {
-        private static readonly string[] TabKeys = { "reallife_giving_tab_charities", "reallife_giving_tab_loans", "reallife_giving_tab_year" };
+        private static readonly string[] TabKeys = { "reallife_giving_tab_charities", "reallife_giving_tab_loans", "reallife_giving_tab_year", "reallife_giving_tab_people" };
 
         private readonly GiveFacts _facts = new GiveFacts();
         private readonly List<TableRow> _rows = new List<TableRow>(12);
         private readonly List<TableRow> _pool = new List<TableRow>(12);
         private AppShell _shell;
         private DataTable _table;
-        private int _tab, _step = 3, _pick;
+        private int _tab, _step = 3, _pick, _district;
         private bool _writing;
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
@@ -147,6 +156,7 @@ namespace RealLifeOverhaul.Giving
                     {
                         case 1: spec = Loans(box); break;
                         case 2: spec = Year(box); break;
+                        case 3: spec = People(box); break;
                         default: spec = Charities(box, d); break;
                     }
                 }
@@ -173,26 +183,49 @@ namespace RealLifeOverhaul.Giving
             }
             int at = Mathf.Clamp(_pick, 0, f.Charities.Length - 1);
             GiveCharityFact p = f.Charities[at];
+            bool upkeep = p.Id == (int)Charity.Upkeep;
             box.Title(GivingText.Charity(p.Id));
             box.Note(GivingText.CharityAbout(p.Id));
             if (f.Why != 0)
             {
                 box.Line(GivingText.Fill(f.Why == 2 ? "reallife_giving_why_session" : "reallife_giving_why_people"), CellTone.Yellow);
             }
-            box.RowWords(GivingText.Fill("reallife_giving_row_held"), GivingGame.Money(p.Pot));
-            box.RowWords(GivingText.Fill("reallife_giving_row_cap"), GivingGame.Money(p.Cap));
-            box.RowWords(GivingText.Fill("reallife_giving_row_last"), GivingText.Fill("reallife_giving_row_last_value", "amount", GivingGame.Money(p.LastMoney), "n", p.LastPeople.ToString()));
+            int districts = f.Districts.Length;
+            _district = districts > 0 ? Mathf.Clamp(_district, 0, districts - 1) : 0;
+            if (upkeep)
+            {
+                if (districts > 0)
+                {
+                    box.RowWords(GivingText.Fill("reallife_giving_row_district_yours"), GivingGame.Money(f.DistrictTotals[_district]));
+                    box.Selector(districts, _district, i => f.Districts[i], i => { _district = i; Refresh(); });
+                }
+                else
+                {
+                    box.Line(GivingText.Fill("reallife_giving_no_district"), CellTone.Yellow);
+                }
+            }
+            else
+            {
+                box.RowWords(GivingText.Fill("reallife_giving_row_held"), GivingGame.Money(p.Pot));
+                box.RowWords(GivingText.Fill("reallife_giving_row_cap"), GivingGame.Money(p.Cap));
+                box.RowWords(GivingText.Fill("reallife_giving_row_last"), GivingText.Fill("reallife_giving_row_last_value", "amount", GivingGame.Money(p.LastMoney), "n", p.LastPeople.ToString()));
+            }
             box.RowWords(GivingText.Fill("reallife_giving_row_yours"), GivingGame.Money(p.PlayerTotal));
             if (p.Standing > 0)
             {
                 box.RowWords(GivingText.Fill("reallife_giving_row_monthly"), GivingGame.Money(p.Standing));
             }
-            _step = Mathf.Clamp(_step, 0, GivingCatalogue.Steps.Length - 1);
-            box.Selector(GivingCatalogue.Steps.Length, _step, i => GivingGame.Money(GivingRules.StepNow(i, f.Level)), i => { _step = i; Refresh(); });
+            int shown = GivingRules.ShownSteps(f.Spare, f.Level);
+            _step = Mathf.Clamp(_step, 0, shown - 1);
+            box.Selector(shown, _step, i => GivingGame.Money(GivingRules.StepNow(i, f.Level)), i => { _step = i; Refresh(); });
+            if (GivingRules.IsNaming(GivingRules.Back(GivingRules.StepNow(_step, f.Level), f.Level)))
+            {
+                box.Note(GivingText.Fill("reallife_giving_naming_hint"));
+            }
             Transform buttons = box.ButtonRow();
-            int charity = p.Id, step = _step;
-            InfoBox.Button(buttons, InfoBox.Positive, "reallife_giving_give", () => { RealLifeOverhaul.Ui.GivingLive.Instance.Give(charity, step); Refresh(); });
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_giving_monthly", () => { RealLifeOverhaul.Ui.GivingLive.Instance.Monthly(charity, step); Refresh(); });
+            int charity = p.Id, step = _step, tag = upkeep && districts > 0 ? _district : -1;
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_giving_give", () => { RealLifeOverhaul.Ui.GivingLive.Instance.Give(charity, step, tag); Refresh(); });
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_giving_monthly", () => { RealLifeOverhaul.Ui.GivingLive.Instance.Monthly(charity, step, tag); Refresh(); });
             if (p.Standing > 0)
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_giving_stop_monthly", () => { RealLifeOverhaul.Ui.GivingLive.Instance.StopMonthly(charity); Refresh(); });
@@ -209,7 +242,7 @@ namespace RealLifeOverhaul.Giving
                 TableRow row = Row("l" + i);
                 row.Pick = false;
                 row.Set(0, l.Name);
-                row.Set(1, GivingGame.Money(l.Principal), l.Principal);
+                row.Set(1, GivingGame.Money(l.Principal + l.Extra), l.Principal + l.Extra);
                 row.Set(2, GivingGame.Money(l.Paid), l.Paid);
                 row.Set(3, GivingGame.Money(l.Remaining), l.Remaining);
                 row.Set(4, GivingText.Fill(l.State == LoanState.Open ? l.Misses > 0 ? "reallife_giving_loan_late" : "reallife_giving_loan_open"
@@ -218,6 +251,7 @@ namespace RealLifeOverhaul.Giving
             }
             box.Title(GivingText.Fill("reallife_giving_sec_how_loans"));
             box.Note(GivingText.Fill("reallife_giving_loans_how", "parts", GivingCatalogue.LoanParts.ToString(), "misses", GivingCatalogue.LoanMisses.ToString()));
+            box.Note(GivingText.Fill("reallife_giving_loans_business", "parts", GivingCatalogue.BusinessParts.ToString(), "share", (GivingCatalogue.BusinessInterest / 10f).ToString("0.#") + "%"));
             if (f.Loans.Count == 0)
             {
                 box.Note(GivingText.Fill("reallife_giving_loans_none"));
@@ -242,11 +276,38 @@ namespace RealLifeOverhaul.Giving
             box.RowWords(GivingText.Fill("reallife_giving_row_income"), GivingGame.Money(f.Income));
             box.RowWords(GivingText.Fill("reallife_giving_row_cap_share", "share", (f.DeductionShare / 10f).ToString("0.#")), GivingGame.Money(f.TaxCap));
             box.RowWords(GivingText.Fill("reallife_giving_row_deducted"), GivingGame.Money(f.TaxClaimed));
+            box.RowWords(GivingText.Fill("reallife_giving_row_carried", "years", GivingCatalogue.CarryYears.ToString()), GivingGame.Money(f.Carried));
             box.Note(GivingText.Fill("reallife_giving_tax_note"));
             string neighbours = GivingText.Fill("reallife_giving_row_neighbours_value", "amount", GivingGame.Money(f.NeighbourYear), "n", f.NeighbourHelped.ToString());
             box.RowWords(GivingText.Fill("reallife_giving_row_neighbours"), neighbours);
             box.RowWords(GivingText.Fill("reallife_giving_row_rivals"), GivingGame.Money(f.RivalsYear));
+            for (int i = 0; i < f.Namings.Count; i++)
+            {
+                box.RowWords(f.Namings[i].Words, GivingGame.Money(f.Namings[i].Amount));
+            }
             return GivingColumns.Year;
+        }
+
+        private TableSpec People(InfoBox box)
+        {
+            GiveFacts f = _facts;
+            for (int i = 0; i < f.People.Count; i++)
+            {
+                GivePersonFact p = f.People[i];
+                TableRow row = Row("p" + i);
+                row.Pick = false;
+                row.Set(0, p.Name);
+                row.Set(1, GivingGame.Money(p.Given), p.Given);
+                row.Set(2, GivingText.Fill(p.Need == GivingNeed.Work ? "reallife_giving_need_work" : p.Need == GivingNeed.Debt ? "reallife_giving_need_debt" : p.Need == GivingNeed.Rent
+                    ? "reallife_giving_need_rent" : "reallife_giving_need_none"), p.Need == GivingNeed.None ? TableRow.Plain : TableRow.Yellow);
+                row.Set(3, GivingGame.Money(p.Loan), p.Loan);
+                row.Set(4, GivingText.Fill(p.Dependence == 0 ? "reallife_giving_lean_0" : p.Dependence < 3 ? "reallife_giving_lean_1" : "reallife_giving_lean_2"),
+                    p.Dependence < 3 ? TableRow.Plain : TableRow.Yellow);
+            }
+            box.Title(GivingText.Fill("reallife_giving_sec_ways"));
+            box.Note(GivingText.Fill("reallife_giving_ways", "most", GivingGame.Money(f.PersonMost)));
+            box.Note(GivingText.Fill("reallife_giving_cannot"));
+            return GivingColumns.People;
         }
     }
 }

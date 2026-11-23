@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Giving
             {
                 return false;
             }
+            CarryOn(s);
             s.TaxGifts = 0;
             s.TaxClaimed = 0;
             s.NeighbourYear = 0;
@@ -68,6 +69,48 @@ namespace RealLifeOverhaul.Giving
                 s.RivalBooks[i].Year = 0;
             }
             return true;
+        }
+
+        /// <summary>
+        /// A year's gifts the cap held back are carried forward, as real relief carries them: what this year's claim did not use of this year's gifts is the first of the carry, the
+        /// older years move one place on and the oldest (<see cref="GivingCatalogue.CarryYears"/> years back) lapses. Called as the year turns, before its sums start again.
+        /// </summary>
+        public static void CarryOn(GivingState s)
+        {
+            long usedOfThisYear = Math.Min(Math.Max(0L, s.TaxClaimed), Math.Max(0L, s.TaxGifts));
+            long left = Math.Max(0L, s.TaxGifts) - usedOfThisYear;
+            for (int i = s.Carry.Length - 1; i > 0; i--)
+            {
+                s.Carry[i] = s.Carry[i - 1];
+            }
+            s.Carry[0] = left;
+            s.CarryTaken = 0;
+        }
+
+        /// <summary>The carry still to be deducted, whole money.</summary>
+        public static long CarryLeft(GivingState s)
+        {
+            long sum = 0;
+            for (int i = 0; i < s.Carry.Length; i++)
+            {
+                sum += Math.Max(0L, s.Carry[i]);
+            }
+            return sum;
+        }
+
+        // What this year's claim took of the carry, the oldest year first: the claim uses this year's gifts before it touches the carry, and a claim is worked out afresh each time
+        // from the figure kept here, so it never takes the same carry twice.
+        private static void DrawCarry(GivingState s)
+        {
+            long need = Math.Max(0L, s.TaxClaimed - Math.Max(0L, s.TaxGifts));
+            long take = need - s.CarryTaken;
+            for (int i = s.Carry.Length - 1; i >= 0 && take > 0; i--)
+            {
+                long part = Math.Min(Math.Max(0L, s.Carry[i]), take);
+                s.Carry[i] -= part;
+                take -= part;
+                s.CarryTaken += part;
+            }
         }
 
         /// <summary>True for a name in the game's list of deductions that is giving's: the key the game translates for the statement, or the words of the language in use.</summary>
@@ -89,8 +132,9 @@ namespace RealLifeOverhaul.Giving
         public static long Claim(GivingState s, long gameHolds, long income)
         {
             long already = Claimed(s, gameHolds);
-            long due = GivingRules.DeductionDue(s.TaxGifts, already, income);
+            long due = GivingRules.DeductionDue(Math.Max(0L, s.TaxGifts) + s.CarryTaken + CarryLeft(s), already, income);
             s.TaxClaimed = already + due;
+            DrawCarry(s);
             return due;
         }
 
@@ -100,7 +144,7 @@ namespace RealLifeOverhaul.Giving
         /// </summary>
         public static long ClaimToday(GivingState s, int day, Func<int, int, long> income, Func<long> gameHolds, Action<long> deduct)
         {
-            if (s.TaxGifts <= 0 || s.PeriodStart < 0)
+            if ((s.TaxGifts <= 0 && CarryLeft(s) <= 0) || s.PeriodStart < 0)
             {
                 return 0L;
             }

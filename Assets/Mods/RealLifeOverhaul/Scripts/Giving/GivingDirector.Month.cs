@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Giving
         void IMonthWorld.PayStanding(StandingGift g, int month)
         {
             int amount = GivingRules.At(g.Amount, GivingGame.Level);
-            GiveResult r = GiveToCharity((Charity)g.Charity, amount);
+            GiveResult r = GiveToCharity((Charity)g.Charity, amount, g.Tag, true);
             if (GivingResults.Moved(r))
             {
                 g.PaidTotal += amount;
@@ -68,9 +68,9 @@ namespace RealLifeOverhaul.Giving
         {
             CharityBook b = _state.Book(c);
             PopulationState s = GivingGame.People();
-            if (s == null)
+            if (s == null || c == Charity.Care || c == Charity.Upkeep)
             {
-                return;   // the city's people are not here to help: the pot waits
+                return;   // the city's people are not here to help: the pot waits (the care fund and a district's upkeep have no month's pay-out to make)
             }
             int level = GivingGame.Level;
             long cap = GivingRules.MonthCap(c, s.Households.Live, level);
@@ -87,9 +87,17 @@ namespace RealLifeOverhaul.Giving
                     case Charity.Housing:
                         helped = GivingPeople.PayHousing(s, pay, level, out spent);
                         break;
-                    default:
+                    case Charity.Shelter:
+                        helped = GivingPeople.PayShelter(s, pay, level, out spent);
+                        break;
+                    case Charity.Scholars:
+                        helped = GivingPeople.PayScholars(s, pay, level, out spent);
+                        break;
+                    case Charity.Training:
                         helped = GivingPeople.PayTraining(s, pay, level, out spent);
                         break;
+                    default:
+                        break;   // the care fund pays as the city's bills come (CareCover), and a district's upkeep is spent when it is given
                 }
             }
             b.Pot = Math.Max(0L, b.Pot - spent);
