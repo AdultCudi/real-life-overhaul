@@ -119,6 +119,11 @@ namespace RealLifeOverhaul.Markets
         public int Had;                          // ...the sectors (bits) it took money in since the last review
         public int Lead = -1;                    // a sector that led the one it is in at the last review (-1 none)...
         public int LeadCount;                    // ...at so many reviews in a row
+        public readonly double[] Quarter = new double[MarketInputs.Trades.Length];   // its takings by trade since the last review: what the next review reads once a few days stand behind it
+        public int QuarterDays;                  // ...the market mornings counted into them
+        public int Rule;                         // the version of the review's rule it was last reviewed under (ListingSector.RuleVersion), 0 before
+        public int SeenDay = -1;                 // the day of the last review that saw takings...
+        public readonly int[] SeenBp = new int[(int)MarketSector.Count];   // ...and each sector's share of them, bp
 
         // A firm of the founder's that listed on its own (a startup with investors), not their whole company: see ListingFirm. Its books are the firm's
         // alone, no reserve moves money for it (the firm's account is where its investors' money is kept), and the founder's deals are the only thing

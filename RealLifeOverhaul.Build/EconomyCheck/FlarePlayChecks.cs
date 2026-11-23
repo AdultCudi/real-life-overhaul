@@ -104,10 +104,10 @@ internal static partial class Program
         // A business's page counts both stores of its reviews: the city's residents (StarRows) and the review posts of the feed the player is told of and
         // answers, so the rating and the count are not empty over reviews the list below shows; and an empty list says how many visits bring a review.
         string stars = MemberText(use, "public FlareStarRow StarsWithPosts(string place, long now)");
-        Check(stars.Contains("StarsFor(place)") && stars.Contains("p.Source != FlareSource.Review") && stars.Contains("p.Author == FlareAuthor.Player") && stars.Contains("p.At > now")
-              && stars.Contains("row ?? city") && screen.Contains("StarsWithPosts(shop.Place, now)") && screen.Contains("StarsWithPosts(shops[i].Place, _flare.Now)")
+        Check(stars.Contains("StarsFor(place)") && stars.Contains("FlareReviewBook.With(_file, city, place, now)") && screen.Contains("StarsWithPosts(shop.Place, now)") && screen.Contains("StarsWithPosts(shops[i].Place, _flare.Now)")
               && screen.Contains("reallife_flare_kit_no_reviews_wait") && screen.Contains("FlareCityCatalogue.VisitsPerReview"),
             "Flare play: a business's rating counts the city's reviews and the feed's, and an empty page says how many visits bring one");
+        FlareReviewBookChecks();
     }
 
     // The repository's root, found by walking up from where the checker runs to the folder that holds RealLifeOverhaul.Build, so a build output that moves (another

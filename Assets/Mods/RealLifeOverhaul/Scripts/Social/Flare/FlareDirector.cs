@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Flare
             ForgetAsked();
             _file = file;
             _running = true;
+            CountReviews();   // a save from before the record: the posts it still has are counted now
             if (FlareLiveRules.StartDay(file.Net, day, Following))
             {
                 LiveDay(day);   // the city's posts of today now (an update to this version, a new account): not an empty feed until tomorrow

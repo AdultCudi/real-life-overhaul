@@ -20,6 +20,7 @@ internal static partial class Program
         ListSectorEngine();
         ListSectorSave();
         ListSectorSources();
+        ListSectorRule();
         ListSectorTexts();
         Console.WriteLine("  a listed company's sector: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
@@ -282,11 +283,109 @@ internal static partial class Program
         Check(damaged != null && damaged.Own != null && !damaged.Own.Mixed, "listing save: a damaged mix is left unfollowed, the company kept");
     }
 
+    // The rule's second version: a review reads the quarter's own takings, so a company mostly in a new sector for a whole quarter moves although the
+    // average still holds a tail of its old mix; a company under the older rule is reviewed once at the load; the page says what the review saw.
+    private static void ListSectorRule()
+    {
+        int current = (int)MarketSector.Specialists;
+        // A jewellery quarter, then a quarter of 60 per cent software and 40 per cent jewellery: the average still shows about 52 to 48, the quarter shows 60 to 40.
+        var o = new OwnListing { Mixed = true };
+        LQuarter(o, ("ba:businesstype_jewelrystore", 10000));
+        ListingSector.Review(o, current, false, out int _, 20);
+        LQuarter(o, ("ba:businesstype_jewelrystore", 4000), ("reallife:businesstype_softwarestudio", 6000));
+        double[] bySector = new double[(int)MarketSector.Count];
+        ListingSector.BySector(o.Mix, bySector);
+        double soft = bySector[(int)MarketSector.Software], spec = bySector[(int)MarketSector.Specialists];
+        Check(soft - spec < ListingSector.LeadShare * (soft + spec), "listing rule 2: the average alone would still hold the old sector (" + soft + " against " + spec + ")");
+        int to = ListingSector.Review(o, current, false, out int trade, 40);
+        Check(to == (int)MarketSector.Software && trade == Trade("webdevelopment"), "listing rule 2: a company mostly in software for a whole quarter moves at the review (" + to + ")");
+        Check(o.SeenDay == 40 && o.SeenBp[(int)MarketSector.Software] == 6000 && o.SeenBp[(int)MarketSector.Specialists] == 4000 && o.Rule == ListingSector.RuleVersion
+              && o.QuarterDays == 0 && o.Quarter[Trade("webdevelopment")] == 0.0, "listing rule 2: the review keeps what it saw and starts the quarter afresh");
+        var few = new OwnListing { Mixed = true };
+        ListingSector.Take(few, QuarterEnv(("ba:businesstype_jewelrystore", 100)), LYear);
+        Check(few.QuarterDays == 1 && few.Quarter[Trade("jewelry")] == 100.0, "listing rule 2: each market morning adds the day's takings to the quarter's");
+        // A short quarter (a load a few days before the turn) reads the average, as before.
+        var shortQ = new OwnListing { Mixed = true };
+        LQuarter(shortQ, ("ba:businesstype_jewelrystore", 10000));
+        shortQ.Quarter[Trade("webdevelopment")] = 1.0;
+        shortQ.QuarterDays = ListingSector.QuarterDaysMin - 1;
+        Check(ListingSector.Review(shortQ, current, false, out int _, 5) < 0 && shortQ.SeenBp[(int)MarketSector.Specialists] == 10000, "listing rule 2: under a few days the review reads the average");
+        // What the page says: the sectors seen, and the one that led by too little.
+        var close = new OwnListing { Mixed = true };
+        LQuarter(close, ("ba:businesstype_jewelrystore", 5400), ("reallife:businesstype_softwarestudio", 4600));
+        Check(ListingSector.Review(close, current, false, out int _, 12) < 0 && !ListingSector.SeenShort(close, current, out int leader, out int _) && leader == -1,
+            "listing page: a company still in the lead has no short lead to explain");
+        var behind = new OwnListing { Mixed = true };
+        LQuarter(behind, ("ba:businesstype_jewelrystore", 4600), ("reallife:businesstype_softwarestudio", 5400));
+        Check(ListingSector.Review(behind, current, false, out int _, 12) < 0 && ListingSector.SeenShort(behind, current, out int l2, out int g2) && l2 == (int)MarketSector.Software && g2 == 800,
+            "listing page: a lead of eight points is said to be short of the ten needed");
+        int[] sectors = new int[3], bps = new int[3];
+        Check(ListingSector.SeenTop(behind, sectors, bps) == 2 && sectors[0] == (int)MarketSector.Software && bps[0] == 5400 && bps[1] == 4600 && ListingSector.SeenTop(new OwnListing(), sectors, bps) == 0,
+            "listing page: the sectors the last review saw, the most first, and none before a review");
+        // The save keeps the rule, the quarter and what was seen; an older reader skips them, and a line without them reads as an older company.
+        var kept = new OwnListing { Mixed = true };
+        LQuarter(kept, ("ba:businesstype_jewelrystore", 5000));
+        ListingSector.Review(kept, current, false, out int _, 33);
+        ListingSector.Take(kept, QuarterEnv(("reallife:businesstype_softwarestudio", 700)), LYear);
+        var text = new System.Text.StringBuilder();
+        ListingSector.Write(text, kept);
+        var back = new OwnListing();
+        ListingSector.Read(text.ToString(), back);
+        Check(back.Mixed && back.Rule == ListingSector.RuleVersion && back.SeenDay == 33 && back.SeenBp[current] == 10000 && back.QuarterDays == 1 && back.Quarter[Trade("webdevelopment")] == 700.0,
+            "listing rule 2 save: the rule, the quarter's takings and days and what the review saw come back");
+        string plain = text.ToString();
+        string older = plain.Substring(0, plain.IndexOf(",R:", StringComparison.Ordinal));
+        var oldBack = new OwnListing();
+        ListingSector.Read(older, oldBack);
+        Check(oldBack.Mixed && oldBack.Rule == 0 && oldBack.SeenDay == -1 && oldBack.QuarterDays == 0, "listing rule 2 save: a company saved under the older rule reads as one (rule 0, nothing seen)");
+        // An older version reading a new line skips every token it does not know (its reader needs a trade's number before the colon).
+        bool skipped = true;
+        foreach (string token in plain.Split(','))
+        {
+            int colon = token.IndexOf(':');
+            if (token.StartsWith("R:", StringComparison.Ordinal) || token.StartsWith("n:", StringComparison.Ordinal) || token.StartsWith("D:", StringComparison.Ordinal)
+                || token.StartsWith("S", StringComparison.Ordinal) || token.StartsWith("q", StringComparison.Ordinal))
+            {
+                skipped &= colon > 0 && !int.TryParse(token.Substring(0, colon), out int _);
+            }
+        }
+        Check(skipped, "listing rule 2 save: the new tokens are ones an older reader skips");
+        // The one review at the load: a company under the older rule, in a sector it no longer leads, moves by the last quarter's books.
+        var load = new OwnListing { Mixed = true, Rule = 0 };
+        long[] books = new long[MarketInputs.Trades.Length];
+        books[Trade("jewelry")] = 4000 * 15;
+        books[Trade("webdevelopment")] = 6000 * 15;
+        Check(ListingSector.Seed(load, books, 15, true) && ListingSector.Review(load, current, true, out int _, 50) == (int)MarketSector.Software && load.Rule == ListingSector.RuleVersion,
+            "listing rule 2: the load's review by the last quarter's books moves a company the average would have held");
+        string own = ModSource(@"Markets\MarketDirector.Own.cs");
+        string at = MethodText(own, "private void SectorAtLoad(int day)");
+        string eng = MethodText(ModSource(@"Markets\MarketEngine.Own.cs"), "public bool SectorFromBooks(Stock s, long[] takings, int days, bool again)");
+        Check(at.Contains("own.Own.Mixed && own.Own.Rule >= ListingSector.RuleVersion") && at.Contains("bool again = own.Own.Mixed;") && eng.Contains("s.Own.Rule = ListingSector.RuleVersion;")
+              && ModSource(@"Markets\Listing\ListingRules.cs").Contains("Rule = ListingSector.RuleVersion"),
+            "listing rule 2 sources: a load reviews a company of the older rule once, a new listing starts under the new rule");
+        string app = ModSource(@"Markets\MarketApp.Own.cs");
+        Check(app.Contains("SeenLine(k, sector)") && app.Contains("reallife_lst_box_seen_none") && app.Contains("reallife_lst_box_seen_short") && app.Contains("ListingSector.SeenShort("),
+            "listing rule 2 sources: the company's page says what the last review saw and what a change needs");
+    }
+
+    private static MarketEnv QuarterEnv(params (string trade, int sales)[] takings)
+    {
+        MarketEnv e = MarketEnv.Quiet();
+        e.Trades = 0;
+        foreach ((string trade, int sales) in takings)
+        {
+            e.TradeOf[e.Trades] = MarketInputs.TradeOf(trade);
+            e.TradeSales[e.Trades] = sales;
+            e.Trades++;
+        }
+        return e;
+    }
+
     private static void ListSectorSources()
     {
         string engine = ModSource(@"Markets\MarketEngine.Own.cs");
         string business = MethodText(engine, "private void OwnBusiness(Stock s, in MarketEnv env, int from, int day)");
-        Check(business.Contains("ListingSector.Take(s.Own, env, Year);") && business.Contains("ListingSector.Review(s.Own, (int)s.Sector, false, out int trade)")
+        Check(business.Contains("ListingSector.Take(s.Own, env, Year);") && business.Contains("ListingSector.Review(s.Own, (int)s.Sector, false, out int trade, day)")
               && business.IndexOf("ListingRules.CloseQuarter(", StringComparison.Ordinal) < business.IndexOf("ListingSector.Review(", StringComparison.Ordinal),
             "listing sources: each market morning feeds the mix, and the review comes at the quarter's turn, on every machine");
         string resector = MethodText(engine, "private void Resector(Stock s, MarketSector to, int trade, int day, in MarketEnv env)");
@@ -297,7 +396,7 @@ internal static partial class Program
         Check(!listing.Contains("f.Trade < 0") && named.Contains("f.Stage <= ListingStage.Audited") && named.Contains("Classify(f);") && listing.Contains("ListingSector.Leading(_takings, out int trade)"),
             "listing sources: on the way to the market the sector follows the takings until the prospectus, not the first business read");
         string own = ModSource(@"Markets\MarketDirector.Own.cs");
-        Check(MethodText(own, "private void OwnStarted(GameInstance save)").Contains("SectorAtLoad(save.Day);") && MethodText(own, "private void SectorAtLoad(int day)").Contains("_engine.SectorFromBooks(own, _takings, days, false)")
+        Check(MethodText(own, "private void OwnStarted(GameInstance save)").Contains("SectorAtLoad(save.Day);") && MethodText(own, "private void SectorAtLoad(int day)").Contains("_engine.SectorFromBooks(own, _takings, days, again)")
               && own.Contains("case MarketNewsKind.OwnSector:") && own.Contains("\"reallife_lst_note_sector\""), "listing sources: a load moves an older listing by its books, and the founder is told");
         string links = ModSource(@"Wiring\ListingLinks.cs");
         string takings = MethodText(links, "private static void TradeTakings(int from, int to, long[] into)");
