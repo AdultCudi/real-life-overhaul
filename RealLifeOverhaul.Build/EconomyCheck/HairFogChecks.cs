@@ -85,7 +85,7 @@ internal static partial class Program
         string label = words.TryGetValue("reallife_lamp_haze", out string l) ? l : "", tip = words.TryGetValue("reallife_opt_tip_lamp_haze", out string t) ? t : "";
         string hair = words.TryGetValue("reallife_opt_tip_character_hair", out string h) ? h : "";
         Check(label == "Street light haze" && tip.Length > 0 && tip.Contains("hair"), "hair fog: the haze option has its label and a tip that names the hair fault");
-        Check(hair.Contains("street light") && hair.Contains("game's own hair"), "hair fog: the hair option's tip says it can look wrong in a street light's haze and that switching it off gives the game's own hair");
+        Check(hair.Contains("street light") && hair.Contains("Switch it off"), "hair fog: the hair option's tip says to switch it off if hair looks wrong near a street light");
         foreach (string text in new[] { label, tip, hair })
         {
             Check(text.IndexOf('—') < 0 && text.IndexOf('–') < 0 && !text.Contains(" - ") && !text.Contains("!"), "hair fog: a text has no dash and no exclamation mark: " + text);
