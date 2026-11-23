@@ -39,6 +39,9 @@ namespace RealLifeOverhaul.Ui
         // Appended with the city map's dock (5 Nov 2026): the box above is the map's dock, not the minimap's card. The left column then
         // stands beside it under the route strip's row, and the notice cards keep off the column too.
         public bool MapDock;
+
+        // Appended with the needs' bars option (23 Nov 2026): the needs in a row of their own along the top. Set by the layout, read by every piece that stands at the top.
+        public float TopRow;   // px the pieces under the row start lower: its height and a step; 0 while no row stands
     }
 
     /// <summary>
@@ -153,6 +156,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The pieces in their places, with the bar's model already read; the prompts said first keep their chips clear.</summary>
         public static void Draw(UiScene s, UiHudModel m, UiFrame frame, IUiKeys keys, bool prompt, UiStatusModel bar)
         {
+            UiNeedsRow needs = UiDraw.PlanNeedsRow(bar, frame.Width);
+            m.TopRow = needs.Height > 0f ? needs.Height + UiTokens.S2 : 0f;   // before the column, which stands under the row
+            if (needs.Height > 0f)
+            {
+                UiDraw.NeedsRow(s, UiAt.Screen, needs, bar, UiTokens.S4);
+            }
             LeftColumn(m, out float column, out float top, out _, out _);
             if (m.Info != null)
             {
@@ -164,7 +173,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Side != null && m.Side.Length > 0)
             {
-                UiSidePanel.LayStack(s, UiAt.Screen, m.Side, m.Side.Length, frame.Width - Left, UiTokens.S4, keys);
+                UiSidePanel.LayStack(s, UiAt.Screen, m.Side, m.Side.Length, frame.Width - Left, UiTokens.S4 + m.TopRow, keys);
                 Join(s);
             }
             if (m.Activity != null && UiActivity.Strip(m.Activity.State))
@@ -175,7 +184,7 @@ namespace RealLifeOverhaul.Ui
             if (m.NoticeCount > 0)
             {
                 NoticeAvoid(m, out float nx, out float ny, out float nw, out float nh);
-                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4, nx, ny, nw, nh);
+                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4 + m.TopRow, nx, ny, nw, nh);
             }
             if (m.PopupCount > 0)
             {
@@ -209,6 +218,12 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>The lowest a piece over the world may stand its top at, so it keeps under the needs' row (and still above the floor): <paramref name="y"/> or more.</summary>
+        public static float UnderTopRow(UiHudModel m, float floor, float height)
+        {
+            return m.TopRow > 0f ? Math.Max(0f, Math.Min(UiTokens.S4 + m.TopRow, floor - height)) : 0f;
+        }
+
         /// <summary>Where the money's change starts: its right edge on the money pill's, its foot a grid step over the bar.</summary>
         public static void MoneyChangePlace(UiStatusModel bar, UiFrame frame, out float right, out float bottom)
         {
@@ -227,7 +242,7 @@ namespace RealLifeOverhaul.Ui
         public static void LeftColumn(UiHudModel m, bool clear, out float x, out float y, out float w, out float h)
         {
             x = Left;
-            y = UiTokens.S4;
+            y = UiTokens.S4 + m.TopRow;
             w = 0f;
             h = 0f;
             float bottom = y;
@@ -281,6 +296,7 @@ namespace RealLifeOverhaul.Ui
             float h = UiWorldPrompt.Height(m.Prompt);
             UiHudRules.Beside(m.PointX, m.PointY, m.PointAhead, UiWorldPrompt.Width, h, frame.Width, floor, lx, ly, lw, lh, out x, out y);
             UiHudRules.Clear(ref x, ref y, UiWorldPrompt.Width, h, frame.Width, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);   // and off the minimap's card, which the column's side rule knows nothing of
+            y = Math.Max(y, UnderTopRow(m, frame.BandY, h));   // and under the needs' row, which spans the screen
             x = UiDraw.SnapDown(x);   // a still scene keeps the grid; the game's follower moves the box by the pixel
             y = UiDraw.SnapDown(y);
         }

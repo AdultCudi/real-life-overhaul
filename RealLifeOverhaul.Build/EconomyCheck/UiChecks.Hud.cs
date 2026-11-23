@@ -10,6 +10,9 @@ internal static partial class Program
         UiActivity.FastCommand, UiActivity.CancelCommand, UiToolRow.ToolCommand, UiToolRow.ChoiceCommand, UiDraw.TimePillCommand, UiDraw.MoneyPillCommand, UiDraw.NeedsPillCommand,
         UiDraw.AlertsPillCommand, UiDraw.SettingsPillCommand
     };
+    private static readonly int[] HudNeedsCommands = { UiDraw.NeedsPillCommand, UiDraw.TimePillCommand, UiDraw.MoneyPillCommand, UiDraw.AlertsPillCommand, UiDraw.SettingsPillCommand, UiInfoPanel.TabCommand,
+        UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand, UiSidePanel.FoldCommand, UiSidePanel.LinkCommand, UiSidePanel.ActionCommand, UiObjectives.FoldCommand, UiObjectives.GroupCommand,
+        UiObjectives.LineCommand, UiObjectives.LocateCommand, UiHudNotice.LinkCommand, UiHudNotice.ActionCommand };
     private static readonly int[] PickerCommands = { UiPicker.EntryCommand, UiPicker.PageCommand, UiPicker.EmptyCommand, UiPicker.ChooseCommand, UiPicker.SecondCommand };
     private static readonly int[] ActivityCardCommands = { UiActivity.ButtonCommand, UiActivity.StepCommand };
     private static readonly int[] TimeSkipCommands = { UiTimeSkip.CancelCommand };
@@ -25,6 +28,13 @@ internal static partial class Program
                 Hud(def, cases, "the bar fast-forwarding", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, true, false));
                 Hud(def, cases, "the bar at night, needs low", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, false, true));
                 Hud(def, cases, "the bar with the clock held", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, false, false, true));
+                HudNeeds(def, cases, "the needs in the bar, size 4", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 4, false, false));
+                HudNeeds(def, cases, "the needs in the bar, size 1, the pieces over the street", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 1, false, true));
+                HudNeeds(def, cases, "the needs in the bar, size 4, the pieces over the street", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 4, false, true, true));
+                HudNeeds(def, cases, "the needs along the top, size 1", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 1, true, false));
+                HudNeeds(def, cases, "the needs along the top, size 4", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 4, true, false, true));
+                HudNeeds(def, cases, "the needs along the top, size 1, the pieces under them", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 1, true, true));
+                HudNeeds(def, cases, "the needs along the top, size 4, the pieces under them", (s, f, d, k, t) => UiSamples.HudNeedsScene(s, f, d, k, t, 4, true, true, true));
                 Hud(def, cases, "a business's info panel", (s, f, d, k, t) => UiSamples.HudInfo(s, f, d, k, t, false));
                 Hud(def, cases, "a car's info panel", (s, f, d, k, t) => UiSamples.HudInfo(s, f, d, k, t, true));
                 Hud(def, cases, "a box at a door", (s, f, d, k, t) => UiSamples.HudPrompt(s, f, d, k, t, false));
@@ -58,6 +68,9 @@ internal static partial class Program
                 break;
         }
     }
+
+    private static void HudNeeds(UiScreenDef def, List<UiScreenCase> cases, string name, System.Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay) =>
+        cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (" + name + ")", Title = "HUD", Commands = HudNeedsCommands, Lay = lay });
 
     private static void Hud(UiScreenDef def, List<UiScreenCase> cases, string name, System.Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay) =>
         cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (" + name + ")", Title = "HUD", Commands = HudCommands, Lay = lay });

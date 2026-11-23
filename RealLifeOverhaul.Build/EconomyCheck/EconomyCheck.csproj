@@ -1069,6 +1069,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSettingsList.cs" Link="Mod\UiSettingsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Links.cs" Link="Mod\UiDraw.Links.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudBar.cs" Link="Mod\UiDraw.HudBar.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudNeeds.cs" Link="Mod\UiDraw.HudNeeds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudParts.cs" Link="Mod\UiDraw.HudParts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudRules.cs" Link="Mod\UiHudRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavPlaceRules.cs" Link="Mod\NavPlaceRules.cs" />
