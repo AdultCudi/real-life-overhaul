@@ -32,9 +32,11 @@ namespace RealLifeOverhaul.Ui
         public static string[] NewsLines(MarketState s, int most, out bool any)
         {
             var lines = new List<string>(most);
-            for (int i = s.News.Count - 1; i >= 0 && lines.Count < most; i--)
+            var all = new List<MarketNews>(s.News.Count + s.Derived.Count);
+            s.NewsAll(all);
+            for (int i = all.Count - 1; i >= 0 && lines.Count < most; i--)
             {
-                MarketNews n = s.News[i];
+                MarketNews n = all[i];
                 if (n.Kind == MarketNewsKind.Close || n.Kind == MarketNewsKind.Mover)
                 {
                     continue;

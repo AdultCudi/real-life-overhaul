@@ -92,7 +92,7 @@ internal static partial class Program
         // A composer chip opens the compose sheet on its part, the post goes to the business chosen there, a result is the
         // visitors the hours that ran have credited, the city's demand is its real trends, and a poll's yes and no are the model's.
         Check(screen.Contains("case FlareFace.ChipCommand: return OpenCompose(arg);") && screen.Contains("_compose.Place = shops[_place].Place;")
-              && screen.Contains("FlareUseRules.Credited(") && screen.Contains("StarsFor(") && screen.Contains("CityTrendsView()")
+              && screen.Contains("FlareUseRules.Credited(") && screen.Contains("CityStarsOf(") && screen.Contains("CityTrendsView()")
               && screen.Contains("FlareFeedRules.Poll(p, now, out int yes, out int votes)")
               && screen.IndexOf("Shops[0]", System.StringComparison.Ordinal) < 0
               && screen.IndexOf("\"@me\"", System.StringComparison.Ordinal) < 0

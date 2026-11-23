@@ -174,7 +174,7 @@ namespace RealLifeOverhaul
                 {
                     if (_done >= _units)
                     {
-                        Finish(JobEnd.Done);
+                        Finish(JobEnd.Done, true);
                         return;
                     }
                     if (_work == DesignWork.Architect)

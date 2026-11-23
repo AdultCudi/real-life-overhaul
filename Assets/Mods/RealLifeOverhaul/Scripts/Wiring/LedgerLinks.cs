@@ -139,9 +139,11 @@ namespace RealLifeOverhaul
                             Volume = c.V, Flags = flags
                         });
                     }
-                    for (int i = 0; i < s.News.Count; i++)
+                    var allNews = new List<MarketNews>(s.News.Count + s.Derived.Count);
+                    s.NewsAll(allNews);
+                    for (int i = 0; i < allNews.Count; i++)
                     {
-                        MarketNews n = s.News[i];
+                        MarketNews n = allNews[i];
                         if (n.Day < since || n.Day >= e.Day || n.Kind == MarketNewsKind.Paid)
                         {
                             continue;   // a dividend paid to the player is their own news, not the city's

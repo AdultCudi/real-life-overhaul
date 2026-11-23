@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Ui
             Features.Add("ui", "reallife_meta_title_ui")
                 .About("reallife_guide_ui_about").Help("reallife_guide_ui")
                 .Owns(Settings.UiInterfaceId, Settings.UiMotionId)
+                .Owns(Settings.UiNeedsSizeId, Settings.UiNeedsPlaceId)
                 .Owns(UiScreenSwitches.OptionIds())
                 .Test("reallife_ui_test_gallery", "reallife_ui_test_parts", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_firm")
                 .Test("reallife_ui_test_all_apps", "reallife_ui_test_question", "reallife_ui_test_question_negative", "reallife_ui_test_acknowledge",

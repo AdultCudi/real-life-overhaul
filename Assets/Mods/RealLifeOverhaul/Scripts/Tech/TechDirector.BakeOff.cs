@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Tech
                 if (IsCustomer(all[i], d) && pick-- == 0)
                 {
                     BuildingRegistration reg = all[i];
-                    return !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : reg.StreetName + " " + reg.StreetNumber.ToString(CultureInfo.InvariantCulture);
+                    return !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : RealLifeOverhaul.Construction.ConstructionGame.AddressText(reg.StreetName, reg.StreetNumber);
                 }
             }
             return null;

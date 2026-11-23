@@ -134,12 +134,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            FlareStarRow row = FlareUseRules.StarsOf(_city.StarRows, place);
-            if (row != null || place.IndexOf('~') < 0)
-            {
-                return row;
-            }
-            return FlareUseRules.StarsOf(_city.StarRows, place.Replace('~', '|'));
+            return CityStarsOf(place);   // by the population's key: the place's own text never matched a street id with a colon
         }
 
         /// <summary>

@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Markets
         private void HookExtras()
         {
             _engine.ExtrasOn = Settings.MarketsExtras;
+            _engine.SegmentsOn = Settings.MarketsExtras;
             _engine.FundPaid = FundPaidHeard;
             _engine.SplitDone = SplitHeard;
             _extrasDay = -1;
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul.Markets
             if (_engine.ExtrasOn != Settings.MarketsExtras)
             {
                 _engine.ExtrasOn = Settings.MarketsExtras;
+                _engine.SegmentsOn = Settings.MarketsExtras;
                 if (!_extrasTold || Verbose)
                 {
                     _extrasTold = true;

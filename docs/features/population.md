@@ -88,7 +88,7 @@ Each demand is a recipe of sources and weights (`PopDemandCatalogue.Recipes`), r
 
 The Economy app's screens are view models (`PopDemandViews`): the business types whose demand moved most since the first day, and each type's demands with each source's part. The Guide's page "Customers from the city's people" says where each business's customers come from, and each business's own page ends with a pointer to it while the option is on.
 
-Not yet on the people: the game's own job candidates (the recruitment agency's and the job board's, drawn by the game's code), and broadband in Uptown and Cedar Heights (the company's network has the base city's seven districts).
+Not yet on the people: the game's own job candidates (the recruitment agency's and the job board's, drawn by the game's code). Broadband is on them in every district: the player's network sizes Uptown and Cedar Heights at ten connections for each household there, and a district a free update adds from the homes and businesses counted there (see the utilities page).
 
 ## The save and Going Public
 

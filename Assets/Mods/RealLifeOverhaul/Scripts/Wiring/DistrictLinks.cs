@@ -152,7 +152,7 @@ namespace RealLifeOverhaul
                         }
                     }
                     Network network = utilities != null && utilities.Company != null ? utilities.Company.Network : null;
-                    int index = BroadbandRules.District(district);
+                    int index = network != null ? network.IndexOf(district) : -1;   // any district the network has a place for: the mod's own and a later one's too
                     if (network != null && index >= 0)
                     {
                         if (network.Open(index, day))

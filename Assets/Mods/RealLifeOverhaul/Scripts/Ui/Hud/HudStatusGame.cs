@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using BigAmbitions.DayNightCycle;
 using Extensions;
 using Helpers;
+using Localizor;
 using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Seasons;
 using TMPro;
@@ -41,6 +42,8 @@ namespace RealLifeOverhaul.Ui
         public static UiToolRowModel ToolRow;
 
         private static bool _said;
+        private static string[] _needWords;
+        private static string _needWordsFor;
         private static int _widestDay = -1;   // the day the widest day's words were worked out for
         private static string _widest;
 
@@ -159,6 +162,25 @@ namespace RealLifeOverhaul.Ui
         // game's state, so the HUD's view names no key at all.
         public static void PressFast(UIs uis) { uis.playerActivityUI.OnPlayerActionPressed(global::PlayerAction.SecondaryInteract); }
 
+        // The six needs' words in the bar's order: the game's own for its three, the mod's for its three (the strip under the game's top bar), kept while the language stays.
+        private static string[] NeedWords
+        {
+            get
+            {
+                string language = LocalizorManager.LoadedLocale;
+                if (_needWords == null || _needWordsFor != language)
+                {
+                    _needWordsFor = language;
+                    _needWords = new[]
+                    {
+                        UiText.T("common_energy"), UiText.T("common_hunger"), UiText.T("common_happiness"),
+                        UiText.T("reallife_home_strip_hygiene"), UiText.T("reallife_home_strip_stress"), UiText.T("reallife_home_strip_home")
+                    };
+                }
+                return _needWords;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Needs(UiStatusModel m)
         {
@@ -173,6 +195,11 @@ namespace RealLifeOverhaul.Ui
             m.Energy = Whole(save.Energy);
             m.Hunger = Whole(save.Hunger);
             m.Happiness = Whole(HappinessHelper.Happiness);
+            m.NeedsSize = Settings.UiNeedsSize;
+            // The row along the top is the HUD's own bar's alone, and stands aside where the bar's pieces do: the map's dock is over the top left, and a modal piece
+            // (Build mode's panels stand at the top) draws a bar of its own with the needs in it.
+            m.NeedsTop = ForHud && Settings.UiNeedsPlace == 1 && !UiMinimapBox.Dock;
+            m.NeedLabels = NeedWords;
             if (Settings.HomeNeeds && HomeState.Loaded)
             {
                 m.Hygiene = Whole(HomeState.Hygiene);
@@ -363,6 +390,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
                 h = h * 31 + (save.notifications != null ? save.notifications.Count : 0) * 7 + _noticesSeen;
+                h = h * 31 + Settings.UiNeedsSize * 5 + Settings.UiNeedsPlace * 3 + (UiMinimapBox.Dock ? 1 : 0);   // the needs' option applies at the next look, no reload
                 h = h * 31 + HudFps.Value + (Settings.SeasonBar ? 1 : 0) + (SeasonBar.Taken ? 4 : 0) + (TimeHelper.use12h ? 2 : 0);
                 h = h * 31 + (int)Weather.Sky * 16 + (int)Weather.Spell * 4 + (RainHelper.isRaining ? 2 : 0) + (SeasonDirector.Instance != null && SeasonDirector.Instance.Snowing ? 1 : 0);
                 TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;

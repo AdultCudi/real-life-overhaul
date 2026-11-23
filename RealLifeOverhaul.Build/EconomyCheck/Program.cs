@@ -180,6 +180,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--gig-pay")
+        {
+            GigPay();       // what gigs pay: the table by effort and skill, a day's tiredness, a first week, the earnings of three ways to play, a rota shift's whole wage for work done early (GigPayChecks.cs)
+            CareerPay();    // ...and what the professions pay against them (CareerPayChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--gig-music")
         {
             GigMusic();   // the player's own gig music: the folder's files, limits, order, shuffle, fallback, fade and texts alone (GigMusicChecks.cs)
@@ -278,6 +285,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--bizman-uniforms")
         {
             BizManUniformsAll();   // BizMan's settings page gives a role its uniform preset on the kit, the editor's name kept on every word (BizManUniformChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--kit-flare-needs")
+        {
+            KitFlareNeeds();   // Flare's rating and address on the kit, raw keys among words, the needs' bars' size and place (KitFlareNeedsChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -854,6 +867,18 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--cloud-takings")
         {
             CloudTakings();   // (a data centre's cloud takings in the company's sector, books and tape, and the centre's thirty days, alone: CloudTakingsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--net-districts")
+        {
+            NetDistricts();   // (the player's own broadband network in every district, the mod's own and later ones, and its own line for a data centre alone: NetDistrictChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--market-why")
+        {
+            MarketWhySegments();   // (why the market moved, the size segments by market value and the player's statement alone: MarketWhyChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1838,6 +1863,8 @@ internal static partial class Program
         Infra2();
         CloudTakings();   // a data centre's cloud takings in the company's sector, books and tape, and the centre's thirty days (CloudTakingsChecks.cs)
         LeasedLines();   // the data centres' leased lines: the table, a rack's profit, who may have one, fees and waits, the line beside a plan, the limits, the save (LeasedLineChecks.cs)
+        NetDistricts();   // the player's own network in every district and its own line for a data centre (NetDistrictChecks.cs)
+        MarketWhySegments();   // why the market moved, the size segments and the player's statement (MarketWhyChecks.cs)
         Segments();   // who an AI model is sold to: the choice at the start and the re-launch's cost, work, days, save and both interfaces (SegmentChecks.cs)
         AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();
@@ -1872,6 +1899,7 @@ internal static partial class Program
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
         GigMusic();     // the player's own gig music (GigMusicChecks.cs)
+        GigPay();       // what gigs pay: the table by effort and skill, a day's tiredness, a first week, the earnings of three ways to play, a rota shift's whole wage for work done early (GigPayChecks.cs)
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
         HairFog();      // hair in a street lamp's haze (HairFogChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
@@ -1989,6 +2017,7 @@ internal static partial class Program
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)
         DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
+        KitFlareNeeds(); // Flare's rating and address on the kit, raw keys among words, the needs' bars' size and place (KitFlareNeedsChecks.cs)
         BizManOfferAll(); // BizMan makes offers on the kit: the game's boxes and buttons, the press that reaches its method (BizManOfferChecks.cs)
         BizManUniformsAll(); // BizMan's settings page gives a role its uniform preset on the kit, the editor's name kept on every word (BizManUniformChecks.cs)
         UiBizman20Checks();   // the purchasing tab says why no plan is added, an employee's card on hover and focus, blank columns and cut text (UiBizman20Checks.cs)

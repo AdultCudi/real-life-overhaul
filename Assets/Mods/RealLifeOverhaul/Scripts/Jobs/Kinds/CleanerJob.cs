@@ -479,7 +479,7 @@ namespace RealLifeOverhaul
         {
             Pay();
             // A floor with no room to work on is nobody's fault; half the floor or more is a shift done.
-            Finish(TotalShare >= Half || _tries >= MostTries ? JobEnd.Done : JobEnd.Failed);
+            Finish(TotalShare >= Half || _tries >= MostTries ? JobEnd.Done : JobEnd.Failed, TotalShare >= 0.999f);
         }
 
         private void Pay()

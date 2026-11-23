@@ -483,7 +483,7 @@ namespace RealLifeOverhaul
         private void Conclude(bool walkedOff)
         {
             Settle();
-            Finish(walkedOff || _bad * 2 > Mathf.Max(1, _calls) ? JobEnd.Failed : JobEnd.Done);
+            Finish(walkedOff || _bad * 2 > Mathf.Max(1, _calls) ? JobEnd.Failed : JobEnd.Done, !walkedOff && _calls >= _callsTotal);
         }
 
         private void Settle()

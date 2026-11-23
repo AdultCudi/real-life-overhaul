@@ -117,6 +117,8 @@ namespace RealLifeOverhaul.Markets
         public int BidderId;                     // the listed company that bids, or 0 for a private buyer
         public int ResultsBoostDay;              // its own moves are larger on this day (its results)
         public int LowDays;                      // market days running it has closed under PennyCents
+        public int SizeQuarter = -1;             // the quarter its segment was last reviewed in (MarketSegments); -1 never: it has the catalogue's
+        public int SizeDay;                      // the day its segment last changed (0 never)
 
         public readonly Candle[] Bars = new Candle[MarketCatalogue.IntradayBars];   // today's, one a step
         public int BarCount;
@@ -411,6 +413,28 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Everything the market keeps of a save: one line of save data (<see cref="MarketStore"/>) and the tape outside it. Game-free.</summary>
     public sealed class MarketState
     {
+        /// <summary>
+        /// Lines the market derives on each machine from what it has (why a sector or a company moved, a segment changed: <see cref="DerivedNews"/>). Never saved and never on the
+        /// tape or in a session's lines, so an older peer sees the same tape; a load starts with none.
+        /// </summary>
+        public readonly List<MarketNews> Derived = new List<MarketNews>(32);
+
+        /// <summary>The market's news and the derived lines together, oldest first, into <paramref name="into"/> (cleared): for a page, never per frame.</summary>
+        public void NewsAll(List<MarketNews> into)
+        {
+            into.Clear();
+            into.AddRange(News);
+            for (int i = 0; i < Derived.Count; i++)
+            {
+                int at = into.Count;
+                while (at > 0 && into[at - 1].Day > Derived[i].Day)
+                {
+                    at--;
+                }
+                into.Insert(at, Derived[i]);
+            }
+        }
+
         public ulong Id;                         // the playthrough's: the tape's name
         public int CreatedDay;
         public int YearDays = 60;                // the game's year, in days

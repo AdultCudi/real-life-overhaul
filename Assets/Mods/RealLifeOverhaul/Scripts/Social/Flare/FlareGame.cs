@@ -240,6 +240,15 @@ namespace RealLifeOverhaul.Flare
             return reg != null ? Mathf.RoundToInt(Books.SalesYesterday(reg.Address)) : 0;
         }
 
+        /// <summary>A place as Flare writes one ("street~number") as the game writes an address ("32 Fifth Avenue"); null for a place that cannot be read.</summary>
+        public static string AddressOf(string place)
+        {
+            string key = FlareCityPass.PlaceToKey(place);
+            int cut = key != null ? key.LastIndexOf('|') : -1;
+            return cut > 0 && int.TryParse(key.Substring(cut + 1), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int number)
+                ? RealLifeOverhaul.Construction.ConstructionGame.AddressText(key.Substring(0, cut), number) : null;
+        }
+
         /// <summary>The game's satisfaction figures of a business (0 to 100): overall, then service, pricing, cleanliness, facility. False with none.</summary>
         public static bool Satisfaction(BuildingRegistration reg, out int overall, int[] parts)
         {

@@ -30,6 +30,12 @@ namespace RealLifeOverhaul.Flare
             }
             long followers = Hero(v, 0), rating = Hero(v, 1), pull = Hero(v, 2);
             long reviews = Detail(v, 4), came = Detail(v, 2), spent = Detail(v, 3);
+            FlareStarRow counted = _director.StarsWithPosts(row.Key, _director.Now);   // the one rating read, as the new interface's page reads it
+            if (counted != null && counted.Total > 0 && file != null)
+            {
+                reviews = counted.Total;
+                rating = FlareReplyRules.Average(counted) / 100;
+            }
             var b = new StringBuilder(240);
             b.Append(reviews > 0
                 ? FlareText.Fill("reallife_flare_city_shop_follow", "followers", FlareText.N((int)followers), "rating", Stars(rating), "reviews", FlareText.N((int)reviews))

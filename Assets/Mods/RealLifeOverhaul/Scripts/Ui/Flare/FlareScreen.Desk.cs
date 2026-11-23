@@ -55,6 +55,17 @@ namespace RealLifeOverhaul.Ui
             b.Rating = total > 0 ? (average / 1000f).ToString("0.0", CultureInfo.InvariantCulture) : FlareText.T("reallife_flare_kit_rating_none");
             b.Halves = total > 0 ? (average + 250) / 500 : 0;
             b.RatingLine = total > 0 ? ReviewsCount(total) : FlareText.T("reallife_flare_kit_week_no_reviews");
+            // The old page draws its stars from the game's own satisfaction of the business; with no review counted yet those are the rating shown.
+            if (_flare.GameSatisfaction(shop.Place, out int overall) && overall > 0)
+            {
+                string game = (overall / 20f).ToString("0.0", CultureInfo.InvariantCulture);
+                b.RatingLine += " · " + FlareText.Fill("reallife_flare_kit_rating_game", "stars", game);
+                if (total == 0)
+                {
+                    b.Rating = game;
+                    b.Halves = (overall + 5) / 10;
+                }
+            }
             b.Bars = row != null ? new[] { row.Five, row.Four, row.Three, row.Two, row.One } : new int[5];
             // What Flare brought it this week: the posts' and the campaigns' visitors and takings, its followers in the city, a campaign.
             Brought(file, shop.Place, now, out int visitors, out long cents, out _, out _);
@@ -110,9 +121,7 @@ namespace RealLifeOverhaul.Ui
         private string BusinessLine(FlareShop shop)
         {
             int hours = _flare.OpenHours(shop.Place);
-            string key = FlareCityPass.PlaceToKey(shop.Place);
-            int cut = key != null ? key.LastIndexOf('|') : -1;
-            string address = cut > 0 ? key.Substring(cut + 1) + " " + key.Substring(0, cut) : null;
+            string address = FlareGame.AddressOf(shop.Place);
             string line = FlareText.Fill("reallife_flare_kit_business_line", "kind", FlareText.Niche(shop.Niche), "district", FlareText.District(shop.District));
             if (address != null)
             {

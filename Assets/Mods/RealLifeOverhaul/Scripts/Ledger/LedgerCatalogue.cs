@@ -171,6 +171,8 @@ namespace RealLifeOverhaul.Ledger
             K("_mkt_news_own_deal_buy", LedgerSection.Markets, 40),
             K("_mkt_news_own_buyback", LedgerSection.Markets, 40),
             K("_mkt_news_own_withdrawn", LedgerSection.Markets, 30),
+            K("_mkt_news_why", LedgerSection.Markets, 47),
+            K("_mkt_news_segment", LedgerSection.Markets, 44),
             K("_mkt_news_crash", LedgerSection.Markets, 92, "crash"),
             K("_mkt_news_failed", LedgerSection.Markets, 87, "failed"),
             K("_mkt_news_bid_failed", LedgerSection.Markets, 60, "bid_failed"),

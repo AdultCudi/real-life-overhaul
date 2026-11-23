@@ -520,8 +520,8 @@ internal static partial class Program
         }
         Check(hotels, "uptown, hotels: left out, no hotel slot is in it");
 
-        // Broadband (left out): the player's own network is New York's seven; Uptown has no place in it and costs nothing to ask about.
-        Check(BroadbandRules.District(UptownId) == -1 && BroadbandRules.BuildCost(BroadbandRules.District(UptownId), 100) == 0, "uptown, broadband: left out of the player's own network");
+        // Broadband (takes part): the player's own network is dug in Uptown and Cedar Heights too, after New York's seven (NetDistrictChecks.cs).
+        Check(BroadbandRules.District(UptownId) == 7 && BroadbandRules.BuildCost(BroadbandRules.District(UptownId), 100) > 0, "uptown, broadband: the player's own network has a place in Uptown after New York's seven");
 
         // Internet (takes part): reached by the providers that reach every district, wireless and copper.
         int reach = 0;

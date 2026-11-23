@@ -206,14 +206,14 @@ namespace RealLifeOverhaul
                         }
                     }
                     Network n = state.Network;
-                    for (int district = 0; n.Running && district < Network.Districts; district++)
+                    for (int district = 0; n.Running && district < n.Count; district++)
                     {
                         int ready = n.ReadyDay(district);
                         PlannerEntry e = n.Digging(district) && ready >= fromDay && ready <= toDay ? into.Add(Id, 5, district, PlannerCategory.Money, ready) : null;
                         if (e != null && into.WantText)
                         {
                             e.Title = UtilitiesText.T("reallife_bb_plan_open_title");
-                            e.What = UtilitiesText.T("reallife_bb_plan_open_what", "district", BroadbandCompany.District(district));
+                            e.What = UtilitiesText.T("reallife_bb_plan_open_what", "district", BroadbandCompany.District(n, district));
                         }
                     }
                 }

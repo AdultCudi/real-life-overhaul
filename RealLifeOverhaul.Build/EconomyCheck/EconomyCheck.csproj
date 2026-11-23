@@ -611,6 +611,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Builders.cs" Link="Mod\MarketEngine.Builders.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Hedge.cs" Link="Mod\MarketEngine.Hedge.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\HedgeRules.cs" Link="Mod\HedgeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketSegments.cs" Link="Mod\MarketSegments.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketWhy.cs" Link="Mod\MarketWhy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStatement.cs" Link="Mod\MarketStatement.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Why.cs" Link="Mod\MarketEngine.Why.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Segments.cs" Link="Mod\MarketStore.Segments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerEdition.cs" Link="Mod\LedgerEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerState.cs" Link="Mod\LedgerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
@@ -873,6 +878,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClientRules.cs" Link="Mod\ClientRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ShiftFactsRules.cs" Link="Mod\ShiftFactsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigOffers.cs" Link="Mod\GigOffers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigPayRules.cs" Link="Mod\GigPayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobRules.cs" Link="Mod\SideJobs\SideJobRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobState.cs" Link="Mod\SideJobs\SideJobState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobStore.cs" Link="Mod\SideJobs\SideJobStore.cs" />
@@ -1083,6 +1090,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSettingsList.cs" Link="Mod\UiSettingsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Links.cs" Link="Mod\UiDraw.Links.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudBar.cs" Link="Mod\UiDraw.HudBar.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudNeeds.cs" Link="Mod\UiDraw.HudNeeds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudParts.cs" Link="Mod\UiDraw.HudParts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudRules.cs" Link="Mod\UiHudRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavPlaceRules.cs" Link="Mod\NavPlaceRules.cs" />

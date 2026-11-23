@@ -66,11 +66,11 @@ namespace RealLifeOverhaul
             UnitDone(_hand, UnitPay());   // the big tipper, if the offer drew one
             if (took <= QuickTip)
             {
-                tip = Mathf.RoundToInt(Random.Range(5.5f, 9.5f) * Ctx.Rate);
+                tip = Mathf.RoundToInt(Random.Range(4f, 6.9f) * Ctx.Rate);   // a quick, right drink: tips moved with the unit pay (13 from 18), so the hat is still as large a share of the shift
             }
             else if (took <= FairTip && Random.value < 0.6f)
             {
-                tip = Mathf.RoundToInt(2.75f * Ctx.Rate);
+                tip = Mathf.RoundToInt(2f * Ctx.Rate);
             }
             _tips += tip;
             TillHeard();

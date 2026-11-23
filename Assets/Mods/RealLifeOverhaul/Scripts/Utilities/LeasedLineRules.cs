@@ -21,26 +21,44 @@ namespace RealLifeOverhaul.Utilities
 
         public static int Step(int plan) => Math.Max(0, Math.Min(LeasedLineCatalogue.Steps - 1, plan));
 
-        /// <summary>A line's price a month at a place now, cents, at today's price level.</summary>
-        public static int MonthCents(int step, int level)
+        /// <summary>A line's price a month at a place now, cents, at today's price level; <paramref name="own"/> a line on the player's own network (its own price).</summary>
+        public static int MonthCents(int step, int level, bool own = false)
         {
             long cents = LeasedLineCatalogue.MonthCents[Step(step)];
             cents = cents * Math.Max(PriceRules.Least, Math.Min(PriceRules.Most, level)) / PriceRules.Start;
+            cents = own ? cents * LeasedLineCatalogue.OwnPriceShare / 1000 : cents;
             return (int)Math.Min(cents, int.MaxValue / 4);
         }
 
-        /// <summary>The installation fee, cents at today's price level: a share of the month's price, more where the district has no fibre.</summary>
-        public static int InstallCents(int step, string district, int level)
+        /// <summary>The installation fee, cents at today's price level: a share of the month's price, more where the district has no fibre; a line on
+        /// the player's own network is laid where its fibre already runs.</summary>
+        public static int InstallCents(int step, string district, int level, bool own = false)
         {
             long cents = (long)MonthCents(step, level) * LeasedLineCatalogue.InstallShare / 1000;
-            cents = cents * LeasedLineCatalogue.FeeShare[Class(district)] / 1000;
+            cents = own ? cents * LeasedLineCatalogue.FeeShare[LeasedLineCatalogue.Fibre] / 1000 * LeasedLineCatalogue.OwnInstallShare / 1000
+                : cents * LeasedLineCatalogue.FeeShare[Class(district)] / 1000;
             return (int)Math.Min(cents, int.MaxValue / 4);
         }
 
         /// <summary>The wait from the order to the line being live, days.</summary>
-        public static int InstallDays(int step, string district)
+        public static int InstallDays(int step, string district, bool own = false)
         {
-            return LeasedLineCatalogue.InstallDays[Step(step)] + LeasedLineCatalogue.ExtraDays[Class(district)];
+            return LeasedLineCatalogue.InstallDays[Step(step)] + (own ? 0 : LeasedLineCatalogue.ExtraDays[Class(district)]);
+        }
+
+        public const int RunningOwn = 1, NextOwn = 2;   // Account.LineOwn's bits: the running line's and the changed one's
+
+        /// <summary>True if the line live on a day is the company's own (the one running, or the changed one once its wait is over).</summary>
+        public static bool LiveOwn(Account a, int day)
+        {
+            bool next = a.LineNext > 0 && a.LineNext <= LeasedLineCatalogue.Steps && day >= a.LineNextDay;
+            return (a.LineOwn & (next ? NextOwn : RunningOwn)) != 0;
+        }
+
+        /// <summary>True if the line last ordered is the company's own (a change ordered counts, though the old one still runs).</summary>
+        public static bool OrderedOwn(Account a)
+        {
+            return a != null && (a.LineOwn & (a.LineNext > 0 ? NextOwn : RunningOwn)) != 0;
         }
 
         /// <summary>The step (plus one) of a line live on a day, 0 with none: the new step once its wait is over, else the one running.</summary>
@@ -74,19 +92,21 @@ namespace RealLifeOverhaul.Utilities
         /// A line ordered. With one already running the new step takes over when its wait is over and the old one runs until then; with none (or one still being
         /// installed) it replaces it. The plan and the rest of the account are left as they were.
         /// </summary>
-        public static void Order(Account a, int step, string district, int day)
+        public static void Order(Account a, int step, string district, int day, bool own = false)
         {
-            int day2 = day + InstallDays(step, district);
+            int day2 = day + InstallDays(step, district, own);
             if (LiveAt(a, day) > 0)
             {
                 a.LineNext = Step(step) + 1;
                 a.LineNextDay = day2;
+                a.LineOwn = (a.LineOwn & RunningOwn) | (own ? NextOwn : 0);
                 return;
             }
             a.LineStep = Step(step) + 1;
             a.LineDay = day2;
             a.LineNext = 0;
             a.LineNextDay = 0;
+            a.LineOwn = own ? RunningOwn : 0;
         }
 
         /// <summary>The day's turn: a changed line whose wait is over becomes the line. True if it changed.</summary>
@@ -100,13 +120,14 @@ namespace RealLifeOverhaul.Utilities
             a.LineDay = a.LineNextDay;
             a.LineNext = 0;
             a.LineNextDay = 0;
+            a.LineOwn = (a.LineOwn & NextOwn) != 0 ? RunningOwn : 0;
             return true;
         }
 
         /// <summary>A line given up, a change not yet live with it: a line is not on a contract, so nothing is owed for leaving.</summary>
         public static void Drop(Account a)
         {
-            a.LineStep = a.LineDay = a.LineNext = a.LineNextDay = 0;
+            a.LineStep = a.LineDay = a.LineNext = a.LineNextDay = a.LineOwn = 0;
         }
 
         /// <summary>The speed the line gives on a day, Mbps; 0 with none or while it is being installed.</summary>
@@ -120,7 +141,7 @@ namespace RealLifeOverhaul.Utilities
         public static int LineCents(Account a, int day, int level)
         {
             int s = LiveAt(a, day);
-            return s > 0 ? MonthCents(s - 1, level) : 0;
+            return s > 0 ? MonthCents(s - 1, level, LiveOwn(a, day)) : 0;
         }
 
         /// <summary>A day of the line added to the month, as a plan's days are: nothing before it is live. Carriers hold a service level, so there is no outage credit.</summary>
@@ -131,7 +152,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return;
             }
-            int perDay = (int)(((long)MonthCents(s - 1, level) + Math.Max(1, monthDays) / 2) / Math.Max(1, monthDays));
+            int perDay = (int)(((long)MonthCents(s - 1, level, LiveOwn(a, day)) + Math.Max(1, monthDays) / 2) / Math.Max(1, monthDays));
             a.Accrued = (int)Math.Min((long)a.Accrued + perDay, int.MaxValue / 4);
         }
 

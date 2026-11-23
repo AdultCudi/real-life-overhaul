@@ -154,6 +154,7 @@ namespace RealLifeOverhaul.Ui
             _screen.Dirty = true;
         }
 
+        private float _topRow;   // the needs' row's height as the last layout drew it
         private Canvas _canvas;
         private int _order;   // the order it was made at, over the game's HUD (UiOverCanvas)
 
@@ -412,6 +413,11 @@ namespace RealLifeOverhaul.Ui
                 _screen.Lay(_scene, frame, true, HudHints.Wrap(UiGame.Instance.Keys));
             }
             _view.Write(_scene, false);
+            if (_screen.Model.TopRow != _topRow)
+            {
+                _topRow = _screen.Model.TopRow;
+                HudLive.RowMoved();   // the game's notifications stand under the needs' row
+            }
             UiHud.LeftColumn(_screen.Model, out _leftX, out _leftY, out _leftW, out _leftH);
             UiHud.LeftColumn(_screen.Model, false, out float cx, out float cy, out float cw, out float ch);
             _columnRight = cw > 0f ? (cx + cw) * _scale : 0f;
@@ -561,6 +567,7 @@ namespace RealLifeOverhaul.Ui
             }
             UiHudRules.Beside(px, py, screen.z > 0f, width, h, frame.Width, frame.BandY, ax, ay, aw, ah, out float x, out float y);
             UiHudRules.Clear(ref x, ref y, width, h, frame.Width, hud.AvoidX, hud.AvoidY, hud.AvoidW, hud.AvoidH);   // and off the minimap's card
+            y = Math.Max(y, UiHud.UnderTopRow(hud, frame.BandY, h));   // and under the needs' row along the top
             var at = new Vector2(x * _scale, -y * _scale);
             if (at != f.At)
             {

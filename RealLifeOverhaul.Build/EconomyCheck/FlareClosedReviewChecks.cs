@@ -225,7 +225,7 @@ internal static partial class Program
             effects++;
         }
         Check(effects == 1, "Flare closed reviews: the city's reviews reach a business's customers by one way alone, the hour's (" + effects + ")");
-        Check(FlareMethod(card, "private string ShopLines(FlareRow row)").Contains("p.Source == FlareSource.Review && p.At <= now"),
+        Check(FlareMethod(card, "private string ShopLines(FlareRow row)").Contains("_director.StarsWithPosts(row.Key, now)") && ModSource(@"Social\Flare\FlareReplyRules.cs").Contains("p.Source == FlareSource.Review && p.Author != FlareAuthor.Player && !string.IsNullOrEmpty(p.Place) && p.At <= now"),
             "Flare closed reviews: the business card counts the reviews that went up, not those of visits still to come");
         Check(page.Contains("\"reallife_flare_test_review_now\", () => Flare.FlareDirector.Instance?.TestReviewNow()")
               && FlareMethod(tests, "public void TestReviewNow()").Contains("ReviewUp(p);") && FlareMethod(tests, "public void TestReviewNow()").Contains("TestReady(\"Flare review now\")"),

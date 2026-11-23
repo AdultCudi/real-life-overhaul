@@ -79,6 +79,48 @@ namespace RealLifeOverhaul.Ui
             return under && words[0] != '_' && words[words.Length - 1] != '_';
         }
 
+        /// <summary>Whether a longer text holds a raw key of the game's or the mod's ("32 ba:street_fifthavenue", "reallife:street_uptown_second") among its words.</summary>
+        public static bool HasRawKey(string text)
+        {
+            return Rekey(text, null) != text;
+        }
+
+        /// <summary>
+        /// A text with each raw key inside it ("ba:" or "reallife:" and an identifier, as a run of letters, digits, underscores and colons) replaced by
+        /// <paramref name="words"/> of it, or kept where that gives nothing. With no resolver every key is marked by a change of the text, which is what
+        /// <see cref="HasRawKey"/> asks. The text as it is when it holds none.
+        /// </summary>
+        public static string Rekey(string text, System.Func<string, string> words)
+        {
+            if (string.IsNullOrEmpty(text) || (text.IndexOf("ba:", System.StringComparison.OrdinalIgnoreCase) < 0 && text.IndexOf("reallife:", System.StringComparison.OrdinalIgnoreCase) < 0))
+            {
+                return text;
+            }
+            var b = new StringBuilder(text.Length + 8);
+            int i = 0;
+            while (i < text.Length)
+            {
+                int j = i;
+                while (j < text.Length && IsKeyChar(text[j]))
+                {
+                    j++;
+                }
+                if (j == i)
+                {
+                    b.Append(text[i++]);
+                    continue;
+                }
+                string run = text.Substring(i, j - i);
+                bool key = (run.StartsWith("ba:", System.StringComparison.OrdinalIgnoreCase) || run.StartsWith("reallife:", System.StringComparison.OrdinalIgnoreCase)) && KeyShaped(run);
+                string said = key ? (words != null ? words(run) : "<key>") : null;
+                b.Append(string.IsNullOrEmpty(said) ? run : said);
+                i = j;
+            }
+            return b.ToString();
+        }
+
+        private static bool IsKeyChar(char c) => c == '_' || c == ':' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+
         /// <summary>
         /// The taxi button's words as the game writes them on its own button (BuildingResume.SetClickLabels): "Travel here" over the minutes and the fare in brackets,
         /// on the game's two lines, each kept whole; <paramref name="none"/> when the game wrote none. A button draws the lines one over the other.

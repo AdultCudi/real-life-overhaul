@@ -72,6 +72,7 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public static class MarketCatalogue
     {
+        public const int PageNewsDays = 6;               // days of news a company's page carries (the market keeps six: MarketEngine.CloseEnd)
         public const int OpenMinute = 9 * 60 + 30;       // 09:30
         public const int CloseMinute = 16 * 60;          // 16:00
         public const int StepMinutes = 5;

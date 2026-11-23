@@ -111,18 +111,12 @@ namespace RealLifeOverhaul.Flare
                 return CityShopLines(file, row);   // Flare in the city: the business's page as the residents see it (FlareApp.City)
             }
             int day = _director.CurrentDay;
-            int talk = file.BuzzAt(row.Key, day), own, last, reviews = 0, stars = 0;
+            int talk = file.BuzzAt(row.Key, day), own, last;
             int posts = FlareCast.PostsAbout(file, row.Key, out own, out last);   // the player's own and the paid posts of the deals there
             long now = _director.Now;
-            for (int k = 0; k < file.Posts.Count; k++)
-            {
-                FlarePost p = file.Posts[k];
-                if (p.Place == row.Key && p.Source == FlareSource.Review && p.At <= now)   // the reviews that went up, not those of visits still to come
-                {
-                    reviews++;
-                    stars += p.Arg;
-                }
-            }
+            FlareStarRow counted = _director.StarsWithPosts(row.Key, now);   // the one rating read, as the new interface's page reads it
+            int reviews = counted != null ? counted.Total : 0;
+            float average = reviews > 0 ? FlareReplyRules.Average(counted) / 1000f : 0f;
             string text = (talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"))
                           + "\n" + FlareText.Fill("reallife_flare_shop_posts_line", "posts", posts.ToString(), "last",
                                                  last >= 0 ? FlareText.Fill("reallife_flare_day", "day", last.ToString()) : FlareText.T("reallife_flare_never"));
@@ -132,7 +126,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (reviews > 0)
             {
-                text += "\n" + FlareText.Fill("reallife_flare_shop_reviews", "count", reviews.ToString(), "stars", (stars / (float)reviews).ToString("0.0"));
+                text += "\n" + FlareText.Fill("reallife_flare_shop_reviews", "count", reviews.ToString(), "stars", average.ToString("0.0"));
             }
             FlareCampaign campaign;
             if (_director.CampaignAt(row.Key, out campaign))

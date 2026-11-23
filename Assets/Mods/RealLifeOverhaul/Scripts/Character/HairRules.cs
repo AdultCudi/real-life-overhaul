@@ -487,23 +487,46 @@ namespace RealLifeOverhaul
             return queue >= AfterPostQueue - QueueReach && queue <= AfterPostQueue + QueueReach ? "after post-process" : "other";
         }
 
+        public const int LayerSpan = 3;            // the game's hair layers sit 0 to 3 above 3000 (scalp, body, strands, wisps)
+        public const int UnderlayQueue = 2998;     // the mod's scalp underlay: under every layer of the hair
+        public const int GlowWrites = 1, GlowLeaves = 0, GlowUnknown = -1;   // whether a lamp glow writes depth
+
         /// <summary>
-        /// The queue a hair layer is drawn at so that it comes after a lamp glow of queue <paramref name="glow"/>, keeping the
-        /// layers' own order (the game gives them 3000 to 3003, scalp first). Only inside the default transparent pass, where
-        /// HDRP sorts by queue: a glow in an earlier pass is drawn before the hair anyway, and one in the low resolution or
-        /// after post-process pass is composited later whatever the hair's queue is, so nothing is changed for those.
-        /// Never leaves the pass: the last queue of it is kept for the layers that would pass it.
+        /// The queue a hair layer is drawn at against the lamp glow of the same street (<paramref name="glow"/>, 0 = none known),
+        /// given whether the glow writes depth (<paramref name="depth"/>). Before a glow that writes depth, after one that does not.
         /// </summary>
-        public static int QueueAfter(int queue, int glow)
+        public static int QueueFor(int queue, int glow, int depth)
         {
+            // A glow that writes depth fails the depth test of anything drawn after it that lies behind its near face, so hair drawn
+            // after it vanishes inside and behind the cone: the layers go just before it, in their own order and with their gaps, and
+            // the cone blends over them. A glow that writes no depth hides nothing, so the layers go just after it and lie over the
+            // cone. An unknown flag counts as writing: hair before a glow is right either way, hair after a depth writing one is lost.
+            // Only inside the default transparent pass, where HDRP sorts by queue (a glow in another pass is drawn before or after
+            // the hair whatever its queue), and never out of it.
             bool hairHere = queue >= DefaultQueue && queue <= DefaultQueue + QueueReach;
             bool glowHere = glow >= DefaultQueue - QueueReach && glow <= DefaultQueue + QueueReach;
             if (!hairHere || !glowHere)
             {
                 return queue;
             }
+            if (depth != GlowLeaves)
+            {
+                if (glow > DefaultQueue + LayerSpan)
+                {
+                    return queue;   // every layer is already drawn before it
+                }
+                int before = glow - 1 - LayerSpan + (queue - DefaultQueue);
+                return Math.Max(DefaultQueue - QueueReach, Math.Min(glow - 1, before));
+            }
             int wanted = glow + 1 + (queue - DefaultQueue);
             return Math.Min(Math.Max(queue, wanted), DefaultQueue + QueueReach - 1);
+        }
+
+        /// <summary>The queue of the scalp underlay: 2998, or below the lowest hair layer where those were moved before a glow.</summary>
+        public static int UnderlayFor(int glow, int depth)
+        {
+            int lowest = QueueFor(DefaultQueue, glow, depth);
+            return Math.Max(DefaultQueue - QueueReach, Math.Min(UnderlayQueue, lowest - 1));
         }
 
         // ---------------------------------------------------------------- small things

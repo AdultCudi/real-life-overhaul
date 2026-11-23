@@ -479,6 +479,11 @@ namespace RealLifeOverhaul.Markets
                 SplitEvent(e);   // Extras/MarketEngine.Extras.cs
                 return;
             }
+            if (e.Kind == MarketInputs.EventSegment)
+            {
+                SegmentEvent(e);   // MarketEngine.Why.cs
+                return;
+            }
             if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)
             {
                 // A player's trade in a Going Public session: its lasting move of the price, or its shares.
@@ -498,6 +503,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 return;
             }
+            WhyHeard(e);   // what it did to each sector, kept for the close's why
             int tradeSector = e.Kind == MarketInputs.EventBuzz ? SectorOfTrade(e.A) : -1;
             for (int i = 0; i < State.Stocks.Count; i++)
             {
@@ -537,10 +543,18 @@ namespace RealLifeOverhaul.Markets
                     Stock s = State.Stocks[i];
                     if (s.Listed)
                     {
+                        double was = s.LogFair;
                         s.LogFair = MarketLife.LogFairOf(s, State.Env, State.Day, Year);
                         s.Last = s.MidCents;
+                        if (s.Own == null)
+                        {
+                            _why.PolicyLn[(int)s.Sector] += s.LogFair - was;
+                            _why.PolicyN[(int)s.Sector]++;
+                        }
                     }
                 }
+                _why.PolicyLever = e.A;
+                _why.PolicyDirection = e.B;
             }
             if (e.Kind == MarketInputs.EventElection)
             {

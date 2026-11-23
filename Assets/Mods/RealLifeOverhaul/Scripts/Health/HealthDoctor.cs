@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Health
             {
                 return new DialogEntry
                 {
-                    messageData = "reallife_hc_call_booked".Localize(new { day = a.Day, hour = a.Hour, place = a.Number + " " + a.Street }),
+                    messageData = "reallife_hc_call_booked".Localize(new { day = a.Day, hour = a.Hour, place = RealLifeOverhaul.Construction.ConstructionGame.AddressText(a.Street, a.Number) }),
                     ConfirmTextOverride = "reallife_hc_call_other".Localize(),
                     OnConfirm = before,
                     OnCancel = PhoneContacts.HangUp
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Health
                 return PhoneContacts.Closing("reallife_hc_call_no_clinic");
             }
             HealthAppointment a = d.State.Appointment;
-            return PhoneContacts.Closing("reallife_hc_call_done", new { day = a.Day, hour = a.Hour, place = a.Number + " " + a.Street });
+            return PhoneContacts.Closing("reallife_hc_call_done", new { day = a.Day, hour = a.Hour, place = RealLifeOverhaul.Construction.ConstructionGame.AddressText(a.Street, a.Number) });
         }
     }
 }

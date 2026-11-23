@@ -1127,6 +1127,10 @@ namespace RealLifeOverhaul
                     v => Settings.UiInterface = v)
                 .AddDropdown(Settings.UiMotionId, "reallife_ui_motion", new[] { "reallife_ui_motion_0", "reallife_ui_motion_1", "reallife_ui_motion_2" }, Settings.UiMotion,
                     v => Settings.UiMotion = v)
+                .AddSlider(Settings.UiNeedsSizeId, "reallife_ui_needs_size", 0, 4, Settings.UiNeedsSize,
+                    v => Settings.UiNeedsSize = v, Meta.SettingsTable.SliderValue)   // laid out again at the next second by the HUD's signature: no reload
+                .AddDropdown(Settings.UiNeedsPlaceId, "reallife_ui_needs_place", new[] { "reallife_ui_needs_place_0", "reallife_ui_needs_place_1" }, Settings.UiNeedsPlace,
+                    v => Settings.UiNeedsPlace = v)
                 .Guarded(o => Ui.UiSwitchOptions.Add(o))   // a switch for each screen on the RLO interface (Ui/UiScreenSwitches)
                 .AddButton("reallife_phone_test_second", Ui.PhoneKit.TestSecondPage)
                 .AddButton("reallife_phone_test_kit_folder", Ui.PhoneKit.TestFolder)

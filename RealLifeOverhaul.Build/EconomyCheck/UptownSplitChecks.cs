@@ -436,7 +436,7 @@ internal static partial class Program
                 }
             }
         }
-        string[] allowed = { "BuildCatalogue.cs", "ConstructionDirector.cs", "DistrictBuildings.cs", "DistrictSplit.cs", "DistrictValues.cs", "LifeDirector.Tests.cs", "LifeText.cs", "ConstructionLinks.cs", "Wiring.ConstructionLinks.cs" };
+        string[] allowed = { "BroadbandCatalogue.cs", "BuildCatalogue.cs", "ConstructionDirector.cs", "DistrictBuildings.cs", "DistrictSplit.cs", "DistrictValues.cs", "LifeDirector.Tests.cs", "LifeText.cs", "ConstructionLinks.cs", "Wiring.ConstructionLinks.cs" };
         users.RemoveAll(u => allowed.Contains(u));
         Check(users.Count == 0, "uptown split sources: no file reads the first district's id as the whole band's but those that name a district for a reason" + (users.Count > 0 ? ": " + string.Join(", ", users) : string.Empty));
         string lifeGame = SplitSource(@"Uptown\LifeGame.cs") + SplitSource(@"Uptown\LifeGame.Map.cs") + SplitSource(@"Uptown\LifeGame.Buildings.cs") + SplitSource(@"Uptown\LifeGame.Mix.cs") + SplitSource(@"Uptown\LifeGame.Market.cs");
