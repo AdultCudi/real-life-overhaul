@@ -184,7 +184,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        private static readonly Collider[] Solid = new Collider[4];
+        private static readonly Collider[] Solid = new Collider[8];
+        private static int _itemMask;
         private static int _vehicleMask;
 
         /// <summary>
@@ -200,21 +201,32 @@ namespace RealLifeOverhaul
                 {
                     return true;
                 }
+                _itemMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             }
             Vector3 at = spot;
             for (int attempt = 0; attempt < 5; attempt++)
             {
-                int count = Physics.OverlapSphereNonAlloc(at + Vector3.up * 0.9f, 0.4f, Solid, _vehicleMask, QueryTriggerInteraction.Ignore);
-                if (count == 0)
+                // A parked scooter, and so every bicycle and motorbike made on one, keeps its collider on the interactive layer so that it can
+                // be walked up to; no vehicle layer holds it, so it is looked for there too.
+                int count = Physics.OverlapSphereNonAlloc(at + Vector3.up * 0.9f, 0.4f, Solid, _vehicleMask | _itemMask, QueryTriggerInteraction.Ignore);
+                Vector3 centre = default;
+                bool blocked = false;
+                for (int i = 0; i < count; i++)
+                {
+                    Collider hit = Solid[i];
+                    Solid[i] = null;
+                    if (!blocked && hit != null && ((_vehicleMask & (1 << hit.gameObject.layer)) != 0 || hit.GetComponentInParent<ScooterController>() != null))
+                    {
+                        blocked = true;
+                        centre = hit.bounds.center;
+                    }
+                }
+                if (!blocked)
                 {
                     spot = at;
                     return true;
                 }
-                Vector3 away = at - Solid[0].bounds.center;
-                for (int i = 0; i < count; i++)
-                {
-                    Solid[i] = null;
-                }
+                Vector3 away = at - centre;
                 away.y = 0f;
                 away = away.sqrMagnitude < 0.01f ? Vector3.right : away.normalized;
                 if (!OnRoad(at + away * 0.5f, 0.6f, out at))

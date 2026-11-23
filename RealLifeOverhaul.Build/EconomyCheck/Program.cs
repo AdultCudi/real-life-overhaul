@@ -317,6 +317,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--board-places")
+        {
+            BoardPlaces();   // a help-wanted board kept where it was, a meeting place told by its address, nobody thrown down by a bicycle mounted (BoardPlaceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bike-lanes")
         {
             BikeLanes();   // a stand, a rack or a dock never in the lane to a repair bay, a pump, a display spot or a garage door (BikeLaneChecks.cs)
@@ -1948,6 +1954,7 @@ internal static partial class Program
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         WorkUiRules(); // the work interface's new rules: standing, colleagues, other applicants, seats, tutors, grades, rivals' offers, posts, past jobs, sellers (WorkRulesChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
+        BoardPlaces();  // a help-wanted board kept where it was, a meeting place told by its address, nobody thrown down by a bicycle mounted (BoardPlaceChecks.cs)
         MeetingPlaces(); // a review is held where the player can go: a board that stands, named with the shop it is outside and the way in, else the phone (MeetingPlaceChecks.cs)
         DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)
         InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
