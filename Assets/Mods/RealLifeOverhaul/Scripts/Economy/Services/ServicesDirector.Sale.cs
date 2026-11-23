@@ -387,18 +387,19 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// A business handed over for no money as a takeover of the player's listed company completes (Markets/Listing), ended
-        /// as in a sale with the staff going along. True once it is not the player's; false while it cannot be done yet.
+        /// as in a sale with the staff going along. True once it is not the player's; false while it cannot be done yet. A takeover of the company leaves a contract's firm be (it
+        /// is its buyer's already); the contract's own hand-over (<paramref name="byContract"/>) is the one that takes it, and so must not stop at the hold the contract puts on it.
         /// </summary>
-        public bool HandOver(string place, string buyerName)
+        public bool HandOver(string place, string buyerName, bool byContract = false)
         {
             if (!_running || _broken || _saleBroken || GoingPublic.InSession)
             {
                 return false;
             }
             BuildingRegistration reg = ServicesGame.Find(place);
-            if (reg == null || !ServicesGame.IsSellable(reg) || Held(reg))
+            if (reg == null || !ServicesGame.IsSellable(reg) || (!byContract && Held(reg)))
             {
-                return true;   // not the player's business any more (a contract's firm is its buyer's, and a takeover of the company leaves it be)
+                return true;   // not the player's business any more, or one a contract holds that a takeover leaves be
             }
             if (ServicesGame.Blocked(reg) != SaleBlock.None)
             {

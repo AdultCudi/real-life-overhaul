@@ -62,6 +62,10 @@ namespace RealLifeOverhaul.Ui
                     return TechText.T("reallife_terms_row_paying");
                 }
                 long aim = SaleTermRules.Aim(d);
+                if (d.Kind == TermKind.Boss && !d.Open)
+                {
+                    return TechText.T("reallife_terms_row_handing");   // ended, the business not yet passed to the buyer
+                }
                 if (d.Kind == TermKind.Boss && d.EarnState != 0)
                 {
                     return TechText.T("reallife_terms_row_contract");

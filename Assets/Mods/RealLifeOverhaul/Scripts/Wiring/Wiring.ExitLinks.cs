@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
                 ExitBridges.ShareQuote = ShareQuote;
                 ExitBridges.ShareGrant = ShareGrant;
                 ExitBridges.HandOverReady = HandOverReady;
+                ExitBridges.StillHeld = StillHeld;
                 ServicesBridges.Contracted = place => TechDirector.Instance != null && TechDirector.Instance.Contracted(place);
                 CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
                 // a contract firm's profit is its owner's, not the player's
@@ -157,7 +158,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     ServicesDirector services = ServicesDirector.Instance;
-                    return services != null && services.HandOver(place, buyer);
+                    return services != null && services.HandOver(place, buyer, true);   // a sale or a contract's end: the hold a contract puts on a business is not in their way
                 }
                 catch (Exception e)
                 {
@@ -221,6 +222,20 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("ExitLinks.HandOverReady", e);
+                    return false;
+                }
+            }
+
+            // Whether the business is still the player's own: a hand-over that said it was done is believed only when this says no.
+            private static bool StillHeld(string place)
+            {
+                try
+                {
+                    return ServicesGame.IsSellable(ServicesGame.Find(place));
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.StillHeld", e);
                     return false;
                 }
             }

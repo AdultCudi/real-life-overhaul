@@ -137,7 +137,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_vc_button_diligence", "reallife_vc_button_follow_angel", "reallife_vc_button_follow_fund", "reallife_vc_button_fund_in",
                 "reallife_vc_button_fund_open", "reallife_vc_button_fund_out", "reallife_vc_button_listing", "reallife_vc_button_meet", "reallife_vc_button_meet_vc",
                 "reallife_vc_button_options", "reallife_vc_button_raise", "reallife_vc_button_raise_page", "reallife_exit_button_sell", "reallife_vc_button_take_sheet",
-                "reallife_vc_cap_all_yours", "reallife_vc_cap_board", "reallife_vc_cap_burn", "reallife_vc_cap_chief", "reallife_vc_cap_profit", "reallife_vc_cap_title",
+                "reallife_vc_cap_all_yours", "reallife_vc_cap_board", "reallife_vc_cap_burn", "reallife_vc_cap_chief", "reallife_vc_chief_help", "reallife_vc_cap_profit", "reallife_vc_cap_title",
                 "reallife_vc_col_board", "reallife_vc_col_raised", "reallife_vc_col_revenue", "reallife_vc_col_runway", "reallife_vc_col_sector",
                 "reallife_vc_col_share", "reallife_vc_col_stage", "reallife_vc_col_startup", "reallife_vc_col_value", "reallife_vc_col_yours",
                 "reallife_vc_confirm_sheet_body", "reallife_vc_confirm_sheet_title",

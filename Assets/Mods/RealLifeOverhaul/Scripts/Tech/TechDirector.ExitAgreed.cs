@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Tech
             {
                 terms = default(TermChoice);
             }
-            if (Save == null || e == null || e.Agreed != null)
+            if (Save == null || e == null || e.Agreed != null || ContractRefused(place, null))
             {
                 return false;
             }
