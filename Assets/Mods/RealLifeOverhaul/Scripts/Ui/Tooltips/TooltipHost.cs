@@ -1,5 +1,6 @@
 using System;
 using Entities;
+using Helpers;
 using Tooltip;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,9 @@ namespace RealLifeOverhaul.Ui
         private int _sig;
         private bool _readDue, _shown, _gameOwn, _kind;   // _kind: the card shown is the money's
         private string _note;   // the words of a held button card, else null
+        private string _person;   // the employee a row's card is asked for, else null
+        private bool _personSchedule;   // ...and it stands in the schedule, whose overworked days it adds
+        private float _moneyH;
         private CanvasGroup _gameGroup;   // the game's own tooltip group: its alpha is 0 while the game hides or pauses its tooltip
         private bool _moneyAsked, _years;   // a pill's card is asked for: the clock's years and days when _years, else the net worth
         private float _moneyDue, _moneyX, _moneyY, _moneyW;   // the pill's box as fractions of the screen
@@ -150,6 +154,7 @@ namespace RealLifeOverhaul.Ui
         {
             _years = false;
             _note = null;
+            _person = null;
             _moneyAsked = true;
             _moneyDue = Time.unscaledTime + MoneyDelay;
             _moneyX = x;
@@ -173,6 +178,15 @@ namespace RealLifeOverhaul.Ui
         {
             MoneyIn(x, y, w);
             _note = words;
+        }
+
+        /// <summary>The pointer or the focus settled on a row that shows a person (its box as fractions of the screen): their card shows by it after a moment.</summary>
+        internal void PersonIn(string employeeId, bool schedule, float x, float y, float w, float h)
+        {
+            MoneyIn(x, y, w);
+            _person = employeeId;
+            _personSchedule = schedule;
+            _moneyH = h;
         }
 
         /// <summary>The pointer left the money pill, or pressed it: its card goes.</summary>
@@ -359,14 +373,24 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            if (!(_note != null ? TooltipWorth.MakeNote(_model, _note) : _years ? TooltipWorth.MakeYears(_model) : TooltipWorth.Make(_model)))
+            bool made = _person != null ? TooltipEmployee.Make(_model, EmployeeHelper.GetEmployeeById(_person, false), _personSchedule)
+                : _note != null ? TooltipWorth.MakeNote(_model, _note) : _years ? TooltipWorth.MakeYears(_model) : TooltipWorth.Make(_model);
+            if (!made)
             {
                 _moneyAsked = false;
                 return;
             }
             Lay();
             float lw = _laid.x / _scale, lh = _laid.y / _scale;
-            UiTooltipRules.OverPill(_moneyX * lw, _moneyY * lh, _moneyW * lw, _w, _h, lw, UiTooltipRules.Gap, out float x, out float y);
+            float x, y;
+            if (_person != null)
+            {
+                UiTooltipRules.BesideRow(_moneyX * lw, _moneyY * lh, _moneyW * lw, _moneyH * lh, _w, _h, lw, lh, UiTooltipRules.Gap, out x, out y);
+            }
+            else
+            {
+                UiTooltipRules.OverPill(_moneyX * lw, _moneyY * lh, _moneyW * lw, _w, _h, lw, UiTooltipRules.Gap, out x, out y);
+            }
             _view.Root.anchoredPosition = new Vector2(x * _scale, -y * _scale);
             _kind = true;
             _view.Root.gameObject.SetActive(true);

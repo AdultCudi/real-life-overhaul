@@ -120,6 +120,20 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        /// <summary>
+        /// The pointer or the pad's focus rests on a row that shows a person (a shift on a board, a name in a list): its box as fractions of the
+        /// screen, and the person's card, what the game's employee tooltip shows, stands by it after a moment. False while the card is not drawn.
+        /// </summary>
+        public static bool Person(string employeeId, bool schedule, float x, float y, float w, float h)
+        {
+            if (_host == null)
+            {
+                return false;
+            }
+            _host.PersonIn(employeeId, schedule, x, y, w, h);
+            return true;
+        }
+
         /// <summary>The pointer left the money pill or pressed it: the net worth card goes.</summary>
         public static void MoneyOut()
         {

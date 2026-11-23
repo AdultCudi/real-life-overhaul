@@ -43,6 +43,12 @@ namespace RealLifeOverhaul.Family
         /// <summary>A car can be offered from a family conversation: they asked for one and have none yet.</summary>
         public static bool CanOffer => Settings.FamilyExpect && !GoingPublic.InSession && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PCarWishDay > 0 && !Has;
 
+        /// <summary>
+        /// A car can be given from Giving's Help with money whether or not they asked for one: they live with the player, have none yet, and the partner's expectations are on (never in a
+        /// Going Public session). The conversation is the same as when they asked: a car of the player's, or a new one at the game's own price.
+        /// </summary>
+        public static bool CanGift => Settings.FamilyExpect && !GoingPublic.InSession && FamilyState.Together && FamilyState.S.LivesIn && !Has;
+
         /// <summary>They have one, and it can be asked back.</summary>
         public static bool CanTakeBack => Settings.FamilyExpect && !GoingPublic.InSession && FamilyState.Together && Has;
 

@@ -184,8 +184,8 @@ namespace RealLifeOverhaul.Construction
                 return new ConstructionLead
                 {
                     Icon = UiIcon.Briefcase, Kicker = ConstructionText.T("reallife_ui_cons_lead_start"),
-                    Title = office ? ConstructionText.T("reallife_bld_glance_found", "name", place.Name) : ConstructionText.T("reallife_bld_glance_no_office"),
-                    Body = null, Actions = actions.ToArray()
+                    Title = ConstructionText.T(office ? "reallife_ui_cons_lead_found_title" : "reallife_ui_cons_lead_office_title"),
+                    Body = office ? ConstructionText.T("reallife_bld_glance_found", "name", place.Name) : ConstructionText.T("reallife_bld_glance_no_office"), Actions = actions.ToArray()
                 };
             }
             if (f.Licence != LicenceState.Granted)

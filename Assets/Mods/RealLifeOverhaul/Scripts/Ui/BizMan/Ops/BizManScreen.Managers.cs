@@ -1065,12 +1065,42 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- purchasing
 
+        // The game's purchasing tab has no Add plan: a plan starts in the importer's phone call, one to a seated purchasing
+        // agent who holds none, and only with a rented warehouse in use (Dialogs/ImportManagerDialog). Said under the list
+        // with what is missing, as the game's own refusal says it in the call.
+        private static string PurchasingNote(BizManBusiness b)
+        {
+            bool warehouse = false;
+            List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
+            for (int i = 0; i < all.Count && !warehouse; i++)
+            {
+                warehouse = all[i].RentedByPlayer && GameRegistrations.BuildingType(all[i]) == "ba:buildingtype_warehouse" && all[i].businessTypeName != "ba:businesstype_empty";
+            }
+            int free = 0;
+            List<EmployeeInstance> agents = EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo
+            {
+                withAssignedAddress = b.address,
+                withSkills = new[] { "ba:skill_purchasingagent" },
+                excludeBeingReplaced = true
+            });
+            for (int i = 0; i < agents.Count; i++)
+            {
+                if (agents[i].IsAssignedToAnyWorkShift() && PurchasingAgentHelper.GetAssignedPlanForPurchasingAgent(agents[i].id) == null)
+                {
+                    free++;
+                }
+            }
+            return UiText.Fill(BizManRules.PurchasingNoteKey(warehouse, free), "n", free.ToString());
+        }
+
         private void Purchasing(BizManBusiness b, BizOpsModel o)
         {
             PurchasingAgentsPlanList list = b.purchasingAgentsPlanList;
             GameObject none = Get<GameObject>(GameContract.BuyNone, list);
+            string why = PurchasingNote(b);
             Plans(Get<ReorderableList>(GameContract.BuyPlanOrder, list), null, UiText.T("bizman_menu_purchasing_agents"), UiText.T("reallife_ui_bizops_imports_none"),
-                UiText.T("reallife_ui_bizops_imports_none_body"), e => Entry(e, UiIcon.Handshake, "ContractName", null));
+                why, e => Entry(e, UiIcon.Handshake, "ContractName", null));
+            o.PlansNote = why;
             if (none != null && none.activeInHierarchy)
             {
                 o.Plans = new BizManItem[0];

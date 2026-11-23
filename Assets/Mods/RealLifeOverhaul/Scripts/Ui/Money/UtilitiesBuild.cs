@@ -146,8 +146,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[]
                     {
-                        a.Place, state, w.Money(a.SoFar), a.Owed > 0 ? w.Money(a.Owed) : string.Empty,
-                        a.Owed > 0 && a.DueDay > 0 ? w.Day(a.DueDay) : string.Empty, w.T(a.AutoDebit ? "reallife_util_debit_on" : "reallife_util_debit_off", a.AutoDebit ? "On" : "Off")
+                        a.Place, state, w.Money(a.SoFar), w.Money(a.Owed),
+                        a.Owed > 0 && a.DueDay > 0 ? w.Day(a.DueDay) : w.T("reallife_ui_cell_none", "None"),
+                        w.T(a.AutoDebit ? "reallife_util_debit_on" : "reallife_util_debit_off", a.AutoDebit ? "On" : "Off")
                     },
                     Subs = new[] { w.F("reallife_ui_util_account_sub", "{service}, {provider}", "service", service, "provider", a.Provider), null, null, null, null, null },
                     Values = new[] { (int)ServiceIcon(a.Service), 0, 0, 0, 0, 0 },

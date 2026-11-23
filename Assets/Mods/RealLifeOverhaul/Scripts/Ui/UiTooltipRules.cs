@@ -68,6 +68,17 @@ namespace RealLifeOverhaul.Ui
             y = Math.Max(UiHudRules.Margin, pillY - gap / 2f - h);
         }
 
+        /// <summary>
+        /// Where the card of a row stands: under the row, its left edge on the row's, or over it where there is no room below, kept inside
+        /// the screen, so a row's own words stay readable (a person's name on a shift). The row's box and the card are in px of the layout.
+        /// </summary>
+        public static void BesideRow(float rowX, float rowY, float rowW, float rowH, float w, float h, float screenW, float screenH, float gap, out float x, out float y)
+        {
+            x = Math.Max(UiHudRules.Margin, Math.Min(rowX, screenW - UiHudRules.Margin - w));
+            float below = rowY + rowH + gap / 2f;
+            y = below + h + UiHudRules.Margin <= screenH ? below : Math.Max(UiHudRules.Margin, rowY - gap / 2f - h);
+        }
+
         /// <summary>The mood step of a satisfaction: 0 low, 1 fair, 2 good.</summary>
         public static int MoodStep(int satisfaction) => satisfaction < Low ? 0 : satisfaction < Fair ? 1 : 2;
 

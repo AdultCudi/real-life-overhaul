@@ -246,9 +246,11 @@ namespace RealLifeOverhaul.Ui
                 case VentBlockKind.Stepper:
                 {
                     float h = UiTokens.Control;
-                    float fw = Math.Min(UiDataTable.StepperWidth, UiDraw.SnapDown(w * 0.5f));
+                    // The field is as wide as its figure needs between its buttons ("tomorrow at 19:00" is wider than a price), up to most of the row.
+                    float need = UiDraw.Snap(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4 * 2f + (UiDraw.StepButton + UiTokens.S2) * 2f);
+                    float fw = Math.Min(Math.Max(UiDataTable.StepperWidth, need), UiDraw.SnapDown(w * (need > UiDataTable.StepperWidth ? 0.65f : 0.5f)));
                     UiDraw.TextMiddle(s, at, x, y, h, w - fw - UiTokens.S3, UiStyle.Body, UiRole.Text2, b.Text, UiFlags.Label | UiFlags.Truncate);
-                    UiDraw.Stepper(s, at, x + w - fw, y, fw, b.Value, b.CanLess, b.CanMore, StepLess, StepType, StepMore, b.Run, b.Disabled, b.Hint);
+                    UiDraw.Stepper(s, at, x + w - fw, y, fw, b.Value, b.CanLess, b.CanMore, StepLess, StepType, StepMore, b.Run, b.Disabled, b.Hint, true);
                     return y + h + UiTokens.S1;
                 }
                 case VentBlockKind.Choice:

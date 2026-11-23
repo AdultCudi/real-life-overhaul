@@ -23,6 +23,16 @@ namespace RealLifeOverhaul.Giving
         public const string LoanKey = "reallife_transaction_giving_loan";
         public const string LoanBackKey = "reallife_transaction_giving_loan_back";
         public const string DeductKey = "reallife_transaction_giving_deduct";
+        public const string StandingKey = "reallife_transaction_giving_standing";
+        public const string NamingKey = "reallife_transaction_giving_naming";
+        public const string UpkeepKey = "reallife_transaction_giving_upkeep";
+        public const string RentKey = "reallife_transaction_giving_rent";
+        public const string DebtKey = "reallife_transaction_giving_debt";
+        public const string BusinessKey = "reallife_transaction_giving_business";
+        public const string BusinessLoanKey = "reallife_transaction_giving_business_loan";
+        public const string CourseKey = "reallife_transaction_giving_course";
+        public const string CarKey = "reallife_transaction_giving_car";
+        public const string HomeKey = "reallife_transaction_giving_home";
         private const string DeductName = "reallife_giving_deduct";
 
         public static IModLogger Logger;
@@ -98,6 +108,70 @@ namespace RealLifeOverhaul.Giving
                 return null;
             }
             return CityPopulation.Live;
+        }
+
+        // ---- the city's districts and the cars on sale, for gifts to upkeep and a car for a person
+
+        /// <summary>
+        /// The districts a gift to upkeep can name: the seven of New York the mod knows, those of them this city has, in the order they are saved by. Another city (the mod does not know
+        /// it) and a district a free update adds have none, so such a gift stands down there and never throws (CityCheck.Here, CityDistricts.NewYork).
+        /// </summary>
+        public static void Districts(List<string> into)
+        {
+            into.Clear();
+            for (int i = 0; i < CityDistricts.NewYork.Length && into.Count < GivingState.Districts; i++)
+            {
+                if (CityCheck.Here(CityDistricts.NewYork[i]))
+                {
+                    into.Add(CityDistricts.NewYork[i]);
+                }
+            }
+        }
+
+        /// <summary>A district as the game names it.</summary>
+        public static string DistrictName(string district)
+        {
+            return string.IsNullOrEmpty(district) ? string.Empty : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
+        }
+
+        /// <summary>The player's own name as the game holds it, for what a big gift is called.</summary>
+        public static string PlayerName
+        {
+            get
+            {
+                try
+                {
+                    string name = PlayerHelper.CharacterData != null ? PlayerHelper.CharacterData.name : null;
+                    return string.IsNullOrEmpty(name) ? string.Empty : name;
+                }
+                catch (Exception)
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Three cars a household can be given, by the game's own prices (the cars on sale, the dearest and the cheapest left out of the ends): the first cheap, the second the middle, the
+        /// third a fine one. Their names and prices, in today's whole money, are written into the arrays. How many there are (3, or none when the game lists no cars).
+        /// </summary>
+        public static int CarsOffered(string[] names, int[] prices)
+        {
+            var models = new List<RealLifeOverhaul.Economy.Dealership.MarketModel>(64);
+            RealLifeOverhaul.Economy.Dealership.DealerGame.Models(models, new List<string>());
+            if (models.Count == 0 || names.Length < 3 || prices.Length < 3)
+            {
+                return 0;
+            }
+            models.Sort((a, b) => a.Price.CompareTo(b.Price));
+            int[] at = { models.Count / 4, models.Count / 2, models.Count * 9 / 10 };
+            for (int i = 0; i < 3; i++)
+            {
+                RealLifeOverhaul.Economy.Dealership.MarketModel m = models[Math.Min(models.Count - 1, at[i])];
+                names[i] = RealLifeOverhaul.Economy.Dealership.DealerGame.CarName(m.Type);
+                prices[i] = (int)Math.Min(GivingCatalogue.AmountMost, Math.Round(m.Price));
+            }
+            return 3;
         }
 
         // ---- the game's tax

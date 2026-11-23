@@ -131,6 +131,7 @@
         public const string CharacterLightingId = "character_lighting";
         public const string CharacterNewLooksId = "character_new_looks";
         public const string CharacterSkinId = "character_skin";
+        public const string LampHazeId = "lamp_haze";
         public const string CrimeAgainstPlayerId = "crime_against_player";
         public const string OffenceRedLightId = "offence_red_light";
         public const string OffenceSpeedingId = "offence_speeding";
@@ -569,6 +570,7 @@
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
+        public static bool LampHaze = true;              // the glow cone and the volumetric scatter of the game's street lamps (off: the light only)
         public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
         public static bool OffenceRedLight = true;       // running a red light can get the player pulled over
@@ -1069,6 +1071,7 @@
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);
             CharacterNewLooks = Bool(modId, CharacterNewLooksId, CharacterNewLooks);
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
+            LampHaze = Bool(modId, LampHazeId, LampHaze);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
             MoveOffences(modId);   // before the eight are read: the older single switch becomes their own saved values

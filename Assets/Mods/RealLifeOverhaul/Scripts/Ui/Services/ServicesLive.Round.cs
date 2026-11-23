@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
                         t.Totals[sums[i]] = Money((float)Math.Min(TableRules.Sum(written, order, sums[i]), int.MaxValue / 2));
                     }
                 }
+                UiDataTableRules.DashBlank(t, 1, true, ServicesText.T("reallife_ui_cell_none"));   // a shop not on the round has no minutes needed or done: a dash, not a gap under the head
                 return t;
             }
 

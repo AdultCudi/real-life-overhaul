@@ -460,6 +460,52 @@ namespace RealLifeOverhaul
             return materialName != null && materialName.IndexOf("Scalp", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        // ---------------------------------------------------------------- the order hair is drawn in
+
+        // HDRP's transparent render queue ranges (HDRenderQueue): each pass takes 100 either side of its middle.
+        public const int DefaultQueue = 3000;      // the "default" transparent pass, where the game's hair is drawn
+        public const int QueueReach = 100;
+        public const int PreRefractionQueue = 2750;
+        public const int LowResQueue = 3400;
+        public const int AfterPostQueue = 3700;
+
+        /// <summary>Which of HDRP's passes a render queue draws in, in words (for the log).</summary>
+        public static string PassOf(int queue)
+        {
+            if (queue < DefaultQueue - QueueReach)
+            {
+                return queue >= PreRefractionQueue - QueueReach ? "before refraction" : "opaque";
+            }
+            if (queue <= DefaultQueue + QueueReach)
+            {
+                return "default transparent";
+            }
+            if (queue >= LowResQueue - QueueReach && queue <= LowResQueue + QueueReach)
+            {
+                return "low resolution transparent";
+            }
+            return queue >= AfterPostQueue - QueueReach && queue <= AfterPostQueue + QueueReach ? "after post-process" : "other";
+        }
+
+        /// <summary>
+        /// The queue a hair layer is drawn at so that it comes after a lamp glow of queue <paramref name="glow"/>, keeping the
+        /// layers' own order (the game gives them 3000 to 3003, scalp first). Only inside the default transparent pass, where
+        /// HDRP sorts by queue: a glow in an earlier pass is drawn before the hair anyway, and one in the low resolution or
+        /// after post-process pass is composited later whatever the hair's queue is, so nothing is changed for those.
+        /// Never leaves the pass: the last queue of it is kept for the layers that would pass it.
+        /// </summary>
+        public static int QueueAfter(int queue, int glow)
+        {
+            bool hairHere = queue >= DefaultQueue && queue <= DefaultQueue + QueueReach;
+            bool glowHere = glow >= DefaultQueue - QueueReach && glow <= DefaultQueue + QueueReach;
+            if (!hairHere || !glowHere)
+            {
+                return queue;
+            }
+            int wanted = glow + 1 + (queue - DefaultQueue);
+            return Math.Min(Math.Max(queue, wanted), DefaultQueue + QueueReach - 1);
+        }
+
         // ---------------------------------------------------------------- small things
 
         public static float Clamp01(float value)

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Ui
     /// does (a tab, a row, a day), never every frame; a button goes to the director that already owns it through <see cref="ICompanySource.Do"/>. The old app's pages stay
     /// underneath for the per-screen switch. A typed figure (the reserve, the most hours) goes through the host's text field. Nothing a frame; nothing allocated while idle.
     /// </summary>
-    public sealed class CompanyScreen : IUiScreen, IUiTypingSubmit
+    public sealed class CompanyScreen : IUiScreen, IUiTypingSubmit, IUiPersonTip
     {
         public const string ScreenId = "company";
 
@@ -531,6 +531,26 @@ namespace RealLifeOverhaul.Ui
         }
 
         // ------------------------------------------------------------------------------------------------- the host's calls
+
+        // A person's row on the Staff page, or their lane or shift on the Rota's day board: the person, for the card the game's employee tooltip gives.
+        public string PersonAt(int command, int arg, out bool schedule)
+        {
+            schedule = false;
+            if (command == CompanyFace.Row)
+            {
+                string id = arg >= 0 && arg < _layout.RowIds.Length ? _layout.RowIds[arg] : null;
+                return id != null && id.StartsWith(StaffRowId, StringComparison.Ordinal) ? id.Substring(StaffRowId.Length) : null;
+            }
+            UiBoardModel board = _view.Tab == CompanyView.Rota && _facts.Rota.Place != null ? _facts.Rota.Place.Board : null;
+            if (board == null)
+            {
+                return null;
+            }
+            int lane = command == UiBoard.LaneCommand ? arg : command == UiBoard.ShiftCommand && arg >= 0 && arg < board.Shifts.Length ? board.Shifts[arg].Lane : -1;
+            return lane >= 0 && lane < board.Lanes.Length ? board.Lanes[lane].Who : null;
+        }
+
+        private const string StaffRowId = "emp:";
 
         public void Focused(int command, int arg)
         {

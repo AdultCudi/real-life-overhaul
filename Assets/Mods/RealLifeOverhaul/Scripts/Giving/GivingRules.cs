@@ -18,13 +18,33 @@ namespace RealLifeOverhaul.Giving
         public static long Reserve(long floorCents) => floorCents <= 0 ? 0L : (floorCents + 99) / 100;
 
         /// <summary>An amount written at the start's prices, at the price level (tenths of a point), in whole money.</summary>
-        public static int At(int amount, int level) => (int)Math.Round(PriceRules.At((float)amount, level));
+        public static int At(int amount, int level) => (int)Math.Min(GivingCatalogue.AmountMost, Math.Round(PriceRules.At((float)amount, level)));
 
         /// <summary>An amount at today's prices written back at the start's, in whole money.</summary>
         public static int Back(long amount, int level) => (int)Math.Min(int.MaxValue / 2, amount * PriceRules.Start / Math.Max(PriceRules.Least, level));
 
         /// <summary>A step of the list at today's prices; the index is held inside the list.</summary>
         public static int StepNow(int index, int level) => At(GivingCatalogue.Steps[GivingCatalogue.Clamp(index, 0, GivingCatalogue.Steps.Length - 1)], level);
+
+        /// <summary>
+        /// How many steps of the list a player is shown: the usual eleven, and for a richer player every step up to the cash they can give (the first step over it is not shown, as it
+        /// cannot be given). So the most a gift can be follows the player's wealth, and a poorer player is not shown sums that mean nothing to them.
+        /// </summary>
+        public static int ShownSteps(long spare, int level)
+        {
+            int n = GivingCatalogue.StepsBase;
+            while (n < GivingCatalogue.Steps.Length && At(GivingCatalogue.Steps[n], level) <= spare)
+            {
+                n++;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// The most a gift or a loan to a person may be: the start's most, doubled for each of the wealth steps the player has passed (0 to 5), so a late game player can lift a
+        /// household out of trouble with a sum that means something to them, and an early one cannot hand over a fortune.
+        /// </summary>
+        public static int PersonMost(int baseMost, int wealthTier) => (int)Math.Min(GivingCatalogue.AmountMost, (long)baseMost << GivingCatalogue.Clamp(wealthTier, 0, 5));
 
         /// <summary>The nearest step to an amount at the start's prices.</summary>
         public static int StepOf(int amount)
@@ -58,6 +78,23 @@ namespace RealLifeOverhaul.Giving
         {
             long allowed = Math.Min(Math.Max(0L, gifts), DeductionCap(income));
             return Math.Max(0L, allowed - Math.Max(0L, deducted));
+        }
+
+        /// <summary>Whether a gift to one cause takes the giver's name: a hall, a wing, a scholarship. The amount is at the start's prices.</summary>
+        public static bool IsNaming(int amountAtStart) => amountAtStart >= GivingCatalogue.NamingFrom;
+
+        /// <summary>Points of neighbourhood standing a gift to a district's upkeep earns there, by the curve (each gift is its own: it is spent at once, so nothing is kept to add up).</summary>
+        public static int UpkeepPoints(int amountAtStart) => (int)Curve(amountAtStart, GivingCatalogue.UpkeepPointsMost, GivingCatalogue.UpkeepHalf);
+
+        /// <summary>The days the district's shops see more custom after a gift to its upkeep, at the start's prices; 0 under the first line.</summary>
+        public static int UpkeepDays(int amountAtStart)
+        {
+            int days = 0;
+            for (int i = 0; i < GivingCatalogue.UpkeepFrom.Length; i++)
+            {
+                days = amountAtStart >= GivingCatalogue.UpkeepFrom[i] ? GivingCatalogue.UpkeepDays[i] : days;
+            }
+            return days;
         }
 
         // ---- standing and the press
@@ -106,8 +143,8 @@ namespace RealLifeOverhaul.Giving
         /// <summary>What a loan counts for in a person's window, at the start's prices: a share of a gift of the same size, because it comes back.</summary>
         public static int LoanCounts(int amountAtStart) => (int)((long)Math.Max(0, amountAtStart) * GivingCatalogue.LoanShare / 1000);
 
-        /// <summary>A loan's most a month asks: an equal part of it over the months it is paid back in, never under one.</summary>
-        public static int LoanPart(int principal) => Math.Max(1, (principal + GivingCatalogue.LoanParts - 1) / GivingCatalogue.LoanParts);
+        /// <summary>A loan's most a month asks: an equal part of what is owed over the months it is paid back in (six, or a business loan's twelve), never under one.</summary>
+        public static int LoanPart(int owed, int parts = GivingCatalogue.LoanParts) => Math.Max(1, (int)(((long)owed + Math.Max(1, parts) - 1) / Math.Max(1, parts)));
 
         /// <summary>What a household pays back of a part: what it can spare, never more than the part or what is owed.</summary>
         public static int Repayment(int remaining, int part, long spare) => (int)Math.Max(0L, Math.Min(Math.Min(remaining, part), spare));
@@ -134,6 +171,40 @@ namespace RealLifeOverhaul.Giving
                    && affection + trust >= GivingCatalogue.AskLeast;
         }
 
+        /// <summary>
+        /// How much somebody leans on the player's help, 0 to <see cref="GivingCatalogue.DependMost"/>: the times they were helped lately, a point lighter for each
+        /// <see cref="GivingCatalogue.DependDecayDays"/> since the last. Nothing is kept for it but the count and the day.
+        /// </summary>
+        public static int Dependence(PersonGiving g, int day)
+        {
+            if (g == null || g.Helps <= 0)
+            {
+                return 0;
+            }
+            int eased = Math.Max(0, day - g.HelpDay) / GivingCatalogue.DependDecayDays;
+            return GivingCatalogue.Clamp(g.Helps - eased, 0, GivingCatalogue.DependMost);
+        }
+
+        /// <summary>Whether somebody is still within the days after help in which they do not ask again.</summary>
+        public static bool Cooling(PersonGiving g, int day) => g != null && g.HelpDay > 0 && day - g.HelpDay < GivingCatalogue.HelpCooldownDays;
+
+        /// <summary>The chance an hour out of ten thousand for somebody who leans on the player: the usual chance, a share more for each point of dependence.</summary>
+        public static int AskLeaning(int chance, int dependence) => (int)((long)chance * (1000 + (long)GivingCatalogue.AskPerDependence * Math.Max(0, dependence)) / 1000);
+
+        /// <summary>Whether somebody leans enough to ask for more with no real need: they have been helped, often enough lately, and they are not the reliable sort.</summary>
+        public static bool AsksForMore(int dependence, bool reliable) => !reliable && dependence >= GivingCatalogue.MoreFrom;
+
+        /// <summary>What somebody asks for when they ask for more: a share of their last help, whole money at today's prices, rounded to fifty, never under a hundred or over the most asked.</summary>
+        public static int MoreAmount(int lastHelpAtStart, int level)
+        {
+            long ask = (long)Math.Max(0, lastHelpAtStart) * GivingCatalogue.MoreShare / 1000;
+            int amount = (int)Math.Min(At(GivingCatalogue.AskMost, level), (long)At((int)Math.Min(GivingCatalogue.AmountMost, ask), level) / 50 * 50);
+            return Math.Max(At(100, level), amount);
+        }
+
+        /// <summary>What a no costs: the first costs nothing, every later one a little affection (tenths of a point).</summary>
+        public static int NoCost(int nosBefore) => nosBefore >= GivingCatalogue.FreeNos ? GivingCatalogue.NoCost : 0;
+
         /// <summary>What a person in trouble asks for, whole money at today's prices: their debt, held to the most and rounded to fifty.</summary>
         public static int AskAmount(long debt, int level)
         {
@@ -151,7 +222,7 @@ namespace RealLifeOverhaul.Giving
         public static long RivalGift(int seed, int tycoon, long worth, int monthsPerYear, out int charity)
         {
             uint h = Hash(seed, tycoon, 1, 0);
-            charity = (int)(Hash(seed, tycoon, 2, 0) % (uint)Charity.Count);
+            charity = (int)(Hash(seed, tycoon, 2, 0) % (uint)GivingCatalogue.Potted);
             if (worth <= 0)
             {
                 return 0;
@@ -170,8 +241,8 @@ namespace RealLifeOverhaul.Giving
         /// <summary>The charity a tycoon's gift goes to in a month: their own favourite most months, another now and then (seeded).</summary>
         public static int RivalCharity(int seed, int tycoon, int month)
         {
-            uint favourite = Hash(seed, tycoon, 2, 0) % (uint)Charity.Count;
-            return Hash(seed, tycoon, 3, month) % 4 == 0 ? (int)(Hash(seed, tycoon, 4, month) % (uint)Charity.Count) : (int)favourite;
+            uint favourite = Hash(seed, tycoon, 2, 0) % (uint)GivingCatalogue.Potted;
+            return Hash(seed, tycoon, 3, month) % 4 == 0 ? (int)(Hash(seed, tycoon, 4, month) % (uint)GivingCatalogue.Potted) : (int)favourite;
         }
 
         /// <summary>A hash of four numbers, the same on every machine.</summary>
@@ -193,6 +264,13 @@ namespace RealLifeOverhaul.Giving
 
         /// <summary>What a charity may pay out in a month: its cap for each household of the city, at today's prices; at least what is in the pot is not paid past it.</summary>
         public static long MonthCap(Charity c, int households, int level) => (long)Math.Max(0, households) * At(GivingCatalogue.CapPerHousehold[(int)c], level);
+
+        /// <summary>What the care fund pays of a household's own share of a bill: its share of it, never more than the pot holds or the month's cap leaves, and never under nothing.</summary>
+        public static long CareCover(long own, long pot, long cap, long paidThisMonth)
+        {
+            long share = Math.Max(0L, own) * GivingCatalogue.CareShare / 1000;
+            return Math.Max(0L, Math.Min(Math.Min(share, Math.Max(0L, pot)), cap - paidThisMonth));
+        }
 
         /// <summary>What it pays now: the pot, held to the cap less what it has paid this month already.</summary>
         public static long PayNow(long pot, long cap, long paidThisMonth) => Math.Max(0L, Math.Min(pot, cap - paidThisMonth));

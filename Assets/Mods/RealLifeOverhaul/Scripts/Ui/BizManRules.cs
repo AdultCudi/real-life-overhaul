@@ -278,6 +278,20 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool Promises(int command) =>
             command == BizManPages.Action || command == BizManPages.LineAction || command == UiFirmHead.First + UiFirmHead.Action || command == UiFirmHead.First + UiFirmHead.Switch;
+
+        /// <summary>
+        /// Why the purchasing tab has no Add plan, as the game has none either: a plan starts when the importer is phoned and
+        /// takes a seated purchasing agent with no plan, one plan an agent, and a rented warehouse in use. The key of the
+        /// sentence that says which is missing, or what to do next.
+        /// </summary>
+        public static string PurchasingNoteKey(bool warehouse, int freeAgents)
+        {
+            if (!warehouse)
+            {
+                return "reallife_ui_bizops_buy_note_warehouse";
+            }
+            return freeAgents > 0 ? "reallife_ui_bizops_buy_note_free" : "reallife_ui_bizops_buy_note_agent";
+        }
     }
 
     /// <summary>The start page's rules, game-free: the help page and the words of a kind of business, which kinds list staff, and the name's length.</summary>

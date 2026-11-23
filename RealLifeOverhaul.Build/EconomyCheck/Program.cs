@@ -174,6 +174,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--hair-fog")
+        {
+            HairFog();   // hair in a street lamp's haze: the order hair is drawn in against the glow, the option, the log line and the texts alone (HairFogChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--gig-music")
         {
             GigMusic();   // the player's own gig music: the folder's files, limits, order, shuffle, fallback, fade and texts alone (GigMusicChecks.cs)
@@ -1569,6 +1575,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--bizman20")
+        {
+            UiBizman20Checks();   // (the purchasing tab's reason, the employee's card on hover and focus, blank columns and cut text on eight screens: UiBizman20Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-kit2")
         {
             UiKit2Checks();   // (the kit's second pass alone: a table cell's card, a row's blocks, any column sorted, a chart's least span, the search's suggestion, the designer's rows: UiKit2Checks.cs)
@@ -1834,6 +1846,7 @@ internal static partial class Program
         CartQueue();
         GigMusic();     // the player's own gig music (GigMusicChecks.cs)
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
+        HairFog();      // hair in a street lamp's haze (HairFogChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
@@ -1950,6 +1963,7 @@ internal static partial class Program
         DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
         BizManOfferAll(); // BizMan makes offers on the kit: the game's boxes and buttons, the press that reaches its method (BizManOfferChecks.cs)
         BizManUniformsAll(); // BizMan's settings page gives a role its uniform preset on the kit, the editor's name kept on every word (BizManUniformChecks.cs)
+        UiBizman20Checks();   // the purchasing tab says why no plan is added, an employee's card on hover and focus, blank columns and cut text (UiBizman20Checks.cs)
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         WorkUiRules(); // the work interface's new rules: standing, colleagues, other applicants, seats, tutors, grades, rivals' offers, posts, past jobs, sellers (WorkRulesChecks.cs)

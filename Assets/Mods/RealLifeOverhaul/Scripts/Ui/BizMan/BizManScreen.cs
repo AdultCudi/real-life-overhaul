@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
     /// patches all run; nothing of the game's is worked out here. A page only the game's own view shows hands over to it.
     /// Cost: a look at a few counts and flags four times a second while it shows; a layout only when they change.
     /// </summary>
-    public sealed partial class BizManScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IUiTypingFocus, IUiStepping, IUiPointing, IUiTracking
+    public sealed partial class BizManScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IUiTypingFocus, IUiStepping, IUiPointing, IUiTracking, IUiPersonTip
     {
         private const float Every = 0.25f;   // seconds between looks at the game's BizMan
         private const float Away = 1f;       // seconds with no look: the app was closed or stood aside meanwhile

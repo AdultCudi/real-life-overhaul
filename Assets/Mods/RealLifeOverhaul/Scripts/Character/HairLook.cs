@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
         private static readonly int PrepassClipId = Shader.PropertyToID("_AlphaClipThresholdDepthPrepass");
         private static readonly int ZWriteId = Shader.PropertyToID("_TransparentZWrite");
         private static readonly int SortPriorityId = Shader.PropertyToID("_TransparentSortPriority");
+        private static readonly int FogOnId = Shader.PropertyToID("_EnableFogOnTransparent");
         private static readonly HashSet<int> Said = new HashSet<int>();   // characters whose hair check line was written this scene
 
         private sealed class Layer
@@ -110,6 +111,7 @@ namespace RealLifeOverhaul
             renderer.GetSharedMaterials(Scratch);
             Finished known = Find(renderer);
             HairFinish.Settings settings = HairFinish.Settings.Default;
+            settings.AfterQueue = LampHaze.GlowQueue();
             bool swapped = false, changed = false;
             for (int i = 0; i < Scratch.Count; i++)
             {
@@ -575,6 +577,7 @@ namespace RealLifeOverhaul
                 text.Append("no hair or beard is worn; ");
             }
             text.Append("underlay: ").Append(ModLooks.DescribeUnderlay(character)).Append("; ");
+            text.Append("street lamp haze: ").Append(LampHaze.Describe()).Append("; ");
             text.Append(finishedLayers).Append(" of ").Append(hairLayers).Append(" layer(s) finished; lit skin sends back ")
                 .Append(Number(HairRules.SkinLit, "F4")).Append(" per unit of light, dark hair may send back at most ")
                 .Append(Number(HairRules.DarkThrough * HairRules.SkinLit, "F4")).Append(" with a lamp behind it, black hair ")
@@ -599,13 +602,28 @@ namespace RealLifeOverhaul
                 .Append(", depth prepass ").Append(material.GetShaderPassEnabled(HairFinish.DepthPrepass) && Float(material, PrepassEnableId) > 0.5f
                     ? "at " + Number(Float(material, PrepassClipId), "F2") : "off")
                 .Append(", writes depth ").Append(Float(material, ZWriteId) > 0.5f ? "yes" : "no")
-                .Append(", sort ").Append(Number(Float(material, SortPriorityId), "F0"));
+                .Append(", sort ").Append(Number(Float(material, SortPriorityId), "F0"))
+                .Append(", ").Append(HairFinish.PassOf(material.renderQueue)).Append(" pass")
+                .Append(", fog on transparent ").Append(material.IsKeywordEnabled(HairFinish.FogKeyword) ? "yes" : "no")
+                .Append(material.HasProperty(FogOnId) ? " (property " + Number(Float(material, FogOnId), "F0") + ")" : "")
+                .Append(", after the lamp glow ").Append(AfterGlow(material.renderQueue));
             Texture map = material.HasProperty(BaseColorMapId) ? material.GetTexture(BaseColorMapId) : null;
             text.Append(", strands '").Append(map != null ? map.name : "none").Append("'");
             if (map is Texture2D texture)
             {
                 text.Append(" ").Append(texture.width).Append("x").Append(texture.height).Append(" ").Append(texture.mipmapCount).Append(" mips");
             }
+        }
+
+        // Whether this layer is drawn after the lamp glow the game puts over the street (HairFinish.QueueAfter).
+        private static string AfterGlow(int queue)
+        {
+            int glow = LampHaze.GlowQueue();
+            if (glow == 0)
+            {
+                return "(no glow mesh known)";
+            }
+            return queue > glow ? "yes (glow " + glow + ")" : queue == glow ? "same queue (glow " + glow + ")" : "NO (glow " + glow + ")";
         }
 
         private static float Float(Material material, int id)

@@ -62,6 +62,7 @@ namespace RealLifeOverhaul
                 HealthBridges.EmployerPlan = () => Employer(out int _);
                 HealthBridges.EmployerSince = () => { Employer(out int since); return since; };
                 HealthBridges.ShiftEnd = ShiftEnd;
+                HealthBridges.CareFund = CareFund;
                 HealthBridges.SickPolicy = SickPolicy;
                 HealthBridges.Reserved = Reserved;
                 HealthBridges.Clinic = Clinic;
@@ -136,6 +137,23 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault(where, e);
+                }
+            }
+
+            // ---- the city's people
+
+            // Giving's care fund pays part of a household's own share of a care bill as the bill falls on it; nothing while giving is off or the city's people are not the player's to help.
+            private static long CareFund(long own, int level)
+            {
+                try
+                {
+                    Giving.GivingDirector giving = Giving.GivingDirector.Instance;
+                    return giving != null ? giving.CareCover(own, level) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("HealthLinks.CareFund", e);
+                    return 0L;
                 }
             }
 

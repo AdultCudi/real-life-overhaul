@@ -673,6 +673,32 @@ namespace RealLifeOverhaul.Ui
             return most;
         }
 
+        // The person a target of the schedule shows, for the card the game's employee tooltip gives on a shift, a name beside the board or a
+        // name in the picker: what a player reads to place them in the right hours. None while a shift is held or dragged.
+        public string PersonAt(int command, int arg, out bool schedule)
+        {
+            schedule = true;
+            if (_m.Part != BizManPart.Schedule || _dragged != null)
+            {
+                return null;
+            }
+            if (command == UiBoard.ShiftCommand)
+            {
+                return arg >= 0 && arg < _shifts.Count && _shifts[arg] != null ? _shifts[arg].employeeId : null;
+            }
+            if (command == BizManPages.Crew + UiDataTable.Row)
+            {
+                return arg >= 0 && arg < _crew.Count ? _crew[arg] : null;
+            }
+            if (command == BizManPages.People + UiDataTable.Row)
+            {
+                ScheduleEmployeeScrollerController list = null;
+                PickBox(out list);
+                return list != null && list.data != null && arg >= 0 && arg < list.data.Count ? list.data[arg].employeeId : null;
+            }
+            return null;
+        }
+
         // A person of the column pressed: chosen to place, or let go when pressed again.
         private bool CrewChoose(int row)
         {

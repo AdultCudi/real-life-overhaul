@@ -39,4 +39,15 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The pointer moved over a target of that command and argument, to a place in px of the layout.</summary>
         void Moved(int command, int arg, float x, float y);
     }
+
+    /// <summary>
+    /// A screen whose targets show a person (a shift on a board, a name in a list): the host asks it which person a target holds when the
+    /// mouse rests on it or the pad's focus comes to it, and the tooltip card shows what the game's employee tooltip shows, by that target.
+    /// Cost: one call a hover or a focus step; the card reads the person once when it is made.
+    /// </summary>
+    public interface IUiPersonTip
+    {
+        /// <summary>The id of the employee this target shows, or null; schedule is true where the person stands in the open schedule (their overworked days are added).</summary>
+        string PersonAt(int command, int arg, out bool schedule);
+    }
 }

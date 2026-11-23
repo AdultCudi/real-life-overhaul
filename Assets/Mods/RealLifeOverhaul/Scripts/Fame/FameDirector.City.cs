@@ -73,6 +73,24 @@ namespace RealLifeOverhaul.Fame
         }
 
         /// <summary>The player answers a request on the Standing page; an accepted one is paid for first.</summary>
+        /// <summary>
+        /// A gift to a district's upkeep (Giving): neighbourhood standing in the district, through the same move every cause of Standing makes (held to the day's most), and more custom in
+        /// its shops for some days, as the sponsored event gives. Returns the points of standing applied.
+        /// </summary>
+        public int Upkept(string district, int points, int percent, int days)
+        {
+            if (!Running || Save == null || string.IsNullOrEmpty(district))
+            {
+                return 0;
+            }
+            int applied = Moved(FamePart.Neighbourhood, FameCause.Charity, points, district);
+            if (percent > 0 && days > 0)
+            {
+                FameCity.DistrictBoost(_file, district, percent, Save.Day + days);
+            }
+            return applied;
+        }
+
         public void AnswerRequest(int id, bool accept)
         {
             FameRequest r = Running ? FameCity.Request(_file, id) : null;

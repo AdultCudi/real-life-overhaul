@@ -52,6 +52,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Character\HairRules.cs" Link="Mod\HairRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyDirector.CompanionOwnership.cs" Link="Mod\CompanyDirector.CompanionOwnership.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionTransactions.cs" Link="Mod\CompanionTransactions.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionPromotion.cs" Link="Mod\CompanionPromotion.cs" />
@@ -455,6 +456,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingStore.cs" Link="Mod\Giving\GivingStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingRules.cs" Link="Mod\Giving\GivingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingPeople.cs" Link="Mod\Giving\GivingPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingHelp.cs" Link="Mod\Giving\GivingHelp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveResult.cs" Link="Mod\Giving\GiveResult.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveFacts.cs" Link="Mod\Giving\GiveFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingYear.cs" Link="Mod\Giving\GivingYear.cs" />
@@ -469,6 +471,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthLeave.cs" Link="Mod\Health\HealthLeave.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthDay.cs" Link="Mod\Health\HealthDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthPeople.cs" Link="Mod\Health\HealthPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthBridges.cs" Link="Mod\Health\HealthBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRivals.cs" Link="Mod\Health\HealthRivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthFacts.cs" Link="Mod\Health\HealthFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\HealthPages.cs" Link="Mod\Ventures\HealthPages.cs" />
@@ -1228,6 +1231,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Fields.cs" Link="Mod\UiDraw.Fields.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Caret.cs" Link="Mod\UiDraw.Caret.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataTable.cs" Link="Mod\UiDataTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataTableRules.cs" Link="Mod\UiDataTableRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataSort.cs" Link="Mod\UiDataSort.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksModel.cs" Link="Mod\StocksModel.cs" />

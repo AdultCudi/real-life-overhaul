@@ -39,6 +39,12 @@ namespace RealLifeOverhaul.Giving
         /// <summary>Money given to a person for good, whole money: a gift, or a loan written off (the dynasty counts it in the estate for a time). Null: nobody is told.</summary>
         public static Action<long> GaveToPerson;
 
+        /// <summary>
+        /// A gift to a district's upkeep reaches Standing: the district's own id (as the game names it), the points of neighbourhood standing it earns there, the per cent more custom its
+        /// shops see and for how many days. Returns the points really applied (Standing holds a part to a most a day). Null: nothing.
+        /// </summary>
+        public static Func<string, int, int, int, int> Upkeep;
+
         public static void Reset()
         {
             Reserved = null;
@@ -51,6 +57,7 @@ namespace RealLifeOverhaul.Giving
             RivalPay = null;
             RivalName = null;
             GaveToPerson = null;
+            Upkeep = null;
         }
     }
 }

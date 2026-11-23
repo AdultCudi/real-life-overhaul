@@ -187,12 +187,22 @@ namespace RealLifeOverhaul.Ui
         // A day after today: its name at the left, its first things at the right; a press opens that day.
         private static float Later(UiScene s, UiAt at, ref UiPlanLater e, int index, float x, float y, float w)
         {
-            float h = UiTokens.PairRow;
+            float dw = UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(e.Day, UiStyle.Body) + UiTokens.S2)), tx = x + dw + UiTokens.S2, tw = w - dw - UiTokens.S2;
+            // What the day holds takes a second line before it is cut: "Signage licence of Selftest Studio runs out" is a thing to read whole.
+            bool two = !UiTextRules.Fits(e.Title, UiStyle.Body, tw) && UiTextRules.Lines(e.Title, UiStyle.Body, tw, 0, out float _) <= 2;
+            float th = two ? UiDraw.Snap(UiTextRules.WrappedHeight(e.Title, UiStyle.Body, tw, 2)) : 0f;
+            float h = two ? Math.Max(UiTokens.PairRow, th + UiTokens.S2) : UiTokens.PairRow;
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
-            float dw = UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(e.Day, UiStyle.Body) + UiTokens.S2));
-            UiDraw.TextMiddle(s, inside, x, y, h, dw, UiStyle.Body, UiRole.Text2, e.Day, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.TextMiddle(s, inside, x + dw + UiTokens.S2, y, h, w - dw - UiTokens.S2, UiStyle.Body, UiRole.Text, e.Title, UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inside, x, y, UiTokens.PairRow, dw, UiStyle.Body, UiRole.Text2, e.Day, UiFlags.Label | UiFlags.Truncate);
+            if (two)
+            {
+                UiDraw.Text(s, inside, tx, y + UiDraw.SnapDown((h - th) / 2f), tw, UiStyle.Body, UiRole.Text, e.Title, UiFlags.Label | UiFlags.Wrap | UiFlags.Right, 2);
+            }
+            else
+            {
+                UiDraw.TextMiddle(s, inside, tx, y, h, tw, UiStyle.Body, UiRole.Text, e.Title, UiFlags.Right | UiFlags.Truncate);
+            }
             UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, LaterCommand, index, face);
             return h;
         }
