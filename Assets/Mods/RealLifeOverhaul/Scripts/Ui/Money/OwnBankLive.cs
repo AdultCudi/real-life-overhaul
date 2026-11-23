@@ -73,6 +73,21 @@ namespace RealLifeOverhaul.Ui
 
         public bool Press(MoneyModel model, int command, int arg) => false;
 
+        /// <summary>The facts of the bank as the kit's page reads them, for the old app's newer pages, so both interfaces show one figure. Read now; nothing kept but the facts.</summary>
+        public OwnBankFacts Facts(int tab)
+        {
+            try
+            {
+                Read(tab);
+            }
+            catch (Exception e)
+            {
+                _facts.Ready = false;
+                OwnBankDirector.Logger?.Warn("Your bank: the facts could not be read: " + e.Message);
+            }
+            return _facts;
+        }
+
         public void Fill(MoneyModel model)
         {
             try
@@ -114,6 +129,7 @@ namespace RealLifeOverhaul.Ui
             w.MoveFee = director.MoveUpFee();
             w.MoveWhy = bank.Running ? director.MoveUpWhy() : null;
             w.BranchOn = Settings.EconomyBranch;
+            w.Tax = OwnBankGame.TaxOn;
             if (tab == OwnBankBuild.FundTab && bank.Running)
             {
                 DaySeriesBook book = DaySeriesDirector.Book;
@@ -233,10 +249,93 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.DividendEvery: director.SetDividends(value, bank.DivShare); return true;
                 case MoneyAct.DividendShare: director.SetDividendShare(value); return true;
                 case MoneyAct.MoveUp: return MoveUp(director, bank);
+                case MoneyAct.CardsOn: director.SetCards(value == 1); return true;
+                case MoneyAct.CardIssue:
+                    {
+                        int kind = RowKind(view.Row, "c|");
+                        if (kind < 0)
+                        {
+                            return false;
+                        }
+                        director.SetCardIssue(kind, value == 1);
+                        return true;
+                    }
+                case MoneyAct.CardLimit: director.SetCardLimit(id, value); return true;
+                case MoneyAct.CardRate: director.SetCardRate(value); return true;
+                case MoneyAct.CardFee: director.SetCardFee(value); return true;
+                case MoneyAct.CardAuto: director.SetCardLines(value, bank.CardDecline); return true;
+                case MoneyAct.CardBelow: director.SetCardLines(bank.CardAuto, value); return true;
+                case MoneyAct.CardApprove:
+                case MoneyAct.CardRefuse:
+                    {
+                        bool ok = director.DecideCards(id, act == MoneyAct.CardApprove, out string why);
+                        Warn(ok ? null : why);
+                        return ok;
+                    }
+                case MoneyAct.OwnCardOpen:
+                    {
+                        bool ok = director.OpenOwnCard(OwnBankBuild.OwnLimitDollars(view, _facts), out string why);
+                        Warn(ok ? null : why);
+                        return ok;
+                    }
+                case MoneyAct.OwnCardClose:
+                    {
+                        bool ok = director.CloseOwnCard(out string why);
+                        Warn(ok ? null : why);
+                        return ok;
+                    }
+                case MoneyAct.DeskOn: director.SetDesk(value == 1); return true;
+                case MoneyAct.DeskMandate: director.SetDeskMandate(value); return true;
+                case MoneyAct.DeskShare: director.SetDeskShare(value); return true;
+                case MoneyAct.DeskLimit: director.SetDeskLimit(value); return true;
+                case MoneyAct.SellLoans: return SellLoans(director, id, OwnBankBuild.SaleDollars(view, _facts, id) * 100L);
+                case MoneyAct.Borrow: return Borrow(director, OwnBankBuild.BorrowDollars(view, _facts) * 100L);
+                case MoneyAct.Repay:
+                    {
+                        bool ok = director.Repay(OwnBankBuild.BorrowDollars(view, _facts) * 100L, out string why);
+                        Warn(ok ? null : why);
+                        return ok;
+                    }
                 default: return false;
             }
         }
 
+
+        private static int RowKind(string row, string prefix)
+        {
+            return row != null && row.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(row.Substring(prefix.Length), NumberStyles.None, Inv, out int kind) ? kind : -1;
+        }
+
+        // The game's own question before loans are sold to other banks: what goes, what comes, what is lost at once.
+        private bool SellLoans(OwnBankDirector director, int segment, long face)
+        {
+            if (face <= 0 || segment < 0 || segment >= OwnBankCatalogue.Segments)
+            {
+                return false;
+            }
+            BankCity city = OwnBankGame.City();
+            long loss = face * OwnBankRules.SaleDiscountOf(city, director.Bank) / 1000;
+            Ask("reallife_ob_confirm_sale_title".Localize(new { bank = director.Bank.Name }), "reallife_ob_confirm_sale_body".Localize(new { face = OwnBankText.Money(face),
+                kind = OwnBankText.Segment(segment), cash = OwnBankText.Money(face - loss), loss = OwnBankText.Money(loss) }), "reallife_ob_sale_button", true,
+                () => director.SellLoans(segment, face, out string why) ? null : why);
+            return true;
+        }
+
+        // The game's own question before money is borrowed from other banks: the price and the day it falls due.
+        private bool Borrow(OwnBankDirector director, long cents)
+        {
+            OwnBank bank = director.Bank;
+            BankCity city = OwnBankGame.City();
+            cents = OwnBankRules.ToStep(cents);
+            if (cents <= 0)
+            {
+                return false;
+            }
+            Ask("reallife_ob_confirm_borrow_title".Localize(new { bank = bank.Name }), "reallife_ob_confirm_borrow_body".Localize(new { amount = OwnBankText.Money(cents),
+                rate = OwnBankText.Rate(OwnBankRules.BorrowBp(city, bank)), fee = OwnBankText.Money(OwnBankRules.BorrowFee(cents)) }), "reallife_ob_stress_borrow_button", false,
+                () => director.Borrow(cents, out string why) ? null : why);
+            return true;
+        }
 
         private static int SegmentOf(string row)
         {

@@ -2,6 +2,7 @@ using System;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -33,6 +34,14 @@ namespace RealLifeOverhaul.Economy
             pay.Set(1, OwnBankText.Money(b.PaidMonth), b.PaidMonth / 100.0, TableRow.Plain);
             pay.Set(2, PayNote(b));
             DividendRow(b);
+            OwnBankFacts facts = Facts();
+            RiskTableRow(facts);
+            if (_pick == RiskRow)
+            {
+                selected = RiskRow;
+                WriteRisk(box, b, facts);
+                return true;
+            }
             if (_pick == LevelRow)
             {
                 selected = LevelRow;

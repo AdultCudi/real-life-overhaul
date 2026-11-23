@@ -40,10 +40,47 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
+        // The labels the newer pages of the Your bank screen write: the risk page, the cards tab, the desk tab and the dividends' next sum.
+        private static string[] OwnBankGrowthKeys()
+        {
+            return new[]
+            {
+                "reallife_ob_card_applicants", "reallife_ob_card_applicants_value", "reallife_ob_card_approve", "reallife_ob_card_auto_head",
+                "reallife_ob_card_auto_hint", "reallife_ob_card_balance", "reallife_ob_card_chip_issuing", "reallife_ob_card_col_balance", "reallife_ob_card_col_cards",
+                "reallife_ob_card_col_issue", "reallife_ob_card_col_kind", "reallife_ob_card_col_limit", "reallife_ob_card_col_wait", "reallife_ob_card_costs",
+                "reallife_ob_card_decline", "reallife_ob_card_decline_head", "reallife_ob_card_decline_hint", "reallife_ob_card_empty", "reallife_ob_card_f_book",
+                "reallife_ob_card_f_cards", "reallife_ob_card_f_month", "reallife_ob_card_f_waiting", "reallife_ob_card_fee_head", "reallife_ob_card_fee_hint",
+                "reallife_ob_card_fee_none", "reallife_ob_card_fee_option", "reallife_ob_card_fees", "reallife_ob_card_fraud", "reallife_ob_card_holders",
+                "reallife_ob_card_holders_value", "reallife_ob_card_interchange", "reallife_ob_card_interest", "reallife_ob_card_issue_switch",
+                "reallife_ob_card_limit_head", "reallife_ob_card_lost", "reallife_ob_card_note", "reallife_ob_card_queue", "reallife_ob_card_queue_note",
+                "reallife_ob_card_rate_head", "reallife_ob_card_rate_option", "reallife_ob_card_rival", "reallife_ob_card_spend", "reallife_ob_card_switch",
+                "reallife_ob_card_title", "reallife_ob_card_yours", "reallife_ob_desk_activity", "reallife_ob_desk_activity_value", "reallife_ob_desk_all",
+                "reallife_ob_desk_cuts", "reallife_ob_desk_cuts_value", "reallife_ob_desk_derivs", "reallife_ob_desk_empty", "reallife_ob_desk_f_book",
+                "reallife_ob_desk_f_commission", "reallife_ob_desk_f_custody", "reallife_ob_desk_f_drawdown", "reallife_ob_desk_limit", "reallife_ob_desk_limit_hint",
+                "reallife_ob_desk_limit_option", "reallife_ob_desk_mandate", "reallife_ob_desk_mandate_hint", "reallife_ob_desk_market_off",
+                "reallife_ob_desk_month_value", "reallife_ob_desk_never", "reallife_ob_desk_no_derivs", "reallife_ob_desk_note", "reallife_ob_desk_peak",
+                "reallife_ob_desk_room", "reallife_ob_desk_share", "reallife_ob_desk_share_option", "reallife_ob_desk_shares", "reallife_ob_desk_switch",
+                "reallife_ob_desk_title", "reallife_ob_desk_waiting", "reallife_ob_div_expected", "reallife_ob_div_expected_none", "reallife_ob_div_expected_value",
+                "reallife_ob_div_tax", "reallife_ob_div_tax_note", "reallife_ob_div_tax_value", "reallife_ob_note_stress_off", "reallife_ob_note_stress_quiet",
+                "reallife_ob_note_stress_signs", "reallife_ob_own_chip", "reallife_ob_own_close", "reallife_ob_own_intro", "reallife_ob_own_limit",
+                "reallife_ob_own_limit_hint", "reallife_ob_own_lost", "reallife_ob_own_needs_capital", "reallife_ob_own_needs_cards", "reallife_ob_own_open",
+                "reallife_ob_own_open_note", "reallife_ob_own_owed", "reallife_ob_own_rate", "reallife_ob_own_title", "reallife_ob_row_stress",
+                "reallife_ob_sale_amount", "reallife_ob_sale_button", "reallife_ob_sale_head", "reallife_ob_sale_hint", "reallife_ob_sale_terms",
+                "reallife_ob_stress_borrow", "reallife_ob_stress_borrow_button", "reallife_ob_stress_borrow_hint", "reallife_ob_stress_borrow_room",
+                "reallife_ob_stress_borrow_room_value", "reallife_ob_stress_borrowed", "reallife_ob_stress_borrowed_none", "reallife_ob_stress_borrowed_value",
+                "reallife_ob_stress_clear", "reallife_ob_stress_clear_hint", "reallife_ob_stress_conc_over", "reallife_ob_stress_cover",
+                "reallife_ob_stress_cover_value", "reallife_ob_stress_no_signs", "reallife_ob_stress_off_body", "reallife_ob_stress_prudence",
+                "reallife_ob_stress_ratio", "reallife_ob_stress_repay_button", "reallife_ob_stress_shock_next", "reallife_ob_stress_shock_now",
+                "reallife_ob_stress_signs", "reallife_ob_stress_sold", "reallife_ob_stress_sold_value", "reallife_ob_stress_title", "reallife_ob_stress_warn_line",
+                "reallife_ob_stress_warned", "reallife_ob_stress_watched", "reallife_ob_stress_wf", "reallife_ob_stress_wf_short", "reallife_ob_stress_wf_value",
+                "reallife_ob_tab_cards", "reallife_ob_tab_desk"
+            };
+        }
+
         // Every label the Your bank screen writes (OwnBankBuild and BankParts ask for these and no others).
         private static string[] OwnBankKeys()
         {
-            return new[]
+            return Join(OwnBankGrowthKeys(), new[]
             {
                 "reallife_ob_box_intro", "reallife_util_day", "reallife_branch_box_books", "reallife_branch_box_brings", "reallife_branch_box_brings_value", "reallife_branch_box_costs",
                     "reallife_branch_box_count",
@@ -88,7 +125,15 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_ob_month_title", "reallife_ui_ob_next", "reallife_ui_ob_now", "reallife_ui_ob_paid", "reallife_ui_ob_pay_note", "reallife_ui_ob_put",
                 "reallife_ui_ob_reserve", "reallife_ui_ob_sell_not", "reallife_ui_ob_shares", "reallife_ui_ob_strategy", "reallife_ui_ob_take", "reallife_ui_ob_take_most",
                 "reallife_ui_ob_take_none", "reallife_ui_ob_written", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
-            };
+            });
+        }
+
+        private static string[] Join(string[] first, string[] second)
+        {
+            var all = new string[first.Length + second.Length];
+            first.CopyTo(all, 0);
+            second.CopyTo(all, first.Length);
+            return all;
         }
     }
 }

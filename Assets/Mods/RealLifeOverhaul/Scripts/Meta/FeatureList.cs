@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Meta
             Districts.DistrictGuide.Register();
             Economy.OwnBankGuide.Register();
             Economy.BranchGuide.Register();
+            Economy.BankGrowthGuide.Register();
             EndScaleGuide.Register();
             Rivals.RivalGuide.Register();
             Photos.PhotosGuide.Register();

@@ -36,9 +36,9 @@ namespace RealLifeOverhaul.Economy
             box.Title(OwnBankText.T("reallife_ob_div_title"));
             box.Subtitle(b.Name);
             box.Headline("reallife_ob_div_head");
-            box.Selector(BankDividends.Count, b.DivEvery, Every, i => UiClone.Safe(() =>
+            box.Selector(BankDividends.Order.Length, BankDividends.PositionOf(b.DivEvery), i => Every(BankDividends.Order[i]), i => UiClone.Safe(() =>
             {
-                _director.SetDividends(i, b.DivShare);
+                _director.SetDividends(BankDividends.Order[i], b.DivShare);
                 Refresh();
             }));
             if (b.DivEvery != BankDividends.Off)
@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 box.Row("reallife_ob_div_next", FinanceText.Day(OwnBankRules.DividendDay(b, c.MonthDays, c.YearDays)));
                 box.Row("reallife_ob_div_kept", OwnBankText.Signed(b.DivKept), b.DivKept < 0 ? CellTone.Red : CellTone.Plain);
+                DividendNext(box, Facts());
             }
             box.Section("reallife_ob_div_paid");
             if (b.DivDay > 0)
@@ -68,6 +69,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_ob_div_all", OwnBankText.Money(b.DivAll));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
             box.Note(OwnBankText.T("reallife_ob_div_note"));
+            box.Note(OwnBankText.T("reallife_ob_div_tax_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
