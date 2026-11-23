@@ -240,6 +240,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("gig_set_level", () => CareerCatalogue.GigNeedsLevel.ToString(CultureInfo.InvariantCulture))
                 .Fact("gig_set_tips", () => Guide.Percent(CareerCatalogue.GigTipFactor - 1f))
                 .Fact("job_levels", () => JobCatalogue.MaxLevel.ToString(CultureInfo.InvariantCulture))
+                .Fact("job_daily_shifts", () => JobCatalogue.DailyShifts.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_level_bonus", () => Guide.Percent(JobCatalogue.LevelBonus))
                 .Fact("job_reference_level", () => JobCatalogue.ReferenceLevel.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_strikes", () => JobCatalogue.StrikesToSack.ToString(CultureInfo.InvariantCulture))

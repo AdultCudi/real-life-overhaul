@@ -162,7 +162,7 @@ namespace RealLifeOverhaul
         // level 1, a quarter more at the top level (it was 165 rent against takings of 30: the licence paid less than half
         // the rank below, and a promotion to it read as a wage of 0 an hour).
         public static int CartRent => Prices.At(45);             // a day's rent of the cart, own-cart licence
-        public const float CartTakings = 40f;       // what a customer pays at the player's own cart
+        public const float CartTakings = 35f;       // what a customer pays at the player's own cart: a fifth to a third more than the cart vendor's shift nets
         public const float CartStock = 9.5f;        // ...and what the drink cost
         public const int CabShiftFares = 4;         // fares in an employed cab shift
         public static int GigFee => Prices.At(125);              // a venue's fee for a booked set, on top of the hat
@@ -238,7 +238,7 @@ namespace RealLifeOverhaul
                 }, JobCatalogue.Taxi, JobCatalogue.Courier, 2, 4606, false, null, new[] { "cardealership", "gasstation", "truckgarage" },
                 new CareerRank("reallife_career_cab_rank_1", CareerWork.Gig, 14f, 1f, 1f, 0, CareerPerk.Shorter),
                 new CareerRank("reallife_career_cab_rank_2", CareerWork.Gig, 22f, 1.25f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium),
-                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.6f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium)),
+                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.7f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium)),
             // The building trades': no help-wanted board (their shifts are worked at a works site or the practice's floor,
             // Scripts/BuildTrades), so they are reached by the Work contact and at their places. A labourer learns the mason's
             // skill on the job: an apprenticeship up the builder's ladder; the ranks above ask what a builder would.

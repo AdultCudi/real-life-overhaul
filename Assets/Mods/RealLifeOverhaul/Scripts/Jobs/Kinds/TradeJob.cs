@@ -183,7 +183,7 @@ namespace RealLifeOverhaul
             if (DoneCount >= _units && Settled())
             {
                 _panel.Hide();
-                Finish(JobEnd.Done);
+                Finish(JobEnd.Done, true);
                 return;
             }
             TickMode(now);

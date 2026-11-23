@@ -100,9 +100,10 @@ namespace RealLifeOverhaul
                 {
                     title = first.TitleKey.GetLocalization(),
                     wage = (first.Hourly * rate).ToCurrencyFormat(),
-                    status = can
+                    status = (can
                         ? "reallife_career_hire_ready".GetLocalization()
-                        : reason.GetLocalization().Replace("{value}", value ?? string.Empty)
+                        : reason.GetLocalization().Replace("{value}", value ?? string.Empty))
+                        + " " + CareerDirector.PayRuleKey(employer, first).GetLocalization()
                 }),
                 OnCancel = PhoneContacts.HangUp
             };
@@ -198,6 +199,8 @@ namespace RealLifeOverhaul
                 : CareerState.OnNotice
                     ? "reallife_career_note_notice".GetLocalization().Replace("{left}", CareerState.NoticeShiftsLeft.ToString())
                     : string.Empty;
+            string rule = CareerDirector.PayRuleKey(employer, CareerState.CurrentRank).GetLocalization();   // how the shift is paid, said every time it is asked about
+            note = note.Length > 0 ? note + " " + rule : rule;
             string where = WhereText(career, employer);   // and where the work is done, so it is never to be looked for
             if (where.Length > 0)
             {

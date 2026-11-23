@@ -72,6 +72,33 @@ namespace RealLifeOverhaul
             return list == null ? string.Empty : JobText.T("reallife_gig_quote", "fee", ((int)(offer.Fee * 100f + 0.5f)).ToString(), "words", list);
         }
 
+        /// <summary>
+        /// The pay rule of a gig for its offer, said up front: how the work is paid (in full once done, or for being there), the shifts left
+        /// of the day's two, and what tiredness or being new to gigs takes off this one. Built when the Gig Line or a board is asked, never per frame.
+        /// </summary>
+        public static string Rule(JobDef def)
+        {
+            Text.Length = 0;
+            Text.Append(JobText.T(def.ByHour ? "reallife_gig_rule_hour" : "reallife_gig_rule_whole"));
+            Text.Append(' ').Append(JobText.T("reallife_gig_left", "left", GigPayRules.ShiftsLeft(def, JobState.LeftToday(def)).ToString(CultureInfo.InvariantCulture),
+                "most", JobCatalogue.DailyShifts.ToString(CultureInfo.InvariantCulture)));
+            float today = JobState.ShiftsToday();
+            float wear = GigPayRules.WearFactor(today);
+            if (wear < 1f)
+            {
+                Text.Append(' ').Append(JobText.T("reallife_gig_wear", "done", ((int)(today + 0.5f)).ToString(CultureInfo.InvariantCulture),
+                    "share", Percent(wear)));
+            }
+            float fresh = GigPayRules.NewHandFactor(JobState.ShiftsWorked());
+            if (fresh < 1f)
+            {
+                Text.Append(' ').Append(JobText.T("reallife_gig_newhand", "share", Percent(fresh)));
+            }
+            return Text.ToString();
+        }
+
+        private static string Percent(float share) => ((int)(share * 100f + 0.5f)).ToString(CultureInfo.InvariantCulture);
+
         /// <summary>One diagnostics line for an offer: the seed and every figure drawn from it.</summary>
         public static void Log(IModLogger logger, in GigOffer offer, int day, int hour)
         {

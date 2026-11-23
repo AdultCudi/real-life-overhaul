@@ -141,7 +141,7 @@ namespace RealLifeOverhaul
             int level = JobState.Level(def);
             // What the work will really pay: the offer drawn now is the one worked if the job is taken this hour.
             GigOffer offer = GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky());
-            float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale() * offer.Fee;
+            float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale() * offer.Fee * JobState.Strain();   // as the shift will be paid: tiredness and newness included
             int size = offer.Units > 0 ? offer.Units : def.ShiftUnits;
             var entry = new DialogEntry
             {
@@ -155,6 +155,7 @@ namespace RealLifeOverhaul
                     left = JobState.LeftToday(def).ToString(),
                     status = (available ? "reallife_jobline_ready" : reason ?? "reallife_job_no_now").GetLocalization()
                              + (available ? " " + GigWords.Quote(offer) : string.Empty)
+                             + " " + GigWords.Rule(def)
                 }),
                 OnCancel = PhoneContacts.HangUp
             };

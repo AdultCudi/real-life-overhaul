@@ -520,7 +520,7 @@ namespace RealLifeOverhaul
                 EndSpeed(Time.time);   // the whole delivery by hand
             }
             Settle(all);
-            Finish(_stocked * 2 >= _boxes ? JobEnd.Done : JobEnd.Failed);
+            Finish(_stocked * 2 >= _boxes ? JobEnd.Done : JobEnd.Failed, all);
         }
 
         private void Settle(bool all)

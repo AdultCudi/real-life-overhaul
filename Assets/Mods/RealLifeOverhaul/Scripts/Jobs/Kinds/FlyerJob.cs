@@ -186,7 +186,7 @@ namespace RealLifeOverhaul
                     {
                         EndSpeed(now);   // the whole bundle by hand
                     }
-                    Finish(JobEnd.Done);
+                    Finish(JobEnd.Done, true);
                 }
                 return;
             }

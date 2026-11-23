@@ -35,11 +35,14 @@ namespace RealLifeOverhaul
                 }
                 hours[def.Id] = hour;
                 Console.WriteLine($"  {def.Id,-8} shift {shift,6:0}  an hour of the shift {hour,5:0.0}");
+                // Pay follows what an hour of the work asks: idle work pays the cashier's rate, involved work half as much again, work that
+                // needs a car, a licence and a reference twice and more (the gig pay rebalance; EconomyCheck GigPayChecks holds the same).
                 bool skilled = def.Id == JobCatalogue.Courier || def.Id == JobCatalogue.Taxi;
-                if (def.Id != JobCatalogue.Busker && hour < Cashier * 1.5) fail($"{def.Id}: {hour:0.0} an hour is not clearly more than the game's cashier ({Cashier})");
-                if (def.Id == JobCatalogue.Busker && hour < Cashier) fail($"busker: {hour:0.0} an hour is under the cashier");
+                bool idle = def.Id == JobCatalogue.Flyers || def.Id == JobCatalogue.Busker;
+                if (idle && hour < Cashier) fail($"{def.Id}: {hour:0.0} an hour is under the game's cashier ({Cashier})");
+                if (!idle && !skilled && hour < Cashier * 1.3) fail($"{def.Id}: {hour:0.0} an hour is not clearly more than the game's cashier ({Cashier})");
                 if (hour > VanJob * 1.1) fail($"{def.Id}: {hour:0.0} an hour is over the game's van job ({VanJob})");
-                if (skilled && hour < 70) fail($"{def.Id}: a skilled gig pays only {hour:0.0} an hour");
+                if (skilled && hour < Cashier * 2.0) fail($"{def.Id}: a skilled gig pays only {hour:0.0} an hour");
                 if (!locale.ContainsKey(def.PitchKey)) fail($"{def.Id}: pitch key missing");
             }
             double unskilledMax = gigs.Where(g => g.Needs == JobNeed.Outdoors && g.Id != JobCatalogue.Busker).Max(g => g.UnitPay * g.ShiftUnits) / 4.0;

@@ -89,7 +89,7 @@ The game's one employer job (the cashier) is left exactly as it is: an hour work
   Desk and lead shifts are clocked on to within 45 m of the office.
 
 - **Sick.** "I'm not well today" is accepted, and a missed shift is excused, if `CareerLinks.Health` says a sick note covers the day, or with no health feature if the mod's own sickness (`ModState.IsSick`) is on.
-- **Pay.** What the work itself pays (piece pay, by the rank's factor) plus the rank's basic wage for each game hour of the shift, four at most, paid when the shift ends well.
+- **Pay.** What the work itself pays (piece pay, by the rank's factor) plus the rank's basic wage for each game hour of the shift, four at most, paid when the shift ends well. A shift whose set work is done in full pays all four hours at once however early; a stall, a cab or a watch (`JobDef.ByHour`) pays the hours begun ([Finishing early](jobs.md#finishing-early-jobwholework-gigpayruleswagehours)).
   The payslip lists both and a tax line that reads zero: the game takes no tax from wages (its cashier job pays hours x rate in full; `TaxHelper` taxes business sales and property only).
 - **Reviews** are due every three rota shifts and are held with the boss.
 

@@ -593,7 +593,7 @@ namespace RealLifeOverhaul
             // A trade's shifts are varied by its site and its own game; a desk's meter is the table's.
             bool freelance = shift == null && gig == null && desk == null && !test && !JobCatalogue.IsTrade(def);
             _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
-            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Piece : 1f) * _context.Offer.Fee;
+            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Piece : 1f) * _context.Offer.Fee * (freelance ? JobState.Strain() : 1f);
             if (shift != null)
             {
                 shift.Hourly *= scale;
@@ -632,6 +632,18 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 GigWords.Log(Logger, _context.Offer, TimeHelper.CurrentDay, TimeHelper.CurrentHour);
+                if (freelance)
+                {
+                    float today = JobState.ShiftsToday();
+                    int worked = JobState.ShiftsWorked();
+                    float want = JobCatalogue.PayFactor(_context.Level) * scale * _context.Offer.Fee * GigPayRules.Strain(today, worked);
+                    string tired = GigPayRules.WearFactor(today).ToString("F2", CultureInfo.InvariantCulture);
+                    string fresh = GigPayRules.NewHandFactor(worked).ToString("F2", CultureInfo.InvariantCulture);
+                    Logger?.Info("Jobs check (gig pay): '" + def.Id + "' rate " + _context.Rate.ToString("F3", CultureInfo.InvariantCulture) + " against "
+                                 + want.ToString("F3", CultureInfo.InvariantCulture) + " from level " + _context.Level + ", the fee, tiredness " + tired + " after "
+                                 + today.ToString("F1", CultureInfo.InvariantCulture) + " shifts today and newness " + fresh + " after " + worked + " shifts: "
+                                 + (Mathf.Abs(_context.Rate - want) < 0.0001f ? "PASS" : "FAIL") + ".");
+                }
             }
             reasonKey = null;
             return true;
