@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -12,7 +13,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static partial class OwnBankBuild
     {
-        public const int BankTab = 0, SaversTab = 1, LendingTab = 2, FundTab = 3, BranchesTab = 4, Tabs = 5;
+        public const int BankTab = 0, SaversTab = 1, LendingTab = 2, FundTab = 3, BranchesTab = 4, Tabs = 7;
         public const string LevelRow = "b|level", PayRow = "b|pay", DivRow = "b|div";
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -27,7 +28,8 @@ namespace RealLifeOverhaul.Ui
             m.Nav = new[]
             {
                 Tab(w, "reallife_ob_tab_bank", "Bank", UiIcon.Bank), Tab(w, "reallife_ob_tab_savers", "Savers", UiIcon.PiggyBank), Tab(w, "reallife_ob_tab_lending", "Lending", UiIcon.Coin),
-                Tab(w, "reallife_ob_tab_fund", "Fund", UiIcon.ChartPie), Tab(w, "reallife_branch_tab", "Branches", UiIcon.Building)
+                Tab(w, "reallife_ob_tab_fund", "Fund", UiIcon.ChartPie), Tab(w, "reallife_branch_tab", "Branches", UiIcon.Building),
+                Tab(w, "reallife_ob_tab_cards", "Cards", UiIcon.Coin), Tab(w, "reallife_ob_tab_desk", "Desk", UiIcon.ChartPie)
             };
             m.Tab = Math.Max(0, Math.Min(Tabs - 1, m.Tab));
             m.Prompts = new[]
@@ -55,7 +57,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     m.Shape = MoneyShape.Table;
                     m.EmptyTitle = m.Tab == SaversTab ? w.T("reallife_ob_tab_savers", "Savers") : m.Tab == LendingTab ? w.T("reallife_ob_tab_lending", "Lending")
-                        : m.Tab == FundTab ? w.T("reallife_ob_tab_fund", "Fund") : w.T("reallife_branch_tab", "Branches");
+                        : m.Tab == FundTab ? w.T("reallife_ob_tab_fund", "Fund") : m.Tab == CardsTab ? w.T("reallife_ob_tab_cards", "Cards") : m.Tab == DeskTab ? w.T("reallife_ob_tab_desk", "Desk")
+                        : w.T("reallife_branch_tab", "Branches");
                     m.EmptyBody = w.T("reallife_ob_box_none_yet", "Found your bank on the Bank tab first.");
                 }
                 cards.Into(m);
@@ -67,6 +70,8 @@ namespace RealLifeOverhaul.Ui
                 case LendingTab: LendingPage(m, f, w, cards); break;
                 case FundTab: FundPage(m, f, w, cards); break;
                 case BranchesTab: BranchesPage(m, f, w, cards); break;
+                case CardsTab: CardsPage(m, f, w, cards); break;
+                case DeskTab: DeskPage(m, f, w, cards); break;
                 default: BankPage(m, f, w, cards); break;
             }
             cards.Into(m);
@@ -187,6 +192,8 @@ namespace RealLifeOverhaul.Ui
                 "Off: a dividend only when you take one.")
                 : w.F("reallife_ob_note_div_on", "{every}: {share} of the profit kept.", "every", EveryName(f), "share", Pct(f.DivShare)) }));
             ids.Add(DivRow);
+            rows.Add(RiskTableRow(f, w));
+            ids.Add(RiskRow);
             int selected = ids.IndexOf(m.View.Row);
             m.Table = BankParts.Table(new[] { w.T("reallife_ob_col_item", "Item"), w.T("reallife_ob_col_amount", "Amount"), w.T("reallife_ob_col_note", "Note") },
                 new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Text }, rows, selected, w.T("reallife_ui_ob_books_empty", "Nothing yet"), string.Empty, UiIcon.PiggyBank);
@@ -207,6 +214,10 @@ namespace RealLifeOverhaul.Ui
             else if (m.View.Row == DivRow)
             {
                 DividendCard(m, f, w, cards);
+            }
+            else if (m.View.Row == RiskRow)
+            {
+                RiskCard(m, f, w, cards);
             }
             else
             {
@@ -237,6 +248,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static string EveryName(OwnBankFacts f) => f.DivEvery >= 0 && f.DivEvery < f.DivEveryNames.Length ? f.DivEveryNames[f.DivEvery] : string.Empty;
+
 
         private static string LevelHolds(OwnBankFacts f, UtilitiesWords w)
         {
@@ -346,7 +358,8 @@ namespace RealLifeOverhaul.Ui
         public static int PutDollars(MoneyView v, OwnBankFacts f)
         {
             long step = StepDollars(f);
-            long value = v.F[MoneyView.FPut] > 0 ? v.F[MoneyView.FPut] : step * 10L;
+            long clear = f.ToClear > 0 ? (f.ToClear / 100L + step - 1) / step * step : 0L;
+            long value = v.F[MoneyView.FPut] > 0 ? v.F[MoneyView.FPut] : Math.Max(step * 10L, clear);
             return (int)Math.Max(step, Math.Min(999999999L / step * step, value / step * step));
         }
 
@@ -482,13 +495,10 @@ namespace RealLifeOverhaul.Ui
             var steps = new List<UtilitiesStep>(2);
             var moves = new List<MoneyStep>(2);
             var lines = new List<UtilitiesLine>(8);
-            int n = Math.Max(1, f.DivEveryNames.Length);
-            var every = new int[n];
-            for (int i = 0; i < n; i++)
-            {
-                every[i] = i;
-            }
-            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_head", "How often"), EveryName(f), null, Math.Max(0, Math.Min(n - 1, f.DivEvery)), n, -1, MoneyAct.DividendEvery, 0, every,
+            int n = Math.Max(1, BankDividends.Order.Length);
+            var every = (int[])BankDividends.Order.Clone();
+            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_head", "How often"), EveryName(f), null, Math.Max(0, Math.Min(n - 1, BankDividends.PositionOf(f.DivEvery))), n, -1,
+                MoneyAct.DividendEvery, 0, every,
                 out MoneyStep how));
             moves.Add(how);
             if (f.DivEvery != 0)
@@ -505,6 +515,7 @@ namespace RealLifeOverhaul.Ui
                 moves.Add(share);
                 lines.Add(BankParts.Pair(w.T("reallife_ob_div_next", "Next one at the end of"), w.Day(f.DivNextDay)));
                 lines.Add(BankParts.Pair(w.T("reallife_ob_div_kept", "Profit kept since the last one"), Signed(w, f.DivKept), f.DivKept < 0 ? UiRole.DangerText : UiRole.Text));
+                DividendNext(lines, f, w);
             }
             if (f.DivDay > 0)
             {
@@ -517,6 +528,8 @@ namespace RealLifeOverhaul.Ui
             }
             lines.Add(BankParts.Pair(w.T("reallife_ob_div_all", "In all"), C(w, f.DivAll)));
             lines.Add(BankParts.Say(w.T("reallife_ui_ob_div_note", "A dividend is paid to you out of the capital the bank keeps over its least, and only while it can spare it.")));
+            lines.Add(BankParts.Say(w.T("reallife_ob_div_tax_note",
+                "Every dividend is taxed as the stock market's dividends are, one you take by hand as well as an automatic one.")));
             cards.Add(new UtilitiesCard { Title = w.T("reallife_ob_div_title", "Automatic dividends"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps.ToArray() }, moves.ToArray());
         }
     }

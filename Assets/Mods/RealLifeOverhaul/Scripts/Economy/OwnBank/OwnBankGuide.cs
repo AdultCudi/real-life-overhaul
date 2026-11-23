@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
                 .Owns(Settings.EconomyBankId)
                 .Data(OwnBankStore.Key, OwnBankDirector.TestKey)
                 .Test("reallife_ob_test_found", "reallife_ob_test_month", "reallife_ob_test_hard", "reallife_ob_test_run", "reallife_ob_test_deadline", "reallife_ob_test_fund",
-                    "reallife_ob_test_level", "reallife_ob_test_div", "reallife_ob_test_back")
+                    "reallife_ob_test_level", "reallife_ob_test_div", "reallife_ob_test_stress", "reallife_ob_test_cards", "reallife_ob_test_desk", "reallife_ob_test_back")
                 .Fact("ob_licence", () => Money(OwnBankDirector.FoundLicence(Prices.Level, EndScaleGuide.Scale)))
                 .Fact("ob_capital", () => Money(OwnBankDirector.FoundCapital(Prices.Level, 0, EndScaleGuide.Scale)))
                 .Fact("ob_again_capital", () => Money(OwnBankDirector.FoundCapital(Prices.Level, 1, EndScaleGuide.Scale)))

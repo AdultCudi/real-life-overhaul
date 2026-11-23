@@ -26,17 +26,18 @@ namespace RealLifeOverhaul.Economy
             long level = Level(c.Level);
             BankCaps caps = Caps(b, c.Level, c.Scale);
             int tier = TierOf(b);
+            b.Risk = BankRisk.Level(c.Risk);   // the rules that see only the bank read the level from it
 
             // Confidence from the books as yesterday left them.
             int confidence = Confidence(c, b, Ratio(b));
-            if (!b.Run && confidence < OwnBankCatalogue.RunStart)
+            if (!b.Run && confidence < BankRisk.RunStart[b.Risk])
             {
                 b.Run = true;
                 b.RunFrom = day;
                 b.Scare = Math.Min(OwnBankCatalogue.ScareMost, b.Scare + OwnBankCatalogue.ScareRun);
                 into.RunStarted = true;
             }
-            else if (b.Run && confidence >= OwnBankCatalogue.RunEnd && b.Stage != Regulator.Breach)
+            else if (b.Run && confidence >= BankRisk.RunEnd[b.Risk] && b.Stage != Regulator.Breach)
             {
                 b.Run = false;
                 into.RunEnded = true;
@@ -57,12 +58,17 @@ namespace RealLifeOverhaul.Economy
                 long move;
                 if (b.Run)
                 {
-                    move = -(b.Deposits[k] * OwnBankCatalogue.RunShare[k] / 1000);
+                    move = -(b.Deposits[k] * RunShareOf(b, k) / 1000 * (1000 - RunHold(c, b, k)) / 1000);
                 }
                 else
                 {
                     long gap = SaversWanted(c, b, k, trust) - b.Deposits[k];
                     move = gap * OwnBankCatalogue.SaverFollow[k] / (1000L * m) * working / 1000;
+                    if (b.Risk > BankRisk.Off)
+                    {
+                        move = move < 0 ? move * BankRisk.FlightSpeed[b.Risk] / 1000 : move;   // savers leave faster than they come
+                        move -= Flight(b, k, confidence);
+                    }
                 }
                 Moves[k] = Math.Max(-b.Deposits[k], move);
                 coming += Math.Max(0, Moves[k]);
@@ -106,7 +112,7 @@ namespace RealLifeOverhaul.Economy
                 into.Lost += written;
                 if (written > 0)
                 {
-                    int share = OwnBankCatalogue.RecoverShare[j] + (c.Courts ? OwnBankCatalogue.CourtExtra : 0);
+                    int share = (OwnBankCatalogue.RecoverShare[j] + (c.Courts ? OwnBankCatalogue.CourtExtra : 0)) * RecoveryFactor(c) / 1000;
                     b.Recovering[j] += written * share / 1000;
                     b.Recover[j] = (OwnBankCatalogue.RecoverMonths + (c.Courts ? OwnBankCatalogue.CourtMonths : 0)) * m;
                     long court = c.Courts ? written * OwnBankCatalogue.CourtCost / 1000 : 0;
@@ -145,6 +151,9 @@ namespace RealLifeOverhaul.Economy
             into.Counter = counter;
 
             OwnBankFund.Day(b, c, day, quotes, into, hold);
+            InterbankDay(b, day, y, m, into);
+            CardsDay(b, c, day, into, hold);
+            DeskDay(b, c, day, quotes, into, hold);
 
             // Staff: the hall of its level and a share of what it holds, giving way at scale to its crews' wages, its level's
             // systems and the deposit insurance. What the scale adds never takes the capital below nothing in one day.
@@ -165,7 +174,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (b.Reserves < 0)
             {
-                Close(b, day, ClosedWhy.Run, into);
+                Close(b, day, ClosedWhy.Run, into, WindFactor(b, c));
                 return;
             }
 
@@ -189,6 +198,7 @@ namespace RealLifeOverhaul.Economy
                 b.PaidAll += pay;
             }
             Dividends(b, c, day, into);
+            RiskSigns(b, c, day, m, confidence, into);
             if (b.Scare > 0)
             {
                 b.Scare = Math.Max(0, b.Scare - Math.Max(1, b.Scare * OwnBankCatalogue.ScareFade / (1000 * m)));
@@ -230,7 +240,7 @@ namespace RealLifeOverhaul.Economy
             for (int j = 0; j < OwnBankCatalogue.Segments; j++)
             {
                 long gap = LoansWanted(c, b, j) - b.Loans[j];
-                Want[j] = gap > 0 ? gap * OwnBankCatalogue.LendFollow / (1000L * m) * working / 1000 : 0;
+                Want[j] = gap > 0 ? gap * OwnBankCatalogue.LendFollow / (1000L * m) * working / 1000 * LendScale(b) / 1000 : 0;
                 need += Want[j];
                 weighted += Want[j] * OwnBankCatalogue.LoanWeight[j] / 1000;
             }
@@ -239,7 +249,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             long cash = FreeCash(b) - hold;
-            long room = FreeCapital(b) * 1000 / OwnBankCatalogue.LendRatio - RiskWeighted(b);
+            long room = FreeCapital(b) * 1000 / LendRatioOf(b) - RiskWeighted(b);
             if (cash <= 0 || room <= 0)
             {
                 return;
@@ -267,12 +277,12 @@ namespace RealLifeOverhaul.Economy
             int ratio = Ratio(b);
             if (capital <= 0)
             {
-                Close(b, day, ClosedWhy.Insolvent, into);
+                Close(b, day, ClosedWhy.Insolvent, into, WindFactor(b, c));
                 return;
             }
             if (ratio < OwnBankCatalogue.MinRatio / 2)
             {
-                Close(b, day, ClosedWhy.Collapse, into);
+                Close(b, day, ClosedWhy.Collapse, into, WindFactor(b, c));
                 return;
             }
             if (ratio < OwnBankCatalogue.MinRatio)
@@ -291,7 +301,7 @@ namespace RealLifeOverhaul.Economy
                     b.Strikes++;
                     if (b.Strikes >= OwnBankCatalogue.StrikesClose)
                     {
-                        Close(b, day, ClosedWhy.Strikes, into);
+                        Close(b, day, ClosedWhy.Strikes, into, WindFactor(b, c));
                         return;
                     }
                     long fine = Fine(b, c.Level);
@@ -362,11 +372,33 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(At(OwnBankCatalogue.FineLeastCents, level), Math.Max(0, short_) * OwnBankCatalogue.FineShare / 1000);
         }
 
-        private static void Close(OwnBank b, int day, ClosedWhy why, BankDay into)
+        private static void Close(OwnBank b, int day, ClosedWhy why, BankDay into, int wind)
         {
             into.Closed = true;
             into.Why = why;
-            into.WoundUp = WindUp(b, day, why);
+            into.Waterfall = Resolve(b, wind);
+            into.WoundUp = WindUp(b, day, why, wind);
+        }
+
+        // With the risk on, the warning signs a month at most, and a coming shock once for the month it is for.
+        private static void RiskSigns(OwnBank b, BankCity c, int day, int m, int confidence, BankDay into)
+        {
+            if (b.Risk == BankRisk.Off)
+            {
+                return;
+            }
+            int signs = Signs(b, c, day, confidence);
+            if (signs != 0 && WatchDue(day, b.SignsTold, m))
+            {
+                b.SignsTold = day;
+                into.RiskTold = true;
+            }
+            int ahead = ShockAhead(b, day, m);
+            if (ahead >= 0 && b.ShockTold != b.Month + 1)
+            {
+                b.ShockTold = b.Month + 1;
+                into.ShockNew = ahead;
+            }
         }
 
         /// <summary>A month's books closed on the first day of the next: its profit recorded, its figures kept for the page, a new month's luck.</summary>
@@ -384,6 +416,10 @@ namespace RealLifeOverhaul.Economy
             }
             b.LastIncome = b.MonthIncome;
             b.LastCosts = b.MonthCosts;
+            CloseCardMonth(b);
+            b.DeskLastBrokerage = b.DeskBrokerage;
+            b.DeskLastDerivs = b.DeskDerivs;
+            b.DeskBrokerage = b.DeskDerivs = 0;
             b.LastLost = b.MonthLost;
             b.PaidLast = b.PaidMonth;
             b.MonthIncome = b.MonthCosts = b.MonthLost = b.PaidMonth = 0;
@@ -407,6 +443,9 @@ namespace RealLifeOverhaul.Economy
             b.WatchTold = b.WatchTold == int.MinValue ? int.MinValue : b.WatchTold - days;
             b.DivFrom -= days;
             b.DivDay = b.DivDay > 0 ? b.DivDay - days : 0;
+            b.InterbankDue = b.InterbankDue > 0 ? b.InterbankDue - days : 0;
+            b.DeskCutDay = b.DeskCutDay > 0 ? b.DeskCutDay - days : 0;
+            b.SignsTold = b.SignsTold == int.MinValue ? int.MinValue : b.SignsTold - days;
         }
     }
 }

@@ -459,7 +459,8 @@ internal static partial class Program
         string links = ModSource(@"Wiring\Wiring.StockExtrasLinks.cs"), game = ModSource(@"Economy\OwnBank\OwnBankGame.cs"), bankDirector = ModSource(@"Economy\OwnBank\OwnBankDirector.cs");
         Check(links.Contains("CapitalCents = gone ? b.EndCents : b.Capital") && !links.Contains("Deposits") && !links.Contains("b.Reserves") && !links.Contains("Savings"),
             "stock extras sources: the bank is read by its own capital alone: no deposit and no reserve reaches the market");
-        Check(game.Contains("Book(Owner(d.Pay), OwnBankCatalogue.PayKey") && game.Contains("Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey") && game.Contains("cents = Owner(cents);")
+        Check(game.Contains("Book(Owner(d.Pay), OwnBankCatalogue.PayKey") && game.Contains("long paid = Owner(d.PaidOut);") && game.Contains("Book(paid, OwnBankCatalogue.DividendAutoKey") && game.Contains("cents = Owner(cents);")
+              && bankDirector.Contains("OwnBankGame.WithholdOnTaken(OwnBankGame.Owner(cents)")
               && game.Contains("key == OwnBankCatalogue.CapitalOutKey || key == OwnBankCatalogue.SaleKey"), "stock extras sources: the owner's pay, a dividend, a sale and a winding up are all shared with the bank's other holders");
         Check(bankDirector.Contains("public bool PublicCapital(long cents)") && bankDirector.Contains("OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit, _bank.Capital)") && !bankDirector.Substring(
                   bankDirector.IndexOf("public bool PublicCapital(long cents)", StringComparison.Ordinal), 600).Contains("OwnBankGame.Pay("),

@@ -44,6 +44,18 @@ namespace RealLifeOverhaul.Economy
         public static Func<bool> StandingOn;
 
         /// <summary>
+        /// The tax withheld from a dividend the bank pays its owner, in cents: the stock market's rate for dividends moved by the council's business tax, as a
+        /// stake's dividend is taxed (Markets/Listing). Default: none.
+        /// </summary>
+        public static Func<long, long> DividendTax;
+
+        /// <summary>The stock market's activity, thousandths of an ordinary day's, 0 while it is not running (the desk's commission follows it). Default: none.</summary>
+        public static Func<int> Activity;
+
+        /// <summary>True while the exchange has options and futures a bank's clients may deal in. Default: no.</summary>
+        public static Func<bool> Derivs;
+
+        /// <summary>
         /// Thousandths of its first day's figure the city's people now bring a pool (OwnBankCatalogue's savers, then its segments), -1 with no living
         /// population (the catalogue's figures stand). Default: none.
         /// </summary>
@@ -58,6 +70,9 @@ namespace RealLifeOverhaul.Economy
             Policy = null;
             Courts = null;
             Quotes = null;
+            DividendTax = null;
+            Activity = null;
+            Derivs = null;
             Moved = null;
             Qualified = null;
             People = null;
@@ -149,7 +164,10 @@ namespace RealLifeOverhaul.Economy
                 Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts(),
                 Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0,
                 Reach = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Reach() : 0,
-                People = PeopleNow()
+                People = PeopleNow(),
+                Risk = Settings.EconomyBank ? Mathf.Clamp(Settings.EconomyBankRisk, BankRisk.Off, BankRisk.Hard) : BankRisk.Off,
+                Activity = OwnBankBridges.Activity != null ? Mathf.Max(0, OwnBankBridges.Activity()) : 0,
+                Derivs = OwnBankBridges.Derivs != null && OwnBankBridges.Derivs()
             };
         }
 
@@ -177,16 +195,22 @@ namespace RealLifeOverhaul.Economy
         public static void BookDay(BankDay d, BuildingRegistration hq, string bank, int day)
         {
             long profit = d.Profit;
-            Book(d.Income, OwnBankCatalogue.TakingsKey, hq, bank, null, day, false, false);
+            BankLines l = BankLines.Of(d);   // every part of the day in one line, so the statement, the tax and a listed bank's books count it once
+            Book(l.Takings, OwnBankCatalogue.TakingsKey, hq, bank, null, day, false, false);
+            Book(l.Cards, OwnBankCatalogue.CardsKey, hq, bank, null, day, false, false);
+            Book(l.Desk, OwnBankCatalogue.DeskKey, hq, bank, null, day, false, false);
             if (profit < 0)
             {
                 Book(-profit, OwnBankCatalogue.CoveredKey, hq, bank, null, day, false, false);
             }
-            Book(-d.Savers, OwnBankCatalogue.SaversKey, hq, bank, null, day, true, true);
-            Book(-(d.Lost + d.Court + d.FundLost + d.Fees), OwnBankCatalogue.LossesKey, hq, bank, null, day, true, true);
-            Book(-d.Staff, OwnBankCatalogue.WagesKey, hq, bank, GameBooks.Salaries, day, true, true);
-            Book(-d.Systems, OwnBankCatalogue.SystemsKey, hq, bank, null, day, true, true);
-            Book(-d.Fine, OwnBankCatalogue.FineKey, hq, bank, null, day, false, true);
+            Book(-l.Savers, OwnBankCatalogue.SaversKey, hq, bank, null, day, true, true);
+            Book(-l.Losses, OwnBankCatalogue.LossesKey, hq, bank, null, day, true, true);
+            Book(-l.CardCosts, OwnBankCatalogue.CardCostsKey, hq, bank, null, day, true, true);
+            Book(-l.Funding, OwnBankCatalogue.FundingKey, hq, bank, null, day, true, true);
+            Book(-l.DeskCosts, OwnBankCatalogue.DeskCostsKey, hq, bank, null, day, true, true);
+            Book(-l.Wages, OwnBankCatalogue.WagesKey, hq, bank, GameBooks.Salaries, day, true, true);
+            Book(-l.Systems, OwnBankCatalogue.SystemsKey, hq, bank, null, day, true, true);
+            Book(-l.Fine, OwnBankCatalogue.FineKey, hq, bank, null, day, false, true);
             if (profit > 0)
             {
                 Book(-profit, OwnBankCatalogue.KeptKey, hq, bank, null, day, false, true);
@@ -197,8 +221,31 @@ namespace RealLifeOverhaul.Economy
             }
             if (d.PaidOut > 0)
             {
-                Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false);   // an automatic dividend, booked as one taken by hand
+                long paid = Owner(d.PaidOut);
+                Book(paid, OwnBankCatalogue.DividendAutoKey, hq, bank, null, day, false, false);
+                long tax = TaxOn(paid);
+                if (tax > 0)
+                {
+                    Book(-tax, OwnBankCatalogue.DividendTaxKey, hq, bank, null, day, false, true);   // withheld as the stock market's dividends are, a line of its own
+                }
             }
+        }
+
+        /// <summary>The tax withheld from a dividend the owner takes by hand, a line of its own as an automatic dividend's is.</summary>
+        public static void WithholdOnTaken(long ownerCents, BuildingRegistration hq, string bank)
+        {
+            long tax = TaxOn(ownerCents);
+            if (tax > 0)
+            {
+                Book(-tax, OwnBankCatalogue.DividendTaxKey, hq, bank, null, null, false, true);
+            }
+        }
+
+        /// <summary>The tax withheld from an automatic dividend of this many cents paid to the owner; nothing without the market's rate, never more than the dividend.</summary>
+        public static long TaxOn(long cents)
+        {
+            Func<long, long> tax = OwnBankBridges.DividendTax;
+            return tax != null && cents > 0 ? Math.Max(0L, Math.Min(cents, tax(cents))) : 0L;
         }
 
         /// <summary>

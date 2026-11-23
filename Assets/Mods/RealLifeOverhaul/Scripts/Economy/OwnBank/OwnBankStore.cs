@@ -20,6 +20,13 @@ namespace RealLifeOverhaul.Economy
     ///   e  the end game's scale: the day it began|tellers|managers|loan officers|compliance officers|the least capital founded under
     ///   k  the branches' counters: fees not yet booked|the last hour worked
     ///   b  each branch: place|name|carry|month from|the week's seven days|their visits seen to|this month's figures|last month's
+    ///   r  the risk: level|borrowed from other banks|its due day|its rate|loans sold|what they cost|the signs last told|a shock last told|sale loss and fee not yet booked
+    ///   c  the cards: issuing|approved at once from|declined under|points over the rivals|fee|lost in all|the owner's card held|what is owed on it|lost on it|
+    ///      what it did since the last day: drawn|paid|interest|fees|lost|its limit|its rate
+    ///   q  each kind of client's cards: issued|limit|holders|balance|arrears|queued|defaults against the kind's
+    ///   w  the cards' figures this month, then last month's
+    ///   t  the desk: open|mandate|share|limit|peak|the last cut's day|cuts|this month's commission on shares|on options and futures|in all|last month's two|changed
+    ///   g  the own book's holdings: stock|ticker|name|shares|cost|last price|dividend
     /// A later version adds fields at the end of a record or a part with a new letter; an older line's missing fields read as none.
     /// </summary>
     public static class OwnBankStore
@@ -88,6 +95,7 @@ namespace RealLifeOverhaul.Economy
             t.Append('|').Append(b.FoundedLeast.ToString(Inv));
             t.Append('|').Append(b.Public.ToString(Inv));
             t.Append("^k:").Append(b.CounterFees.ToString(Inv)).Append('|').Append(b.CounterHour.ToString(Inv));
+            WriteNew(t, b);
             if (b.Branches.Count > 0)
             {
                 t.Append("^b:");
@@ -191,6 +199,14 @@ namespace RealLifeOverhaul.Economy
                             string[] counter = body.Split('|');
                             b.CounterFees = Math.Max(0, L(counter, 0));
                             b.CounterHour = counter.Length > 1 && counter[1].Length > 0 ? I(counter, 1) : int.MinValue;
+                            break;
+                        case 'r':
+                        case 'c':
+                        case 'q':
+                        case 'w':
+                        case 't':
+                        case 'g':
+                            ReadNew(part[0], body, b);
                             break;
                         case 'b':
                             foreach (string record in body.Split(';'))
@@ -299,6 +315,143 @@ namespace RealLifeOverhaul.Economy
             b.DivAll = Math.Max(0, L(c, DivAt + 8));
         }
 
+        // The risk, the cards and the desk: parts a line written before them lacks, which then read as none of them.
+        private static void WriteNew(StringBuilder t, OwnBank b)
+        {
+            t.Append("^r:").Append(Join(b.Risk, b.Interbank, b.InterbankDue, b.InterbankBp, b.SoldFace, b.SoldLoss, b.SignsTold, b.ShockTold, b.SaleLossPend, b.FundingPend));
+            t.Append("^c:").Append(Join(b.CardsOn ? 1 : 0, b.CardAuto, b.CardDecline, b.CardRate, b.CardFee, b.CardLostAll, b.OwnCard ? 1 : 0, b.OwnOwed, b.OwnLostAll,
+                b.OwnDrawn, b.OwnPaid, b.OwnInterest, b.OwnFees, b.OwnLost, b.OwnLimit, b.OwnRateBp));
+            t.Append("^q:");
+            for (int j = 0; j < CardTerms.Kinds; j++)
+            {
+                t.Append(j > 0 ? ";" : string.Empty).Append(Join(b.CardIssue[j] ? 1 : 0, b.CardLimit[j], b.CardHolders[j], b.CardBal[j], b.CardArr[j], b.CardQueue[j], b.CardRisk[j]));
+            }
+            t.Append("^w:");
+            for (int i = 0; i < CardTerms.Figures; i++)
+            {
+                t.Append(i > 0 ? "|" : string.Empty).Append(b.CardFig[i].ToString(Inv));
+            }
+            for (int i = 0; i < CardTerms.Figures; i++)
+            {
+                t.Append('|').Append(b.CardLast[i].ToString(Inv));
+            }
+            t.Append("^t:").Append(Join(b.DeskOn ? 1 : 0, b.DeskMandate, b.DeskShare, b.DeskLimit, b.DeskPeak, b.DeskCutDay, b.DeskCuts, b.DeskBrokerage, b.DeskDerivs, b.DeskCommissionAll,
+                b.DeskLastBrokerage, b.DeskLastDerivs, b.DeskDirty ? 1 : 0));
+            if (b.Book.Count > 0)
+            {
+                t.Append("^g:");
+                for (int i = 0; i < b.Book.Count && i < HoldingsMost; i++)
+                {
+                    FundHolding h = b.Book[i];
+                    t.Append(i > 0 ? ";" : string.Empty).Append(h.StockId.ToString(Inv)).Append('|').Append(Escape(h.Ticker)).Append('|').Append(Escape(h.Name)).Append('|')
+                        .Append(h.Qty.ToString(Inv)).Append('|').Append(h.CostCents.ToString(Inv)).Append('|').Append(h.LastCents.ToString(Inv)).Append('|').Append(h.DpsCents.ToString(Inv));
+                }
+            }
+        }
+
+        private static string Join(params long[] values)
+        {
+            var t = new StringBuilder(64);
+            for (int i = 0; i < values.Length; i++)
+            {
+                t.Append(i > 0 ? "|" : string.Empty).Append(values[i].ToString(Inv));
+            }
+            return t.ToString();
+        }
+
+        private static void ReadNew(char part, string body, OwnBank b)
+        {
+            string[] c = body.Split('|');
+            switch (part)
+            {
+                case 'r':
+                    b.Risk = Clamp(I(c, 0), BankRisk.Off, BankRisk.Hard);
+                    b.Interbank = Math.Max(0, L(c, 1));
+                    b.InterbankDue = Math.Max(0, I(c, 2));
+                    b.InterbankBp = Math.Max(0, I(c, 3));
+                    b.SoldFace = Math.Max(0, L(c, 4));
+                    b.SoldLoss = Math.Max(0, L(c, 5));
+                    b.SignsTold = c.Length > 6 && c[6].Length > 0 ? I(c, 6) : int.MinValue;
+                    b.ShockTold = c.Length > 7 && c[7].Length > 0 ? I(c, 7) : int.MinValue;
+                    b.SaleLossPend = Math.Max(0, L(c, 8));
+                    b.FundingPend = Math.Max(0, L(c, 9));
+                    break;
+                case 'c':
+                    b.CardsOn = I(c, 0) != 0;
+                    b.CardAuto = Step(c.Length > 1 ? I(c, 1) : CardTerms.AutoDefault, CardTerms.AutoLeast, CardTerms.AutoMost, CardTerms.LineStep);
+                    b.CardDecline = Step(c.Length > 2 ? I(c, 2) : CardTerms.DeclineDefault, CardTerms.DeclineLeast, CardTerms.AutoMost, CardTerms.LineStep);
+                    b.CardRate = Step(I(c, 3), CardTerms.RateLeast, CardTerms.RateMost, CardTerms.RateStep);
+                    b.CardFee = Clamp(I(c, 4), 0, CardTerms.FeeSteps.Length - 1);
+                    b.CardLostAll = Math.Max(0, L(c, 5));
+                    b.OwnCard = I(c, 6) != 0;
+                    b.OwnOwed = Math.Max(0, L(c, 7));
+                    b.OwnLostAll = Math.Max(0, L(c, 8));
+                    b.OwnDrawn = Math.Max(0, L(c, 9));
+                    b.OwnPaid = Math.Max(0, L(c, 10));
+                    b.OwnInterest = Math.Max(0, L(c, 11));
+                    b.OwnFees = Math.Max(0, L(c, 12));
+                    b.OwnLost = Math.Max(0, L(c, 13));
+                    b.OwnLimit = Math.Max(0, L(c, 14));
+                    b.OwnRateBp = Math.Max(0, I(c, 15));
+                    break;
+                case 'q':
+                    string[] kinds = body.Split(';');
+                    for (int j = 0; j < CardTerms.Kinds && j < kinds.Length; j++)
+                    {
+                        string[] k = kinds[j].Split('|');
+                        b.CardIssue[j] = I(k, 0) != 0;
+                        b.CardLimit[j] = Clamp(I(k, 1), 0, CardTerms.LimitSteps - 1);
+                        b.CardHolders[j] = Math.Max(0, I(k, 2));
+                        b.CardBal[j] = Math.Max(0, L(k, 3));
+                        b.CardArr[j] = Math.Max(0, L(k, 4));
+                        b.CardQueue[j] = Clamp(I(k, 5), 0, CardTerms.QueueMost);
+                        b.CardRisk[j] = k.Length > 6 ? Clamp(I(k, 6), 100, 10000) : 1000;
+                    }
+                    break;
+                case 'w':
+                    for (int i = 0; i < CardTerms.Figures; i++)
+                    {
+                        b.CardFig[i] = Math.Max(0, L(c, i));
+                        b.CardLast[i] = Math.Max(0, L(c, CardTerms.Figures + i));
+                    }
+                    break;
+                case 't':
+                    b.DeskOn = I(c, 0) != 0;
+                    b.DeskMandate = BankDesk.MandateOf(I(c, 1));
+                    b.DeskShare = Step(c.Length > 2 ? I(c, 2) : BankDesk.ShareDefault, 0, BankDesk.ShareMost, BankDesk.ShareStep);
+                    b.DeskLimit = Step(c.Length > 3 ? I(c, 3) : BankDesk.LimitDefault, BankDesk.LimitLeast, BankDesk.LimitMost, BankDesk.LimitStep);
+                    b.DeskPeak = Math.Max(0, L(c, 4));
+                    b.DeskCutDay = Math.Max(0, I(c, 5));
+                    b.DeskCuts = Math.Max(0, I(c, 6));
+                    b.DeskBrokerage = Math.Max(0, L(c, 7));
+                    b.DeskDerivs = Math.Max(0, L(c, 8));
+                    b.DeskCommissionAll = Math.Max(0, L(c, 9));
+                    b.DeskLastBrokerage = Math.Max(0, L(c, 10));
+                    b.DeskLastDerivs = Math.Max(0, L(c, 11));
+                    b.DeskDirty = I(c, 12) != 0;
+                    break;
+                default:
+                    foreach (string record in body.Split(';'))
+                    {
+                        string[] f = record.Split('|');
+                        if (f.Length < 7 || b.Book.Count >= HoldingsMost)
+                        {
+                            continue;
+                        }
+                        var h = new FundHolding
+                        {
+                            StockId = I(f, 0), Ticker = Unescape(f[1]), Name = Unescape(f[2]), Qty = Math.Max(0, L(f, 3)), CostCents = Math.Max(0, L(f, 4)),
+                            LastCents = Math.Max(0, I(f, 5)), DpsCents = Math.Max(0, I(f, 6))
+                        };
+                        if (h.Qty > 0 && b.FindBook(h.StockId) == null)
+                        {
+                            b.Book.Add(h);
+                        }
+                    }
+                    break;
+            }
+        }
+
         private static void WriteBranch(StringBuilder t, BankBranch br)
         {
             t.Append(Escape(br.Place)).Append('|').Append(Escape(br.Name)).Append('|').Append(br.Carry.ToString(Inv)).Append('|').Append(br.MonthFrom.ToString(Inv));
@@ -355,7 +508,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            b.Reserves = b.Savings + b.Capital - b.Lent - b.InArrears - b.FundCost;
+            b.Reserves = b.Savings + b.Capital + b.Interbank - b.Lent - b.InArrears - b.FundCost - b.OtherAssets;
             return true;
         }
 

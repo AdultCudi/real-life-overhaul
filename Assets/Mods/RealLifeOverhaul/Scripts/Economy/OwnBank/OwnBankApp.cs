@@ -4,6 +4,7 @@ using System.Globalization;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UI.Notification;
 using UI.Smartphone;
@@ -53,6 +54,29 @@ namespace RealLifeOverhaul.Economy
             .Order(3, false)
             .Empty("reallife_ob_empty_fund");
 
+        /// <summary>0 kind of client, 1 cards, 2 limit, 3 balance, 4 in arrears, 5 defaults a year, 6 applicants waiting, 7 whether it issues.</summary>
+        public static readonly TableSpec Cards = new TableSpec("OwnBank", "Cards")
+            .Column("reallife_ob_card_col_kind", 480f, TableSort.Text, flexible: true)
+            .Column("reallife_ob_card_col_cards", 200f, TableSort.Number, sums: true)
+            .Column("reallife_ob_card_col_limit", 240f, TableSort.Money)
+            .Column("reallife_ob_card_col_balance", 260f, TableSort.Money, sums: true)
+            .Column("reallife_ob_col_arrears", 240f, TableSort.Money, sums: true)
+            .Column("reallife_ob_col_defaults", 240f, TableSort.Number)
+            .Column("reallife_ob_card_col_wait", 200f, TableSort.Number, sums: true)
+            .Column("reallife_ob_card_col_issue", 200f, TableSort.Text, right: true)
+            .Empty("reallife_ob_card_empty");
+
+        /// <summary>0 company, 1 shares, 2 cost, 3 value, 4 gain, 5 dividends a year: the own book's holdings.</summary>
+        public static readonly TableSpec Desk = new TableSpec("OwnBank", "Desk")
+            .Column("reallife_ob_col_company", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_ob_col_shares", 220f, TableSort.Number)
+            .Column("reallife_ob_col_cost", 280f, TableSort.Money, sums: true)
+            .Column("reallife_ob_col_value", 280f, TableSort.Money, sums: true)
+            .Column("reallife_ob_col_gain", 260f, TableSort.Money, sums: true)
+            .Column("reallife_ob_col_dividends", 280f, TableSort.Money, sums: true, right: true)
+            .Order(3, false)
+            .Empty("reallife_ob_desk_empty");
+
         /// <summary>0 branch, 1 visitors this month, 2 seen to, 3 left unseen, 4 accounts opened, 5 loans arranged, 6 fees, 7 rent and wages a day.</summary>
         public static readonly TableSpec Branches = new TableSpec("OwnBank", "Branches")
             .Column("reallife_branch_col_branch", 440f, TableSort.Text, flexible: true)
@@ -72,7 +96,10 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed partial class OwnBankApp
     {
-        private static readonly string[] TabKeys = { "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending", "reallife_ob_tab_fund", "reallife_branch_tab" };
+        private static readonly string[] TabKeys =
+        {
+            "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending", "reallife_ob_tab_fund", "reallife_branch_tab", "reallife_ob_tab_cards", "reallife_ob_tab_desk"
+        };
         private const int TypedLength = 12;
         private const string GuideTitle = "reallife_meta_title_economy_ownbank";
 
@@ -189,7 +216,8 @@ namespace RealLifeOverhaul.Economy
                 box.Clear();
                 string selected = null;
                 TableSpec spec = _tab == OwnBankDirector.TabSavers ? OwnBankTables.Savers : _tab == OwnBankDirector.TabLending ? OwnBankTables.Lending
-                    : _tab == OwnBankDirector.TabFund ? OwnBankTables.Fund : _tab == OwnBankDirector.TabBranches ? OwnBankTables.Branches : OwnBankTables.Books;
+                    : _tab == OwnBankDirector.TabFund ? OwnBankTables.Fund : _tab == OwnBankDirector.TabBranches ? OwnBankTables.Branches
+                    : _tab == OwnBankDirector.TabCards ? OwnBankTables.Cards : _tab == OwnBankDirector.TabDesk ? OwnBankTables.Desk : OwnBankTables.Books;
                 OwnBank bank = _director.Bank;
                 if (bank == null || SaveGameManager.Current == null)
                 {
@@ -223,6 +251,14 @@ namespace RealLifeOverhaul.Economy
                     else if (_tab == OwnBankDirector.TabBranches)
                     {
                         WriteBranches(box, bank, city, ref selected);
+                    }
+                    else if (_tab == OwnBankDirector.TabCards)
+                    {
+                        WriteCards(box, bank, city, ref selected);
+                    }
+                    else if (_tab == OwnBankDirector.TabDesk)
+                    {
+                        WriteDesk(box, bank, city);
                     }
                     else
                     {
@@ -522,6 +558,8 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_ob_box_defaults", OwnBankText.Fill("reallife_ob_box_defaults_value", "rate", OwnBankText.Ratio(OwnBankRules.DefaultPerMille(c, b, seg)),
                 "usual", OwnBankText.Ratio(OwnBankCatalogue.DefaultBase[seg])));
             box.Row("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.LoansWanted(c, b, seg)));
+            OwnBankFacts facts = Facts();
+            SaleRow(box, facts, seg);
             box.Headline("reallife_ob_box_rate_head");
             int least = OwnBankCatalogue.LoanOffsetLeast, step = OwnBankCatalogue.LoanOffsetStep, rivalBp = OwnBankRules.RivalLoanBp(c, b, seg);
             box.Selector((OwnBankCatalogue.LoanOffsetMost - least) / step + 1, (b.LoanOffset[seg] - least) / step,
@@ -537,7 +575,9 @@ namespace RealLifeOverhaul.Economy
                 _director.SetLending(seg, on);
                 Refresh();
             }));
-            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
+            Transform segmentButtons = box.ButtonRow();
+            SaleButton(b, facts, seg, segmentButtons);
+            InfoBox.Button(segmentButtons, InfoBox.Additional, "reallife_ob_box_back", Back);
             box.Note(OwnBankText.T(seg == OwnBankCatalogue.Poor ? "reallife_ob_box_poor_note" : OwnBankCatalogue.IsBusiness(seg) ? "reallife_ob_box_firm_note" : "reallife_ob_box_person_note"));
             Meta.Guide.Point(box, GuideTitle);
         }

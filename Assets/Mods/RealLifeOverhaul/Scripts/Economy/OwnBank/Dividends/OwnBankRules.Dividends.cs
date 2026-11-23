@@ -30,6 +30,27 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// What the next dividend is expected to come to, in cents: the profit kept so far, plus what the days still to run bring at the rate of the month so far (or
+        /// last month's, early in a month), after the owner's pay, a share of it, and as far as the bank may pay one now. Nothing while they are off, in a breach, a
+        /// run or a watch, or for a loss. An estimate: the day's own books decide the sum.
+        /// </summary>
+        public static long DividendExpected(OwnBank b, BankCity c)
+        {
+            int days = BankDividends.Days(b.DivEvery, c.MonthDays, c.YearDays);
+            if (!b.Running || days <= 0 || b.Test || b.Stage == Regulator.Breach || b.Run || WatchHeld(b))
+            {
+                return 0;
+            }
+            int due = DividendDay(b, c.MonthDays, c.YearDays);
+            int left = Math.Max(0, due - b.LastDay);
+            long perDay = DaysRun(b) > 0 ? ProfitPerDayNow(b) : b.HistoryCount > 0 ? ProfitPerDayLast(b, c.MonthDays) : 0;
+            long kept = b.DivKept + left * (perDay - (b.PayGiven > 0 ? b.PayGiven : 0));
+            long wanted = kept > 0 ? kept * BankDividends.ShareOf(b.DivShare) / BankDividends.ShareMost : 0;
+            long room = Math.Max(0, Math.Min(FreeCash(b), CapitalNow(b) - Keep(b, c.Level) - PayAhead(b)));
+            return Math.Min(wanted, room);
+        }
+
+        /// <summary>
         /// The end of a day for the dividends, after the owner's pay: the profit kept that day added to the time's, and at the
         /// time's end a share of it paid, short or not at all with why (BankDividends.Paid and the rest) in into.PaidOut and
         /// the bank's DivWanted, DivPaid and DivWhy. Nothing while they are off.
@@ -57,9 +78,9 @@ namespace RealLifeOverhaul.Economy
             {
                 why = BankDividends.NoProfit;
             }
-            else if (b.Stage == Regulator.Breach || b.Run)
+            else if (b.Stage == Regulator.Breach || b.Run || WatchHeld(b))
             {
-                why = b.Run ? BankDividends.Run : BankDividends.Breach;
+                why = b.Run ? BankDividends.Run : b.Stage == Regulator.Breach ? BankDividends.Breach : BankDividends.Watch;
             }
             else
             {

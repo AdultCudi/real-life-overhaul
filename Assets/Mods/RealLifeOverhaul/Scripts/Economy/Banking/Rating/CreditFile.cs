@@ -91,7 +91,20 @@ namespace RealLifeOverhaul.Economy
         {
             for (int i = 0; i < Accounts.Count; i++)
             {
-                if (Accounts[i].Kind == kind && !Accounts[i].Closed && !Accounts[i].Test)
+                if (Accounts[i].Kind == kind && !Accounts[i].Closed && !Accounts[i].Test && !Accounts[i].Own)
+                {
+                    return Accounts[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The owner's own card from their own bank, or null; the cities' banks' cards are never this one.</summary>
+        public CreditAccount OwnCard()
+        {
+            for (int i = 0; i < Accounts.Count; i++)
+            {
+                if (Accounts[i].Own && !Accounts[i].Closed && !Accounts[i].Test)
                 {
                     return Accounts[i];
                 }
