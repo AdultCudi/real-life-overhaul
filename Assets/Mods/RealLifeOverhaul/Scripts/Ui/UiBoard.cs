@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Ui
         public string Warning;   // a lane that needs the player ("No one on Saturday"), said with the warning's glyph; null for none
         public bool Cleaning;    // a cleaning station: it takes a shift at any hour, so its closed hours are not shaded as shut
         public int Free;         // the hours (bit h for hour h, 0 to 23) a new shift may start at now: open, or any for a cleaning station, and not taken
+        public string Who;      // the id of the person a person's lane is for (the card their hover or focus shows); null for a station's lane
         public string Blocked;   // why the person chosen beside the board cannot take this lane ("No matching skill"), said where its warning goes; null for none
     }
 

@@ -867,7 +867,7 @@ namespace RealLifeOverhaul.Ui
                     rows[i] = row;
                 }
             }
-            return new UiDataTableModel
+            var goods = new UiDataTableModel
             {
                 Columns = columns,
                 Rows = rows.ToArray(),
@@ -876,6 +876,8 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = OutlookText.T("reallife_news_empty_city_body"),
                 EmptyIcon = UiIcon.Tag
             };
+            UiDataTableRules.LeaveOutBlank(goods);   // a week or a month the book does not hold yet is no column of blanks
+            return goods;
         }
 
         // The districts by their pull on customers: the pull, its change over the week where the book has a week of it (blank where it has not, never a nought), and
@@ -908,7 +910,7 @@ namespace RealLifeOverhaul.Ui
                     Tones = new[] { UiTokens.Chart(i), UiRole.None, UiRole.None, UiRole.None }
                 });
             }
-            return new UiDataTableModel
+            var districts = new UiDataTableModel
             {
                 Columns = new[]
                 {
@@ -923,6 +925,8 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = OutlookText.T("reallife_news_empty_city_body"),
                 EmptyIcon = UiIcon.MapTrifold
             };
+            UiDataTableRules.LeaveOutBlank(districts);   // the week's change only once the book holds a week, and the rent only where somebody rents
+            return districts;
         }
 
         private static UiDataTableModel HoldingTable()

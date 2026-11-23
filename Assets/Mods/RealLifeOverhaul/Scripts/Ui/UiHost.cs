@@ -704,6 +704,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Layout();
             }
+            if (_mode.Ring)
+            {
+                PersonCard(_view.Focus);
+            }
         }
 
         private void PressNode(int node, float now)
@@ -919,8 +923,28 @@ namespace RealLifeOverhaul.Ui
             {
                 _view.SetHover(node);
                 BarCard(ref _scene.Nodes[node]);
+                PersonCard(node);
                 Pointed(_scene.Nodes[node].Command, _scene.Nodes[node].Arg);
             }
+        }
+
+        // The pointer or the focus on a target that shows a person: their card, as the game's employee tooltip shows it, stands by the target.
+        // A target that shows nobody takes a card away.
+        private void PersonCard(int node)
+        {
+            if (!(_screen is IUiPersonTip tip) || node < 0 || node >= _scene.NodeCount || _laidSize.x <= 0f || _laidSize.y <= 0f)
+            {
+                return;
+            }
+            ref UiNode n = ref _scene.Nodes[node];
+            string id = tip.PersonAt(n.Command, n.Arg, out bool schedule);
+            if (string.IsNullOrEmpty(id))
+            {
+                CardGone();
+                return;
+            }
+            float fx = _view.Scale / _laidSize.x, fy = _view.Scale / _laidSize.y;
+            _barCard = TooltipKit.Person(id, schedule, n.X * fx, n.Y * fy, n.W * fx, n.H * fy);
         }
 
         // The bar's card goes: the pointer left its pill, or the screen did.

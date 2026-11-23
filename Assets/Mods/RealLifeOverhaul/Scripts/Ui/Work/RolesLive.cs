@@ -312,7 +312,7 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level),
                     Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
                     Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
-                    Cells = new[] { null, string.Empty, string.Empty, first >= 0 ? TechText.Rate(d.GoingFor(first,
+                    Cells = new[] { null, w.T("common_unknown", "Unknown"), w.T("common_unknown", "Unknown"), first >= 0 ? TechText.Rate(d.GoingFor(first,
                         ra.Level) * (10000 + ra.PayBp) / 10000) : string.Empty, w.T("reallife_work_rival_ad", "Rival ad") },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
                     Sentence = w.F("reallife_work_rival_ad_line", "{rival} hires the same line and pays {bp} over the going rate. Their applicants may take an offer before yours.", "rival", ra.Rival,

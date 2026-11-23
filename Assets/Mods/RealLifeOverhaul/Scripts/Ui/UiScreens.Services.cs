@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_svc_sec_give_up", "reallife_ui_svc_sec_price", "reallife_ui_svc_sec_raise", "reallife_ui_svc_sec_rival_none",
                 "reallife_ui_svc_sec_service", "reallife_ui_svc_sec_valued", "reallife_ui_svc_sell_pick_title", "reallife_ui_svc_state_active",
                 "reallife_ui_svc_state_bidding", "reallife_ui_svc_state_bidding_one", "reallife_ui_svc_state_late", "reallife_ui_svc_state_nobody",
-                "reallife_ui_svc_state_not_on", "reallife_ui_svc_state_offer", "reallife_ui_svc_sub_crew", "reallife_ui_svc_tax_gain",
+                "reallife_ui_cell_none", "reallife_ui_svc_state_not_on", "reallife_ui_svc_state_offer", "reallife_ui_svc_sub_crew", "reallife_ui_svc_tax_gain",
                 "reallife_ui_svc_term_cash", "reallife_ui_svc_term_keeps", "reallife_ui_svc_term_weeks", "reallife_ui_svc_then_kept",
                 "reallife_ui_svc_then_taken", "reallife_ui_svc_then_value", "reallife_ui_svc_threshold_hint", "reallife_ui_svc_van",
                 "reallife_ui_svc_view_offers", "reallife_ui_svc_view_offers_title", "reallife_ui_svc_view_rivals",

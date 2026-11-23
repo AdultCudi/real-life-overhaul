@@ -189,6 +189,9 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The lead's body wraps to three lines: the start of the company is a sentence or two, and a cut sentence tells the player nothing.
+        private const int LeadLines = 3;
+
         private static float LeadBand(UiScene s, UiAt at, ConstructionLead lead, float x, float y, float w, IUiKeys keys)
         {
             float pad = UiTokens.S4, actionsW = 0f;
@@ -199,7 +202,7 @@ namespace RealLifeOverhaul.Ui
             }
             float tile = UiTokens.IconTile + UiTokens.S4, tx = x + pad + tile + UiTokens.S4, room = x + w - pad - tx - (actionsW > 0f ? actionsW + UiTokens.S4 : 0f);
             float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number));
-            float bh = string.IsNullOrEmpty(lead.Body) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(lead.Body, UiStyle.Body, room, 2));
+            float bh = string.IsNullOrEmpty(lead.Body) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(lead.Body, UiStyle.Body, room, LeadLines));
             float h = UiDraw.Snap(pad * 2f + kh + UiTokens.S1 + th + (bh > 0f ? UiTokens.S1 + bh : 0f));
             int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(box);
@@ -209,11 +212,11 @@ namespace RealLifeOverhaul.Ui
             float cy = y + pad;
             UiDraw.Text(s, on, tx, cy, room, UiStyle.SectionHeader, UiRole.Muted, lead.Kicker, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             cy += kh + UiTokens.S1;
-            UiDraw.Text(s, on, tx, cy, room, UiStyle.Number, UiRole.Text, lead.Title, UiFlags.Truncate | UiFlags.Middle);
+            UiDraw.Text(s, on, tx, cy, room, UiStyle.Number, UiRole.Text, lead.Title, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             cy += th + UiTokens.S1;
             if (bh > 0f)
             {
-                UiDraw.Text(s, on, tx, cy, room, UiStyle.Body, UiRole.Text2, lead.Body, UiFlags.Wrap | UiFlags.Label, 2);
+                UiDraw.Text(s, on, tx, cy, room, UiStyle.Body, UiRole.Text2, lead.Body, UiFlags.Wrap | UiFlags.Label, LeadLines);
             }
             float right = x + w - pad;
             for (int i = lead.Actions.Length - 1; i >= 0; i--)

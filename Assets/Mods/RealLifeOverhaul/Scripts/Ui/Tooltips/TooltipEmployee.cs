@@ -1,9 +1,15 @@
 using System;
 using System.Collections.Generic;
 using AI.Customers.CustomerEntries;
+using BigAmbitions.Characters.Skills;
+using BigAmbitions.DayNightCycle;
 using Entities;
+using Entities.Employee.JobDemands;
+using Enums;
 using Helpers;
+using Localizor;
 using Streets;
+using UI.Smartphone.Apps.BizMan.Schedule;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ui
@@ -31,6 +37,86 @@ namespace RealLifeOverhaul.Ui
             var person = GameContract.TipEmployee.Field;
             return target != null && person != null ? person.GetValue(target) as EmployeeInstance : null;
         }
+
+        /// <summary>
+        /// The card the game's own employee tooltip (EmployeeTooltip.ShowTooltip) would build for this person, from the same reads: the name
+        /// and years, the hours a week, the satisfaction bar, each skill's percentage, each demand with its priority and whether the person's
+        /// work meets it, and, where the schedule is the one open, the days they work too long. Then <see cref="Extend"/> adds the mood, the
+        /// shift and the customers, as it does to the game's. For the kit's own rows that show a person where the game's tooltip stands on
+        /// a shift or a name. False for no person. Cost: one read of the person when the card is made.
+        /// </summary>
+        internal static bool Make(UiTooltipModel into, EmployeeInstance e, bool schedule)
+        {
+            if (e == null || e.characterData == null)
+            {
+                return false;
+            }
+            into.Clear();
+            string name = Game(e.characterData.name);
+            if (e.isBeingReplaced)
+            {
+                into.Header(name);
+                string hunter = e.GetAssignedHeadhunterPlan()?.HeadhunterInstance?.characterData.name;
+                into.Text(LocalizorManager.GetLocalization("awaiting_replacement_from_headhunter", new { headhunterName = hunter }), UiRole.None, false, false);
+                return true;
+            }
+            into.Header(name, LocalizorManager.GetLocalization("common_years_amount", new { years = e.Years }));
+            into.Rule();
+            into.Text(LocalizorManager.GetLocalization("common_hours_per_week", new { weeklyHours = e.assignedWeeklyHours }).ToUpperInvariant());
+            int sat = Mathf.Clamp(Mathf.CeilToInt(e.satisfaction), 0, 100);
+            into.Meter(null, sat + "%", sat, UiRole.Ok);
+            into.Rule();
+            UiTipBlock skills = into.Rows();
+            for (int i = 0; e.characterData.skills != null && i < e.characterData.skills.Count; i++)
+            {
+                Skill skill = e.characterData.skills[i];
+                skills.Lines.Add(new UiTipLine { Left = Game(skill.name), Right = skill.GetRoundedValue() + "%" });
+            }
+            if (skills.Lines.Count == 0)
+            {
+                into.Blocks.Remove(skills);
+            }
+            else
+            {
+                into.Rule();
+            }
+            UiTipBlock asks = into.Rows(UiTipKind.Checks);
+            for (int i = 0; e.demands != null && i < e.demands.Count; i++)
+            {
+                JobDemand d = JobDemandHelper.GetByName(e.demands[i]);
+                if (d == null)
+                {
+                    continue;
+                }
+                asks.Lines.Add(new UiTipLine
+                {
+                    Left = Game(e.demands[i]), Right = Game(d.PriorityLocalizeKey), On = d.Fulfilled(e, null),
+                    Ink = d.priority == Priority.Low ? UiRole.OkText : d.priority == Priority.Medium ? UiRole.WarnText : d.priority == Priority.High ? UiRole.DangerText : UiRole.None
+                });
+            }
+            if (asks.Lines.Count == 0)
+            {
+                into.Blocks.Remove(asks);
+            }
+            else
+            {
+                into.Rule();
+            }
+            List<DayOfWeekOrdered> worn = schedule && ScheduleHelper.Business != null ? ScheduleHelper.GetOverworkedDays(e) : null;
+            if (worn != null && worn.Count > 0)
+            {
+                into.Text(LocalizorManager.GetLocalization("bizman_schedule_employee_overworked_days", ScheduleHelper.GetOverworkedTooltipArguments(worn)), UiRole.WarnText, false, false);
+            }
+            while (into.Blocks.Count > 0 && into.Blocks[into.Blocks.Count - 1].Kind == UiTipKind.Rule)
+            {
+                into.Blocks.RemoveAt(into.Blocks.Count - 1);
+            }
+            Extend(into, e);
+            return true;
+        }
+
+        // A key of the game's words, or the words themselves where the game keeps them as typed (a person's name), as its tooltip does.
+        private static string Game(string key) => string.IsNullOrEmpty(key) ? string.Empty : LocalizorManager.IsLocalizedKey(key) ? LocalizorManager.GetLocalization(key) : key;
 
         /// <summary>The employee's rows added to the model the game's words made.</summary>
         internal static void Extend(UiTooltipModel m, EmployeeInstance e)

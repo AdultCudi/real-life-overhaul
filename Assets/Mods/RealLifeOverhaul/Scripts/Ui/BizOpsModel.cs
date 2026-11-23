@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Ui
         public string PlansTitle;
         public BizManItem[] Plans = new BizManItem[0];  // each plan: what it covers, who runs it, chosen in the cyan fifth
         public string PlansEmpty, PlansEmptyBody;
+        public string PlansNote;                        // under the plans: why no plan can be added here and what to do, or null
         public UiActionModel[] PlanActions = new UiActionModel[0];   // add a plan, move the chosen one up or down
         public string FormTitle;                        // the chosen plan's or machine's name over its form
         public string FormLead;                         // a sentence over the form (the businesses it covers)

@@ -539,7 +539,12 @@ namespace RealLifeOverhaul.Ui
         private static void PlanList(UiScene s, UiAt at, BizManModel m, BizOpsModel o, float x, float y, float w, float bottom, bool onRow, IUiKeys keys)
         {
             float actionsH = o.PlanActions.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
-            Items(s, at, m, ScrollPlans, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH, OpsPlan, -1, onRow, keys);
+            float noteH = string.IsNullOrEmpty(o.PlansNote) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(o.PlansNote, UiStyle.Body, w, 6)) + UiTokens.S4;
+            Items(s, at, m, ScrollPlans, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH - noteH, OpsPlan, -1, onRow, keys);
+            if (noteH > 0f)
+            {
+                UiDraw.Text(s, at, x, bottom - actionsH - noteH + UiTokens.S4, w, UiStyle.Body, UiRole.Text2, o.PlansNote, UiFlags.Label | UiFlags.Wrap, 6);
+            }
             if (actionsH > 0f)
             {
                 PlanActions(s, at, o.PlanActions, x, bottom - UiTokens.Control, w, keys);
