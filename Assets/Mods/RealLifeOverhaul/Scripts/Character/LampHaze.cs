@@ -10,8 +10,10 @@ namespace RealLifeOverhaul
     /// the game's own cone) and the volumetric scatter of its lights. Two jobs, both about hair seen against a lit lamp:
     ///
     ///  - <see cref="GlowQueue"/> reads once per scene which transparent queue the game draws that glow in, so the hair finish
-    ///    and the mod's own hair looks can be sorted after it (<see cref="HairFinish.QueueAfter"/>): hair drawn before a cone
-    ///    that is blended over it is covered by it, hair drawn after it lies on top of it.
+    ///    and the mod's own hair looks can be sorted against it (<see cref="HairFinish.QueueFor"/>). A glow that writes depth
+    ///    (the game's does: Shader Graphs/Sh_VolumetricLight, ZWrite on) makes anything drawn after it that lies behind its
+    ///    near face fail the depth test, so the hair is drawn before it and the cone blends over the hair; a glow that does
+    ///    not write depth is drawn first and the hair lies on top.
     ///  - The option "Street light haze" (<see cref="Settings.LampHaze"/>): off hides the glow and takes the lights out of the
     ///    volumetric fog, and the lights themselves stay as they are. It is the way out for a player on whom a cone still covers
     ///    hair after the sorting, e.g. a cone the game draws in the low resolution pass, which no hair material can be sorted into.
@@ -43,6 +45,7 @@ namespace RealLifeOverhaul
 
         private static bool _found;      // a lamp with a glow was read this scene
         private static int _queue;       // the highest render queue among the glow's materials; 0 = it has no mesh
+        private static int _depth = HairRules.GlowUnknown;   // whether the glow's first material writes depth
         private static string _said = "no street lamp has been looked at yet";
 
         /// <summary>
@@ -56,6 +59,16 @@ namespace RealLifeOverhaul
                 Look();
             }
             return _queue;
+        }
+
+        /// <summary>Whether the glow writes depth (<see cref="HairRules.GlowWrites"/>, <see cref="HairRules.GlowLeaves"/>), or <see cref="HairRules.GlowUnknown"/>.</summary>
+        public static int GlowDepth()
+        {
+            if (!_found)
+            {
+                Look();
+            }
+            return _depth;
         }
 
         /// <summary>What was read of the glow and what the haze option has done, for the hair check line.</summary>
@@ -96,11 +109,13 @@ namespace RealLifeOverhaul
                             continue;
                         }
                         _queue = Mathf.Max(_queue, material.renderQueue);
-                        if (r == 0)
+                        if (r == 0 && m == 0)
                         {
+                            string writes = Flag(material, ZWriteId) ?? Flag(material, TransparentZWriteId);
+                            _depth = writes == null ? HairRules.GlowUnknown : writes == "yes" ? HairRules.GlowWrites : HairRules.GlowLeaves;
                             text.Append("; shader '").Append(material.shader != null ? material.shader.name : "none").Append("' queue ")
                                 .Append(material.renderQueue).Append(" (").Append(HairFinish.PassOf(material.renderQueue)).Append(" pass), writes depth ")
-                                .Append(Flag(material, ZWriteId) ?? Flag(material, TransparentZWriteId) ?? "unknown").Append(", sort ")
+                                .Append(writes ?? "unknown").Append(", sort ")
                                 .Append(material.HasProperty(SortPriorityId) ? material.GetFloat(SortPriorityId).ToString("F0") : "none");
                         }
                     }
@@ -232,6 +247,7 @@ namespace RealLifeOverhaul
             Restore();
             _found = false;
             _queue = 0;
+            _depth = HairRules.GlowUnknown;
             _said = "no street lamp has been looked at yet";
         }
     }

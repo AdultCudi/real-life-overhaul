@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using RealLifeOverhaul;
 
 // Hair seen in the haze of a street lamp (a player's report: the hair looked gone, the head bald, where the lamp's glow was
-// behind or round the character). The game draws a glow object with each street lamp; the mod's hair finish and its own hair
-// looks are blended transparent layers, and HDRP draws the transparent layers of one pass in the order of their render queue.
-// What these checks hold: the arithmetic that puts a hair layer after the glow (Character/HairRules.QueueAfter, compiled here
-// as it ships), that the three places that make hair layers use it once when a look is put on, that the haze has its option and
-// is read when the option changes, that the hair check line reports what was applied, and the texts. That the picture is
-// right is for the game to show (the test list says what to look at).
+// behind or round the character). The game draws a glow object with each street lamp, and its material writes depth; the mod's
+// hair finish and its own hair looks are blended transparent layers, and HDRP draws the transparent layers of one pass in the
+// order of their render queue, each tested against the depth written so far. So a layer drawn after a depth writing glow that
+// lies behind its near face is lost: the layers are drawn before such a glow and after one that does not write depth. What these
+// checks hold: that arithmetic (Character/HairRules.QueueFor and UnderlayFor, compiled here as they ship), that the places that
+// make hair layers use it once when a look is put on, that the haze has its option and is read when the option changes, that
+// the hair check line reports what was applied, and the texts. That the picture is right is for the game to show.
 internal static partial class Program
 {
     private static void HairFog()
@@ -20,49 +21,76 @@ internal static partial class Program
 
     private static void HairFogQueue()
     {
+        const int W = HairRules.GlowWrites, L = HairRules.GlowLeaves, U = HairRules.GlowUnknown;
         Check(HairRules.PassOf(2998) == "default transparent" && HairRules.PassOf(2750) == "before refraction" && HairRules.PassOf(3400) == "low resolution transparent"
               && HairRules.PassOf(3700) == "after post-process" && HairRules.PassOf(2450) == "opaque",
             "hair fog: the pass a queue draws in is named as HDRP's ranges have it");
         for (int layer = 3000; layer <= 3003; layer++)
         {
-            Check(HairRules.QueueAfter(layer, 0) == layer, "hair fog: with no glow known a hair layer at " + layer + " keeps its queue");
-            Check(HairRules.QueueAfter(layer, 2750) == layer, "hair fog: a glow drawn before refraction is drawn before the hair anyway; layer " + layer + " unchanged");
-            Check(HairRules.QueueAfter(layer, 3400) == layer && HairRules.QueueAfter(layer, 3700) == layer,
-                "hair fog: a glow in the low resolution or after post-process pass cannot be sorted against; layer " + layer + " unchanged");
+            foreach (int depth in new[] { W, L, U })
+            {
+                Check(HairRules.QueueFor(layer, 0, depth) == layer, "hair fog: with no glow known a hair layer at " + layer + " keeps its queue");
+                Check(HairRules.QueueFor(layer, 2750, depth) == layer, "hair fog: a glow drawn before refraction is drawn before the hair anyway; layer " + layer + " unchanged");
+                Check(HairRules.QueueFor(layer, 3400, depth) == layer && HairRules.QueueFor(layer, 3700, depth) == layer,
+                    "hair fog: a glow in the low resolution or after post-process pass cannot be sorted against; layer " + layer + " unchanged");
+            }
         }
-        foreach (int glow in new[] { 2900, 2999, 3000, 3001, 3002, 3050, 3090 })
+        // The game's glow as the 1.0.21 log shows it: queue 3000, writes depth. The layers go just before it, order and gaps kept.
+        Check(HairRules.QueueFor(3000, 3000, W) == 2996 && HairRules.QueueFor(3001, 3000, W) == 2997 && HairRules.QueueFor(3002, 3000, W) == 2998 && HairRules.QueueFor(3003, 3000, W) == 2999,
+            "hair fog: a glow at 3000 that writes depth puts the layers at 2996 to 2999, before it");
+        Check(HairRules.UnderlayFor(3000, W) == 2995, "hair fog: the scalp underlay goes under all of them (2995)");
+        Check(HairRules.UnderlayFor(0, U) == 2998 && HairRules.UnderlayFor(3400, W) == 2998 && HairRules.UnderlayFor(3000, L) == 2998 && HairRules.UnderlayFor(3050, W) == 2998,
+            "hair fog: the underlay stays at 2998 where the layers are not moved before a glow");
+        foreach (int glow in new[] { 2904, 2999, 3000, 3001, 3002, 3003, 3004, 3050, 3090 })
         {
             int last = -1;
             for (int layer = 3000; layer <= 3003; layer++)
             {
-                int q = HairRules.QueueAfter(layer, glow);
-                Check(q > glow && q >= layer && q <= 3099, "hair fog: with the glow at " + glow + " the layer at " + layer + " is drawn after it, inside the pass (" + q + ")");
-                Check(q > last, "hair fog: with the glow at " + glow + " the layers keep their order, scalp then body then strands");
+                int q = HairRules.QueueFor(layer, glow, W);
+                Check(q < glow && q >= 2900 && q <= layer, "hair fog: with a depth writing glow at " + glow + " the layer at " + layer + " is drawn before it, inside the pass (" + q + ")");
+                Check(q > last, "hair fog: with a depth writing glow at " + glow + " the layers keep their order");
+                last = q;
+                Check(HairRules.QueueFor(layer, glow, U) == q, "hair fog: an unknown flag is treated as writing depth (glow " + glow + ", layer " + layer + ")");
+            }
+            Check(HairRules.UnderlayFor(glow, W) <= HairRules.QueueFor(3000, glow, W) && HairRules.UnderlayFor(glow, W) >= 2900, "hair fog: the underlay is not above any layer for a glow at " + glow);
+        }
+        foreach (int glow in new[] { 2999, 3000, 3050, 3090 })
+        {
+            int last = -1;
+            for (int layer = 3000; layer <= 3003; layer++)
+            {
+                int q = HairRules.QueueFor(layer, glow, L);
+                Check(q > glow && q >= layer && q <= 3099, "hair fog: with a glow at " + glow + " that does not write depth the layer at " + layer + " is drawn after it, inside the pass (" + q + ")");
+                Check(q > last, "hair fog: with a glow at " + glow + " that does not write depth the layers keep their order");
                 last = q;
             }
         }
-        Check(HairRules.QueueAfter(3000, 3003) == 3004 && HairRules.QueueAfter(3003, 3003) == 3007, "hair fog: the layers are drawn right after a glow at 3003, the gaps between them kept");
-        Check(HairRules.QueueAfter(3003, 3099) == 3099, "hair fog: a glow at the end of the pass leaves the layers at its last queue, never out of the pass");
-        Check(HairRules.QueueAfter(2998, 3003) == 2998 && HairRules.QueueAfter(2450, 3003) == 2450,
-            "hair fog: the scalp underlay (2998) and an alpha tested hat (2450) are not moved");
-        // A layer is always sorted from its template's queue (HairFinish.Make, ModLooks.FinishHair), never from a sorted one,
-        // so what has to hold is that the result is after the glow and inside the pass.
-        Check(HairRules.QueueAfter(3001, 3010) == 3012 && HairRules.QueueAfter(3001, 3010) > 3010, "hair fog: a layer sorted from its template is after the glow");
+        Check(HairRules.QueueFor(3000, 3003, L) == 3004 && HairRules.QueueFor(3003, 3003, L) == 3007, "hair fog: layers go right after a glow at 3003 that does not write depth, the gaps kept");
+        Check(HairRules.QueueFor(3003, 3099, L) == 3099, "hair fog: a glow at the end of the pass leaves the layers at its last queue, never out of the pass");
+        Check(HairRules.QueueFor(3000, 3050, W) == 3000 && HairRules.QueueFor(3003, 3050, U) == 3003, "hair fog: layers already before a glow are not moved");
+        Check(HairRules.QueueFor(2998, 3003, W) == 2998 && HairRules.QueueFor(2450, 3000, W) == 2450 && HairRules.QueueFor(2450, 3003, L) == 2450,
+            "hair fog: the scalp underlay's own queue and an alpha tested hat (2450) are not moved by the layer rule");
+        Check(HairRules.QueueFor(HairRules.QueueFor(3001, 3010, W), 3010, W) == HairRules.QueueFor(3001, 3010, W), "hair fog: sorting a layer twice changes nothing more");
     }
 
     private static void HairFogSources()
     {
         string finish = ModSource(@"Character\HairFinish.cs"), look = ModSource(@"Character\HairLook.cs"), looks = ModSource(@"Character\ModLooks.cs");
         string haze = ModSource(@"Character\LampHaze.cs");
-        Check(finish.Contains("finished.renderQueue = QueueAfter(layer.renderQueue, settings.AfterQueue);"), "hair fog: a finished hair layer is queued after the lamp glow when it is made");
-        Check(looks.Contains("material.renderQueue = HairFinish.QueueAfter((int)RenderQueue.Transparent + order, LampHaze.GlowQueue());"),
-            "hair fog: the mod's own hair looks are queued after the lamp glow when their material is made");
-        Check(look.Contains("settings.AfterQueue = LampHaze.GlowQueue();"), "hair fog: the finish reads the glow's queue once for each look it puts on");
+        Check(finish.Contains("finished.renderQueue = QueueFor(layer.renderQueue, settings.GlowQueue, settings.GlowDepth);"), "hair fog: a finished hair layer is queued against the lamp glow when it is made");
+        Check(looks.Contains("material.renderQueue = HairFinish.QueueFor((int)RenderQueue.Transparent + order, LampHaze.GlowQueue(), LampHaze.GlowDepth());"),
+            "hair fog: the mod's own hair looks (scalp, body, wisps, beards) are queued against the lamp glow when their material is made");
+        Check(looks.Contains("HairFinish.Underlay(material, colour, LampHaze.GlowQueue(), LampHaze.GlowDepth());") && finish.Contains("HairRules.UnderlayFor(glow, glowDepth)"),
+            "hair fog: the scalp underlay is queued under the layers it lies beneath");
+        Check(look.Contains("settings.GlowQueue = LampHaze.GlowQueue();") && look.Contains("settings.GlowDepth = LampHaze.GlowDepth();"), "hair fog: the finish reads the glow's queue and depth flag once for each look it puts on");
         string made = look.Substring(look.IndexOf("private static bool Finish(", StringComparison.Ordinal));
-        Check(made.IndexOf("settings.AfterQueue = LampHaze.GlowQueue();", StringComparison.Ordinal) < made.IndexOf("HairFinish.Make(", StringComparison.Ordinal),
-            "hair fog: the glow's queue is read before the layer is made");
-        Check(look.Contains("\", fog on transparent \"") && look.Contains("\", after the lamp glow \"") && look.Contains("\"street lamp haze: \"") && look.Contains("HairFinish.PassOf(material.renderQueue)"),
-            "hair fog: the hair check line reports the pass, the fog keyword, whether the layer is after the glow and what the haze option has done");
+        Check(made.IndexOf("settings.GlowDepth = LampHaze.GlowDepth();", StringComparison.Ordinal) < made.IndexOf("HairFinish.Make(", StringComparison.Ordinal),
+            "hair fog: the glow is read before the layer is made");
+        Check(look.Contains("\", fog on transparent \"") && look.Contains("\"after the lamp glow\"") && look.Contains("\"before the lamp glow\"") && look.Contains("(it writes depth)")
+              && look.Contains("\"street lamp haze: \"") && look.Contains("HairFinish.PassOf(material.renderQueue)"),
+            "hair fog: the hair check line reports the pass, the fog keyword, whether the layer is before or after the glow and whether the glow writes depth");
+        Check(haze.Contains("public static int GlowDepth()") && haze.Contains("Flag(material, ZWriteId)") && haze.Contains("Flag(material, TransparentZWriteId)"),
+            "hair fog: the glow's depth flag is read from its material's _ZWrite or _TransparentZWrite");
         Check(haze.Contains("GetComponentsInChildren<Renderer>(true)") && haze.Contains("affectsVolumetric") && !haze.Contains("SetActive("),
             "hair fog: the haze is hidden by its renderers and the lights' volumetric flag, never by switching the game's glow object off, which the game does itself");
         Check(!haze.Contains("void Update") && !haze.Contains("LateUpdate") && !haze.Contains("FixedUpdate") && !haze.Contains("OnGUI"), "hair fog: the haze code has nothing that runs every frame");

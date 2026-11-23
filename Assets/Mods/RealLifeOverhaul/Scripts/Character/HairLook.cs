@@ -111,7 +111,8 @@ namespace RealLifeOverhaul
             renderer.GetSharedMaterials(Scratch);
             Finished known = Find(renderer);
             HairFinish.Settings settings = HairFinish.Settings.Default;
-            settings.AfterQueue = LampHaze.GlowQueue();
+            settings.GlowQueue = LampHaze.GlowQueue();
+            settings.GlowDepth = LampHaze.GlowDepth();
             bool swapped = false, changed = false;
             for (int i = 0; i < Scratch.Count; i++)
             {
@@ -606,7 +607,7 @@ namespace RealLifeOverhaul
                 .Append(", ").Append(HairFinish.PassOf(material.renderQueue)).Append(" pass")
                 .Append(", fog on transparent ").Append(material.IsKeywordEnabled(HairFinish.FogKeyword) ? "yes" : "no")
                 .Append(material.HasProperty(FogOnId) ? " (property " + Number(Float(material, FogOnId), "F0") + ")" : "")
-                .Append(", after the lamp glow ").Append(AfterGlow(material.renderQueue));
+                .Append(", ").Append(AgainstGlow(material.renderQueue));
             Texture map = material.HasProperty(BaseColorMapId) ? material.GetTexture(BaseColorMapId) : null;
             text.Append(", strands '").Append(map != null ? map.name : "none").Append("'");
             if (map is Texture2D texture)
@@ -615,15 +616,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Whether this layer is drawn after the lamp glow the game puts over the street (HairFinish.QueueAfter).
-        private static string AfterGlow(int queue)
+        // Where this layer is drawn against the lamp glow the game puts over the street (HairFinish.QueueFor).
+        private static string AgainstGlow(int queue)
         {
             int glow = LampHaze.GlowQueue();
             if (glow == 0)
             {
-                return "(no glow mesh known)";
+                return "no lamp glow mesh known";
             }
-            return queue > glow ? "yes (glow " + glow + ")" : queue == glow ? "same queue (glow " + glow + ")" : "NO (glow " + glow + ")";
+            int depth = LampHaze.GlowDepth();
+            string said = depth == HairRules.GlowWrites ? " (it writes depth)" : depth == HairRules.GlowLeaves ? " (it does not write depth)" : " (whether it writes depth is unknown)";
+            return (queue > glow ? "after the lamp glow" : queue < glow ? "before the lamp glow" : "at the same queue as the lamp glow") + said + ", glow " + glow;
         }
 
         private static float Float(Material material, int id)
