@@ -287,6 +287,8 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareBoost> Boosts = new List<FlareBoost>(8);
         public readonly List<FlarePastHire> PastHires = new List<FlarePastHire>(8);
         public readonly List<FlareReviewNote> Answers = new List<FlareReviewNote>(8);
+        public readonly List<FlareStarRow> Counted = new List<FlareStarRow>(8);   // the stars of the player's businesses from the feed's review posts, kept past the posts (FlareReviewBook)
+        public readonly List<int> CountedPosts = new List<int>(32);               // the numbers of the posts counted into them
 
         public FlareInfluencer Influencer(int id)
         {
