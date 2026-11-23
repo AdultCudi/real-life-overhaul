@@ -131,6 +131,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|');
                 Standing(t, a.Ladder);
                 t.Append('|').Append(Clean(a.Security)).Append('|').Append(Clean(a.SecurityName)).Append('|').Append(Clean(a.Street));
+                t.Append('|').Append(a.Own ? '1' : '0');
             }
             SharkDebt shark = f.Shark;
             t.Append("~k:");
@@ -291,7 +292,8 @@ namespace RealLifeOverhaul.Economy
                     OpenedDay = I(c, 6), Term = Count(c, 7), Instalment = Count(c, 8), NextDay = I(c, 9), DueDay = I(c, 10), StatementLeft = Count(c, 11),
                     MinimumLeft = Count(c, 12), Charged = I(c, 13) != 0, Secured = I(c, 14) != 0, SecurityValue = Count(c, 15), Number = I(c, 16),
                     Frozen = I(c, 17) != 0, Closed = I(c, 18) != 0, Test = I(c, 19) != 0,
-                    Security = c.Length > 32 ? c[32] : string.Empty, SecurityName = c.Length > 33 ? c[33] : string.Empty, Street = c.Length > 34 ? c[34] : string.Empty
+                    Security = c.Length > 32 ? c[32] : string.Empty, SecurityName = c.Length > 33 ? c[33] : string.Empty, Street = c.Length > 34 ? c[34] : string.Empty,
+                    Own = c.Length > 35 && I(c, 35) != 0   // appended: a line from before it has no own card
                 };
                 Standing(a.Ladder, c, 20);
                 f.Accounts.Add(a);

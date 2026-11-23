@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Economy
                     CreditLedger.Register(file.Accounts[i]);   // a test account is never part of the rating
                 }
             }
+            ConnectOwnCard();
             StartDebtBegin(opened);   // before the loans are looked over: the one it makes is among them
             SelfCheck(today);
             ApplyHolds("the start");
@@ -167,6 +168,7 @@ namespace RealLifeOverhaul.Economy
                 _afterSave = false;
                 _repoWaiting = false;
                 _startDebtWaiting = false;
+                DisconnectOwnCard();
                 BankTerms.Secured = null;
                 DebtPhone.Forget();
             }

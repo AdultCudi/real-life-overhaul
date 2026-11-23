@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Economy
             }
             long cash = FreeCash(b);
             long risk = RiskWeighted(b) + cents * OwnBankCatalogue.LoanWeight[segment] / 1000;
-            return cash >= cents && FreeCapital(b) * 1000 >= risk * OwnBankCatalogue.LendRatio && LoanRoom(b, caps) >= cents;
+            return cash >= cents && FreeCapital(b) * 1000 >= risk * LendRatioOf(b) && LoanRoom(b, caps) >= cents;
         }
 
         /// <summary>

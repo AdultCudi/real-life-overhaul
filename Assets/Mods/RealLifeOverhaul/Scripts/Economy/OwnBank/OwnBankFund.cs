@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Economy
             long byLimit = b.Savings * Math.Min(OwnBankCatalogue.FundLimitMost, b.FundLimit) / 1000;
             long byCash = OwnBankRules.FreeCash(b) - hold + value;
             long others = OwnBankRules.RiskWeighted(b) - value * OwnBankCatalogue.FundWeight / 1000;
-            long byCapital = (OwnBankRules.FreeCapital(b) * 1000 / OwnBankCatalogue.LendRatio - others) * 1000 / OwnBankCatalogue.FundWeight;
+            long byCapital = (OwnBankRules.FreeCapital(b) * 1000 / OwnBankRules.LendRatioOf(b) - others) * 1000 / OwnBankCatalogue.FundWeight;
             return Math.Max(0, Math.Min(byLimit, Math.Min(byCash, byCapital)));
         }
 
@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Economy
                 into.Dividends += dividend;
                 if (!Eligible(q, b.Strategy) || b.FundLimit <= 0)
                 {
-                    SellShares(b, i, h.Qty, OwnBankCatalogue.FundSpreadBp * 10, into);
+                    SellShares(b, b.Holdings, i, h.Qty, OwnBankCatalogue.FundSpreadBp * 10, into);
                 }
             }
             if (b.Strategy <= 0 || b.FundLimit <= 0)
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (!PickedHas(quotes, b.Holdings[i].StockId))
                 {
-                    SellShares(b, i, b.Holdings[i].Qty, OwnBankCatalogue.FundSpreadBp * 10, into);
+                    SellShares(b, b.Holdings, i, b.Holdings[i].Qty, OwnBankCatalogue.FundSpreadBp * 10, into);
                 }
             }
             if (Picked.Count == 0)
@@ -139,19 +139,19 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (mayBuy)
                     {
-                        Buy(b, q, part - have, into, hold);
+                        Buy(b, b.Holdings, q, part - have, into, hold);
                     }
                 }
                 else if (h != null)
                 {
                     long sell = (have - part) / Math.Max(1, q.LastCents);
-                    SellShares(b, b.Holdings.IndexOf(h), Math.Min(h.Qty, sell), OwnBankCatalogue.FundSpreadBp * 10, into);
+                    SellShares(b, b.Holdings, b.Holdings.IndexOf(h), Math.Min(h.Qty, sell), OwnBankCatalogue.FundSpreadBp * 10, into);
                 }
             }
         }
 
         // As many whole shares as about this amount buys at the last price and the spread, with the commission.
-        private static void Buy(OwnBank b, FundQuote q, long cents, BankDay into, long hold)
+        internal static void Buy(OwnBank b, List<FundHolding> list, FundQuote q, long cents, BankDay into, long hold)
         {
             long price = (long)q.LastCents * (10000 + OwnBankCatalogue.FundSpreadBp) / 10000;
             long cash = OwnBankRules.FreeCash(b) - hold;
@@ -161,11 +161,11 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             long cost = qty * price, fee = Fee(cost);
-            FundHolding h = b.Find(q.StockId);
+            FundHolding h = FindIn(list, q.StockId);
             if (h == null)
             {
                 h = new FundHolding { StockId = q.StockId, Ticker = q.Ticker ?? string.Empty, Name = q.Name ?? string.Empty };
-                b.Holdings.Add(h);
+                list.Add(h);
             }
             h.Qty += qty;
             h.CostCents += cost;
@@ -178,13 +178,13 @@ namespace RealLifeOverhaul.Economy
         }
 
         // Shares sold at the last price less a discount in hundred-thousandths (200 is the spread's 0.2%), with the commission.
-        private static void SellShares(OwnBank b, int index, long qty, int under, BankDay into)
+        internal static void SellShares(OwnBank b, List<FundHolding> list, int index, long qty, int under, BankDay into)
         {
-            if (index < 0 || index >= b.Holdings.Count || qty <= 0)
+            if (index < 0 || index >= list.Count || qty <= 0)
             {
                 return;
             }
-            FundHolding h = b.Holdings[index];
+            FundHolding h = list[index];
             qty = Math.Min(qty, h.Qty);
             long proceeds = qty * h.LastCents * (100000 - under) / 100000;
             long fee = Fee(proceeds);
@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Economy
             into.Sold += proceeds;
             if (h.Qty <= 0)
             {
-                b.Holdings.RemoveAt(index);
+                list.RemoveAt(index);
             }
         }
 
@@ -224,21 +224,27 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Shares sold under the market, the largest holding first, until the savers' need is met or nothing is left.</summary>
+        /// <summary>Shares sold under the market, the own book first and then the fund, the largest holding first, until the savers' need is met or nothing is left.</summary>
         public static void FireSale(OwnBank b, long need, BankDay into)
         {
-            while (need > 0 && b.Holdings.Count > 0)
+            need = FireSaleOf(b, b.Book, need, into);
+            FireSaleOf(b, b.Holdings, need, into);
+        }
+
+        private static long FireSaleOf(OwnBank b, List<FundHolding> list, long need, BankDay into)
+        {
+            while (need > 0 && list.Count > 0)
             {
                 int largest = 0;
-                for (int i = 1; i < b.Holdings.Count; i++)
+                for (int i = 1; i < list.Count; i++)
                 {
-                    largest = b.Holdings[i].Qty * b.Holdings[i].LastCents > b.Holdings[largest].Qty * b.Holdings[largest].LastCents ? i : largest;
+                    largest = list[i].Qty * list[i].LastCents > list[largest].Qty * list[largest].LastCents ? i : largest;
                 }
-                FundHolding h = b.Holdings[largest];
+                FundHolding h = list[largest];
                 long each = (long)h.LastCents * (1000 - OwnBankCatalogue.FundFireSale) / 1000;
                 long qty = each > 0 ? Math.Min(h.Qty, need / each + 1) : h.Qty;
                 long before = b.Reserves;
-                SellShares(b, largest, qty, OwnBankCatalogue.FundFireSale * 100, into);
+                SellShares(b, list, largest, qty, OwnBankCatalogue.FundFireSale * 100, into);
                 into.FireSold += b.Reserves - before;
                 need -= b.Reserves - before;
                 if (b.Reserves <= before)
@@ -246,6 +252,7 @@ namespace RealLifeOverhaul.Economy
                     break;   // shares worth nothing
                 }
             }
+            return need;
         }
 
         /// <summary>A trade's commission, rounded up.</summary>
@@ -254,7 +261,19 @@ namespace RealLifeOverhaul.Economy
             return cents <= 0 ? 0 : (cents * OwnBankCatalogue.FundCommissionBp + 9999) / 10000;
         }
 
-        private static int IndexOf(IList<FundQuote> quotes, int stockId)
+        internal static FundHolding FindIn(List<FundHolding> list, int stockId)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].StockId == stockId)
+                {
+                    return list[i];
+                }
+            }
+            return null;
+        }
+
+        internal static int IndexOf(IList<FundQuote> quotes, int stockId)
         {
             for (int i = 0; i < quotes.Count; i++)
             {

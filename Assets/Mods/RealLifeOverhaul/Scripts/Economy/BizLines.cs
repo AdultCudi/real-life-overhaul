@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] TakingsKeys =
         {
             P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "tech_bakeoff", P + "broadband_takings", P + "ownbank_takings",
-            P + "study_academy", P + "bld_contract", P + "estate_agency_fee", P + "estate_agency_letting"
+            P + "study_academy", P + "bld_contract", P + "estate_agency_fee", P + "estate_agency_letting",
+            P + "ownbank_cards", P + "ownbank_desk"   // a bank's cards and its trading desk
         };
 
         /// <summary>Running costs.</summary>
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_recruitment_rush",   // a search firm paid to bring its candidates forward
             P + "broadband_network", P + "broadband_installs", P + "broadband_marketing", P + "broadband_wages", P + "broadband_licence",
             P + "ownbank_savers", P + "ownbank_losses", P + "ownbank_wages", P + "ownbank_systems", P + "ownbank_fine",
+            P + "ownbank_cards_costs", P + "ownbank_funding", P + "ownbank_desk_costs",
             P + "bld_crews", P + "bld_plant", P + "bld_fees", P + "bld_interest", P + "bld_land_tax", P + "bld_vacant_tax", P + "bld_cover",
             P + "fire_repair", P + "holdup_till",
             P + "trips_fuel",   // a delivery trip's fuel, at its warehouse
@@ -83,6 +85,7 @@ namespace RealLifeOverhaul.Economy
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",
+            P + "ownbank_investment_dividend_auto", P + "ownbank_investment_dividend_tax",   // an automatic dividend to the owner, and what is withheld from it
             P + "bld_builder", P + "bld_builder_back", P + "bld_buyout", P + "bld_cash", P + "bld_conversion", P + "bld_conversion_back",
             P + "bld_demolition", P + "bld_demolition_back", P + "bld_fees_back", P + "bld_insurance", P + "bld_investor_in", P + "bld_investor_out",
             P + "bld_land", P + "bld_land_auction", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",

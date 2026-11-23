@@ -364,6 +364,7 @@ namespace RealLifeOverhaul.Economy
                     continue;   // a mortgage stays with its building, on its payments
                 }
                 a.Frozen = false;
+                OwnCardSink.Moved(a.Own, OwnCardSink.Lost, a.Owed);   // the owner's bank writes the card off
                 a.Owed = 0;
                 a.Ladder.Clear();
                 if (a.Kind == ProductKind.CarFinance && a.Secured && Books.Vehicle(a.Security) != null)

@@ -115,6 +115,60 @@ namespace RealLifeOverhaul.Economy
         public int DivWhy;                      // why it was less: a BankDividends value
         public long DivAll;                     // paid out in all
 
+        // Its risk (Economy/OwnBank/Risk). Zero everywhere while the option is off, so a bank that never met it reads as before.
+        public int Risk;                        // BankRisk level in force: set from the city each day (BankCity.Risk), so the rules that see only the bank read it
+        public long Interbank;                  // borrowed from other banks: a liability beside the deposits
+        public int InterbankDue;                // the day it falls due; 0: none borrowed
+        public int InterbankBp;                 // the rate it bears, hundredths of a per cent a year
+        public long SoldFace, SoldLoss;         // loans sold to other banks in all, at their face, and what the sales cost
+        public long SaleLossPend, FundingPend;  // what a sale of loans cost and the fee for money borrowed, taken from the capital at once: into the books with the next day
+        public int SignsTold = int.MinValue;    // the day the warning signs were last told, once a month at most; int.MinValue: never
+        public int ShockTold = int.MinValue;    // the month a coming shock was last told; int.MinValue: never
+
+        // Its credit cards (Economy/OwnBank/Cards).
+        public bool CardsOn;                    // issuing: off, no new card is issued and the book runs down
+        public int CardAuto = CardTerms.AutoDefault, CardDecline = CardTerms.DeclineDefault;   // credit scores: approved at once from the first, declined under the second
+        public int CardRate;                    // hundredths of a point over the rivals' card rate
+        public int CardFee;                     // an index of CardTerms.FeeSteps
+        public readonly bool[] CardIssue = new bool[CardTerms.Kinds];
+        public readonly int[] CardLimit = new int[CardTerms.Kinds];            // an index of CardTerms.Limits[kind]
+        public readonly int[] CardHolders = new int[CardTerms.Kinds];
+        public readonly long[] CardBal = new long[CardTerms.Kinds];            // carried, paying
+        public readonly long[] CardArr = new long[CardTerms.Kinds];            // in arrears
+        public readonly int[] CardQueue = new int[CardTerms.Kinds];            // applicants between the two lines, waiting for the owner
+        public readonly int[] CardRisk = new int[CardTerms.Kinds];             // thousandths: the book's defaults against its kind's, by the scores approved
+        public readonly long[] CardFig = new long[CardTerms.Figures], CardLast = new long[CardTerms.Figures];   // this month's figures and last month's
+        public long CardLostAll;                // written off and lost to fraud in all
+        public bool OwnCard;                    // the owner holds the bank's top card (the credit file's own-bank card)
+        public long OwnOwed;                    // what the owner owes on it, the credit file's figure in cents
+        public long OwnLostAll;                 // of it, written off in all
+        public long OwnLimit;                   // its limit, cents
+        public int OwnRateBp;                   // the rate it was opened at, hundredths of a per cent a year
+        public long OwnDrawn, OwnPaid, OwnInterest, OwnFees, OwnLost;   // what the owner's card did since the last day was run: into the books with the next day
+
+        // Its trading desk (Economy/OwnBank/Desk).
+        public bool DeskOn;                     // the desk is open: brokerage for the clients
+        public bool DeskDirty;                  // a choice changed: the own book is traded to it on the next day
+        public int DeskMandate;                 // BankDesk: none, index, income or growth
+        public int DeskShare = BankDesk.ShareDefault;   // thousandths of the capital the own book may hold
+        public int DeskLimit = BankDesk.LimitDefault;   // thousandths: the loss from its peak that cuts the book
+        public long DeskPeak;                   // the highest value the book has had since it last was cut or began
+        public int DeskCutDay;                  // the day the limit last cut the book; 0: never
+        public int DeskCuts;                    // times it has cut
+        public long DeskBrokerage, DeskDerivs, DeskCommissionAll;   // this month's commissions on shares and on options and futures, and in all
+        public long DeskLastBrokerage, DeskLastDerivs;
+        public readonly List<FundHolding> Book = new List<FundHolding>(10);   // the own book's holdings
+
+        public OwnBank()
+        {
+            for (int j = 0; j < CardTerms.Kinds; j++)
+            {
+                CardIssue[j] = j != OwnBankCatalogue.Poor;   // as a bank lends to all but the poorly rated
+                CardLimit[j] = CardTerms.LimitDefault;
+                CardRisk[j] = 1000;
+            }
+        }
+
         public BankBranch Branch(string place)
         {
             for (int i = 0; i < Branches.Count; i++)
@@ -208,6 +262,88 @@ namespace RealLifeOverhaul.Economy
             }
             return null;
         }
+
+        /// <summary>What the own book cost, and what it is worth at the last prices seen.</summary>
+        public long BookCost
+        {
+            get
+            {
+                long sum = 0;
+                for (int i = 0; i < Book.Count; i++)
+                {
+                    sum += Book[i].CostCents;
+                }
+                return sum;
+            }
+        }
+
+        public long BookValue
+        {
+            get
+            {
+                long sum = 0;
+                for (int i = 0; i < Book.Count; i++)
+                {
+                    sum += Book[i].Qty * Book[i].LastCents;
+                }
+                return sum;
+            }
+        }
+
+        /// <summary>The cards' balances that pay, the owner's included.</summary>
+        public long CardBook
+        {
+            get
+            {
+                long sum = OwnOwed;
+                for (int j = 0; j < CardBal.Length; j++)
+                {
+                    sum += CardBal[j];
+                }
+                return sum;
+            }
+        }
+
+        public long CardArrears
+        {
+            get
+            {
+                long sum = 0;
+                for (int j = 0; j < CardArr.Length; j++)
+                {
+                    sum += CardArr[j];
+                }
+                return sum;
+            }
+        }
+
+        public int CardsHeld
+        {
+            get
+            {
+                int sum = 0;
+                for (int j = 0; j < CardHolders.Length; j++)
+                {
+                    sum += CardHolders[j];
+                }
+                return sum;
+            }
+        }
+
+        /// <summary>What the new businesses hold as assets: the own book at cost, the cards' balances and their arrears.</summary>
+        public long OtherAssets => BookCost + CardBook + CardArrears;
+
+        public FundHolding FindBook(int stockId)
+        {
+            for (int i = 0; i < Book.Count; i++)
+            {
+                if (Book[i].StockId == stockId)
+                {
+                    return Book[i];
+                }
+            }
+            return null;
+        }
     }
 
     /// <summary>The city as the bank's day reads it (OwnBankGame.City): game-free, so a day runs offline as in the game.</summary>
@@ -228,6 +364,9 @@ namespace RealLifeOverhaul.Economy
         public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
         public int Reach;               // thousandths more of the city's people the bank's branches bring it (Economy/OwnBank/Branch): 0 with none
         public int[] People;            // thousandths of its first day's figure the city's people now save and borrow, by pool (the savers, then the segments); null with none
+        public int Risk;                // BankRisk: how hard the bank is held to the economy (the option); Off is the bank as before
+        public int Activity;            // the stock market's activity, thousandths of an ordinary day's; 0 while the market is not running (Economy/OwnBank/Desk)
+        public bool Derivs;             // the exchange has options and futures for the desk's clients
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -251,6 +390,14 @@ namespace RealLifeOverhaul.Economy
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
+        public long Brokerage, Derivs;          // in: the desk's commission on clients' trades in shares, and in options and futures (Economy/OwnBank/Desk)
+        public long CardInterest, CardInterchange, CardFees;   // in: what the cards earn (Economy/OwnBank/Cards)
+        public long CardLost, CardFraud, CardCosts;            // out: card balances written off, spend lost to fraud, rewards and processing
+        public long Funding, SaleLoss, DeskCosts;              // out: interest on money borrowed from other banks, what loans sold to other banks cost, the desk's running costs
+        public bool Rolled, RiskTold, DeskCut;                 // a loan from other banks was rolled over; new warning signs; the desk's risk limit cut the book
+        public long OwnerCardPaid;              // the owner's card: cash it paid the bank today, for the page
+        public int ShockNew = -1;               // the kind of borrower a coming shock is first told for today; -1 none
+        public Waterfall Waterfall;             // how the assets were shared out when the bank was closed today
         public long Pay;                        // the owner's pay out of the capital (OwnBankRules.OwnerPay): neither takings nor a cost
         public long PaidOut;                    // an automatic dividend out of the capital (OwnBankRules.Dividends): neither takings nor a cost
         public bool DividendDue;                // an automatic dividend fell due today, paid or not
@@ -260,8 +407,8 @@ namespace RealLifeOverhaul.Economy
         public ClosedWhy Why;
         public long WoundUp;                    // what winding it up left for the player
 
-        public long Income => Interest + Reserve + Dividends + Recovered + Gains + Counter;
-        public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems;
+        public long Income => Interest + Reserve + Dividends + Recovered + Gains + Counter + Brokerage + Derivs + CardInterest + CardInterchange + CardFees;
+        public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems + CardLost + CardFraud + CardCosts + Funding + SaleLoss + DeskCosts;
         public long Profit => Income - Costs;
 
         public void Clear()
@@ -269,6 +416,10 @@ namespace RealLifeOverhaul.Economy
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
             Counter = Pay = PaidOut = 0;
+            Brokerage = Derivs = CardInterest = CardInterchange = CardFees = CardLost = CardFraud = CardCosts = Funding = SaleLoss = DeskCosts = OwnerCardPaid = 0;
+            Rolled = RiskTold = DeskCut = false;
+            ShockNew = -1;
+            Waterfall = default(Waterfall);
             DividendDue = false;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;

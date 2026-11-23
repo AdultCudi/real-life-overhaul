@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The loans the level still lets the bank make: nothing while its book (performing and in arrears) is at its most or over it.</summary>
         public static long LoanRoom(OwnBank b, in BankCaps caps)
         {
-            return caps.Loans == BankTiers.NoLimit ? BankTiers.NoLimit : Math.Max(0, caps.Loans - b.Lent - b.InArrears);
+            return caps.Loans == BankTiers.NoLimit ? BankTiers.NoLimit : Math.Max(0, caps.Loans - b.Lent - b.InArrears - b.CardBook - b.CardArrears);
         }
 
         /// <summary>The savers' money the level still lets the bank take: nothing while its deposits are at its most or over it.</summary>
@@ -187,7 +187,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static long Keep(OwnBank b, int level)
         {
-            return Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000)
+            return Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * LendRatioOf(b) / 1000)
                    + Math.Max(0, b.Public);
         }
 
@@ -225,6 +225,11 @@ namespace RealLifeOverhaul.Economy
                 held = b.Run ? BankTiers.PayHeldRun : BankTiers.PayHeldBreach;
                 return 0;
             }
+            if (WatchHeld(b))
+            {
+                held = BankTiers.PayHeldWatch;   // watched with the bank risk on: the regulator limits what the owner takes out
+                return 0;
+            }
             long cash = b.Reserves - ReserveNeed(b), capital = CapitalNow(b) - Keep(b, level);
             long pay = Math.Max(0, Math.Min(wanted, Math.Min(cash, capital)));
             if (pay < wanted)
@@ -241,7 +246,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static long PayAhead(OwnBank b)
         {
-            return b.Running && !b.Test && !b.Run && b.Stage != Regulator.Breach && b.PayMode == BankTiers.PayFixedMode ? Math.Max(0, b.PayFixed) : 0;
+            return b.Running && !b.Test && !b.Run && b.Stage != Regulator.Breach && !WatchHeld(b) && b.PayMode == BankTiers.PayFixedMode ? Math.Max(0, b.PayFixed) : 0;
         }
 
         /// <summary>The cash over the reserve that the bank may lend, invest or pay out at a counter: less the fixed pay it holds back.</summary>
