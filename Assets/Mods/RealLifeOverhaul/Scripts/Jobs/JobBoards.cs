@@ -16,6 +16,8 @@ namespace RealLifeOverhaul
     public sealed class JobBoards
     {
         private const int Most = 6;              // boards at most
+        private const int Spares = 6;            // buildings kept per kind, to fall back on when the first can never take a board
+        private const int Tries = 3;             // asks of one building (a second apart) before the next of its kind is used
         private const int PerTick = 30;          // buildings looked at a second while searching
         private const float FromWall = 0.30f;    // metres from the wall the board's middle stands
         private const float Reach = 1.5f;        // metres from its front to read it (the door beside it keeps its own key)
@@ -34,6 +36,11 @@ namespace RealLifeOverhaul
         private readonly List<string> _names = new List<string>(Most);
         private readonly List<string> _places = new List<string>(Most);        // the name of the shop or service each board stands outside
         private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);   // the building each board stands at
+        private readonly Dictionary<string, List<CityBuildingController>> _candidates = new Dictionary<string, List<CityBuildingController>>();   // a kind's buildings, in the city's list order
+        private readonly List<string> _order = new List<string>();   // the kinds in the order the city's list first shows them: the order the boards are put up in
+        private int _head;                   // the kind being put up
+        private int _spare;                  // which of its buildings is being tried
+        private int _tries;                  // failed tries at that building
         private int _next;                   // the next building to look at
         private bool _searched;
         private bool _failed;
@@ -143,6 +150,8 @@ namespace RealLifeOverhaul
             _places.Clear();
             _buildings.Clear();
             _outward.Clear();
+            _candidates.Clear();
+            _order.Clear();
             InReach = false;
             Near = -1;
         }
@@ -165,22 +174,67 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            for (int looked = 0; looked < PerTick && _next < buildings.Length && _boards.Count < Most; looked++, _next++)
+            // Which building stands for a kind is settled by the city's own list alone (the first of its kind, then the next ones as
+            // spares), never by whether the pavement happened to be clear on the second it was asked: a board that fell through to a
+            // building across the map whenever a car stood at the first one was moved by the weather of the load.
+            for (int looked = 0; looked < PerTick && _next < buildings.Length; looked++, _next++)
             {
                 CityBuildingController building = buildings[_next];
                 if (building == null || building.building == null || building.building.SpecialService == null
-                    || GameMembers.Fenced(building.building))
+                    || GameMembers.Fenced(building.building) || !JobSpots.DoorOf(building, out _))
                 {
                     continue;
                 }
                 string kind = building.building.SpecialService.businessTypeName;
-                if (string.IsNullOrEmpty(kind) || _kinds.Contains(kind) || !Place(building, kind))
+                if (string.IsNullOrEmpty(kind))
                 {
                     continue;
                 }
-                _kinds.Add(kind);
+                if (!_candidates.TryGetValue(kind, out List<CityBuildingController> list))
+                {
+                    list = new List<CityBuildingController>(Spares);
+                    _candidates[kind] = list;
+                    _order.Add(kind);
+                }
+                if (list.Count < Spares)
+                {
+                    list.Add(building);
+                }
             }
-            if (_next >= buildings.Length || _boards.Count >= Most)
+            bool scanned = _next >= buildings.Length;
+            while (_head < _order.Count && _boards.Count < Most)
+            {
+                string kind = _order[_head];
+                List<CityBuildingController> list = _candidates[kind];
+                if (_spare >= list.Count)
+                {
+                    if (!scanned && list.Count < Spares)
+                    {
+                        break;   // the next of its kind may still be found
+                    }
+                    _head++;     // no building of this kind can hold a board: it has none
+                    _spare = 0;
+                    _tries = 0;
+                    continue;
+                }
+                if (Place(list[_spare], kind))
+                {
+                    _kinds.Add(kind);
+                    _head++;
+                    _spare = 0;
+                    _tries = 0;
+                    continue;
+                }
+                // The first building of its kind is asked again on the next tries, since a passer-by or a parked car is gone in seconds;
+                // only a building that fails every time gives the board to the next of its kind.
+                if (++_tries >= Tries)
+                {
+                    _spare++;
+                    _tries = 0;
+                }
+                break;
+            }
+            if (_boards.Count >= Most || (scanned && _head >= _order.Count))
             {
                 _searched = true;
                 _logger?.Info("Jobs: " + _boards.Count + " help-wanted board(s) stand outside service buildings (" + string.Join(", ", _kinds) + ").");
