@@ -47,6 +47,21 @@ namespace RealLifeOverhaul.Population
             return d >= 0 && d < s.Figures.Length ? s.Figures[d] : null;
         }
 
+        /// <summary>A district's middle on the city's map, metres (the mean place of its buildings); false for none known. A walk of the districts, about a dozen.</summary>
+        public static bool Middle(string id, out float x, out float z)
+        {
+            PopulationState s = Live;
+            int d = s != null ? s.DistrictOf(id) : -1;
+            x = z = 0f;
+            if (d < 0 || d >= s.Districts.Count || (s.Districts[d].X == 0f && s.Districts[d].Z == 0f))
+            {
+                return false;
+            }
+            x = s.Districts[d].X;
+            z = s.Districts[d].Z;
+            return true;
+        }
+
         /// <summary>Unemployment in the city, thousandths of the labour force; -1 while not running.</summary>
         public static int Unemployment
         {

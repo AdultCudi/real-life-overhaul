@@ -6,8 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The utilities' save line: "v=2~h:" the days, "~a:" the accounts, "~n:" the broadband company, "~g:" the grace. A
-    /// line that cannot be read gives no state; figures out of range are brought within it; later fields read as unset.
+    /// The utilities' save line: "v=2~h:" the days, "~a:" the accounts, "~n:" the broadband company (its first seven districts, as always), "~x:" the districts after
+    /// those (the mod's own two and any a free update added: id, size, distance, build, cost, shares, scale), "~g:" the grace. A line that cannot be read gives no
+    /// state; figures out of range are brought within it; later fields read as unset; a build that does not know "~x:" skips it.
     /// </summary>
     public static class UtilitiesStore
     {
@@ -53,7 +54,7 @@ namespace RealLifeOverhaul.Utilities
                     (int)a.Service, (int)a.Kind, (int)a.State, a.Owned ? 1 : 0, a.AutoDebit ? 1 : 0, a.OpenedDay, a.ConnectDay, a.TemporaryUntil,
                     a.Deposit, a.Accrued, a.Units, a.Owed, a.DueDay, a.LateCharged ? 1 : 0, a.LastBill, a.LastBillDay, a.OnTime, a.CutForDebt ? 1 : 0,
                     a.Provider, a.Plan, a.BusinessPlan ? 1 : 0, a.ContractUntil, a.PriceCents, a.OutageFrom, a.OutageUntil,
-                    a.LineStep, a.LineDay, a.LineNext, a.LineNextDay   // the line's four at the end: an older line reads none
+                    a.LineStep, a.LineDay, a.LineNext, a.LineNextDay, a.LineOwn   // the line's five at the end: an older line reads none, and a line without the last is the carriers'
                 };
                 for (int f = 0; f < figures.Length; f++)
                 {
@@ -73,7 +74,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     t.Append('|').Append(head[f].ToString(Inv));
                 }
-                for (int d = 0; d < Network.Districts; d++)
+                for (int d = 0; d < Network.Legacy; d++)
                 {
                     t.Append('|').Append(n.Built[d].ToString(Inv)).Append('|').Append(n.Spent[d].ToString(Inv));
                     for (int p = 0; p < Network.Providers; p++)
@@ -86,7 +87,7 @@ namespace RealLifeOverhaul.Utilities
                     t.Append('|').Append(n.History[h].ToString(Inv));
                 }
                 t.Append('|').Append(n.ScaleFrom.ToString(Inv));
-                for (int d = 0; d < Network.Districts; d++)
+                for (int d = 0; d < Network.Legacy; d++)
                 {
                     t.Append('|').Append(n.Scaled[d] ? 1 : 0);
                 }
@@ -95,6 +96,19 @@ namespace RealLifeOverhaul.Utilities
                     t.Append('|').Append(n.Crew[k].ToString(Inv));
                 }
                 t.Append('|').Append(n.Owed.ToString(Inv));
+                if (n.Count > Network.Legacy)
+                {
+                    t.Append("~x:");
+                    for (int d = Network.Legacy; d < n.Count; d++)
+                    {
+                        t.Append(d > Network.Legacy ? ";" : string.Empty).Append(Escape(n.Id[d])).Append('|').Append(n.Size[d].ToString(Inv)).Append('|').Append(n.Far[d].ToString(Inv))
+                            .Append('|').Append(n.Built[d].ToString(Inv)).Append('|').Append(n.Spent[d].ToString(Inv)).Append('|').Append(n.Scaled[d] ? 1 : 0);
+                        for (int p = 0; p < Network.Providers; p++)
+                        {
+                            t.Append('|').Append(n.Share[d, p].ToString(Inv));
+                        }
+                    }
+                }
             }
             if (s.GraceUntil > 0 && s.Grace.Count > 0)
             {
@@ -125,7 +139,7 @@ namespace RealLifeOverhaul.Utilities
             n.LastGained = I(c, 12);
             n.HistoryCount = Clamp(I(c, 13), 0, n.History.Length);
             int at = 14;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < Network.Legacy; d++)
             {
                 n.Built[d] = I(c, at++);
                 n.Spent[d] = Math.Max(0, I(c, at++));
@@ -149,7 +163,7 @@ namespace RealLifeOverhaul.Utilities
             }
             n.ScaleFrom = at < c.Length ? I(c, at) : EndScaleRules.Unset;
             at++;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < Network.Legacy; d++)
             {
                 n.Scaled[d] = I(c, at++) != 0;
             }
@@ -173,6 +187,7 @@ namespace RealLifeOverhaul.Utilities
                 return null;
             }
             var s = new UtilitiesState();
+            string districts = null;
             for (int i = 1; i < sections.Length; i++)
             {
                 string section = sections[i];
@@ -193,6 +208,10 @@ namespace RealLifeOverhaul.Utilities
                 else if (section.StartsWith("n:", StringComparison.Ordinal))
                 {
                     ReadNetwork(section.Substring(2).Split('|'), s.Network);
+                }
+                else if (section.StartsWith("x:", StringComparison.Ordinal))
+                {
+                    districts = section.Substring(2);   // read once the company is: it names districts by their ids
                 }
                 else if (section.StartsWith("g:", StringComparison.Ordinal))
                 {
@@ -219,7 +238,59 @@ namespace RealLifeOverhaul.Utilities
                     }
                 }
             }
+            ReadDistricts(districts, s.Network);
             return s;
+        }
+
+        // The districts after the first seven: a record each by id, put in the place its id has (the mod's two) or the next free one (a later district). A district
+        // with no record, as in a save from before the mod's own two, starts as the market stands (BroadbandRules.Seed).
+        private static void ReadDistricts(string body, Network n)
+        {
+            foreach (string record in string.IsNullOrEmpty(body) ? new string[0] : body.Split(';'))
+            {
+                string[] c = record.Split('|');
+                string id = c.Length >= 6 ? Unescape(c[0]) : null;
+                if (string.IsNullOrEmpty(id))
+                {
+                    continue;
+                }
+                int d = n.IndexOf(id);
+                d = d >= 0 ? d : n.Register(id, I(c, 1), I(c, 2));
+                if (d < Network.Legacy)
+                {
+                    continue;   // a record can never rewrite the first seven, which the company's own record keeps
+                }
+                n.Built[d] = I(c, 3);
+                n.Spent[d] = Math.Max(0, I(c, 4));
+                n.Scaled[d] = I(c, 5) != 0;
+                int sum = 0;
+                for (int p = 0; p < Network.Providers; p++)
+                {
+                    n.Share[d, p] = Clamp(I(c, 6 + p), 0, 1000);
+                    sum += n.Share[d, p];
+                }
+                if (sum > 1000)
+                {
+                    for (int p = 0; p < Network.Providers; p++)
+                    {
+                        n.Share[d, p] = n.Share[d, p] * 1000 / sum;
+                    }
+                }
+                else if (sum == 0)
+                {
+                    BroadbandRules.Seed(n, d);   // a record with no shares: the market as it stands
+                }
+            }
+            if (n.Exists)
+            {
+                for (int d = Network.Legacy; d < n.Count; d++)
+                {
+                    if (n.Built[d] == 0 && n.Spent[d] == 0 && n.Share[d, 0] + n.Share[d, 1] + n.Share[d, 2] + n.Share[d, 3] + n.Share[d, Network.Own] == 0)
+                    {
+                        BroadbandRules.Seed(n, d);   // the mod's two in a save from before them: untouched, so the rivals hold them as the market stands
+                    }
+                }
+            }
         }
 
         private static Account Account(string record)
@@ -265,7 +336,8 @@ namespace RealLifeOverhaul.Utilities
                 LineStep = Clamp(I(c, 26), 0, LeasedLineCatalogue.Steps),
                 LineDay = Math.Max(0, I(c, 27)),
                 LineNext = Clamp(I(c, 28), 0, LeasedLineCatalogue.Steps),
-                LineNextDay = Math.Max(0, I(c, 29))
+                LineNextDay = Math.Max(0, I(c, 29)),
+                LineOwn = Clamp(I(c, 30), 0, LeasedLineRules.RunningOwn | LeasedLineRules.NextOwn)
             };
         }
 

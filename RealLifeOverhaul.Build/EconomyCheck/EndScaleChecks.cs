@@ -310,7 +310,7 @@ internal static partial class Program
             int cost = BbRules.BuildCost(d, 1000, Full);
             all += cost;
             fortune &= cost >= BbRules.BuildCost(d, 1000, 0) * 5 && BbRules.MarketAtScale(d) == BbCat.Market[d] * BbCat.MarketScale / 1000
-                       && cost == (int)((long)BbRules.MarketAtScale(d) * (d == BbCat.FarDistrict ? BbCat.HomeCentsFarScale : BbCat.HomeCentsScale) / 100);
+                       && cost == (int)((long)BbRules.MarketAtScale(d) * BbCat.HomeCentsScale / 100 * BbCat.Far[d] / 1000);
         }
         Check(fortune && all > 150000000L && BbRules.BuildCost(4, 4000, Full) == 4 * BbRules.BuildCost(4, 1000, Full),
             "end scale: a district's network is dug to every home of the city at its real size, a fortune each, the whole city over a hundred and fifty million, and dearer with prices (" + all + ")");
@@ -350,8 +350,8 @@ internal static partial class Program
         BbRules.Extend(old, 3, extend);
         Check(old.Scaled[3] && BbRules.MarketOf(old, 3) == BbRules.MarketAtScale(3) && old.Spent[3] == BbRules.BuildCost(3, 1000, Full) && BbRules.ExtendCost(old, 3, 1000, 20, Full) == 0,
             "end scale: extended, it reaches the whole district and has cost what a network at scale does");
-        Check(BbRules.BuildCostRange(1000, 0, false) == BbRules.BuildCost(2, 1000) && BbRules.BuildCostRange(1000, 0, true) == BbRules.BuildCost(4, 1000)
-              && BbRules.BuildCostRange(1000, Full, true) == BbRules.BuildCost(4, 1000, Full),
+        Check(BbRules.BuildCostRange(1000, 0, false) == BbRules.BuildCost(2, 1000) && BbRules.BuildCostRange(1000, 0, true) == BbRules.BuildCost(8, 1000)
+              && BbRules.BuildCostRange(1000, Full, true) == BbRules.BuildCost(8, 1000, Full),
             "end scale: the Guide's least and most a district costs are the catalogue's");
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BAModAPI;
 using Localizor;
 using UI.Notification;
@@ -17,6 +18,7 @@ namespace RealLifeOverhaul.Utilities
 
         private readonly UtilitiesDirector _director;
         private int _warnedDay = -1;
+        private readonly List<string> _ids = new List<string>(24);
 
         public BroadbandCompany(UtilitiesDirector director)
         {
@@ -53,19 +55,55 @@ namespace RealLifeOverhaul.Utilities
         {
             Network n = Network;
             ScaleNow();
+            Discover();
             if (n != null && n.Exists)
             {
-                for (int d = 0; d < Network.Districts; d++)
+                for (int d = 0; d < n.Count; d++)
                 {
                     if (n.Digging(d) && n.ReadyDay(d) <= today)
                     {
-                        UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_bb_toast_open", "district", District(d)), 12f);
-                        Logger?.Info("Utilities: the broadband network in " + BroadbandCatalogue.Districts[d] + " opened (ready on day " + n.ReadyDay(d) + ").");
+                        UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_bb_toast_open", "district", District(n, d)), 12f);
+                        Logger?.Info("Utilities: the broadband network in " + n.Id[d] + " opened (ready on day " + n.ReadyDay(d) + ").");
                     }
                 }
                 BroadbandRules.Finish(n, today);
             }
             BroadbandRules.Apply(n, today);
+        }
+
+        /// <summary>
+        /// A district the catalogue does not list (one a free update added to the city) given a place in the network the first morning it is in the loaded city: sized by the
+        /// homes and businesses the population counts there and distanced from the nearest district the catalogue lists, both kept in the save so the district's network
+        /// costs the same from then on. A later district the population cannot measure gets the catalogue's default size and the usual cost per connection.
+        /// </summary>
+        public void Discover()
+        {
+            Network n = Network;
+            if (n == null || n.Count >= Network.Slots || !UtilitiesGame.CityDistricts(_ids))
+            {
+                return;
+            }
+            Func<string, int> homes = UtilitiesBridges.Homes;
+            Func<string, float[]> middle = UtilitiesBridges.Middle;
+            for (int i = 0; i < _ids.Count && n.Count < Network.Slots; i++)
+            {
+                string id = _ids[i];
+                if (n.IndexOf(id) >= 0)
+                {
+                    continue;
+                }
+                int count = homes != null ? homes(id) : -1;
+                float[] at = middle != null ? middle(id) : null;
+                int far = at != null && at.Length >= 2 ? BroadbandRules.FarShare(BroadbandRules.NearestMetres(at[0], at[1])) : 1000;
+                int place = n.Register(id, BroadbandRules.SizeFromHomes(count), far);
+                if (place < 0)
+                {
+                    continue;
+                }
+                BroadbandRules.Seed(n, place);
+                Logger?.Info("Utilities: a district the network had no place for, " + id + ", is now place " + place + ": " + n.Size[place] + " connection(s) at the start's prices ("
+                             + (count > 0 ? count + " homes and businesses counted" : "none counted, the default") + "), " + n.Far[place] + " thousandths of the usual cost each for its distance.");
+            }
         }
 
         /// <summary>Each district's homes and businesses against the anchor day's, read before the rules run (the living population; nothing with none).</summary>
@@ -77,9 +115,9 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             Func<string, int> people = UtilitiesBridges.Connections;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
-                n.People[d] = people != null ? Math.Max(0, people(BroadbandCatalogue.Districts[d])) : 0;
+                n.People[d] = people != null ? Math.Max(0, people(n.Id[d])) : 0;
             }
         }
 
@@ -191,14 +229,14 @@ namespace RealLifeOverhaul.Utilities
         public bool Build(int district, out string why)
         {
             Network n = Network;
-            why = n == null || !n.Running ? "reallife_bb_not_running" : district < 0 || district >= Network.Districts || n.Digging(district) || n.Built[district] > 0 ? "reallife_bb_already" : null;
+            why = n == null || !n.Running ? "reallife_bb_not_running" : district < 0 || district >= n.Count || n.Digging(district) || n.Built[district] > 0 ? "reallife_bb_already" : null;
             if (why != null)
             {
                 return false;
             }
             BuildingRegistration hq = UtilitiesGame.Headquarters();
             int buy = EndScaleRules.Buying(Settings.EndScale);
-            int cost = BroadbandRules.BuildCost(district, Prices.Level, buy);
+            int cost = BroadbandRules.BuildCost(n, district, Prices.Level, buy);
             if (hq == null)
             {
                 why = "reallife_bb_no_hq";
@@ -211,8 +249,8 @@ namespace RealLifeOverhaul.Utilities
             }
             int today = UtilitiesGame.Today;
             BroadbandRules.StartBuild(n, district, today, GameCalendar.MonthDays, cost, buy > 0);
-            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_bb_toast_build", "district", District(district), "day", UtilitiesText.Day(n.ReadyDay(district))), 12f);
-            Logger?.Info("Utilities: the broadband network in " + BroadbandCatalogue.Districts[district] + " ordered on day " + today + " for " + cost + ", open on day " + n.ReadyDay(district) + ".");
+            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_bb_toast_build", "district", District(n, district), "day", UtilitiesText.Day(n.ReadyDay(district))), 12f);
+            Logger?.Info("Utilities: the broadband network in " + n.Id[district] + " ordered on day " + today + " for " + cost + ", open on day " + n.ReadyDay(district) + ".");
             return true;
         }
 
@@ -239,8 +277,8 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             BroadbandRules.Extend(n, district, cost);
-            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_endscale_bb_extended", "district", District(district)), 12f);
-            Logger?.Info("Utilities: the broadband network in " + BroadbandCatalogue.Districts[district] + " extended to the whole district on day " + UtilitiesGame.Today + " for " + cost + ".");
+            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_endscale_bb_extended", "district", District(n, district)), 12f);
+            Logger?.Info("Utilities: the broadband network in " + n.Id[district] + " extended to the whole district on day " + UtilitiesGame.Today + " for " + cost + ".");
             return true;
         }
 
@@ -294,6 +332,7 @@ namespace RealLifeOverhaul.Utilities
             for (int i = 0; i < State.Accounts.Count; i++)
             {
                 Account a = State.Accounts[i];
+                a.LineOwn = 0;   // a data centre's line on the company's own fibre is the buyer's from now, billed at the carriers' price
                 if (a.Service == Service.Internet && a.Provider == InternetCatalogue.OwnIndex && a.State != SupplyState.Closed)
                 {
                     a.ContractUntil = 0;
@@ -325,7 +364,7 @@ namespace RealLifeOverhaul.Utilities
         {
             Network n = Network;
             int count = 0;
-            for (int d = 0; n != null && d < Network.Districts; d++)
+            for (int d = 0; n != null && d < n.Count; d++)
             {
                 if (n.Digging(d))
                 {
@@ -337,9 +376,10 @@ namespace RealLifeOverhaul.Utilities
             return count;
         }
 
-        public static string District(int district)
+        /// <summary>A district's name in the game's own words (a district of the mod's own has its name in the mod's texts).</summary>
+        public static string District(Network n, int district)
         {
-            return district >= 0 && district < Network.Districts ? BroadbandCatalogue.Districts[district].GetLocalization() : string.Empty;
+            return n != null && district >= 0 && district < n.Count ? n.Id[district].GetLocalization() : string.Empty;
         }
 
         private static string Signed(int value)

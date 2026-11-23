@@ -220,11 +220,13 @@ internal static partial class Program
               && !InternetRules.Reaches(1, "ba:neighborhood_garmentdistrict"), "the known districts are reached as before");
         Check(!InternetRules.Reaches(0, null) && !InternetRules.Reaches(-1, NewDistrict), "no district, no provider: nothing reached");
 
-        // Broadband: the player's network has New York's seven; a new district has no place in it and costs nothing to ask about.
-        Check(BroadbandCatalogue.Districts.Length == NyDistricts.NewYork.Length && Array.TrueForAll(BroadbandCatalogue.Districts, NyDistricts.Known),
-            "the broadband tables are New York's seven districts");
+        // Broadband: the catalogue has New York's seven and the mod's own two; a district a free update adds is no place in the catalogue, costs nothing to ask about without a network, and
+        // gets a place of its own in the player's network (NetDistrictChecks.cs).
+        Check(BroadbandCatalogue.Districts.Length == Network.Districts && Network.Districts == NyDistricts.NewYork.Length + 2
+              && Array.TrueForAll(NyDistricts.NewYork, id => Array.IndexOf(BroadbandCatalogue.Districts, id) == Array.IndexOf(NyDistricts.NewYork, id)),
+            "the broadband catalogue is New York's seven districts in their places, then the mod's two");
         Check(BroadbandRules.District(NewDistrict) == -1 && BroadbandRules.District(null) == -1 && BroadbandRules.BuildCost(-1, 100) == 0
-              && BroadbandRules.BuildCost(BroadbandCatalogue.Districts.Length, 100) == 0, "a new district is no place in the network, and its cost is nothing, not a fault");
+              && BroadbandRules.BuildCost(BroadbandCatalogue.Districts.Length, 100) == 0, "a new district is no place in the catalogue, and its cost without a network is nothing, not a fault");
 
         // Hotels: every slot is in a district the mod knows, so a new district simply has no hotel.
         foreach (HotelSlot slot in TravelCatalogue.Hotels)

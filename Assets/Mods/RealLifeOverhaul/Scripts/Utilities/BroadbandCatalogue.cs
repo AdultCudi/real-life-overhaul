@@ -6,15 +6,45 @@ namespace RealLifeOverhaul.Utilities
     /// </summary>
     public static class BroadbandCatalogue
     {
-        /// <summary>The districts of the city's market, in the order of every table here.</summary>
+        /// <summary>
+        /// The districts of the city's market, in the order of every table here: the game's seven, then the mod's own two (Uptown and Cedar Heights). The
+        /// saved places of the first seven never move; a district a free update adds comes after these, by id (<see cref="Network.Register"/>).
+        /// </summary>
         public static readonly string[] Districts =
         {
             "ba:neighborhood_garmentdistrict", "ba:neighborhood_hellskitchen", "ba:neighborhood_industrycity",
-            "ba:neighborhood_lowermanhattan", "ba:neighborhood_midtown", "ba:neighborhood_murrayhill", "ba:neighborhood_thehamptons"
+            "ba:neighborhood_lowermanhattan", "ba:neighborhood_midtown", "ba:neighborhood_murrayhill", "ba:neighborhood_thehamptons",
+            "reallife_neighborhood_uptown", "reallife_neighborhood_cedarheights"
         };
 
-        public static readonly int[] Market = { 15000, 20000, 12000, 25000, 30000, 20000, 3000 };                     // homes and businesses with a connection
-        public static readonly int[] BuildCost = { 1200000, 1600000, 1000000, 2000000, 2400000, 1600000, 1200000 };   // a district's fibre (the Hamptons' houses stand far apart)
+        public const int Legacy = 7;                // the districts a save before the mod's own two kept by place: its record has these and no more
+        public const int ExtraMax = 6;              // districts a free update may add that a network keeps a place for
+
+        public static readonly int[] Market = { 15000, 20000, 12000, 25000, 30000, 20000, 3000, MarketUptown, MarketCedar };   // homes and businesses with a connection
+        // a district's fibre (the Hamptons' houses stand far apart); the mod's own two by BuildPerConnection
+        public static readonly int[] BuildCost = { 1200000, 1600000, 1000000, 2000000, 2400000, 1600000, 1200000, MarketUptown * 80, MarketCedar * 80 };
+
+        /// <summary>The mod's own districts' connections at the start's prices: ten for each of their households, as the first seven's 125,000 are of
+        /// theirs. The day-one band has 7,475 flats in 222 home buildings (docs/features/population.md), 106 of them in Uptown and 116 in Cedar
+        /// Heights, so about 3,570 and 3,900 flats, 96% of them households: 34,000 and 37,000.</summary>
+        public const int MarketUptown = 34000, MarketCedar = 37000;
+
+        public const int PerHousehold = 10;         // connections (homes and businesses) in a district for each household the population counts there: the first seven's 125,000 over their households
+        public const int BuildPerConnection = 8000; // cents, at the start's prices: what a connection's fibre costs to dig, as the first seven's costs bear to their markets (15,000 for 1,200,000)
+        // a district no farther than this from the nearest the catalogue lists is dug at the usual cost per connection:
+        // Industry City, the farthest of the usual ones, lies 1,452 m from Lower Manhattan
+        public const int NearMetres = 1500;
+        public const int FarMetres = 3000;          // ...from twice that far it is dug at FarMost, as the Hamptons are: the cost per connection rises in a line between
+        public const int FarMost = 3000;            // thousandths of the usual cost per connection for the farthest: the Hamptons' (at scale, HomeCentsFarScale over HomeCentsScale)
+        public const int DefaultMarket = 12000;     // a later district's connections when the population cannot say: the smallest of the first seven's non-rural districts (Industry City)
+
+        /// <summary>The middle of each district of <see cref="Districts"/>, metres on the city's map (the first seven from the zones the population
+        /// holds, the mod's two from its plan's lots), for a later district's distance.</summary>
+        // thousandths of the usual cost per connection: the Hamptons' houses stand far apart, the rest lie one district's reach from another
+        public static readonly int[] Far = { 1000, 1000, 1000, 1000, 1000, 1000, 3000, 1000, 1000 };
+
+        public static readonly int[] MiddleX = { 291, 291, -1600, -409, -104, -39, -2691, 920, 140 };
+        public static readonly int[] MiddleZ = { -294, 246, -1120, -289, 246, -289, -1359, 700, 700 };
 
         public const int LicenceFee = 1000000;   // the city's operator's licence, once
         public const int BuildMonths = 2;        // a district's network is dug in this many of the game's months
@@ -66,8 +96,7 @@ namespace RealLifeOverhaul.Utilities
         // network and crews the company hires itself. A district dug before the scale reaches the old number until extended.
         public const int MarketScale = 5000;                 // thousandths of a district's connections at the city's real size
         public const int HomeCentsScale = 35000;             // a home or business passed by the fibre, cents
-        public const int HomeCentsFarScale = 105000;         // ...in the Hamptons, where the houses stand far apart
-        public const int FarDistrict = 6;                    // the Hamptons, in the order of Districts
+        public const int HomeCentsFarScale = 105000;         // ...in the Hamptons, where the houses stand far apart (FarMost times the usual)
         public const int LicenceFeeScale = 40000000;         // the operator's licence and the core network, once, money ($40,000,000)
         public const int UpkeepPerMilleScale = 3;            // of what a district's network costs at scale, a month, at the usual maintenance
         public const int InstallCentsScale = 60000;          // an engineer's visit, the box and the drop to the home

@@ -13,16 +13,22 @@ namespace RealLifeOverhaul.Utilities
     /// <summary>The player's broadband company: its network, the city's market shares, its settings and its books.</summary>
     public sealed class Network
     {
-        public const int Districts = 7;          // BroadbandCatalogue.Districts
+        public const int Districts = 9;          // BroadbandCatalogue.Districts: the game's seven and the mod's two
+        public const int Legacy = BroadbandCatalogue.Legacy;   // the first of them are a save before the mod's own two kept
+        public const int Slots = Districts + BroadbandCatalogue.ExtraMax;   // the places the arrays keep: those and the districts a free update adds
         public const int Providers = 5;          // the four rivals (InternetCatalogue.Providers) and the company
         public const int Own = 4;
 
         public CompanyState State;
         public int FoundedDay, SoldDay;
         public long SalePrice;
-        public readonly int[] Built = new int[Districts];   // the day a district's network opened; minus the day it will while dug; 0 none
-        public readonly int[] Spent = new int[Districts];               // what each district's network cost, money
-        public readonly int[,] Share = new int[Districts, Providers];   // thousandths of each district's connections, by provider
+        public int Count = Districts;            // the districts in use: the catalogue's, then those registered after them (never fewer)
+        public readonly string[] Id = new string[Slots];       // each district's game id
+        public readonly int[] Size = new int[Slots];           // its connections at the start's prices: the catalogue's, or a later district's as it was measured when registered
+        public readonly int[] Far = new int[Slots];            // thousandths of the usual cost per connection its distance makes it (BroadbandRules.FarShare)
+        public readonly int[] Built = new int[Slots];          // the day a district's network opened; minus the day it will while dug; 0 none
+        public readonly int[] Spent = new int[Slots];          // what each district's network cost, money
+        public readonly int[,] Share = new int[Slots, Providers];   // thousandths of each district's connections, by provider
         public int PriceShare = 1000;            // the company's prices, thousandths of the usual
         public int Maintenance = 1000;           // thousandths of the usual upkeep spent
         public int Marketing;                    // a budget of BroadbandCatalogue.Marketing
@@ -31,25 +37,65 @@ namespace RealLifeOverhaul.Utilities
         public readonly int[] History = new int[BroadbandCatalogue.HistoryMonths];   // each recorded month's profit, the oldest first
         public int HistoryCount;
         public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in for the company
-        public readonly bool[] Scaled = new bool[Districts];   // dug or extended at scale: it reaches the whole district
+        public readonly bool[] Scaled = new bool[Slots];   // dug or extended at scale: it reaches the whole district
         public readonly int[] Crew = new int[BroadbandCatalogue.CrewKinds];   // its crews at scale: field, call centre, network operations
         public long Owed;   // money the scale added that the cash could not meet, carried to the next day
         // read each day, never saved
         public int Scale;                                               // the end game's share today, set by the company before the rules run
         public int Cover = EndScaleRules.Full;                          // how far its crews cover what they need, thousandths
-        public readonly int[] People = new int[Districts];              // thousandths of each district's homes and businesses against the anchor day's (the living population); 0 is read as 1000
+        public readonly int[] People = new int[Slots];                  // thousandths of each district's homes and businesses against the anchor day's (the living population); 0 is read as 1000
+
+        public Network()
+        {
+            for (int d = 0; d < Districts; d++)
+            {
+                Id[d] = BroadbandCatalogue.Districts[d];
+                Size[d] = BroadbandCatalogue.Market[d];
+                Far[d] = BroadbandCatalogue.Far[d];
+            }
+        }
+
+        /// <summary>A district's place by its id; -1 for one the network has no place for.</summary>
+        public int IndexOf(string id)
+        {
+            for (int d = 0; d < Count && id != null; d++)
+            {
+                if (string.Equals(Id[d], id, StringComparison.Ordinal))
+                {
+                    return d;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// A district the catalogue does not list (one a free update added) given the next place, sized and distanced as measured; its place if it had one, -1 when
+        /// the places are full or the id empty. A place once given is never taken back, so a save's records by id keep to their district.
+        /// </summary>
+        public int Register(string id, int size, int far)
+        {
+            int at = IndexOf(id);
+            if (at >= 0 || string.IsNullOrEmpty(id) || Count >= Slots)
+            {
+                return at;
+            }
+            Id[Count] = id;
+            Size[Count] = Math.Max(1, size);
+            Far[Count] = Math.Max(1000, Math.Min(BroadbandCatalogue.FarMost, far));
+            return Count++;
+        }
 
         public bool Running => State == CompanyState.Running;
         public bool Exists => State != CompanyState.None;
 
         public bool Open(int district, int day)
         {
-            return district >= 0 && district < Districts && Built[district] > 0 && Built[district] <= day;
+            return district >= 0 && district < Count && Built[district] > 0 && Built[district] <= day;
         }
 
         public bool Digging(int district)
         {
-            return district >= 0 && district < Districts && Built[district] < 0;
+            return district >= 0 && district < Count && Built[district] < 0;
         }
 
         public int ReadyDay(int district)
@@ -66,6 +112,7 @@ namespace RealLifeOverhaul.Utilities
     {
         private static readonly string[] None = new string[0];
 
+        /// <summary>A catalogued district's place by its id; -1 for any other (a later district's place is in its network: <see cref="Network.IndexOf"/>).</summary>
         public static int District(string id)
         {
             return id == null ? -1 : Array.IndexOf(BroadbandCatalogue.Districts, id);
@@ -79,31 +126,93 @@ namespace RealLifeOverhaul.Utilities
 
         public static int LicenceFee(int level, int share = 0) => At(EndScaleRules.Mix(BroadbandCatalogue.LicenceFee, BroadbandCatalogue.LicenceFeeScale, share), level);
 
-        /// <summary>A district's network's cost, money: the old figure before the scale; at it, every home and business at the real size.</summary>
-        public static int BuildCost(int district, int level, int share = 0)
+        /// <summary>
+        /// The thousandths of the usual cost per connection a district's distance makes it: nothing more than <see cref="BroadbandCatalogue.NearMetres"/> from the middle
+        /// of the nearest district the catalogue lists is the usual cost, <see cref="BroadbandCatalogue.FarMetres"/> or more is <see cref="BroadbandCatalogue.FarMost"/>
+        /// (the Hamptons'), and in a line between. The metres come from <see cref="NearestMetres"/>.
+        /// </summary>
+        public static int FarShare(int nearestMetres)
         {
-            if (district < 0 || district >= Network.Districts)
+            if (nearestMetres <= BroadbandCatalogue.NearMetres)
+            {
+                return 1000;
+            }
+            if (nearestMetres >= BroadbandCatalogue.FarMetres)
+            {
+                return BroadbandCatalogue.FarMost;
+            }
+            return 1000 + (BroadbandCatalogue.FarMost - 1000) * (nearestMetres - BroadbandCatalogue.NearMetres) / (BroadbandCatalogue.FarMetres - BroadbandCatalogue.NearMetres);
+        }
+
+        /// <summary>Metres from a point on the city's map to the nearest middle of the catalogue's districts.</summary>
+        public static int NearestMetres(float x, float z)
+        {
+            double best = double.MaxValue;
+            for (int d = 0; d < BroadbandCatalogue.MiddleX.Length; d++)
+            {
+                double dx = x - BroadbandCatalogue.MiddleX[d], dz = z - BroadbandCatalogue.MiddleZ[d];
+                best = Math.Min(best, Math.Sqrt(dx * dx + dz * dz));
+            }
+            return (int)Math.Min(int.MaxValue / 4, best);
+        }
+
+        /// <summary>A later district's connections at the start's prices from the homes and businesses the population counts there: ten each, never
+        /// under a village's; the default with none counted.</summary>
+        public static int SizeFromHomes(int homes)
+        {
+            return homes > 0 ? Math.Max(BroadbandCatalogue.PerHousehold * 300, homes * BroadbandCatalogue.PerHousehold) : BroadbandCatalogue.DefaultMarket;
+        }
+
+        /// <summary>A district's network's cost at the start's prices, money: the catalogue's figure, or for a later district its connections at the usual cost each, by its distance.</summary>
+        public static int CostAtStart(Network n, int district)
+        {
+            if (district >= 0 && district < Network.Districts)
+            {
+                return BroadbandCatalogue.BuildCost[district];
+            }
+            return Clip((long)n.Size[district] * BroadbandCatalogue.BuildPerConnection / 100 * n.Far[district] / 1000);
+        }
+
+        /// <summary>A district's network's cost, money: the old figure before the scale; at it, every home and business at the real size, the farther the dearer.</summary>
+        public static int BuildCost(Network n, int district, int level, int share = 0)
+        {
+            if (n == null || district < 0 || district >= n.Count)
             {
                 return 0;
             }
-            long scale = (long)MarketAtScale(district) * (district == BroadbandCatalogue.FarDistrict ? BroadbandCatalogue.HomeCentsFarScale : BroadbandCatalogue.HomeCentsScale) / 100;
-            return Clip((EndScaleRules.Mix((long)BroadbandCatalogue.BuildCost[district], scale, share) * Level(level) + PriceRules.Start / 2) / PriceRules.Start);
+            long scale = (long)MarketAtScale(n, district) * BroadbandCatalogue.HomeCentsScale / 100 * n.Far[district] / 1000;
+            return Clip((EndScaleRules.Mix((long)CostAtStart(n, district), scale, share) * Level(level) + PriceRules.Start / 2) / PriceRules.Start);
         }
 
-        /// <summary>The least or the most a district's network costs, money, for the Guide.</summary>
-        public static int BuildCostRange(int level, int share, bool most)
+        /// <summary>The same for a catalogued district with no network at hand (the checks' and the Guide's).</summary>
+        public static int BuildCost(int district, int level, int share = 0)
         {
-            int pick = BuildCost(0, level, share);
-            for (int d = 1; d < Network.Districts; d++)
+            return district < 0 || district >= Network.Districts ? 0 : BuildCost(Catalogue, district, level, share);
+        }
+
+        private static readonly Network Catalogue = new Network();
+
+        /// <summary>The least or the most a district's network costs, money, for the Guide: over the districts the network has (the catalogue's with none).</summary>
+        public static int BuildCostRange(Network n, int level, int share, bool most)
+        {
+            Network of = n ?? Catalogue;
+            int pick = BuildCost(of, 0, level, share);
+            for (int d = 1; d < of.Count; d++)
             {
-                int cost = BuildCost(d, level, share);
+                int cost = BuildCost(of, d, level, share);
                 pick = most ? Math.Max(pick, cost) : Math.Min(pick, cost);
             }
             return pick;
         }
 
-        /// <summary>A district's homes and businesses at the city's real size.</summary>
+        /// <summary>The same with no network at hand: over the catalogue's districts.</summary>
+        public static int BuildCostRange(int level, int share, bool most) => BuildCostRange(null, level, share, most);
+
+        /// <summary>A catalogued district's homes and businesses at the city's real size.</summary>
         public static int MarketAtScale(int district) => BroadbandCatalogue.Market[district] * BroadbandCatalogue.MarketScale / 1000;
+
+        /// <summary>Any district's homes and businesses at the city's real size.</summary>
+        public static int MarketAtScale(Network n, int district) => (int)Math.Min(int.MaxValue / 4, (long)n.Size[district] * BroadbandCatalogue.MarketScale / 1000);
 
         /// <summary>
         /// A district's connections for the company: the old number, or, dug at scale, the real size as the scale comes in; either moved by the district's homes
@@ -111,25 +220,32 @@ namespace RealLifeOverhaul.Utilities
         /// </summary>
         public static int MarketOf(Network n, int district)
         {
-            int before = BroadbandCatalogue.Market[district];
-            int size = n != null && n.Scaled[district] ? EndScaleRules.Mix(before, MarketAtScale(district), n.Scale) : before;
+            n = n ?? Catalogue;   // no company: the catalogue's own figures
+            int before = n.Size[district];
+            int size = n.Scaled[district] ? EndScaleRules.Mix(before, MarketAtScale(n, district), n.Scale) : before;
             return (int)Math.Min(int.MaxValue / 4, (long)size * PeopleOf(n, district) / 1000);
+        }
+
+        /// <summary>A district's connections the company reaches once dug, or would if dug now (at scale, the whole district), as the pages list them.</summary>
+        public static int MarketShown(Network n, int district, int share, bool built)
+        {
+            return built ? MarketOf(n, district) : (int)((long)EndScaleRules.Mix(n.Size[district], MarketAtScale(n, district), share) * PeopleOf(n, district) / 1000);
         }
 
         /// <summary>Thousandths of a district's homes and businesses against the anchor day's: a thousand with no living population.</summary>
         public static int PeopleOf(Network n, int district)
         {
-            return n != null && district >= 0 && district < Network.Districts && n.People[district] > 0 ? n.People[district] : 1000;
+            return n != null && district >= 0 && district < Network.Slots && n.People[district] > 0 ? n.People[district] : 1000;
         }
 
         /// <summary>What extending a network dug before the scale costs: the scale's network less what it cost; 0 with nothing to extend.</summary>
         public static int ExtendCost(Network n, int district, int level, int day, int buy)
         {
-            if (n == null || !n.Running || buy <= 0 || district < 0 || district >= Network.Districts || !n.Open(district, day) || n.Scaled[district])
+            if (n == null || !n.Running || buy <= 0 || district < 0 || district >= n.Count || !n.Open(district, day) || n.Scaled[district])
             {
                 return 0;
             }
-            return Math.Max(1, BuildCost(district, level, buy) - n.Spent[district]);
+            return Math.Max(1, BuildCost(n, district, level, buy) - n.Spent[district]);
         }
 
         /// <summary>A network extended to the whole district: at scale from now, its cost added to what it had cost.</summary>
@@ -184,19 +300,9 @@ namespace RealLifeOverhaul.Utilities
             n.SoldDay = 0;
             n.SalePrice = 0;
             n.Owed = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
-                n.Built[d] = n.Spent[d] = 0;
-                int total = 0;
-                for (int p = 0; p < Network.Own; p++)
-                {
-                    total += InternetRules.Reaches(p, BroadbandCatalogue.Districts[d]) ? BroadbandCatalogue.RivalHold[p] : 0;
-                }
-                for (int p = 0; p < Network.Providers; p++)
-                {
-                    n.Share[d, p] = p < Network.Own && total > 0 && InternetRules.Reaches(p, BroadbandCatalogue.Districts[d]) ? BroadbandCatalogue.RivalHold[p] * 1000 / total : 0;
-                }
-                Whole(n, d);
+                Seed(n, d);
             }
             Array.Clear(n.Scaled, 0, n.Scaled.Length);
             Array.Clear(n.Crew, 0, n.Crew.Length);
@@ -207,6 +313,23 @@ namespace RealLifeOverhaul.Utilities
             n.MonthTakings = n.MonthCosts = n.LastTakings = n.LastCosts = n.LastConnections = n.LastGained = 0;
             Array.Clear(n.History, 0, n.History.Length);
             n.HistoryCount = 0;
+        }
+
+        /// <summary>A district with no network of the company's yet: nothing built or spent, the market as it stands (each rival's share where it reaches, by its hold).</summary>
+        public static void Seed(Network n, int d)
+        {
+            n.Built[d] = n.Spent[d] = 0;
+            n.Scaled[d] = false;
+            int total = 0;
+            for (int p = 0; p < Network.Own; p++)
+            {
+                total += InternetRules.Reaches(p, n.Id[d]) ? BroadbandCatalogue.RivalHold[p] : 0;
+            }
+            for (int p = 0; p < Network.Providers; p++)
+            {
+                n.Share[d, p] = p < Network.Own && total > 0 && InternetRules.Reaches(p, n.Id[d]) ? BroadbandCatalogue.RivalHold[p] * 1000 / total : 0;
+            }
+            Whole(n, d);
         }
 
         /// <summary>A district's network ordered: dug for BuildMonths from a day, at a cost.</summary>
@@ -221,7 +344,7 @@ namespace RealLifeOverhaul.Utilities
         public static int Finish(Network n, int day)
         {
             int opened = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 if (n.Digging(d) && n.ReadyDay(d) <= day)
                 {
@@ -254,13 +377,13 @@ namespace RealLifeOverhaul.Utilities
             var weight = new double[Network.Providers];
             double own = n.Running ? Pull(n) : 1.0;
             double e = BroadbandCatalogue.PriceElasticity / 1000.0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 double sum = 0.0;
                 for (int p = 0; p < Network.Own; p++)
                 {
                     int price = promo != null && p < promo.Length && promo[p] > 0 ? promo[p] : 1000;
-                    weight[p] = InternetRules.Reaches(p, BroadbandCatalogue.Districts[d]) ? BroadbandCatalogue.RivalHold[p] * Math.Pow(1000.0 / price, e) : 0.0;
+                    weight[p] = InternetRules.Reaches(p, n.Id[d]) ? BroadbandCatalogue.RivalHold[p] * Math.Pow(1000.0 / price, e) : 0.0;
                     sum += weight[p];
                 }
                 weight[Network.Own] = n.Open(d, day) ? BroadbandCatalogue.OwnHold * Trust(n, d, day, monthDays) / 1000.0 * own : 0.0;
@@ -308,7 +431,7 @@ namespace RealLifeOverhaul.Utilities
         public static int Connections(Network n, int district = -1)
         {
             long total = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 if (district < 0 || district == d)
                 {
@@ -339,7 +462,7 @@ namespace RealLifeOverhaul.Utilities
             }
             int m = Math.Max(1, monthDays);
             long lvl = Level(level), connections = Connections(n), upkeep = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 if (n.Open(d, day))
                 {
@@ -371,7 +494,7 @@ namespace RealLifeOverhaul.Utilities
             if (kind == BroadbandCatalogue.Operations)
             {
                 int open = 0;
-                for (int d = 0; d < Network.Districts; d++)
+                for (int d = 0; d < n.Count; d++)
                 {
                     open += n.Open(d, day) ? 1 : 0;
                 }
@@ -486,7 +609,7 @@ namespace RealLifeOverhaul.Utilities
         public static long SaleValue(Network n)
         {
             long spent = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
                 spent += n.Spent[d];
             }
@@ -505,9 +628,9 @@ namespace RealLifeOverhaul.Utilities
                 return InternetCatalogue.PromoMost;
             }
             long own = 0, total = 0;
-            for (int d = 0; d < Network.Districts; d++)
+            for (int d = 0; d < n.Count; d++)
             {
-                if (InternetRules.Reaches(rival, BroadbandCatalogue.Districts[d]))
+                if (InternetRules.Reaches(rival, n.Id[d]))
                 {
                     own += (long)n.Share[d, Network.Own] * MarketOf(n, d);
                     total += 1000L * MarketOf(n, d);
@@ -523,19 +646,20 @@ namespace RealLifeOverhaul.Utilities
             Provider own = InternetCatalogue.Own;
             bool sold = n != null && n.State == CompanyState.Sold;
             int count = 0;
-            for (int d = 0; n != null && n.Exists && d < Network.Districts; d++)
+            for (int d = 0; n != null && n.Exists && d < n.Count; d++)
             {
                 count += n.Open(d, day) ? 1 : 0;
             }
             string[] reach = count == 0 ? None : new string[count];
-            for (int d = 0, i = 0; count > 0 && d < Network.Districts; d++)
+            for (int d = 0, i = 0; count > 0 && d < n.Count; d++)
             {
                 if (n.Open(d, day))
                 {
-                    reach[i++] = BroadbandCatalogue.Districts[d];
+                    reach[i++] = n.Id[d];
                 }
             }
             own.Districts = reach;
+            InternetCatalogue.OwnLine.Districts = sold ? None : reach;   // the company's own line for a data centre goes with the company
             own.NameKey = sold ? BroadbandCatalogue.SoldNameKey : BroadbandCatalogue.OwnNameKey;
             own.OutagePerMille = n != null && n.Running ? OutagePerMille(n.Maintenance) * EndScaleRules.Outages(n.Cover) / 1000 : BroadbandCatalogue.OutageBase;
             for (int k = 0; k < own.MonthCents.Length; k++)

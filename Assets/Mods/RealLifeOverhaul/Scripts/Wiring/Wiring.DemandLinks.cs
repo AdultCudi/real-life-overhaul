@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
                 CareersBridges.Openings = Openings;
                 TechBridges.Seekers = TechSeekers;
                 Utilities.UtilitiesBridges.Connections = Connections;
+                Utilities.UtilitiesBridges.Homes = HomesIn;
+                Utilities.UtilitiesBridges.Middle = MiddleOf;
                 CivicBridges.Adults = Adults;
                 CivicBridges.Taxes = Taxes;
                 CivicBridges.Residents = Residents;
@@ -59,6 +61,8 @@ namespace RealLifeOverhaul
                 CareersBridges.Openings = null;
                 TechBridges.Seekers = null;
                 Utilities.UtilitiesBridges.Connections = null;
+                Utilities.UtilitiesBridges.Homes = null;
+                Utilities.UtilitiesBridges.Middle = null;
                 CivicBridges.Adults = null;
                 CivicBridges.Taxes = null;
                 CivicBridges.Residents = null;
@@ -262,6 +266,39 @@ namespace RealLifeOverhaul
                 {
                     Fault("DemandLinks.Connections", e);
                     return 0;
+                }
+            }
+
+            // A district's households and businesses that sell to people: the size of a district the broadband network had no place for; -1 for none counted.
+            private static int HomesIn(string district)
+            {
+                try
+                {
+                    if (!Live)
+                    {
+                        return -1;
+                    }
+                    int homes = CityDemand.Households(district), shops = CityDemand.Businesses(district);
+                    return homes < 0 && shops < 0 ? -1 : Math.Max(0, homes) + Math.Max(0, shops);
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.HomesIn", e);
+                    return -1;
+                }
+            }
+
+            // A district's middle on the city's map (x, z), for how far it lies from the districts the broadband catalogue lists; null for none known.
+            private static float[] MiddleOf(string district)
+            {
+                try
+                {
+                    return Live && Population.CityPopulation.Middle(district, out float x, out float z) ? new[] { x, z } : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.MiddleOf", e);
+                    return null;
                 }
             }
 

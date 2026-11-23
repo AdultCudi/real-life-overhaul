@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Utilities
                 Refresh();
             }));
             bool ours = provider == InternetCatalogue.OwnIndex && _director.State.Network.Running;
-            bool leased = provider == InternetCatalogue.LeasedIndex;
+            bool leased = InternetCatalogue.IsLine(provider), ownLine = provider == InternetCatalogue.OwnLineIndex;
             box.Selector(p.Mbps.Length, _plan, i => ours ? UtilitiesText.T("reallife_net_plan_option_own", "mbps", p.Mbps[i].ToString())
                 : leased ? UtilitiesText.T("reallife_net_plan_option_line", "speed", UtilitiesText.Gbps(p.Mbps[i]), "racks", (p.Mbps[i] / LeasedLineCatalogue.RackMbps).ToString(),
                     "price", UtilitiesText.Money(_director.NetPrice(place, provider, i, false) / 100f))
@@ -209,7 +209,7 @@ namespace RealLifeOverhaul.Utilities
             if (leased)
             {
                 // what the line is: the way to grow a data centre past its plan, and what the district it stands in does to the wait
-                box.Note(UtilitiesText.T("reallife_net_box_line_about"));
+                box.Note(UtilitiesText.T(ownLine ? "reallife_net_box_line_own_about" : "reallife_net_box_line_about"));
             }
             if (!ours && !leased)
             {
@@ -219,12 +219,12 @@ namespace RealLifeOverhaul.Utilities
                     Refresh();
                 }));
             }
-            bool same = leased ? LeasedLineRules.Ordered(a) == _plan + 1 : live && a.Provider == provider && a.State != SupplyState.Cut;
+            bool same = leased ? LeasedLineRules.Ordered(a) == _plan + 1 && LeasedLineRules.OrderedOwn(a) == ownLine : live && a.Provider == provider && a.State != SupplyState.Cut;
             box.Row("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract && !ours && !leased) / 100f));
             SpeedLines(box, place, p.Mbps[_plan]);
             if (leased && !same)
             {
-                LineInstall(box, place, _plan, today);
+                LineInstall(box, place, _plan, today, ownLine);
             }
             else if (!same)
             {
@@ -272,11 +272,11 @@ namespace RealLifeOverhaul.Utilities
         private static void LineRows(InfoBox box, Account a, int today)
         {
             int live = LeasedLineRules.LiveAt(a, today);
-            string price = UtilitiesText.Money(LeasedLineRules.MonthCents(Math.Max(0, LeasedLineRules.Ordered(a) - 1), Prices.Level) / 100f);
+            string price = UtilitiesText.Money(LeasedLineRules.MonthCents(Math.Max(0, LeasedLineRules.Ordered(a) - 1), Prices.Level, LeasedLineRules.OrderedOwn(a)) / 100f);
             if (live > 0)
             {
                 box.Row("reallife_net_box_line", UtilitiesText.T("reallife_net_line_live", "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[live - 1]),
-                    "price", UtilitiesText.Money(LeasedLineRules.MonthCents(live - 1, Prices.Level) / 100f)));
+                    "price", UtilitiesText.Money(LeasedLineRules.MonthCents(live - 1, Prices.Level, LeasedLineRules.LiveOwn(a, today)) / 100f)));
             }
             int ordered = LeasedLineRules.Ordered(a);
             int day = a.LineNext > 0 ? a.LineNextDay : a.LineDay;
@@ -288,13 +288,14 @@ namespace RealLifeOverhaul.Utilities
         }
 
         // What a leased line costs to bring to a place and how long it takes, with what the district has (fibre in the street, only cable, nothing).
-        private void LineInstall(InfoBox box, PlaceInfo place, int step, int today)
+        private void LineInstall(InfoBox box, PlaceInfo place, int step, int today, bool own)
         {
             string district = GameRegistrations.District(place.Reg);
-            int days = _director.LineDays(place, step);
-            box.Line(UtilitiesText.T("reallife_net_box_line_install", "fee", UtilitiesText.Money(_director.LineFee(place, step)), "days", days.ToString(), "day", UtilitiesText.Day(today + days)));
-            int has = LeasedLineRules.Class(district);
-            box.Line(UtilitiesText.T(has == LeasedLineCatalogue.Fibre ? "reallife_net_box_line_fibre"
+            int days = _director.LineDays(place, step, own);
+            box.Line(UtilitiesText.T("reallife_net_box_line_install", "fee", UtilitiesText.Money(_director.LineFee(place, step, own)), "days", days.ToString(),
+                "day", UtilitiesText.Day(today + days)));
+            int has = own ? LeasedLineCatalogue.Fibre : LeasedLineRules.Class(district);
+            box.Line(UtilitiesText.T(own ? "reallife_net_box_line_own" : has == LeasedLineCatalogue.Fibre ? "reallife_net_box_line_fibre"
                 : has == LeasedLineCatalogue.Cable ? "reallife_net_box_line_cable" : "reallife_net_box_line_dig"));
         }
 
@@ -337,6 +338,10 @@ namespace RealLifeOverhaul.Utilities
             if (_director.LineSite(place))
             {
                 _reach.Add(InternetCatalogue.LeasedIndex);   // business fibre, sold to a data centre only
+                if (_director.OwnLineHere(place))
+                {
+                    _reach.Add(InternetCatalogue.OwnLineIndex);   // ...and the company's own, where its network is open
+                }
             }
         }
 

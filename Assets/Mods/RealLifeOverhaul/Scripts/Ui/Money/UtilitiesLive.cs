@@ -201,23 +201,35 @@ namespace RealLifeOverhaul.Ui
             }
             if (d.LineSite(place))
             {
-                // the carriers' leased lines, for a data centre only: bought beside the plan, so the plan's own row stays "your plan"
-                Provider line = InternetCatalogue.Leased;
-                string note = LeasedLineRules.Class(district) == LeasedLineCatalogue.Fibre ? "reallife_net_box_line_fibre"
-                    : LeasedLineRules.Class(district) == LeasedLineCatalogue.Cable ? "reallife_net_box_line_cable" : "reallife_net_box_line_dig";
-                for (int i = 0; i < line.Mbps.Length; i++)
+                // the carriers' leased lines, for a data centre only: bought beside the plan, so the plan's own row stays "your plan"; and, where the player's own network is
+                // open, the company's own line on its own fibre
+                Line(options, d, place, district, a, live, InternetCatalogue.LeasedIndex);
+                if (d.OwnLineHere(place))
                 {
-                    int price = d.NetPrice(place, InternetCatalogue.LeasedIndex, i, false);
-                    options.Add(new UtilityOptionFact
-                    {
-                        Provider = InternetCatalogue.LeasedIndex, Plan = i, ProviderName = UtilitiesText.T(line.NameKey), Kind = UtilitiesText.T(line.KindKey), Mbps = line.Mbps[i],
-                        ContractCents = price, MonthlyCents = price, Leased = true, Current = live && LeasedLineRules.Ordered(a) == i + 1, Speed = SpeedWords(place, line.Mbps[i]),
-                        InstallFee = d.LineFee(place, i), InstallDays = d.LineDays(place, i), Note = UtilitiesText.T(note),
-                        Racks = line.Mbps[i] / LeasedLineCatalogue.RackMbps, GpuRacks = line.Mbps[i] / LeasedLineCatalogue.GpuRackMbps
-                    });
+                    Line(options, d, place, district, a, live, InternetCatalogue.OwnLineIndex);
                 }
             }
             return options.ToArray();
+        }
+
+        // One kind of line's four steps as options: its price, installation and wait for this place, what the district has, and the racks a step carries.
+        private static void Line(List<UtilityOptionFact> options, UtilitiesDirector d, PlaceInfo place, string district, Account a, bool live, int index)
+        {
+            bool own = index == InternetCatalogue.OwnLineIndex;
+            Provider line = InternetRules.Get(index);
+            string note = own ? "reallife_net_box_line_own" : LeasedLineRules.Class(district) == LeasedLineCatalogue.Fibre ? "reallife_net_box_line_fibre"
+                : LeasedLineRules.Class(district) == LeasedLineCatalogue.Cable ? "reallife_net_box_line_cable" : "reallife_net_box_line_dig";
+            for (int i = 0; i < line.Mbps.Length; i++)
+            {
+                int price = d.NetPrice(place, index, i, false);
+                options.Add(new UtilityOptionFact
+                {
+                    Provider = index, Plan = i, ProviderName = UtilitiesText.T(line.NameKey), Kind = UtilitiesText.T(line.KindKey), Mbps = line.Mbps[i],
+                    ContractCents = price, MonthlyCents = price, Leased = true, Current = live && LeasedLineRules.Ordered(a) == i + 1 && LeasedLineRules.OrderedOwn(a) == own,
+                    Speed = SpeedWords(place, line.Mbps[i]), InstallFee = d.LineFee(place, i, own), InstallDays = d.LineDays(place, i, own), Note = UtilitiesText.T(note),
+                    Racks = line.Mbps[i] / LeasedLineCatalogue.RackMbps, GpuRacks = line.Mbps[i] / LeasedLineCatalogue.GpuRackMbps
+                });
+            }
         }
 
         // A leased line in words: what is live and what is on its way (the running one carries on until a change is live).
@@ -225,9 +237,10 @@ namespace RealLifeOverhaul.Ui
         {
             int live = LeasedLineRules.LiveAt(a, today), ordered = LeasedLineRules.Ordered(a);
             string running = live > 0 ? UtilitiesText.T("reallife_net_line_live", "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[live - 1]),
-                "price", UtilitiesText.Money(LeasedLineRules.MonthCents(live - 1, Prices.Level) / 100f)) : null;
+                "price", UtilitiesText.Money(LeasedLineRules.MonthCents(live - 1, Prices.Level, LeasedLineRules.LiveOwn(a, today)) / 100f)) : null;
             string coming = ordered > 0 && ordered != live ? UtilitiesText.T("reallife_net_line_ordered", "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[ordered - 1]),
-                "day", UtilitiesText.Day(a.LineNext > 0 ? a.LineNextDay : a.LineDay), "price", UtilitiesText.Money(LeasedLineRules.MonthCents(ordered - 1, Prices.Level) / 100f)) : null;
+                "day", UtilitiesText.Day(a.LineNext > 0 ? a.LineNextDay : a.LineDay),
+                "price", UtilitiesText.Money(LeasedLineRules.MonthCents(ordered - 1, Prices.Level, LeasedLineRules.OrderedOwn(a)) / 100f)) : null;
             return running != null && coming != null ? running + ". " + coming : running ?? coming;
         }
 
@@ -270,20 +283,20 @@ namespace RealLifeOverhaul.Ui
             f.HasHeadquarters = hq != null;
             f.HeadquartersName = hq != null ? (string.IsNullOrEmpty(hq.BusinessName) ? hq.Address.ToFormattedString() : hq.BusinessName) : string.Empty;
             f.Licence = BroadbandRules.LicenceFee(level, buy);
-            f.DigLeast = BroadbandRules.BuildCostRange(level, buy, false);
-            f.DigMost = BroadbandRules.BuildCostRange(level, buy, true);
+            f.DigLeast = BroadbandRules.BuildCostRange(n, level, buy, false);
+            f.DigMost = BroadbandRules.BuildCostRange(n, level, buy, true);
             f.BuildMonths = BroadbandCatalogue.BuildMonths;
             f.BuyerName = UtilitiesText.T(BroadbandCatalogue.SoldNameKey);
-            var districts = new UtilityDistrictFact[Network.Districts];
+            var districts = new UtilityDistrictFact[n.Count];
             for (int i = 0; i < districts.Length; i++)
             {
                 bool open = n.Open(i, today), digging = n.Digging(i);
-                int upkeep = (int)EndScaleRules.Mix((long)BroadbandRules.BuildCost(i, level) * BroadbandCatalogue.UpkeepPerMille / 1000,
-                    (long)BroadbandRules.BuildCost(i, level, EndScaleRules.Full) * BroadbandCatalogue.UpkeepPerMilleScale / 1000, buy);
+                int upkeep = (int)EndScaleRules.Mix((long)BroadbandRules.BuildCost(n, i, level) * BroadbandCatalogue.UpkeepPerMille / 1000,
+                    (long)BroadbandRules.BuildCost(n, i, level, EndScaleRules.Full) * BroadbandCatalogue.UpkeepPerMilleScale / 1000, buy);
                 districts[i] = new UtilityDistrictFact
                 {
-                    Name = BroadbandCompany.District(i), State = open ? 2 : digging ? 1 : 0, Homes = MarketShown(n, i, buy, open || digging),
-                    Customers = n.Running ? BroadbandRules.Connections(n, i) : 0, ReadyDay = n.ReadyDay(i), DigCost = BroadbandRules.BuildCost(i, level, buy),
+                    Name = BroadbandCompany.District(n, i), State = open ? 2 : digging ? 1 : 0, Homes = MarketShown(n, i, buy, open || digging),
+                    Customers = n.Running ? BroadbandRules.Connections(n, i) : 0, ReadyDay = n.ReadyDay(i), DigCost = BroadbandRules.BuildCost(n, i, level, buy),
                     ExtendCost = BroadbandRules.ExtendCost(n, i, level, today, buy), Upkeep = upkeep
                 };
             }
@@ -346,8 +359,7 @@ namespace RealLifeOverhaul.Ui
         // A district's homes and businesses the company reaches once dug, or would if dug now (at scale, the whole district).
         private static int MarketShown(Network n, int d, int buy, bool built)
         {
-            return built ? BroadbandRules.MarketOf(n, d)
-                : (int)((long)EndScaleRules.Mix(BroadbandCatalogue.Market[d], BroadbandRules.MarketAtScale(d), buy) * BroadbandRules.PeopleOf(n, d) / 1000);
+            return BroadbandRules.MarketShown(n, d, buy, built);
         }
 
         // The customers over the last sixty days, from the day the company opened: as many points as there are days of history.
