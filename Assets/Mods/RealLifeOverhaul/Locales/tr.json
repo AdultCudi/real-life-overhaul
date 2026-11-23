@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "Sorun değil. Belki bir dahaki sefere.",
   "reallife_social_favour_refused": "Önemli değil. Başkalarına sorarım.",
   "reallife_social_lift_nocar": "Yanında araba yok mu? Boş ver, metroya binerim. Yine de teşekkürler.",
-  "reallife_social_lift_coming": "Hayatımı kurtardın. {place} konumunda dışarıdayım. Seni bekliyorum.",
-  "reallife_social_moving_agreed": "Sen bir tanesin. {time} saatinde {place} konumunda dışarıda. Sana bir pizza borçlanırım.",
+  "reallife_social_lift_coming": "Hayatımı kurtardın. {place} önündeyim. Haritanda Neler oluyor bölümünün altında işaretli. Seni gözlerim arayacak.",
+  "reallife_social_moving_agreed": "Sen bir tanesin. {place} önünde, {time}. Haritanda Neler oluyor bölümünün altında işaretli. Sana bir pizza borçlu olurum.",
   "reallife_social_loan_ask_1": "Bu biraz rahatsız edici ama bu ay sıkıştım. Bana {amount} borç verebilir misin? Bir hafta kadar sonra geri öderim.",
   "reallife_social_loan_ask_2": "Sormaktan nefret ediyorum ama {amount} borç alabilir miyim? Bir durum çıktı ve maaş gününe bir hafta var.",
   "reallife_social_loan_thanks_1": "Teşekkür ederim. Gerçekten. Geri alacaksın, söz veriyorum.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: bir iş ilanı panosu, haritada başka yere taşınmak yerine ilk durduğu binada kalır, bir arkadaşın buluşma yeri adresiyle ve ilçesiyle verilir, bisiklete bindiğinizde de kimse yere atılmaz. Flare üzerindeki bir işletmenin puanı ve inceleme sayısı artık yükselen her incelemeyi yıldızlarıyla birlikte tutar; akış eski gönderileri temizlediğinde bunlar kaybolmaz. Borsada listeli bir şirketin sektörü, yüklemede bir kez incelenen çeyreğin kendi hasılatından okunur ve sayfası son incelemenin ne gördüğünü ve bir değişikliğin neye ihtiyaç duyduğunu gösterir.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "Boş",
   "reallife_ui_estate_roll_sub_flats": "{buildings} bina ve {flats} daire, toplam {units} birim",
   "reallife_ui_estate_roll_waiting": "sizi bekleyen {waiting}",
-  "reallife_ui_estate_roll_waiting_clear": "sizi bekleyen bir şey yok"
+  "reallife_ui_estate_roll_waiting_clear": "sizi bekleyen bir şey yok",
+  "reallife_lst_box_seen": "Son inceleme, {day}. günde, {seen} hasılat gösterdi. {sector} sektörü, ancak başka bir sektör çeyrek boyunca hasılatta onu {need} puan geçerse değişir.",
+  "reallife_lst_box_seen_none": "Bu şirketin hasılatını henüz hiçbir inceleme görmedi. {sector} sektörü, ancak başka bir sektör çeyrek boyunca hasılatta onu {need} puan geçerse değişir.",
+  "reallife_lst_box_seen_short": "{leader} o zaman {gap} puan önde gidiyordu, gereken {need} puana yetmedi."
 }

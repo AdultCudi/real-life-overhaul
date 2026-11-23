@@ -2701,8 +2701,8 @@
   "reallife_social_invite_declined": "Nie ma sprawy. Może następnym razem.",
   "reallife_social_favour_refused": "W porządku. Zapytam kogoś innego.",
   "reallife_social_lift_nocar": "Nie masz samochodu przy sobie? Nic nie szkodzi, pojadę metrem. Dzięki tak czy inaczej.",
-  "reallife_social_lift_coming": "Ratujesz życie. Stoję przed {place}. Będę na ciebie patrzył.",
-  "reallife_social_moving_agreed": "Jesteś najlepszy. Przed {place}, {time}. Będę ci winien pizzę.",
+  "reallife_social_lift_coming": "Ratujesz życie. Jestem przed {place}. Jest zaznaczone na mapie w sekcji Co się dzieje. Będę na ciebie uważał.",
+  "reallife_social_moving_agreed": "Jesteś najlepszy. Przed {place}, {time}. Jest zaznaczone na mapie w sekcji Co się dzieje. Będę ci winien pizzę.",
   "reallife_social_loan_ask_1": "Niezręcznie. Brakuje mi w tym miesiącu. Mógłbyś mi pożyczyć {amount}? Oddam za tydzień albo coś koło tego.",
   "reallife_social_loan_ask_2": "Nienawidzę prosić, ale czy mógłbym pożyczyć {amount}? Coś wypadło, a wypłata za tydzień.",
   "reallife_social_loan_thanks_1": "Dzięki. Naprawdę. Oddam, obiecuję.",
@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: tablica ogłoszeń o pracę zostaje przy budynku, przy którym stała na początku, zamiast przenosić się po mapie, miejsce spotkania znajomego podawane jest jako adres z dzielnicą, a nikt nie zostaje zrzucony, gdy wsiadasz na rower. Ocena firmy i liczba opinii w Flare zachowują teraz każdą opinię, która wzrosła, razem z gwiazdkami, zamiast gubić je, gdy kanał czyści stare posty. Branża spółki giełdowej jest odczytywana z utargu samego kwartału, sprawdzana raz przy wczytaniu, a jej strona pokazuje, co zobaczył ostatni przegląd i czego potrzebuje zmiana.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -38566,5 +38566,8 @@
   "reallife_flat_tenant_empty": "Pusto",
   "reallife_ui_estate_roll_sub_flats": "Budynków: {buildings}, mieszkań: {flats}, lokali łącznie: {units}",
   "reallife_ui_estate_roll_waiting": "{waiting} czeka na ciebie",
-  "reallife_ui_estate_roll_waiting_clear": "nic nie czeka na ciebie"
+  "reallife_ui_estate_roll_waiting_clear": "nic nie czeka na ciebie",
+  "reallife_lst_box_seen": "Ostatni przegląd, dnia {day}, pokazał utarg {seen}. Branża {sector} zmienia się tylko wtedy, gdy inna branża wyprzedza ją o {need} punktów utargu w ciągu kwartału.",
+  "reallife_lst_box_seen_none": "Żaden przegląd jeszcze nie widział utargu tej firmy. Branża {sector} zmienia się tylko wtedy, gdy inna branża wyprzedza ją o {need} punktów utargu w ciągu kwartału.",
+  "reallife_lst_box_seen_short": "{leader} prowadził wtedy o {gap} punktów, za mało z potrzebnych {need}."
 }
