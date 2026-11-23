@@ -708,9 +708,16 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--util-pay")
+        {
+            UtilitiesPayAll();    // Pay all now and paying ticked bills in the Utilities app: the rules, the questions, one bank line each, nothing twice (OwnWorkPayChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--own-work")
         {
             OwnWork();            // own work keeps up the skills of the work done, starts at a desk and has its hours picked (OwnWorkChecks.cs)
+            OwnWorkYield();       // (and its slider says what the hours picked will do before Start: OwnWorkPayChecks.cs)
             Own();                // (and the rules of working for oneself it builds on: OwnChecks.cs)
             OwnDesk();            // (the desk of one's own tech firm, whose learning it shares: OwnDeskChecks.cs)
             DeskSeat();           // (every seat held or given back, one more caller of it: DeskSeatChecks.cs)
@@ -1704,6 +1711,8 @@ internal static partial class Program
         Banks();
         Calendar();
         Utilities();
+        UtilitiesPayAll();   // Pay all now and paying ticked bills: the rules, the questions, one bank line each, nothing twice (OwnWorkPayChecks.cs)
+        OwnWorkYield();      // own work's slider says what the hours picked will do before Start (OwnWorkPayChecks.cs)
         UtilitiesPhone();   // no office to visit: the app takes the desk's work by phone, each office text has its twin for the app, and the office comes back (UtilitiesPhoneChecks.cs)
         SpecialNames();
         StudyPrompts();

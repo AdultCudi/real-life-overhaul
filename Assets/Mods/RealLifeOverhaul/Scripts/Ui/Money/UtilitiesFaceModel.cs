@@ -123,6 +123,7 @@ namespace RealLifeOverhaul.Ui
         public string OffTitle, OffBody;            // the utilities are off, or no save is loaded
         public string Headline;                     // the accounts' or the places' one line
         public UiDataTableModel Accounts;
+        public UiActionModel PayAll;                // "Pay all now" beside the headline; no label when nothing is owed or while bills are being picked
         public UtilitiesCard AccountCard;
         public UiDataTableModel Places;
         public string PlansTitle;

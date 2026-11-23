@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True while a free desk of an office business of the player's is clicked for a contract: <see cref="OwnWay"/> and the click in the game.</summary>
         internal bool OwnDeskWay => OwnWay && DeskGame.Clickable;
 
+        /// <summary>Whole money a contract pays when it is delivered today, less for a late one (the sum ContractEnded pays).</summary>
+        internal int ContractPays(Contract c) => Save != null ? Prices.At((int)System.Math.Min(int.MaxValue, OwnRules.Paid(c, Save.Day))) : 0;
+
         /// <summary>The slider moved to these hours: kept for the next stint, while the game runs.</summary>
         internal void OwnHoursChosen(int hours)
         {
@@ -298,7 +301,7 @@ namespace RealLifeOverhaul.Careers
                 return busy;
             }
             Sitting sitting = ContractSitting(c, left);
-            var stint = new ContractStint(this, sitting, desk, place, new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen));
+            var stint = new ContractStint(this, sitting, desk, place, new StintSlider(_ownHours, left, Settings.CareersOwnHours, OwnHoursChosen, ContractPays(c)));
             CloseApps();
             ShiftSkip skip = ShiftSkip.Offer(this, stint);
             if (skip == null)

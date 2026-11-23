@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int AccountsBase = UiDataTable.First;   // its rows answer AccountsBase + UiDataTable.Row
         public const int PlacesBase = 600, PlansBase = 700;
-        public const int HeroAction = 800, DistrictAct = 801, CardAction = 802, CardSwitch = 803, BuyAction = 806, BuySwitch = 807;
+        public const int HeroAction = 800, DistrictAct = 801, CardAction = 802, CardSwitch = 803, PayAllAction = 804, BuyAction = 806, BuySwitch = 807;
         public const int SheetClose = 810, SheetAnswer = 811, SheetPick = 812, SheetAction = 813, SheetLess = 814, SheetMore = 815;
 
         /// <summary>Every command the screen answers, for the checks: the tables' own ranges and the buttons.</summary>
@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
         {
             var list = new List<int>
             {
-                UiAppWindow.NavCommand, HeroAction, DistrictAct, CardAction, CardSwitch, BuyAction, BuySwitch, SheetClose, SheetAnswer, SheetPick, SheetAction, SheetLess,
+                UiAppWindow.NavCommand, HeroAction, DistrictAct, CardAction, CardSwitch, PayAllAction, BuyAction, BuySwitch, SheetClose, SheetAnswer, SheetPick, SheetAction, SheetLess,
                 SheetMore, UiChart.First + UiChart.Point
             };
             foreach (int first in new[] { AccountsBase, PlacesBase, PlansBase })
@@ -87,7 +87,17 @@ namespace RealLifeOverhaul.Ui
 
         private static void AccountsPage(UiScene s, UiAt at, UtilitiesFaceModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            y = Headline(s, at, m.Headline, x, y, w);
+            if (m.PayAll.Label != null)
+            {
+                float bw = UiDraw.ButtonWidth(m.PayAll.Kind, m.PayAll.Label, m.PayAll.Icon, m.PayAll.Key, keys);
+                UiDraw.Button(s, at.InRegion(3), x + w - bw, y, bw, UiTokens.Control, m.PayAll.Kind, m.PayAll.Label, m.PayAll.Icon, m.PayAll.Key, keys, m.PayAll.Command, m.PayAll.Arg, m.PayAll.Disabled);
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, Math.Max(0f, w - bw - UiTokens.S4), UiStyle.BodyStrong, UiRole.Text2, m.Headline, UiFlags.Truncate);
+                y += UiTokens.Control;
+            }
+            else
+            {
+                y = Headline(s, at, m.Headline, x, y, w);
+            }
             float h = bottom - y;
             bool detail = m.AccountCard != null;
             float tw = detail ? UiDraw.SnapDown(w * 0.62f) : w;
