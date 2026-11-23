@@ -883,6 +883,13 @@ namespace RealLifeOverhaul.Ui
             more.Add(Note(CompanyText.T(PolicyCatalogue.Mod + "_hier_seat_what_" + seat.ToString().ToLowerInvariant())));
             more.Add(Row(CompanyText.T("reallife_hier_area_settled"), d.SettledSince(null, x.Name, d.Today - 7).ToString()));
             more.Add(Row(CompanyText.T("reallife_hier_last_month"), x.LastDecided.ToString()));
+            d.ExecutiveDid(x, d.Today - 1, out int didSettled, out int didPassed);
+            more.Add(Row(CompanyText.T("reallife_hier_exec_yesterday"), CompanyText.T("reallife_hier_exec_did", "settled", didSettled.ToString(), "passed", didPassed.ToString())));
+            string idle = d.ExecutiveIdle(x, didSettled + didPassed);
+            if (idle != null && x.Seen)
+            {
+                more.Add(Note(CompanyText.T(idle), UiRole.WarnText));
+            }
             if (!x.Seen)
             {
                 more.Add(Note(CompanyText.T("reallife_hier_seat_waits_line"), UiRole.WarnText));

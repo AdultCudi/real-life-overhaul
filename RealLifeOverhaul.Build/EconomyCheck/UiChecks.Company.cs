@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -456,8 +457,47 @@ internal static partial class Program
         }
     }
 
+    // "Also waiting" says a planner row's words and, after them, what it costs. The two are sentences, so they are joined as sentences (a stop, a space, a capital), not
+    // with a list's comma: "renewing by itself., To pay: $150." stood on the owner's screen. Every such row, in every language.
+    private static void CompanySentenceChecks()
+    {
+        Check(UiTextRules.Sentences("Its last day.", "To pay: $150.") == "Its last day. To pay: $150." && UiTextRules.Sentences("No stop", "to pay: $5.") == "No stop. To pay: $5."
+              && UiTextRules.Sentences("Done!", null) == "Done!" && UiTextRules.Sentences(string.Empty, "To pay: $5.") == "To pay: $5." && UiTextRules.Sentences(null, null).Length == 0,
+            "company waiting: two sentences join with the first's own mark, a space and a capital, either alone where the other is empty");
+        Check(UiTextRules.DoubledMark("itself., To pay") && UiTextRules.DoubledMark("a, . b") == false && UiTextRules.DoubledMark("end,. To") && UiTextRules.DoubledMark("end.. To")
+              && !UiTextRules.DoubledMark("wait...") && !UiTextRules.DoubledMark("e.g., this") && !UiTextRules.DoubledMark("Its last day. To pay: $150."),
+            "company waiting: a stop with a comma, a comma with a stop and two stops are found; an ellipsis and an abbreviation are not");
+        int rows = 0, bad = 0;
+        string first = string.Empty;
+        foreach (string lang in ModLanguages.All)
+        {
+            Dictionary<string, string> mod = LocaleFile(lang), en = LocaleFile("en");
+            string costs = mod.TryGetValue("reallife_planner_costs", out string c) ? c : en["reallife_planner_costs"];
+            foreach (string key in en.Keys)
+            {
+                if (!key.StartsWith("reallife_co_plan_", StringComparison.Ordinal) || !key.EndsWith("_what", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                string what = mod.TryGetValue(key, out string w) ? w : en[key];
+                string line = UiTextRules.Sentences(what, costs.Replace("{amount}", "$150"));
+                rows++;
+                if (UiTextRules.DoubledMark(line))
+                {
+                    bad++;
+                    first = first.Length == 0 ? lang + " " + key + ": " + line : first;
+                }
+            }
+        }
+        Check(rows > 100 && bad == 0, "company waiting: no row's words and its cost join with a doubled mark in any language (" + rows + " rows)" + (bad > 0 ? ": " + first : string.Empty));
+        string live = ModSource(@"Ui\Company\CompanyLive.Overview.cs");
+        Check(live.Contains("UiTextRules.Sentences(a.What, a.Money)") && !live.Contains("a.What + (string.IsNullOrEmpty(a.Money)"),
+            "company waiting: the Overview's row joins its words and its cost with the sentence rule");
+    }
+
     private static void CompanyFaceChecks(string only)
     {
+        CompanySentenceChecks();
         // Every kind of target has a number of its own: none appears twice among the screen's commands, and none is the frame's own.
         int[] commands = CompanyFace.Commands;
         var seen = new HashSet<int>();

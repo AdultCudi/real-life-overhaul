@@ -814,7 +814,8 @@ internal static partial class UiSamples
         BizManModel m = OpsPlace(t, "headquarters", BizManPart.Managers, 4);
         BizOpsModel o = m.Ops;
         o.PlansEmpty = t("reallife_ui_bizops_imports_none", "No purchasing plans yet");
-        o.PlansEmptyBody = t("reallife_ui_bizops_imports_none_body", "Add a plan to keep your warehouses stocked from importers.");
+        o.PlansEmptyBody = t("reallife_ui_bizops_buy_note_agent", "Each purchasing agent runs one plan. To add another, hire a purchasing agent, seat them on a shift, then phone an importer to start a plan.");
+        o.PlansNote = t("reallife_ui_bizops_buy_note_free", "Each purchasing agent runs one plan. Seated agents with no plan: {n}. Phone an importer to start a plan for one of them.").Replace("{n}", "1");
         OpsPlans(t, o, t("bizman_menu_purchasing_agents", "Purchasing Agents"), new[] { "Total Produce Trading", "Pacific Coffee Importers", "Atlas Paper Goods" },
             new[] { "Rosa Alvarez", "Rosa Alvarez", null }, 1, 2, UiIcon.Handshake);
         o.FormTitle = "Pacific Coffee Importers";

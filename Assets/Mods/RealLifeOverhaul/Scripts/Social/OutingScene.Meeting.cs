@@ -172,7 +172,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _nudged = true;
-            SocialLife.SendText(_who, "reallife_social_text_where", SocialLife.Data(_who, "place", _venue.Name), true);
+            SocialLife.SendText(_who, "reallife_social_text_where", SocialLife.Data(_who, "place", _venue.Name), true, true);
             SocialDirector.Logger?.Info("Social: " + _who.Name + " asked where the player is (" + (nowMinutes - _time).ToString("F0") + " min after the time agreed).");
         }
 

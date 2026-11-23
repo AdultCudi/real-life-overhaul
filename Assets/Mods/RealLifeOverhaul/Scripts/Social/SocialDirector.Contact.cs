@@ -52,7 +52,7 @@ namespace RealLifeOverhaul
             {
                 _reactArrest = false;
                 SocialPerson mom = SocialState.ByOrigin(SocialOrigin.Family);
-                SocialPerson who = mom != null && Random.value < 0.5f ? mom : Contactor(hour);
+                SocialPerson who = mom != null && MomContact.MayOn(day) && Random.value < 0.5f ? mom : Contactor(hour);
                 if (who != null)
                 {
                     SocialLife.SendText(who, SocialLines.Pick(who.IsFamily ? SocialCatalogue.TextArrestMom
@@ -161,7 +161,7 @@ namespace RealLifeOverhaul
 
         private static bool Reachable(SocialPerson p, int hour, int day, int bar)
         {
-            return !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day && SocialRules.InCircle(p, day, bar);
+            return !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day && SocialRules.InCircle(p, day, bar) && (!p.IsFamily || MomContact.MayOn(day));
         }
 
         // The closeness the closest people of the cast have (SocialRules.CircleBar). One pass; nothing allocated.
@@ -194,6 +194,11 @@ namespace RealLifeOverhaul
                 SocialPerson p = SocialState.Get(i);
                 if (p == null || !p.Met || p.AfterDay <= 0)
                 {
+                    continue;
+                }
+                if (p.IsFamily && !MomContact.On)
+                {
+                    p.AfterDay = 0;   // with Mom's own contact off the day-after text is let go, so switching it on again brings nothing late
                     continue;
                 }
                 int lastText = Mathf.Max(p.LastTextDay, SocialPhone.LastTextDay(p));
@@ -416,7 +421,7 @@ namespace RealLifeOverhaul
                         p.DebtDay = day;
                         SocialLife.Remember(p, MemoryCode.NotRepaid);
                         SocialLife.Change(p, 0f, -2f, SocialRules.NotRepaidTrust);
-                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextDebt), SocialLife.Data(p, "amount", SocialLife.Money(p.Debt)), true);
+                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextDebt), SocialLife.Data(p, "amount", SocialLife.Money(p.Debt)), true, true);
                     }
                     // People who like things done properly think less of somebody with a record, until it is lived down.
                     if (law != null && law.HasRecord && law.Reputation < 60 && (p.Has(SocialTrait.Punctual) || p.Has(SocialTrait.Careful) || p.Has(SocialTrait.Reliable)))
@@ -433,14 +438,14 @@ namespace RealLifeOverhaul
                     {
                         Dictionary<string, string> data = SocialLife.Data(p, "amount", SocialLife.Money(p.Loan));
                         SocialLife.Give(p.Loan, "reallife_transaction_social_loan_back");
-                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanBack), data, true);
+                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanBack), data, true, true);
                         p.Loan = 0;
                     }
                     else
                     {
                         // An excuse and a few more days; at their end they pay or it is written off (below).
                         Dictionary<string, string> data = SocialLife.Data(p, "amount", SocialLife.Money(p.Loan));
-                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanExcuse), data, true);
+                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanExcuse), data, true, true);
                         p.LoanDue = SocialRules.GraceUntil(day);
                     }
                 }
@@ -451,7 +456,7 @@ namespace RealLifeOverhaul
                     if (repays)
                     {
                         SocialLife.Give(p.Loan, "reallife_transaction_social_loan_back");
-                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanBack), data, true);
+                        SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextLoanBack), data, true, true);
                     }
                     else
                     {

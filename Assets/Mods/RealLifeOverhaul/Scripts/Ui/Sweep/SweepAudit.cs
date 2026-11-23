@@ -197,6 +197,7 @@ namespace RealLifeOverhaul.Ui
             Row("Civic", "The council and the town hall", "the card over the door", AuditWindow.Prompt, Prompt, "Civic/"),
             Row("Civic", "The town hall's phone", "the dialogue", AuditWindow.Dialog, Dialog, "Civic/"),
             Row("Law", "The station desk and custody", "the list window", AuditWindow.Picker, Picker, "Law/"),
+            Row("Careers", "The officer's list of an incident's moves", "the list window", AuditWindow.Picker, Picker, "Careers/Police/"),
             Row("Law", "The station and the record", "the card over the desk", AuditWindow.Prompt, Prompt, "Law/"),
             Row("Law", "The record's call", "the dialogue", AuditWindow.Dialog, Dialog, "Law/"),
             Row("Garage", "The garage bay", "the list window", AuditWindow.Picker, Picker, "Garage/"),

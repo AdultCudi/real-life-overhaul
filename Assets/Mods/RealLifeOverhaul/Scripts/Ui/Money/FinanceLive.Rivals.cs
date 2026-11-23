@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Ui
             r.Values = new string[0];
             r.Moves = new FinanceRivalMove[0];
             r.Answers = new FinanceAnswer[0];
-            r.CanFollow = r.CanHolding = false;
+            r.CanFollow = r.CanHolding = r.CanHead = false;
             r.MovesTitle = w.T("reallife_fin_moves_title", "Their latest moves");
             r.MovesNone = w.T("reallife_fin_moves_none", "No moves yet.");
             r.AnswersTitle = w.T("reallife_fin_answers_title", "How do you answer?");
@@ -192,6 +192,14 @@ namespace RealLifeOverhaul.Ui
                 values.Add(RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));
                 r.CanHolding = RivalBridges.OpenStock != null;
                 r.HoldingLabel = RivalText.T("reallife_rival_open_holding");
+            }
+            string head = RivalBridges.HeadLine != null ? RivalBridges.HeadLine(who) : null;
+            if (!string.IsNullOrEmpty(head))
+            {
+                labels.Add(RivalText.T("reallife_rival_label_head"));
+                values.Add(head);
+                r.CanHead = RivalBridges.ShowHead != null;   // Show on map, the Careers pages' own text and call
+                r.HeadLabel = RivalText.T("reallife_career_button_map");
             }
             if (day < t.QuietUntil || day < t.SlowUntil || day < t.BarredUntil)
             {
@@ -431,6 +439,8 @@ namespace RealLifeOverhaul.Ui
                         flare.Follow(TycoonKey(who), true);
                         return true;
                     }
+                case FinanceAct.ShowHead:
+                    return RivalBridges.ShowHead != null && RivalBridges.ShowHead(who);
                 case FinanceAct.OpenHolding:
                     if (RivalBridges.OpenStock == null)
                     {

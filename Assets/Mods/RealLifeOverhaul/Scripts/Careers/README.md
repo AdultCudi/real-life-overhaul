@@ -6,8 +6,9 @@ Education and careers: the city's courses and the player's own skills, the profe
 
 - `CareersDirector.cs`: the one component, its parts in partial files.
 - `Study/StudyCatalogue.cs`: every course, exam, fee and grant (game-free).
-- `Work/ProCatalogue.cs`: the twenty-five professions (game-free).
+- `Work/ProCatalogue.cs`: the twenty-six professions (game-free).
 - `CareersBridges.cs`: what it asks of the others.
+- `Police/PoliceRules.cs`: the police career's rules (game-free).
 
 ## Documentation
 

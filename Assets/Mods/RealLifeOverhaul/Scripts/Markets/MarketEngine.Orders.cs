@@ -48,6 +48,14 @@ namespace RealLifeOverhaul.Markets
                 _world.Filled(o, s, 0, 0);
                 return false;
             }
+            if (o.Side == OrderSide.Sell && !o.Forced && State.Locks.Count > 0 && State.Held(s.Id) - qty < MarketTrading.Locked(State, s.Id, State.Day))
+            {
+                // Shares locked up since the order was placed (or by a lock the order was worked against): none of them is sold, whatever the order says.
+                o.State = o.Filled > 0 ? OrderState.Cancelled : OrderState.Refused;
+                o.Why = OrderWhy.Locked;
+                _world.Filled(o, s, 0, 0);
+                return false;
+            }
             // A trade's lasting move is the city's in a session, and on a replayed day that was played in one: its tape has it.
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
             if (!MarketTrading.Fill(State, s, o, qty, cents, least >= 0 ? least : _world.CommissionLeast, Wallet, phase, !city, out double kept))

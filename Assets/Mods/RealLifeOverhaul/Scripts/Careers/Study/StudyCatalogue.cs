@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Careers
             CustomerService = 8, DigitalMarketing = 9;
         public const int Electrician = 10, Plumber = 11, Carpenter = 12, Chef = 13, Hairdresser = 14, Beautician = 15, CareWorker = 16, ItSupport = 17;
         public const int Bricklaying = 18, CraneTicket = 19, ConstructionManagement = 34, ArchitectLicence = 62;   // the building trades' (Scripts/BuildTrades)
+        public const int PoliceAcademy = 36;   // the police career's entry exam (Careers/Police): the cadet rung asks it; 35 was the dance class, which saves may still hold, so it is not reused
         public const int ComputerScience = 20, SoftwareEngineering = 21, DataScience = 22, Cybersecurity = 23, Business = 24, Accounting = 25, Finance = 26, Law = 27,
             Marketing = 28, Architecture = 29, CivilEngineering = 30, Nursing = 31, Teaching = 32, Design = 33;
         public const int Mba = 40, MscComputing = 41, LegalPractice = 42, Pgce = 43;
@@ -189,6 +190,9 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(MachineLearning, "machine_learning", CourseKind.Certificate, Campus.Online, 0, 8, 0, 0, 0, 1300, TalentCatalogue.Learning, 12, TalentCatalogue.Statistics, 5, -1, 10),
             new CourseDef(PrivacyProfessional, "privacy_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 1050, TalentCatalogue.Law, 8, TalentCatalogue.SecurityOps, 8, -1, 9),
             new CourseDef(TestingProfessional, "testing_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 500, TalentCatalogue.Testing, 12, TalentCatalogue.Coding, 5, -1, 11),
+
+            // the police career's (Scripts/Careers/Police): its exam is the course's own, like every diploma's
+            new CourseDef(PoliceAcademy, "police_academy", CourseKind.Vocational, Campus.School, 5, 2, 4, Mon | Wed | Fri, 9, 1600, Skills.Guarding, 40, Skills.FirstAid, 20, Diploma),
 
             // the building trades' (Scripts/BuildTrades): last, so every course before keeps its room at the university and its place in a list
             new CourseDef(Bricklaying, "bricklaying", CourseKind.Vocational, Campus.School, 6, 3, 4, Tue | Thu | Sat, 13, 2400, Skills.Masonry, 45, TalentCatalogue.Structures, 5, Diploma),

@@ -266,6 +266,11 @@ namespace RealLifeOverhaul.Economy
         private bool MaySell(BuildingRegistration reg, int price, int parts, out SaleMoney m)
         {
             m = default(SaleMoney);
+            if (Held(reg))
+            {
+                Notifications.ShowError("reallife_svc_refuse_contract");
+                return false;
+            }
             SaleBlock block = ServicesGame.Blocked(reg);
             if (block != SaleBlock.None)
             {
@@ -377,20 +382,24 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
+        /// <summary>True while a business could be handed to a buyer as a sale ends one: the sales run, nothing of theirs is broken, and the player is no guest.</summary>
+        public bool CanHandOver() => _running && !_broken && !_saleBroken && !GoingPublic.InSession;
+
         /// <summary>
         /// A business handed over for no money as a takeover of the player's listed company completes (Markets/Listing), ended
-        /// as in a sale with the staff going along. True once it is not the player's; false while it cannot be done yet.
+        /// as in a sale with the staff going along. True once it is not the player's; false while it cannot be done yet. A takeover of the company leaves a contract's firm be (it
+        /// is its buyer's already); the contract's own hand-over (<paramref name="byContract"/>) is the one that takes it, and so must not stop at the hold the contract puts on it.
         /// </summary>
-        public bool HandOver(string place, string buyerName)
+        public bool HandOver(string place, string buyerName, bool byContract = false)
         {
             if (!_running || _broken || _saleBroken || GoingPublic.InSession)
             {
                 return false;
             }
             BuildingRegistration reg = ServicesGame.Find(place);
-            if (reg == null || !ServicesGame.IsSellable(reg))
+            if (reg == null || !ServicesGame.IsSellable(reg) || (!byContract && Held(reg)))
             {
-                return true;   // not the player's business any more
+                return true;   // not the player's business any more, or one a contract holds that a takeover leaves be
             }
             if (ServicesGame.Blocked(reg) != SaleBlock.None)
             {

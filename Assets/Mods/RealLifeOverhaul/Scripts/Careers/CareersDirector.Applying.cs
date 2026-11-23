@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Careers
         internal bool OpenToMe(Opening o, Candidate t)
         {
             Profession p = o.Def;
-            if (p == null || !ProRules.Qualified(_study, p, o.Rank) || !ProRules.Eligible(_study, p, o.Rank))
+            if (p == null || DutyEntryWhy(p) != null || !ProRules.Qualified(_study, p, o.Rank) || !ProRules.Eligible(_study, p, o.Rank))
             {
                 return false;
             }
@@ -402,6 +402,11 @@ namespace RealLifeOverhaul.Careers
                 {
                     return "reallife_work_why_accepted";
                 }
+            }
+            string entry = DutyEntryWhy(a.Post.Def);
+            if (entry != null)
+            {
+                return entry;   // the record or the licence changed between the offer and its answer
             }
             int day = Save.Day;
             Job j = w.Job;

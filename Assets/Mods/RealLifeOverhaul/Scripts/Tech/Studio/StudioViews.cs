@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Tech
         /// A name to be typed (the concept's, or a game's on its page), which the page that shows it asks for in the game's
         /// text box and then hands to the director, and another suggestion for a concept, which the director gives itself.
         /// </summary>
-        public const int Name = 27, Suggest = 28;
+        public const int Name = 27, Suggest = 28, Forget = 29;
     }
 
     /// <summary>What the screens know of a studio from the game, filled by the director when a page is drawn.</summary>
@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Tech
         public int Reputation = 500;
         public bool Desks = true;        // desk sessions run: the pitch is held at the desk; off, the concept is greenlit on its page
         public long Tickets, Answered;   // support tickets a day from its games' players, and those its support people answer
+        public int Support;              // its support people at work: the figure Answered is made of
         public string Title = string.Empty;   // what the concept's game will be called; empty where no page asks (the firm's page)
         public int TitleFrom;            // how that name came: StudioViews.TitleSuggested, TitleTyped or TitleSequel
         public Func<int, string> GameName;   // a game's name by its product's id (the firms' list keeps it); null: its genre and score stand for it
@@ -230,7 +231,8 @@ namespace RealLifeOverhaul.Tech
             long work = StudioRules.WorkFor(budget, StudioRules.AsPlanned, d.Engine == (int)GameEngine.Own && s.OwnEngine);
             int days = StudioRules.DaysLeft(work, s.PointsADay);
             c.Trade = days > 0
-                ? Words(P + "budget_trade", ViewTone.Plain, "points", fmt.Whole(work), "days", fmt.Whole(days), "usual", fmt.Money(ScaleCatalogue.BudgetTypical[StudioCatalogue.UsualScope[genre]]))
+                ? Words(P + "budget_trade", ViewTone.Plain, "points", fmt.Whole(work), "days", fmt.Whole(days), "usual", fmt.Money(ScaleCatalogue.BudgetTypical[StudioCatalogue.UsualScope[genre]]),
+                    "people", fmt.Whole(StudioRules.PeopleFor(work, year)), "have", fmt.Whole(s.People))
                 : Words(P + "budget_trade_nobody", ViewTone.Warn, "points", fmt.Whole(work), "usual", fmt.Money(ScaleCatalogue.BudgetTypical[StudioCatalogue.UsualScope[genre]]));
             c = Choice(money, P + "label_price", StudioAct.Price, StudioRules.Clamp(d.Price, 0, StudioCatalogue.PriceSteps.Length - 1), true);
             for (int i = 0; i < StudioCatalogue.PriceSteps.Length; i++)
@@ -398,6 +400,10 @@ namespace RealLifeOverhaul.Tech
                 v.Others.Add(new ViewAction { Key = Mod + "_tech_button_rename", Act = StudioAct.Name });   // free at any time before it is withdrawn: nothing reads a name
                 v.Others.Add(new ViewAction { Key = "reallife_tech_button_withdraw", Act = StudioAct.Withdraw, Danger = true });
             }
+            else
+            {
+                v.Others.Add(new ViewAction { Key = "reallife_tech_button_forget", Act = StudioAct.Forget, Danger = true });   // a withdrawn game only clutters the list
+            }
             v.Others.Add(new ViewAction { Key = "common_close", Act = StudioAct.Close });
             return v;
         }
@@ -494,7 +500,11 @@ namespace RealLifeOverhaul.Tech
             {
                 c.Options.Add(i == 0 ? fmt.Text(P + "campaign_none") : fmt.Money(g.Budget * StudioCatalogue.CampaignShare[i] / 1000));
             }
-            c.Trade = Words(P + "campaign_trade", ViewTone.Plain, "spent", fmt.Money(g.CampaignSpent), "days", fmt.Whole(StudioCatalogue.CampaignDays));
+            int step = StudioRules.Clamp(g.Campaign, 0, StudioCatalogue.CampaignShare.Length - 1);
+            c.Trade = step == 0
+                ? Words(P + "campaign_trade_none", ViewTone.Plain, "days", fmt.Whole(StudioCatalogue.CampaignDays))
+                : Words(P + "campaign_trade", ViewTone.Plain, "spent", fmt.Money(g.CampaignSpent), "days", fmt.Whole(StudioCatalogue.CampaignDays),
+                    "cost", fmt.Money(g.Budget * StudioCatalogue.CampaignShare[step] / 1000), "hype", fmt.Mille(StudioCatalogue.CampaignHype * step * StudioCatalogue.CampaignDays));
             if (g.Launched < 0)
             {
                 c = Choice(m, P + "label_release", StudioAct.Release, 0, false);
@@ -665,7 +675,8 @@ namespace RealLifeOverhaul.Tech
             Line(own, P + "studio_known", ViewTone.Plain, "genres", Known(f, s.Place, fmt));
             if (s.Tickets > 0)
             {
-                Line(own, P + "studio_support", s.Answered >= s.Tickets ? ViewTone.Plain : ViewTone.Warn, "tickets", fmt.Whole(s.Tickets), "answered", fmt.Whole(Math.Min(s.Tickets, s.Answered)));
+                Line(own, P + "studio_support", s.Answered >= s.Tickets ? ViewTone.Plain : ViewTone.Warn, "tickets", fmt.Whole(s.Tickets), "answered", fmt.Whole(Math.Min(s.Tickets, s.Answered)),
+                    "have", fmt.Whole(s.Support), "need", fmt.Whole(StudioRules.SupportFor(s.Tickets)));
             }
             ViewSection market = v.Section(P + "sec_market");
             if (f != null && f.TrendGenre >= 0 && day < f.TrendUntil)

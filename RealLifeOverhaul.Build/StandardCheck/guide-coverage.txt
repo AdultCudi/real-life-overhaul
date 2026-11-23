@@ -4,6 +4,7 @@
 business-pressure	reallife_guide_business	business events
 calendar	reallife_guide_calendar	the Calendar app
 careers	reallife_guide_careers,reallife_guide_careers_life	careers
+careers-police	reallife_guide_careers_jobs	the police career
 character	reallife_guide_character	the player's look
 city-events	reallife_guide_events	fires, weather, street events
 city-life	reallife_guide_citylife	people on the pavements
@@ -20,6 +21,7 @@ health	reallife_guide_health	illness, the doctor, hospital stays, health plans a
 parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
 loyalty	reallife_guide_loyalty	loyalty cards for the player's shops
 suppliers	reallife_guide_suppliers	a choice of suppliers, fixed price contracts, late or short deliveries
+rivals-property	reallife_guide_rivals	the game's rivals' buildings by their place in the ranking, and their fortune
 rivals-seen	reallife_guide_rivals_seen	rivals seen around the city, their cars, the greeting and the sightings
 dynasty	reallife_guide_dynasty	the will, estate tax, retiring and the heir who carries on
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
@@ -58,7 +60,9 @@ interiors	reallife_guide_interiors	interiors and decor
 jobs	reallife_guide_jobs	jobs
 side-jobs	reallife_guide_side_jobs	taxi and delivery shifts in the player's own car
 justice	reallife_guide_justice	courts and prison
+estate-agency	reallife_guide_economy_estate	the estate agency's blocks of other owners' flats and the player's own buildings under it
 landlord	reallife_guide_economy_estate_duties	a landlord's duties
+flats	reallife_guide_economy_estate_flats	flats and studios to buy as a home
 landmarks	reallife_guide_landmarks	Uptown's landmarks
 law	reallife_guide_law	police stations and custody
 leisure	reallife_guide_leisure	leisure

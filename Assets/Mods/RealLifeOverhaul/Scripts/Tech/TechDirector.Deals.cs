@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Tech
                 return null;
             }
             Cap c = _venture.CapOf(place);
-            if (c == null && make)
+            if (c == null && make && !Contracted(place))   // a firm a contract holds is its owner's: it raises nothing
             {
                 c = VentureRules.NewCap(place);
                 _venture.Caps.Add(c);
@@ -179,6 +179,10 @@ namespace RealLifeOverhaul.Tech
         internal bool StartRaise(string place)
         {
             FirmPlace firm = FirmOf(place);
+            if (firm != null && ContractRefused(place, firm.File.Name))
+            {
+                return false;   // a round is the owner's to raise: a firm a contract holds raises nothing
+            }
             Cap c = firm != null ? CapFor(place, true) : null;
             if (c == null || Save == null || c.RaiseUntil > 0 || StockRaiseRefused(place, firm.File.Name))
             {
@@ -319,6 +323,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Share options split among the firm's people with any still waiting; refused, with a warning, while nobody works there.</summary>
         internal bool GrantOptions(string place)
         {
+            if (ContractRefused(place, null))
+            {
+                return false;
+            }
             Cap c = CapFor(place, true);
             if (c == null || Save == null || c.OptionsGranted >= 150)
             {
@@ -339,6 +347,10 @@ namespace RealLifeOverhaul.Tech
 
         internal void SetChief(string place, string id)
         {
+            if (ContractRefused(place, null))
+            {
+                return;
+            }
             Cap c = CapFor(place, true);
             if (c != null)
             {
@@ -351,7 +363,7 @@ namespace RealLifeOverhaul.Tech
         internal void PrepareListing(string place)
         {
             FirmPlace firm = FirmOf(place);
-            if (firm == null)
+            if (firm == null || ContractRefused(place, firm.File.Name))
             {
                 return;
             }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.Tech;
@@ -185,7 +185,7 @@ namespace RealLifeOverhaul.Ui
                     t.Amounts.Add(new WorkAmount { Id = 0, Value = dollars, Min = 1, Max = 200, Figure = "$" + dollars.ToString(Inv) + " " + w.T("reallife_work_an_hour", "an hour") });
                 }
                 r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
-                r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
+                r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Offer {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
                     OfferWhy(a, w, dollars)));
                 r.Acts.Add(a.Stage == (int)ApplyStage.Countered ? Act(Counter, a.Id, w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Secondary, UiIcon.Check)
                     : Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, false,
@@ -307,7 +307,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_rival_bid", "Rival's offer"), Value = a.RivalBy + ", " + TechText.Rate(a.RivalBid) });
                 }
-                contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
+                contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Offer {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
                     OfferWhy(a, w, dollars));
                 form.Left.Add(contract);
                 var answer = new WorkFormBand { Title = w.T("reallife_work_their_answer", "Their answer") };
@@ -709,7 +709,26 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- Team
 
-        private WorkTab Team(TechDirector d, int day)
+        private const int RaiseAmount = 9;   // the amount the share of a raise for everyone is kept in (the view's, apart from the new ad's 0 to 8)
+        private const int TeamRows = 60;     // the people the Team page lists
+
+        // The professionals the page lists that its search leaves: who a raise for everyone reaches.
+        private static void ShownTeam(TechDirector d, WorkView view, List<string> ids)
+        {
+            ids.Clear();
+            string query = view != null ? view.Query ?? string.Empty : string.Empty;
+            for (int i = 0; i < d.People.Count && i < TeamRows; i++)
+            {
+                Person p = d.People[i];
+                if (query.Length == 0 || p.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
+                    || (p.Business != null && p.Business.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    ids.Add(p.File.Id);
+                }
+            }
+        }
+
+        private WorkTab Team(TechDirector d, int day, WorkView view)
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
@@ -732,7 +751,7 @@ namespace RealLifeOverhaul.Ui
             var allJoinedText = new List<string>(8);
             long payroll = 0;
             int moraleSum = 0, leaving = 0;
-            for (int i = 0; i < d.People.Count && i < 60; i++)
+            for (int i = 0; i < d.People.Count && i < TeamRows; i++)
             {
                 Person p = d.People[i];
                 Profile f = p.File;
@@ -785,6 +804,7 @@ namespace RealLifeOverhaul.Ui
                 r.Acts.Add(Act(OpenPerson, i, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, true));
                 t.Rows.Add(r);
             }
+            AddRaiseAll(d, view, t, w);
             if (d.People.Count > 0)
             {
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_payroll", "Payroll an hour"), TechText.Money((int)(payroll / 100))));
@@ -795,6 +815,48 @@ namespace RealLifeOverhaul.Ui
             WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray(), 2));
             WorkBands.Tenure(t.Below, w, allNames.ToArray(), allRoles.ToArray(), allJoined.ToArray(), allJoinedText.ToArray());
             return t;
+        }
+
+        // A raise of a chosen share for everyone the page lists, with what it comes to a month before the question asks, and the switch that matches rivals' offers by itself.
+        // The share is chosen in each person's detail (the table's detail is where the page keeps its steppers); the buttons stand in the tool row.
+        private void AddRaiseAll(TechDirector d, WorkView view, WorkTab t, UtilitiesWords w)
+        {
+            var ids = new List<string>(TeamRows);
+            ShownTeam(d, view, ids);
+            int at = BulkRaiseRules.At(view != null ? view.Get(RaiseAmount, BulkRaiseRules.StartAt) : BulkRaiseRules.StartAt);
+            int bp = BulkRaiseRules.Bp(at), month = GameCalendar.MonthDays;
+            string percent = TechText.Bp(bp);
+            BulkRaiseRules.Plan plan = d.PlanRaises(ids, bp);
+            var words = new string[BulkRaiseRules.Percents.Length];
+            for (int i = 0; i < words.Length; i++)
+            {
+                words[i] = TechText.Bp(BulkRaiseRules.Bp(i));
+            }
+            t.Amounts.Add(Choice(RaiseAmount, at, words));
+            foreach (WorkRow row in t.Rows)
+            {
+                row.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_roles_sec_raise", "Raise the team"), Stepper = 0,
+                    Note = plan.Any ? w.F("reallife_work_raise_note", "{total} a month in all", "total", TechText.Cents(plan.TotalMonthly(month))) : null });
+            }
+            if (plan.Any)
+            {
+                t.Stats.Add(new KeyValuePair<string, string>(w.F("reallife_work_stat_raise", "A raise of {percent} for {count}, a month", "percent", percent, "count", plan.Raised.ToString(Inv)),
+                    "+" + TechText.Cents(plan.ExtraMonthly(month))));
+            }
+            string why = plan.Any ? null : w.T(ids.Count == 0 ? "reallife_roles_raise_nobody" : "reallife_roles_raise_none",
+                "Nobody shown can be raised now: each was raised lately, is on notice or is at the top of the pay scale.");
+            t.Acts.Add(Act(RaiseAll, 0, w.F("reallife_work_raise_all", "Raise everyone by {percent}", "percent", percent), UiButtonKind.Primary, UiIcon.Check, false, why));
+            for (int i = 0; i < d.FirmPlaces.Count && i < 6; i++)
+            {
+                FirmPlace fp = d.FirmPlaces[i];
+                bool assigns = fp.File.Assign;
+                t.Acts.Add(Act(AssignRoles, i, TechText.Fill(assigns ? "reallife_tech_assign_on" : "reallife_tech_assign_off", "firm", fp.File.Name),
+                    assigns ? UiButtonKind.Primary : UiButtonKind.Secondary, assigns ? UiIcon.Check : UiIcon.Close, false,
+                    assigns && d.Assigner(fp.File.Place) == null ? TechText.T("reallife_tech_assign_nobody") : null));
+            }
+            bool on = Settings.EconomyCompanyMatchRivals;
+            t.Acts.Add(Act(MatchRivals, 0, w.T(on ? "reallife_work_match_on" : "reallife_work_match_off", on ? "Matching rivals' offers: on" : "Matching rivals' offers: off"),
+                on ? UiButtonKind.Primary : UiButtonKind.Secondary, on ? UiIcon.Check : UiIcon.Close));
         }
 
         private const int GapMost = 200, WornFrom = 20;   // cents an hour a person may be paid under the going pay before it is shown, and the burnout from which they are wearing thin
@@ -904,6 +966,16 @@ namespace RealLifeOverhaul.Ui
                         w.T("reallife_work_set_role", "Set this role"), UiButtonKind.Secondary, UiIcon.Check,
                         false, moves[at] == p.Role ? w.T("reallife_work_already_set", "It is set so.") : null) });
                 }
+                if (d.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
+                {
+                    career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_tech_assign_label", "Role assigned"),
+                        Value = TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support",
+                            "by", assignedBy, "day", assignedDay.ToString()) });
+                }
+                career.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_tech_pin_label", "Role"), Act = Act(PinRole, 0,
+                    w.T(p.Pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off",
+                        p.Pinned ? "Kept by you: unpin" : "Let the manager assign: pin it"), UiButtonKind.Secondary,
+                        p.Pinned ? UiIcon.Check : UiIcon.Close) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_experience", "Experience"),
                     Value = TechText.Years(p.YearsDays + (day - p.Joined) * 365 / Math.Max(60, year)) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_school", "Schooling"), Value = TechText.School(p.School) });
@@ -1014,6 +1086,28 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- doing
 
+        // The question a raise for everyone asks first, with the figures the page showed: the people are read again when it is answered.
+        private bool AskRaiseAll(TechDirector d, WorkView view)
+        {
+            var ids = new List<string>(TeamRows);
+            ShownTeam(d, view, ids);
+            int bp = BulkRaiseRules.Bp(view.Get(RaiseAmount, BulkRaiseRules.StartAt)), month = GameCalendar.MonthDays;
+            BulkRaiseRules.Plan plan = d.PlanRaises(ids, bp);
+            if (!plan.Any)
+            {
+                return false;
+            }
+            string count = plan.Raised.ToString(), percent = TechText.Bp(bp), total = TechText.Cents(plan.TotalMonthly(month)), extra = TechText.Cents(plan.ExtraMonthly(month));
+            GameConfirm.Show("reallife_roles_confirm_raise_title".Localize(new { count, percent }),
+                "reallife_roles_confirm_raise_body".Localize(new { count, percent, total, extra }),
+                () =>
+                {
+                    d.GiveRaises(ids, bp);
+                    _local++;
+                }, null, null, null, true, false);
+            return true;
+        }
+
         private bool Carry(WorkDo act, TechDirector d, HiringFile h, WorkView view)
         {
             Applicant a = h.ApplicantOf(act.Arg);
@@ -1082,6 +1176,18 @@ namespace RealLifeOverhaul.Ui
                 case PostAd: return PostTheAd(d, view);
                 case Brief: return BriefSearch(d, view);
                 case BriefCrew: return BriefCrewSearch(d, view);
+                case RaiseAll: return AskRaiseAll(d, view);
+                case MatchRivals: Settings.SetMatchRivals(!Settings.EconomyCompanyMatchRivals); return true;
+                case AssignRoles:
+                {
+                    string at = act.Arg >= 0 && act.Arg < d.FirmPlaces.Count ? d.FirmPlaces[act.Arg].File.Place : null;
+                    if (at != null)
+                    {
+                        d.SetAssign(at, !d.AssignOn(at));
+                    }
+                    return at != null;
+                }
+                case PinRole: d.SetPinned(key, !(person != null && person.File.Pinned)); return key != null;
                 case Match: d.AnswerRival(key, true); return true;
                 case LetThem: d.AnswerRival(key, false); return true;
                 case GiveRise: return key != null && d.GiveRise(key, act.Arg);

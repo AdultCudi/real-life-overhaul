@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Ui
         // the actions of this app, from 100 (the screen's own are 1 to 3)
         private const int Shortlist = 100, Offer = 101, Counter = 102, Walk = 103, Close = 104, NewAd = 105, PostAd = 107, OpenApplicant = 110, OpenPerson = 111, Interview = 112,
             Refs = 113, Background = 114, Reject = 115, Buyout = 116, Rush = 117, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134,
-            SetRole = 141, SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149;
+            SetRole = 141, SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149,
+                RaiseAll = 150, MatchRivals = 151, AssignRoles = 152, PinRole = 153;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const int RoleSlot = 1;   // the amount place a person's page keeps the role chosen to move them to in
         private static readonly int[] PayBands = { 900, 1000, 1100, 1200, 1350 };   // thousandths of the going rate an ad's top pay can be set at
@@ -128,7 +129,7 @@ namespace RealLifeOverhaul.Ui
                 _app.Tabs[0] = view.Sub == 3 ? NewAdTab(d, h, day, view) : Jobs(d, h, day);
                 _app.Tabs[1] = view.Sub == 1 ? ApplicantPage(d, h, day, view) : Applicants(d, h, day, view);
                 _app.Tabs[3] = Search(d, h, day, view);
-                _app.Tabs[4] = view.Sub == 2 ? PersonPage(d, day, view) : Team(d, day);
+                _app.Tabs[4] = view.Sub == 2 ? PersonPage(d, day, view) : Team(d, day, view);
             }
             return WorkTabPages.Build(_app, view, W);
         }
@@ -312,7 +313,7 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level),
                     Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
                     Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
-                    Cells = new[] { null, string.Empty, string.Empty, first >= 0 ? TechText.Rate(d.GoingFor(first,
+                    Cells = new[] { null, w.T("common_unknown", "Unknown"), w.T("common_unknown", "Unknown"), first >= 0 ? TechText.Rate(d.GoingFor(first,
                         ra.Level) * (10000 + ra.PayBp) / 10000) : string.Empty, w.T("reallife_work_rival_ad", "Rival ad") },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
                     Sentence = w.F("reallife_work_rival_ad_line", "{rival} hires the same line and pays {bp} over the going rate. Their applicants may take an offer before yours.", "rival", ra.Rival,

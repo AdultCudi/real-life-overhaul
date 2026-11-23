@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Giving
                 .Owns(Settings.GivingId)
                 .Data(GivingStore.Key, GivingDirector.TestKey)
                 .Test("reallife_giving_test_btn_gift", "reallife_giving_test_btn_month", "reallife_giving_test_btn_person", "reallife_giving_test_btn_lend", "reallife_giving_test_btn_ask",
-                    "reallife_giving_test_btn_back")
+                    "reallife_giving_test_btn_help", "reallife_giving_test_btn_naming", "reallife_giving_test_btn_back")
                 .Fact("giving_deduct", () => (GivingCatalogue.DeductionShare / 10f).ToString("0.#", Inv) + "%")
                 .Fact("giving_loan_parts", () => GivingCatalogue.LoanParts.ToString(Inv))
                 .Fact("giving_loan_most", () => Guide.Money(GivingCatalogue.LoanMost))
@@ -31,6 +31,11 @@ namespace RealLifeOverhaul.Giving
                 .Fact("giving_misses", () => GivingCatalogue.LoanMisses.ToString(Inv))
                 .Fact("giving_big", () => Guide.Money(GivingCatalogue.BigGift))
                 .Fact("giving_window", () => GivingCatalogue.WindowDays.ToString(Inv))
+                .Fact("giving_naming", () => Guide.Money(GivingCatalogue.NamingFrom))
+                .Fact("giving_carry", () => GivingCatalogue.CarryYears.ToString(Inv))
+                .Fact("giving_business_parts", () => GivingCatalogue.BusinessParts.ToString(Inv))
+                .Fact("giving_business_share", () => (GivingCatalogue.BusinessInterest / 10f).ToString("0.#", Inv) + "%")
+                .Fact("giving_cooldown", () => GivingCatalogue.HelpCooldownDays.ToString(Inv))
                 .ResetData(() => GivingDirector.Instance?.Forget());
         }
     }
@@ -48,6 +53,8 @@ namespace RealLifeOverhaul.Giving
                 .AddButton("reallife_giving_test_btn_person", () => GivingDirector.Instance?.TestPerson(false))
                 .AddButton("reallife_giving_test_btn_lend", () => GivingDirector.Instance?.TestPerson(true))
                 .AddButton("reallife_giving_test_btn_ask", () => GivingDirector.Instance?.TestAsk())
+                .AddButton("reallife_giving_test_btn_help", () => GivingDirector.Instance?.TestHelp())
+                .AddButton("reallife_giving_test_btn_naming", () => GivingDirector.Instance?.TestNaming())
                 .AddButton("reallife_giving_test_btn_back", () => GivingDirector.Instance?.TestBack())
                 .AddSplitter();
         }

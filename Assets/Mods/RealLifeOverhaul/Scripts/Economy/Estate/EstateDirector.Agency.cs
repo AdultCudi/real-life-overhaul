@@ -8,9 +8,17 @@ namespace RealLifeOverhaul.Economy
         private void AgencyDay(int day)
         {
             AgencyFile agency = _state.Agency;
+            if (!agency.Running)
+            {
+                AgencyGone();
+            }
             if (!agency.Running && agency.Open.Count == 0)
             {
                 return;
+            }
+            if (agency.Running)
+            {
+                BookDay(day);   // before the instructions' hours: the blocks and the buildings of his own under the agency are served first
             }
             Instruction arrived = AgencyRules.Arrive(agency, _state.Seed, day, _climate, _state.Real);
             if (arrived != null)
@@ -68,7 +76,8 @@ namespace RealLifeOverhaul.Economy
             if (On(EstatePart.Property))
             {
                 _state.Agency.Office = string.Empty;
-                _state.Agency.Capacity = _state.Agency.Negotiators = 0;
+                _state.Agency.Capacity = _state.Agency.Negotiators = _state.Agency.Skill = 0;
+                AgencyGone();
                 Changed();
             }
         }

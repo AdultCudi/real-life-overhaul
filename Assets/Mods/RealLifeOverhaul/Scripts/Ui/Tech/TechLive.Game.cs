@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < v.Others.Count; i++)
                 {
                     ViewAction a = v.Others[i];
-                    if (a.Act == StudioAct.Withdraw)
+                    if (a.Act == StudioAct.Withdraw || a.Act == StudioAct.Forget)
                     {
                         actions.Add(Button(TechText.T(a.Key), UiButtonKind.Destructive, UiAction.Count, ActRun(a, place, id)));
                     }

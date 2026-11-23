@@ -631,7 +631,7 @@ internal static partial class Program
         }
         Check(onlyGuard && MemberText(made, "public static int InSaveList(").Contains("found +=") && !Regex.IsMatch(MemberText(made, "public static int InSaveList("), @"\.(Add|Remove|Insert)\("),
             "new buildings: only the save guard (MadeGame.Save.cs) touches what the save names, and the made buildings' check only counts the save's registrations");
-        string enter = MemberText(made, "public static bool Enter(");
+        string enter = MemberText(made, "public static bool EnterLookups(");
         int reg = enter.IndexOf("registrations[address] = registration;", StringComparison.Ordinal), rec = enter.IndexOf("buildings[address] = record;", StringComparison.Ordinal);
         Check(reg > 0 && rec > reg && enter.Contains("GameContract.RegistrationLookup.Field") && enter.Contains("GameContract.BuildingLookup.Field"),
             "new buildings: a made building's registration is in the game's private lookup before its record (the game's own lookup would otherwise add one to the save)");
@@ -663,7 +663,7 @@ internal static partial class Program
         {
             destroyed.Add(m.Groups[1].Value.Trim());
         }
-        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("SceneryTrees.Destroy(look.gameObject)")
+        Check(string.Join(" ", destroyed) == "Served[i] b copy data e.Record look.gameObject own record template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("SceneryTrees.Destroy(look.gameObject)")
               && MemberText(copy, "public static void Drop(Transform template)").Contains("SceneryTrees.Destroy(template.gameObject)"),
             "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records, streets and copied services (" + string.Join(", ", destroyed) + ")");
         string unload = MemberText(made, "public static void Unload(bool cityGoes)"), drop = MemberText(made, "private static void Drop()");
@@ -732,7 +732,7 @@ internal static partial class Program
         Check(strip.Contains("MadeStreets.IsMine(save.CurrentStreetName)") && strip.Contains("save.CurrentStreetName = string.Empty;") && strip.Contains("save.LastPlayerPosition = ")
               && strip.Contains("MadeStreets.IsMine(regs[i].StreetName)") && back.Contains("save.CurrentStreetName = taken.Street;") && back.Contains("save.LastPlayerPosition = taken.Position;"),
             "new buildings: a save made inside a made building is written with no address and the player at its door outside, and the save in memory is put back as it was");
-        string makeAll = MemberText(director, "private bool MakeAll()");
+        string makeAll = MemberText(director, "private bool MakeAllSpecs()");
         Check(makeAll.IndexOf("if (!Settings.NewBuildings)", StringComparison.Ordinal) is int off && off > 0
               && off > makeAll.IndexOf("MadeBuildings.Wanted(", StringComparison.Ordinal) && makeAll.IndexOf("if (!_specs[i].Life)", StringComparison.Ordinal) > off
               && makeAll.IndexOf("_specs.RemoveAt(i);", StringComparison.Ordinal) > off
@@ -754,7 +754,7 @@ internal static partial class Program
         Check(!Regex.IsMatch(all, "\"ba:street_") && MemberText(made, "public static int AddStreets()").Contains("GameContract.StreetLookup.Field") && MemberText(made, "public static int AddStreets()").Contains("CreateInstance<StreetData>()"),
             "new buildings: no street of the game's is ever used; the mod's own are put among the game's at every load");
         Check(make.Contains("CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door, inPlay)") && make.Contains("NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred,")
-              && MemberText(director, "private bool MakeAll()").Contains("CopyGame.MeasureAll(") && MemberText(director, "private bool MakeAll()").Contains("CopyGame.MeasureOthers("),
+              && MemberText(director, "private bool MakeAllSpecs()").Contains("CopyGame.MeasureAll(") && MemberText(director, "private bool MakeAllSpecs()").Contains("CopyGame.MeasureOthers("),
             "new buildings: every lot's ground is checked at every load before a building is stood on it, and the next free lot is taken by the fixed rule");
         Check(make.Contains("NewBuildingsRules.Refusal(spec, MadeGame.StructureTakes, MadeGame.DistrictKnown, MadeGame.HomesLeftOut())") && make.Contains("MadeGame.GameHas(spec.Street, spec.Number)")
               && MemberText(made, "public static bool StructureTakes(").Contains("BuildingSizeHelper.GetAllBuildingSizes()") && MemberText(made, "public static bool StructureTakes(").Contains("!each.specialBuildingOnly")

@@ -16,10 +16,12 @@ namespace RealLifeOverhaul.Careers
         private readonly Action<int> _picked;  // told the hours the player moved the slider to, to keep for the next stint
         private int _hours;                    // where the slider stands
         private bool _offered;                 // the panel's offer is done: what it tells the slider from here is the player's
+        private readonly int _pays;            // whole money the contract pays when its last hour is worked, for the line under the slider; 0 for none
 
         /// <summary>A slider for a contract with this much left, starting where the player last left one (held to this contract's ends); picked hears each move.</summary>
-        public StintSlider(int remembered, int leftMinutes, bool slides, Action<int> picked)
+        public StintSlider(int remembered, int leftMinutes, bool slides, Action<int> picked, int pays = 0)
         {
+            _pays = pays;
             _left = leftMinutes;
             _slides = slides;
             _picked = picked;
@@ -37,6 +39,15 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The minutes the stint runs as the slider stands.</summary>
         public int Minutes => _slides ? OwnRules.StintMinutes(_hours, _left) : OwnRules.FixedMinutes(_left);
+
+        /// <summary>Minutes of the contract still to work once a stint of the hours the slider stands at is done.</summary>
+        public int LeftAfter => Math.Max(0, _left - Minutes);
+
+        /// <summary>True if a stint of the hours the slider stands at works the contract's last minute, so that its fee is paid.</summary>
+        public bool Finishes => LeftAfter == 0;
+
+        /// <summary>Whole money the contract pays on delivery, as the panel's first lines say it.</summary>
+        public int Pays => _pays;
 
         /// <summary>True if the slider is there to move: its switch is on and the contract has more than an hour to give.</summary>
         public bool Slides => _slides && Most > Least;

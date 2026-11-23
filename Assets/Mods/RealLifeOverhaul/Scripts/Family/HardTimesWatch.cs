@@ -259,7 +259,7 @@ namespace RealLifeOverhaul.Family
             g.ChildDay = Settings.FamilyChildren ? NewestChild(s) : 0;
             g.SinceDay = FamilyState.Bond == Bond.Married && s.MarriedDay > 0 ? s.MarriedDay : s.SinceDay;
             g.YearDays = GameCalendar.DaysPerYear;
-            g.MomThere = Settings.FamilyRelatives && PhoneContacts.Mom != null;
+            g.MomThere = Settings.FamilyRelatives && Settings.FamilyMomContact && PhoneContacts.Mom != null;
             g.OutingLate = OutingLate(s, day, hour);
             g.LetDownDay = m.PromiseDay;
             g.LetDowns = m.PromiseRun;
@@ -382,7 +382,7 @@ namespace RealLifeOverhaul.Family
                     }
                 }
             }
-            if (Settings.FamilyRelatives && s.MomDinnerDay == day && hour > MomDinnerFrom)
+            if (Settings.FamilyRelatives && Settings.FamilyMomContact && s.MomDinnerDay == day && hour > MomDinnerFrom)
             {
                 late = Mathf.Max(late, (hour - MomDinnerFrom) * 60);
             }

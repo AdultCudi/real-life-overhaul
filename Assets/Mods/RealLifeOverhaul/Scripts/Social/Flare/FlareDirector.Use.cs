@@ -74,6 +74,7 @@ namespace RealLifeOverhaul.Flare
                     _file.Answers.RemoveAt(0);
                 }
                 _file.Answers.Add(new FlareReviewNote { Key = p.Place, Day = p.Day, Quality = quality, Answer = p.Text, Stars = p.Arg });
+                FlareReviewBook.Answered(_file, p, quality, Now);
                 if (quality >= FlareUseRules.GoodAnswer)
                 {
                     SoftenPlace(p.Place);
@@ -149,39 +150,29 @@ namespace RealLifeOverhaul.Flare
         public FlareStarRow StarsWithPosts(string place, long now)
         {
             FlareStarRow city = StarsFor(place);
-            if (_file == null || string.IsNullOrEmpty(place))
-            {
-                return city;
-            }
-            FlareStarRow row = null;
-            for (int i = 0; i < _file.Posts.Count; i++)
-            {
-                FlarePost p = _file.Posts[i];
-                if (p.Source != FlareSource.Review || p.Author == FlareAuthor.Player || p.Place != place || p.At > now
-                    || (p.Author == FlareAuthor.Network && _file.Net.IsHidden(p.AuthorId)))
-                {
-                    continue;
-                }
-                row = row ?? CopyOf(city, place);
-                switch (FlareRules.Clamp(p.Arg, 1, 5))
-                {
-                    case 1: row.One++; break;
-                    case 2: row.Two++; break;
-                    case 3: row.Three++; break;
-                    case 4: row.Four++; break;
-                    default: row.Five++; break;
-                }
-            }
-            return row ?? city;
+            return _file == null || string.IsNullOrEmpty(place) ? city : FlareReviewBook.With(_file, city, place, now);
         }
 
-        private static FlareStarRow CopyOf(FlareStarRow from, string place)
+        private readonly List<string> _countPlaces = new List<string>(8);
+
+        // The feed's review posts of the player's businesses that have gone up are counted into the saved record before the feed lets them go:
+        // at the start, on the hour and before a day's round trims the feed.
+        private void CountReviews()
         {
-            return from == null ? new FlareStarRow { Key = place } : new FlareStarRow
+            if (_file == null || Save == null)
             {
-                Key = from.Key, One = from.One, Two = from.Two, Three = from.Three, Four = from.Four, Five = from.Five, Recent = from.Recent, Earlier = from.Earlier,
-                Eased = from.Eased, EasedStars = from.EasedStars, Raised = from.Raised, RaisedStars = from.RaisedStars
-            };
+                return;
+            }
+            _countPlaces.Clear();
+            List<BuildingRegistration> mine = FlareGame.Businesses();
+            for (int i = 0; i < mine.Count; i++)
+            {
+                _countPlaces.Add(FlareGame.Place(mine[i]));
+            }
+            if (_countPlaces.Count > 0)
+            {
+                FlareReviewBook.Count(_file, Now, _countPlaces);
+            }
         }
 
         /// <summary>Demand, per cent, for the kind a live trend or the newest placed post is about. Not a function of how many posts there are.</summary>

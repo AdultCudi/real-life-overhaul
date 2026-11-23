@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly string[] WhyKeys = Keys(P + "_mkt_why_", "none", "closed", "held", "behind", "no_shares", "no_money", "too_large", "holding_limit", "not_listed",
             "no_borrow", "no_margin", "below_margin", "bad_price", "too_many", "halted", "expired", "cancelled", "company_gone", "forced", "nothing_held", "stop_side", "profit_side",
-            "switched");
+            "switched", "locked");
 
         private static string[] Keys(string prefix, params string[] names)
         {

@@ -304,7 +304,7 @@ internal static partial class UiSamples
                 t.Amounts.Add(new WorkAmount { Id = 0, Value = offerValue, Min = 10, Max = 120, Figure = w.F("reallife_work_offer_figure", "{pay} an hour", "pay", "$" + offerValue) });
             }
             r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
-            r.Acts.Add(WkAct(101, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + offerValue), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
+            r.Acts.Add(WkAct(101, w.F("reallife_work_hire_at", "Offer {pay} an hour", "pay", "$" + offerValue), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
             r.Acts.Add(WkAct(100, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, null, false, r.Id));
             t.Rows.Add(r);
         }

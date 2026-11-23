@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Careers
         Office = 1,     // an office: the employer's own business, or for one of the city's tech companies an office building it is given
         Hospital = 2,   // the city's hospitals and clinics: any of them
         School = 3,     // the city's school
-        CityHall = 4    // the council's offices: the city's tax office building
+        CityHall = 4,   // the council's offices: the city's tax office building
+        Precinct = 5    // a police station of the mod's (Law): the city's precincts, one a district
     }
 
     /// <summary>Who employs the player: the saved number of <see cref="Opening.Kind"/> and <see cref="Job.Kind"/>.</summary>
@@ -139,7 +140,7 @@ namespace RealLifeOverhaul.Careers
 
         public const int Developer = 0, DataPro = 1, SecurityPro = 2, Designer = 3, Accountant = 4, Lawyer = 5, Architect = 6, CivilEngineer = 7, Nurse = 8, Teacher = 9,
             Marketer = 10, Banker = 11, Manager = 12, CouncilOfficer = 13, Electrician = 14, Plumber = 15, Carpenter = 16, Chef = 17, Stylist = 18, ItSupport = 19, Sales = 20,
-            HumanResources = 21, BarStaff = 22, SecurityGuard = 23, Warehouse = 24, Count = 25;
+            HumanResources = 21, BarStaff = 22, SecurityGuard = 23, Warehouse = 24, Police = 25, Count = 26;
 
         private static int[] Q(params int[] courses) => courses;
 
@@ -304,7 +305,16 @@ namespace RealLifeOverhaul.Careers
             new Profession(Warehouse, "warehouse", -1, Skills.Handling, TalentCatalogue.Delivery, new[] { "warehouse", "wholesale", "importexport", "factory" }, Workplace.Business, false, Weekdays, 6, 8,
                 new ProRank(-1, TalentCatalogue.Junior, 70, 10, 0, Q(StudyCatalogue.Forklift)),
                 new ProRank(-1, TalentCatalogue.Mid, 95, 30, 45),
-                new ProRank(-1, TalentCatalogue.Senior, 140, 45, 90))
+                new ProRank(-1, TalentCatalogue.Senior, 140, 45, 90)),
+            // A public service on the nurses' scale: the cadet's diploma is the academy's, so the cadet starts at 80, the pay of every rung after a
+            // diploma (a nurse's 70 is for a care worker's course plus first aid), and climbs as the nurse's does. The week is Tuesday to
+            // Saturday on the afternoon shift (Careers/Police): the city has most to answer then, and its patrol is the work, not a desk.
+            new Profession(Police, "police", -1, Skills.Guarding, TalentCatalogue.Relationships, null, Workplace.Precinct, false, Tue | Wed | Thu | Fri | Sat, PoliceRules.Hour, PoliceRules.Hours,
+                new ProRank(-1, TalentCatalogue.Junior, 80, 10, 0, Q(StudyCatalogue.PoliceAcademy)),
+                new ProRank(-1, TalentCatalogue.Junior, 120, 30, 30),
+                new ProRank(-1, TalentCatalogue.Mid, 170, 46, 90),
+                new ProRank(-1, TalentCatalogue.Senior, 220, 60, 120),
+                new ProRank(-1, TalentCatalogue.Principal, 290, 72, 150, null, -1, true))
         };
 
         public const string HospitalType = "ba:businesstype_hospital", ClinicType = "ba:businesstype_clinic", SchoolType = "ba:businesstype_school", CityHallType = "ba:businesstype_irs";

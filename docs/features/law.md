@@ -137,6 +137,8 @@ A police report after a break-in or a car break-in in the last seven days (15; r
 Law.Bridges.Licensing = () => ...;                    // the desk then offers "Apply for a licence or permit"
 Law.Bridges.LicensingLabelKey = "...";                // optional: its button's text
 Law.Bridges.PoliceReport = (kind, reference) => ...;  // kind: Bridges.BreakIn / CarBreakIn / Accident
+Law.Bridges.Duty = () => ...;                         // the desk then offers the police career's "Go on patrol" / "End your shift" (an officer only)
+Law.Bridges.DutyPress = () => ...;                    // its button: begins or ends the patrol; the line to say if it could not, else null
 Law.Bridges.NoteIncident(Law.Bridges.Accident);       // something a report can be asked for has happened
 Law.LawDirector.Inside                                // the precinct the player is standing in, or null
 ```

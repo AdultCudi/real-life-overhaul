@@ -223,7 +223,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("cooking cook food kitchen exercise gym run diet"),
                 S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
                     .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
-                S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
+                S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "lamp_haze", "character_skin", "character_lighting")
                     .Also("appearance beard face"),
                 S("outfit_m").Guide("character").Opts("look2_top_m", "look2_top_m_colour", "look2_legs_m", "look2_legs_m_colour", "look_feet_m")
                     .Also("clothes wardrobe wear shirt"),
@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Meta
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
                     .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
-                    "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
+                    "family_year_weeks").FreeOpts("family_mom_contact").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
@@ -349,15 +349,15 @@ namespace RealLifeOverhaul.Meta
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
-                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds")
-                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till"),
+                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds", "gig_music").Opt("gig_music_order", "gig_music").Buttons("reallife_gig_music_folder")
+                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till busking busker music own songs mp3 folder"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("sidejobs").For("side_jobs").Opt("side_jobs", "jobs")
                     .Also("taxi cab driver delivery parcel parcels courier food own car vehicle shift desk depot dispatch office fare fares meter tips"),
                 S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
                     .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
                     .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
-                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
+                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start", "careers_skill_fade")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")
                     .Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
@@ -412,7 +412,7 @@ namespace RealLifeOverhaul.Meta
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff")
-                    .Opt("economy_company_agree_up_to", "economy_company_staff")
+                    .Opt("economy_company_agree_up_to", "economy_company_staff").Opt("economy_company_match_rivals", "economy_company_staff")
                     .Opts("economy_company_cover", "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
                     .Also("shop wages insurance advertising accountant permits")
                     .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "
@@ -454,8 +454,8 @@ namespace RealLifeOverhaul.Meta
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
-                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first")
-                    .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
+                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first", "rivals_holdings")
+                    .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game buildings property ranking fortune"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Opt("tech_seat_hires", "tech_people")
                     .Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach desk seat shift schedule hire"),
@@ -490,6 +490,8 @@ namespace RealLifeOverhaul.Meta
                 S("parkspaces").For("parking_spaces").Opt("parking_spaces", "economy_estate").Also("parking space spaces car park garage underground buy bay spot hourly charge"),
                 S("carsupply").For("economy_dealer_supply").Opt("economy_dealer_supply", "economy_dealer")
                     .Also("supplier suppliers wholesaler importer car showroom dealership delivery order standing order manager stock"),
+                S("estateflats").For("economy_estate_flats").Opt("economy_estate_flats", "economy_estate")
+                    .Also("flat flats studio studios apartment apartments home buy own mortgage deposit lease service charge landlord let tenant first home affordable cheap"),
                 S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")
                     .Also("landlord tenants satisfaction repairs repair maintenance complaints inspection inspector fine arrears payment plan reminder eviction letting agent property manager flip"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
@@ -510,11 +512,11 @@ namespace RealLifeOverhaul.Meta
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
                     "reallife_keys_free_cursor", "reallife_keys_look_behind", "reallife_keys_gentle_throttle", "reallife_keys_photo_mode",
-                    "reallife_keys_walk", "reallife_keys_phone")
+                    "reallife_keys_phone", "reallife_keys_driver")
                     .Also("key bindings shortcuts hotkeys rebind keyboard"),
                 S("mouse").Guide("camera").Opt("camera_mouselook", "camera_enabled").Opt("camera_sensitivity", "camera_mouselook").Opts("enter_with_key")
                     .Also("input look cursor"),
-                S("onfoot").For("walking").Opts("walk_toggle").Also("walk walking run running pace slow stroll speed sprint toggle")),
+                S("onfoot").For("walking").Opts("walk_toggle").Buttons("reallife_keys_walk").Also("walk walking run running pace slow stroll speed sprint toggle")),
 
             G("performance",
                 S("speed").For("performance").Opts("perf_refraction", "perf_sky_updates", "perf_stale_lights", "perf_far_districts", "perf_view_radius",

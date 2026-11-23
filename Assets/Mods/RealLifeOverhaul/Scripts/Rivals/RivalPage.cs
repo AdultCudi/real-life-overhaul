@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.Rivals;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
@@ -14,9 +15,9 @@ namespace RealLifeOverhaul.Rivals
     /// </summary>
     public static class RivalPage
     {
-        public const int KindList = 0, KindMove = 1, KindAnswer = 2;
+        public const int KindList = 0, KindMove = 1, KindAnswer = 2, KindProperty = 3;
 
-        public static readonly string[] Kinds = { "reallife_rival_kind_list", "reallife_rival_kind_move", "reallife_rival_kind_answer" };
+        public static readonly string[] Kinds = { "reallife_rival_kind_list", "reallife_rival_kind_move", "reallife_rival_kind_answer", "reallife_rival_kind_property" };
 
         private const string GuideTitle = "reallife_meta_title_rivals";   // the Guide's page every page of the rivals points to at its foot
 
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul.Rivals
             .Empty("reallife_rival_empty");
 
         private static readonly List<RichRow> Rows = new List<RichRow>(RivalCatalogue.RichListSize);
+        private static readonly List<RivalFortuneRow> Fortunes = new List<RivalFortuneRow>(24);
 
         /// <summary>True while the option is on and the rivals run.</summary>
         public static bool On()
@@ -97,6 +99,7 @@ namespace RealLifeOverhaul.Rivals
                     t.Tones[3] = (byte)(r.Worth > r.WeekAgo ? TableRow.Green : TableRow.Red);
                 }
             }
+            WriteProperty(row);
             kind = RivalText.T(Kinds[KindMove]);
             for (int i = f.Moves.Count - 1; i >= 0; i--)
             {
@@ -127,6 +130,31 @@ namespace RealLifeOverhaul.Rivals
                 t.Set(2, RivalText.Money(c.Cost), c.Cost);
                 t.Set(3, RivalText.Fill("reallife_rival_day", "day", c.Day.ToString()), c.Day);
                 t.Set(4, string.Empty);
+            }
+        }
+
+        // The game's own rivals with their fortune by the one rule (RivalFortuneRules), in the order of the game's Rivals app: what they own is in the figure, beside the takings the game ranks by.
+        private static void WriteProperty(Func<string, TableRow> row)
+        {
+            if (!RivalsHelper.IsFeatureEnabled)
+            {
+                return;
+            }
+            string kind = RivalText.T(Kinds[KindProperty]);
+            int day = RivalGame.Day;
+            int n = RivalFortuneGame.Read(Fortunes, day);
+            for (int i = 0; i < n; i++)
+            {
+                RivalFortuneRow r = Fortunes[i];
+                TableRow t = row("rival:" + r.Id);
+                t.Kind = KindProperty;
+                t.Pick = false;
+                t.Set(0, RivalText.Fill("reallife_rival_rank_name", "rank", (i + 1).ToString(), "name", r.Name));
+                t.Set(1, kind);
+                t.Set(2, RivalText.Money(r.Fortune.Worth), r.Fortune.Worth);
+                t.Set(3, string.Empty);
+                t.Set(4, RivalText.Fill("reallife_rival_property_note", "count", r.Fortune.Buildings.ToString(), "value", RivalText.Money(r.Fortune.Property),
+                    "rent", RivalText.Money(r.Fortune.RentWeek), "trade", RivalText.Money(r.Fortune.Trade)));
             }
         }
 
@@ -233,6 +261,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(seen);
             }
+            string head = RivalBridges.HeadLine != null ? RivalBridges.HeadLine(who) : null;
+            if (!string.IsNullOrEmpty(head))
+            {
+                box.Row("reallife_rival_label_head", head);
+            }
             string family = RivalBridges.DynastyLine != null ? RivalBridges.DynastyLine(who) : null;
             if (!string.IsNullOrEmpty(family))
             {
@@ -270,7 +303,7 @@ namespace RealLifeOverhaul.Rivals
                 UnityEngine.Transform rowOf = k < 3 ? first ?? (first = box.ButtonRow()) : second ?? (second = box.ButtonRow());
                 InfoBox.Button(rowOf, k % 3, RivalCatalogue.CounterNames[k], () => Ask(director, who, kind, picked, pick));
             }
-            Foot(box, pick, back, d.StockId);
+            Foot(box, pick, back, d.StockId, !string.IsNullOrEmpty(head) ? who : -1);
             return true;
         }
 
@@ -298,9 +331,13 @@ namespace RealLifeOverhaul.Rivals
         }
 
         // The foot of a tycoon's page: their holding in the Stocks app, closing it and going back, and the Guide's page.
-        private static void Foot(InfoBox box, Action<string> pick, Action back, int? stock)
+        private static void Foot(InfoBox box, Action<string> pick, Action back, int? stock, int head = -1)
         {
             UnityEngine.Transform buttons = box.ButtonRow();
+            if (head >= 0 && RivalBridges.ShowHead != null)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_career_button_map", () => RivalBridges.ShowHead?.Invoke(head));   // their head office, as the Careers pages' button shows a place
+            }
             if (stock.HasValue && RivalBridges.OpenStock != null)
             {
                 int id = stock.Value;

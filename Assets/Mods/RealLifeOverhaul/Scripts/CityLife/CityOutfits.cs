@@ -5,7 +5,7 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>What somebody in the living city wears. Civilians are dressed at random; the rest wear work clothes.</summary>
-    public enum CityLook { Civilian, RoadWorker, Sweeper, Cleaner, Vendor, Canvasser, Courier, Postie, Painter, Gardener, Doorman }
+    public enum CityLook { Civilian, RoadWorker, Sweeper, Cleaner, Vendor, Canvasser, Courier, Postie, Painter, Gardener, Doorman, Officer }
 
     /// <summary>
     /// Work clothes for the living city, made as People/Uniforms makes the officers': the game has no work wear, so each
@@ -157,6 +157,19 @@ namespace RealLifeOverhaul
             new Garment(AppearanceElementType.HeadAccessory, Nothing)
         };
 
+        // The officers' uniform of People/Uniforms, so that the player on a police shift (Careers/Police) wears what the city's officers do: same garments, same navy.
+        private static readonly Color OfficerNavy = new Color(0.050f, 0.075f, 0.180f);
+        private static readonly Color OfficerNavyDark = new Color(0.030f, 0.040f, 0.095f);
+        private static readonly Color OfficerBoot = new Color(0.020f, 0.020f, 0.020f);
+
+        private static readonly Garment[] Officer =
+        {
+            new Garment(AppearanceElementType.Torso, "UniformShirt", OfficerNavy, OfficerNavy, OfficerNavyDark),
+            new Garment(AppearanceElementType.Legs, "SuitPants", OfficerNavyDark, OfficerNavyDark, OfficerNavyDark),
+            new Garment(AppearanceElementType.Feet, "Boots", Black, OfficerBoot, Black),
+            new Garment(AppearanceElementType.HeadAccessory, "Hat", OfficerNavy, OfficerNavy, OfficerNavyDark)
+        };
+
         private static readonly Garment[] Doorman =
         {
             new Garment(AppearanceElementType.Torso, "UniformShirt", Black, Black, Charcoal),
@@ -177,7 +190,7 @@ namespace RealLifeOverhaul
         {
             Garment[] outfit = look == CityLook.RoadWorker ? RoadWorker : look == CityLook.Sweeper ? Sweeper : look == CityLook.Cleaner ? Cleaner
                 : look == CityLook.Vendor ? Vendor : look == CityLook.Canvasser ? Canvasser : look == CityLook.Courier ? Courier : look == CityLook.Postie ? Postie
-                : look == CityLook.Painter ? Painter : look == CityLook.Gardener ? Gardener : look == CityLook.Doorman ? Doorman : null;
+                : look == CityLook.Painter ? Painter : look == CityLook.Gardener ? Gardener : look == CityLook.Doorman ? Doorman : look == CityLook.Officer ? Officer : null;
             if (outfit == null)
             {
                 return;

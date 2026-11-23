@@ -664,6 +664,22 @@ namespace RealLifeOverhaul.Ui
             return c.X >= panel.X - Tolerance && c.X + c.W <= panel.X + panel.W + Tolerance && c.Y >= panel.Y - Tolerance && c.Y + c.H <= panel.Y + panel.H + Tolerance;
         }
 
+        /// <summary>Drawn words with a full stop and a comma side by side, or two full stops: two texts joined with a list's comma ("renewing by itself., To pay: $150.").</summary>
+        public static int Doubled(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind == UiKind.Text && UiTextRules.DoubledMark(it.Text))
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" holds a doubled mark");
+                }
+            }
+            return found;
+        }
+
         /// <summary>Texts that are a record's key rather than words (UiPlaces.IsKey), as "ba:street_fifthavenue|70" stood in beta 3's table.</summary>
         public static int RawKeys(UiScene s, Action<string> say)
         {

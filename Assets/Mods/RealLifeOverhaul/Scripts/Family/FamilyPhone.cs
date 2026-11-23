@@ -364,10 +364,18 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>The "Someone special" contact's call: meeting somebody, or what can be said to the partner.</summary>
-    public sealed class PartnerDialog : Dialog
+    public sealed class PartnerDialog : Dialog, ITalkAge
     {
+        private readonly string _who, _age;
+
+        public string TalkWho => _who;
+
+        public string TalkAge => _age;
+
         public PartnerDialog()
         {
+            FamilyTalk.PartnerHead(out _who, out _age);
+            using var head = TalkAgeGame.Making(this);   // the first page is headed with their age too
             npcNameKey = FamilyPhone.PartnerId;
             DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(FamilyPageDialog.Guard(FamilyPhone.PartnerFirst)));
         }

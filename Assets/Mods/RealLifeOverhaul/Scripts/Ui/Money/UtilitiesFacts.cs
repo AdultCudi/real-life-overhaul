@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
         public int LastBill, LastBillDay;
         public int Deposit, DepositLeft;
         public UtilityOffer Offer;
+        public bool Picked;             // picked to be paid together with others (only an account that owes can be)
         public int ApplyCost;           // what applying costs now, money
         public int ApplyDeposit, ApplyFee;
     }
@@ -66,6 +67,9 @@ namespace RealLifeOverhaul.Ui
         public string District;
         public bool Grace;              // inside the internet's grace period
         public bool Owes;               // a bill is owed on the connection
+        public bool LineSite;           // a data centre: leased lines are sold here
+        public bool HasLine;            // a leased line is ordered here, running or being installed
+        public string LineText;         // what it is and when it goes live, or null
         public UtilityOptionFact[] Options = new UtilityOptionFact[0];
     }
 
@@ -82,6 +86,11 @@ namespace RealLifeOverhaul.Ui
         public bool Own;                // the player's own company: free, no contract
         public bool Current;            // the plan the place has now
         public string Speed;            // what that speed means for the work there, or null
+        public bool Leased;             // a carrier's leased line for a data centre, bought beside the plan
+        public int InstallFee;          // a leased line's installation, money
+        public int InstallDays;         // ...and the days it takes
+        public int Racks, GpuRacks;     // ...and the standard racks or the AI racks it carries
+        public string Note;             // ...and what the district has (fibre, cable, nothing), or null
     }
 
     /// <summary>One district of the broadband company's market.</summary>
@@ -169,7 +178,7 @@ namespace RealLifeOverhaul.Ui
         Apply,              // a: the account
         Debit,              // a: the account, b: 1 on, 0 off
         Buy,                // a: the place, b: the provider, c: the plan, d: 1 on a contract
-        Cancel,             // a: the place
+        Cancel,             // a: the place, b: 1 to give up only the leased line
         Reconnect,          // a: the place
         Found,
         Dig,                // a: the district
@@ -177,7 +186,10 @@ namespace RealLifeOverhaul.Ui
         Prices,             // a: thousandths of the usual
         Maintenance,        // a: thousandths of the usual
         Marketing,          // a: the budget's index
-        Sell
+        Sell,
+        Pick,               // a: the account, b: 1 pick it, 0 leave it; b 2: pick every account that owes, b 3: leave every one
+        PayAll,             // pay what is owed everywhere, after the game's question
+        PayPicked           // pay the picked accounts' bills, after the game's question
     }
 
     /// <summary>Reads the facts from the save and carries the player's acts to the features that own them. The game sets it; a check stands one in.</summary>

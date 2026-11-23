@@ -131,6 +131,7 @@
         public const string CharacterLightingId = "character_lighting";
         public const string CharacterNewLooksId = "character_new_looks";
         public const string CharacterSkinId = "character_skin";
+        public const string LampHazeId = "lamp_haze";
         public const string CrimeAgainstPlayerId = "crime_against_player";
         public const string OffenceRedLightId = "offence_red_light";
         public const string OffenceSpeedingId = "offence_speeding";
@@ -160,6 +161,8 @@
         public const string JobPayId = "job_pay";
         public const string JobTaxiEasyId = "job_taxi_easy";
         public const string JobCartSoundsId = "job_cart_sounds";
+        public const string GigMusicId = "gig_music";
+        public const string GigMusicOrderId = "gig_music_order";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
         public const string UtilitiesNetSpeedId = "utilities_net_speed";
@@ -173,6 +176,7 @@
         public const string FamilyExpectId = "family_expect";
         public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
         public const string FamilyYearWeeksId = "family_year_weeks";
+        public const string FamilyMomContactId = "family_mom_contact";
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
         public const string CivicConstructionId = "civic_construction";
@@ -220,6 +224,7 @@
         public const string EconomyCompanyLevelId = "economy_company_level";
         public const string EconomyCompanyStaffId = "economy_company_staff";
         public const string EconomyCompanyAgreeUpToId = "economy_company_agree_up_to";   // ...a request for a raise of this share of the pay or less is agreed by itself
+        public const string EconomyCompanyMatchRivalsId = "economy_company_match_rivals";   // ...a rival's offer to staff or a professional is matched by itself up to the same limit
         public const string EconomyCompanyCoverId = "economy_company_cover";
         public const string EconomyCompanyMarketingId = "economy_company_marketing";
         public const string EconomyCompanyTaxId = "economy_company_tax";
@@ -233,6 +238,7 @@
         public const string EstateHireId = "economy_estate_hire";
         public const string EstateRentId = "economy_estate_rent";
         public const string EstateDutiesId = "economy_estate_duties";
+        public const string EstateFlatsId = "economy_estate_flats";
         public const string EconomyOnlineId = "economy_online";
         public const string EconomyOnlineWaitNotesId = "economy_online_wait_notes";
         public const string TechPeopleId = "tech_people";
@@ -381,6 +387,7 @@
         public const string RivalsId = "rivals";
         public const string RivalsStrengthId = "rivals_strength";
         public const string RivalsFirstId = "rivals_first";
+        public const string RivalsHoldingsId = "rivals_holdings";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -402,6 +409,7 @@
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
         public const string CareersClassStartId = "careers_class_start";
+        public const string CareersSkillFadeId = "careers_skill_fade";
         public const string CareersRejectReasonId = "careers_reject_reason";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
@@ -562,6 +570,7 @@
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
+        public static bool LampHaze = true;              // the glow cone and the volumetric scatter of the game's street lamps (off: the light only)
         public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
         public static bool OffenceRedLight = true;       // running a red light can get the player pulled over
@@ -587,6 +596,8 @@
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool JobCartSounds = true;         // the drinks cart heard: a customer's voice at the counter, a reminder, the till (VendorJob.Sounds); off, the cart is silent as before
+        public static bool GigMusic = false;             // the player's own music files play in gigs in place of the game's sound (GigMusic); off, gigs sound as before
+        public static int GigMusicOrder = 0;             // ...0 in order by file name, 1 shuffled by the save's seed
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power, water and internet bills and plans, the utilities office and the Utilities app
         public static bool UtilitiesNetSpeed = true;     // ...a connection's speed sets how fast tech firms work and how many orders a shop takes; off, only having one counts
@@ -600,6 +611,7 @@
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
         public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
+        public static bool FamilyMomContact = true;      // Mom gets in touch by herself: texts, calls, visits, introductions (off: she is only ever called), and at most one such contact a day
         public static bool Civic = true;                 // civic life: a city government and a construction programme
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
         public static bool CivicConstruction = true;     // construction sites that progress over days
@@ -647,6 +659,7 @@
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompanyStaff = true;   // ...the wage market, raises, rivals' offers, strikes, overtime and sick pay
         public static int EconomyCompanyAgreeUpTo = 0;   // ...a request for a raise of this many per cent of the pay or less is agreed by itself each morning; 0 is off
+        public static bool EconomyCompanyMatchRivals = false;   // a rival's offer to staff or a professional is matched at once, up to the agree limit, with one notice a day
         public static bool EconomyCompanyCover = true;   // ...business insurance: policies, premiums and claims
         public static bool EconomyCompanyMarketing = true;   // ...campaigns and their reports
         public static bool EconomyCompanyTax = true;     // ...the quarterly return and the accountant
@@ -659,6 +672,8 @@
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
         public static bool EstateHire = true;            // car hire (off: no car goes out, and one that is out is called back)
+        // single flats and studios of residential buildings to buy as a home (off: none is listed, bought, let or billed; one held stays the player's home at its last value)
+        public static bool EstateFlats = true;
         public static bool EstateDuties = true;          // a landlord's duties: satisfaction, repair calls, inspections, managers (off: letting as before)
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
@@ -827,6 +842,7 @@
         public static bool Rivals = true;                // rival tycoons (off: they stand still and do nothing; the save keeps them)
         public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless
         public static int RivalsFirst = 0;               // the worth the first rival comes forward at, a step of RivalCatalogue.FirstFromSteps: 0 is 5 million, as before, up to 4, 50 million
+        public static int RivalsHoldings = 1;            // rivals' buildings by their place in the ranking: 0 as the game deals them, 1 new games (the default), 2 every game, gently
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks
@@ -845,6 +861,7 @@
         public static bool CareersLife = true;           // working life in a profession (off: a job is its days and pay alone)
         public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type
         public static bool CareersClassStart = true;     // "your class starts now" at a class's hour while the player is not inside the place that holds it, once a class
+        public static bool CareersSkillFade = true;      // a skill left unused for weeks fades a little each day (off: nothing fades, and fading starts again from the day it is switched on)
         public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
@@ -882,6 +899,17 @@
         public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
         private static string _modId;
+
+        /// <summary>Sets "Match rivals' offers automatically" from the Open Roles page and saves it, so the options screen stays in step.</summary>
+        public static void SetMatchRivals(bool on)
+        {
+            EconomyCompanyMatchRivals = on;
+            if (_modId != null)
+            {
+                UnityEngine.PlayerPrefs.SetInt(Key(_modId, EconomyCompanyMatchRivalsId), on ? 1 : 0);
+                UnityEngine.PlayerPrefs.Save();
+            }
+        }
 
         /// <summary>Flips the third-person camera on or off and saves it, so the options screen stays in step.</summary>
         public static void ToggleCamera()
@@ -1043,6 +1071,7 @@
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);
             CharacterNewLooks = Bool(modId, CharacterNewLooksId, CharacterNewLooks);
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
+            LampHaze = Bool(modId, LampHazeId, LampHaze);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
             MoveOffences(modId);   // before the eight are read: the older single switch becomes their own saved values
@@ -1067,6 +1096,8 @@
             JobPay = Int(modId, JobPayId, JobPay);
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             JobCartSounds = Bool(modId, JobCartSoundsId, JobCartSounds);
+            GigMusic = Bool(modId, GigMusicId, GigMusic);
+            GigMusicOrder = Int(modId, GigMusicOrderId, GigMusicOrder);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
             UtilitiesNetSpeed = Bool(modId, UtilitiesNetSpeedId, UtilitiesNetSpeed);
@@ -1080,6 +1111,7 @@
             FamilyExpect = Bool(modId, FamilyExpectId, FamilyExpect);
             FamilyInterest = Int(modId, FamilyInterestId, FamilyInterest);
             FamilyYearWeeks = Int(modId, FamilyYearWeeksId, FamilyYearWeeks);
+            FamilyMomContact = Bool(modId, FamilyMomContactId, FamilyMomContact);
             Civic = Bool(modId, CivicId, Civic);
             CivicElections = Bool(modId, CivicElectionsId, CivicElections);
             CivicConstruction = Bool(modId, CivicConstructionId, CivicConstruction);
@@ -1127,6 +1159,7 @@
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
             EconomyCompanyStaff = Bool(modId, EconomyCompanyStaffId, EconomyCompanyStaff);
             EconomyCompanyAgreeUpTo = Int(modId, EconomyCompanyAgreeUpToId, EconomyCompanyAgreeUpTo);
+            EconomyCompanyMatchRivals = Bool(modId, EconomyCompanyMatchRivalsId, EconomyCompanyMatchRivals);
             EconomyCompanyCover = Bool(modId, EconomyCompanyCoverId, EconomyCompanyCover);
             EconomyCompanyMarketing = Bool(modId, EconomyCompanyMarketingId, EconomyCompanyMarketing);
             EconomyCompanyTax = Bool(modId, EconomyCompanyTaxId, EconomyCompanyTax);
@@ -1140,6 +1173,7 @@
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EstateRent = Int(modId, EstateRentId, EstateRent);
             EstateDuties = Bool(modId, EstateDutiesId, EstateDuties);
+            EstateFlats = Bool(modId, EstateFlatsId, EstateFlats);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
             EconomyOnlineWaitNotes = Bool(modId, EconomyOnlineWaitNotesId, EconomyOnlineWaitNotes);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
@@ -1292,6 +1326,7 @@
             Rivals = Bool(modId, RivalsId, Rivals);
             RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
             RivalsFirst = Int(modId, RivalsFirstId, RivalsFirst);
+            RivalsHoldings = Int(modId, RivalsHoldingsId, RivalsHoldings);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);
@@ -1313,6 +1348,7 @@
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);
+            CareersSkillFade = Bool(modId, CareersSkillFadeId, CareersSkillFade);
             CareersRejectReason = Bool(modId, CareersRejectReasonId, CareersRejectReason);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);

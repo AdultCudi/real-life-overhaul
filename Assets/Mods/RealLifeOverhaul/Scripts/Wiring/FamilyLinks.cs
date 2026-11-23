@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
                 FamilyBridges.Social = new SocialForFamily();
                 FamilyBridges.Home = new HomeForFamily();
                 FamilyBridges.Law = new LawForFamily();
+                TalkAgeGame.Partner = PartnerAgeWords;
                 SocialLinks.PartnerChanged = TellFamily;
                 SocialPerson.FreeOf = (p, hour, weekend) => p != null && PeopleOn && p == SocialState.Partner ? FamilyApi.PartnerFree(hour, weekend) : null;
                 SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
@@ -40,10 +41,14 @@ namespace RealLifeOverhaul
                 HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
                 PhoneContacts.MomsDinner = () => FamilyApi.MomsDinner;   // Mom's own call offers today's dinner at hers
                 PhoneContacts.GoToMoms = FamilyApi.GoToMoms;
+                // Giving's Help with money: a car for the partner, the family's own conversation.
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarCan = p => p != null && PeopleOn && p == SocialState.Partner && RealLifeOverhaul.Family.PartnerCar.CanGift;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarOffer = RealLifeOverhaul.Family.PartnerCar.Offer;
             }
 
             internal static void Disconnect()
             {
+                TalkAgeGame.Partner = null;
                 SocialLinks.PartnerChanged = null;
                 SocialPerson.FreeOf = null;
                 SocialPhone.HasFamilyMatters = null;
@@ -54,6 +59,8 @@ namespace RealLifeOverhaul
                 HomeFridgeButton.FamilyClicked = null;
                 PhoneContacts.MomsDinner = null;
                 PhoneContacts.GoToMoms = null;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarCan = null;
+                RealLifeOverhaul.Giving.GivingTalk.PartnerCarOffer = null;
                 FamilyBridges.Reset();
             }
 
@@ -87,6 +94,21 @@ namespace RealLifeOverhaul
             }
 
             private static bool PeopleOn => SocialState.Loaded && Settings.Social;
+
+            // The partner's age as People shows it, for the header of a talk with them.
+            private static string PartnerAgeWords()
+            {
+                try
+                {
+                    SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                    return p != null && p.Met ? SocialTalk.AgeWords(p) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("FamilyLinks.PartnerAgeWords", e);
+                    return null;
+                }
+            }
 
             private static PersonInfo Info(SocialPerson p)
             {

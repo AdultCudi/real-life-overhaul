@@ -397,16 +397,36 @@ namespace RealLifeOverhaul.Markets
         {
             string sector = MarketText.Sector(k.Sector), day = ListingSector.NextReview(s.Day, s.YearDays).ToString();
             int n = ListingSector.Top(k.Own, TopSectors, TopBps);
-            if (n == 0)
+            string line = n == 0 ? MarketText.Fill("reallife_lst_box_sector_plain", "sector", sector, "day", day)
+                : MarketText.Fill("reallife_lst_box_sector", "sector", sector, "mix", Shares(n), "day", day);
+            return line + " " + SeenLine(k, sector);
+        }
+
+        // What the last review saw (each sector's share of the takings) and what a change of sector needs, so a company that is not moving can see why.
+        private static string SeenLine(Stock k, string sector)
+        {
+            string need = ((int)Math.Round(ListingSector.LeadShare * 100.0)).ToString();
+            int seen = ListingSector.SeenTop(k.Own, TopSectors, TopBps);
+            if (seen == 0)
             {
-                return MarketText.Fill("reallife_lst_box_sector_plain", "sector", sector, "day", day);
+                return MarketText.Fill("reallife_lst_box_seen_none", "sector", sector, "need", need);
             }
+            string line = MarketText.Fill("reallife_lst_box_seen", "day", k.Own.SeenDay.ToString(), "seen", Shares(seen), "sector", sector, "need", need);
+            if (ListingSector.SeenShort(k.Own, (int)k.Sector, out int leader, out int gap))
+            {
+                line += " " + MarketText.Fill("reallife_lst_box_seen_short", "leader", MarketText.Sector((MarketSector)leader), "gap", (gap / 100).ToString(), "need", need);
+            }
+            return line;
+        }
+
+        private static string Shares(int n)
+        {
             var mix = new System.Text.StringBuilder(64);
             for (int i = 0; i < n; i++)
             {
                 mix.Append(i > 0 ? ", " : string.Empty).Append(MarketText.Sector((MarketSector)TopSectors[i])).Append(' ').Append(MarketText.Percent(TopBps[i]));
             }
-            return MarketText.Fill("reallife_lst_box_sector", "sector", sector, "mix", mix.ToString(), "day", day);
+            return mix.ToString();
         }
 
         // What is coming: the dividend proposed, the results, the closed time, the lock-up, the yearly meeting.

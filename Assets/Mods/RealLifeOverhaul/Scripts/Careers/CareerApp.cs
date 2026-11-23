@@ -432,7 +432,7 @@ namespace RealLifeOverhaul.Careers
             Transform buttons = box.ButtonRow();
             if (canStart)
             {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_work", () => Do(_director.StartWorkDay));
+                InfoBox.Button(buttons, InfoBox.Positive, _director.StartButtonKey(j), () => Do(_director.StartWorkDay));
             }
             MapButton(buttons, _director.ShowWork);
             JobButtons(buttons, j, day);

@@ -90,7 +90,8 @@ namespace RealLifeOverhaul.Markets
                 BotFirm f = MarketBots.Firm(h.Firm);
                 return name + InvestText.Mark(f != null ? f.Name : string.Empty);
             }
-            return name + test + (h.Reinvest > 0 ? InvestText.Mark(MarketText.Fill("reallife_mkt_inv_mark_back", "pct", h.Reinvest.ToString())) : string.Empty);
+            return name + test + (h.Reinvest > 0 ? InvestText.Mark(MarketText.Fill("reallife_mkt_inv_mark_back", "pct", h.Reinvest.ToString())) : string.Empty)
+                + (h.Locked > 0 ? InvestText.Mark(MarketText.Fill("reallife_mkt_inv_mark_locked", "shares", h.Locked.ToString(), "day", h.LockUntil.ToString())) : string.Empty);
         }
 
         // A payment to come in words: "120, day 34", owed on a short "-120, day 34", a bond's last with its end or rollover.

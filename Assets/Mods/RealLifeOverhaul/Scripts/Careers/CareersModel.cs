@@ -82,6 +82,7 @@ namespace RealLifeOverhaul.Careers
         public int WeekOf = -1, WeekMinutes;   // the week (day / 7) and the minutes of classes and homework in it
         public int GraduationDay, GraduationCourse = -1;   // a graduation ceremony to come
         public int Taught;           // minutes of tutoring given, ever
+        public int FadeFrom;         // the last midnight the option "Skills fade without practice" was off: a skill counts as used that day at the earliest, so fading starts again from it
         public readonly WorkFile Work = new WorkFile();   // the working life, kept in the same line (Careers/Work)
         public readonly List<ChildStudy> Children = new List<ChildStudy>(3);   // the family's grown children at university
         public int TutorDay = -1, TutorToday;   // tutoring sessions given on a day

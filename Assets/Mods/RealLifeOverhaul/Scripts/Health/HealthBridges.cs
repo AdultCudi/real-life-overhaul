@@ -70,6 +70,13 @@ namespace RealLifeOverhaul.Health
 
         public static Func<int, string> RivalName;
 
+        // ---- the city's people
+        /// <summary>
+        /// A fund (Giving's care fund) pays part of a household's own share of a care bill before it reaches the household's savings and debt: the household's own share and the price level go in,
+        /// what the fund paid (never more than the share) comes out. Asked as each case falls on a household, never per frame. Null: nobody pays.
+        /// </summary>
+        public static Func<long, int, long> CareFund;
+
         public delegate bool ClinicOf(out string street, out int number);
 
         public static void Reset()
@@ -94,6 +101,7 @@ namespace RealLifeOverhaul.Health
             RivalPay = null;
             RivalRest = null;
             RivalName = null;
+            CareFund = null;
         }
     }
 }

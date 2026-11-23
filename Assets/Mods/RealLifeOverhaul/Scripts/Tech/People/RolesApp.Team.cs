@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Tech
         private readonly Dictionary<BuildingRegistration, SeatRead> _seatRead = new Dictionary<BuildingRegistration, SeatRead>(32);   // each business's shifts and desks, kept between pages
         private int _seatPage;
         private int _exam;
+        private int _raiseAt = BulkRaiseRules.StartAt;                          // the share a raise for everyone shown is chosen at
+        private readonly List<string> _raiseIds = new List<string>(64);         // the professionals the table shows under its filters, for that raise
 
         // What a page of the Team tab reads of one business to say whether its people have a desk and a shift: who holds a shift at a placed desk (one pass over its
         // week) and, only when somebody has none, its placed workstations by the skills they list (one pass over its items). Asked for each of thousands of rows,
@@ -38,6 +40,9 @@ namespace RealLifeOverhaul.Tech
             Person picked = null;
             string id = Picked(_picked, TeamRow);
             int waiting = 0, leaving = 0, morale = 0;
+            TableFilter byState = RolesColumns.Team.Filters[1];
+            string business = businesses.ChosenName;
+            _raiseIds.Clear();
             for (int i = 0; i < people.Count; i++)
             {
                 Person person = people[i];
@@ -56,6 +61,10 @@ namespace RealLifeOverhaul.Tech
                 row.Set(8, State(person, day, year, seat), waits || p.NoticeEnd > 0 || seat != Seat.Fine ? TableRow.Yellow : TableRow.Plain);
                 row.Kind = KindOf(businesses, person.Business);
                 row.Kind2 = waits ? RolesColumns.Waiting : p.NoticeEnd > 0 ? RolesColumns.Leaving : p.OnCourse(day) ? RolesColumns.Learning : RolesColumns.Settled;
+                if ((business == null || person.Business == business) && (byState.Chosen < 0 || row.Kind2 == byState.Chosen))
+                {
+                    _raiseIds.Add(p.Id);   // shown under the table's two filters: the people a raise for everyone reaches
+                }
                 waiting += waits ? 1 : 0;
                 leaving += p.NoticeEnd > 0 ? 1 : 0;
                 morale += p.Morale;
@@ -83,8 +92,70 @@ namespace RealLifeOverhaul.Tech
             box.Row("reallife_roles_sum_leaving", leaving.ToString());
             box.Row("reallife_roles_sum_morale", people.Count > 0 ? TechText.Mille(morale / people.Count) : "-");
             box.Note(TechText.T("reallife_roles_team_about"));
+            WriteRaiseAll(box);
             Meta.Guide.Point(box, PeopleGuide);
             return RolesColumns.Team;
+        }
+
+        // A raise of a chosen share for everyone the table shows, with what it comes to a month before it is asked for, and the switch that matches rivals' offers by itself.
+        private void WriteRaiseAll(InfoBox box)
+        {
+            int month = GameCalendar.MonthDays, bp = BulkRaiseRules.Bp(_raiseAt);
+            string percent = TechText.Bp(bp);
+            BulkRaiseRules.Plan plan = _director.PlanRaises(_raiseIds, bp);
+            box.Section("reallife_roles_sec_raise");
+            if (box.HasSelector)
+            {
+                box.Selector(BulkRaiseRules.Percents.Length, BulkRaiseRules.At(_raiseAt), i => TechText.Bp(BulkRaiseRules.Bp(i)), i =>
+                {
+                    _raiseAt = i;
+                    Refresh();
+                });
+            }
+            if (plan.Any)
+            {
+                box.Line(TechText.Fill("reallife_roles_raise_plan", "count", plan.Raised.ToString(), "percent", percent,
+                    "total", TechText.Cents(plan.TotalMonthly(month)), "extra", TechText.Cents(plan.ExtraMonthly(month))));
+                if (plan.Left > 0)
+                {
+                    box.Note(TechText.Fill("reallife_roles_raise_left", "count", plan.Left.ToString()));
+                }
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_roles_button_raise_all", () => ConfirmRaiseAll(plan, bp));
+            }
+            else
+            {
+                box.Note(TechText.T(_raiseIds.Count == 0 ? "reallife_roles_raise_nobody" : "reallife_roles_raise_none"));
+            }
+            if (box.HasSwitch)
+            {
+                box.Switch("reallife_co_opt_match_rivals", Settings.EconomyCompanyMatchRivals, on =>
+                {
+                    Settings.SetMatchRivals(on);
+                    Refresh();
+                });
+            }
+            for (int i = 0; box.HasSwitch && i < _director.FirmPlaces.Count && i < 6; i++)
+            {
+                string place = _director.FirmPlaces[i].File.Place;
+                box.Switch(TechText.Fill("reallife_tech_assign_switch", "firm", _director.FirmPlaces[i].File.Name), _director.AssignOn(place), on =>
+                {
+                    _director.SetAssign(place, on);
+                    Refresh();
+                });
+            }
+            int limit = RivalMatchRules.Limit(Settings.EconomyCompanyAgreeUpTo, Economy.CompanyCatalogue.AgreeUpToMost);
+            box.Note(limit > 0 ? TechText.Fill("reallife_roles_match_note", "limit", limit + "%") : TechText.T("reallife_roles_match_note_off"));
+        }
+
+        // The question the raise for everyone asks first: who, what share and the new monthly cost, as the page said it. The people are read again when it is answered.
+        private void ConfirmRaiseAll(BulkRaiseRules.Plan plan, int bp)
+        {
+            int month = GameCalendar.MonthDays;
+            var ids = new List<string>(_raiseIds);
+            string count = plan.Raised.ToString(), percent = TechText.Bp(bp), total = TechText.Cents(plan.TotalMonthly(month)), extra = TechText.Cents(plan.ExtraMonthly(month));
+            GameConfirm.Show("reallife_roles_confirm_raise_title".Localize(new { count, percent }),
+                "reallife_roles_confirm_raise_body".Localize(new { count, percent, total, extra }),
+                () => UiClone.Safe(() => Do(() => _director.GiveRaises(ids, bp))), null, null, null, true, false);
         }
 
         private static int KindOf(TableFilter filter, string name)
@@ -258,6 +329,12 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Role(p.Role));
             }
+            if (_director.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
+            {
+                box.Line(TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support", "by", assignedBy, "day", assignedDay.ToString()));
+            }
+            bool pinned = p.Pinned;
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off", () => Do(() => _director.SetPinned(key, !pinned)));
             bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
             box.Line(promote
                 ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))

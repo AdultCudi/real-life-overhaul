@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Localizor;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Giving;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -16,7 +17,7 @@ namespace RealLifeOverhaul
     /// somebody whose ring is on is their call answered (SocialDirector.TakeRing). Mom's, on a family dinner day while her
     /// table is set, opens on whether the player is coming over, and "Something else" offers it too (PhoneContacts.MomsDinner).
     /// </summary>
-    public sealed partial class PersonDialog : Dialog
+    public sealed partial class PersonDialog : Dialog, ITalkAge
     {
         private static int GiftPrice => Prices.At(60);
 
@@ -32,8 +33,13 @@ namespace RealLifeOverhaul
         private float _moodRoll = -1f;   // the call's one draw of whether a rough day says no to plans (SocialRules.MoodSaysNo); -1 until plans come up
         private int _testTopic;          // a test's topic for this call's first chat; -1 for the topic by what happened
 
+        public string TalkWho => _p != null && _p.Met ? _p.Name : null;
+
+        public string TalkAge => _p != null && _p.Met ? SocialTalk.AgeWords(_p) : null;
+
         public PersonDialog(int index)
         {
+            using var age = TalkAgeGame.Making(this);   // the first page is headed with their age too
             _testTopic = TestTopicFor == index ? TestTopic : -1;
             TestTopic = TestTopicFor = -1;
             _p = SocialState.Get(index);
@@ -233,10 +239,9 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("family");
             }
-            if (Giver != null && Giving.GivingDirector.CauseWhy == 0)
+            if (GivingTalk.Offered)
             {
-                _actions.Add("give");   // Giving: money for them, given or lent; offered only where the city's people are there to receive it (not in a session, not with them off)
-                _actions.Add("lend");
+                _actions.Add("help");   // Giving: money for them, in the ways Giving's talk lists; offered only where the city's people are there to receive it (not in a session, not with them off)
             }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)
             {
@@ -278,13 +283,9 @@ namespace RealLifeOverhaul
                     entry.OnConfirm = Borrow;
                     entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_ask_in", "amount", SocialLife.Money(BorrowAmount()));
                     break;
-                case "give":
-                    entry.ConfirmTextOverride = "reallife_giving_btn_give".Localize();
-                    entry.OnConfirm = () => GiveFlow(false, 0);
-                    break;
-                case "lend":
-                    entry.ConfirmTextOverride = "reallife_giving_btn_lend".Localize();
-                    entry.OnConfirm = () => GiveFlow(true, 0);
+                case "help":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_help".Localize();
+                    entry.OnConfirm = () => Talk.Menu(0);
                     break;
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();

@@ -20,18 +20,18 @@ namespace RealLifeOverhaul.DistrictSave
         private static readonly List<string> Owners = new List<string>(4);
         private static readonly List<Action<PlaceSet>> Fills = new List<Action<PlaceSet>>(4);
         private static readonly List<Action> Befores = new List<Action>(4);   // each feature's early step, or null
+        private static readonly List<Action> Recordeds = new List<Action>(4); // each feature's step after the early pass, or null
         private static readonly List<string> Faults = new List<string>(2);
         private static PlaceSet _current = new PlaceSet();
 
         /// <summary>
-        /// A feature's places, under its own name: <paramref name="fill"/> adds them to the set it is given (streets,
-        /// addresses, buildings with their doors, districts, ground and the ways out to the game's streets);
-        /// <paramref name="early"/>, if given, runs
-        /// when a save has been read and before its city is built, and puts the feature's buildings' assets into the game's
-        /// address lookup, so that their records go back before the game builds its lookups from the save's lists.
-        /// Registering again under the same name replaces both.
+        /// A feature's places, under its own name: <paramref name="fill"/> adds them to the set it is given (streets, addresses,
+        /// buildings with their doors, districts, ground, ways out); <paramref name="early"/>, if given, runs when a save has been read
+        /// and puts the feature's buildings' assets into the game's address lookup, so their records go back before the city is built.
+        /// <paramref name="recorded"/>, if given, runs right after that pass, before the scenes: a building's records made there are
+        /// findable by every mod's city part, and the pass has not put theirs back. Registering again replaces all three.
         /// </summary>
-        public static void Add(string owner, Action<PlaceSet> fill, Action early = null)
+        public static void Add(string owner, Action<PlaceSet> fill, Action early = null, Action recorded = null)
         {
             if (string.IsNullOrEmpty(owner) || fill == null)
             {
@@ -42,11 +42,13 @@ namespace RealLifeOverhaul.DistrictSave
             {
                 Fills[at] = fill;
                 Befores[at] = early;
+                Recordeds[at] = recorded;
                 return;
             }
             Owners.Add(owner);
             Fills.Add(fill);
             Befores.Add(early);
+            Recordeds.Add(recorded);
         }
 
         /// <summary>The features' early steps, in the order they registered; one that throws is named in <see cref="LastFaults"/>.</summary>
@@ -66,6 +68,22 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
+        /// <summary>The features' steps after the early pass, in the order they registered; one that throws is named in <see cref="LastFaults"/> like an early step.</summary>
+        public static void Recorded()
+        {
+            for (int i = 0; i < Recordeds.Count; i++)
+            {
+                try
+                {
+                    Recordeds[i]?.Invoke();
+                }
+                catch (Exception e)
+                {
+                    Faults.Add(Owners[i] + " records (early): " + e.GetType().Name + ": " + e.Message);
+                }
+            }
+        }
+
         /// <summary>Takes a feature's places out; the next build leaves them out.</summary>
         public static void Remove(string owner)
         {
@@ -75,6 +93,7 @@ namespace RealLifeOverhaul.DistrictSave
                 Owners.RemoveAt(at);
                 Fills.RemoveAt(at);
                 Befores.RemoveAt(at);
+                Recordeds.RemoveAt(at);
             }
         }
 
@@ -162,6 +181,7 @@ namespace RealLifeOverhaul.DistrictSave
             Owners.Clear();
             Fills.Clear();
             Befores.Clear();
+            Recordeds.Clear();
             Faults.Clear();
             _current = new PlaceSet();
             Stale = false;

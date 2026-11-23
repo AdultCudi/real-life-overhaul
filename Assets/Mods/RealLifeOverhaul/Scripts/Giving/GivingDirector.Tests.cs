@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Giving
             }
             int amount = GivingRules.StepNow(2, GivingGame.Level);
             Charity c = (Charity)(int)(_state.TaxGifts / Math.Max(1, amount) % (int)Charity.Count);
-            GiveResult r = GiveToCharity(c, amount);
+            GiveResult r = GiveToCharity(c, amount, c == Charity.Upkeep ? 0 : -1);
             if (GivingResults.Moved(r))
             {
                 TestSays("reallife_giving_test_gift", GivingGame.Data("amount", GivingGame.Money(amount), "charity", GivingText.Charity((int)c), "year", GivingGame.Money(_state.TaxGifts)));
@@ -100,6 +100,68 @@ namespace RealLifeOverhaul.Giving
                 Say(r);
             }
             Logger?.Info("Giving check (test, " + (lend ? "a loan" : "a gift") + " of " + amount + " to " + p.Name + "): " + (GivingResults.Moved(r) ? "PASS" : "not given (" + r + ")"));
+        }
+
+        /// <summary>
+        /// Options, Tests: the first person the population holds helps with what they need most cheaply: a course, else a month's rent, else half a debt. Real money, the smallest of each, and
+        /// the person may refuse, which the notice then says.
+        /// </summary>
+        public void TestHelp()
+        {
+            if (!TestReady())
+            {
+                return;
+            }
+            PopulationState s = GivingGame.People();
+            HelpKind[] order = { HelpKind.Course, HelpKind.Rent, HelpKind.Debt };
+            int[] option = { 0, 1, 1 };
+            for (int i = 0; s != null && i < SocialState.Count; i++)
+            {
+                SocialPerson p = SocialState.Get(i);
+                if (p == null || !p.Met)
+                {
+                    continue;
+                }
+                for (int k = 0; k < order.Length; k++)
+                {
+                    if (!PriceOf(p, order[k], option[k], out int amount, out _))
+                    {
+                        continue;
+                    }
+                    GiveResult r = GiveHelp(p, order[k], option[k], false);
+                    if (GivingResults.Moved(r))
+                    {
+                        TestSays("reallife_giving_test_help", GivingGame.Data("amount", GivingGame.Money(amount), "name", p.Name));
+                    }
+                    else
+                    {
+                        Say(r);
+                    }
+                    Logger?.Info("Giving check (test, " + order[k] + " of " + amount + " for " + p.Name + "): " + (GivingResults.Moved(r) ? "PASS" : "not given (" + r + ")"));
+                    return;
+                }
+            }
+            TestSays("reallife_giving_test_nobody_to_help", null);
+        }
+
+        /// <summary>
+        /// Options, Tests: a hall named for the player, with nothing paid: the naming is kept for the page and the City Ledger prints it the morning after, so how a naming reads can be seen
+        /// without a gift of a quarter of a million. Put back with "put giving back as before".
+        /// </summary>
+        public void TestNaming()
+        {
+            if (!TestReady())
+            {
+                return;
+            }
+            Charity c = Charity.Scholars;
+            long amount = GivingRules.At(GivingCatalogue.NamingFrom, GivingGame.Level);
+            var naming = new GivingNaming { Day = GivingGame.Day, Charity = (int)c, Amount = amount, Name = GivingGame.PlayerName };
+            _state.Namings.Add(naming);
+            _state.Notes.Add(new GivingNote { Day = GivingGame.Day, Charity = (int)c, Amount = amount, Giver = -1, Naming = 1, Tag = -1 });
+            _revision++;
+            TestSays("reallife_giving_test_naming", GivingGame.Data("naming", GivingText.Naming(naming)));
+            Logger?.Info("Giving check (test, a hall named for the player, nothing paid): the page lists it and the paper prints it tomorrow: PASS");
         }
 
         /// <summary>Options, Tests: the first person the population holds in trouble asks the player for help, at once.</summary>

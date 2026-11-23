@@ -26,6 +26,7 @@ internal static partial class Program
         ExitOldSaveChecks();
         ExitWiringChecks();
         ExitHandoverChecks();   // (an offer accepted on both interfaces, the refusal named: ExitHandoverChecks.cs)
+        ExitAgreedChecks();     // (a sale agreed at a desk inside the firm, completed when the player steps outside: ExitAgreedChecks.cs)
     }
 
     private static List<ExitBuyer> ExitBuyers() => new List<ExitBuyer>
@@ -228,7 +229,7 @@ internal static partial class Program
         Check(director.Contains("e.Offers.Clear();") && director.Contains("day > o.Lapse") && director.Contains("_venture.Caps.Remove(c);"),
             "exits: a sale clears the firm's offers, an offer past its day is refused, and the cap is removed so nothing stays dormant");
         int i1 = director.IndexOf("c.Acc.Wound = true;", StringComparison.Ordinal), i2 = director.IndexOf("ExitBridges.HandOver(place, o.Name)", StringComparison.Ordinal);
-        int i3 = director.IndexOf("ExitRules.Settle(c, o.Price, Base(VentureGame.Cash), day)", StringComparison.Ordinal), i4 = director.IndexOf("VentureGame.Give(Level(r.Price), VentureGame.ExitKey", StringComparison.Ordinal);
+        int i3 = director.IndexOf("ExitRules.Settle(c, o.Price, Base(VentureGame.Cash), day)", StringComparison.Ordinal), i4 = director.IndexOf("VentureGame.Give(Level(atOnce), VentureGame.ExitKey", StringComparison.Ordinal);
         int i5 = director.IndexOf("VentureGame.Pay(Level(r.Paid), VentureGame.WindKey", StringComparison.Ordinal);
         Check(i1 > 0 && i2 > i1 && i3 > i2 && i4 > i3 && i5 > i4, "exits: the sale lifts the firm's floor, hands the business over, works the settlement out, takes the buyer's money and only then pays the investors");
         Check(director.Contains("VentureGame.Pay(Level(r.Paid), VentureGame.WindKey, name, null, true)") && !Regex.IsMatch(director, @"VentureGame\.Give\(Level\(r\.Player\)"),

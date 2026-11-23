@@ -36,6 +36,8 @@ namespace RealLifeOverhaul.Markets
         public long YearCents;       // income over the next year at today's rates before tax; negative: owed
         public int Reinvest;         // per cent of each payout put back
         public bool Rollover;        // a bond that rolls over at its end
+        public long Locked;          // shares under a lock-up from the terms of a sale: they cannot be sold yet
+        public int LockUntil;        // the first day they are all free; 0 none
         public ComingPayment Next;         // Day 0: none
 
         public long Gain => Worth - Cost;
@@ -179,7 +181,8 @@ namespace RealLifeOverhaul.Markets
                 {
                     Kind = KindOf(k), Stock = k.Id, Test = p.Test, Shares = p.Shares, Price = k.Last,
                     Worth = held ? MarketTrading.Value(p.Shares, q.Bid, false) : -MarketTrading.Value(-p.Shares, q.Ask, true), Cost = held ? p.Cost : -p.Cost, Paid = p.Dividends,
-                    YearCents = p.Shares * YearCentsOf(k), Reinvest = held ? ReinvestOf(p.Reinvest) : 0, Next = NextOf(s, k, p.Shares, 0)
+                    YearCents = p.Shares * YearCentsOf(k), Reinvest = held ? ReinvestOf(p.Reinvest) : 0, Next = NextOf(s, k, p.Shares, 0),
+                    Locked = held ? MarketTrading.Locked(s, k.Id, s.Day) : 0L, LockUntil = held ? MarketTrading.LockedUntil(s, k.Id, s.Day) : 0
                 });
             }
             for (int i = 0; i < s.Bots.Count; i++)

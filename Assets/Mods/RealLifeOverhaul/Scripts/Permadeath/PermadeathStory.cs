@@ -187,6 +187,7 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Assault: return "assault";
                 case DeathCause.Test: return "test";
                 case DeathCause.Starvation: return "starvation";
+                case DeathCause.Duty: return "duty";
                 default: return "none";
             }
         }

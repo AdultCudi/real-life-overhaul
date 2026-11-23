@@ -386,6 +386,7 @@ namespace RealLifeOverhaul.Tech
             }
             float started = Time.realtimeSinceStartup;
             ReadFirms(day);
+            AssignDay(day);
             Crews();
             OwnShareChecked(day);
             _taken.Clear();
@@ -524,7 +525,7 @@ namespace RealLifeOverhaul.Tech
                         marketing += p.K == ProductKind.Game ? FirmsCatalogue.MarketingDay[TalentCatalogue.Clamp(p.Marketing, 0, 4)] : 0;
                         continue;
                     }
-                    ProductDay r = FirmsRules.Sell(_firmsFile, file, p, c, c.Support, day, cycle, HostingRate());
+                    ProductDay r = SegmentRules.Moving(p, day) ? default(ProductDay) : FirmsRules.Sell(_firmsFile, file, p, c, c.Support, day, cycle, HostingRate());
                     firm.Today += r.Takings * level / 1000;
                     hosting += r.Hosting * level / 1000;
                     marketing += r.Marketing;

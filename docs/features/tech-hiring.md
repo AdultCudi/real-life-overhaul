@@ -40,6 +40,13 @@ No rival or startup in the mod briefs a search firm. A rival's ad is a line of i
 
 The interface's Applicants tab listed only the candidates of job ads, so with it on a search firm's three candidates were delivered and never shown, and neither a hire from a search nor the notice buy out could be reached. Now a search with candidates still in play is a row of the "Open roles" list (named like "Software engineer search"), and its candidates are the table's rows. A search sets no top pay, so their page shows the going rate in its place and the table leaves out the "asks less than the pay you set" line (`RolesLive.People.cs`, `SearchHasLive`).
 
+## A raise for everyone on the Team page (`BulkRaiseRules`, `TechDirector.Raises.cs`)
+
+- The Team tab of Open Roles shows, with nothing picked, a share to choose (3, 5, 8, 10, 15 or 20 per cent), what a raise of it for everyone shown comes to (how many it reaches, what they would cost a month in all and how much more
+  than now) and **Raise everyone shown**, which asks first with the same figures. "Shown" is what the table shows under its two filters (old interface) or its search (kit, the listed people). Each raise is one raise of the rule of one
+  (the 14 day rest, the cap of `WageRules`, the same morale and request settled), so anybody raised lately, on notice or at the top of the pay scale is left out and said so. One notice says what was given.
+- The switch **Match rivals' offers automatically** is on the same page (a button on the kit). Checks: `--options4`.
+
 ## Going Public
 
 The hiring is the player's own: nothing is sent, and a rush is the player's own money at the player's own business (headquarters is found through `GoingPublic.Mine`). Nothing in it differs between machines: the price is a fixed share of a fee, with no roll.

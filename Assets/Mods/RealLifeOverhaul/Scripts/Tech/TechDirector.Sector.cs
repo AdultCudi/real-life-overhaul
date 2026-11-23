@@ -318,9 +318,9 @@ namespace RealLifeOverhaul.Tech
             int before = p.Features;
             FirmsRules.Build(file, p, building, give, testing, SectorCatalogue.FeaturesMost, SectorRules.ProductBoost(c), SectorRules.SprintFocus(sf, file.Focus, day));
             built = p.Features > before;
-            if (!p.Live)
+            if (!p.Live || SegmentRules.Moving(p, day))
             {
-                return default(ProductDay);
+                return default(ProductDay);   // off sale for a re-launch (SegmentRules): nothing is won, lost or taken meanwhile
             }
             int m = SectorRules.MarketOf(p);
             long users = p.Users;
@@ -332,6 +332,8 @@ namespace RealLifeOverhaul.Tech
                 market = NicheView(firm, p, market, day, SectorRules.Attraction(appeal, aware), ref appeal, ref aware, ref selling);   // a founded firm sells into its niche
             }
             ProductDay r = SectorRules.SellDay(_firmsFile, file, p, selling, c.Support, day, market, appeal, aware, hostingRate);
+            p.Last = r;   // yesterday's won and lost, by cause, for the product's page
+            p.LastDay = day;
             if (_founding != null)
             {
                 NicheSold(firm, p, r);

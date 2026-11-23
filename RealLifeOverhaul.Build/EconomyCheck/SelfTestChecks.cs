@@ -269,7 +269,7 @@ internal static partial class Program
             {
                 ok |= rel.StartsWith(a, StringComparison.Ordinal) || rel == a;
             }
-            if (!ok && File.ReadAllText(file).IndexOf("SelfTest", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (!ok && File.ReadAllText(file).IndexOf("SelfTest", StringComparison.Ordinal) >= 0)   // the type name; a test business called "Selftest Studio" is not it
             {
                 outside.Add(rel);
             }

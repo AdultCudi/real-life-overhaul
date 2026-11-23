@@ -256,7 +256,34 @@ namespace RealLifeOverhaul.Ui
             cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_ibox_boss", "Boss"), CareersText.Boss((BossKind)j.Boss)));
             cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_ibox_overtime", "Overtime since the review"), CareersText.Minutes(j.Overtime)));
             cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_life_sum_pension", "Pension pot"), CareersText.Cents(w.Pension)));
+            var file = new List<KeyValuePair<string, string>>(8);
+            CareersDirector.Instance?.DutyLines(file);   // an officer's file: arrests, tickets, commendations
+            for (int i = 0; i < file.Count; i++)
+            {
+                cj.Life.Add(new KeyValuePair<string, string>(words.T(file[i].Key, FileWords(file[i].Key)), file[i].Value));
+            }
+            file.Clear();
+            CareersDirector.Instance?.DutyCaseLines(file);   // a detective's open cases, as final words
+            for (int i = 0; i < file.Count; i++)
+            {
+                cj.Life.Add(file[i]);
+            }
             cj.Burnout = Math.Max(0, Math.Min(100, j.Burnout / 10));
+        }
+
+        // The officer's file's labels in English, for the words the locale has not got yet.
+        private static string FileWords(string key)
+        {
+            switch (key)
+            {
+                case "reallife_police_file_arrests": return "Arrests";
+                case "reallife_police_file_tickets": return "Tickets written";
+                case "reallife_police_file_commendations": return "Commendations";
+                case "reallife_police_file_aid": return "First aid given";
+                case "reallife_police_file_hurt": return "Injuries on duty";
+                case "reallife_police_file_backed_off": return "Backed off";
+                default: return "Shift rating";
+            }
         }
 
         // What the next rung asks, from the profession's own ranks: the days at this one, the skills, a qualification and a review's rating.

@@ -54,13 +54,13 @@ namespace RealLifeOverhaul.Economy
             {
                 RotaPlace at = RotaPlaceAt(place);
                 RotaSheet sheet = at != null && RotaFresh(at) ? _rotaSheet : null;
-                if (sheet == null && at != null && !RotaUnread(place))
+                if (sheet == null && at != null && !RotaUnread(place) && !RotaFailed(at))
                 {
                     RotaAsk(place, JobShow, false);   // it changed since the page was written: the page and its buttons are written again
                     Changed();
                     return;
                 }
-                string refusal = sheet == null ? "reallife_rota_cannot"
+                string refusal = sheet == null ? at != null && RotaFailed(at) ? "reallife_rota_failed" : "reallife_rota_cannot"
                     : RotaRefusal(sheet) ?? (useHours && RotaRungOf(sheet, rung) == null ? "reallife_rota_no_hours" : null);
                 if (refusal != null)
                 {

@@ -113,6 +113,11 @@ namespace RealLifeOverhaul.Tech
                 .Fact("infra_years", () => Whole(InfraCatalogue.WriteDownDays / 365))
                 .Fact("infra_technician", () => Whole(InfraCatalogue.RacksPerTechnician))
                 .Fact("infra_net", () => Whole(InfraCatalogue.NetNeeded))
+                .Fact("infra_line_low", () => Whole(Utilities.LeasedLineCatalogue.Mbps[0] / 1000))   // the leased lines the Utilities app sells: read from their catalogue, which is game-free
+                .Fact("infra_line_high", () => Whole(Utilities.LeasedLineCatalogue.Mbps[Utilities.LeasedLineCatalogue.Steps - 1] / 1000))
+                .Fact("tech_move_work", () => Mille(SegmentRules.Work))
+                .Fact("tech_move_days", () => Whole(SegmentRules.Days))
+                .Fact("tech_move_lost", () => Mille(SegmentRules.Lost))
                 .Fact("infra_colo", () => Guide.Money(Prices.At(InfraCatalogue.ColoMonth / 100)))
                 .Fact("infra_unit", () => Guide.Money(Prices.At(InfraCatalogue.UnitDay) / 100f))
                 .Fact("infra_gpu_unit", () => Guide.Money(Prices.At(InfraCatalogue.GpuUnitDay) / 100f))
@@ -195,7 +200,17 @@ namespace RealLifeOverhaul.Tech
                 .Fact("vc_grant", () => Mille(VentureCatalogue.OptionGrant))
                 .Fact("vc_vest", () => Whole(VentureCatalogue.VestYears))
                 .Fact("vc_cliff", () => Whole(VentureCatalogue.CliffYears))
-                .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%");
+                .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%")
+                .Fact("terms_lock", () => Whole(SaleTermCatalogue.ShareLockDays))
+                .Fact("terms_slices", () => Mille(SaleTermCatalogue.SliceSteps[0]) + ", " + Mille(SaleTermCatalogue.SliceSteps[1]) + " or " + Mille(SaleTermCatalogue.SliceSteps[2]))
+                .Fact("terms_slice_years", () => Whole(SaleTermCatalogue.SliceTermDays / SaleTermCatalogue.YearDays))
+                .Fact("terms_minority", () => Mille(SaleTermCatalogue.MinorityDiscount))
+                .Fact("terms_earn_share", () => Mille(SaleTermCatalogue.EarnShare))
+                .Fact("terms_earn_days", () => Whole(SaleTermCatalogue.EarnDays))
+                .Fact("terms_boss_years", () => Whole(SaleTermCatalogue.BossYears[0]) + " or " + Whole(SaleTermCatalogue.BossYears[1]))
+                .Fact("terms_review", () => Whole(SaleTermCatalogue.ReviewDays))
+                .Fact("terms_keep", () => Mille(SaleTermCatalogue.KeepMille))
+                .Fact("terms_most", () => Whole(SaleTermCatalogue.OpenMost));
         }
 
         private static string Firms()

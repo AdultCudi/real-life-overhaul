@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Giving
         /// helped can pay it back out of their own money; at most the most, one at a time for a person, eight open. Done to go on; <paramref name="resident"/> and
         /// <paramref name="household"/> are the person's.
         /// </summary>
-        public static GiveResult Check(GivingState st, PopulationState s, int socialIndex, int amount, int level, out int resident, out int household)
+        public static GiveResult Check(GivingState st, PopulationState s, int socialIndex, int amount, int level, int most, out int resident, out int household)
         {
             resident = GivingPeople.ResidentOf(s, socialIndex);
             household = resident >= 0 ? GivingPeople.HouseholdOf(s, resident) : -1;
@@ -37,20 +37,34 @@ namespace RealLifeOverhaul.Giving
             {
                 return GiveResult.Nothing;
             }
-            if (amount > GivingRules.At(GivingCatalogue.LoanMost, level) || st.OpenLoans() >= GivingCatalogue.LoansMost || st.LoanOf(socialIndex) != null)
+            if (amount > most || st.OpenLoans() >= GivingCatalogue.LoansMost || st.LoanOf(socialIndex) != null)
             {
                 return GiveResult.Limit;
             }
             return GiveResult.Done;
         }
 
-        /// <summary>The loan made, after the player's money has been taken: it lands in the household as a gift does (its debt first), and the loan is written down, the closed ones trimmed.</summary>
-        public static LoanOut Make(GivingState st, PopulationState s, int household, int socialIndex, string name, int amount, int day, int monthDays)
+        /// <summary>
+        /// The loan made, after the player's money has been taken: it lands in the household as a gift does (its debt first), and the loan is written down, the closed ones trimmed. A
+        /// business loan (<paramref name="business"/>) backs a small business instead (<see cref="GivingHelp.BackBusiness"/> for the person <paramref name="resident"/>), is paid back over
+        /// <see cref="GivingCatalogue.BusinessParts"/> months and owes <see cref="GivingHelp.BusinessExtra"/> on top.
+        /// </summary>
+        public static LoanOut Make(GivingState st, PopulationState s, int household, int socialIndex, string name, int amount, int day, int monthDays, bool business = false, int resident = -1)
         {
-            GivingPeople.Help(s, household, amount, out _, out _);
+            if (business && resident >= 0)
+            {
+                GivingHelp.BackBusiness(s, resident, household, amount, day);
+            }
+            else
+            {
+                GivingPeople.Help(s, household, amount, out _, out _);
+            }
+            int extra = business ? GivingHelp.BusinessExtra(amount) : 0;
+            int parts = business ? GivingCatalogue.BusinessParts : GivingCatalogue.LoanParts;
             var loan = new LoanOut
             {
-                Person = socialIndex, Name = name ?? string.Empty, Principal = amount, Remaining = amount, Made = day, Part = GivingRules.LoanPart(amount), Next = day + Math.Max(1, monthDays)
+                Person = socialIndex, Name = name ?? string.Empty, Principal = amount, Remaining = amount + extra, Made = day, Part = GivingRules.LoanPart(amount + extra, parts),
+                Next = day + Math.Max(1, monthDays), Parts = parts, Extra = extra
             };
             st.Loans.Add(loan);
             Trim(st);

@@ -158,6 +158,53 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
+        // ---------------------------------------------------------------- a sale agreed inside the firm
+
+        /// <summary>Where an agreed sale stands on a day.</summary>
+        public enum AgreedState { None, Standing, Lapsed, Gone }
+
+        /// <summary>
+        /// The player's word to an offer, given at a desk inside the firm: the offer, its price and its last day are kept. False, with nothing changed, if a sale is already
+        /// agreed at the firm, or the offer is not one of its own, or it has lapsed. The terms are the way to be paid the player chose (a team bought for its people is always cash).
+        /// </summary>
+        public static bool Agree(FirmExit e, ExitOffer o, int day, TermChoice terms = default(TermChoice))
+        {
+            if (e == null || o == null || e.Agreed != null || e.OfferOf(o.Id) != o || day > o.Lapse)
+            {
+                return false;
+            }
+            e.Agreed = new ExitAgreed { Offer = o.Id, Price = o.Price, Lapse = o.Lapse, Day = day, Name = o.Name, Terms = o.Hire ? default(TermChoice) : terms };
+            return true;
+        }
+
+        /// <summary>Where the firm's agreed sale stands: past its last day it has lapsed (whether or not the offer was swept), and with its offer gone another way it is gone.</summary>
+        public static AgreedState Check(FirmExit e, int day)
+        {
+            if (e == null || e.Agreed == null)
+            {
+                return AgreedState.None;
+            }
+            if (day > e.Agreed.Lapse)
+            {
+                return AgreedState.Lapsed;
+            }
+            return e.OfferOf(e.Agreed.Offer) == null ? AgreedState.Gone : AgreedState.Standing;
+        }
+
+        /// <summary>True if the offer is the one a sale is agreed on, which is then neither accepted again, countered nor settled over.</summary>
+        public static bool IsAgreed(FirmExit e, int offerId) => e != null && e.Agreed != null && e.Agreed.Offer == offerId;
+
+        /// <summary>A firm's agreed sale called off: the offer stands as it did, to its last day. False if none was agreed.</summary>
+        public static bool CallOff(FirmExit e)
+        {
+            if (e == null || e.Agreed == null)
+            {
+                return false;
+            }
+            e.Agreed = null;
+            return true;
+        }
+
         /// <summary>A firm whose account has little left at its burn: investors' money in it, burning, and days of it left under the limit.</summary>
         public static bool Failing(Cap c, long burnPerDay)
         {

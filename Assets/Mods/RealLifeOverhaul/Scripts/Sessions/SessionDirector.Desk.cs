@@ -341,6 +341,24 @@ namespace RealLifeOverhaul.Sessions
             return delegated ? SessionText.T("reallife_session_status_manager_away") : SessionText.T("reallife_session_status_due");
         }
 
+        /// <summary>What a kind is about here, for its page's title (the game a review is of); empty for none.</summary>
+        internal string SubjectOf(SessionDef def)
+        {
+            if (def.Subject == null || _here == null)
+            {
+                return string.Empty;
+            }
+            try
+            {
+                return def.Subject(Ask(_here, SessionGame.Day, SessionGame.Hour, false, null, 100)) ?? string.Empty;
+            }
+            catch (Exception e)
+            {
+                Note("a session's subject failed: " + e.Message);
+                return string.Empty;
+            }
+        }
+
         /// <summary>Hands a kind here to the business's manager, or takes it back; said in a notice.</summary>
         internal void Hand(SessionDef def)
         {

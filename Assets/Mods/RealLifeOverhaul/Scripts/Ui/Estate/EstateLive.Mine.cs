@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Ui
                     Market();
                     return;
                 }
+                if (pick != null && pick.StartsWith(FlatPick, StringComparison.Ordinal) && FlatPage())
+                {
+                    return;   // a flat held, on the Mine tab; a listing is the Market tab's
+                }
                 if (pick != null && pick.StartsWith("lot:", StringComparison.Ordinal))
                 {
                     _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabHire);
@@ -42,6 +46,14 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 string place = Picked(pick, "own:");
+                if (place != null && FlatRules.IsKey(place))
+                {
+                    _v.Pick = FlatPick + place;   // a flat is looked after on its own page
+                    if (FlatPage())
+                    {
+                        return;
+                    }
+                }
                 h = place != null ? _s.Holding(place) : null;
                 if (h != null)
                 {
@@ -171,17 +183,19 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; _d.On(EstatePart.Hotel) && i < _s.Hotels.Count; i++)
                 {
                     HotelFile f = _s.Hotels[i];
-                    rows.Add(OtherRow(UiIcon.Building, f.Name, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"),
-                        f.Takings - f.Costs, EstateText.T("reallife_estate_kind_hotel"), f.Takings < f.Costs ? UiRole.Danger : UiRole.None, EstateTables.OwnHotel, HotelCard(f)));
+                    rows.Add(OtherRow(UiIcon.Building, f.Name, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"), f.Takings - f.Costs,
+                        string.Empty, f.Takings < f.Costs ? UiRole.Danger : UiRole.None, EstateTables.OwnHotel, HotelCard(f)));
                     keys.Add("hot:" + f.Slot);
                 }
                 if (_d.On(EstatePart.Hire) && _s.Hire.Running)
                 {
                     rows.Add(OtherRow(UiIcon.Car, EstateGame.NameOf(_s.Hire.Lot),
-                        EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString(Inv), "count", _s.Hire.Cars.Count.ToString(Inv)),
-                        0, EstateText.T("reallife_estate_kind_lot"), UiRole.None, EstateTables.OwnLot, YearCard(_s.Hire.TakingsYear, _s.Hire.CostsYear, EstateGame.NameOf(_s.Hire.Lot))));
+                        EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString("N0", Inv), "count", _s.Hire.Cars.Count.ToString("N0", Inv)),
+                        0, string.Empty, UiRole.None, EstateTables.OwnLot, YearCard(_s.Hire.TakingsYear, _s.Hire.CostsYear, EstateGame.NameOf(_s.Hire.Lot))));
                     keys.Add("lot:");
                 }
+                int flats = FlatHeld(rows, keys, lines);
+                units += flats;   // a flat is a unit of the roll, though not a building of its own
                 SpaceHeld(rows, keys);
                 RollTotals roll = EstateFigures.Roll(lines, _monthDays);
                 long due = roll.Due, owed = roll.Owed, empty = roll.EmptyAsking;
@@ -189,8 +203,13 @@ namespace RealLifeOverhaul.Ui
                 _m.Shape = EstateShape.Roll;
                 _m.HeadIcon = UiIcon.Home;
                 _m.HeadTitle = EstateText.T("reallife_ui_estate_roll_title");
-                _m.HeadSub = _d.Waiting() > 0 ? EstateText.T("reallife_ui_estate_roll_sub", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv), "waiting", _d.Waiting().ToString(Inv))
-                    : EstateText.T("reallife_ui_estate_roll_sub_clear", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv));
+                bool waiting = _d.Waiting() > 0;
+                _m.HeadSub = flats > 0
+                    ? EstateText.Pair(EstateText.T("reallife_ui_estate_roll_sub_flats", "units", units.ToString("N0", Inv), "buildings", buildings.ToString("N0", Inv),
+                        "flats", flats.ToString("N0", Inv)),
+                        waiting ? EstateText.T("reallife_ui_estate_roll_waiting", "waiting", _d.Waiting().ToString("N0", Inv)) : EstateText.T("reallife_ui_estate_roll_waiting_clear"))
+                    : waiting ? EstateText.T("reallife_ui_estate_roll_sub", "units", units.ToString("N0", Inv), "buildings", buildings.ToString("N0", Inv), "waiting", _d.Waiting().ToString("N0", Inv))
+                    : EstateText.T("reallife_ui_estate_roll_sub_clear", "units", units.ToString("N0", Inv), "buildings", buildings.ToString("N0", Inv));
                 _m.FigLabels = new[] { EstateText.T("reallife_ui_estate_fig_due"), EstateText.T("reallife_ui_estate_fig_collected"),
                     EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
                 _m.FigValues = new[] { Cash(due), Cash(roll.Collected), Cash(owed), Cash(empty) };
@@ -201,13 +220,14 @@ namespace RealLifeOverhaul.Ui
                 t.EmptyIcon = UiIcon.Home;
                 _m.Table = t;
                 _m.RowKeys = keys.ToArray();
-                Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind") },
+                Present(t, keys, new[] { Choice("reallife_tab_all_kinds", "reallife_estate_kind_building", "reallife_estate_kind_hotel", "reallife_estate_kind_lot", "reallife_space_kind",
+                    "reallife_flat_kind_filter") },
                     null, EstateText.T("reallife_estate_empty_mine"));
                 _m.Notes = new[] { EstateText.T("reallife_ui_estate_note_mine"), EstateText.T("reallife_ui_estate_note_mine_game") };
                 // What is due is the let flats' rent, so the foot shows it while flats are among the rows shown, and says nothing over hotels, the lot and spaces alone.
-                if (t.RowCount > 0 && (_v.Chosen[0] < 0 || _v.Chosen[0] == EstateTables.OwnBuilding))
+                if (t.RowCount > 0 && (_v.Chosen[0] < 0 || _v.Chosen[0] == EstateTables.OwnBuilding || _v.Chosen[0] == EstateTables.OwnFlat))
                 {
-                    t.TotalsLabel = EstateText.T("reallife_ui_estate_total_let", "count", let.ToString(Inv));
+                    t.TotalsLabel = EstateText.T("reallife_ui_estate_total_let", "count", let.ToString("N0", Inv));
                     t.Totals = new[] { string.Empty, string.Empty, string.Empty, Cash(due), string.Empty, string.Empty };   // the collected figure is the head's: said once
                 }
                 // The two lists under it: what is due for repair, and the other landlords of the city.
@@ -265,10 +285,10 @@ namespace RealLifeOverhaul.Ui
                 int income = EstateRules.GameNight(EstateGame.GameRent(h), _c.RentScale);
                 return new UiDataRow
                 {
-                    Cells = new[] { h.Name, EstateText.T("reallife_estate_kind_building"), "-", Month(income), chip, string.Empty },
-                    Values = new[] { (int)UseIcon(h.Use), 0, 0, 0, 0, -1 },
+                    Cells = new[] { h.Name, "-", "-", Month(income), chip, string.Empty },
+                    Values = new[] { (int)UseIcon(h.Use), UiDataTable.NoFace, 0, 0, 0, -1 },   // nobody in the tenant column: the game lets it
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, h.Busy ? UiRole.Warn : UiRole.None, UiRole.None },
-                    Subs = new[] { EstateText.District(h.District), EstateText.Use(h.Use), null, null, null, null },
+                    Subs = new[] { EstateText.Pair(EstateText.T("reallife_estate_kind_building"), EstateText.District(h.District)), null, null, null, null, null },
                     SortKeys = new[] { N, N, N, (long)income * _monthDays, N, N }, Kinds = new[] { EstateTables.OwnBuilding }
                 };
             }
@@ -302,16 +322,17 @@ namespace RealLifeOverhaul.Ui
                 Values = new[] { Money(takings), Money(costs) }
             };
 
-            private UiDataRow OtherRow(UiIcon icon, string name, string line, int perDay, string kind, UiRole tone, int kindAt, UiDataCard card = null)
+            // A hotel, the lot or a space: nobody stands in the tenant column, and the chip is empty (what the row is and how it stands is its unit line).
+            private UiDataRow OtherRow(UiIcon icon, string name, string sub, int perDay, string chip, UiRole tone, int kindAt, UiDataCard card = null)
             {
                 return new UiDataRow
                 {
                     Card = card,
-                    Cells = new[] { name, kind, "-", perDay != 0 ? Month(perDay) : "-", line, string.Empty },
-                    Values = new[] { (int)icon, 0, 0, 0, 0, -1 },
+                    Cells = new[] { name, "-", "-", perDay != 0 ? Month(perDay) : "-", chip, string.Empty },
+                    Values = new[] { (int)icon, UiDataTable.NoFace, 0, 0, 0, -1 },
                     // A hotel's or a lot's night is not rent that is due, so its figure stands in the muted ink unless it is a loss.
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone == UiRole.None ? UiRole.Muted : tone, UiRole.None, UiRole.None },
-                    Subs = new[] { kind, string.Empty, null, null, null, null },
+                    Subs = new[] { sub, null, null, null, null, null },
                     SortKeys = new[] { N, N, N, perDay != 0 ? (long)perDay * _monthDays : N, N, N }, Kinds = new[] { kindAt }
                 };
             }
@@ -401,7 +422,7 @@ namespace RealLifeOverhaul.Ui
                     string name = EstateGame.RivalName(l.Id);
                     rows.Add(new EstateRow
                     {
-                        Title = EstateText.T("reallife_ui_estate_landlord_line", "name", name, "units", l.Units.ToString(Inv), "rent", Money(l.Mean(map.MonthDays))),
+                        Title = EstateText.T("reallife_ui_estate_landlord_line", "name", name, "units", l.Units.ToString("N0", Inv), "rent", Money(l.Mean(map.MonthDays))),
                         Face = name, Hue = UiColour.HueOf(name),
                         Amount = change == int.MinValue ? string.Empty : ((change >= 0 ? "+" : string.Empty) + EstateText.Share(change)),
                         AmountInk = change > 0 ? UiRole.OkText : change < 0 ? UiRole.WarnText : UiRole.None, Run = -1
@@ -409,7 +430,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (ordered.Count > shown)
                 {
-                    rows.Add(new EstateRow { Title = EstateText.T("reallife_ui_estate_more_landlords", "count", (ordered.Count - shown).ToString(Inv)), Run = -1 });   // a line that only says
+                    rows.Add(new EstateRow { Title = EstateText.T("reallife_ui_estate_more_landlords", "count", (ordered.Count - shown).ToString("N0", Inv)), Run = -1 });   // a line that only says
                 }
                 return rows.ToArray();
             }

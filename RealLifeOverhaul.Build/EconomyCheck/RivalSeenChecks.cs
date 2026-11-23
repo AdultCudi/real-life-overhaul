@@ -46,6 +46,7 @@ internal static partial class Program
         SeenCostChecks();
         SeenSourceChecks();
         SeenTextChecks();
+        SeenHeadChecks();   // the rivals' head offices: a real office building each, kept, marked, the talk at it (SeenHeadChecks.cs)
     }
 
     // ---- a small city to be seen in
@@ -1500,11 +1501,13 @@ internal static partial class Program
     {
         UiWords en = UiWords("en");
         UiRivalsModel league = UiSamples.Rivals(en, "league");
-        Check(league.Profile.FactLabels.Length == 2 && league.Profile.FactLabels[0] == "Drives" && league.Profile.FactValues[0] == "Mersaidi S500" && league.Profile.FactLabels[1] == "Usually"
-              && league.Profile.FactValues[1] == "Out most days", "rivals seen page: the chosen rival's head in the Rivals app says what they drive and where they are usually found");
+        int drives = Array.IndexOf(league.Profile.FactLabels, "Drives");   // after the fortune's facts, which the sample's rivals have too
+        Check(drives >= 0 && league.Profile.FactValues[drives] == "Mersaidi S500" && league.Profile.FactLabels[drives + 1] == "Usually"
+              && league.Profile.FactValues[drives + 1] == "Out most days", "rivals seen page: the chosen rival's head in the Rivals app says what they drive and where they are usually found");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
-        Check(businesses.Profile.FactLabels.Length == 3 && businesses.Profile.FactLabels[0] == "Weekly Income" && businesses.Profile.FactLabels[1] == "Drives"
-              && businesses.Profile.FactValues.Length == 3,
+        int drove = Array.IndexOf(businesses.Profile.FactLabels, "Drives");
+        Check(businesses.Profile.FactLabels[0] == "Weekly Income" && drove > 0 && businesses.Profile.FactLabels[drove + 1] == "Usually"
+              && businesses.Profile.FactValues.Length == businesses.Profile.FactLabels.Length,
             "rivals seen page: beside their tables the weekly income stays first and the two facts follow");
         var v = new RivalsView
         {
@@ -1582,7 +1585,7 @@ internal static partial class Program
         Check(world.Contains("_onHello = _door.Press(Hello);") && world.Contains("panel.Button(0, \"reallife_seen_btn_hello\", _onHello, true, true);")
               && world.Contains("SeenDialog.Open(talk, s.Person.Character);"), "rivals seen page: the panel's one button says hello, which opens the talk");
         string dialog = ModSource(@"RivalsSeen\SeenDialog.cs");
-        Check(dialog.Contains("entry.OnConfirm = () => Line(SeenCatalogue.BusinessTalk[Form], true);") && dialog.Contains("entry.OnSecondOption = () => Line(SeenCatalogue.CarTalk[Form], true);")
+        Check(dialog.Contains("entry.OnConfirm = () => Answer(SeenCatalogue.BusinessTalk[Form]);") && dialog.Contains("entry.OnSecondOption = () => Answer(SeenCatalogue.CarTalk[Form]);")
               && dialog.Contains("entry.OnCancel = Leave;") && dialog.Contains("SeenCatalogue.HelloKnown[Form]") && dialog.Contains("SeenCatalogue.Hello[Form]")
               && dialog.Contains("if (!string.IsNullOrEmpty(_talk.Car))"),
             "rivals seen page: the talk's buttons ask about the business and the car (only with a car on record) and leave, each by the rival's form");
@@ -1686,7 +1689,7 @@ internal static partial class Program
         string folder = System.IO.Path.GetDirectoryName(ModPath(@"RivalsSeen\SeenDirector.cs"));
         var files = new List<string>(Directory.GetFiles(folder, "*.cs")) { ModPath(@"Wiring\Wiring.SeenLinks.cs"), ModPath(@"Wiring\Wiring.SeenTycoons.cs") };
         Check(files.Count >= 18, "rivals seen sources: the feature's files are found (" + files.Count + ")");
-        string[] gameFree = { "SeenRules.cs", "SeenDay.cs", "SeenFile.cs", "SeenCatalogue.cs", "SeenStore.cs", "SeenTable.cs", "SeenLines.cs", "SeenPage.cs", "Wiring.SeenTycoons.cs" };
+        string[] gameFree = { "SeenRules.cs", "SeenDay.cs", "SeenFile.cs", "SeenCatalogue.cs", "SeenStore.cs", "SeenTable.cs", "SeenLines.cs", "SeenPage.cs", "HeadOfficeRules.cs", "Wiring.SeenTycoons.cs" };
         int randoms = 0;
         foreach (string file in files)
         {

@@ -535,9 +535,27 @@ namespace RealLifeOverhaul.Economy
             return SaleRefusal(ServicesGame.Find(place), out reasonKey);
         }
 
+        // A business a contract of a firm's sale holds (Tech/Venture/SaleTermRules): its owner is the buyer, so it is no sale of the player's.
+        private static bool Held(BuildingRegistration reg)
+        {
+            try
+            {
+                return ServicesBridges.Contracted != null && ServicesBridges.Contracted(ServicesGame.Place(reg));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>True when the business can be sold now; otherwise the text key of why not.</summary>
         public static bool SaleRefusal(BuildingRegistration reg, out string reasonKey)
         {
+            if (reg != null && Held(reg))
+            {
+                reasonKey = "reallife_svc_refuse_contract";   // a contract the player signed on its sale holds it until it ends
+                return false;
+            }
             SaleBlock block = ServicesGame.Blocked(reg);
             reasonKey = BlockKeys[(int)block];
             return block == SaleBlock.None;

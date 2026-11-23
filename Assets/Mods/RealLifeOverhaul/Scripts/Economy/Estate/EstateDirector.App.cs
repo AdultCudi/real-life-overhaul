@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A notification of the game's that opens the Property app on a tab, with something picked.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)
         {
+            FlatNoticePick(ref tab, ref pick);
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
@@ -56,6 +57,7 @@ namespace RealLifeOverhaul.Economy
                     EstateGame.ReadAgency(_state.Agency);
                     if (added > 0 || dropped > 0)
                     {
+                        FoldFlats(Save.Day);
                         EstateGame.WriteValues(_state, _climate.Index);
                         WriteRents(false);
                         BuildAlerts(Save.Day);
@@ -109,7 +111,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     EstateHolding h = _state.Holdings[i];
                     waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, day);
-                    waiting += Duties && h.Managed && h.Manager != (int)EstateManager.Manager ? EstateRules.CallsWaiting(h) : 0;
+                    waiting += Duties && h.Managed && !EstateRules.Runs(h) ? EstateRules.CallsWaiting(h) : 0;
                 }
                 for (int i = 0; i < _state.Agency.Open.Count; i++)
                 {
@@ -120,7 +122,7 @@ namespace RealLifeOverhaul.Economy
             {
                 waiting += _state.Hotels[i].AskRooms > 0 ? 1 : 0;
             }
-            return waiting;
+            return waiting + FlatsWaiting();
         }
 
         partial void PropertyAlerts(int day);

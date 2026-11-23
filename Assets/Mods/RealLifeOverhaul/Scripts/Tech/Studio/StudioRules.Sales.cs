@@ -426,8 +426,18 @@ namespace RealLifeOverhaul.Tech
             return (int)Platform.Pc;
         }
 
-        /// <summary>Support tickets a day of a game's players still playing.</summary>
-        public static long Tickets(GameDev g) => g.Active * StudioCatalogue.TicketsPerThousand / 1000;
+        /// <summary>Support tickets a day of a game's players still playing: the full rate for an online, free or subscription game, a fifth of it for a game bought once.</summary>
+        public static long Tickets(GameDev g)
+        {
+            bool accounts = StudioCatalogue.Online[Clamp(g.Genre, 0, (int)Genre.Count - 1)] || g.M == GameModel.FreeToPlay || g.M == GameModel.Subscription;
+            return g.Active * (accounts ? StudioCatalogue.TicketsPerThousand : StudioCatalogue.TicketsPerThousandOnce) / 1000;
+        }
+
+        /// <summary>The tickets a day a number of support people answer.</summary>
+        public static long Answers(int support) => (long)Math.Max(0, support) * StudioCatalogue.TicketsPerSupport;
+
+        /// <summary>The support people a day's tickets need, rounded up.</summary>
+        public static int SupportFor(long tickets) => (int)Math.Min(100000L, (Math.Max(0L, tickets) + StudioCatalogue.TicketsPerSupport - 1) / StudioCatalogue.TicketsPerSupport);
 
         /// <summary>The reputation a studio loses in a day for the tickets its support people leave unanswered: none when all are answered.</summary>
         public static int TicketToll(long tickets, long answered)

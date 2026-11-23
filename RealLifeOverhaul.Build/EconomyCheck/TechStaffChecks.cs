@@ -1236,7 +1236,7 @@ internal static partial class Program
               && day.Contains("_shortageRead[(int)p.Def.Family]") && day.Contains("TalentRules.Approachable(p, day)") && day.Contains("_places.PullAt(here, p.Place, day)")
               && CodeAt(day, "TalentRules.Approachable(p, day)") >= 0 && CodeAt(day, "_places.PullAt(here, p.Place, day)") > CodeAt(day, "TalentRules.Approachable(p, day)"),
             "tech staff sources: the day asks the comfort and the team week of a place once, the market's shortage once for the read, and the rivals' pull only for one who can be approached");
-        Check(day.Contains("reviews <= TalentCatalogue.NoticesMost") && day.Contains("approached <= TalentCatalogue.NoticesMost") && day.Contains("reallife_talent_note_reviews_many") && day.Contains("reallife_talent_note_poach_many")
+        Check(day.Contains("reviews <= TalentCatalogue.NoticesMost") && day.Contains("++offersTold <= TalentCatalogue.NoticesMost") && day.Contains("reallife_talent_note_reviews_many") && day.Contains("reallife_talent_note_poach_many")
               && day.Contains("StudioRules.Prune(_studio, _fileOf)") && day.Contains("TalentCatalogue.DayMs(_people.Count)") && day.Contains("ms <= wanted ? \"PASS\" : \"FAIL\""),
             "tech staff sources: only the first " + TalentCatalogue.NoticesMost + " reviews and offers of a day are told by name and the rest together, the studio's experience of those who left is let go, and the day's time is written as PASS or FAIL against its share");
         Check(ModSource(@"Tech\TechDirector.cs").Contains("_places = new PlaceDays(TechBridges.ComfortAt, TechBridges.TeamWeekAt, PullOfPlace);")

@@ -9,8 +9,32 @@ namespace RealLifeOverhaul
         public const float PatrolCrime = 0.6f;   // times the street crime while the police patrol
         public const float PatrolSeen = 1.3f;    // times the chance an offence is seen while they do
 
+        public const float DutyCrime = 3f;       // times the street crime while the player is on a police shift: the dispatcher sends them where it is
+
+        /// <summary>True while the player is on a police shift in uniform (Wiring/PoliceLinks); null for no.</summary>
+        public static System.Func<bool> OnDuty;
+
         private static bool _patrol;
         private static float _dark = 1f;
+
+        /// <summary>True while the player is on a police shift. Asked every twenty seconds by the crime roll and at a traffic stop: one delegate call.</summary>
+        public static bool OnShift
+        {
+            get
+            {
+                try
+                {
+                    return OnDuty != null && OnDuty();
+                }
+                catch (System.Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>What street crime is scaled by for the player's shift: <see cref="DutyCrime"/> on a police shift, else 1.</summary>
+        public static float DispatchScale => OnShift ? DutyCrime : 1f;
 
         /// <summary>What street crime is scaled by here and now: 1 without patrols or a dark street.</summary>
         public static float CrimeScale { get; private set; } = 1f;

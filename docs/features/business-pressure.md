@@ -50,6 +50,7 @@ Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every numb
 - a closure is 12 game hours at most;
 - an employee's satisfaction is never pushed below 20 (the game makes them resign under 10); a wage only goes up;
 - **the off switch** closes every open issue without its outcome, puts every promotion figure back and reopens every business the mod closed; each group has its own switch; "easy business" leaves the opportunities only.
+- **staff trouble and the staff pay option**: the rival's offer to an employee (poaching) and the strike threat are staff pay trouble, so they need the option "Staff pay, raises, strikes and sick pay" (`economy_company_staff`) on as well as their own group's switch ("Rival moves", "Staff trouble"): `BusinessIssues.KindOn` asks both (`BusinessCatalogue.NeedsStaffPay`, game-free), in the morning's deal, in another feature's start of an issue and in the sweep that takes down what is already open when a switch goes off. The tech sector's professionals' sick days follow the same option (`TalentRules.GoesSick`). The separate switches stay; undercutting, smears, thefts and arguments do not need the staff pay option. The two notices (`reallife_biz_poach_start`, `reallife_biz_strike_start`) and the three options' tips say which switch stops which message. Check `EconomyCheck --loose-ends`.
 
 **How the effects reach the game** (all in `BusinessGame`, each logged with before and after):
 

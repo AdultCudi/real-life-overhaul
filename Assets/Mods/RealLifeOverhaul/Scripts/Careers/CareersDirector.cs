@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Careers
                 ClassPromptGone();
                 CloseSitting();
                 StopWork(true);
+                _dutyDesk?.Dispose();
                 StopStudy(false, true);
                 CampusGone();
                 ComputerButtons.Remove();
@@ -110,6 +111,10 @@ namespace RealLifeOverhaul.Careers
         private void Slow()
         {
             using var hotSpot = HotSpots.Time(HotTick);
+            if (_dutyOn && (Save == null || LoadScene.isLoading || !ReferenceEquals(_dutySave, Save)))
+            {
+                DutyDown("the save was left or changed");   // the uniform comes off before another city is built
+            }
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;
@@ -143,6 +148,7 @@ namespace RealLifeOverhaul.Careers
             {
                 WorkDesks();
                 OwnDeskSecond();
+                DutyTick();
             }
             LookAtSittings();
             if (_skip != null && !_skip.Open)
@@ -259,6 +265,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     Save.modData = new Dictionary<string, string>();
                 }
+                DutyBank();   // the minutes patrolled since the hour are worked and paid before the save is taken
                 WriteStudy(Save.modData);
                 WriteCampus(Save.modData);
                 if (_news != null && ReferenceEquals(_newsOf, Save))
@@ -286,9 +293,9 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_study_test_off";   // switched off: ShiftSkip would call a sitting off at Start, as it needs its host enabled
             }
-            if (_skip != null && _skip.Open)
+            if ((_skip != null && _skip.Open) || _dutyOn)
             {
-                return "reallife_study_why_busy";
+                return "reallife_study_why_busy";   // a sitting is not taken on a patrol: the shift is the officer's time
             }
             if (!CareersGame.Free())
             {
@@ -600,6 +607,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Fault("the save tools", e);
             }
+            DutyDown("the save tools");
             _study = null;
             LadderForget();
             PeopleForget();

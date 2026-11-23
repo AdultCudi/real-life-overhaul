@@ -222,16 +222,17 @@ namespace RealLifeOverhaul.Utilities
             }
             string place = UtilitiesGame.Place(reg);
             Account a = _state.Find(place, Service.Internet);
+            int line = LeasedLineRules.LineMbps(a, UtilitiesGame.Today);   // a data centre's leased line carries on through its plan's outage or visit
             if (a == null || a.State != SupplyState.Active)
             {
-                return InternetRules.InGrace(_state, place, UtilitiesGame.Today) || (shop && _state.SpeedMet == 0) ? NetSpeedRules.Grace : 0;
+                return line > 0 ? line : InternetRules.InGrace(_state, place, UtilitiesGame.Today) || (shop && _state.SpeedMet == 0) ? NetSpeedRules.Grace : 0;
             }
             if (hour >= 0 && InternetRules.InOutage(a, hour))
             {
-                return 0;
+                return line;
             }
             Provider p = InternetRules.Get(a.Provider);
-            return p != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0;
+            return LeasedLineRules.Speed(p != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0, line);
         }
 
         /// <summary>A business that cannot open without a connection (web design, software, the headquarters).</summary>
@@ -269,6 +270,10 @@ namespace RealLifeOverhaul.Utilities
         {
             why = null;
             int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
+            if (provider == InternetCatalogue.LeasedIndex)
+            {
+                return BuyLine(place, plan, out why);   // the pickers list the carriers' fibre among the providers; it is bought beside the plan
+            }
             if (!InternetRules.Reaches(provider, GameRegistrations.District(place.Reg)))
             {
                 why = "reallife_net_no_reach";
@@ -352,9 +357,111 @@ namespace RealLifeOverhaul.Utilities
             }
             UtilitiesRules.Bill(a, today, monthDays);
             a.State = SupplyState.Closed;
+            LeasedLineRules.Drop(a);   // cancelling the connection ends its line too: the line has its own button for dropping only that
             a.ContractUntil = 0;
             a.OutageFrom = a.OutageUntil = 0;
             UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_net_toast_cancelled", "place", place.Name), 8f);
+            Touch();
+            return true;
+        }
+
+        /// <summary>A place a leased line may be sold to: a warehouse of the player's fitted out as a data centre, and nothing else (the tech sector says which).</summary>
+        public bool LineSite(PlaceInfo place)
+        {
+            Func<BuildingRegistration, bool> site = UtilitiesBridges.LineSite;
+            return site != null && place.Kind != PlaceKind.Home && place.Reg != null && site(place.Reg);
+        }
+
+        /// <summary>The installation fee of a line at a place now, money (whole); the wait comes from <see cref="LineDays"/>.</summary>
+        public int LineFee(PlaceInfo place, int step)
+        {
+            return UtilitiesRules.Money(LeasedLineRules.InstallCents(step, GameRegistrations.District(place.Reg), Prices.Level));
+        }
+
+        /// <summary>The days from the order to a line being live at a place.</summary>
+        public int LineDays(PlaceInfo place, int step)
+        {
+            return LeasedLineRules.InstallDays(step, GameRegistrations.District(place.Reg));
+        }
+
+        /// <summary>
+        /// A leased line ordered for a data centre: the installation fee now, the line live after its wait and billed with the month's internet from then. The plan stays;
+        /// a line already running keeps running until a changed one is live. Refused anywhere that is not a data centre.
+        /// </summary>
+        public bool BuyLine(PlaceInfo place, int step, out string why)
+        {
+            why = null;
+            if (!LineSite(place))
+            {
+                why = "reallife_net_line_site";
+                return false;
+            }
+            step = LeasedLineRules.Step(step);
+            Account a = _state.Find(place.Place, Service.Internet);
+            if (a != null && (a.Owed > 0 || a.State == SupplyState.Cut))
+            {
+                why = a.Owed > 0 ? "reallife_net_owed_first" : "reallife_net_line_cut";   // a cut connection is reconnected first, as for a plan
+                return false;
+            }
+            if (LeasedLineRules.Ordered(a) == step + 1)
+            {
+                why = "reallife_net_line_same";
+                return false;
+            }
+            int today = UtilitiesGame.Today, fee = LineFee(place, step), days = LineDays(place, step);
+            if (fee > UtilitiesGame.Cash)
+            {
+                why = "reallife_net_no_cash";
+                return false;
+            }
+            if (fee > 0)
+            {
+                UtilitiesGame.Pay(fee, "reallife_transaction_util_net_line_install", place.Reg, deductible: true);
+            }
+            if (a == null || a.State == SupplyState.Closed)
+            {
+                // a data centre with no plan has the line alone: the account holds it, supplied from the start, and bills only the line
+                if (a == null)
+                {
+                    a = new Account { Place = place.Place, Kind = place.Kind, AutoDebit = true };
+                    _state.Accounts.Add(a);
+                }
+                a.Service = Service.Internet;
+                a.State = SupplyState.Active;
+                a.Provider = -1;
+                a.Plan = 0;
+                a.PriceCents = 0;
+                a.OpenedDay = today;
+                a.ContractUntil = 0;
+                a.OutageFrom = a.OutageUntil = 0;
+                a.Kind = place.Kind;
+            }
+            LeasedLineRules.Order(a, step, GameRegistrations.District(place.Reg), today);
+            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_line_bought", "place", place.Name, "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[step]),
+                "day", UtilitiesText.Day(today + days)), 10f);
+            Logger?.Info("Utilities: leased line at " + place.Place + ": step " + step + " (" + LeasedLineCatalogue.Mbps[step] + " Mbps), " + LeasedLineRules.MonthCents(step, Prices.Level)
+                         + " cents a month, installation " + fee + " money, live on day " + (today + days) + ".");
+            Touch();
+            return true;
+        }
+
+        /// <summary>A place's leased line given up (and any change not yet live): the month so far stays billed, nothing is owed for leaving. A place with no line is left alone.</summary>
+        public bool CancelLine(PlaceInfo place, out string why)
+        {
+            why = null;
+            Account a = _state.Find(place.Place, Service.Internet);
+            if (!LeasedLineRules.Has(a))
+            {
+                return true;
+            }
+            LeasedLineRules.Drop(a);
+            if (a.Provider < 0 && a.State != SupplyState.Closed)
+            {
+                int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
+                UtilitiesRules.Bill(a, today, monthDays);   // a place that had only the line has no connection left: the month so far is billed and the account closed
+                a.State = SupplyState.Closed;
+            }
+            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_net_toast_line_cancelled", "place", place.Name), 8f);
             Touch();
             return true;
         }

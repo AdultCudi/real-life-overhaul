@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Economy
     {
         Self = 0,       // the player answers everything
         Agent = 1,      // a letting agent finds and takes tenants, for a fee at each letting
-        Manager = 2     // a property manager does everything, for a cut of the rent
+        Manager = 2,    // a property manager does everything, for a cut of the rent
+        Agency = 3      // the player's own agency does everything, as long as its agents have the hours: no fee, no money moves
     }
 
     /// <summary>How a tenant's repair call is being answered. Saved as a number.</summary>
@@ -62,6 +63,7 @@ namespace RealLifeOverhaul.Economy
     public static class EstateCatalogue
     {
         public const int HoldingsMost = 40;
+        public const int LandlordHomesMost = 12;    // residential buildings of a rival landlord kept for a block to be tied to
         public const int SoldMost = 24;             // buildings sold remembered, the newest kept: a sold one put back is handed back to its buyer
         public const int SoldLookBack = 7;          // days of the game's books searched for a building's sale: it keeps at least six days of them
         public const int ApplicantsMost = 3;        // waiting for one unit
@@ -335,7 +337,7 @@ namespace RealLifeOverhaul.Economy
         public const int PlanMissShare = 800;       // of a tenant's miss chance, while on a plan
         public const int ReminderLift = 200;        // added to the chance arrears are paid in full, once reminded
 
-        public const int Managers = 3;              // yourself, a letting agent, a property manager
+        public const int Managers = 4;              // yourself, a letting agent, a property manager, the player's own agency
         public const int AgentLetDays = 7;          // a letting agent's fee at each letting, days of the agreed rent
         public const int ManagerShare = 100;        // a property manager's cut of the rent that comes in
         public const int ManagedApplicants = 1250;  // an agent or a manager brings this much more applicants

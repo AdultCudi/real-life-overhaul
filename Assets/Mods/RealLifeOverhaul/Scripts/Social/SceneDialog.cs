@@ -28,13 +28,18 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>A conversation in the street, in the game's dialogue panel; the scene reads <see cref="SceneTalk"/> after.</summary>
-    public sealed class SceneDialog : Dialog
+    public sealed class SceneDialog : Dialog, ITalkAge
     {
         private readonly SceneTalk _talk;
         private readonly SocialPerson _p;
 
+        public string TalkWho => _p != null ? _p.Name : null;
+
+        public string TalkAge => _p != null ? SocialTalk.AgeWords(_p) : null;
+
         public SceneDialog()
         {
+            using var age = TalkAgeGame.Making(this);   // the first page is headed with their age too
             _talk = SocialDirector.Talk;
             _p = _talk != null ? _talk.Person : null;
             if (_p == null)

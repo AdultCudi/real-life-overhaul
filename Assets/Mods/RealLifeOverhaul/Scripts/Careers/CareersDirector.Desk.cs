@@ -77,7 +77,9 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             Job j = Work != null ? Work.Job : null;
-            string here = j != null && DeskGame.Inside(out _, out BuildingRegistration reg) && CareersGame.InsideAt(j.Post.Street, j.Post.Number) ? DeskPlace(reg) : null;
+            // (a patrol has no desk to set up)
+            string here = j != null && !IsPolice(j) && DeskGame.Inside(out _, out BuildingRegistration reg) && CareersGame.InsideAt(j.Post.Street, j.Post.Number)
+                ? DeskPlace(reg) : null;
             if (here != null && here != JobPlace(j))
             {
                 here = null;   // another company's floor of a tower: the desk is on the employer's
@@ -187,7 +189,7 @@ namespace RealLifeOverhaul.Careers
         private void DeskSetUp(bool atTheDoor)
         {
             Job j = Work != null ? Work.Job : null;
-            if (j == null || _deskOff || !DeskGame.Clickable || !DeskGame.Inside(out BuildingManager manager, out BuildingRegistration reg)
+            if (j == null || IsPolice(j) || _deskOff || !DeskGame.Clickable || !DeskGame.Inside(out BuildingManager manager, out BuildingRegistration reg)
                 || !CareersGame.InsideAt(j.Post.Street, j.Post.Number))
             {
                 return;
@@ -427,6 +429,10 @@ namespace RealLifeOverhaul.Careers
             if (j == null)
             {
                 return "reallife_career_desk_none";
+            }
+            if (IsPolice(j))
+            {
+                return "reallife_police_desk_fallback";   // a patrol starts at a station's front desk, or from the Career app standing at one
             }
             int day = Save != null ? Save.Day : 0;
             if (ProRules.FromHome((WorkMode)j.Work, day))

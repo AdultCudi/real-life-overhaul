@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         public bool Contract = true;
         public UtilitiesAsk Sheet;
         public int District;                // the district a question is about
+        public bool Picking;                // the accounts table picks bills to pay together instead of opening an account
     }
 
     /// <summary>What is open over the page.</summary>
@@ -146,13 +147,25 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[]
                     {
-                        a.Place, state, w.Money(a.SoFar), a.Owed > 0 ? w.Money(a.Owed) : string.Empty,
-                        a.Owed > 0 && a.DueDay > 0 ? w.Day(a.DueDay) : string.Empty, w.T(a.AutoDebit ? "reallife_util_debit_on" : "reallife_util_debit_off", a.AutoDebit ? "On" : "Off")
+                        a.Place, state, w.Money(a.SoFar), w.Money(a.Owed),
+                        a.Owed > 0 && a.DueDay > 0 ? w.Day(a.DueDay) : w.T("reallife_ui_cell_none", "None"),
+                        w.T(a.AutoDebit ? "reallife_util_debit_on" : "reallife_util_debit_off", a.AutoDebit ? "On" : "Off")
                     },
                     Subs = new[] { w.F("reallife_ui_util_account_sub", "{service}, {provider}", "service", service, "provider", a.Provider), null, null, null, null, null },
                     Values = new[] { (int)ServiceIcon(a.Service), 0, 0, 0, 0, 0 },
                     Tones = new[] { UiRole.None, tone, UiRole.None, a.State == UtilityBillState.Overdue ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None }
                 };
+            }
+            int owing = 0, picked = 0;
+            long pickedSum = 0;
+            for (int i = 0; i < list.Length; i++)
+            {
+                owing += list[i].Owed > 0 ? 1 : 0;
+                if (list[i].Picked && list[i].Owed > 0)
+                {
+                    picked++;
+                    pickedSum += list[i].Owed;
+                }
             }
             m.Accounts = new UiDataTableModel
             {
@@ -170,7 +183,34 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = w.T("reallife_util_empty", "No accounts yet: they come with the first place you rent or buy."),
                 EmptyIcon = UiIcon.Lightning
             };
-            if (rows.Length > 0)
+            for (int i = 0; i < rows.Length; i++)
+            {
+                rows[i].Picked = v.Picking && list[i].Picked && list[i].Owed > 0;
+            }
+            if (owing > 0)
+            {
+                m.Accounts.Picking = v.Picking;
+                m.Accounts.PickWords = w.T("reallife_ui_util_pick", "Pick bills to pay");
+                m.Accounts.PickedWords = w.F("reallife_ui_util_picked", "{count} picked, {amount}", "count", picked.ToString(CultureInfo.InvariantCulture), "amount", w.Money(pickedSum));
+                m.Accounts.DoneWords = w.T("reallife_ui_util_pick_done", "Done");
+                m.Accounts.Mass = new[]
+                {
+                    new UiActionModel { Label = w.T("reallife_ui_util_pick_all", "Pick every bill"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count, Command = -1, Arg = 0 },
+                    new UiActionModel
+                    {
+                        Label = w.T("reallife_util_box_pay_ticked", "Pay ticked bills"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin, Key = UiAction.Count, Command = -1, Arg = 1,
+                        Disabled = picked == 0
+                    }
+                };
+                if (!v.Picking)
+                {
+                    m.PayAll = new UiActionModel
+                    {
+                        Label = w.T("reallife_util_box_pay_all", "Pay all now"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Coin, Key = UiAction.Count, Command = UtilitiesFace.PayAllAction, Arg = 0
+                    };
+                }
+            }
+            if (rows.Length > 0 && !v.Picking)   // while bills are picked the table has the room, and its Pay ticked bills is the one main button
             {
                 m.AccountCard = AccountCard(f, list[m.Accounts.Selected], w);
             }

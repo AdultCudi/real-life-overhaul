@@ -38,10 +38,13 @@ namespace RealLifeOverhaul.Utilities
                     connected++;
                 }
                 row.Set(0, place.Name);
-                row.Set(1, p != null ? UtilitiesText.T(p.NameKey) : UtilitiesText.T("reallife_net_none"), needs && !live ? TableRow.Red : TableRow.Plain);
-                row.Set(2, p != null ? UtilitiesText.T("reallife_net_mbps", "mbps", p.Mbps[Math.Min(a.Plan, p.Mbps.Length - 1)].ToString()) : "-",
-                    p != null ? p.Mbps[Math.Min(a.Plan, p.Mbps.Length - 1)] : double.NaN);
-                row.Set(3, live ? UtilitiesText.Money(a.PriceCents / 100f) : "-", live ? a.PriceCents / 100.0 : double.NaN);
+                int line = live ? LeasedLineRules.LineMbps(a, today) : 0;   // a data centre's leased line stands beside its plan: the place has the faster of the two
+                int speed = LeasedLineRules.Speed(p != null ? p.Mbps[Math.Min(a.Plan, p.Mbps.Length - 1)] : 0, line);
+                row.Set(1, p != null ? UtilitiesText.T(p.NameKey) : live && LeasedLineRules.Has(a) ? UtilitiesText.T("reallife_net_provider_leased") : UtilitiesText.T("reallife_net_none"),
+                    needs && !live ? TableRow.Red : TableRow.Plain);
+                row.Set(2, speed > 0 ? UtilitiesText.T("reallife_net_mbps", "mbps", speed.ToString()) : "-", speed > 0 ? speed : double.NaN);
+                int month = live ? a.PriceCents + LeasedLineRules.LineCents(a, today, Prices.Level) : 0;
+                row.Set(3, live ? UtilitiesText.Money(month / 100f) : "-", live ? month / 100.0 : double.NaN);
                 row.Set(4, live ? (InternetRules.InOutage(a, hour) ? UtilitiesText.T("reallife_net_state_outage") : UtilitiesText.State(a, today)) : "-", down ? TableRow.Red : TableRow.Plain);
                 row.Set(5, live ? (a.ContractUntil > today ? UtilitiesText.Day(a.ContractUntil) : UtilitiesText.T("reallife_net_month_by_month")) : "-",
                     live && a.ContractUntil > today ? a.ContractUntil : double.NaN);
@@ -115,6 +118,10 @@ namespace RealLifeOverhaul.Utilities
                     ? UtilitiesText.T("reallife_net_box_contract_until", "day", UtilitiesText.Day(a.ContractUntil), "fee", UtilitiesText.Money(_director.NetExitFee(place)))
                     : UtilitiesText.T("reallife_net_month_by_month"));
                 box.Row("reallife_net_box_district", district);
+                if (LeasedLineRules.Has(a))
+                {
+                    LineRows(box, a, today);
+                }
                 Transform buttons = box.ButtonRow();
                 if (a.State == SupplyState.Cut)
                 {
@@ -135,6 +142,17 @@ namespace RealLifeOverhaul.Utilities
                         _provider = Math.Max(0, ReachIndex(place, a.Provider));
                         _plan = a.Plan;
                         _contract = a.ContractUntil > today || _contract;
+                        Refresh();
+                    }));
+                }
+                if (LeasedLineRules.Has(a))
+                {
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_net_box_line_cancel", () => UiClone.Safe(() =>
+                    {
+                        if (!_director.CancelLine(place, out string why) && why != null)
+                        {
+                            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(why), 8f);
+                        }
                         Refresh();
                     }));
                 }
@@ -178,14 +196,22 @@ namespace RealLifeOverhaul.Utilities
                 Refresh();
             }));
             bool ours = provider == InternetCatalogue.OwnIndex && _director.State.Network.Running;
+            bool leased = provider == InternetCatalogue.LeasedIndex;
             box.Selector(p.Mbps.Length, _plan, i => ours ? UtilitiesText.T("reallife_net_plan_option_own", "mbps", p.Mbps[i].ToString())
+                : leased ? UtilitiesText.T("reallife_net_plan_option_line", "speed", UtilitiesText.Gbps(p.Mbps[i]), "racks", (p.Mbps[i] / LeasedLineCatalogue.RackMbps).ToString(),
+                    "price", UtilitiesText.Money(_director.NetPrice(place, provider, i, false) / 100f))
                 : UtilitiesText.T("reallife_net_plan_option", "mbps", p.Mbps[i].ToString(), "price", UtilitiesText.Money(_director.NetPrice(place, provider, i, _contract) / 100f)),
                 i => UiClone.Safe(() =>
             {
                 _plan = i;
                 Refresh();
             }));
-            if (!ours)
+            if (leased)
+            {
+                // what the line is: the way to grow a data centre past its plan, and what the district it stands in does to the wait
+                box.Note(UtilitiesText.T("reallife_net_box_line_about"));
+            }
+            if (!ours && !leased)
             {
                 box.Switch("reallife_net_box_contract_switch", _contract, on => UiClone.Safe(() =>
                 {
@@ -193,10 +219,14 @@ namespace RealLifeOverhaul.Utilities
                     Refresh();
                 }));
             }
-            bool same = live && a.Provider == provider && a.State != SupplyState.Cut;
-            box.Row("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract && !ours) / 100f));
+            bool same = leased ? LeasedLineRules.Ordered(a) == _plan + 1 : live && a.Provider == provider && a.State != SupplyState.Cut;
+            box.Row("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract && !ours && !leased) / 100f));
             SpeedLines(box, place, p.Mbps[_plan]);
-            if (!same)
+            if (leased && !same)
+            {
+                LineInstall(box, place, _plan, today);
+            }
+            else if (!same)
             {
                 box.Line(ours ? UtilitiesText.T("reallife_net_box_install_own") : _contract ? UtilitiesText.T("reallife_net_box_install_free")
                     : UtilitiesText.T("reallife_net_box_install_fee", "fee", UtilitiesText.Money(InternetCatalogue.InstallFee)));
@@ -208,7 +238,7 @@ namespace RealLifeOverhaul.Utilities
                 }
             }
             Transform buttons = box.ButtonRow();
-            InfoBox.Button(buttons, InfoBox.Positive, same ? "reallife_net_box_change" : "reallife_net_box_buy", () => UiClone.Safe(() =>
+            InfoBox.Button(buttons, InfoBox.Positive, same || leased && LeasedLineRules.Has(a) ? "reallife_net_box_change" : "reallife_net_box_buy", () => UiClone.Safe(() =>
             {
                 if (_director.BuyNet(place, provider, _plan, _contract, out string why))
                 {
@@ -232,10 +262,40 @@ namespace RealLifeOverhaul.Utilities
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_util_box_back", Back);
             }
-            if (_contract && !ours)
+            if (_contract && !ours && !leased)
             {
                 box.Note(UtilitiesText.T("reallife_net_box_contract_note", "months", InternetCatalogue.ContractMonths.ToString()));
             }
+        }
+
+        // A leased line ordered at a place, in words: its speed, its state and what it costs a month, and a change under way.
+        private static void LineRows(InfoBox box, Account a, int today)
+        {
+            int live = LeasedLineRules.LiveAt(a, today);
+            string price = UtilitiesText.Money(LeasedLineRules.MonthCents(Math.Max(0, LeasedLineRules.Ordered(a) - 1), Prices.Level) / 100f);
+            if (live > 0)
+            {
+                box.Row("reallife_net_box_line", UtilitiesText.T("reallife_net_line_live", "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[live - 1]),
+                    "price", UtilitiesText.Money(LeasedLineRules.MonthCents(live - 1, Prices.Level) / 100f)));
+            }
+            int ordered = LeasedLineRules.Ordered(a);
+            int day = a.LineNext > 0 ? a.LineNextDay : a.LineDay;
+            if (ordered > 0 && (live == 0 || ordered != live))
+            {
+                box.Row(live > 0 ? "reallife_net_box_line_change" : "reallife_net_box_line",
+                    UtilitiesText.T("reallife_net_line_ordered", "speed", UtilitiesText.Gbps(LeasedLineCatalogue.Mbps[ordered - 1]), "day", UtilitiesText.Day(day), "price", price));
+            }
+        }
+
+        // What a leased line costs to bring to a place and how long it takes, with what the district has (fibre in the street, only cable, nothing).
+        private void LineInstall(InfoBox box, PlaceInfo place, int step, int today)
+        {
+            string district = GameRegistrations.District(place.Reg);
+            int days = _director.LineDays(place, step);
+            box.Line(UtilitiesText.T("reallife_net_box_line_install", "fee", UtilitiesText.Money(_director.LineFee(place, step)), "days", days.ToString(), "day", UtilitiesText.Day(today + days)));
+            int has = LeasedLineRules.Class(district);
+            box.Line(UtilitiesText.T(has == LeasedLineCatalogue.Fibre ? "reallife_net_box_line_fibre"
+                : has == LeasedLineCatalogue.Cable ? "reallife_net_box_line_cable" : "reallife_net_box_line_dig"));
         }
 
         // What a plan's speed means for the work there, from the same rules the work goes by (NetSpeedRules): for the player's
@@ -273,6 +333,10 @@ namespace RealLifeOverhaul.Utilities
                 {
                     _reach.Add(p);
                 }
+            }
+            if (_director.LineSite(place))
+            {
+                _reach.Add(InternetCatalogue.LeasedIndex);   // business fibre, sold to a data centre only
             }
         }
 

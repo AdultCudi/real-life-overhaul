@@ -118,6 +118,80 @@ namespace RealLifeOverhaul.SelfTest
             }
         }
 
+        /// <summary>The "under_lamp" step (SelfTestKinds has its words): the player warped, as the game's own teleport does, to the ground by a lit street lamp.</summary>
+        internal sealed class UnderLampStep : SelfTestStep
+        {
+            public override string Name => "under_lamp";
+
+            public override IEnumerator Run(SelfTestContext c)
+            {
+                if (!SelfTestGame.CityUp())
+                {
+                    c.Fail("no city stands");
+                    yield break;
+                }
+                string where = c.Arg("where") ?? "inside";
+                if (where != "inside" && where != "front" && where != "behind")
+                {
+                    c.Fail("where is inside, front or behind, not '" + where + "'");
+                    yield break;
+                }
+                yield return SelfTestGame.Close();
+                Vector3 from = SelfTestWorld.PlayerAt();
+                var lamps = new List<StreetLamp>(4096);
+                PerfGame.Lamps(lamps);
+                var lit = new List<StreetLamp>(64);
+                foreach (StreetLamp lamp in lamps)
+                {
+                    GameObject glow = PerfGame.KnowsLamps ? PerfGame.GlowOf(lamp) : null;
+                    if (glow != null && glow.activeSelf && (lamp.transform.position - from).magnitude <= 150f)
+                    {
+                        lit.Add(lamp);
+                    }
+                }
+                if (lit.Count == 0)
+                {
+                    c.Fail(lamps.Count + " street lamps are loaded, but none within 150 m has its glow switched on (is it night?)");
+                    yield break;
+                }
+                lit.Sort((a, b) => (a.transform.position - from).sqrMagnitude.CompareTo((b.transform.position - from).sqrMagnitude));
+                int nth = (int)c.Number("nth", 0f);
+                if (nth < 0 || nth >= lit.Count)
+                {
+                    c.Fail("only " + lit.Count + " lit lamps are within 150 m, so nth " + nth + " is none");
+                    yield break;
+                }
+                StreetLamp pick = lit[nth];
+                Vector3 foot = pick.transform.position;
+                Camera cam = Camera.main;
+                Vector3 toCam = cam != null ? cam.transform.position - foot : from - foot;
+                toCam.y = 0f;
+                toCam = toCam.sqrMagnitude < 0.01f ? Vector3.back : toCam.normalized;
+                Vector3 target = where == "front" ? foot + toCam * 2.5f : where == "behind" ? foot - toCam * 2.5f : foot;
+                if (!UnityEngine.AI.NavMesh.SamplePosition(target, out UnityEngine.AI.NavMeshHit hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    c.Fail("no walkable ground within 3 m of " + target + " by lamp '" + pick.name + "'");
+                    yield break;
+                }
+                if (!GameManager.IsPlayerWalking)
+                {
+                    c.Fail("the player is not walking: the game's move needs him on foot");
+                    yield break;
+                }
+                yield return InstanceBehavior<GameManager>.Instance.StartCoroutine(GameManager.SetPlayerPosition(hit.position));
+                yield return new WaitForSecondsRealtime(0.5f);
+                Vector3 now = SelfTestWorld.PlayerAt();
+                if ((now - hit.position).magnitude > 1.5f)
+                {
+                    c.Fail("the player is at " + now + ", not at " + hit.position + " by lamp '" + pick.name + "'");
+                    yield break;
+                }
+                GameObject glowNow = PerfGame.GlowOf(pick);
+                c.Pass(where + ": the player is at " + now + ", " + (now - foot).magnitude.ToString("0.0") + " m from lamp '" + pick.name + "' at " + foot
+                    + ", glow " + (glowNow != null && glowNow.activeSelf ? "active" : "not active") + ", lamp " + (nth + 1) + " of " + lit.Count + " lit");
+            }
+        }
+
         /// <summary>A business of a type started in a building, as the game's start screen does it (the player's money and the course the type asks for are given first).</summary>
         internal sealed class FoundBusinessStep : SelfTestStep
         {

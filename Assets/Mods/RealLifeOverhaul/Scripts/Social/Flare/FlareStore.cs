@@ -322,6 +322,20 @@ namespace RealLifeOverhaul.Flare
                 Join(b, n.Person, n.Stars, n.Day, n.Why, n.Quality);
                 b.Append('|').Append(Clean(n.Answer));
             }
+            for (int i = 0; i < f.Counted.Count; i++)
+            {
+                FlareStarRow s = f.Counted[i];
+                b.Append("\nK|").Append(Clean(s.Key));
+                Join(b, s.One, s.Two, s.Three, s.Four, s.Five, s.Eased, s.EasedStars, s.Raised, s.RaisedStars);
+            }
+            if (f.CountedPosts.Count > 0)
+            {
+                b.Append("\nJ|");
+                for (int i = 0; i < f.CountedPosts.Count; i++)
+                {
+                    b.Append(i > 0 ? "," : string.Empty).Append(f.CountedPosts[i].ToString(Inv));
+                }
+            }
             return b.ToString();
         }
 
@@ -443,6 +457,26 @@ namespace RealLifeOverhaul.Flare
                         {
                             Key = Text(c[1]), Person = I(c, 2), Stars = I(c, 3), Day = I(c, 4), Why = I(c, 5), Quality = I(c, 6), Answer = c.Length > 7 ? Text(c[7]) : null
                         });
+                    }
+                    else if (c[0] == "K" && c.Length >= 11 && c[1].Length > 0 && f.Counted.Count < FlareReviewBook.RowsMost)
+                    {
+                        f.Counted.Add(new FlareStarRow
+                        {
+                            Key = Text(c[1]), One = Math.Max(0, I(c, 2)), Two = Math.Max(0, I(c, 3)), Three = Math.Max(0, I(c, 4)), Four = Math.Max(0, I(c, 5)), Five = Math.Max(0, I(c, 6)),
+                            Eased = Math.Max(0, I(c, 7)), EasedStars = Math.Max(0, I(c, 8)), Raised = Math.Max(0, I(c, 9)), RaisedStars = Math.Max(0, I(c, 10))
+                        });
+                    }
+                    else if (c[0] == "J" && c.Length >= 2)
+                    {
+                        string[] ids = c[1].Split(',');
+                        for (int d = Math.Max(0, ids.Length - FlareReviewBook.PostsKept); d < ids.Length; d++)
+                        {
+                            int id = I(ids, d, -1);
+                            if (id >= 0 && !f.CountedPosts.Contains(id))
+                            {
+                                f.CountedPosts.Add(id);
+                            }
+                        }
                     }
                 }
                 ReadPosts(f, posts);

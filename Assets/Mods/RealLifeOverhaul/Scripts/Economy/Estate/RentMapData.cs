@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
+    /// <summary>A residential building of a rival landlord: its place as the property business writes one, and its district.</summary>
+    public struct RentHome
+    {
+        public string Place, District;
+    }
+
     /// <summary>One other landlord of the city, as the game's rival-owned buildings show them: their units and what a flat of theirs rents for.</summary>
     public sealed class RentLandlord
     {
@@ -10,6 +16,33 @@ namespace RealLifeOverhaul.Economy
         public int Units;                   // units they hold in the city's buildings
         public int Flats;                   // ...of them flats
         public long FlatRent;               // dollars a day, summed over their flats
+        public readonly List<RentHome> Homes = new List<RentHome>(EstateCatalogue.LandlordHomesMost);   // some of their residential buildings, the lowest addresses
+        /// <summary>
+        /// Notes a residential building of theirs for an agency to tie a block to: the few with the lowest addresses are kept, in that order, so the same city gives the same list in
+        /// whatever order the game's registrations come.
+        /// </summary>
+        public void AddHome(string place, string district)
+        {
+            if (string.IsNullOrEmpty(place))
+            {
+                return;
+            }
+            int at = 0;
+            while (at < Homes.Count && string.CompareOrdinal(Homes[at].Place, place) <= 0)
+            {
+                at++;
+            }
+            if (at >= EstateCatalogue.LandlordHomesMost || (at > 0 && Homes[at - 1].Place == place))
+            {
+                return;
+            }
+            Homes.Insert(at, new RentHome { Place = place, District = district ?? string.Empty });
+            if (Homes.Count > EstateCatalogue.LandlordHomesMost)
+            {
+                Homes.RemoveAt(Homes.Count - 1);
+            }
+        }
+
         public int Mean(int monthDays) => Flats > 0 ? (int)(FlatRent / Flats * monthDays) : 0;
     }
 
@@ -92,7 +125,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>A rival-owned building's units are counted to its owner.</summary>
-        public void AddLandlord(string rival, int use, int rentADay, int units)
+        public void AddLandlord(string rival, int use, int rentADay, int units, string place = null, string district = null)
         {
             if (string.IsNullOrEmpty(rival) || units <= 0)
             {
@@ -113,6 +146,7 @@ namespace RealLifeOverhaul.Economy
             {
                 l.Flats += units;
                 l.FlatRent += rentADay;
+                l.AddHome(place, district);
             }
         }
 

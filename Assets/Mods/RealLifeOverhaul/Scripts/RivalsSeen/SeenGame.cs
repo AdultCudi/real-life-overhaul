@@ -8,6 +8,7 @@ using Helpers;
 using Localizor;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
+using Streets;
 using UI.Dialog;
 using UI.Notification;
 using UnityEngine;
@@ -49,6 +50,9 @@ namespace RealLifeOverhaul.RivalsSeen
 
         // ---- the city's table
 
+        /// <summary>Money as the game's own screens write it, for what a rival says of a sale.</summary>
+        public static string Money(float amount) => FinanceText.Money(amount);
+
         /// <summary>The address of a registration as the rivals' sources write an office: its street and number.</summary>
         public static string KeyOf(BuildingRegistration r) => (r.StreetName ?? string.Empty) + "#" + r.StreetNumber;
 
@@ -77,15 +81,16 @@ namespace RealLifeOverhaul.RivalsSeen
             {
                 CityBuildingController c = all[i];
                 BuildingRegistration r = c != null ? c.buildingRegistration : null;
-                if (r == null || c.building == null || !r.HasEstablishedBusiness || string.IsNullOrEmpty(r.businessTypeName))
+                if (r == null || c.building == null)
                 {
                     continue;
                 }
-                bool eats = SeenTable.Eats(r.businessTypeName);
+                bool business = r.HasEstablishedBusiness && !string.IsNullOrEmpty(r.businessTypeName);
+                bool eats = business && SeenTable.Eats(r.businessTypeName);
                 int office = Table.OfficeAt(r.StreetName, r.StreetNumber);
-                if (!eats && office < 0)
+                if ((!eats && office < 0) || (!business && !Table.IsHead(office)))
                 {
-                    continue;
+                    continue;   // (a head office is a building of the city and needs no business in it; any other office is its rival's business)
                 }
                 Vector3 at = c.transform.position;
                 Table.SetOffice(office, c, at.x, at.z);
@@ -96,6 +101,64 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             Table.Done();
             return true;
+        }
+
+        /// <summary>
+        /// The city's office buildings a rival could have their head office in, for HeadOfficeRules: every one of the city's list that is an office building and is no building the
+        /// mod keeps (Core/SpecialBuildings), none of the player's (nor another player's in a Going Public session). One pass over the city's buildings, made only when a rival has
+        /// none (a new save, a rival who has just come forward, an office that has stopped being one), never per frame. False while the city's list is not there to read.
+        /// </summary>
+        public static bool OfficeSites(List<OfficeSite> into)
+        {
+            into.Clear();
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
+            if (all == null || all.Length == 0)
+            {
+                return false;
+            }
+            for (int i = 0; i < all.Length; i++)
+            {
+                CityBuildingController c = all[i];
+                BuildingRegistration r = c != null ? c.buildingRegistration : null;
+                if (r == null || c.building == null || !r.HasValidAddress || c.building.BuildingType != OfficeType || SpecialBuildings.Holds(c) || SpecialBuildings.TakenBy(r) != null
+                    || SpecialBuildings.Players(r) || GoingPublic.Mine(r))
+                {
+                    continue;
+                }
+                float price;
+                try
+                {
+                    price = c.building.GetMarketPricePerSqm();
+                }
+                catch (Exception)
+                {
+                    price = 0f;
+                }
+                into.Add(new OfficeSite
+                {
+                    Key = KeyOf(r), District = c.building.Neighbourhood ?? string.Empty, Owner = r.buildingOwnerRivalId ?? string.Empty, Price = (int)Mathf.Clamp(price, 0f, 100000000f)
+                });
+            }
+            return true;
+        }
+
+        private const string OfficeType = "ba:buildingtype_office";
+
+        /// <summary>A building by its key ("street#number") as the game writes an address, in the game's language; the key itself where it cannot be read.</summary>
+        public static string AddressText(string key)
+        {
+            try
+            {
+                if (SeenRules.Address(key, out int cut, out int number) && cut > 0)
+                {
+                    return new Address(key.Substring(0, cut), number).ToFormattedString();
+                }
+            }
+            catch (Exception)
+            {
+                // the key is told as it is
+            }
+            return key ?? string.Empty;
         }
 
         /// <summary>True where the city has the Hamptons (Core/CityCheck): without them nobody weekends there.</summary>

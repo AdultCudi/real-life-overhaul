@@ -135,6 +135,24 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // A business that is not the whole company's: a firm that listed on its own is a stock of its own, and one a contract of its sale holds is its buyer's. Neither is in the
+            // company's books, its hand-over or its trade: the same takings never feed two stocks, and a company cannot list or give away what it no longer owns.
+            private static bool Apart(BuildingRegistration reg)
+            {
+                if (ExitStockLinks.IsListed(reg))
+                {
+                    return true;
+                }
+                try
+                {
+                    return ServicesBridges.Contracted != null && ServicesBridges.Contracted(ServicesGame.Place(reg));
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+
             // The player's own businesses now, by the key the statements' addresses are compared under. A firm that listed on its own is a stock of its own and
             // is not in the whole company's books: the same takings never feed two stocks.
             private static void Mine()
@@ -144,7 +162,7 @@ namespace RealLifeOverhaul
                 Keys.Clear();
                 for (int i = 0; i < Businesses.Count; i++)
                 {
-                    if (Businesses[i] != null && Businesses[i].Address != null && !ExitStockLinks.IsListed(Businesses[i]))
+                    if (Businesses[i] != null && Businesses[i].Address != null && !Apart(Businesses[i]))
                     {
                         Keys.Add(Books.Key(Businesses[i].Address));
                     }
@@ -360,7 +378,7 @@ namespace RealLifeOverhaul
                     ExitStockLinks.Remember();
                     for (int i = 0; i < Businesses.Count; i++)
                     {
-                        if (Businesses[i] != null && !ExitStockLinks.IsListed(Businesses[i]))   // a firm that listed on its own is not the company's to hand over
+                        if (Businesses[i] != null && !Apart(Businesses[i]))   // a firm that listed on its own is not the company's to hand over
                         {
                             into.Add(ServicesGame.Place(Businesses[i]));
                         }
@@ -438,7 +456,7 @@ namespace RealLifeOverhaul
                     for (int i = 0; i < Businesses.Count; i++)
                     {
                         BuildingRegistration r = Businesses[i];
-                        int trade = r != null && r.Address != null && !ExitStockLinks.IsListed(r) ? CompanyBooks.TradeOf(r) : -1;
+                        int trade = r != null && r.Address != null && !Apart(r) ? CompanyBooks.TradeOf(r) : -1;
                         if (trade >= 0 && trade < into.Length)
                         {
                             Keys.Add(Books.Key(r.Address));

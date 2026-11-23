@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Careers
         {
             var w = new TechWriter(Version);
             w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.LoanCents).Add(f.LoanTaken).Add(f.LoanRepaid).Add(f.WeekOf).Add(f.WeekMinutes)
-                .Add(f.GraduationDay).Add(f.GraduationCourse).Add(f.Taught);
+                .Add(f.GraduationDay).Add(f.GraduationCourse).Add(f.Taught).Add(f.FadeFrom);
             w.Part('s');
             for (int s = 0; s < Skills.Count; s++)
             {
@@ -103,6 +103,7 @@ namespace RealLifeOverhaul.Careers
             f.GraduationDay = h.Int();
             f.GraduationCourse = h.Int(-1);
             f.Taught = Math.Max(0, h.Int());
+            f.FadeFrom = Math.Max(0, h.Int());   // a save from before it was kept reads 0: nothing is held
             foreach (Fields x in r.Records('s'))
             {
                 int s = x.Int(-1);

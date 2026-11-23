@@ -89,7 +89,11 @@ namespace RealLifeOverhaul.Markets
             long have = State.Held(s.Id);
             if (side == OrderSide.Sell)
             {
-                return qty > Math.Max(0L, have) - MarketTrading.Reserved(State, s.Id, OrderSide.Sell) ? OrderWhy.NoShares : OrderWhy.None;
+                if (qty > Math.Max(0L, have) - MarketTrading.Reserved(State, s.Id, OrderSide.Sell))
+                {
+                    return OrderWhy.NoShares;
+                }
+                return State.Locks.Count > 0 && have - qty < MarketTrading.Locked(State, s.Id, State.Day) ? OrderWhy.Locked : OrderWhy.None;
             }
             if (have + MarketTrading.Reserved(State, s.Id, OrderSide.Buy) >= MarketTrading.MostHeld(s))
             {

@@ -356,6 +356,7 @@ namespace RealLifeOverhaul.Tech
         {
             float started = Time.realtimeSinceStartup;
             int day = Save.Day;
+            RivalMatches.Flush(day, Save.Hour);
             bool midnight = Save.Hour == 0;
             TalentGame.Employees(_employees);
             for (int i = 0; i < _employees.Count; i++)
@@ -557,9 +558,10 @@ namespace RealLifeOverhaul.Tech
             int made = ReadPeople(day);
             Unseat(day, true);
             Mentors(day);
-            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0, reviewsMore = 0, offersMore = 0;
+            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0, reviewsMore = 0, offersMore = 0, offersTold = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
-            bool staffPay = Settings.EconomyCompanyStaff;   // the one option for raises asked, rivals' offers, strikes and sick pay: off, professionals ask for nothing and no rival approaches them
+            // The one option for raises asked, rivals' offers, strikes and sick days: off, professionals ask for nothing, no rival approaches them and nobody goes off sick.
+            bool staffPay = Settings.EconomyCompanyStaff;
             for (int i = 0; i < _people.Count; i++)
             {
                 Person person = _people[i];
@@ -592,7 +594,7 @@ namespace RealLifeOverhaul.Tech
                     TalentGame.Mood(person.Game, TalentRules.GameMood(p, person.Game.satisfaction));
                 }
                 p.Sick = false;
-                if (TechRandom.Mille(Seed, TechRandom.Of(p.Id), day, 91) < TalentRules.SickChance(p))
+                if (TalentRules.GoesSick(staffPay, Seed, p, day))   // sick days are staff trouble: none with the staff pay option off
                 {
                     sick++;
                     if (person.Game != null)
@@ -665,7 +667,11 @@ namespace RealLifeOverhaul.Tech
                     // a game studio's people are a rival studio's to court, a firm's the company that just beat it in its market or a tender
                     string rival = StudioPoacher(p.Place, day) ?? SectorPoacher(p.Place, day) ?? (TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null);
                     TalentRules.Offer(p, string.IsNullOrEmpty(rival) ? TechText.T("reallife_talent_rival_default") : rival, day);
-                    if (approached <= TalentCatalogue.NoticesMost)
+                    if (MatchOffer(person, day))
+                    {
+                        // matched by itself: said with the others of the night in one notice (RivalMatches)
+                    }
+                    else if (++offersTold <= TalentCatalogue.NoticesMost)
                     {
                         Tell(NotificationType.Warning, "reallife_talent_note_poach",
                             Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),

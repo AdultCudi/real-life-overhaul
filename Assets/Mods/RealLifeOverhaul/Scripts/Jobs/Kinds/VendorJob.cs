@@ -182,6 +182,8 @@ namespace RealLifeOverhaul
                                  + (card != null ? "copied" : "NOT copied (the panel over the cart is all there is)")
                                  + ", waiting for the solid check before the place is offered.");
             }
+            _calls = GigEffect.Open(GigSound.CartCalls, Ctx.Director, Ctx.Logger);   // the folders are read now, once
+            _till = GigEffect.Open(GigSound.CartTill, Ctx.Director, Ctx.Logger);
             return true;
         }
 
@@ -346,6 +348,8 @@ namespace RealLifeOverhaul
                 _cart = null;
             }
             SoundCheck();
+            _calls?.Close();
+            _till?.Close();
             Settle();   // also after a fault (last, so nothing above depends on it)
         }
     }

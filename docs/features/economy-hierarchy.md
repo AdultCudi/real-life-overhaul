@@ -118,3 +118,7 @@ Under the options, "Real Life Overhaul: Running a business": a button for each t
 ## Not checked in the game (the game could not be run)
 
 That a candidate of another place's job board, given to the place with the gap, is hired as the game's own MyEmployees hires them. That a member of staff moved between stores takes their place at the new one as one moved in MyEmployees does. That the policy centre's selector fits the white box with a long scope list.
+
+## What an executive does, and when (23 Nov 2026)
+
+An executive acts through escalations from a manager at work at a place, and, for the people chief, on what waits at a place with no manager answering it (`ExecutivesCover`: the policy's switches, band, largest raise, days between raises and the days a request may wait; an offer the "Match rivals' offers automatically" option can match is never answered here, so no offer has two answers). Every rule's page says what has to be so for it to act (`reallife_pol_field_*_when`). An executive's page shows what they did since yesterday and why nothing came; one notice each morning says what they settled, unless the policy reports only what needs the owner. The operations chief fills a gap only when "Where gaps are filled from" is set past the own job board, and a gap needs a manager at work with a keep number.

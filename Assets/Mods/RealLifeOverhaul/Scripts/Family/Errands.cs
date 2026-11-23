@@ -284,8 +284,8 @@ namespace RealLifeOverhaul.Family
             }
         };
 
-        private static readonly Action OpenRings = () => FamilyTalk.Open(() => Courtship.Rings(0));
-        private static readonly Action OpenPlanner = () => FamilyTalk.Open(() => WeddingPlanner.Start(true));
+        private static readonly Action OpenRings = () => FamilyTalk.Open(() => Courtship.Rings(0), partner: true);
+        private static readonly Action OpenPlanner = () => FamilyTalk.Open(() => WeddingPlanner.Start(true), partner: true);
 
         private static Action At(Errand errand, Spec spec)
         {

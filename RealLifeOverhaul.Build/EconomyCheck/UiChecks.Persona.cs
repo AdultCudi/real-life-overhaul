@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -229,10 +230,11 @@ internal static partial class Program
               && System.Math.Abs(RivalsViews.Change(-50f, -100f) - 0.5f) < 1e-4f, "rivals: a week's change is a share of where it stood, none without a week's history or from nothing");
         UiWords en = UiWords("en");
         UiRivalsModel league = UiSamples.Rivals(en, "league");
-        Check(league.Table.Selected == 1 && league.ProfileActions.Length == 1 && league.ProfileActions[0].Key == UiAction.Option && league.Profile.Ring == UiRole.None,
-            "rivals: the chosen rival is the league's chosen row, Open in Contacts on P, and no mood ring on a rival's face");
-        Check(league.Table.Rows[0].Tones[4] == UiRole.Danger && league.Table.Rows[2].Tones[4] == UiRole.Ok && league.Table.Rows[0].Values[4] == 1
-              && league.Table.Columns[2].Kind == UiCellKind.Money && league.Table.Columns[4].Kind == UiCellKind.Trend,
+        Check(league.Table.Selected == 1 && league.ProfileActions.Length == 2 && league.ProfileActions[0].Key == UiAction.Option && league.ProfileActions[1].Key == UiAction.Count && league.Profile.Ring == UiRole.None,
+            "rivals: the chosen rival is the league's chosen row, Open in Contacts on P beside Show on map, and no mood ring on a rival's face");
+        int change = RivalsViews.ColumnChange;
+        Check(league.Table.Rows[0].Tones[change] == UiRole.Danger && league.Table.Rows[2].Tones[change] == UiRole.Ok && league.Table.Rows[0].Values[change] == 1
+              && league.Table.Columns[2].Kind == UiCellKind.Money && league.Table.Columns[change].Kind == UiCellKind.Trend,
             "rivals: good and bad are the player's: a rival's rise reads bad, the player's own good");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
         Check(businesses.RowActions.Length == 2 && businesses.RowActions[1].Key == UiAction.Alt && businesses.RowLink != null && businesses.Table.Columns[0].Kind == UiCellKind.Tile,
@@ -285,25 +287,65 @@ internal static partial class Program
         UiChart.Scale(income.Chart, out float mlo, out float mhi, out float mstep);
         Check(!income.Chart.Whole && mlo <= money[0] && mhi >= money[4] && mhi - mlo <= (money[4] - money[0]) * 6f && mlo > 0f,
             "rivals: the weekly income chart's axis is fitted to its days' own values, not run from nothing");
-        bool waits = count.Table.Columns[RivalsViews.ColumnChange].Title == "From day 8", empty = true;
+        bool waits = count.Table.Columns.Length == 5 && Array.TrueForAll(count.Table.Columns, c => c.Kind != UiCellKind.Trend), empty = true;
         foreach (UiDataRow r in count.Table.Rows)
         {
-            empty &= string.IsNullOrEmpty(r.Cells[RivalsViews.ColumnChange]);
+            empty &= r.Cells.Length == 5 && r.Values.Length == 5 && r.Tones.Length == 5;
         }
         UiRivalsModel later = UiSamples.Rivals(en, "league");
-        bool shown = later.Table.Columns[RivalsViews.ColumnChange].Title == "7 days";
+        bool shown = later.Table.Columns[RivalsViews.ColumnChange].Title == "7 day change";
         int figures = 0;
         foreach (UiDataRow r in later.Table.Rows)
         {
             figures += string.IsNullOrEmpty(r.Cells[RivalsViews.ColumnChange]) ? 0 : 1;
         }
         Check(waits && empty && shown && figures > 10 && !RivalsViews.WeekShown(5) && !RivalsViews.WeekShown(7) && RivalsViews.WeekShown(8),
-            "rivals: before day 8 the week column says From day 8 and shows no figure; from day 8 it says 7 days and compares");
+            "rivals: before day 8 the league has no week column at all (it would be empty); from day 8 it is headed 7 day change and compares");
+        RivalsFactsFit();
         string ui = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
         string screen = File.ReadAllText(System.IO.Path.Combine(ui, "Rivals", "RivalsScreen.cs"));
         Check(screen.Contains("_v.Today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;"), "rivals: the screen tells the view the game's day, which the chart and the week column keep to");
     }
 
+
+    // The chosen rival's head with a three digit count of buildings and an eleven digit worth (the game cut "183 buildings" with an ellipsis): in every language and
+    // frame every fact's value is drawn whole, in the league and on the other tabs. The general fit rule skips a value that may truncate, so this reads them itself.
+    private static void RivalsFactsFit()
+    {
+        int cut = 0, seen = 0;
+        string first = string.Empty;
+        foreach (string state in new[] { "league", "businesses", "buildings" })
+        {
+            foreach (string lang in ModLanguages.All)
+            {
+                UiWords t = UiWords(lang);
+                UiRivalsModel m = UiSamples.Rivals(t, state);
+                foreach (float aspect in UiAspects)
+                {
+                    var scene = new UiScene();
+                    UiRivals.Lay(scene, m, UiFrame.FullMenu(aspect, m.Title), true, UiDefaultKeys.Keyboard);
+                    for (int i = 0; i < scene.ItemCount; i++)
+                    {
+                        UiItem it = scene.Items[i];
+                        if (it.Kind != UiKind.Text || Array.IndexOf(m.Profile.FactValues, it.Text) < 0)
+                        {
+                            continue;
+                        }
+                        seen++;
+                        if (!UiTextRules.Fits(it.Text, it.Style, it.W))
+                        {
+                            cut++;
+                            first = first.Length == 0 ? state + " " + lang + " " + aspect.ToString("0.00") + ": " + it.Text + " in " + (int)it.W : first;
+                        }
+                    }
+                }
+            }
+        }
+        UiRivalsModel rich = UiSamples.Rivals(UiWords("en"), "league");
+        string all = string.Join("|", rich.Profile.FactValues);
+        Check(cut == 0 && seen > 500 && all.Contains("183 buildings worth $29,691,160,576") && rich.Profile.Wrap,
+            "rivals: a head with 183 buildings worth eleven digits shows every fact whole in every language and frame (" + seen + " read" + (cut > 0 ? ", cut: " + first : "") + ")");
+    }
 
     // Market Insider's rules: the import price graded, every district its colour with the mod's own apart, and the glyphs.
     private static void MarketChecks()

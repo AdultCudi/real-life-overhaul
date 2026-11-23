@@ -130,10 +130,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The gain on a startup stake sold, between two days, both counted. Apart from <see cref="OtherIncome"/> so neither overwrites the other.</summary>
         public static Func<int, int, int> StartupGains;
 
-        /// <summary>Every income that no statement holds, between two days: a business sold and a startup stake sold, each once.</summary>
+        /// <summary>The profit of the businesses a contract of a sale holds, between two days, that was their owners' and not the player's: taken out of the takings the return counts.</summary>
+        public static Func<int, int, int> HeldProfit;
+
+        /// <summary>Every income that no statement holds, between two days: a business sold and a startup stake sold, each once; less a contract firm's profit, which is its owner's.</summary>
         public static int Other(int fromDay, int toDay)
         {
-            return TaxRules.OtherIncome(OtherIncome, StartupGains, fromDay, toDay);
+            return TaxRules.OtherIncome(OtherIncome, StartupGains, fromDay, toDay, HeldProfit);
         }
 
         /// <summary>True where the cleaning service cleans a business, so the rota planner wants no cleaning shift there.</summary>
@@ -234,6 +237,7 @@ namespace RealLifeOverhaul.Economy
             TaxCase = null;
             IssueFootfall = null;
             OtherIncome = null;
+            HeldProfit = null;
             StartupGains = null;
             Cleaned = null;
             Outside = null;

@@ -38,7 +38,10 @@ namespace RealLifeOverhaul.Utilities
         private void Touch()
         {
             Revision++;
-            _view?.Changed();
+            if (!_paying)
+            {
+                _view?.Changed();   // a run of bills paid together (PayBills) writes the page once, at its end
+            }
         }
 
         /// <summary>True while the office's panel is up, or its button was pressed this frame.</summary>
@@ -50,6 +53,7 @@ namespace RealLifeOverhaul.Utilities
         private UtilitiesState _state;
         private GameInstance _save;
         private bool _loaded, _failed, _gaveUp;
+        private bool _paying;   // PayBills is running: the page is written again once, at its end
         private float _nextSecond, _nextHook;
         private int _hour = -1;
         private int _graceSeen = -1;   // the day the internet's grace last saw
@@ -490,6 +494,7 @@ namespace RealLifeOverhaul.Utilities
                     if (a.Service == Service.Internet)
                     {
                         InternetRules.AddDay(a, billing, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
+                        LeasedLineRules.AddDay(a, d, billing, level);
                     }
                 }
                 _company.Day(d, level, billing);

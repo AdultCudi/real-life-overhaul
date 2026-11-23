@@ -99,6 +99,16 @@ The school's car on a lesson or test is lawful and is never checked.
 Points count for 21 days.
 Twelve suspend every licence for 7 days, after which the record starts from zero.
 
+## How long a licence lasts (`LicenceTerm`)
+
+- A licence lasts two of the save's own years (`LicenceTerm.Days`, the year read as `Core/GameCalendar` reads it), never fewer than 120 days (the term it always had, two of the game's 60 day years). `LicenceLaw.ValidDays` is that figure,
+  read when a licence is issued, renewed or shown, and every text that gives a number of days takes it from `{days}`.
+- A card stores the day it ran to and, since this change, the term it was given (`Card.Term`, saved as `terms=` after the heavy part, so an older RLO passes over it and a save without it reads 0, meaning 120). A card's last valid day is
+  `Card.End`: the stored day plus whatever a longer year has added since (`LicenceTerm.End`). A licence already held therefore runs the rest of its term as the longer one, and one never ends sooner than it would have, whatever the
+  year does afterwards. A renewal runs from `End` and stores the new term.
+- The written test's question about the term answers "two years, or 120 days if that is longer", true for every year a save can have. It is a rule, with no option.
+- Checks: `--options4`.
+
 ## The school in the game's own interface
 
 - Desk: the game's panel over a place (`GameUi.WorldPanel` through `GameUi.DoorPanel`) says whether the school is open and has "Speak to the instructor" on the interact key.

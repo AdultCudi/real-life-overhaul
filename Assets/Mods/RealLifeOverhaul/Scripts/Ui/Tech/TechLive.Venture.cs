@@ -50,6 +50,12 @@ namespace RealLifeOverhaul.Ui
                         NichePage(nicheId);
                         return;
                     }
+                    TermDeal deal = int.TryParse(Pick(pick, TechApp.DealRow), out int did) && _d.Terms != null ? _d.Terms.Of(did) : null;
+                    if (deal != null)
+                    {
+                        DealPage(deal);
+                        return;
+                    }
                     Startup picked = int.TryParse(Pick(pick, TechApp.StartupRow), out int sid) ? v.StartupOf(sid) : null;
                     if (picked != null)
                     {
@@ -90,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                         value += mine;
                     }
                 }
+                DealRows(rows, keys);   // what the sales' terms still hold, beside the startups held
                 _m.Shape = TechShape.Table;
                 _m.Table = new UiDataTableModel
                 {
@@ -253,8 +260,9 @@ namespace RealLifeOverhaul.Ui
                     row.Cells[0] = firm.File.Name;
                     row.Sub = TechText.FirmName(firm.File.K);
                     row.Values[0] = (int)TechGlyphs.Of(TechGlyphs.Firm, firm.File.Kind);
-                    row.Cells[1] = c != null && c.Stage >= 0 ? TechText.RoundName((RoundStage)c.Stage) : TechText.T("reallife_vc_bootstrapped");
-                    int share = c != null ? VentureRules.PlayerShare(c) : 1000;
+                    row.Cells[1] = _d.ContractOf(firm.File.Place) != null ? TechText.T("reallife_terms_row_contract")
+                        : c != null && c.Stage >= 0 ? TechText.RoundName((RoundStage)c.Stage) : TechText.T("reallife_vc_bootstrapped");
+                    int share = _d.OwnShare(firm.File.Place);
                     row.Cells[2] = TechText.Mille(share);
                     row.Cells[3] = Cents(c != null ? _d.Level(c.Post) : 0);
                     long raised = 0;
@@ -308,6 +316,16 @@ namespace RealLifeOverhaul.Ui
                     (VentureGame.Cash / -profit).ToString()) : TechText.T("reallife_vc_cap_profit", "profit", Cents(profit)),
                     profit < 0 ? UiRole.WarnText : UiRole.None);
                 StockInfo stock = _d.StockOf(place);   // a firm whose shares trade: the cap table below is the stock's, and the stock has a page of its own
+                TermDeal contract = _d.ContractOf(place);
+                if (contract != null)
+                {
+                    // from the day of the sale the firm is the buyer's in every figure: the cap table the sale ended shows the buyer, whole
+                    card.Row(contract.Buyer, TechText.Mille(1000));
+                    card.Say(TechText.Fill("reallife_terms_cap_owner", "firm", firm.File.Name, "buyer", contract.Buyer));
+                    _m.HeadActions = new[] { Button(TechText.T("reallife_exit_button_page"), UiButtonKind.Secondary, UiAction.Count, Go(v => v.Page = PageExits)) };
+                    _m.Left = new[] { card.Build() };
+                    return;
+                }
                 if (c != null)
                 {
                     long total = Math.Max(1, c.Total);
@@ -344,6 +362,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (chiefs.Count > 0)
                 {
+                    card.Say(TechText.T("reallife_vc_chief_help"));
                     string ceo = c != null ? c.Ceo : string.Empty;
                     int at = 0;
                     for (int i = 0; i < chiefs.Count; i++)

@@ -32,6 +32,10 @@ internal static partial class Program
         TechPointsTexts();
     }
 
+    // The licence's "deals full" line under whichever of its four wordings the product's levers pick (marketing at its top, price at its lowest), or null.
+    private static ViewLine TechPointsFull(ViewSection s) => TechPointsLine(s, "reallife_tech_mkt_product_deals_full") ?? TechPointsLine(s, "reallife_tech_mkt_product_deals_full_marketing")
+        ?? TechPointsLine(s, "reallife_tech_mkt_product_deals_full_price") ?? TechPointsLine(s, "reallife_tech_mkt_product_deals_full_both");
+
     // A whole number as the words write it.
     private static string TechPointsWhole(long n) => n.ToString("N0", CultureInfo.InvariantCulture);
 
@@ -423,7 +427,8 @@ internal static partial class Program
         foreach (string key in new[]
                  {
                      "reallife_tech_mkt_product_heading_up", "reallife_tech_mkt_product_heading_down", "reallife_tech_mkt_product_heading_flat",
-                     "reallife_tech_product_deals", "reallife_tech_product_deals_none", "reallife_tech_mkt_product_deals_full"
+                     "reallife_tech_product_deals", "reallife_tech_product_deals_none", "reallife_tech_mkt_product_deals_full",
+                     "reallife_tech_mkt_product_deals_full_marketing", "reallife_tech_mkt_product_deals_full_price", "reallife_tech_mkt_product_deals_full_both"
                  })
         {
             if (TechPointsLine(section, key) != null)
@@ -454,12 +459,12 @@ internal static partial class Program
         long users = lic.Users;
         lic.Users = 100000;
         ViewSection holds = SectorViews.Market(f, lic, appeal, aware, fmt, 0);
-        ViewLine full = TechPointsLine(holds, "reallife_tech_mkt_product_deals_full");
+        ViewLine full = TechPointsFull(holds);
         lic.Users = 0;
         long buyers = md.Buyers;
         md.Buyers = 3;
         ViewSection tiny = SectorViews.Market(f, lic, appeal, aware, fmt, 0);
-        ViewLine none0 = TechPointsLine(tiny, "reallife_tech_mkt_product_deals_full");
+        ViewLine none0 = TechPointsFull(tiny);
         md.Buyers = buyers;
         lic.Users = users;
         Check(full != null && TechPointsPair(full, "have") == "100000" && TechPointsLine(holds, "reallife_tech_product_deals_none") == null
@@ -470,8 +475,8 @@ internal static partial class Program
         off.Features = 15;
         Product soft = Saas(new FirmsFile { Seed = 4 }, Segment.Enterprise, 15, 0);
         ViewSection offSection = SectorViews.Market(f, off, appeal, aware, fmt, 0), softSection = SectorViews.Market(f, soft, appeal, aware, fmt, 0);
-        Check(TechPointsLine(offSection, "reallife_tech_product_deals_none") == null && TechPointsLine(offSection, "reallife_tech_mkt_product_deals_full") == null
-              && TechPointsLine(softSection, "reallife_tech_product_deals_none") == null && TechPointsLine(softSection, "reallife_tech_mkt_product_deals_full") == null,
+        Check(TechPointsLine(offSection, "reallife_tech_product_deals_none") == null && TechPointsFull(offSection) == null
+              && TechPointsLine(softSection, "reallife_tech_product_deals_none") == null && TechPointsFull(softSection) == null,
             "tech points: a licence not on sale yet, and a product that is not a licence, have no deals line");
         // a product not on sale has no customers heading anywhere: the section keeps its buyers and going features, and drops the line that says it grows
         bool heads = false, headsOff = false;
@@ -617,7 +622,7 @@ internal static partial class Program
         string founding = ModSource(@"Tech\TechDirector.Founding.cs"), day = ModSource(@"Tech\TechDirector.Firms.cs"), cloud = ModSource(@"Tech\TechDirector.Infra.cs"), infraRules = ModSource(@"Tech\Infra\InfraRules.cs"), views = ModSource(@"Tech\Firms\ProductViews.cs");
         // only the rules name a feature's cost: a page that works out the points to go itself (the cost less the work, in whatever shape) was below zero while a model waited for its training
         var named = new Regex(@"\bFeatureCost\s*\(", RegexOptions.CultureInvariant);
-        var rulesOnly = new HashSet<string> { "FirmsRules.cs", "SectorRules.Rivals.cs", "RivalryRules.Reactions.cs", "TechDirector.FoundDesk.cs" };
+        var rulesOnly = new HashSet<string> { "FirmsRules.cs", "SectorRules.Rivals.cs", "RivalryRules.Reactions.cs", "TechDirector.FoundDesk.cs", "SegmentRules.cs" };
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts")), stray = "none";
         int scanned = 0, users = 0;
         foreach (string folder in new[] { "Tech", System.IO.Path.Combine("Ui", "Tech") })

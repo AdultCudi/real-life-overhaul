@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Ui
             RotaSheet sheet = d.RotaSheetFor(at);
             if (sheet == null)
             {
-                p.Refused = CompanyText.T(d.RotaUnread(place) ? "reallife_rota_cannot" : d.RotaWorking(place) ? "reallife_rota_working" : "reallife_rota_off");
+                p.Refused = CompanyText.T(d.RotaNoSheetText(at));
                 p.RefusedCard = RefusedCard(at, p.Refused, null, w);
                 return p;
             }
@@ -499,7 +499,7 @@ namespace RealLifeOverhaul.Ui
             for (int wk = 0; wk < sheet.Workers.Count && wk < sheet.Problem.Workers; wk++)
             {
                 string name = RotaGame.WorkerName(sheet.Workers[wk]);
-                lanes.Add(new UiBoardLane { Name = name, Sub = RotaGame.Skills(sheet.Workers[wk]), Hue = UiColour.HueOf(name), Tint = UiRole.None });
+                lanes.Add(new UiBoardLane { Name = name, Sub = RotaGame.Skills(sheet.Workers[wk]), Hue = UiColour.HueOf(name), Tint = UiRole.None, Who = sheet.Workers[wk].id });
                 int from = -1;
                 for (int h = 0; h <= RotaCatalogue.Hours; h++)
                 {

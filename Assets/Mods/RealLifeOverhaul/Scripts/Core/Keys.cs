@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
         Walk,               // on foot: walk, and press again for the game's own pace (Walking/WalkDirector)
         Phone,              // the keys and the pad to the phone on the RLO interface, and back (Ui/Phone/PhoneKit)
+        Driver,             // the private driver: calls the garage's only car or opens the card of cars (Ui/HudScreens/HudDriver)
     }
 
     /// <summary>The modifier a key is bound with.</summary>
@@ -78,6 +79,7 @@ namespace RealLifeOverhaul
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
             new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // free of the game, the mod and the system (ContractCheck)
             new Binding("phone", "reallife_keys_phone", KeyCode.F11),   // free of the game, the mod and the system too (ContractCheck)
+            new Binding("driver", "reallife_keys_driver", KeyCode.Insert),   // free of the game, the mod and the system too (ContractCheck)
         };
 
         private static readonly TextLocalizationComponent[] Rows = new TextLocalizationComponent[All.Length];

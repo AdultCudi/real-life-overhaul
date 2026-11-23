@@ -175,6 +175,9 @@ namespace RealLifeOverhaul.Tech
             return anchor - (int)((long)(anchor - 1000) * Math.Max(0, gone) / AnchorDays);
         }
 
+        // What made a product's churn higher than a sound, supported product's, as bits of ProductDay.ChurnWhy: its page names them.
+        public const int WhyBugs = 1, WhySupport = 2, WhyBehind = 4, WhyPrice = 8;
+
         // ---------------------------------------------------------------- the curves in place of the clamps
 
         /// <summary>
@@ -382,18 +385,23 @@ namespace RealLifeOverhaul.Tech
             {
                 churn /= 3;
             }
-            churn = churn * (2000 - Soundness(p.Bugs, FirmsRules.Allowance(p))) / 1000;
+            int sound = Soundness(p.Bugs, FirmsRules.Allowance(p));
+            churn = churn * (2000 - sound) / 1000;
+            r.ChurnWhy |= sound < 900 ? WhyBugs : 0;
             int needed = FirmsRules.SupportNeeded(p);
             if (needed > support)
             {
                 // the whole extra is reached only with nobody answering at all
                 churn = churn * (1000 + Math.Min(FirmsCatalogue.SupportChurnMost, (needed - support) * 1000 / Math.Max(1, needed))) / 1000;
+                r.ChurnWhy |= WhySupport;
             }
             churn = churn * (p.Tier == 0 ? 900 : p.Tier == 2 ? 1150 : 1000) / 1000;
+            r.ChurnWhy |= p.Tier == 2 ? WhyPrice : 0;
             int behind = m.Average - p.Features;
             if (behind > 0)
             {
                 churn = churn * (1000 + Lift(behind, 10, 1000)) / 1000;
+                r.ChurnWhy |= WhyBehind;
             }
             double lost = p.Users * churn / 1000.0 / FirmsCatalogue.MonthDays;
             long lostWhole = (long)lost;
@@ -401,15 +409,26 @@ namespace RealLifeOverhaul.Tech
             {
                 lostWhole++;
             }
-            long overFree = 0;
+            long overFree = 0, drift = 0;
             if (have > target)
             {
-                long over = (have - target) * SectorCatalogue.Pace[who] / 1000000;   // past its share: they drift to the products that took it
+                // past its share: they drift to the products that took it. A fraction of a customer is rolled by the day's seed, as churn's is: cut off,
+                // a licence with a few customers over its share (the pace is thousandths of a thousandth of the gap) would never lose one while its page
+                // says it loses some to its rivals.
+                long micro = (have - target) * SectorCatalogue.Pace[who];
+                long over = micro / 1000000;
+                if (TechRandom.Mille(f.Seed, p.Id, day, 41) < (int)(micro % 1000000 / 1000))
+                {
+                    over++;
+                }
+                over = Math.Min(over, have - target);
                 long overPaying = have > 0 ? over * p.Users / have : 0;
-                lostWhole += overPaying;
+                drift = overPaying;
                 overFree = over - overPaying;
             }
-            r.Lost = Math.Min(p.Users, lostWhole);
+            r.LostChurn = Math.Min(p.Users, lostWhole);
+            r.LostDrift = Math.Min(p.Users - r.LostChurn, drift);
+            r.Lost = r.LostChurn + r.LostDrift;
             p.Free -= Math.Min(p.Free, p.Free * churn * 2 / 1000 / FirmsCatalogue.MonthDays + overFree);
             p.Users = Math.Max(0, p.Users + r.Won - r.Lost);
             r.Takings += FirmsRules.MonthlyRevenue(p) / FirmsCatalogue.MonthDays;
@@ -434,6 +453,7 @@ namespace RealLifeOverhaul.Tech
                 long gone = Math.Min(p.Users, p.Users * FirmsCatalogue.OutageChurn / 1000);
                 p.Users -= gone;
                 r.Lost += gone;
+                r.LostIncident += gone;
                 if (seg == (int)Segment.Enterprise)
                 {
                     r.Takings = Math.Max(0, r.Takings - FirmsRules.MonthlyRevenue(p) * FirmsCatalogue.SlaCredit / 1000);
@@ -450,6 +470,7 @@ namespace RealLifeOverhaul.Tech
                 long gone = Math.Min(p.Users, p.Users * 50 / 1000);
                 p.Users -= gone;
                 r.Lost += gone;
+                r.LostIncident += gone;
                 firm.Breaches++;
                 firm.Reputation = Math.Max(0, firm.Reputation - 100);
             }

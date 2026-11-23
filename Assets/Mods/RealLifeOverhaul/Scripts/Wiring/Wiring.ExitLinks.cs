@@ -40,7 +40,15 @@ namespace RealLifeOverhaul
                 ExitBridges.Practised = (skill, hours) => CareersDirector.Instance?.PractisedSkill(skill, hours);
                 ExitBridges.Sessions = Hold;
                 ExitBridges.Fixtures = Fixtures;
+                ExitBridges.ShareQuote = ShareQuote;
+                ExitBridges.ShareGrant = ShareGrant;
+                ExitBridges.HandOverReady = HandOverReady;
+                ExitBridges.StillHeld = StillHeld;
+                ServicesBridges.Contracted = place => TechDirector.Instance != null && TechDirector.Instance.Contracted(place);
                 CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
+                // a contract firm's profit is its owner's, not the player's
+                CompanyBridges.HeldProfit = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.HeldBetween(from, to) : 0;
+                ExitBridges.DividendTax = DividendTax;
                 ExitJobLinks.Connect();
             }
 
@@ -48,7 +56,9 @@ namespace RealLifeOverhaul
             {
                 Hold(false);
                 ExitBridges.Reset();
+                ServicesBridges.Contracted = null;
                 CompanyBridges.StartupGains = null;
+                CompanyBridges.HeldProfit = null;
             }
 
             // The founders of the city's startups as residents of the field their startup works in; none while the venture part is off.
@@ -148,11 +158,84 @@ namespace RealLifeOverhaul
                 try
                 {
                     ServicesDirector services = ServicesDirector.Instance;
-                    return services != null && services.HandOver(place, buyer);
+                    return services != null && services.HandOver(place, buyer, true);   // a sale or a contract's end: the hold a contract puts on a business is not in their way
                 }
                 catch (Exception e)
                 {
                     Fault("ExitLinks.HandOver", e);
+                    return false;
+                }
+            }
+
+            // The market's price of a listed company's share and a place for shares paid in a sale: the stock market's own, for the player who owns this save.
+            private static int ShareQuote(int stock)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null ? m.GrantPrice(stock) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.ShareQuote", e);
+                    return 0;
+                }
+            }
+
+            private static bool ShareGrant(int stock, long shares, int cents, int lockDay)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null && m.Grant(stock, shares, cents, lockDay);
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.ShareGrant", e);
+                    return false;
+                }
+            }
+
+            // The tax withheld from a stake's dividend, whole money: the stock market's own rate for dividends, moved by the council's business tax.
+            private static long DividendTax(long money)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null ? m.StakeDividendTax(money) : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.DividendTax", e);
+                    return 0L;
+                }
+            }
+
+            // A contract keeps the business until it ends and then hands it over as a sale does, which only the sales of businesses can do, and never in a Going Public session.
+            private static bool HandOverReady(string place)
+            {
+                try
+                {
+                    ServicesDirector services = ServicesDirector.Instance;
+                    return services != null && services.CanHandOver();
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.HandOverReady", e);
+                    return false;
+                }
+            }
+
+            // Whether the business is still the player's own: a hand-over that said it was done is believed only when this says no.
+            private static bool StillHeld(string place)
+            {
+                try
+                {
+                    return ServicesGame.IsSellable(ServicesGame.Find(place));
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.StillHeld", e);
                     return false;
                 }
             }
@@ -243,7 +326,10 @@ namespace RealLifeOverhaul
 
             internal static SessionDef Offer()
             {
-                SessionDef def = Make(OfferId, "offer", new[] { C("offer_accept", 20), C("offer_counter", 40), C("offer_decline", 0) }, 30);
+                SessionDef def = Make(OfferId, "offer", new[]
+                {
+                    C("offer_accept", 20), C("offer_counter", 40), C("offer_decline", 0), C("offer_shares", 20), C("offer_slice", 20), C("offer_earn", 20), C("offer_boss", 30)
+                }, 30);   // the first three are as they were; the rest accept on the terms of the Exits page at their middle sizes (TechDirector.SessionTerms)
                 def.Blocked = ask => Blocked(ask, 0);
                 def.Apply = (ask, choices) => Apply(ask, choices, 0);
                 return def;

@@ -444,7 +444,7 @@ namespace RealLifeOverhaul.Meta
             // The courses and what runs with them share the jobs header.
             Careers.CareersGuide.AddStudyFacts(Features.Add("careers_study", "reallife_meta_title_careers_study")
                 .About("reallife_guide_careers_study_about").Help("reallife_guide_careers_study")
-                .Owns(Settings.CareersStudyId, Settings.CareersClassStartId)
+                .Owns(Settings.CareersStudyId, Settings.CareersClassStartId, Settings.CareersSkillFadeId)
                 .Test("reallife_study_test_class", "reallife_study_test_exam", "reallife_study_test_skills")
                 .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
@@ -467,8 +467,8 @@ namespace RealLifeOverhaul.Meta
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
                 .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
                 .Owns(Settings.CareersJobsId, Settings.CareersAgencyNoteId, Settings.CareersRejectReasonId)
-                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies")
-                .Data(Careers.CareersStore.Key)
+                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies", "reallife_police_test_patrol", "reallife_police_test_hurt")
+                .Data(Careers.CareersStore.Key, Careers.DutyStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddLifeFacts(Features.Add("careers_life", "reallife_meta_title_careers_life")
@@ -708,6 +708,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("net_outage_most", () => Utilities.InternetCatalogue.OutageMostHours.ToString(CultureInfo.InvariantCulture))
                 .Fact("net_outage_least", () => Utilities.InternetCatalogue.OutageLeastHours.ToString(CultureInfo.InvariantCulture))
                 .Fact("net_exit", () => Guide.Percent(Utilities.InternetCatalogue.ExitShare / 1000f))
+                .Fact("net_line_low", () => (Utilities.LeasedLineCatalogue.Mbps[0] / 1000).ToString(CultureInfo.InvariantCulture))
+                .Fact("net_line_high", () => (Utilities.LeasedLineCatalogue.Mbps[Utilities.LeasedLineCatalogue.Steps - 1] / 1000).ToString(CultureInfo.InvariantCulture))
+                .Fact("net_line_from", () => Guide.Money(Utilities.LeasedLineCatalogue.MonthCents[0] / 100f * Prices.Level / 1000f))
+                .Fact("net_line_to", () => Guide.Money(Utilities.LeasedLineCatalogue.MonthCents[Utilities.LeasedLineCatalogue.Steps - 1] / 100f * Prices.Level / 1000f))
+                .Fact("net_line_days", () => Utilities.LeasedLineCatalogue.InstallDays[0].ToString(CultureInfo.InvariantCulture))
+                .Fact("net_line_fee", () => Guide.Percent(Utilities.LeasedLineCatalogue.InstallShare / 1000f))
                 .Owns(Settings.UtilitiesId, Settings.UtilitiesNetSpeedId)
                 .Data(Utilities.UtilitiesStore.Key, CityReserves.UtilitiesKey)
                 .Fact("util_kwh", () => Guide.Money(Utilities.UtilitiesCatalogue.UnitCents[0] / 100f * Prices.Level / 1000f))
@@ -752,7 +758,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")
                 .Owns(Settings.FamilyId, Settings.FamilyAtHomeId, Settings.FamilyWeddingId, Settings.FamilyChildrenId, Settings.FamilyRelativesId,
-                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId)
+                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyExpectId, Settings.FamilyYearWeeksId, Settings.FamilyMomContactId)
                 .Preset(Settings.FamilyFrictionId, 0, 1, 1)
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")

@@ -36,18 +36,23 @@ namespace RealLifeOverhaul.Family
 
         private static bool On => Settings.FamilyRelatives;
 
-        /// <summary>A text from Mom. Nothing if she is not in the phone (the contacts option is off) or relatives are switched off.</summary>
+        /// <summary>
+        /// A text from Mom about the player's own news (an engagement, a child on the way). Nothing if she is not in the phone (the
+        /// contacts option is off), relatives are switched off or Mom's own contact is. It answers the player's news, so the day's
+        /// one contact does not hold it back, but it counts as hers for the day.
+        /// </summary>
         public static void MomSays(string key)
         {
-            if (On && PhoneContacts.Mom != null)
+            if (On && PhoneContacts.Mom != null && MomContact.On)
             {
                 FamilyText.Message(PhoneContacts.Mom, key, Args.Us);
+                MomContact.Note(TimeHelper.CurrentDay);
             }
         }
 
         public static void MomGift(int amount, string key, Args fill)
         {
-            if (!On || PhoneContacts.Mom == null)
+            if (!On || PhoneContacts.Mom == null || !MomContact.On)
             {
                 return;
             }
@@ -55,6 +60,7 @@ namespace RealLifeOverhaul.Family
             FamilyState.MoneyIn(amount);
             fill.Amount = FamilyText.Money(amount);
             FamilyText.Message(PhoneContacts.Mom, key, fill);
+            MomContact.Note(TimeHelper.CurrentDay);
         }
 
         public static void InLawsSay(string key)
@@ -94,7 +100,7 @@ namespace RealLifeOverhaul.Family
             // Mom drops by on a Sunday now and then, once there is a household to drop in on, and a home to drop in on: every
             // visit's words are of the home, one of its fridge (Core/LineNeeds), so without a home she does not come.
             string visit;
-            if (TimeHelper.GetDayOfWeek(day) == DayOfWeekOrdered.Sunday && day - s.LastMomVisitDay >= 14 && PhoneContacts.Mom != null
+            if (TimeHelper.GetDayOfWeek(day) == DayOfWeekOrdered.Sunday && day - s.LastMomVisitDay >= 14 && PhoneContacts.Mom != null && MomContact.MayOn(day)
                 && (FamilyState.Bond == Bond.Married || FamilyState.AtHome() > 0) && Random.value < 0.5f
                 && (visit = FamilyText.Pick(Visits, ref _lastVisit)) != null)
             {
@@ -108,6 +114,7 @@ namespace RealLifeOverhaul.Family
                     }
                 }
                 FamilyText.Message(PhoneContacts.Mom, visit, Args.Us);
+                MomContact.Note(day);
             }
 
             // The in-laws: a favour asked, a loan paid back, a favour that went unanswered.
@@ -146,11 +153,12 @@ namespace RealLifeOverhaul.Family
         // The day before: Mom's invitation, saying how to come by where the dinner will be.
         private static void Invite(int which)
         {
-            if (PhoneContacts.Mom == null)
+            if (PhoneContacts.Mom == null || !MomContact.May)
             {
                 return;
             }
             Args fill = Args.Us.With(FamilyText.T(HolidayNames[which]));
+            MomContact.Note(TimeHelper.CurrentDay);
             if (Place == DinnerPlace.Home)
             {
                 FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(HomeInvites, ref _lastHomeInvite), fill.Hours(DinnerRules.HomeFrom, DinnerRules.HomeTo));
@@ -173,19 +181,21 @@ namespace RealLifeOverhaul.Family
                 errand.FromHour = from;
                 errand.ToHour = to;
                 errand.Number = which;
-                if (PhoneContacts.Mom != null)
+                if (PhoneContacts.Mom != null && MomContact.May)
                 {
                     FamilyText.Message(PhoneContacts.Mom, "reallife_family_holiday_at_home", fill.Hours(from, to));
+                    MomContact.Note(day);
                 }
                 return DinnerPlace.Home;
             }
             s.MomDinnerDay = day;
             s.MomDinnerWhich = which;
             _tableNowDay = fromNow ? day : 0;
-            if (PhoneContacts.Mom != null)
+            if (PhoneContacts.Mom != null && MomContact.May)
             {
                 bool now = fromNow && TimeHelper.CurrentHour < DinnerRules.MomsFrom;
                 FamilyText.Message(PhoneContacts.Mom, now ? "reallife_family_holiday_at_moms_now" : "reallife_family_holiday_at_moms", fill);
+                MomContact.Note(day);
             }
             return DinnerPlace.Moms;
         }
@@ -238,9 +248,10 @@ namespace RealLifeOverhaul.Family
 
         public static void DinnerMissed(Errand errand)
         {
-            if (PhoneContacts.Mom != null && On)
+            if (PhoneContacts.Mom != null && On && MomContact.May)
             {
                 FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(MissedLines, ref _lastMissed), Args.Us.With(FamilyText.T(HolidayName(errand.Number))));
+                MomContact.Note(TimeHelper.CurrentDay);
             }
         }
 

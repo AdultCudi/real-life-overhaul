@@ -113,6 +113,10 @@ namespace RealLifeOverhaul.SelfTest
             new SelfTestKind("teleport", 60,
                 "Puts the player at an address (12 5th Avenue), at a business type's first building, or inside the building.",
                 null, new[] { "address:s", "business:s", "inside:b" }),
+            new SelfTestKind("under_lamp", 60,
+                "Stands the player on the ground by the nth nearest lit street lamp (where: inside the glow, front on the camera's side, behind on the far side). "
+                + "The camera is left alone: the game's third-person camera follows the player, and nothing turns it by code safely.",
+                null, new[] { "where:s", "nth:i" }),
             new SelfTestKind("found_business", 120, "Rents a building and starts a business of a type in it as the game's start screen does (a tech firm is a type of the mod's).", new[] { "type:s" },
                 new[] { "name:s", "address:s", "settle:n" }),
 

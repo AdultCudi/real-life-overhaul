@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
                 UtilitiesBridges.FirmWork = FirmWork;
                 UtilitiesBridges.ShopMost = ShopMost;
                 UtilitiesBridges.Shops = Shops;
+                UtilitiesBridges.LineSite = LineSite;
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
@@ -103,6 +104,21 @@ namespace RealLifeOverhaul
                 {
                     Fault("UtilityLinks.ShopMost", e);
                     return -1;
+                }
+            }
+
+            // A leased line is sold to a warehouse of the player's that is fitted out as a data centre, and to nothing else.
+            private static bool LineSite(BuildingRegistration reg)
+            {
+                try
+                {
+                    Tech.TechDirector tech = Tech.TechDirector.Instance;
+                    return tech != null && tech.Infra != null && tech.IsCentre(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.LineSite", e);
+                    return false;
                 }
             }
 

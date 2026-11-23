@@ -277,6 +277,7 @@ namespace RealLifeOverhaul.Markets
                 State.Day = day + 1;
                 MarketBots.Turn(State, day + 1);   // the day turn: what the bots and the rules gained today is nothing again, and this week's on a Monday
                 RuleBots.Turn(State, day + 1);
+                SweepLocks();   // a lock-up that has run out, or on shares no longer held, comes off with the day
                 State.Phase = MarketCatalogue.PhaseNone;
                 return 1;
             }

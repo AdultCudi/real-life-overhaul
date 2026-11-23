@@ -167,6 +167,8 @@ namespace RealLifeOverhaul
                     v => Settings.CharacterLighting = v)
                 .AddToggle(Settings.CharacterSkinId, "reallife_character_skin", Settings.CharacterSkin,
                     v => Settings.CharacterSkin = v)
+                .AddToggle(Settings.LampHazeId, "reallife_lamp_haze", Settings.LampHaze,
+                    v => Settings.LampHaze = v)
                 .AddSplitter()
                 .AddHeader("reallife_looks_header")
                 .AddToggle(Settings.CharacterNewLooksId, "reallife_character_new_looks", Settings.CharacterNewLooks,
@@ -359,6 +361,12 @@ namespace RealLifeOverhaul
                     v => Settings.JobTaxiEasy = v)
                 .AddToggle(Settings.JobCartSoundsId, "reallife_jobs_cart_sounds", Settings.JobCartSounds,
                     v => Settings.JobCartSounds = v)
+                .AddToggle(Settings.GigMusicId, "reallife_gig_music_enabled", Settings.GigMusic,
+                    v => Settings.GigMusic = v)
+                .AddDropdown(Settings.GigMusicOrderId, "reallife_gig_music_order",
+                    new[] { "reallife_gig_music_order_0", "reallife_gig_music_order_1" }, Settings.GigMusicOrder,
+                    v => Settings.GigMusicOrder = v)
+                .AddButton("reallife_gig_music_folder", GigMusicGame.OpenFolder)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
@@ -392,6 +400,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
                 .AddToggle(Settings.CareersClassStartId, "reallife_study_opt_class_start", Settings.CareersClassStart,
                     v => Settings.CareersClassStart = v)
+                .AddToggle(Settings.CareersSkillFadeId, "reallife_study_opt_skill_fade", Settings.CareersSkillFade,
+                    v => Settings.CareersSkillFade = v)
                 .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
                     v => Settings.CareersDegrees = v)
                 .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
@@ -405,6 +415,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_reject", () => Careers.CareersDirector.Instance?.TestReject())
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
+                .AddButton("reallife_police_test_patrol", () => Careers.CareersDirector.Instance?.TestDuty())
+                .AddButton("reallife_police_test_hurt", () => Careers.CareersDirector.Instance?.TestDutyHurt())
                 .AddButton("reallife_work_test_computer", () => Careers.CareersDirector.Instance?.TestComputerWork())
                 .AddButton("reallife_work_test_interview_place", () => Careers.CareersDirector.Instance?.TestInterviewPlace())
                 .AddButton("reallife_work_test_interview_home", () => Careers.CareersDirector.Instance?.TestInterviewHome())
@@ -813,6 +825,9 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.RivalsFirstId, "reallife_rival_first",
                     new[] { "reallife_rival_first_5", "reallife_rival_first_10", "reallife_rival_first_20", "reallife_rival_first_30", "reallife_rival_first_50" }, Settings.RivalsFirst,
                     v => Settings.RivalsFirst = v)
+                .AddDropdown(Settings.RivalsHoldingsId, "reallife_rival_holdings",
+                    new[] { "reallife_rival_holdings_game", "reallife_rival_holdings_new", "reallife_rival_holdings_all" }, Settings.RivalsHoldings,
+                    v => Settings.RivalsHoldings = v)
                 .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
                 .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
                 .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
@@ -824,6 +839,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
                 .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
                 .AddButton("reallife_rival_test_first", () => Rivals.RivalDirector.Instance?.TestFirst())
+                .AddButton("reallife_rival_test_holdings", () => Economy.EstateDirector.Instance?.TestHoldings())
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
@@ -1065,6 +1081,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyStaff = v)
                 .AddSlider(Settings.EconomyCompanyAgreeUpToId, "reallife_co_opt_agree_up_to", 0, Economy.CompanyCatalogue.AgreeUpToMost, Settings.EconomyCompanyAgreeUpTo,
                     v => Settings.EconomyCompanyAgreeUpTo = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.EconomyCompanyMatchRivalsId, "reallife_co_opt_match_rivals", Settings.EconomyCompanyMatchRivals,
+                    v => Settings.EconomyCompanyMatchRivals = v)
                 .AddToggle(Settings.EconomyCompanyCoverId, "reallife_co_opt_cover", Settings.EconomyCompanyCover,
                     v => Settings.EconomyCompanyCover = v)
                 .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
@@ -1334,6 +1352,10 @@ namespace RealLifeOverhaul
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
                     v => Settings.EstateDuties = v)
+                .AddToggle(Settings.EstateFlatsId, "reallife_flat_opt", Settings.EstateFlats,
+                    v => Settings.EstateFlats = v)
+                .AddButton("reallife_flat_test_buy", () => Economy.EstateDirector.Instance?.TestFlatBuy())
+                .AddButton("reallife_flat_test_bills", () => Economy.EstateDirector.Instance?.TestFlatBills())
                 .AddToggle(Settings.ParkingSpacesId, "reallife_space_enabled", Settings.ParkingSpaces,
                     v => Settings.ParkingSpaces = v)
                 .AddButton("reallife_space_test_btn_buy", () => ParkSpaces.SpaceDirector.Instance?.TestBuy())
@@ -1344,6 +1366,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
                 .AddButton("reallife_estate_test_offer", () => Economy.EstateDirector.Instance?.TestOffer())
                 .AddButton("reallife_estate_test_instruction", () => Economy.EstateDirector.Instance?.TestInstruction())
+                .AddButton("reallife_estate_test_block", () => Economy.EstateDirector.Instance?.TestBlockOffer())
+                .AddButton("reallife_estate_test_block_month", () => Economy.EstateDirector.Instance?.TestBlockMonth())
                 .AddButton("reallife_estate_test_night", () => Economy.EstateDirector.Instance?.TestHotelNight())
                 .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
@@ -1408,6 +1432,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_exit_test_pricing", () => Tech.TechDirector.Instance?.TestExitPricing())
                 .AddButton("reallife_exit_test_hire", () => Tech.TechDirector.Instance?.TestStartupHire())
                 .AddButton("reallife_exit_test_lead", () => Tech.TechDirector.Instance?.TestExitLead())
+                .AddButton("reallife_terms_test_year", () => Tech.TechDirector.Instance?.TestTermsYear())
                 .AddButton("reallife_exit_test_founder", () => Tech.TechDirector.Instance?.TestExitFounder())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
@@ -1553,6 +1578,8 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyChildren = v)
                 .AddToggle(Settings.FamilyRelativesId, "reallife_family_relatives", Settings.FamilyRelatives,
                     v => Settings.FamilyRelatives = v)
+                .AddToggle(Settings.FamilyMomContactId, "reallife_family_mom_contact_opt", Settings.FamilyMomContact,
+                    v => Settings.FamilyMomContact = v)
                 .AddToggle(Settings.FamilyFrictionId, "reallife_family_friction", Settings.FamilyFriction,
                     v => Settings.FamilyFriction = v)
                 .AddToggle(Settings.FamilyWorkId, "reallife_family_work_opt", Settings.FamilyWork,

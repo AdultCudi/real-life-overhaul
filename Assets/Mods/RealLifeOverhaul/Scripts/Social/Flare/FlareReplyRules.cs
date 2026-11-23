@@ -160,4 +160,142 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
     }
+
+    /// <summary>
+    /// The lasting record of the review posts of the feed that went up about a business of the player's. The feed keeps a city post only a few
+    /// days (FlareLiveRules.CityKeepDays) and fewer when it is full (FlareRules.PostsMost), so a rating read off the posts fell back to nothing;
+    /// each review is counted once, by its post's number, into a row of stars per place that is saved with the account, as the city's own rows are
+    /// (FlareUseRules.NoteReview): it counts for as long as the business is the player's. The rows and the numbers are bounded.
+    /// </summary>
+    public static class FlareReviewBook
+    {
+        public const int RowsMost = 32;       // businesses with a row: the oldest is let go
+        public const int PostsKept = 1024;    // numbers of counted posts: twice the feed's posts, so a post still in the feed is never counted again
+
+        /// <summary>Whether a post is a review that somebody else wrote and that has gone up by <paramref name="now"/>.</summary>
+        public static bool Counts(FlareFile f, FlarePost p, long now)
+        {
+            return p.Source == FlareSource.Review && p.Author != FlareAuthor.Player && !string.IsNullOrEmpty(p.Place) && p.At <= now
+                   && !(p.Author == FlareAuthor.Network && f.Net.IsHidden(p.AuthorId));
+        }
+
+        public static FlareStarRow RowOf(FlareFile f, string place, bool make)
+        {
+            for (int i = 0; i < f.Counted.Count; i++)
+            {
+                if (f.Counted[i].Key == place)
+                {
+                    return f.Counted[i];
+                }
+            }
+            if (!make)
+            {
+                return null;
+            }
+            if (f.Counted.Count >= RowsMost)
+            {
+                f.Counted.RemoveAt(0);
+            }
+            var row = new FlareStarRow { Key = place };
+            f.Counted.Add(row);
+            return row;
+        }
+
+        public static void Add(FlareStarRow row, int stars)
+        {
+            switch (FlareRules.Clamp(stars, 1, 5))
+            {
+                case 1: row.One++; break;
+                case 2: row.Two++; break;
+                case 3: row.Three++; break;
+                case 4: row.Four++; break;
+                default: row.Five++; break;
+            }
+        }
+
+        /// <summary>Counts the posts that have gone up and are about one of <paramref name="places"/>, each once. How many were counted.</summary>
+        public static int Count(FlareFile f, long now, List<string> places)
+        {
+            int n = 0;
+            for (int i = 0; i < f.Posts.Count; i++)
+            {
+                FlarePost p = f.Posts[i];
+                if (Counts(f, p, now) && places.Contains(p.Place) && !f.CountedPosts.Contains(p.Id))
+                {
+                    Take(f, p);
+                    n++;
+                }
+            }
+            return n;
+        }
+
+        private static void Take(FlareFile f, FlarePost p)
+        {
+            Add(RowOf(f, p.Place, true), p.Arg);
+            if (f.CountedPosts.Count >= PostsKept)
+            {
+                f.CountedPosts.RemoveAt(0);
+            }
+            f.CountedPosts.Add(p.Id);
+        }
+
+        /// <summary>
+        /// The stars of a place: the city's row (null for none), the lasting record, and any review post that has gone up and is not counted yet
+        /// (the hour has not come round), so nothing shows less in between. The city's row itself is copied before it is added to, never changed.
+        /// </summary>
+        public static FlareStarRow With(FlareFile f, FlareStarRow city, string place, long now)
+        {
+            FlareStarRow kept = RowOf(f, place, false);
+            FlareStarRow row = null;
+            if (kept != null)
+            {
+                row = CopyOf(city, place);
+                row.One += kept.One; row.Two += kept.Two; row.Three += kept.Three; row.Four += kept.Four; row.Five += kept.Five;
+                row.Eased += kept.Eased; row.EasedStars += kept.EasedStars; row.Raised += kept.Raised; row.RaisedStars += kept.RaisedStars;
+            }
+            for (int i = 0; i < f.Posts.Count; i++)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Place == place && Counts(f, p, now) && !f.CountedPosts.Contains(p.Id))
+                {
+                    row = row ?? CopyOf(city, place);
+                    Add(row, p.Arg);
+                }
+            }
+            return row ?? city;
+        }
+
+        /// <summary>A reply of the player's to a review post, counted into the business's stars as the answer rules say (the first reply only).</summary>
+        public static void Answered(FlareFile f, FlarePost reply, int quality, long now)
+        {
+            FlarePost review = reply.ReplyTo >= 0 ? f.Post(reply.ReplyTo) : null;
+            if (review == null || review.Place != reply.Place || !Counts(f, review, now))
+            {
+                return;
+            }
+            int replies = 0;
+            for (int i = 0; i < f.Posts.Count; i++)
+            {
+                replies += f.Posts[i].ReplyTo == review.Id && f.Posts[i].Author == FlareAuthor.Player ? 1 : 0;
+            }
+            if (replies > 1)
+            {
+                return;
+            }
+            if (!f.CountedPosts.Contains(review.Id))
+            {
+                Take(f, review);
+            }
+            FlareReplyRules.Answered(RowOf(f, review.Place, true), review.Arg, quality);
+        }
+
+        private static FlareStarRow CopyOf(FlareStarRow from, string place)
+        {
+            return from == null ? new FlareStarRow { Key = place } : new FlareStarRow
+            {
+                Key = from.Key, One = from.One, Two = from.Two, Three = from.Three, Four = from.Four, Five = from.Five, Recent = from.Recent, Earlier = from.Earlier,
+                Eased = from.Eased, EasedStars = from.EasedStars, Raised = from.Raised, RaisedStars = from.RaisedStars
+            };
+        }
+    }
 }

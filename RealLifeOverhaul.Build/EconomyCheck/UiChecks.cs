@@ -765,6 +765,7 @@ internal static partial class Program
                         Check(UiFocusRules.Unreached(s, out string missed) == 0, "ui screens: the d-pad reaches every target: " + where + " (" + missed + ")");
                         Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (dark): " + where);
                         Check(UiCheckRules.RawKeys(s, say) == 0, "ui screens: no record's key on the screen, only words: " + where);
+                        Check(UiCheckRules.Doubled(s, say) == 0, "ui screens: no drawn text holds a full stop with a comma or a second full stop: " + where);
                         Check(UiCheckRules.Repeats(s, frame, say) == 0, "ui screens: no page repeats its window's title under it: " + where);
                         Check(UiCheckRules.Stacked(s, say) == 0, "ui screens: no label stands over another saying the same thing: " + where);
                         Check(UiCheckRules.EmptyPanels(s, say) == 0, "ui screens: no panel stands empty: " + where);

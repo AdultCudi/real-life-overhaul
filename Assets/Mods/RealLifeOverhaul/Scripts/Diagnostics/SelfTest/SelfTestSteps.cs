@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.SelfTest
                 case "console": return new ConsoleStep();
                 case "set_money": return new SetMoneyStep();
                 case "teleport": return new TeleportStep();
+                case "under_lamp": return new UnderLampStep();
                 case "found_business": return new FoundBusinessStep();
                 case "screenshot": return new ScreenshotStep();
                 case "assert_no_faults": return new AssertNoFaultsStep();

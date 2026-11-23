@@ -96,7 +96,8 @@ namespace RealLifeOverhaul.Economy
             "consolidation_paid_out", "consolidation_paid_off", "credit_drawn", "overdraft_cover", "finance_advance", "finance_returned", "private_loan", "private_loan_taken",
             "repossession_surplus",
             // money lent and paid back, or borrowed from a friend
-            "family_loan", "giving_loan", "giving_loan_back", "social_loan", "social_loan_back", "roommate_loan", "roommate_loan_back", "loan_friend", "social_borrowed", "repaid",
+            "family_loan", "giving_loan", "giving_business_loan", "giving_loan_back", "social_loan", "social_loan_back", "roommate_loan", "roommate_loan_back", "loan_friend",
+            "social_borrowed", "repaid",
             // what a retiring founder keeps back as their own fund, and what is left of it come back to the family (Dynasty)
             "dynasty_keep", "dynasty_fund",
             // a deposit held and given back
@@ -104,7 +105,9 @@ namespace RealLifeOverhaul.Economy
             // a hotel or a school bought or sold
             "estate_hotel_buy", "estate_hotel_sold", "school_buy", "school_sell",
             // a parking space bought, sold back or settled when its car park goes (its rent and the charges paid back are costs and count)
-            "space_buy", "space_sold", "space_gone"
+            "space_buy", "space_sold", "space_gone",
+            // a flat bought, sold, or folded into a building bought whole (its service charge, tax and rent count)
+            "flat_buy", "flat_sold", "flat_fold", "flat_deposit"
         };
 
         /// <summary>The keys of EconoView's Investments and Loans categories that count: what a loan, a card or a share costs or pays, not the capital.</summary>

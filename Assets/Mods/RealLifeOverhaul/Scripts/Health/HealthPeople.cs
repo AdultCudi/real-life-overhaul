@@ -183,6 +183,10 @@ namespace RealLifeOverhaul.Health
                 long doctor = HealthRules.At(HealthCatalogue.DoctorFee, level) + HealthRules.At(HealthCatalogue.PrescriptionFee, level);
                 own = bill - HealthCover.Claim(Plan.Standard, Care.Doctor, doctor, 0, level) - HealthCover.Claim(Plan.Standard, Care.Hospital, bill - doctor, 0, level);
             }
+            if (own > 0 && HealthBridges.CareFund != null)
+            {
+                own -= Math.Max(0L, Math.Min(own, HealthBridges.CareFund(own, level)));   // a fund's cover comes off the household's own share, whatever else it owes
+            }
             long due = lost + own;
             long fromSavings = Math.Min(Math.Max(0, hh.Savings[h]), due);
             long toDebt = Math.Min(due - fromSavings, Math.Min(HealthRules.At(HealthCatalogue.NpcDebtMost, level), (long)int.MaxValue / 2 - hh.Debt[h]));

@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Uptown
         public static void Register(IModLogger logger)
         {
             Logger = logger;
-            DistrictPlaces.Add(PlacesOwner, Fill, Early);
+            DistrictPlaces.Add(PlacesOwner, Fill, Early, Recorded);
             MadeBuildings.Arranging += Arrange;
             DistrictSaveDirector.KeepsAlso(LifeStore.Key);
         }
@@ -127,6 +127,8 @@ namespace RealLifeOverhaul.Uptown
             Declared.Clear();
             BuiltLots.Clear();
             KeptLots.Clear();
+            _declaredEarly = false;
+            LifeGame.RecordsBack("a new load began");   // records of the last load's that no make claimed
             Waiting.Clear();
             _armed = false;
             ForgetLeases();
@@ -170,12 +172,16 @@ namespace RealLifeOverhaul.Uptown
             }
             Know("at the city load");
             _cityWasNew = SaveGameManager.Current != null && !SaveGameManager.Current.CityInitialized;
-            ReadState();
-            LifeGame.Lots(Plan);   // the ground's plan, read for the construction game whether or not the district lives
-            _nearest = BuildingsRules.Nearest(Plan, LifeGame.AwayX, LifeGame.AwayZ);
-            if (_known)
+            if (!_declaredEarly)
             {
-                Declare();
+                // Not declared at the district save's step after its early pass (a load that did not pass the main menu, or the district not known then): declared here.
+                ReadState();
+                LifeGame.Lots(Plan);   // the ground's plan, read for the construction game whether or not the district lives
+                _nearest = BuildingsRules.Nearest(Plan, LifeGame.AwayX, LifeGame.AwayZ);
+                if (_known)
+                {
+                    Declare();
+                }
             }
             UptownLots.Closing += OnClosing;
             _closingHooked = true;
@@ -329,6 +335,7 @@ namespace RealLifeOverhaul.Uptown
         public static void Settle()
         {
             MarketForget();
+            LifeGame.RecordsBack("no make claimed them by the time the district stands");   // made at the load's first step, for a building that did not stand
             Standing.Clear();
             StandingLots.Clear();
             if (!_known)

@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Tech
         public int Rating;               // the last review, 1 to 5; 0 before the first
         public int LowRuns;              // ratings of 1 in a row
         public int Work;                 // Arrangement
+        public bool Pinned;              // put in their role by the player's hand: the manager's assignment leaves them be
         public bool NonCompete;
         public int NoticeEnd;            // the day they go; 0: not going
         public int Leaving;              // LeaveKind

@@ -8,6 +8,7 @@ amountoption_all
 amountoption_negative
 amountoption_positive
 auto_tow_service_ny
+awaiting_replacement_from_headhunter
 ba:buildingresume_taxi_travel
 ba:buildingtype_cinema
 ba:buildingtype_office
@@ -521,6 +522,7 @@ bizman_schedule_employee_doesnt_have_required_skill
 bizman_schedule_employee_header_no_workstation
 bizman_schedule_employee_no_employees
 bizman_schedule_employee_not_available
+bizman_schedule_employee_overworked_days
 bizman_schedule_employee_search_placeholder
 bizman_schedule_fast_autofill
 bizman_schedule_hourly_wage
@@ -650,6 +652,7 @@ common_hourly_wage
 common_hours
 common_hours_abbr
 common_hours_left
+common_hours_per_week
 common_hunger
 common_in_training
 common_investment_fund

@@ -114,6 +114,7 @@ namespace RealLifeOverhaul.Flare
         private void CityHour(int day, int hour)
         {
             ReviewsAt(day, hour);   // FlareDirector.Live
+            CountReviews();         // FlareDirector.Use: the ones that have gone up are kept
             if (hour >= 7 && _file.LedgerDay != day && FlareBridges.Headlines != null && !Following)
             {
                 _file.LedgerDay = day;

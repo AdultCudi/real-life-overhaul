@@ -250,7 +250,7 @@ namespace RealLifeOverhaul.Markets
                     {
                         s.ResultsDay = MarketTrading.NextTradingDay(day);
                     }
-                    int to = ListingSector.Review(s.Own, (int)s.Sector, false, out int trade);
+                    int to = ListingSector.Review(s.Own, (int)s.Sector, false, out int trade, day);
                     if (to >= 0)
                     {
                         Resector(s, (MarketSector)to, trade, day, env);
@@ -295,12 +295,13 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
+            s.Own.Rule = ListingSector.RuleVersion;   // looked at under this rule now, whatever the books hold: once
             if (!ListingSector.Seed(s.Own, takings, days, again))
             {
                 s.Own.Mixed = true;
                 return false;
             }
-            int to = ListingSector.Review(s.Own, (int)s.Sector, true, out int trade);
+            int to = ListingSector.Review(s.Own, (int)s.Sector, true, out int trade, State.Day);
             ListingSector.Seed(s.Own, takings, days, true);   // the review spent what it was earning in: the next review reads this quarter's too
             if (to < 0)
             {

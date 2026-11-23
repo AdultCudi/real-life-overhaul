@@ -185,10 +185,11 @@ namespace RealLifeOverhaul.Ui
         /// <summary>
         /// An amount between a minus and a plus, as the game's AmountSelector: the figure in a field typed through the host
         /// (IUiTyping) and the two buttons, each greyed at its end. Returns the figure's focus target; the buttons are
-        /// targets of their own.
+        /// targets of their own. <paramref name="whole"/>: the figure is a label that must fit whole (the offline checks read it so), where the
+        /// caller sizes the field to it.
         /// </summary>
         public static int Stepper(UiScene s, UiAt at, float x, float y, float w, string figure, bool canLess, bool canMore, int lessCommand, int typeCommand,
-            int moreCommand, int arg, bool disabled, string placeholder = null)
+            int moreCommand, int arg, bool disabled, string placeholder = null, bool whole = false)
         {
             float h = UiTokens.Control, by = y + (h - StepButton) / 2f;
             StepKey(s, at, x, by, UiIcon.Minus, lessCommand, arg, disabled || !canLess);
@@ -196,7 +197,7 @@ namespace RealLifeOverhaul.Ui
             int field = Box(s, at, fx, y, fw, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, disabled ? UiFlags.Disabled : UiFlags.None);
             bool hint = string.IsNullOrEmpty(figure) && !string.IsNullOrEmpty(placeholder);   // an empty field says what to type, as a text field's hint
             TextMiddle(s, at.In(field), fx + UiTokens.S2, y, h, fw - UiTokens.S4, hint ? UiStyle.Body : UiStyle.BodyStrong, disabled || hint ? UiRole.Muted : UiRole.Text,
-                hint ? placeholder : figure, UiFlags.Centre | UiFlags.Truncate | (disabled ? UiFlags.Disabled : UiFlags.None));
+                hint ? placeholder : figure, UiFlags.Centre | UiFlags.Truncate | (whole ? UiFlags.Label : UiFlags.None) | (disabled ? UiFlags.Disabled : UiFlags.None));
             if (!disabled && Typing(s, typeCommand, arg))
             {
                 // The figure is centred: the caret stands after its last digit, or before the hint of an empty field.

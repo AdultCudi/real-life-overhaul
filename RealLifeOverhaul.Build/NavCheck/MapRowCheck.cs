@@ -150,7 +150,7 @@ internal static partial class Program
             {
                 rows.Add(new MapRow
                 {
-                    Id = m.Groups[1].Value.Trim('"'),
+                    Id = ConstantText(code, m.Groups[1].Value.Trim('"')),
                     TitleKey = m.Groups[2].Value,
                     Icon = m.Groups[3].Value,
                     InStreet = m.Groups[4].Value.Contains("inStreet: true"),
@@ -159,6 +159,14 @@ internal static partial class Program
             }
         }
         return rows;
+    }
+
+    // A row registered under a named constant (private const string Id = "saved") is told apart by the text the constant holds,
+    // not by its name: two files may each call theirs Id.
+    private static string ConstantText(string code, string name)
+    {
+        Match held = Regex.Match(code, "const\\s+string\\s+" + Regex.Escape(name) + "\\s*=\\s*\"(\\w+)\"");
+        return held.Success ? held.Groups[1].Value : name;
     }
 
     // Every row has its own id, a name in the three languages, and an icon that is drawn: every glyph but the cross has a

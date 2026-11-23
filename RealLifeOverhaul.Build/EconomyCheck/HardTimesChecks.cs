@@ -688,7 +688,7 @@ internal static partial class Program
         Check(test.Contains("if (!Settings.FamilyFriction)") && test.Contains("TestRefusal.FeatureOff") && test.Contains("\"reallife_family_no_argue_cause\""),
             "hard times: the test says hard times are off when they are, and that nothing is wrong when nothing is");
         string signs = MemberText(watch, "private static HardSigns Signs(int day, int hour, HardMemory m)");
-        Check(signs.Contains("g.ChildDay = Settings.FamilyChildren ? NewestChild(s) : 0;") && signs.Contains("g.MomThere = Settings.FamilyRelatives && PhoneContacts.Mom != null;"),
+        Check(signs.Contains("g.ChildDay = Settings.FamilyChildren ? NewestChild(s) : 0;") && signs.Contains("g.MomThere = Settings.FamilyRelatives && Settings.FamilyMomContact && PhoneContacts.Mom != null;"),
             "hard times: children off, no new child to come of; relatives off, no call from Mom");
         string home = MemberText(links, "private static void Home(ref HardSigns signs)");
         Check(home.Contains("if (!HomeState.Loaded || !Settings.HomeLife)") && Regex.IsMatch(home, @"if \(Settings\.HomeNeeds\)\s*\{\s*signs\.Stress = HomeState\.Stress;\s*signs\.Tidy")

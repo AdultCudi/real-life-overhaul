@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return true;
             }
-            return state.Listing != null && state.Listing.BidCount > 0;
+            return state.Locks.Count > 0 || (state.Listing != null && state.Listing.BidCount > 0);
         }
 
         public static void Write(StringBuilder t, MarketState state)
@@ -59,6 +59,11 @@ namespace RealLifeOverhaul.Markets
                     // Written only once there is something to say, so a rule that has not traded keeps the line it always had.
                     t.Append('|').Append(r.Closed).Append('|').Append(r.Peak).Append('|').Append(r.DrawdownBp);
                 }
+            }
+            for (int i = 0; i < state.Locks.Count; i++)
+            {
+                ShareLock k = state.Locks[i];
+                t.Append(";k|").Append(k.StockId.ToString(Inv)).Append('|').Append(k.Shares.ToString(Inv)).Append('|').Append(k.UntilDay.ToString(Inv));
             }
             ListingFile file = state.Listing;
             if (file != null && file.BidCount > 0)
@@ -136,6 +141,10 @@ namespace RealLifeOverhaul.Markets
                         made.Peak = Math.Max(0, L(c, 27));
                         made.DrawdownBp = Clamp(I(c, 28), 0, 10000);
                     }
+                }
+                else if (c[0] == "k" && state.Locks.Count < MarketState.LocksMost && c.Length >= 4 && L(c, 2) > 0)
+                {
+                    state.Locks.Add(new ShareLock { StockId = I(c, 1), Shares = L(c, 2), UntilDay = I(c, 3) });
                 }
                 else if (c[0] == "b" && state.Listing != null && c.Length >= 4)
                 {

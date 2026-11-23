@@ -124,7 +124,11 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == UtilitiesFace.AccountsBase + UiDataTable.Row)
             {
-                return SelectAccount(arg);
+                return _view.Picking ? PickAccount(arg) : SelectAccount(arg);
+            }
+            if (command >= UtilitiesFace.AccountsBase + UiDataTable.Pick && command <= UtilitiesFace.AccountsBase + UiDataTable.Done)
+            {
+                return PickBills(command - UtilitiesFace.AccountsBase, arg);
             }
             if (command == UtilitiesFace.PlacesBase + UiDataTable.Row)
             {
@@ -138,6 +142,7 @@ namespace RealLifeOverhaul.Ui
             {
                 case UtilitiesFace.CardAction: return Account(arg);
                 case UtilitiesFace.CardSwitch: return Debit();
+                case UtilitiesFace.PayAllAction: return _source != null && _source.Do(UtilitiesAct.PayAll, 0, 0, 0, 0);
                 case UtilitiesFace.BuySwitch: _view.Contract = !_view.Contract; return true;
                 case UtilitiesFace.BuyAction: return Connection(arg);
                 case UtilitiesFace.HeroAction: return Hero(arg);
@@ -150,12 +155,43 @@ namespace RealLifeOverhaul.Ui
 
         private UtilityPlaceFact Place() => _view.Place >= 0 && _view.Place < _facts.Places.Length ? _facts.Places[_view.Place] : null;
 
+        // Picking bills to pay together: a row picked or left, every bill that owes picked, the picked bills paid (after the game's question), or picking ended with none left picked.
+        private bool PickAccount(int row)
+        {
+            if (row < 0 || row >= _facts.Accounts.Length || _facts.Accounts[row].Owed <= 0 || _source == null)
+            {
+                return false;
+            }
+            return _source.Do(UtilitiesAct.Pick, row, _facts.Accounts[row].Picked ? 0 : 1, 0, 0);
+        }
+
+        private bool PickBills(int part, int arg)
+        {
+            if (_source == null)
+            {
+                return false;
+            }
+            if (part == UiDataTable.Pick)
+            {
+                _view.Picking = true;
+                return true;
+            }
+            if (part == UiDataTable.Done)
+            {
+                _view.Picking = false;
+                _source.Do(UtilitiesAct.Pick, 0, 3, 0, 0);
+                return true;
+            }
+            return arg == 0 ? _source.Do(UtilitiesAct.Pick, 0, 2, 0, 0) : _source.Do(UtilitiesAct.PayPicked, 0, 0, 0, 0);
+        }
+
         private bool ShowTab(int tab)
         {
             if (tab < 0 || tab > 2)
             {
                 return false;
             }
+            _view.Picking = false;
             _view.Tab = tab;
             _view.Sheet = UtilitiesAsk.None;
             return true;
@@ -222,6 +258,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return _source.Do(UtilitiesAct.Cancel, _view.Place, 0, 0, 0);
             }
+            if (which == 3)
+            {
+                return _source.Do(UtilitiesAct.Cancel, _view.Place, 1, 0, 0);   // only the leased line
+            }
             if (which == 2)
             {
                 return _source.Do(UtilitiesAct.Reconnect, _view.Place, 0, 0, 0);
@@ -232,7 +272,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             UtilityOptionFact o = p.Options[option];
-            bool done = _source.Do(UtilitiesAct.Buy, _view.Place, o.Provider, o.Plan, _view.Contract && !o.Own ? 1 : 0);
+            bool done = _source.Do(UtilitiesAct.Buy, _view.Place, o.Provider, o.Plan, _view.Contract && !o.Own && !o.Leased ? 1 : 0);
             if (done)
             {
                 _view.Option = -1;
@@ -380,6 +420,13 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
+            if (_view.Sheet == UtilitiesAsk.None && _view.Picking && _view.Tab == 0 && _source != null)
+            {
+                _view.Picking = false;   // Back ends picking before it leaves the page
+                _source.Do(UtilitiesAct.Pick, 0, 3, 0, 0);
+                _dirty = true;
+                return true;
+            }
             if (_view.Sheet == UtilitiesAsk.None)
             {
                 return false;
@@ -396,6 +443,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _view.Tab = (_view.Tab + step + 3) % 3;
+            _view.Picking = false;
             _dirty = true;
         }
 
