@@ -267,6 +267,8 @@
         public const string LivingDesksId = "living_desks";
         public const string UiInterfaceId = "ui_interface";
         public const string UiMotionId = "ui_motion";
+        public const string UiNeedsSizeId = "ui_needs_size";     // the needs bars of the RLO interface's bar: how large
+        public const string UiNeedsPlaceId = "ui_needs_place";   // ...and where they stand: in the bar, or a row of their own along the top
         public const string LivingStudioId = "living_studio";
         public const string LivingFlareId = "living_flare";
         public const string LivingFirmsId = "living_firms";
@@ -701,6 +703,8 @@
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
         public static bool UiInterface = false;          // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off, as shipped since 1.0.3: the game's own screens)
+        public static int UiNeedsSize = 0;               // the RLO interface's needs bars: 0 as the bar always drew them, 1 to 4 larger, with their words and figures (Ui/UiDraw.HudNeeds)
+        public static int UiNeedsPlace = 0;              // ...0 in the bar, 1 in a row of their own along the top of the screen
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
@@ -1203,6 +1207,8 @@
             SwitchInterfaceOffOnce(modId);   // before the switch is read, and so before the interface is built: a saved "on" from before 1.0.3 is written off, once
             UiInterface = Bool(modId, UiInterfaceId, UiInterface);
             UiMotion = Int(modId, UiMotionId, UiMotion);
+            UiNeedsSize = System.Math.Max(0, System.Math.Min(4, Int(modId, UiNeedsSizeId, UiNeedsSize)));
+            UiNeedsPlace = System.Math.Max(0, System.Math.Min(1, Int(modId, UiNeedsPlaceId, UiNeedsPlace)));
             Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);

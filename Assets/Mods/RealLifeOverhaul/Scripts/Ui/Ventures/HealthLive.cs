@@ -45,7 +45,8 @@ namespace RealLifeOverhaul.Ui
             if (d != null && d.Book())
             {
                 HealthAppointment a = d.State.Appointment;
-                HealthGame.Tell(NotificationType.Info, "reallife_hc_note_booked", HealthGame.Data("day", a.Day.ToString(), "hour", a.Hour.ToString(), "place", a.Number + " " + a.Street));
+                string place = RealLifeOverhaul.Construction.ConstructionGame.AddressText(a.Street, a.Number);
+                HealthGame.Tell(NotificationType.Info, "reallife_hc_note_booked", HealthGame.Data("day", a.Day.ToString(), "hour", a.Hour.ToString(), "place", place));
             }
             else
             {

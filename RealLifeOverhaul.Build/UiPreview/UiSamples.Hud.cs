@@ -92,6 +92,34 @@ internal static partial class UiSamples
         Hud(s, f, dark, k, t, new UiHudModel(), bar);
     }
 
+    /// <summary>
+    /// The needs' bars at a size (0 the bar's own cells, 1 to 4 larger) in the bar or in a row of their own along the top; with <paramref name="busy"/> every piece that stands
+    /// at the top as well (the info panel, the objectives, the side panels and the notice cards), which must keep clear of the row.
+    /// </summary>
+    public static void HudNeedsScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, int size, bool top, bool busy, bool night = false)
+    {
+        UiStatusModel bar = HudBar(t, false, false, night);
+        bar.NeedsSize = size;
+        bar.NeedsTop = top;
+        bar.Player = "Sam Hartley";
+        bar.NeedLabels = new[]
+        {
+            t("common_energy", "Energy"), t("common_hunger", "Hunger"), t("common_happiness", "Happiness"), t("reallife_home_strip_hygiene", "Hygiene"),
+            t("reallife_home_strip_stress", "Stress"), t("reallife_home_strip_home", "Home")
+        };
+        var m = new UiHudModel();
+        if (busy)
+        {
+            m.Info = HudBusiness(t);
+            m.Objectives = HudGoals(t, true, false);   // folded: with the business card over it the open list would not stand above the bar here, where the game fits it to the room
+            m.Side = new[] { HudShift(t, false), HudJob(t, false), HudBuilding(t, true) };
+            UiHudNoticeModel[] cards = PiecesNotes(t, night);
+            m.Notices = cards;
+            m.NoticeCount = cards.Length;
+        }
+        Hud(s, f, dark, k, t, m, bar);
+    }
+
     // ------------------------------------------------------------------------------------------------- info panels
 
     /// <summary>A business in the world as an info panel: Bloom Café, open, with its owner, takings and staff.</summary>

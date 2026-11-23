@@ -281,6 +281,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--kit-flare-needs")
+        {
+            KitFlareNeeds();   // Flare's rating and address on the kit, raw keys among words, the needs' bars' size and place (KitFlareNeedsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizman-offer")
         {
             BizManOfferAll();   // BizMan's offers on the kit: the takeover, the building's offer, the house's, beside the lease (BizManOfferChecks.cs)
@@ -1977,6 +1983,7 @@ internal static partial class Program
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)
         DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
+        KitFlareNeeds(); // Flare's rating and address on the kit, raw keys among words, the needs' bars' size and place (KitFlareNeedsChecks.cs)
         BizManOfferAll(); // BizMan makes offers on the kit: the game's boxes and buttons, the press that reaches its method (BizManOfferChecks.cs)
         BizManUniformsAll(); // BizMan's settings page gives a role its uniform preset on the kit, the editor's name kept on every word (BizManUniformChecks.cs)
         UiBizman20Checks();   // the purchasing tab says why no plan is added, an employee's card on hover and focus, blank columns and cut text (UiBizman20Checks.cs)

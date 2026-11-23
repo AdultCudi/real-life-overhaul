@@ -59,7 +59,8 @@ namespace RealLifeOverhaul.Ui
         {
             if (!MapText.KeyShaped(words))
             {
-                return words;
+                // a raw key among other words ("32 ba:street_fifthavenue") is put into words one key at a time
+                return MapText.HasRawKey(words) ? MapText.Rekey(words, KeyWords) : words;
             }
             if (LocalizorManager.IsLocalizedKey(words))
             {
@@ -67,6 +68,21 @@ namespace RealLifeOverhaul.Ui
             }
             string small = words.ToLowerInvariant();
             return LocalizorManager.IsLocalizedKey(small) ? small.GetLocalization() : words;
+        }
+
+        // One raw key's words: the game's text of it, or for a street the street's words the way the mod's addresses name one; null for another key.
+        private static string KeyWords(string key)
+        {
+            string small = key.ToLowerInvariant();
+            if (LocalizorManager.IsLocalizedKey(key))
+            {
+                return key.GetLocalization();
+            }
+            if (LocalizorManager.IsLocalizedKey(small))
+            {
+                return small.GetLocalization();
+            }
+            return RealLifeOverhaul.Construction.StreetNameRules.HasId(key) ? RealLifeOverhaul.Construction.ConstructionGame.StreetWords(key) : null;
         }
 
         /// <summary>A text's words with the game's rich text taken off: the kit sets its own type.</summary>

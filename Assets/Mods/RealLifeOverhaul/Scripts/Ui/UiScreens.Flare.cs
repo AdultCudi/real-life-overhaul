@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_kit_quick_biz_2", "reallife_flare_kit_quick_calm", "reallife_flare_kit_quick_chat_0", "reallife_flare_kit_quick_chat_1",
                 "reallife_flare_kit_quick_chat_2", "reallife_flare_kit_quick_inf_0", "reallife_flare_kit_quick_inf_1", "reallife_flare_kit_quick_inf_2",
                 "reallife_flare_kit_quick_res_0", "reallife_flare_kit_quick_res_1", "reallife_flare_kit_quick_res_2", "reallife_flare_kit_rating", "reallife_flare_kit_rating_none",
+                "reallife_flare_kit_rating_game",
                 "reallife_flare_kit_reach_step", "reallife_flare_kit_reply", "reallife_flare_kit_reply_failed", "reallife_flare_kit_reply_line",
                 "reallife_flare_kit_reply_title", "reallife_flare_kit_result_done", "reallife_flare_kit_result_flop", "reallife_flare_kit_result_flopped",
                 "reallife_flare_kit_result_on", "reallife_flare_kit_result_post", "reallife_flare_kit_result_viral", "reallife_flare_kit_results_campaigns",

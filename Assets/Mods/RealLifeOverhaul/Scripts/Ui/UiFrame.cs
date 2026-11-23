@@ -168,6 +168,11 @@ namespace RealLifeOverhaul.Ui
 
         // Appended with the frames-a-second figure (4 Nov 2026).
         public int Fps;               // the frames a second, shown as a small pill before the needs while the game's show-FPS option is on; 0 for none
+
+        // Appended with the needs' bars option (23 Nov 2026).
+        public int NeedsSize;         // the needs' bars' size, the player's option: 0 the small cells the bar always drew, 1 to 4 larger with their figures and from 3 their words (UiDraw.HudNeeds)
+        public bool NeedsTop;         // the needs stand in a row of their own along the top of the screen (UiDraw.PlanNeedsRow), not in the bar: set on the HUD's own bar only
+        public string[] NeedLabels;   // the six needs' words in order (energy, hunger, happiness, hygiene, stress, home); null leaves the words out
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>

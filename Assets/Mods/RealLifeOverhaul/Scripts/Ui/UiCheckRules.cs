@@ -687,7 +687,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                if (it.Kind == UiKind.Text && UiPlaces.IsKey(it.Text))
+                if (it.Kind == UiKind.Text && (UiPlaces.IsKey(it.Text) || MapText.HasRawKey(it.Text)))   // (a key inside longer words too: "32 ba:street_fifthavenue")
                 {
                     found++;
                     say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" is a record's key on the screen, not words");

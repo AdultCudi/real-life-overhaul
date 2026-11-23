@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.GameUi
         private static float _drop;
         private static bool _said;
         private static Func<float> _room;
+        private static Func<float> _extra;
 
         /// <summary>
         /// While the RLO interface's HUD draws the top right (its side panels; the mod's own panels are unseen under them), the
@@ -33,6 +34,20 @@ namespace RealLifeOverhaul.GameUi
             set
             {
                 _room = value;
+                Changed(null, false);
+            }
+        }
+
+        /// <summary>
+        /// A second foot the stack keeps under, beside the marks and <see cref="Room"/>: the lowest edge of the RLO interface's needs' row along the top of the screen, in
+        /// screen pixels from the foot, or NaN for none. It adds to whatever else holds the stack down and never stands in for it. Null for none.
+        /// </summary>
+        public static Func<float> Extra
+        {
+            get => _extra;
+            set
+            {
+                _extra = value;
                 Changed(null, false);
             }
         }
@@ -83,6 +98,11 @@ namespace RealLifeOverhaul.GameUi
             if (_room != null)
             {
                 lowest = _room();
+            }
+            if (_extra != null)
+            {
+                float row = _extra();
+                lowest = float.IsNaN(row) ? lowest : float.IsNaN(lowest) ? row : NoticeRoomRules.Lowest(lowest, row);
             }
             stack.GetWorldCorners(Corners);
             float scale = stack.lossyScale.y;

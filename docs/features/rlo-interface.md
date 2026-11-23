@@ -24,6 +24,11 @@ preset touches it, and "reset everything" writes it off.
 - Options: "RLO interface" (`ui_interface`) and "Interface motion" (`ui_motion`: full, calm, off). The kit has one dark
   look, so Flare's look option (`flare_theme`) no longer changes it. With either switch off, every screen is the game's
   own.
+- Needs bars: "Needs bars size" (`ui_needs_size`, 0 to 4; 0 is the size the bar always drew them, 1 to 4 carry their figures
+  and from 3 their names) and "Needs bars place" (`ui_needs_place`: in the bar, or in a row of their own along the top of the
+  screen, as wide as the screen and on two rows where one is too short; `Ui/UiDraw.HudNeeds.cs`). The row is the HUD's own bar's
+  alone: the pieces at the top (the info panel, the objectives, the side panels, the notice cards, the game's own notifications)
+  stand under it, and it steps aside while the map's dock or a modal piece (Build mode) is up.
 - Tests: "Open the interface gallery", "Open Contacts on the RLO interface", "Open the city's people on the RLO
   interface", "Open Flare in the city on the RLO interface" and "Open your first tech firm on the RLO interface";
   "Open BizMan on the RLO interface", "BizMan for a business you do not own", "BizMan for a building to rent" and

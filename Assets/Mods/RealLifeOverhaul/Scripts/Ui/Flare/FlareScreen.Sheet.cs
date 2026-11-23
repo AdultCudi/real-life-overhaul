@@ -269,7 +269,7 @@ namespace RealLifeOverhaul.Ui
                 FlareShop shop = ShopOfKey(r.Note.Key);
                 business = shop.Name ?? "?";
                 words = NoteWords(r.Note, business);
-                row = shop.Place != null ? _flare.StarsFor(shop.Place) : null;
+                row = shop.Place != null ? _flare.CityStarsOf(shop.Place) : null;
             }
             else if (r.Act == RowAct.Review && r.Post != null)
             {

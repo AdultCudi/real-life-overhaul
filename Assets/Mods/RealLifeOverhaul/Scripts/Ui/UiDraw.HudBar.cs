@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Ui
         public float Fps;                             // px: the frames-a-second pill before the needs; 0 for none (the game's show-FPS option is off)
         public bool Day, Words, District, MoneyDay;   // the second lines kept: the day, the weather's words, the district, the money's day
         public float Meter;                           // px: each need's cell, its glyph over a meter as wide
+        public int NeedLevel;                         // the needs' size in the bar: 0 the small cells (Meter), 1 to 4 the larger (UiDraw.HudNeeds); stepped down to the one that fits
         public float MoneyX;                          // px: the money pill's left edge, before the settings at the strip's corner
         public int Apps;                              // the app row's apps before All apps
         public float RowX, RowW;                      // px: the app row's left edge and its width; 0 wide for no row
@@ -112,7 +113,8 @@ namespace RealLifeOverhaul.Ui
             p.Time = TimeWidth(m, true);
             p.Weather = WeatherWidth(m, true);
             p.Place = PlaceWidth(m, true);
-            p.Needs = NeedsWidth(m, NeedCell);
+            p.NeedLevel = m.NeedsTop ? 0 : NeedLevelOf(m);   // the top row has them, or the bar draws them at the size asked for
+            p.Needs = m.NeedsTop ? 0f : NeedsWidthAt(m, p.NeedLevel, false);
             p.Alerts = AlertsWidth(m);
             p.Money = MoneyWidth(m, true);
             // The gear keeps its corner on every bar with money on it, a picture where the bar takes no press, so the money never
@@ -122,7 +124,8 @@ namespace RealLifeOverhaul.Ui
             p.Fps = FpsWidth(m);
             // The row keeps every app it is given until the time with its day, or the right pills at their tightest, would not
             // stand whole beside it; then apps wait under All apps, down to four.
-            float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f), Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings));
+            float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f),
+                Pills(m.NeedsTop ? 0f : NeedsWidthAt(m, p.NeedLevel, p.NeedLevel == 0), p.Alerts, p.Money, p.Settings));   // larger needs push apps under All apps before they shrink
             int apps = RowApps(m);
             while (apps > 0 && (Zone(m, w, RowWidth(m, apps)) < 0f || (apps > RowLeast && Zone(m, w, RowWidth(m, apps)) < least)))
             {
@@ -202,13 +205,19 @@ namespace RealLifeOverhaul.Ui
                 // bar stays as it was without it. The needs, the bell and the money are the bar's own.
                 UiPillPlan trial = p;
                 trial.Meter = NeedTight;
-                trial.Needs = NeedsWidth(m, NeedTight);
+                trial.NeedLevel = 0;
+                trial.Needs = m.NeedsTop ? 0f : NeedsWidthAt(m, 0, true);
                 p.Fps = Right(ref trial) > room ? 0f : p.Fps;
+            }
+            while (Right(ref p) > room && p.NeedLevel > 0)
+            {
+                p.NeedLevel--;   // the larger needs give up a size at a time before anything else goes
+                p.Needs = NeedsWidthAt(m, p.NeedLevel, false);
             }
             if (Right(ref p) > room && p.Needs > 0f)
             {
                 p.Meter = NeedTight;
-                p.Needs = NeedsWidth(m, NeedTight);
+                p.Needs = NeedsWidthAt(m, 0, true);
             }
             float alerts = p.Alerts;
             if (Right(ref p) > room)
@@ -387,7 +396,14 @@ namespace RealLifeOverhaul.Ui
             }
             if (p.Needs > 0f)
             {
-                NeedsPill(s, row, rx, py, p.Needs, p.Meter, m);
+                if (p.NeedLevel > 0)
+                {
+                    NeedsPillLarge(s, row, rx, py, p.Needs, p.NeedLevel, m);
+                }
+                else
+                {
+                    NeedsPill(s, row, rx, py, p.Needs, p.Meter, m);
+                }
                 rx += p.Needs + PillGap;
             }
             if (p.Alerts > 0f)
@@ -562,7 +578,7 @@ namespace RealLifeOverhaul.Ui
             float gap = NeedGap(cell), cx = x + PillPad;
             if (PortraitRoom(m) > 0f)
             {
-                UiDraw.Portrait(s, inside, cx, y + (BarPill - UiTokens.AvatarRow) / 2f, UiTokens.AvatarRow, m.Player, UiColour.HueOf(m.Player), UiRole.None);
+                UiDraw.Portrait(s, inside, cx, y + SnapDown((BarPill - UiTokens.AvatarRow) / 2f), UiTokens.AvatarRow, m.Player, UiColour.HueOf(m.Player), UiRole.None);
                 cx += PortraitRoom(m);
             }
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.Lightning, m.Energy);

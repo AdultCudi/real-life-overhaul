@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Health
             f.Booked = a.Booked;
             f.BookedDay = a.Day;
             f.BookedHour = a.Hour;
-            f.Clinic = a.Booked ? a.Number + " " + a.Street : string.Empty;
+            f.Clinic = a.Booked ? RealLifeOverhaul.Construction.ConstructionGame.AddressText(a.Street, a.Number) : string.Empty;
             f.CanBook = !a.Booked && HealthBridges.Clinic != null;
 
             HealthPolicy p = _state.Policy;

@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         private static float _beginDue, _lookDue;
         private static int _signature;
         private static float _foot = float.NaN;   // the side panels' foot as the game's notifications were last told it
+        private static float _row = float.NaN;    // ...and the needs' row's
         private static string _state = "waiting for the city";
         private static readonly UiHudPopupModel[] Popups = new UiHudPopupModel[2];
         private static readonly Vector3[] PhoneCorners = new Vector3[4];
@@ -251,7 +252,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     HudSides.End();
                 }
-                NoticeRoom.Room = _sides ? (Func<float>)SideFoot : null;
+                NoticeRoom.Room = _sides ? (Func<float>)SideFoot : null;   // (and the needs' row, which asks it too: HudLive.Look)
             }
             if (goals != _goals)
             {
@@ -297,6 +298,11 @@ namespace RealLifeOverhaul.Ui
                 NoticeRoom.Room = null;
             }
             _foot = float.NaN;
+            _row = float.NaN;
+            if (NoticeRoom.Extra != null)
+            {
+                NoticeRoom.Extra = null;
+            }
             PhoneKit.Lift = 0f;
             HudHost host = HudHost.Instance;
             if (host != null)
@@ -382,7 +388,7 @@ namespace RealLifeOverhaul.Ui
                 m.PopupCount = popups;
                 host.PopupUp = popups > 0;
                 sig = sig * 31 + (SampleSides != null ? SidesSample(m) : _sides ? HudSides.Look(m) : NoSides(m));
-                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? m.AvoidY + UiMapChrome.RouteTop - UiTokens.S4 : 0f)) : NoGoals(m));
+                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? m.AvoidY + UiMapChrome.RouteTop - UiTokens.S4 : m.TopRow)) : NoGoals(m));
                 sig = sig * 31 + (_notes || SampleNote != null ? HudNotes.Look(m, _notes, SampleNote) : 0);
                 sig = sig * 31 + HudHints.Look(m);
                 m.ActivityClear = ActivityStrip != null ? ActivityStrip() : null;
@@ -438,13 +444,37 @@ namespace RealLifeOverhaul.Ui
         {
             float perPx = FrameHeight > 1f ? Screen.height / FrameHeight : 1f;
             PhoneKit.Lift = shown ? (UiFrame.BandHeight + UiTokens.S2) * perPx : 0f;
+            if (shown && NoticeRoom.Extra == null)
+            {
+                NoticeRoom.Extra = TopFoot;
+            }
             float foot = _sides && shown ? SideFoot() : float.NaN;
-            bool moved = float.IsNaN(foot) ? !float.IsNaN(_foot) : float.IsNaN(_foot) || Math.Abs(foot - _foot) > 0.5f;
+            float row = shown ? TopFoot() : float.NaN;
+            bool moved = Moves(foot, _foot) || Moves(row, _row);
             if (moved)
             {
                 _foot = foot;
+                _row = row;
                 NoticeRoom.Moved();
             }
+        }
+
+        /// <summary>The needs' row changed its height (a layout drew it taller, or took it away): the game's notifications are placed under it.</summary>
+        public static void RowMoved() => Place(_shown);
+
+        private static bool Moves(float now, float was) => float.IsNaN(now) ? !float.IsNaN(was) : float.IsNaN(was) || Math.Abs(now - was) > 0.5f;
+
+        // The needs' row's foot in screen pixels from the screen's foot, which the game's notifications keep under; NaN while no row stands.
+        private static float TopFoot()
+        {
+            HudHost host = HudHost.Instance;
+            float rows = host != null && _shown ? host.Screen.Model.TopRow : 0f;
+            if (rows <= 0f)
+            {
+                return float.NaN;
+            }
+            float perPx = FrameHeight > 1f ? Screen.height / FrameHeight : 1f;
+            return Screen.height - (UiTokens.S4 + rows) * perPx;
         }
 
         // The side panels' foot in screen pixels from the screen's foot; NaN while none shows.
@@ -455,14 +485,17 @@ namespace RealLifeOverhaul.Ui
             {
                 return float.NaN;
             }
-            UiSidePanelModel[] side = host.Screen.Model.Side;
-            if (side == null || side.Length == 0)
+            UiHudModel model = host.Screen.Model;
+            UiSidePanelModel[] side = _sides ? model.Side : null;
+            bool panels = side != null && side.Length > 0;
+            if (!panels && model.TopRow <= 0f)
             {
                 return float.NaN;
             }
-            float h = UiSidePanel.StackHeight(side, side.Length);
+            // The game's notifications stand under the lowest thing the HUD draws at the top right: its side panels, or the needs' row across the whole top.
+            float h = panels ? UiSidePanel.StackHeight(side, side.Length) : 0f;
             float perPx = FrameHeight > 1f ? Screen.height / FrameHeight : 1f;
-            return Screen.height - (UiTokens.S4 + h) * perPx;
+            return Screen.height - (UiTokens.S4 + model.TopRow + h) * perPx;
         }
 
         // ------------------------------------------------------------------------------------------------- presses
