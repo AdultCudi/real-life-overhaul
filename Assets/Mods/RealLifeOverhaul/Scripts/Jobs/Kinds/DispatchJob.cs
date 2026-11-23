@@ -364,7 +364,7 @@ namespace RealLifeOverhaul
                 if (_plan >= Plans)
                 {
                     Settle();
-                    Finish(_poor * 2 > Plans ? JobEnd.Failed : JobEnd.Done);
+                    Finish(_poor * 2 > Plans ? JobEnd.Failed : JobEnd.Done, true);
                 }
                 else
                 {

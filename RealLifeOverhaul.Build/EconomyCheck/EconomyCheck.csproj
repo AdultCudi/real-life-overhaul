@@ -871,6 +871,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClientRules.cs" Link="Mod\ClientRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ShiftFactsRules.cs" Link="Mod\ShiftFactsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigOffers.cs" Link="Mod\GigOffers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigPayRules.cs" Link="Mod\GigPayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobRules.cs" Link="Mod\SideJobs\SideJobRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobState.cs" Link="Mod\SideJobs\SideJobState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\SideJobs\SideJobStore.cs" Link="Mod\SideJobs\SideJobStore.cs" />

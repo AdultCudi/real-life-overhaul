@@ -246,6 +246,19 @@ namespace RealLifeOverhaul
             Outcome = outcome;
         }
 
+        /// <summary>
+        /// True when the shift's set work was all done (every flyer, box, parcel, floor or plan): a rota shift then pays its whole basic
+        /// wage at once (<see cref="GigPayRules.WageHours"/>). Time spent adds nothing to it and finishing early takes nothing off.
+        /// </summary>
+        public bool WholeWork { get; private set; }
+
+        /// <summary>Ends the job, saying whether the work it was given was done in full (only an end that is <see cref="JobEnd.Done"/> can be).</summary>
+        protected void Finish(JobEnd outcome, bool wholeWork)
+        {
+            WholeWork = wholeWork && outcome == JobEnd.Done;
+            Finish(outcome);
+        }
+
         /// <summary>A closed or refused client calls the work off without a strike; the clock settles before the job's usual end settles the hand work.</summary>
         protected bool ClientClosed(in DoorSpot client, bool refused = false)
         {

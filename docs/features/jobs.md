@@ -62,17 +62,17 @@ They are found on the phone (the Gig Line) and at the help-wanted boards.
 
 | job | needs | a unit is | pays | a day |
 |---|---|---|---|---|
-| Flyers | nothing | a flyer taken | 7, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
-| Cleaner | a business near that is open | an eighth of the client's floor cleaned (the game's own dirt, to 100 %) | 20, by the share of the dirt taken off | 24 (three floors of 8) |
-| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 33, +10 % for the whole delivery | 18 (three deliveries of 6) |
-| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 18, tips of 2.75 to 9.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
-| Busker | a pavement | a song | tips only: about 17 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 2.75 to 8.25 from each listener | 16 (two sets of 8) |
-| Courier | a car (own, or a van hired for 125 a day) | a parcel delivered | 50 + 0.085 a metre of the round, +15 % for beating the clock, tips of 5.50 to 16.50 | 15 (three rounds of 5) |
-| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 22 + 0.195 a metre, tip up to 30 % by comfort | 14 |
+| Flyers | nothing | a flyer taken | 4.40, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
+| Cleaner | a business near that is open | an eighth of the client's floor cleaned (the game's own dirt, to 100 %) | 18, by the share of the dirt taken off | 16 (two floors of 8) |
+| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 29, +10 % for the whole delivery | 12 (two deliveries of 6) |
+| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 13, tips of 2 to 6.90 for quick, +10 % if nobody walked off; paid for standing at the cart | 24 (two shifts of 12) |
+| Busker | a pavement | a song | tips only: about 13 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 2.10 to 6.30 from each listener | 16 (two sets of 8) |
+| Courier | a car (own, or a van hired for 125 a day) | a parcel delivered | 38 + 0.065 a metre of the round, +15 % for beating the clock, tips of 4.20 to 12.50 | 10 (two rounds of 5) |
+| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 16 + 0.14 a metre, tip up to 30 % by comfort; paid for being on the road | 8 fares (two shifts of 4) |
 
 Every figure is in `JobCatalogue`, set against what the game itself pays (read from its data files by `JobAssets/scripts/extract_wages.py`: the one employer job, cashier, is 25 an hour; the game's own staff start at 12 an hour for cleaning, 16 for customer service, 18 for delivery driving; the van job is 100 a drop).
 
-Pay is multiplied by 1 + 0.08 per level above the first (a level every 40 flyers, 30 patches, 20 boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Job pay" option.
+Pay is multiplied by 1 + 0.06 per level above the first (a level every 40 flyers, 30 patches, 20 boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels), by the "Job pay" option, and for a freelance gig by how tired and how new the player is ([Over a day and a first week](#over-a-day-and-a-first-week-jobsgigpayrules)).
 Deductions only ever reduce what a job pays; a slip never goes below zero.
 Three failed shifts in a job and it lets the player go for three days; a good shift takes a strike off.
 
@@ -98,7 +98,7 @@ One game hour is one minute of play; a gig shift is four game hours (the hours a
 
 The first release's gigs paid 14 to 22 an hour on foot (under the cashier's 25) and 30 to 55 with a car, which is what the maintainer found far too little against 48,500 in hand and 187 a day in costs.
 
-The new table raises every gig's unit pay by about 2.8 (unskilled 2.75 to 2.9, courier and ride-hail 2.8, the two desk shifts 3.0), which puts a shift played well at 40 to 55 an hour on foot (1.6 to 2.2 times the cashier) and about 95 to 105 an hour of play with a car (the van job's 100).
+The second table (kept for the record; the third is the one in `JobCatalogue` now, under [Over a day and a first week](#over-a-day-and-a-first-week-jobsgigpayrules)) raised every gig's unit pay by about 2.8 (unskilled 2.75 to 2.9, courier and ride-hail 2.8, the two desk shifts 3.0), which puts a shift played well at 40 to 55 an hour on foot (1.6 to 2.2 times the cashier) and about 95 to 105 an hour of play with a car (the van job's 100).
 Skilled work (courier, ride-hail, the desk shifts) pays more an hour than unskilled.
 
 Nothing is said to cost more energy or to level faster.
@@ -125,8 +125,35 @@ These moved with it:
 - the booked set's fee (45 to 125) and the hired van's daily fee (45 to 125);
 - what a review counts a tip for (a point a dollar to a point for 3, twenty at most).
 
-The 85 % rate of the game's clock (`ShiftRates.Share`), the crash and police-stop cuts, the level bonus (8 % a level) and the "Job pay" option are shares or factors and needed no change.
+The 85 % rate of the game's clock (`ShiftRates.Share`), the crash and police-stop cuts, the level bonus and the "Job pay" option are shares or factors and needed no change in that table.
 Every figure the Guide quotes (`job_table`, `job_van_fee`, and the pitches' `{pay}`, `{km}` and `{shift}`) is read from these constants.
+
+## Over a day and a first week (`Jobs/GigPayRules`)
+
+Two players said gigs were far better than the game's own job: one made over 3,000 in under 48 hours by spamming them where the cashier would have given about 300, and the owner answered that gigs should pay differently by kind. The answer is four rules, all in `JobCatalogue` and `GigPayRules` (game-free, checked by `EconomyCheck` `GigPayChecks`, flag `--gig-pay`):
+
+- **By effort and skill.** A kind's unit pay is set by what an hour of it asks, against the cashier's 25: idle work (flyers, busking) 26 an hour, involved work (the cart 39, cleaning 36, shelves 43) a half more, work that needs a car (the courier 60) twice and more, and ride-hail, which also needs a licence, a reference and a clean record, 75. Tips that were set against the old unit pay (the cart's, the courier's and the listeners') moved with it.
+- **A day's amount.** Two shifts of each kind a day (`JobCatalogue.DailyShifts`; ride-hail eight fares). The Gig Line says how many are left ("Shifts left today: 1 of 2").
+- **Tiredness.** Every freelance gig started after others today pays `GigPayRules.Wear`: 100 %, 90 %, 70 %, 55 %, 40 %, then 30 % of the usual (a part shift counts by rounding). `JobState.ShiftsToday` reads it from the units each gig already keeps for the day, so nothing new is saved. The offer says "You are tired after 2 shifts today, so this one pays 70%." A rota shift, a booked set, a desk shift and a test are not tired: they are limited by the rota.
+- **A first week.** The first gig shift pays 60 % and each one adds a twenty-first of the rest until the 21st (three a day for a week), so spamming in week one does not print money. `JobState.ShiftsWorked` adds the gigs' own shift counts, which saves already carry: a save in progress with 21 shifts or more is not held back, one with fewer is, and every level it reached is kept (`JobCatalogue.LevelFor` is unchanged; a level's step is 6 % instead of 8 %, since a spammed gig reached the top level in two days).
+
+The pay offered is the pay worked: `JobPhone.Offer` and `JobDirector.StartJob` both multiply by `JobState.Strain()`. The "Job pay" option (25 to 300 %) scales everything as before; there is no other option for the rules, because a switch that keeps the old pay would keep the exploit.
+
+What it comes to, from the model in `GigPayChecks` (a player who works whenever energy allows and picks the best-paying gig of the day, one game hour a minute of play, the game's job 25 an hour from 8 to 16 six days):
+
+| way to play | 48 hours before | 48 hours now | a week before | a week now (first, then second) |
+|---|---|---|---|---|
+| gigs only, on foot | 2,631 | 1,019 | 8,317 | 3,789, then 5,019 |
+| gigs only, own car | 4,595 | 1,656 | 15,589 | 6,101 |
+| the game's job only | 400 | 400 | 1,200 | 1,200 |
+| both, on foot | 1,780 | 963 | 6,168 | 3,412 |
+| both, own car | 2,638 | 1,386 | 9,637 | 5,184 |
+
+## Finishing early (`Job.WholeWork`, `GigPayRules.WageHours`)
+
+A player found the best day's pay came from letting time pass and then finishing the tasks. The cause was a rota shift's basic wage: it was counted in game hours from clock on to the end of the work (every hour begun, one to four), so finishing the bundle in an hour paid one hour's wage, and waiting out the clock before finishing paid four. A freelance gig was never paid for time: it pays per unit done, and the clock pays 85 % of that with no tips and no bonus, so doing the work by hand always paid more.
+
+Now a job says when its set work was done in full (`Finish(JobEnd.Done, true)`: every flyer, box, parcel, floor, plan, call, stage, tender or trade unit; a bundle the clock ran out on is not whole), and a rota shift of it pays its whole `CareerCatalogue.ShiftHours` of basic wage at once, less an hour if the start was late. Time spent adds nothing and finishing early takes nothing off. A stall, a cab and a watch (the drinks cart, ride-hail and site security: `JobDef.ByHour`) are paid for being there, and keep the hours begun. Every offer says which it is ("Paid in full when the work is done, however quickly. Waiting adds nothing." or "Paid for being there, by the customer or fare as they come. Finishing early adds nothing."): the Gig Line's and the boards' through `GigWords.Rule`, the Work contact's offer and status through `CareerDirector.PayRuleKey`. The level's experience is counted when the slip is paid, as before.
 
 ## No two shifts alike (`Jobs/GigOffers`, `Jobs/GigWords`)
 

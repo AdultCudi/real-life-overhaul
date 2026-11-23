@@ -83,6 +83,34 @@ namespace RealLifeOverhaul
             return left > 0 ? left : 0;
         }
 
+        /// <summary>
+        /// The Gig Line's shifts worked today, all kinds together and a part shift as its part: what tires the player (<see cref="GigPayRules.Wear"/>).
+        /// Read from each gig's units today, which the save already keeps, so no new field is saved.
+        /// </summary>
+        public static float ShiftsToday()
+        {
+            float shifts = 0f;
+            for (int i = 0; i < JobCatalogue.All.Length; i++)
+            {
+                shifts += GigPayRules.ShiftsOf(JobCatalogue.All[i], Records[i].Today);
+            }
+            return shifts;
+        }
+
+        /// <summary>The Gig Line's shifts worked in all, from each gig's own count: how new the player is to gigs (<see cref="GigPayRules.NewHandFactor"/>).</summary>
+        public static int ShiftsWorked()
+        {
+            int shifts = 0;
+            for (int i = 0; i < JobCatalogue.All.Length; i++)
+            {
+                shifts += Records[i].Shifts;
+            }
+            return shifts;
+        }
+
+        /// <summary>What a freelance gig's pay is multiplied by now for today's tiredness and for being new to gigs; 1 for a rested hand of a week's standing.</summary>
+        public static float Strain() => GigPayRules.Strain(ShiftsToday(), ShiftsWorked());
+
         public static void Reset()
         {
             Loaded = false;

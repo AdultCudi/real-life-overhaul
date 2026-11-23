@@ -180,6 +180,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--gig-pay")
+        {
+            GigPay();       // what gigs pay: the table by effort and skill, a day's tiredness, a first week, the earnings of three ways to play, a rota shift's whole wage for work done early (GigPayChecks.cs)
+            CareerPay();    // ...and what the professions pay against them (CareerPayChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--gig-music")
         {
             GigMusic();   // the player's own gig music: the folder's files, limits, order, shuffle, fallback, fade and texts alone (GigMusicChecks.cs)
@@ -1867,6 +1874,7 @@ internal static partial class Program
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
         GigMusic();     // the player's own gig music (GigMusicChecks.cs)
+        GigPay();       // what gigs pay: the table by effort and skill, a day's tiredness, a first week, the earnings of three ways to play, a rota shift's whole wage for work done early (GigPayChecks.cs)
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
         HairFog();      // hair in a street lamp's haze (HairFogChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)

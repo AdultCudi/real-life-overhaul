@@ -531,7 +531,7 @@ namespace RealLifeOverhaul
                 Ctx.Cast.Emoji(_recipient, CharacterEmojiName.CommonGreenHappy, 2f);
                 if (Random.value < TipChance)
                 {
-                    _tips += Mathf.RoundToInt(Random.Range(5.5f, 16.5f) * Ctx.Rate);
+                    _tips += Mathf.RoundToInt(Random.Range(4.2f, 12.5f) * Ctx.Rate);   // moved with the door pay (38 from 50)
                 }
                 if (_delivered % 2 == 1)
                 {
@@ -629,7 +629,7 @@ namespace RealLifeOverhaul
             {
                 return;   // a desk shift goes on: the depot has the next run
             }
-            Finish(all || _delivered * 2 >= _count ? JobEnd.Done : JobEnd.Failed);
+            Finish(all || _delivered * 2 >= _count ? JobEnd.Done : JobEnd.Failed, all);
         }
 
         private void Settle(bool beatTheClock)

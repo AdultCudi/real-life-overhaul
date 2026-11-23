@@ -126,7 +126,7 @@ namespace RealLifeOverhaul
                 {
                     if (_tender >= Tenders)
                     {
-                        Finish(JobEnd.Done);
+                        Finish(JobEnd.Done, true);
                         return;
                     }
                     NewTender(now);

@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.SideJobs
         public const int CommissionMille = 200;     // thousandths of the meter the cab office keeps; tips are the driver's
         public const int MarginMille = 250;         // thousandths of what a client pays for a drop that the depot keeps
         public const float DistanceShare = 0.85f;   // of the gig's fare by distance: the rest is the meter's time
-        public const float SecondsRate = 0.21f;     // money a second of the ride at the start's prices: a ride at par comes to the gig's fare
+        public const float SecondsRate = 0.15f;     // money a second of the ride at the start's prices: a ride at par comes to the gig's fare (0.21 while a 600 m fare was 139, 100 now)
         public const float TimeMost = 1.5f;         // times the ride's par: the meter stops counting time there, so standing still earns nothing
         public const float TripLeast = 250f;        // metres: a shorter ride is no fare at all
         public const int LateMost = 25;             // quality a slow ride can lose

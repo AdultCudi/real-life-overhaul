@@ -13,8 +13,8 @@ using RealLifeOverhaul.SideJobs;
 // work, the option) and the texts.
 internal static partial class Program
 {
-    private const float SideUnit = 22f, SideMetre = 0.195f;        // the ride-hail gig's fare: a fare and a metre (JobCatalogue)
-    private const float SideDoor = 50f, SideLeg = 0.085f;          // the courier gig's: a door and a metre
+    private const float SideUnit = 16f, SideMetre = 0.14f;        // the ride-hail gig's fare: a fare and a metre (JobCatalogue)
+    private const float SideDoor = 38f, SideLeg = 0.065f;          // the courier gig's: a door and a metre
 
     private static void SideJobShifts()
     {
@@ -38,7 +38,7 @@ internal static partial class Program
     {
         JobDef taxi = JobCatalogue.Find(JobCatalogue.Taxi), courier = JobCatalogue.Find(JobCatalogue.Courier);
         Check(taxi != null && courier != null && taxi.UnitPay == SideUnit && taxi.PayPerMetre == SideMetre && courier.UnitPay == SideDoor && courier.PayPerMetre == SideLeg,
-            "side jobs: the checks' figures are the two gigs' own (a fare 22 and 0.195 a metre, a door 50 and 0.085 a metre)");
+            "side jobs: the checks' figures are the two gigs' own (a fare 16 and 0.14 a metre, a door 38 and 0.065 a metre)");
         SideCar car = SideGood();
         Check(SideJobRules.Refusal(SideKind.Cab, car, 5) == SideRefusal.None && SideJobRules.Refusal(SideKind.Parcels, car, 5) == SideRefusal.None,
             "side jobs: a sound car of the driver's own with the licences is signed on at both desks");
@@ -287,7 +287,7 @@ internal static partial class Program
         Check(differ, "side jobs: another day is another day's books");
         SideBooks dear = SideJobRules.Books(4242, 17, SideKind.Cab, 2000, SideUnit, SideMetre, JobCatalogue.LevelBonus);
         Check(dear.Drivers == a.Drivers && dear.Units == a.Units && Math.Abs(dear.Gross - 2 * a.Gross) <= a.Units, "side jobs: at twice the city's prices the same drivers take twice as much");
-        Check(JobCatalogue.LevelBonus == 0.08f, "side jobs: the other drivers' levels pay as the player's do (8% a level)");
+        Check(JobCatalogue.LevelBonus == 0.06f, "side jobs: the other drivers' levels pay as the player's do (6% a level)");
     }
 
     private static void SideJobSources()

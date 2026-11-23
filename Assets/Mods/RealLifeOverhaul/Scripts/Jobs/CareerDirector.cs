@@ -504,6 +504,13 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>The words of a rank's pay rule for its offer and status: the whole shift's basic wage at once for set work, the hours for a stall, a watch or a cab.</summary>
+        public static string PayRuleKey(Employer employer, CareerRank rank)
+        {
+            JobDef def = employer != null && rank != null ? RotaJob(employer, rank) : null;
+            return def != null && def.ByHour ? "reallife_career_rule_hour" : "reallife_career_rule_whole";
+        }
+
         // The job a rank's shift is: the planning desk, a shift in charge, the rank's own trade, or the employer's own gig.
         private static JobDef RotaJob(Employer employer, CareerRank rank)
         {
@@ -633,9 +640,20 @@ namespace RealLifeOverhaul
                 int hours = 0;
                 if (!failed && job.Shift.Units > 0)   // (a job pays what was done before a fault, and its hours too)
                 {
-                    hours = CareerCatalogue.PaidHours(TimeHelper.NowInMinutes() - shift.StartMinutes, shift.Late);
+                    // The set work done in full pays the whole shift's basic wage at once, however early; a watch, a stall or a cab, or work
+                    // stopped short, pays the hours begun (GigPayRules.WageHours).
+                    hours = GigPayRules.WageHours(job.WholeWork && why == JobEnd.Done, job.Def.ByHour, TimeHelper.NowInMinutes() - shift.StartMinutes, shift.Late);
                 }
                 int wage = CareerCatalogue.Wage(hours, shift.Hourly);
+                if (Meta.Dev.Verbose && !failed && job.Shift.Units > 0)
+                {
+                    bool whole = job.WholeWork && why == JobEnd.Done && !job.Def.ByHour;
+                    int most = CareerCatalogue.ShiftHours - (shift.Late ? 1 : 0);
+                    _logger?.Info("Careers check (wage): '" + job.Def.Id + "' "
+                                  + (whole ? "work done in full, so the whole shift's wage" : job.Def.ByHour ? "paid for being there, so the hours begun" : "work stopped short, so the hours begun")
+                                  + ": " + hours + " h paid of " + most + " h at most, " + ((int)(TimeHelper.NowInMinutes() - shift.StartMinutes)) + " game minutes since clock on: "
+                                  + ((whole ? hours == most : hours >= 1 && hours <= most) ? "PASS" : "FAIL") + ".");
+                }
                 if (wage > 0)
                 {
                     RealLifeOverhaul.Economy.BizBooks.Book(wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);

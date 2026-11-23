@@ -504,7 +504,7 @@ namespace RealLifeOverhaul
         private void Conclude()
         {
             Settle();
-            Finish(JobEnd.Done);
+            Finish(JobEnd.Done, _songs >= _songsWanted);
         }
 
         private void Settle()

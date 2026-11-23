@@ -32,9 +32,10 @@ namespace RealLifeOverhaul
         public readonly int UnitsPerLevel;       // units of work for each level after the first
         public readonly int ShiftUnits;          // how many units one shift is, on average (0 = until the player stops)
         public readonly int UnitsSpread;         // ...and how many more or fewer a freelance offer may make it; the average stays
+        public readonly bool ByHour;             // paid for being there (a stall, a watch, a cab): a rota shift of it pays the hours begun, never the whole shift for finishing early
 
         public JobDef(string id, string nameKey, string pitchKey, string transactionKey, JobNeed needs, float unitPay, float payPerMetre,
-            float unitEnergy, float unitSkill, string skill, int dailyUnits, int unitsPerLevel, int shiftUnits, int unitsSpread = 0)
+            float unitEnergy, float unitSkill, string skill, int dailyUnits, int unitsPerLevel, int shiftUnits, int unitsSpread = 0, bool byHour = false)
         {
             Id = id;
             NameKey = nameKey;
@@ -50,12 +51,14 @@ namespace RealLifeOverhaul
             UnitsPerLevel = unitsPerLevel;
             ShiftUnits = shiftUnits;
             UnitsSpread = unitsSpread;
+            ByHour = byHour;
         }
     }
 
     /// <summary>
-    /// Every job and every number that balances one; game-free. A shift played well pays about 40 to 55 an hour on foot and 85
-    /// with a car, against the game's cashier at 25 (docs/features/jobs.md); offers vary around these figures.
+    /// Every job and every number that balances one; game-free. A shift played well pays 26 to 43 an hour on foot and 60 to 75
+    /// with a car, against the game's cashier at 25 (docs/features/jobs.md); offers vary around these figures, and a tired or
+    /// new hand earns less of them (<see cref="GigPayRules"/>).
     /// </summary>
     public static class JobCatalogue
     {
@@ -86,8 +89,9 @@ namespace RealLifeOverhaul
         public const string Engineer = "engineer";
         public const string Estimator = "estimator";
 
+        public const int DailyShifts = 2;            // shifts of one gig a day: a client does not want the same hand three times, and the Gig Line says how many are left
         public const int MaxLevel = 4;
-        public const float LevelBonus = 0.08f;       // pay per level above the first
+        public const float LevelBonus = 0.06f;       // pay per level above the first: a spammed gig reaches the top level in two days, so it is a smaller step now
         public const int ReferenceLevel = 2;         // the level in any job that earns a reference letter
         public const int StrikesToSack = 3;          // failed shifts in a job before it lets the player go
         public const int SackedDays = 3;             // days before it takes them back
@@ -100,30 +104,36 @@ namespace RealLifeOverhaul
         private const string DeliveryDriver = "ba:skill_deliverydriver";
         private const string Cleaning = "ba:skill_cleaning";
 
-        /// <summary>In the order the phone offers them: the first needs nothing, each later one something the earlier ones give.</summary>
+        /// <summary>
+        /// In the order the phone offers them: the first needs nothing, each later one something the earlier ones give. Each kind's
+        /// unit pay is set by what an hour of it asks (effort, care, skill) against the game's cashier at 25 an hour: the idle ones pay
+        /// about that, the involved ones half as much again, the ones that need a car, a licence and a reference twice and more. The
+        /// day's amount is <see cref="DailyShifts"/> shifts of each kind (the Gig Line says how many are left).
+        /// </summary>
         public static readonly JobDef[] All =
         {
-            // 24 flyers a bundle, about four minutes of walking up to people: 7 a flyer is 168 a bundle, 42 an hour (the cashier's 25).
+            // 24 flyers a bundle, about four minutes of walking up to people: 4.4 a flyer is 106 a bundle, 26 an hour: the cashier's rate for easy, outdoor work.
             new JobDef(Flyers, "reallife_job_flyers_name", "reallife_job_flyers_pitch", "reallife_transaction_job_flyers",
-                JobNeed.Outdoors, 7f, 0f, 0.35f, 0.01f, CustomerService, 48, 40, 24, 6),
-            // A client's floor cleaned to 100 %, about four minutes with the walk in: eight units of 20 are 160 at 100 %, 40 an hour (the game's cleaners cost 12).
+                JobNeed.Outdoors, 4.4f, 0f, 0.35f, 0.01f, CustomerService, 24 * DailyShifts, 40, 24, 6),
+            // A client's floor cleaned to 100 %, about four minutes with the walk in: eight units of 18 are 144 at 100 %, 36 an hour: heavier, and judged on the result.
             new JobDef(Cleaner, "reallife_job_cleaner_name", "reallife_job_cleaner_pitch", "reallife_transaction_job_cleaner",
-                JobNeed.Outdoors, 20f, 0f, 0.9f, 0.03f, Cleaning, 24, 30, 8, 2),
-            // Six boxes from the kerb to a shop's shelves, about four minutes: 33 a box is 198, 50 an hour.
+                JobNeed.Outdoors, 18f, 0f, 0.9f, 0.03f, Cleaning, 8 * DailyShifts, 30, 8, 2),
+            // Six boxes from the kerb to a shop's shelves, about four minutes: 29 a box is 174, 43 an hour: the hardest work on foot, carrying and then the right shelf.
             new JobDef(Stocker, "reallife_job_stocker_name", "reallife_job_stocker_pitch", "reallife_transaction_job_stocker",
-                JobNeed.Outdoors, 33f, 0f, 1.3f, 0.02f, CustomerService, 18, 20, 6, 2),
-            // Twelve customers at a pavement cart, about five minutes: 18 each is 216, 54 an hour, and tips for quick and right.
+                JobNeed.Outdoors, 29f, 0f, 1.3f, 0.02f, CustomerService, 6 * DailyShifts, 20, 6, 2),
+            // Twelve customers at a pavement cart, about five minutes: 13 each is 156, 39 an hour, and tips for quick and right. Paid for standing at it.
             new JobDef(Vendor, "reallife_job_vendor_name", "reallife_job_vendor_pitch", "reallife_transaction_job_vendor",
-                JobNeed.Outdoors, 18f, 0f, 0.6f, 0.04f, CustomerService, 36, 30, 12, 3),
-            // Tips only: a song is 40 seconds and brings 11 to 45 by how busy the street is, the hour and how it was played.
+                JobNeed.Outdoors, 13f, 0f, 0.6f, 0.04f, CustomerService, 12 * DailyShifts, 30, 12, 3, byHour: true),
+            // Tips only: a song is 40 seconds and brings 8 to 33 by how busy the street is, the hour and how it was played; 26 an hour on an ordinary street.
             new JobDef(Busker, "reallife_job_busker_name", "reallife_job_busker_pitch", "reallife_transaction_job_busker",
-                JobNeed.Outdoors, 17f, 0f, 0.7f, 0f, null, 16, 20, 8, 2),
-            // Five parcels a round, about four minutes with a car: 50 a door plus the distance, about 310 to 340 a round (the van job pays 100 an hour).
+                JobNeed.Outdoors, 13f, 0f, 0.7f, 0f, null, 8 * DailyShifts, 20, 8, 2),
+            // Five parcels a round, about four minutes with a car: 38 a door plus the distance, about 240 a round, 60 an hour (a car and a driver's skill; the van job pays 100).
             new JobDef(Courier, "reallife_job_courier_name", "reallife_job_courier_pitch", "reallife_transaction_job_courier",
-                JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5, 2),
-            // A 600 m fare: 22 + 117 = 139 and a tip of up to 30 %, about 1.5 times what a taxi charges the player (90).
+                JobNeed.Outdoors | JobNeed.Car, 38f, 0.065f, 1.6f, 0.04f, DeliveryDriver, 5 * DailyShifts, 15, 5, 2),
+            // A 600 m fare: 16 + 84 = 100 and a tip of up to 30 %, about 1.1 times what a taxi charges the player (90): the best an hour, for a
+            // licence, a reference and a clean record. Paid for being on the road.
             new JobDef(Taxi, "reallife_job_taxi_name", "reallife_job_taxi_pitch", "reallife_transaction_job_taxi",
-                JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 22f, 0.195f, 2.2f, 0.05f, CustomerService, 14, 12, 0)
+                JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 16f, 0.14f, 2.2f, 0.05f, CustomerService, GigOffers.TaxiShift * DailyShifts, 12, 0, byHour: true)
         };
 
         public static JobDef Find(string id)
@@ -186,7 +196,7 @@ namespace RealLifeOverhaul
             Trade(Inspector, JobNeed.Site, 55f, 0.5f, 16, 24, 8),
             Trade(Surveyor, JobNeed.Site, 110f, 0.7f, 8, 12, 4),
             // The security licence: six rounds of the site at 46, 69 an hour, after its working hours.
-            Trade(Security, JobNeed.Site, 46f, 0.6f, 12, 18, 6),
+            Trade(Security, JobNeed.Site, 46f, 0.6f, 12, 18, 6, byHour: true),
             // At the architects' office: a stage of a design at 160 (two or three to a commission, 80 to 120 an hour),
             // a draughtsperson's sheet at 60 (45 an hour), an engineer's frame at 220 (110), an estimator's tender at 120 (90).
             Trade(Architect, JobNeed.Office, 160f, 0.6f, 6, 6, 3),
@@ -195,11 +205,11 @@ namespace RealLifeOverhaul
             Trade(Estimator, JobNeed.Office, 120f, 0.5f, 6, 6, 3)
         };
 
-        private static JobDef Trade(string id, JobNeed needs, float unitPay, float unitEnergy, int dailyUnits, int unitsPerLevel, int shiftUnits)
+        private static JobDef Trade(string id, JobNeed needs, float unitPay, float unitEnergy, int dailyUnits, int unitsPerLevel, int shiftUnits, bool byHour = false)
         {
             const string mod = "reallife_";
             return new JobDef(id, mod + "trades_" + id + "_name", mod + "trades_" + id + "_about", mod + "transaction_trades_" + id,
-                (needs & JobNeed.Office) != 0 ? needs : needs | JobNeed.Outdoors, unitPay, 0f, unitEnergy, 0f, null, dailyUnits, unitsPerLevel, shiftUnits);
+                (needs & JobNeed.Office) != 0 ? needs : needs | JobNeed.Outdoors, unitPay, 0f, unitEnergy, 0f, null, dailyUnits, unitsPerLevel, shiftUnits, 0, byHour);
         }
 
         /// <summary>True for one of the building trades (<see cref="Trades"/>).</summary>

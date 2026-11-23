@@ -85,7 +85,7 @@ A hired van, a job van of the game's and another Going Public player's car are n
 The ride-hail job as it is, with these differences (`TaxiJob.Desk.cs`):
 
 - **The car** is the one signed on with: a fare does not board another (the card says so).
-- **The meter** (`SideJobRules.Fare`): 85% of the gig's fare by distance (22 and 0.195 a metre) and 0.21 for each second of the ride, counted no further than 1.5 times the ride's par (its metres over 7.5, and 20 seconds). A ride at par comes to the gig's fare; a slow one to 8% more at most; standing still earns nothing; a ride under 250 m is no fare (the job plans none under 280 m).
+- **The meter** (`SideJobRules.Fare`): 85% of the gig's fare by distance (16 and 0.14 a metre) and 0.15 for each second of the ride, counted no further than 1.5 times the ride's par (its metres over 7.5, and 20 seconds). A ride at par comes to the gig's fare; a slow one to 8% more at most; standing still earns nothing; a ride under 250 m is no fare (the job plans none under 280 m).
 - **The office's share** is 20% of the meter. The slip carries what reaches the driver.
 - **The mark** (`SideJobRules.Quality`) starts as the passenger's comfort and loses up to 25 for a ride slower than par, 5 for a pick-up in the last quarter of the passenger's patience, 8 for each offence on a police bill during the ride (`PoliceAttention.Stopped`, passed on by `JobDirector.OnStopped`) and 30 for having driven off from the police first.
 - **The tip** (`SideJobRules.TipShare`) is 26% of the meter at 90 or better, 15% at 75, 6% at 55, else nothing: the middle of what the gig's passengers give. Crashes, police stops and a ride under 30 cut the slip as on the gig.
@@ -98,7 +98,7 @@ The courier round as it is, with these differences (`CourierJob.Desk.cs`):
 - **The pick-up** is one of the city's businesses that is somebody else's and open (`JobSites.AnyClient`), 40 to 420 m from the driver. A business that cooks (`SideJobRules.IsFood`, by its type's name) sends meals; any other, parcels.
 - **The run's size** is the vehicle's room (`SideJobRules.Drops`: two and one for every four boxes it holds, 8 at most; 3 for meals) and never more than the day has left.
 - **Each drop has its own clock** from loading (`SideJobRules.DueIn`: 50 seconds, the planned road to it at 4.5 m/s, and 38 seconds a door; a meal's is four fifths of that). The card counts down the drop being headed for.
-- **Each drop's pay** (`SideJobRules.DropPay`): the gig's 50 a door and 0.085 a metre of its own leg, at the driver's rate, 15% more for a meal, times its punctuality (`Punctual`): 110% with a quarter of its time to spare, 100% on time, then less by the second down to 50% at two minutes late. A run all on time pays what the gig's round does.
+- **Each drop's pay** (`SideJobRules.DropPay`): the gig's door pay (38) and 0.065 a metre of its own leg, at the driver's rate, 15% more for a meal, times its punctuality (`Punctual`): 110% with a quarter of its time to spare, 100% on time, then less by the second down to 50% at two minutes late. A run all on time pays what the gig's round does.
 - **Run after run**: a whole run is paid and the next is planned at once; signing off between runs leaves nothing undone. A run not finished 1.6 times its own time after loading is called back, as a round out of time is.
 - **The day**: 30 drops.
 
