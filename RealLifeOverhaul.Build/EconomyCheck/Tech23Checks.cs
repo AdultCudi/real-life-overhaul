@@ -232,7 +232,6 @@ internal static partial class Program
             { "reallife_tech_mkt_product_deals_full_price", new[] { "{target}", "{who}", "{have}" } },
             { "reallife_tech_mkt_product_deals_full_marketing", new[] { "{target}", "{who}", "{have}", "{reach}" } },
             { "reallife_tech_mkt_product_deals_full_both", new[] { "{target}", "{who}", "{have}", "{reach}" } },
-            { "reallife_session_title_about", new[] { "{session}", "{subject}" } },
             { "reallife_studio_campaign_trade", new[] { "{cost}", "{days}", "{hype}", "{spent}" } },
             { "reallife_studio_campaign_trade_none", new[] { "{days}" } },
             { "reallife_studio_budget_trade", new[] { "{points}", "{days}", "{people}", "{have}", "{usual}" } },

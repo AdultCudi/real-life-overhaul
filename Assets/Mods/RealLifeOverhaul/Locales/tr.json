@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "Pazarında {buyers} alıcı var: {mine} bu ürünü tutuyor, {rivals} bir rakibinkini ve {left} bu türden hiçbirini. Bu azınlığı yalnızca daha büyük bir çekicilik kazanır.",
   "reallife_tech_mkt_product_features_taken": "Şimdi daha fazla özellik, yalnızca zaten ele geçirdiği bir pazarın daha büyük bir payını kazandırır. Özellikler çekiciliğinde {now} sayılır ve asla {top} değerinden fazla sayılmaz. Bir tane daha payını {target} müşteriden yaklaşık {next} müşteriye çıkarır.",
   "reallife_tech_mkt_product_features_room": "Bir özellik daha payını {target} müşteriden yaklaşık {next} müşteriye çıkarır. Özellikler çekiciliğinde {now} sayılır ve asla {top} değerinden fazla sayılmaz.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Kampanya yok. Heyecanı duyurulardan, önizlemelerden, fragmanlardan ve fuardan gelir. Bir kampanya çıkıştan önceki son {days} günde harcanır.",
   "reallife_tech_button_forget": "Listeden çıkar",
   "reallife_tech_confirm_forget_title": "Listeden çıkarılsın mı?",

@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "Jej rynek ma {buyers} kupujących: {mine} trzymają ten produkt, {rivals} produkt rywala, a {left} żaden z jej rodzaju. Tych nielicznych zdobywa się tylko większym przyciągnięciem.",
   "reallife_tech_mkt_product_features_taken": "Więcej funkcji teraz daje jej tylko większy udział w rynku, który już zdobyła. Funkcje liczą się w jej atrakcyjności na {now} i nigdy nie liczą się bardziej niż {top}. Jedna więcej podniosłaby jej udział do około {next} klientów z {target}.",
   "reallife_tech_mkt_product_features_room": "Jedna funkcja więcej podniosłaby jej udział do około {next} klientów z {target}. Funkcje liczą się w jej atrakcyjności na {now} i nigdy nie liczą się bardziej niż {top}.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Brak kampanii. Jego szum bierze się z zapowiedzi, podglądów, zwiastunów i targów. Kampania wydawana jest w ostatnich {days} dniach przed premierą.",
   "reallife_tech_button_forget": "Usuń z listy",
   "reallife_tech_confirm_forget_title": "Usunąć ją z listy?",

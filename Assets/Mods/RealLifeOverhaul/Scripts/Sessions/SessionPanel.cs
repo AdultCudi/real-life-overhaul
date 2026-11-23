@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Sessions
         {
             SessionDef def = Def;
             string subject = _director.SubjectOf(def);
-            _title = DeskGame.Label(subject.Length > 0 ? SessionText.Fill("reallife_session_title_about", "session", SessionText.T(def.TitleKey), "subject", subject) : SessionText.T(def.TitleKey), 0);
+            _title = DeskGame.Label(subject.Length > 0 ? SessionText.T(def.TitleKey) + ": " + subject : SessionText.T(def.TitleKey), 0);
             if (_step < 0)
             {
                 string status = _director.Status(def, out int colour, out bool can, out int hand);

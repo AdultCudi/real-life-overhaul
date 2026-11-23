@@ -191,7 +191,6 @@ namespace RealLifeOverhaul.Ui
                 "reallife_tech_mkt_why_bugs", "reallife_tech_mkt_why_support", "reallife_tech_mkt_why_behind", "reallife_tech_mkt_why_price",
                 "reallife_tech_assign_switch", "reallife_tech_assign_on", "reallife_tech_assign_off", "reallife_tech_assign_nobody",
                     "reallife_tech_assign_label", "reallife_tech_pin_label", "reallife_tech_pin_on", "reallife_tech_pin_off",
-                    "reallife_session_title_about",
                 "reallife_tech_mkt_product_features_taken", "reallife_tech_mkt_product_features_room",
                 // Added with the parity fixes: the old firm page crew, connection and risk lines.
                 "reallife_tech_firm_crew", "reallife_tech_firm_net", "reallife_tech_firm_net_grace", "reallife_tech_firm_net_lift",

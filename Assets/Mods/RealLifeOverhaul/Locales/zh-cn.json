@@ -38772,7 +38772,6 @@
   "reallife_tech_mkt_product_left": "它的市场有{buyers}名买家：{mine}人使用此产品，{rivals}人使用对手的产品，{left}人没有使用同类产品。只有更大的吸引力才能赢得这少数人。",
   "reallife_tech_mkt_product_features_taken": "现在再增加功能，只会为它已占领的市场赢得更大的份额。功能在其吸引力中计为{now}，且最多只计为{top}。再增加一个，会将其份额从{target}名客户提高到约{next}名。",
   "reallife_tech_mkt_product_features_room": "再增加一个功能，会将其份额从{target}名客户提高到约{next}名。功能在其吸引力中计为{now}，且最多只计为{top}。",
-  "reallife_session_title_about": "{session}：{subject}",
   "reallife_studio_campaign_trade_none": "没有营销活动。热度来自公告、预览、预告片和展会。营销活动会在上市前最后{days}天内投入。",
   "reallife_tech_button_forget": "从列表中移除",
   "reallife_tech_confirm_forget_title": "将其从列表中移除？",

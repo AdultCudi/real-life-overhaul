@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "De markt heeft {buyers} kopers: {mine} kiezen dit product, {rivals} het product van een concurrent en {left} geen enkel product van deze soort. Die weinigen worden alleen gewonnen met een grotere aantrekkingskracht.",
   "reallife_tech_mkt_product_features_taken": "Meer functies leveren nu alleen een groter aandeel op in een markt die het al heeft ingenomen. Functies tellen {now} mee in de aantrekkingskracht en kunnen nooit meer dan {top} tellen. Nog één zou het aandeel verhogen naar ongeveer {next} klanten, van {target}.",
   "reallife_tech_mkt_product_features_room": "Nog één functie zou het aandeel verhogen naar ongeveer {next} klanten, van {target}. Functies tellen {now} mee in de aantrekkingskracht en kunnen nooit meer dan {top} tellen.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Geen campagne. De hype komt uit aankondigingen, previews, trailers en de beurs. Een campagne wordt in de laatste {days} dagen voor de lancering uitgegeven.",
   "reallife_tech_button_forget": "Uit de lijst verwijderen",
   "reallife_tech_confirm_forget_title": "Uit de lijst verwijderen?",

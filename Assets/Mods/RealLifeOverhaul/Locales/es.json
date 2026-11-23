@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "Su mercado tiene {buyers} compradores: {mine} tienen este producto, {rivals} el de un rival y {left} ninguno de su tipo. Esos pocos solo se ganan con un atractivo mayor.",
   "reallife_tech_mkt_product_features_taken": "Ahora más funciones solo le dan una cuota mayor de un mercado que ya ha conquistado. Las funciones cuentan {now} en su atractivo y nunca pueden contar más de {top}. Una más subiría su cuota a unos {next} clientes desde {target}.",
   "reallife_tech_mkt_product_features_room": "Una función más subiría su cuota a unos {next} clientes desde {target}. Las funciones cuentan {now} en su atractivo y nunca pueden contar más de {top}.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Sin campaña. Su expectación viene de los anuncios, las previas, los tráileres y la feria. Una campaña se gasta durante los últimos {days} días antes del lanzamiento.",
   "reallife_tech_button_forget": "Quitar de la lista",
   "reallife_tech_confirm_forget_title": "¿Quitarlo de la lista?",

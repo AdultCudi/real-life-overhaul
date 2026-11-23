@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "Son marché compte {buyers} acheteurs : {mine} possèdent ce produit, {rivals} un produit rival et {left} aucun produit de son genre. Ces quelques-uns ne se gagnent que par un attrait plus fort.",
   "reallife_tech_mkt_product_features_taken": "Des fonctionnalités en plus ne lui font plus gagner qu'une plus grande part d'un marché qu'elle a déjà pris. Les fonctionnalités comptent {now} dans son attrait et ne peuvent jamais compter plus que {top}. Une de plus porterait sa part à environ {next} clients, contre {target}.",
   "reallife_tech_mkt_product_features_room": "Une fonctionnalité de plus porterait sa part à environ {next} clients, contre {target}. Les fonctionnalités comptent {now} dans son attrait et ne peuvent jamais compter plus que {top}.",
-  "reallife_session_title_about": "{session} : {subject}",
   "reallife_studio_campaign_trade_none": "Aucune campagne. Son buzz vient des annonces, des aperçus, des bandes-annonces et du salon. Une campagne se dépense sur les {days} derniers jours avant la sortie.",
   "reallife_tech_button_forget": "Retirer de la liste",
   "reallife_tech_confirm_forget_title": "Le retirer de la liste ?",

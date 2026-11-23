@@ -38772,7 +38772,6 @@
   "reallife_tech_mkt_product_left": "Its market has {buyers} buyers: {mine} hold this product, {rivals} a rival's and {left} none of its kind. Those few are won only by a bigger pull.",
   "reallife_tech_mkt_product_features_taken": "More features now only win it a larger share of a market it has taken. Features count {now} in its appeal and can never count more than {top}. One more would raise its share to about {next} customers from {target}.",
   "reallife_tech_mkt_product_features_room": "One more feature would raise its share to about {next} customers from {target}. Features count {now} in its appeal and can never count more than {top}.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "No campaign. Its hype comes from announcements, previews, trailers and the expo. A campaign is spent over the last {days} days before launch.",
   "reallife_tech_button_forget": "Remove from the list",
   "reallife_tech_confirm_forget_title": "Remove it from the list?",

@@ -38772,7 +38772,6 @@
   "reallife_tech_mkt_product_left": "O mercado dele tem {buyers} compradores: {mine} usam este produto, {rivals} usam o de um rival e {left} não usam nenhum do seu tipo. Esses poucos só são conquistados com um apelo maior.",
   "reallife_tech_mkt_product_features_taken": "Mais recursos agora só lhe dão uma fatia maior de um mercado que ele já conquistou. Os recursos contam {now} no apelo e nunca podem contar mais que {top}. Mais um aumentaria a fatia dele para cerca de {next} clientes, a partir de {target}.",
   "reallife_tech_mkt_product_features_room": "Mais um recurso aumentaria a fatia dele para cerca de {next} clientes, a partir de {target}. Os recursos contam {now} no apelo e nunca podem contar mais que {top}.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Sem campanha. O hype vem de anúncios, prévias, trailers e da feira. Uma campanha é gasta nos últimos {days} dias antes do lançamento.",
   "reallife_tech_button_forget": "Remover da lista",
   "reallife_tech_confirm_forget_title": "Remover da lista?",

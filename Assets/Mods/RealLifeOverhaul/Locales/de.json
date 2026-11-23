@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "Sein Markt hat {buyers} Käufer: {mine} nutzen dieses Produkt, {rivals} das eines Rivalen und {left} keines seiner Art. Die wenigen gewinnt man nur mit einer größeren Anziehungskraft.",
   "reallife_tech_mkt_product_features_taken": "Mehr Funktionen bringen ihm jetzt nur noch einen größeren Anteil an einem Markt, den es sich genommen hat. Funktionen zählen {now} in seiner Anziehung und können nie mehr als {top} zählen. Eine weitere würde seinen Anteil auf etwa {next} Kunden von {target} steigern.",
   "reallife_tech_mkt_product_features_room": "Eine weitere Funktion würde seinen Anteil auf etwa {next} Kunden von {target} steigern. Funktionen zählen {now} in seiner Anziehung und können nie mehr als {top} zählen.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Keine Kampagne. Sein Hype kommt von Ankündigungen, Vorschauen, Trailern und der Messe. Eine Kampagne wird über die letzten {days} Tage vor dem Launch ausgegeben.",
   "reallife_tech_button_forget": "Aus der Liste entfernen",
   "reallife_tech_confirm_forget_title": "Aus der Liste entfernen?",

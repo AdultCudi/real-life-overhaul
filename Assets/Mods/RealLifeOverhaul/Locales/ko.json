@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "이 제품의 시장에는 구매자 {buyers}명이 있습니다. 그중 {mine}명은 이 제품을, {rivals}명은 경쟁사 제품을, {left}명은 같은 종류의 제품을 전혀 쓰지 않습니다. 그 적은 사람들은 더 큰 매력으로만 얻을 수 있습니다.",
   "reallife_tech_mkt_product_features_taken": "이제 기능을 늘리면 이미 차지한 시장에서 더 큰 점유율을 얻을 뿐입니다. 기능은 매력에서 {now}만큼 반영되며, 최대 {top}을(를) 넘을 수 없습니다. 하나 더 만들면 점유율이 {target}명의 고객에서 약 {next}명으로 오릅니다.",
   "reallife_tech_mkt_product_features_room": "기능을 하나 더 만들면 점유율이 {target}명의 고객에서 약 {next}명으로 오릅니다. 기능은 매력에서 {now}만큼 반영되며, 최대 {top}을(를) 넘을 수 없습니다.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "캠페인이 없습니다. 화제성은 발표, 미리보기, 예고편과 엑스포에서 나옵니다. 캠페인은 출시 전 마지막 {days}일 동안 씁니다.",
   "reallife_tech_button_forget": "목록에서 제거",
   "reallife_tech_confirm_forget_title": "목록에서 제거하시겠습니까?",

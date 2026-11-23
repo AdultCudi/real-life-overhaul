@@ -38730,7 +38730,6 @@
   "reallife_tech_mkt_product_left": "На её рынке {buyers} покупателей: {mine} пользуются этим продуктом, {rivals} продуктом конкурента и {left} ничем подобным. Этих немногих берёт только большая привлекательность.",
   "reallife_tech_mkt_product_features_taken": "Больше функций теперь дают ей только большую долю рынка, который она уже взяла. Функции дают {now} в её привлекательности и не могут дать больше {top}. Ещё одна поднимет её долю примерно до {next} клиентов с {target}.",
   "reallife_tech_mkt_product_features_room": "Ещё одна функция подняла бы её долю примерно до {next} клиентов с {target}. Функции дают {now} в её привлекательности и не могут дать больше {top}.",
-  "reallife_session_title_about": "{session}: {subject}",
   "reallife_studio_campaign_trade_none": "Кампании нет. Ажиотаж идёт от анонсов, превью, трейлеров и выставки. Кампания тратится за последние {days} дн. до релиза.",
   "reallife_tech_button_forget": "Убрать из списка",
   "reallife_tech_confirm_forget_title": "Убрать его из списка?",
