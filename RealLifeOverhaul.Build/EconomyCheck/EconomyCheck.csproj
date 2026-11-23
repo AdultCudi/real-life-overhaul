@@ -455,6 +455,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingStore.cs" Link="Mod\Giving\GivingStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingRules.cs" Link="Mod\Giving\GivingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingPeople.cs" Link="Mod\Giving\GivingPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingHelp.cs" Link="Mod\Giving\GivingHelp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveResult.cs" Link="Mod\Giving\GiveResult.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveFacts.cs" Link="Mod\Giving\GiveFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingYear.cs" Link="Mod\Giving\GivingYear.cs" />
@@ -469,6 +470,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthLeave.cs" Link="Mod\Health\HealthLeave.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthDay.cs" Link="Mod\Health\HealthDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthPeople.cs" Link="Mod\Health\HealthPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthBridges.cs" Link="Mod\Health\HealthBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRivals.cs" Link="Mod\Health\HealthRivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthFacts.cs" Link="Mod\Health\HealthFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\HealthPages.cs" Link="Mod\Ventures\HealthPages.cs" />

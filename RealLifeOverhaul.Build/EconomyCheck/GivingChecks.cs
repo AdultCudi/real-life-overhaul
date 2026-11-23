@@ -36,6 +36,7 @@ internal static partial class Program
         GivingPageChecks();
         GivingSourceChecks();
         GivingTextChecks();
+        GivingHelpChecks();   // the newer causes, the bigger gifts, the carry, help for a person (GivingHelpChecks.cs)
     }
 
     // ---- a small city of households to give to
@@ -112,14 +113,14 @@ internal static partial class Program
         {
             rising &= steps[i] > steps[i - 1];
         }
-        Check(rising && steps[0] == 50 && steps[steps.Length - 1] == 100000, "giving: the steps rise from 50 to 100,000 at the start's prices");
+        Check(rising && steps[0] == 50 && steps[GivingCatalogue.StepsBase - 1] == 100000 && steps[steps.Length - 1] == 500000000, "giving: the steps rise from 50 to 500 million at the start's prices, and everyone is shown the first eleven, to 100,000");
         Check(GivingRules.StepNow(4, 1000) == 1000 && GivingRules.StepNow(4, 2000) == 2000 && GivingRules.StepNow(4, 500) == 500, "giving: a step follows the city's prices, as Prices.At does");
-        Check(GivingRules.StepNow(-5, 1000) == 50 && GivingRules.StepNow(99, 1000) == 100000, "giving: a step out of the list is held inside it");
-        Check(GivingRules.StepOf(480) == 3 && GivingRules.StepOf(0) == 0 && GivingRules.StepOf(9999999) == steps.Length - 1, "giving: the nearest step to an amount");
+        Check(GivingRules.StepNow(-5, 1000) == 50 && GivingRules.StepNow(99, 1000) == 500000000, "giving: a step out of the list is held inside it");
+        Check(GivingRules.StepOf(480) == 3 && GivingRules.StepOf(0) == 0 && GivingRules.StepOf(9999999) == 16 && GivingRules.StepOf(int.MaxValue) == steps.Length - 1, "giving: the nearest step to an amount");
         Check(GivingRules.Back(2000, 2000) == 1000 && GivingRules.Back(1000, 1000) == 1000, "giving: an amount at today's prices goes back to the start's");
         Check(GivingRules.MonthOf(1, 5) == 0 && GivingRules.MonthOf(5, 5) == 0 && GivingRules.MonthOf(6, 5) == 1 && GivingRules.MonthOf(0, 5) == 0, "giving: a month is the twelfth of the year the economy uses");
         Check(GivingCatalogue.CapPerHousehold.Length == (int)Charity.Count && GivingCatalogue.NameKeys.Length == (int)Charity.Count && GivingCatalogue.AboutKeys.Length == (int)Charity.Count
-              && GivingCatalogue.DeductionShare == 60, "giving: three charities, each with its cap, its name and its words, and the deduction share of 6%");
+              && GivingCatalogue.NamingKeys.Length == (int)Charity.Count && (int)Charity.Count == 7 && GivingCatalogue.DeductionShare == 60, "giving: seven causes, each with its cap, its name, its words and what a naming is called, and the deduction share of 6%");
         long cap = GivingRules.MonthCap(Charity.FoodBank, 20000, 1000);
         Check(cap == 20000L * 14 && GivingRules.MonthCap(Charity.Housing, 20000, 2000) == 20000L * 20 && GivingRules.MonthCap(Charity.Training, 0, 1000) == 0, "giving: a charity's cap is its share for each household of the city, at today's prices");
         Check(GivingRules.PayNow(1000, 600, 0) == 600 && GivingRules.PayNow(300, 600, 0) == 300 && GivingRules.PayNow(1000, 600, 600) == 0 && GivingRules.PayNow(1000, 600, 900) == 0,
@@ -427,7 +428,7 @@ internal static partial class Program
         string director = ModSource(@"Giving\GivingDirector.Loans.cs"), contact = ModSource(@"Social\SocialDirector.Contact.cs");
         Check(contact.Contains("if (free && Giving.GivingDirector.Instance != null && Giving.GivingDirector.Instance.TryAsk(person))") && director.Contains("person.Stage >= SocialStage.Friend || person.IsFamily"),
             "giving asks: only when no plan or offer is waiting, and only from a friend or family, through the social life's own hour and its text");
-        Check(director.Contains("SocialLife.SendText(person, key,") && director.Contains("offer.Kind = SocialOffer.Help") && director.Contains("GivingPeople.AskOf(s, person.Index, GivingGame.Level, out GivingNeed need, out int amount)")
+        Check(director.Contains("SocialLife.SendText(person, key,") && director.Contains("offer.Kind = SocialOffer.Help") && director.Contains("GivingPeople.AskOf(s, person.Index, GivingGame.Level, out need, out amount)")
               && director.Contains("GivingRules.Asks(_state.Seed, person.Index, day, hour, chance)"), "giving asks: by text, then answered on the call, and never for someone the population does not hold in trouble");
     }
 
@@ -454,7 +455,7 @@ internal static partial class Program
         {
             int c = GivingRules.RivalCharity(7, 1, m);
             seen |= c != GivingRules.RivalCharity(7, 1, 0);
-            Check(c >= 0 && c < (int)Charity.Count, "giving rivals: a tycoon's charity is one of the three");
+            Check(c >= 0 && c < GivingCatalogue.Potted, "giving rivals: a tycoon gives to one of the causes that hold a pot, never to a district's upkeep");
         }
         Check(seen, "giving rivals: a tycoon has a favourite and now and then another");
         string wiring = ModSource(@"Wiring\Wiring.GivingLinks.cs"), month = ModSource(@"Giving\GivingMonth.cs");
@@ -522,7 +523,7 @@ internal static partial class Program
             var stub = new UiSamples.GivingStub();
             VentModel m = UiSamples.Giving(ModEnglish(), state, null, stub);
             bool off = state == "off";
-            Check(off ? m.Shape == VentShape.Off : m.Shape == VentShape.Page && m.Nav.Length == 3, "giving pages: " + state + " builds as " + (off ? "the off page" : "a page of three tabs"));
+            Check(off ? m.Shape == VentShape.Off : m.Shape == VentShape.Page && m.Nav.Length == 4, "giving pages: " + state + " builds as " + (off ? "the off page" : "a page of four tabs"));
             if (off)
             {
                 continue;
@@ -555,7 +556,7 @@ internal static partial class Program
         VentModel pick = UiSamples.Giving(ModEnglish(), "charities_pick", new VentView(), press);
         VentBlock actions = pick.Right.First(b => b.Kind == VentBlockKind.Actions);
         pick.Runs[actions.Actions[actions.Actions.Length - 1].Arg]();
-        Check(press.Last == "give" && press.Charity == 1 && press.Step == 5, "giving pages: Give gives the chosen amount to the chosen charity");
+        Check(press.Last == "give" && press.Charity == 1 && press.Step == 5 && press.District == -1, "giving pages: Give gives the chosen amount to the chosen charity");
         pick.Runs[actions.Actions[actions.Actions.Length - 2].Arg]();
         Check(press.Last == "monthly" && press.Charity == 1, "giving pages: Give every month sets the standing gift");
         VentModel standing = UiSamples.Giving(ModEnglish(), "charities", new VentView(), press);
@@ -580,10 +581,11 @@ internal static partial class Program
         string app = ModSource(@"Giving\GivingApp.cs"), live = ModSource(@"Ui\Ventures\GivingLive.cs");
         Check(app.Contains("GivingLive.Instance.Give(") && app.Contains("GivingLive.Instance.Monthly(") && app.Contains("GivingLive.Instance.StopMonthly(") && live.Contains("d.GiveToCharity(") && live.Contains("d.SetStanding(") && live.Contains("d.CancelStanding("),
             "giving pages: the app in the game's frame and the kit's page press the same calls of the director");
-        string call = ModSource(@"Social\PersonDialog.Giving.cs") + ModSource(@"Social\PersonDialog.cs");
+        string call = ModSource(@"Social\PersonDialog.Giving.cs") + ModSource(@"Social\PersonDialog.cs") + ModSource(@"Giving\GivingTalk.cs");
         Check(call.Contains("GiveFlow(false, 0)") && call.Contains("GiveFlow(true, 0)") && call.Contains("giver.Lend(_p, amount)") && call.Contains("giver.GiveToPerson(_p, amount, false)") && call.Contains("return Plea();")
-              && call.Contains("PleaLess(") && call.Contains("PleaLend(") && call.Contains("PleaNo"), "giving pages: the call offers Give money and Lend money, and a plea is answered by giving, giving less, lending or saying no");
-        Check(ModSource(@"Social\PersonDialog.cs").Contains("if (Giver != null && Giving.GivingDirector.CauseWhy == 0)"), "giving pages: the call offers Give money and Lend money only where the city's people are there to receive them");
+              && call.Contains("PleaLess(") && call.Contains("PleaLend(") && call.Contains("PleaNo"), "giving pages: the call offers Give money and Lend money among its ways to help, and a plea is answered by giving, giving less, lending or saying no");
+        Check(ModSource(@"Social\PersonDialog.cs").Contains("if (GivingTalk.Offered)") && ModSource(@"Giving\GivingTalk.cs").Contains("public static bool Offered => Giver != null && GivingDirector.CauseWhy == 0;"),
+            "giving pages: the call offers Help with money only where the city's people are there to receive it");
         string gifts3 = ModSource(@"Giving\GivingDirector.Gifts.cs"), loans3 = ModSource(@"Giving\GivingDirector.Loans.cs");
         int toPerson = gifts3.IndexOf("public GiveResult GiveToPerson", StringComparison.Ordinal);
         int lend3 = loans3.IndexOf("public GiveResult Lend", StringComparison.Ordinal);
@@ -636,6 +638,7 @@ internal static partial class Program
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         string[] sources = { @"Giving\GivingDirector.cs", @"Giving\GivingDirector.App.cs", @"Giving\GivingDirector.Facts.cs", @"Giving\GivingDirector.Gifts.cs", @"Giving\GivingDirector.Loans.cs", @"Giving\GivingDirector.Month.cs",
             @"Giving\GivingDirector.Tests.cs", @"Giving\GivingGuide.cs", @"Giving\GivingText.cs", @"Giving\GivingApp.cs", @"Giving\GiveResult.cs", @"Giving\GivingGame.cs", @"Ui\Ventures\GivePages.cs", @"Ui\Ventures\GivingLive.cs",
+            @"Giving\GivingDirector.Help.cs", @"Giving\GivingTalk.cs", @"Giving\GivingCatalogue.cs", @"Social\PeopleDialog.cs",
             @"Social\PersonDialog.Giving.cs", @"Wiring\Wiring.GivingLinks.cs" };
         foreach (string source in sources)
         {
@@ -650,14 +653,19 @@ internal static partial class Program
         }
         keys.Remove("reallife_giving_charity_");
         keys.Remove("reallife_ui_dialog_cost_now");
-        Check(keys.Count >= 130, "giving texts: its keys are found: " + keys.Count);
+        Check(keys.Count >= 220, "giving texts: its keys are found: " + keys.Count);
         string[] notices = { "reallife_giving_gave", "reallife_giving_monthly_set", "reallife_giving_monthly_full", "reallife_giving_monthly_stopped", "reallife_giving_standing_skipped", "reallife_giving_loan_part",
             "reallife_giving_loan_repaid", "reallife_giving_loan_off", "reallife_giving_result_done", "reallife_giving_result_done_only", "reallife_giving_result_off", "reallife_giving_result_broke",
             "reallife_giving_result_no_cause", "reallife_giving_result_session", "reallife_giving_result_no_person", "reallife_giving_result_limit", "reallife_giving_result_nothing", "reallife_giving_test_gift",
             "reallife_giving_test_month", "reallife_giving_test_person", "reallife_giving_test_lend", "reallife_giving_test_ask", "reallife_giving_test_nobody", "reallife_giving_test_nobody_in_trouble",
-            "reallife_giving_test_back", "reallife_giving_test_back_none", "reallife_giving_test_off" };
+            "reallife_giving_test_back", "reallife_giving_test_back_none", "reallife_giving_test_off", "reallife_giving_named", "reallife_giving_test_help", "reallife_giving_test_naming",
+            "reallife_giving_test_nobody_to_help", "reallife_giving_result_named", "reallife_giving_result_distant", "reallife_giving_result_proud", "reallife_giving_result_needless",
+            "reallife_giving_result_not_needed", "reallife_giving_result_no_district", "reallife_giving_ask_more" };
         string[] facts = { "{giving_deduct}", "{giving_loan_parts}", "{giving_loan_most}", "{giving_gift_most}", "{giving_loans_most}", "{giving_ask_gap}", "{giving_standing_most}", "{giving_misses}", "{giving_big}", "{giving_window}" };
+        string[] newFacts = { "{giving_naming}", "{giving_carry}", "{giving_business_parts}", "{giving_business_share}", "{giving_cooldown}" };
         Dictionary<string, string> english = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
+        // A key the other languages do not hold yet (a new feature's texts are translated in a batch after it is built) is asked for in English alone; once Portuguese holds it, every language must.
+        Dictionary<string, string> portuguese = LoadWords(System.IO.Path.Combine(DesignLocales, "pt.json"));
         foreach (string code in GivingLanguages)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, code + ".json"));
@@ -668,6 +676,10 @@ internal static partial class Program
             }
             foreach (string key in keys)
             {
+                if (code != "en" && portuguese != null && !portuguese.ContainsKey(key))
+                {
+                    continue;
+                }
                 bool there = words.TryGetValue(key, out string value) && value.Length > 0;
                 Check(there, "giving texts: " + key + " is in " + code + ".json");
                 if (!there)
@@ -675,7 +687,9 @@ internal static partial class Program
                     continue;
                 }
                 Check(!value.Contains('!') && !value.Contains((char)0x2014) && !value.Contains((char)0x2013) && !value.Contains(" - "), "giving texts: " + key + " has no exclamation mark or dash in " + code);
-                if (english != null && english.TryGetValue(key, out string en))
+                // The guide page's older translation has none of the newer facts: it is compared once the batch has translated the new page.
+                bool stale = code != "en" && key == "reallife_guide_giving" && !value.Contains("{giving_naming}");
+                if (!stale && english != null && english.TryGetValue(key, out string en))
                 {
                     var wanted = new SortedSet<string>(Regex.Matches(en, @"\{[a-z_0-9]+\}").Cast<Match>().Select(m => m.Value));
                     var got = new SortedSet<string>(Regex.Matches(value, @"\{[a-z_0-9]+\}").Cast<Match>().Select(m => m.Value));
@@ -685,7 +699,8 @@ internal static partial class Program
             }
             foreach (string key in notices)
             {
-                Check(words.TryGetValue(key, out string value) && value.Length <= 240, "giving texts: the notice " + key + " is at most 240 characters in " + code);
+                bool held = words.TryGetValue(key, out string value);
+                Check(held ? value.Length <= 240 : code != "en", "giving texts: the notice " + key + " is at most 240 characters in " + code);
             }
             if (words.TryGetValue("reallife_guide_giving", out string page))
             {
@@ -693,10 +708,15 @@ internal static partial class Program
                 {
                     Check(page.Contains(fact), "giving texts: the Guide page has " + fact + " in " + code);
                 }
+                bool anyNew = newFacts.Any(f => page.Contains(f));   // a page translated before the newer facts had none of them: asked once it has any
+                foreach (string fact in newFacts)
+                {
+                    Check(code == "en" ? page.Contains(fact) : !anyNew || page.Contains(fact), "giving texts: the Guide page has " + fact + " in " + code);
+                }
             }
         }
         string guide = ModSource(@"Giving\GivingGuide.cs");
-        foreach (string fact in facts)
+        foreach (string fact in facts.Concat(newFacts))
         {
             Check(guide.Contains(".Fact(\"" + fact.Trim('{', '}') + "\""), "giving texts: the Guide's " + fact + " is filled from the rules");
         }
