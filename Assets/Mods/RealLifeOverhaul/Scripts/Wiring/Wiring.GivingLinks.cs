@@ -18,6 +18,7 @@ namespace RealLifeOverhaul
         ///   WealthTier,
         ///   Recognition        how rich and how well known the player is, for how often a person asks
         ///   Integrity, Press   Standing: a gift's good name, and the papers
+        ///   Upkeep             Standing's neighbourhood and its custom for a district a gift to its upkeep names
         ///   RivalWorth,
         ///   RivalPay,
         ///   RivalName          the rival tycoons give from their own worth to the same charities
@@ -39,6 +40,7 @@ namespace RealLifeOverhaul
                 GivingBridges.Recognition = () => Standing.Recognition;
                 GivingBridges.Integrity = points => FameDirector.Instance != null ? FameDirector.Instance.Moved(FamePart.Integrity, FameCause.Charity, points) : 0;
                 GivingBridges.Press = tenths => FameDirector.Instance != null ? FameDirector.Instance.Publicised(tenths, FameCause.Charity) : 0;
+                GivingBridges.Upkeep = (district, points, percent, days) => FameDirector.Instance != null ? FameDirector.Instance.Upkept(district, points, percent, days) : 0;
                 GivingBridges.RivalWorth = RivalWorth;
                 GivingBridges.RivalPay = RivalPay;
                 GivingBridges.RivalName = RivalName;

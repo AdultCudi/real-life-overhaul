@@ -36,16 +36,33 @@ namespace RealLifeOverhaul.Giving
             return text;
         }
 
-        /// <summary>A gift as a story of the paper: the player's or a tycoon's, to a charity.</summary>
+        /// <summary>What a gift that took the giver's name is called: the cause's word (a kitchen, a wing, a scholarship) with the giver's name and, for a district, its name.</summary>
+        public static string Naming(GivingNaming n)
+        {
+            string district = n.Tag >= 0 && n.Tag < GivingState.Districts ? DistrictOf(n.Tag) : string.Empty;
+            string key = GivingCatalogue.NamingKeys[GivingCatalogue.Clamp(n.Charity, 0, GivingCatalogue.NamingKeys.Length - 1)];
+            return Fill(key, "name", string.IsNullOrEmpty(n.Name) ? Fill("reallife_giving_naming_anon") : n.Name, "charity", Charity(n.Charity), "district", district);
+        }
+
+        private static string DistrictOf(int tag)
+        {
+            var list = new List<string>(GivingState.Districts);
+            GivingGame.Districts(list);
+            return tag < list.Count ? GivingGame.DistrictName(list[tag]) : string.Empty;
+        }
+
+        /// <summary>A gift as a story of the paper: the player's or a tycoon's, to a charity, or the player's naming gift with what it is called.</summary>
         public static GivingStory Story(GivingNote n, bool lead)
         {
             string giver = n.Giver < 0 ? string.Empty : GivingBridges.RivalName != null ? GivingBridges.RivalName(n.Giver) : string.Empty;
-            return new GivingStory
+            var data = new Dictionary<string, string> { { "rival", giver }, { "amount", GivingGame.Money(n.Amount) }, { "charity", Charity(n.Charity) } };
+            string key = n.Giver < 0 ? "reallife_giving_paper_player" : "reallife_giving_paper_rival";
+            if (n.Giver < 0 && n.Naming == 1)
             {
-                Key = n.Giver < 0 ? "reallife_giving_paper_player" : "reallife_giving_paper_rival",
-                Lead = lead,
-                Data = new Dictionary<string, string> { { "rival", giver }, { "amount", GivingGame.Money(n.Amount) }, { "charity", Charity(n.Charity) } }
-            };
+                key = "reallife_giving_paper_naming";
+                data["naming"] = Naming(new GivingNaming { Charity = n.Charity, Tag = n.Tag, Name = GivingGame.PlayerName });
+            }
+            return new GivingStory { Key = key, Lead = lead, Data = data };
         }
     }
 }

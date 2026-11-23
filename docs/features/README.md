@@ -32,7 +32,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
 - [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
-- [Giving](giving.md): gifts to the city's charities, money given or lent to people, the deduction on the tax return and the people who ask.
+- [Giving](giving.md): gifts to the city's seven causes, with names on halls for big gifts, the deduction on the tax return and its carry forward, help for people (money, rent, debts, a business, a course, a car, a home) and the people who ask.
 - [Insurance](insurance.md): a tier for each car's policy, a policy for each home, and one app for those, the health plan and the business cover, with claims taken off the bill.
 - [Health](health.md): illnesses and injuries that can turn serious, the doctor's appointment, hospital stays, health plans, medical debt and sick leave, for the player, their staff, the rivals and the city.
 - [The rivals' buildings and their fortune](rivals-property.md): the game's rivals own buildings by their place in the Rivals app, dealt at once in a new game and moved gently in one under way, and their pages count what they own.

@@ -4,6 +4,7 @@ using System.Text;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.Giving;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -162,11 +163,71 @@ namespace RealLifeOverhaul
                 : p.Loan > 0 ? SocialLife.T("reallife_social_people_owes_you").Replace("{amount}", SocialLife.Money(p.Loan))
                 : string.Empty;
             var entry = new DialogEntry { messageData = "reallife_social_people_history".Localize(data), OnCancel = PhoneContacts.HangUp };
-            entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
-            entry.OnConfirm = () => Page(at + 1);
+            if (GivingTalk.Offered)
+            {
+                entry.ConfirmTextOverride = "reallife_giving_btn_money".Localize();   // their money page: what they are short of, and the ways to help (Giving)
+                entry.OnConfirm = () => MoneyPage(at);
+            }
+            else
+            {
+                entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
+                entry.OnConfirm = () => Page(at + 1);
+            }
             entry.SecondOptionTextOverride = "reallife_social_lose_btn";
             entry.OnSecondOption = () => LoseTouch(at);
             return entry;
+        }
+
+        // Their money page (Giving): what they are short of, what the player has given or lent them, how they lean on it, and the ways to help, offered as on a call.
+        private DialogEntry MoneyPage(int at)
+        {
+            SocialPerson p = _known[at % _known.Count];
+            var fact = new GivePersonFact();
+            GivingDirector giver = GivingDirector.Instance;
+            if (giver == null || !giver.MoneyOf(p, fact))
+            {
+                return Page(at + 1);
+            }
+            var lines = new StringBuilder(160);
+            lines.Append(SocialLife.T(fact.Need == GivingNeed.Work ? "reallife_giving_need_work" : fact.Need == GivingNeed.Debt ? "reallife_giving_need_debt" : fact.Need == GivingNeed.Rent
+                ? "reallife_giving_need_rent" : "reallife_giving_need_none"));
+            lines.Append('\n').Append(SocialLife.T("reallife_giving_people_given", new Dictionary<string, string> { { "amount", SocialLife.Money(fact.Given) } }));
+            if (fact.Loan > 0)
+            {
+                lines.Append('\n').Append(SocialLife.T("reallife_giving_people_loan", new Dictionary<string, string> { { "amount", SocialLife.Money(fact.Loan) } }));
+            }
+            if (fact.CoveredDays > 0)
+            {
+                lines.Append('\n').Append(SocialLife.T("reallife_giving_people_covered", new Dictionary<string, string> { { "days", fact.CoveredDays.ToString() } }));
+            }
+            lines.Append('\n').Append(SocialLife.T(fact.Dependence == 0 ? "reallife_giving_lean_0" : fact.Dependence < 3 ? "reallife_giving_lean_1" : "reallife_giving_lean_2"));
+            Dictionary<string, string> data = SocialLife.Data(p);
+            data["money"] = lines.ToString();
+            var entry = new DialogEntry { messageData = "reallife_giving_people_page".Localize(data), OnCancel = PhoneContacts.HangUp };
+            entry.ConfirmTextOverride = "reallife_giving_btn_help".Localize();
+            entry.OnConfirm = () => new GivingTalk(new MoneyHost(p)).Menu(0);
+            entry.SecondOptionTextOverride = "reallife_social_btn_next";
+            entry.OnSecondOption = () => Page(at + 1);
+            return entry;
+        }
+
+        // Where the help talk is held on their page: the lines are the page's own, and a result ends the conversation as a call's does.
+        private sealed class MoneyHost : IGivingTalkHost
+        {
+            public MoneyHost(SocialPerson person)
+            {
+                Person = person;
+            }
+
+            public SocialPerson Person { get; }
+
+            public DialogEntry Say(string key, Dictionary<string, string> data) => new DialogEntry { messageData = key.Localize(data), OnCancel = PhoneContacts.HangUp };
+
+            public DialogEntry Ask(string key, Dictionary<string, string> data) => Say(key, data);
+
+            public DialogEntry End(string key, Dictionary<string, string> data) => PhoneContacts.Closing(key, data);
+
+            public DialogEntry Close(string key, Dictionary<string, string> data) => PhoneContacts.Closing(key, data);
         }
 
         // Losing touch: why not, on the page, or the call ends and the game's question box asks, as its Contacts app does before

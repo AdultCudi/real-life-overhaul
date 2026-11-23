@@ -255,7 +255,8 @@ internal static partial class Program
         }
         Check(off.TaxAt[120] == 2000, "giving tax: a gift after the option is back on is deducted in its year (" + off.TaxAt[120] + ")");
 
-        // Many years at random: gifts, language changes, saves and loads, the option off for stretches. Never over the gifts of the year or the cap, and with every day played, exact.
+        // Many years at random: gifts, language changes, saves and loads, the option off for stretches. Never over the cap, never over the gifts of the year and the years it can carry
+        // from, never over everything given in all, and in the first year, with every day played, exact (the later years carry what the cap held back: GivingCarryChecks).
         long worstOver = 0, years = 0, exact = 0;
         for (int seed = 1; seed <= 24; seed++)
         {
@@ -300,20 +301,29 @@ internal static partial class Program
                 }
                 w.NewDay();
             }
+            long deductedInAll = 0, givenInAll = 0;
             foreach (KeyValuePair<int, long> t in w.TaxAt)
             {
                 years++;
-                long gifts = w.GiftsOfYearEndingAt(t.Key), most = Math.Min(gifts, w.CapAt(t.Key, false));
+                long gifts = w.GiftsOfYearEndingAt(t.Key), carried = 0;
+                for (int back = 1; back <= GivingCatalogue.CarryYears; back++)
+                {
+                    carried += t.Key - back * days > 0 ? w.GiftsOfYearEndingAt(t.Key - back * days) : 0L;
+                }
+                long most = Math.Min(gifts + carried, w.CapAt(t.Key, false));
                 worstOver = Math.Max(worstOver, t.Value - most);
-                Check(t.Value >= 0 && t.Value <= most, "giving tax: year ending day " + t.Key + " (seed " + seed + "): " + t.Value + " is over the gifts of the year or the cap (" + most + ")");
-                if (!missed.Contains(t.Key))
+                deductedInAll += t.Value;
+                givenInAll += gifts;
+                Check(t.Value >= 0 && t.Value <= most, "giving tax: year ending day " + t.Key + " (seed " + seed + "): " + t.Value + " is over the gifts of the year and its carry or the cap (" + most + ")");
+                if (!missed.Contains(t.Key) && t.Key == days)
                 {
                     exact++;
                     Check(t.Value == Math.Min(gifts, w.CapAt(t.Key, true)), "giving tax: every day played, year ending day " + t.Key + " (seed " + seed + ") deducts " + t.Value + " of " + Math.Min(gifts, w.CapAt(t.Key, true)));
                 }
             }
+            Check(deductedInAll <= givenInAll + w.GiftsOfYearEndingAt(days * 9), "giving tax: over all its years (seed " + seed + ") no more is deducted than was given (" + deductedInAll + " of " + givenInAll + ")");
         }
-        Check(worstOver <= 0 && years >= 100 && exact >= 40, "giving tax: " + years + " tax years played through, " + exact + " of them every day exactly, none over its cap or its gifts");
+        Check(worstOver <= 0 && years >= 100 && exact >= 6, "giving tax: " + years + " tax years played through, " + exact + " of them every day exactly in the first year, none over its cap or its gifts and their carry");
     }
 
     // ---- the month's pass
@@ -321,7 +331,7 @@ internal static partial class Program
     private sealed class MonthGame : IMonthWorld
     {
         public int Day = 100, Level = 1000;
-        public readonly int[] Standing = new int[3], PayOuts = new int[3], Rivals = new int[GivingState.Rivals];
+        public readonly int[] Standing = new int[(int)Charity.Count], PayOuts = new int[(int)Charity.Count], Rivals = new int[GivingState.Rivals];
         public int NeighbourCalls;
         public readonly long[] Worth = { 50000000L, 0L, 3000000L };
         public readonly long[] Floor = { 40000000L, 60000000L, 3000000L };
@@ -362,6 +372,19 @@ internal static partial class Program
         }
     }
 
+    // Every cause with a month's pay-out paid it this many times, and the care fund and a district's upkeep, which close their month with the counters, never (their pay-out step has nothing to do).
+    private static bool PaidThrough(MonthGame w, int times)
+    {
+        for (int c = 0; c < (int)Charity.Count; c++)
+        {
+            if (w.PayOuts[c] != (c == (int)Charity.Care || c == (int)Charity.Upkeep ? 0 : times))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static GivingState MonthState()
     {
         var s = new GivingState { Seed = 33, Month = 4, PeriodStart = 0 };
@@ -385,9 +408,9 @@ internal static partial class Program
             steps++;
             Check(s.MonthStep < 0 ? s.Month == 5 : s.Month == 4, "giving month: the month is marked done when its last step is, not before (step " + steps + ")");
         }
-        Check(steps == GivingMonth.Steps && w.Standing[0] == 1 && w.Standing[2] == 1 && w.Standing[1] == 0 && w.Rivals[0] == 1 && w.Rivals[1] == 0 && w.Rivals[2] == 1 && w.PayOuts.All(n => n == 1)
+        Check(steps == GivingMonth.Steps && w.Standing[0] == 1 && w.Standing[2] == 1 && w.Standing[1] == 0 && w.Rivals[0] == 1 && w.Rivals[1] == 0 && w.Rivals[2] == 1 && PaidThrough(w, 1)
               && w.NeighbourCalls == 1 && s.MonthGiven == 0 && s.Book(Charity.FoodBank).PlayerMonth == 0, "giving month: a pass does each of its steps once and starts the counters again (" + steps + " steps)");
-        Check(w.Left > 0 && s.Book(Charity.FoodBank).Pot + s.Book(Charity.Housing).Pot + s.Book(Charity.Training).Pot == w.Left && s.RivalBooks[0].Year + s.RivalBooks[2].Year == w.Left,
+        Check(w.Left > 0 && s.Books.Sum(b => b.Pot) == w.Left && s.RivalBooks[0].Year + s.RivalBooks[2].Year == w.Left,
             "giving month: every dollar a rival gives leaves their worth and fills a pot, none of it the player's");
 
         // Interrupted at every step by a save and a load, or by the option off (the same line kept): the pass goes on at its step and nothing is done twice or dropped.
@@ -413,7 +436,7 @@ internal static partial class Program
                 {
                     GivingMonth.Step(s2, w2);
                 }
-                Check(s2.Month == 5 && w2.Standing[0] == 1 && w2.Standing[2] == 1 && w2.Rivals[0] == 1 && w2.Rivals[2] == 1 && w2.PayOuts.All(n => n == 1) && w2.NeighbourCalls == 1,
+                Check(s2.Month == 5 && w2.Standing[0] == 1 && w2.Standing[2] == 1 && w2.Rivals[0] == 1 && w2.Rivals[2] == 1 && PaidThrough(w2, 1) && w2.NeighbourCalls == 1,
                     "giving month: the rest of the month runs after a save at step " + stop + ", each thing once (" + string.Join(",", w2.PayOuts) + ")");
             }
         }
@@ -432,7 +455,7 @@ internal static partial class Program
         {
             GivingMonth.Step(s3, w3);
         }
-        Check(w3.Standing[0] == 1 && w3.Standing[2] == 1 && w3.Rivals[0] == 1 && w3.Rivals[2] == 1 && w3.PayOuts.All(n => n == 1) && w3.NeighbourCalls == 1,
+        Check(w3.Standing[0] == 1 && w3.Standing[2] == 1 && w3.Rivals[0] == 1 && w3.Rivals[2] == 1 && PaidThrough(w3, 1) && w3.NeighbourCalls == 1,
             "giving month: a month whose steps run again pays no standing gift, rival, pot or neighbours twice");
         var s4 = MonthState();
         s4.Standing[0].Month = 5;   // a standing gift set during the pass has its first turn the month after
@@ -455,7 +478,7 @@ internal static partial class Program
                 GivingMonth.Step(s5, w5);
             }
         }
-        Check(w5.Standing[0] == 4 && w5.Standing[2] == 4 && w5.PayOuts.All(n => n == 4) && w5.NeighbourCalls == 4 && w5.Rivals[0] == 4 && s5.Month == 8, "giving month: four months, four passes, each thing four times");
+        Check(w5.Standing[0] == 4 && w5.Standing[2] == 4 && PaidThrough(w5, 4) && w5.NeighbourCalls == 4 && w5.Rivals[0] == 4 && s5.Month == 8, "giving month: four months, four passes, each thing four times");
         Check(GivingMonth.Begin(s5, 30) && s5.MonthNumber == 30, "giving month: after a long time away one pass runs, for the month it is now");
         var first = new GivingState();
         Check(!GivingMonth.Begin(first, 7) && first.Month == 7 && first.MonthStep == -1, "giving month: the very first look only notes the month");
@@ -544,20 +567,20 @@ internal static partial class Program
         PopulationState s = LoanCity(out int who, out int h);
         var st = new GivingState();
         long before = (long)s.Households.Savings[h] - s.Households.Debt[h];
-        Check(GivingLoans.Check(st, s, who, 4000, 1000, out int p, out int hh) == GiveResult.Done && hh == h && p == 14, "giving loans: a resident the population holds can be lent to");
-        Check(GivingLoans.Check(st, s, 99, 4000, 1000, out _, out _) == GiveResult.NoPerson && GivingLoans.Check(st, s, who, 0, 1000, out _, out _) == GiveResult.Nothing
-              && GivingLoans.Check(st, s, who, 10001, 1000, out _, out _) == GiveResult.Limit && GivingLoans.Check(st, s, who, 20000, 2000, out _, out _) == GiveResult.Done,
+        Check(GivingLoans.Check(st, s, who, 4000, 1000, GivingRules.At(GivingCatalogue.LoanMost, 1000), out int p, out int hh) == GiveResult.Done && hh == h && p == 14, "giving loans: a resident the population holds can be lent to");
+        Check(GivingLoans.Check(st, s, 99, 4000, 1000, 10000, out _, out _) == GiveResult.NoPerson && GivingLoans.Check(st, s, who, 0, 1000, 10000, out _, out _) == GiveResult.Nothing
+              && GivingLoans.Check(st, s, who, 10001, 1000, 10000, out _, out _) == GiveResult.Limit && GivingLoans.Check(st, s, who, 20000, 2000, 20000, out _, out _) == GiveResult.Done,
             "giving loans: nobody the population does not hold, nothing for no amount, nothing over the most at today's prices");
         LoanOut loan = GivingLoans.Make(st, s, h, who, "A Name", 4000, 400, 5);
         Check(((long)s.Households.Savings[h] - s.Households.Debt[h]) - before == 4000 && loan.Remaining == 4000 && loan.Part == 667 && loan.Next == 405 && st.LoanOf(who) == loan,
             "giving loans: a loan lands in the household whole and is written down");
-        Check(GivingLoans.Check(st, s, who, 100, 1000, out _, out _) == GiveResult.Limit, "giving loans: one loan at a time for a person");
+        Check(GivingLoans.Check(st, s, who, 100, 1000, 10000, out _, out _) == GiveResult.Limit, "giving loans: one loan at a time for a person");
         var many = new GivingState();
         for (int i = 0; i < GivingCatalogue.LoansMost; i++)
         {
             many.Loans.Add(new LoanOut { Person = 100 + i, Principal = 10, Remaining = 10 });
         }
-        Check(GivingLoans.Check(many, s, who, 100, 1000, out _, out _) == GiveResult.Limit, "giving loans: eight open at the most");
+        Check(GivingLoans.Check(many, s, who, 100, 1000, 10000, out _, out _) == GiveResult.Limit, "giving loans: eight open at the most");
         // Months go by: the person pays what the household can spare, never more than lent in all, and the household's net gain is never more than the loan.
         s.Households.Savings[h] = 6000;
         int day = 405, months = 0;

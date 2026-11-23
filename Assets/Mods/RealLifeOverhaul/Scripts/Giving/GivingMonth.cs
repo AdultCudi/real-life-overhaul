@@ -117,6 +117,18 @@ namespace RealLifeOverhaul.Giving
             for (int i = 0; i < s.Books.Length; i++)
             {
                 CharityBook b = s.Books[i];
+                if (i == (int)Charity.Care)
+                {
+                    // The care fund pays as bills come, not on a day: what it paid in the month that ends is what it paid "last month".
+                    b.LastMoney = b.PaidMonth;
+                    b.LastPeople = b.MonthPeople;
+                    b.LastMonth = s.MonthNumber;
+                }
+                else if (i == (int)Charity.Upkeep)
+                {
+                    b.LastMonth = s.MonthNumber;   // a district's upkeep holds nothing to pay out
+                }
+                b.MonthPeople = 0;
                 b.PlayerMonth = 0;
                 b.OthersMonth = 0;
                 b.PaidMonth = 0;

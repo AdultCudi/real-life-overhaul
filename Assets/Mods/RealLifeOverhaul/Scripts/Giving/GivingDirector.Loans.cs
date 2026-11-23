@@ -28,28 +28,69 @@ namespace RealLifeOverhaul.Giving
                 return GoingPublic.InSession ? GiveResult.Session : GiveResult.NoCause;
             }
             int level = GivingGame.Level;
-            GiveResult allowed = GivingLoans.Check(_state, s, person.Index, amount, level, out int p, out int h);
+            GiveResult allowed = GivingLoans.Check(_state, s, person.Index, amount, level, PersonCap(true), out int p, out int h);
             if (allowed != GiveResult.Done)
             {
                 return allowed;
+            }
+            bool inNeed = GivingPeople.NeedOf(s, p, out _) != GivingNeed.None;
+            PersonGiving g = _state.PersonOf(person.Index, true);
+            GiveResult said = Takes(person, HelpKind.Money, true, GivingRules.Back(amount, level), inNeed, g);
+            if (said != GiveResult.Done)
+            {
+                return said;   // a loan is the easiest thing to accept, but not from somebody they do not know well enough, or who needs nothing and gives rather than takes
             }
             if (!GivingGame.Pay(amount, GivingGame.LoanKey))
             {
                 return GiveResult.Broke;
             }
-            bool inNeed = GivingPeople.NeedOf(s, p, out _) != GivingNeed.None;
             int day = GivingGame.Day;
             GivingLoans.Make(_state, s, h, person.Index, person.Name, amount, day, GivingGame.MonthDays);
-            GivingRules.PersonGain(_state.PersonOf(person.Index, true), GivingRules.LoanCounts(GivingRules.Back(amount, level)), day, inNeed, out int affection, out int trust);
-            SocialLife.Contacted(person);
+            Warm(person, g, GivingRules.LoanCounts(GivingRules.Back(amount, level)), inNeed, out int affection, out int trust);
+            Helped(g, GivingRules.Back(amount, level));
             SocialLife.Remember(person, MemoryCode.Loan);
-            SocialLife.Change(person, 0f, affection / 10f, trust / 10f);
             Answered(person);
             _revision++;
             if (Verbose)
             {
                 Logger?.Info("Giving check (a loan of " + amount + " to " + person.Name + "): in their household, parts of " + GivingRules.LoanPart(amount)
                              + " from day " + (day + GivingGame.MonthDays) + "; affection +" + affection / 10f + ", trust +" + trust / 10f + ": PASS");
+            }
+            return GiveResult.Done;
+        }
+
+        // A business loan: the sum backs the person's small business (their skill, and work of their own for somebody out of work), is paid back over a year and carries a friend's share on
+        // top. Everything else is a loan's: one at a time for a person, the most the player's wealth allows, the rules before any money is taken.
+        private GiveResult LendBusiness(SocialPerson person, int amount, PopulationState s, int p, int h)
+        {
+            int level = GivingGame.Level;
+            GiveResult allowed = GivingLoans.Check(_state, s, person.Index, amount, level, PersonCap(true), out _, out _);
+            if (allowed != GiveResult.Done)
+            {
+                return allowed;
+            }
+            bool inNeed = GivingPeople.NeedOf(s, p, out _) != GivingNeed.None;
+            PersonGiving g = _state.PersonOf(person.Index, true);
+            GiveResult said = Takes(person, HelpKind.Business, true, GivingRules.Back(amount, level), inNeed, g);
+            if (said != GiveResult.Done)
+            {
+                return said;
+            }
+            if (!GivingGame.Pay(amount, GivingGame.BusinessLoanKey))
+            {
+                return GiveResult.Broke;
+            }
+            int day = GivingGame.Day;
+            LoanOut loan = GivingLoans.Make(_state, s, h, person.Index, person.Name, amount, day, GivingGame.MonthDays, true, p);
+            Warm(person, g, GivingRules.LoanCounts(GivingRules.Back(amount, level)), inNeed, out int affection, out int trust);
+            Helped(g, GivingRules.Back(amount, level));
+            SocialLife.Remember(person, MemoryCode.Loan);
+            Answered(person);
+            _revision++;
+            if (Verbose)
+            {
+                Logger?.Info("Giving check (a business loan of " + amount + " to " + person.Name + "): " + loan.Remaining + " to pay back in parts of " + loan.Part + " over "
+                             + loan.Parts + " months; affection +" + affection / 10f + ", trust +" + trust / 10f + ": PASS");
             }
             return GiveResult.Done;
         }
@@ -114,45 +155,69 @@ namespace RealLifeOverhaul.Giving
             PopulationState s = GivingGame.People();
             int day = GivingGame.Day, hour = SocialLife.Hour;
             PersonGiving g = _state.PersonOf(person.Index, false);
-            if (s == null || !GivingRules.MayAsk(day, _state.LastAsk, g != null ? g.AskDay : 0, (int)person.Affection, (int)person.Trust))
+            if (s == null || !GivingRules.MayAsk(day, _state.LastAsk, g != null ? g.AskDay : 0, (int)person.Affection, (int)person.Trust) || GivingRules.Cooling(g, day))
             {
                 return false;
             }
-            int chance = GivingRules.AskPerTenThousand(GivingBridges.WealthTier != null ? GivingBridges.WealthTier() : 0, GivingBridges.Recognition != null ? GivingBridges.Recognition() : 0);
+            int dependence = GivingRules.Dependence(g, day);
+            int chance = GivingRules.AskLeaning(GivingRules.AskPerTenThousand(GivingBridges.WealthTier != null ? GivingBridges.WealthTier() : 0,
+                GivingBridges.Recognition != null ? GivingBridges.Recognition() : 0), dependence);
             if (!GivingRules.Asks(_state.Seed, person.Index, day, hour, chance))
             {
                 return false;
             }
-            if (!GivingPeople.AskOf(s, person.Index, GivingGame.Level, out GivingNeed need, out int amount))
+            bool more = false;
+            GivingNeed need;
+            int amount;
+            if (!GivingPeople.AskOf(s, person.Index, GivingGame.Level, out need, out amount) || (need == GivingNeed.Rent && g != null && g.CoveredUntil > day))
             {
-                return false;
+                // No trouble that the population holds: somebody who has leant on the player's help lately may still ask for more, and the player can say no.
+                if (g == null || GivingPeople.ResidentOf(s, person.Index) < 0 || !GivingRules.AsksForMore(dependence, person.Has(SocialTrait.Reliable)))
+                {
+                    return false;
+                }
+                more = true;
+                need = GivingNeed.None;
+                amount = GivingRules.MoreAmount(g.LastHelp, GivingGame.Level);
             }
             SocialOffer offer = SocialState.Offer;
             offer.Person = person.Index;
             offer.Kind = SocialOffer.Help;
             offer.Amount = amount;
             offer.Expires = SocialLife.Now + GivingCatalogue.AskExpireHours * 60f;
-            string key = need == GivingNeed.Work ? "reallife_giving_ask_work" : need == GivingNeed.Debt ? "reallife_giving_ask_debt" : "reallife_giving_ask_rent";
+            string key = more ? "reallife_giving_ask_more" : need == GivingNeed.Work ? "reallife_giving_ask_work" : need == GivingNeed.Debt ? "reallife_giving_ask_debt" : "reallife_giving_ask_rent";
             if (!SocialLife.SendText(person, key, SocialLife.Data(person, "amount", SocialLife.Money(amount))))
             {
                 offer.Clear();
                 return false;
             }
             _state.LastAsk = day;
-            _state.PersonOf(person.Index, true).AskDay = day;
+            PersonGiving asking = _state.PersonOf(person.Index, true);
+            asking.AskDay = day;
+            asking.MorePending = more ? 1 : 0;
             if (Verbose)
             {
-                Logger?.Info("Giving check (" + person.Name + " asks for " + amount + " in " + need + "): chance " + chance + " in ten thousand, the last ask day " + _state.LastAsk + ": PASS");
+                Logger?.Info("Giving check (" + person.Name + " asks for " + amount
+                             + (more ? " more, leaning on the player's help (dependence " + dependence + ")" : " in " + need) + "): chance " + chance
+                             + " in ten thousand, the last ask day " + _state.LastAsk + ": PASS");
             }
             return true;
         }
 
-        /// <summary>What a person's ask is for now (to word the call): their need as the population holds it, None when they are no longer in trouble.</summary>
+        /// <summary>What a person's ask is for now (to word the call): their need as the population holds it, None when they are no longer in trouble (or their rent is paid for them).</summary>
         public GivingNeed NeedOfPerson(SocialPerson person)
         {
             PopulationState s = GivingGame.People();
             int p = s != null ? GivingPeople.ResidentOf(s, person.Index) : -1;
-            return p >= 0 ? GivingPeople.NeedOf(s, p, out _) : GivingNeed.None;
+            GivingNeed need = p >= 0 ? GivingPeople.NeedOf(s, p, out _) : GivingNeed.None;
+            return need == GivingNeed.Rent && RentCovered(person) ? GivingNeed.None : need;
+        }
+
+        /// <summary>True while the person's ask is for more help than their trouble calls for: they have leant on the player's help, and the call says so.</summary>
+        public bool AsksForMore(SocialPerson person)
+        {
+            PersonGiving g = person != null ? _state.PersonOf(person.Index, false) : null;
+            return g != null && g.MorePending == 1;
         }
     }
 }

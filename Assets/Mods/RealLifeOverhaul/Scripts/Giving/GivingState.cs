@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Giving
         public int LastMonth = -1;  // the month it was
         public long PlayerTotal;    // given by the player in all
         public int StandingTold;    // the day a skipped standing gift was last said (0: none pending)
+        public int MonthPeople;     // people helped this month by a cause that helps as it goes (the care fund: a case at a time), counted for its "last month"
     }
 
     /// <summary>A standing monthly gift to a charity: its step at the start's prices, paid on the first day of each month.</summary>
@@ -29,6 +30,7 @@ namespace RealLifeOverhaul.Giving
         public bool Skipped;     // the last month could not be paid, and the player was told
         public long PaidTotal;
         public int Month = -1;   // the last month its turn came, paid or skipped: a month's turn comes once, whatever is saved or switched off in the middle of the pass
+        public int Tag = -1;     // a district's number for a gift to its upkeep (the list the game side makes, the known districts first), -1 for the others
     }
 
     /// <summary>The state of a loan.</summary>
@@ -53,6 +55,8 @@ namespace RealLifeOverhaul.Giving
         public int Paid;           // paid back so far
         public LoanState State;
         public int Closed;         // the day it was repaid or written off
+        public int Parts = GivingCatalogue.LoanParts;   // the months it is paid back over: the usual loan's, or a business loan's
+        public int Extra;          // whole money added to what is owed, once (a business loan's), in Principal's terms never counted as lent
     }
 
     /// <summary>What the player gave a person in one window, so many gifts earn no more than one: the gains applied so far are kept, and the curve's next value is paid as the difference.</summary>
@@ -65,6 +69,13 @@ namespace RealLifeOverhaul.Giving
         public int TrustDone;
         public int AskDay;          // the last day they asked the player for help
         public int GivenTotal;      // whole money, in all
+        public int Helps;           // times they were helped (a gift of any kind, a loan) lately: the dependence below is worked out from it and the day of the last
+        public int HelpDay;         // the day of the last help
+        public int LastHelp;        // whole money at the start's prices of the last help: what they ask for when they ask for more
+        public int RefusedDay;      // the day they last refused an offer out of pride (0 for never)
+        public int CoveredUntil;    // the first day their rent is theirs to pay again, after the player paid it for them (0 for none)
+        public int Nos;             // times the player said no to them
+        public int MorePending;     // 1 while their ask is for more help than their trouble says they need
     }
 
     /// <summary>A rival's giving: their gifts in all and this tax year, and the latest.</summary>
@@ -84,6 +95,7 @@ namespace RealLifeOverhaul.Giving
     public sealed class GivingState
     {
         public const int Rivals = 3;
+        public const int Districts = 8;    // the districts a gift to upkeep can name: the seven the mod knows and one for a district of a free update
 
         public int Seed;
         public int LastDay;             // the day last gone through
@@ -109,6 +121,10 @@ namespace RealLifeOverhaul.Giving
         public readonly List<PersonGiving> People = new List<PersonGiving>(16);
         public readonly RivalGiving[] RivalBooks = new RivalGiving[Rivals];
         public readonly List<GivingNote> Notes = new List<GivingNote>(8);   // gifts the paper has still to print
+        public readonly List<GivingNaming> Namings = new List<GivingNaming>(4);   // what the player's big gifts are named, newest last
+        public readonly long[] Carry = new long[GivingCatalogue.CarryYears];      // gifts over the cap of an earlier year, still to be deducted: the latest year first
+        public long CarryTaken;         // of the carry, what this year's claim has used (the claim takes this year's gifts first)
+        public readonly long[] UpkeepTotal = new long[GivingState.Districts];     // the player's gifts to each district's upkeep, in all
 
         public GivingState()
         {
@@ -207,5 +223,17 @@ namespace RealLifeOverhaul.Giving
         public int Charity;
         public long Amount;       // whole money
         public int Giver;         // -1 the player, 0.. a rival's index
+        public int Naming;        // 1 when the gift took the giver's name
+        public int Tag;           // the district of a gift to upkeep, else -1
+    }
+
+    /// <summary>A hall, a wing or a scholarship that carries the player's name for a big gift.</summary>
+    public sealed class GivingNaming
+    {
+        public int Day;
+        public int Charity;
+        public long Amount;       // whole money
+        public int Tag = -1;      // the district of a gift to upkeep
+        public string Name = string.Empty;   // the giver's name when it was given
     }
 }

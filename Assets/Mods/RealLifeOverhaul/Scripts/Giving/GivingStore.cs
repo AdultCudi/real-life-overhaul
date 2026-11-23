@@ -8,10 +8,11 @@ namespace RealLifeOverhaul.Giving
     /// <summary>
     /// Giving in the save: one line of modData under <see cref="Key"/>, game-free.
     ///
-    ///     v=1^h:...^b:...;...^s:...;...^l:...;...^p:...;...^r:...;...^n:...;...
+    ///     v=1^h:...^b:...;...^s:...;...^l:...;...^p:...;...^r:...;...^n:...;...^m:...;...^c:...^u:...
     ///
-    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header, b the charities' books, s the standing
-    /// gifts, l the loans, p what was given to each person, r the rivals' giving, n the gifts the paper has still to print. A newer version adds fields at the end of a
+    /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header, b the causes' books, s the standing
+    /// gifts, l the loans, p what was given to each person, r the rivals' giving, n the gifts the paper has still to print, m the names the player's big gifts carry, c the
+    /// excess of the deduction carried forward and u the gifts to each district's upkeep. A newer version adds fields at the end of a
     /// record or a part with a new letter: this reader takes what it knows and puts every figure inside its bounds. A line from before the feature is none at all. Every
     /// number is written and read in the invariant culture, so a player whose language writes a decimal comma saves and loads the same line.
     /// </summary>
@@ -44,7 +45,7 @@ namespace RealLifeOverhaul.Giving
                 CharityBook b = s.Books[i];
                 t.Append(i > 0 ? ";" : string.Empty);
                 Join(t, b.Pot, b.PlayerMonth, b.OthersMonth, b.PlayerYear, b.OthersYear, b.PaidMonth, b.PaidYear, b.PeopleYear, b.LastMoney, b.LastPeople, b.LastMonth,
-                    b.PlayerTotal, b.StandingTold);
+                    b.PlayerTotal, b.StandingTold, b.MonthPeople);
             }
             if (s.Standing.Count > 0)
             {
@@ -53,7 +54,7 @@ namespace RealLifeOverhaul.Giving
                 {
                     StandingGift g = s.Standing[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, g.Charity, g.Amount, g.Since, g.Skipped ? 1 : 0, g.PaidTotal, g.Month);
+                    Join(t, g.Charity, g.Amount, g.Since, g.Skipped ? 1 : 0, g.PaidTotal, g.Month, g.Tag);
                 }
             }
             if (s.Loans.Count > 0)
@@ -64,7 +65,7 @@ namespace RealLifeOverhaul.Giving
                     LoanOut l = s.Loans[i];
                     t.Append(i > 0 ? ";" : string.Empty);
                     Join(t, l.Person, l.Principal, l.Remaining, l.Made, l.Part, l.Misses, l.Next, l.Paid, (int)l.State, l.Closed);
-                    t.Append('|').Append(Uri.EscapeDataString(l.Name ?? string.Empty));
+                    t.Append('|').Append(Uri.EscapeDataString(l.Name ?? string.Empty)).Append('|').Append(l.Parts.ToString(Inv)).Append('|').Append(l.Extra.ToString(Inv));
                 }
             }
             if (s.People.Count > 0)
@@ -74,7 +75,7 @@ namespace RealLifeOverhaul.Giving
                 {
                     PersonGiving p = s.People[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, p.Person, p.Start, p.Given, p.AffectionDone, p.TrustDone, p.AskDay, p.GivenTotal);
+                    Join(t, p.Person, p.Start, p.Given, p.AffectionDone, p.TrustDone, p.AskDay, p.GivenTotal, p.Helps, p.HelpDay, p.LastHelp, p.RefusedDay, p.CoveredUntil, p.Nos, p.MorePending);
                 }
             }
             t.Append("^r:");
@@ -91,8 +92,43 @@ namespace RealLifeOverhaul.Giving
                 {
                     GivingNote n = s.Notes[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, n.Day, n.Charity, n.Amount, n.Giver);
+                    Join(t, n.Day, n.Charity, n.Amount, n.Giver, n.Naming, n.Tag);
                 }
+            }
+            if (s.Namings.Count > 0)
+            {
+                t.Append("^m:");
+                for (int i = 0; i < s.Namings.Count; i++)
+                {
+                    GivingNaming m = s.Namings[i];
+                    t.Append(i > 0 ? ";" : string.Empty);
+                    Join(t, m.Day, m.Charity, m.Amount, m.Tag);
+                    t.Append('|').Append(Uri.EscapeDataString(m.Name ?? string.Empty));
+                }
+            }
+            bool carried = s.CarryTaken > 0;
+            for (int i = 0; i < s.Carry.Length; i++)
+            {
+                carried |= s.Carry[i] > 0;
+            }
+            if (carried)
+            {
+                t.Append("^c:");
+                Join(t, s.CarryTaken);
+                for (int i = 0; i < s.Carry.Length; i++)
+                {
+                    t.Append('|').Append(s.Carry[i].ToString(Inv));
+                }
+            }
+            bool upkept = false;
+            for (int i = 0; i < s.UpkeepTotal.Length; i++)
+            {
+                upkept |= s.UpkeepTotal[i] > 0;
+            }
+            if (upkept)
+            {
+                t.Append("^u:");
+                Join(t, s.UpkeepTotal);
             }
             return t.ToString();
         }
@@ -128,8 +164,12 @@ namespace RealLifeOverhaul.Giving
                     case 'p': People(s, body); break;
                     case 'r': Rivals(s, body); break;
                     case 'n': Notes(s, body); break;
+                    case 'm': Namings(s, body); break;
+                    case 'c': Carry(s, body); break;
+                    case 'u': Upkeep(s, body); break;
                 }
             }
+            s.TaxClaimed = Math.Min(s.TaxClaimed, s.TaxGifts + s.CarryTaken);   // what is claimed never passes the gifts it was claimed for
             return s;
         }
 
@@ -141,7 +181,7 @@ namespace RealLifeOverhaul.Giving
             s.Month = I(f, 2, -1);
             s.PeriodStart = Math.Max(-1, I(f, 3, -1));
             s.TaxGifts = Math.Max(0, L(f, 4));
-            s.TaxClaimed = GivingCatalogue.Clamp(L(f, 5), 0, s.TaxGifts);
+            s.TaxClaimed = Math.Max(0, L(f, 5));   // held to the gifts and the carry once the whole line is read
             s.StandingMonth = I(f, 6, -1);
             s.MonthGiven = Math.Max(0, L(f, 7));
             s.StandingDone = Math.Max(0, I(f, 8));
@@ -177,6 +217,7 @@ namespace RealLifeOverhaul.Giving
                 b.LastMonth = I(f, 10, -1);
                 b.PlayerTotal = Math.Max(0, L(f, 11));
                 b.StandingTold = Math.Max(0, I(f, 12));
+                b.MonthPeople = Math.Max(0, I(f, 13));
             }
         }
 
@@ -191,7 +232,12 @@ namespace RealLifeOverhaul.Giving
                 {
                     continue;
                 }
-                s.Standing.Add(new StandingGift { Charity = charity, Amount = I(f, 1), Since = I(f, 2), Skipped = I(f, 3) == 1, PaidTotal = Math.Max(0, L(f, 4)), Month = I(f, 5, -1) });
+                int tag = I(f, 6, -1);
+                s.Standing.Add(new StandingGift
+                {
+                    Charity = charity, Amount = I(f, 1), Since = I(f, 2), Skipped = I(f, 3) == 1, PaidTotal = Math.Max(0, L(f, 4)), Month = I(f, 5, -1),
+                    Tag = tag >= 0 && tag < GivingState.Districts ? tag : -1
+                });
             }
         }
 
@@ -206,10 +252,12 @@ namespace RealLifeOverhaul.Giving
                     continue;
                 }
                 int state = GivingCatalogue.Clamp(I(f, 8), 0, 2);
+                // (what is owed may pass what was lent by the share a business loan adds on top)
                 s.Loans.Add(new LoanOut
                 {
-                    Person = I(f, 0), Principal = I(f, 1), Remaining = GivingCatalogue.Clamp(I(f, 2), 0, I(f, 1)), Made = I(f, 3), Part = Math.Max(1, I(f, 4)),
-                    Misses = Math.Max(0, I(f, 5)), Next = I(f, 6), Paid = Math.Max(0, I(f, 7)), State = (LoanState)state, Closed = I(f, 9), Name = Unescape(f[10])
+                    Person = I(f, 0), Principal = I(f, 1), Remaining = GivingCatalogue.Clamp(I(f, 2), 0, I(f, 1) + Math.Max(0, I(f, 12))), Made = I(f, 3), Part = Math.Max(1, I(f, 4)),
+                    Misses = Math.Max(0, I(f, 5)), Next = I(f, 6), Paid = Math.Max(0, I(f, 7)), State = (LoanState)state, Closed = I(f, 9), Name = Unescape(f[10]),
+                    Parts = I(f, 11) <= 0 ? GivingCatalogue.LoanParts : GivingCatalogue.Clamp(I(f, 11), 1, GivingCatalogue.BusinessParts), Extra = Math.Max(0, I(f, 12))
                 });
             }
         }
@@ -227,7 +275,9 @@ namespace RealLifeOverhaul.Giving
                 s.People.Add(new PersonGiving
                 {
                     Person = I(f, 0), Start = I(f, 1), Given = Math.Max(0, I(f, 2)), AffectionDone = Math.Max(0, I(f, 3)), TrustDone = Math.Max(0, I(f, 4)),
-                    AskDay = Math.Max(0, I(f, 5)), GivenTotal = Math.Max(0, I(f, 6))
+                    AskDay = Math.Max(0, I(f, 5)), GivenTotal = Math.Max(0, I(f, 6)), Helps = GivingCatalogue.Clamp(I(f, 7), 0, 1000), HelpDay = Math.Max(0, I(f, 8)),
+                    LastHelp = Math.Max(0, I(f, 9)), RefusedDay = Math.Max(0, I(f, 10)), CoveredUntil = Math.Max(0, I(f, 11)), Nos = GivingCatalogue.Clamp(I(f, 12), 0, 1000),
+                    MorePending = I(f, 13) == 1 ? 1 : 0
                 });
             }
         }
@@ -259,7 +309,49 @@ namespace RealLifeOverhaul.Giving
                     continue;
                 }
                 int charity = GivingCatalogue.Clamp(I(f, 1), 0, (int)Charity.Count - 1), giver = GivingCatalogue.Clamp(I(f, 3), -1, GivingState.Rivals - 1);
-                s.Notes.Add(new GivingNote { Day = I(f, 0), Charity = charity, Amount = L(f, 2), Giver = giver });
+                int tag = I(f, 5, -1);
+                s.Notes.Add(new GivingNote
+                {
+                    Day = I(f, 0), Charity = charity, Amount = L(f, 2), Giver = giver, Naming = I(f, 4) == 1 ? 1 : 0, Tag = tag >= 0 && tag < GivingState.Districts ? tag : -1
+                });
+            }
+        }
+
+        private static void Namings(GivingState s, string body)
+        {
+            string[] records = body.Split(';');
+            for (int i = 0; i < records.Length && s.Namings.Count < GivingCatalogue.NamingsKept; i++)
+            {
+                string[] f = records[i].Split('|');
+                if (f.Length < 5 || L(f, 2) <= 0)
+                {
+                    continue;
+                }
+                int tag = I(f, 3, -1);
+                s.Namings.Add(new GivingNaming
+                {
+                    Day = I(f, 0), Charity = GivingCatalogue.Clamp(I(f, 1), 0, (int)Charity.Count - 1), Amount = L(f, 2), Name = Unescape(f[4]),
+                    Tag = tag >= 0 && tag < GivingState.Districts ? tag : -1
+                });
+            }
+        }
+
+        private static void Carry(GivingState s, string body)
+        {
+            string[] f = body.Split('|');
+            s.CarryTaken = Math.Max(0, L(f, 0));
+            for (int i = 0; i < s.Carry.Length; i++)
+            {
+                s.Carry[i] = Math.Max(0, L(f, i + 1));
+            }
+        }
+
+        private static void Upkeep(GivingState s, string body)
+        {
+            string[] f = body.Split('|');
+            for (int i = 0; i < s.UpkeepTotal.Length; i++)
+            {
+                s.UpkeepTotal[i] = Math.Max(0, L(f, i));
             }
         }
 
