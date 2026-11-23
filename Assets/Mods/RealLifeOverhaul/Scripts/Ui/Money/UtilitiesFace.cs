@@ -90,7 +90,8 @@ namespace RealLifeOverhaul.Ui
             if (m.PayAll.Label != null)
             {
                 float bw = UiDraw.ButtonWidth(m.PayAll.Kind, m.PayAll.Label, m.PayAll.Icon, m.PayAll.Key, keys);
-                UiDraw.Button(s, at.InRegion(3), x + w - bw, y, bw, UiTokens.Control, m.PayAll.Kind, m.PayAll.Label, m.PayAll.Icon, m.PayAll.Key, keys, m.PayAll.Command, m.PayAll.Arg, m.PayAll.Disabled);
+                UiActionModel pay = m.PayAll;
+                UiDraw.Button(s, at.InRegion(3), x + w - bw, y, bw, UiTokens.Control, pay.Kind, pay.Label, pay.Icon, pay.Key, keys, pay.Command, pay.Arg, pay.Disabled);
                 UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, Math.Max(0f, w - bw - UiTokens.S4), UiStyle.BodyStrong, UiRole.Text2, m.Headline, UiFlags.Truncate);
                 y += UiTokens.Control;
             }

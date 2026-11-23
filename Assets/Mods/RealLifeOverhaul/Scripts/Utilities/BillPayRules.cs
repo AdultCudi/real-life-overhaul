@@ -2,7 +2,10 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Utilities
 {
-    /// <summary>What paying several bills at once comes to, with no game types (checked offline): the bills of the player's accounts that are owed, their total against the cash, and, for a player who chooses it, the bills the cash covers taken in due-date order.</summary>
+    /// <summary>
+    /// What paying several bills at once comes to, with no game types (checked offline): the bills of the player's accounts that are owed, their total against the cash,
+    /// and, for a player who chooses it, the bills the cash covers taken in due-date order.
+    /// </summary>
     public readonly struct BillQuote
     {
         public readonly int Count;        // bills owed among those asked about

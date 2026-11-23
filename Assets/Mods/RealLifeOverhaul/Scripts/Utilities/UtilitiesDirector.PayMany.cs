@@ -78,7 +78,8 @@ namespace RealLifeOverhaul.Utilities
         }
 
         /// <summary>
-        /// The bills paid, in due-date order, each with its own bank line and each cleared as it is paid; with <paramref name="whatCashCovers"/> only those the cash covers. The cash is read again here:
+        /// The bills paid, in due-date order, each with its own bank line and each cleared as it is paid; with <paramref name="whatCashCovers"/> only those the cash covers.
+        /// The cash is read again here:
         /// the box was up for as long as the player took. A bill the game refuses stops the run and what was paid stands. One notice at the end says how many and how much.
         /// </summary>
         public void PayBills(List<Account> bills, bool whatCashCovers, Action done)
@@ -114,7 +115,8 @@ namespace RealLifeOverhaul.Utilities
                 _paying = false;
                 _toPay.Clear();
             }
-            Logger?.Info("Utilities check (pay together): " + paid + " of " + wanted + " bill(s) paid, " + sum + " in all" + (whatCashCovers ? " (those the cash covers, earliest due first)" : string.Empty) + ": "
+            Logger?.Info("Utilities check (pay together): " + paid + " of " + wanted + " bill(s) paid, " + sum + " in all"
+                         + (whatCashCovers ? " (those the cash covers, earliest due first)" : string.Empty) + ": "
                          + (paid == wanted ? "PASS" : "STOPPED"));
             if (paid == 0)
             {
