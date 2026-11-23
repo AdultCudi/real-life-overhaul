@@ -38,6 +38,7 @@ namespace RealLifeOverhaul
         public const string AlphaTestKeyword = "_ALPHATEST_ON";
         public const string TransparentKeyword = "_SURFACE_TYPE_TRANSPARENT";
         public const string DepthPrepass = "TransparentDepthPrepass";
+        public const string FogKeyword = "_ENABLE_FOG_ON_TRANSPARENT";
 
         private const float UnderlayGloss = 0.04f;       // the scalp underlay's two highlight strengths: all but matt
         private const float UnderlayGlossMin = 0.15f;    // and its gloss range
@@ -89,6 +90,11 @@ namespace RealLifeOverhaul
             /// mipmaps, as the first finish had them: with distance the strand cores melt into haze and the skull shows through.
             /// </summary>
             public bool KeepCover;
+            /// <summary>
+            /// The render queue of the lamp glow the game draws over the street (<see cref="QueueAfter"/>); 0 = none known.
+            /// A layer is drawn after it where both are in the same transparent pass, so a cone blended over the scene never covers hair.
+            /// </summary>
+            public int AfterQueue;
 
             public static Settings Default => new Settings
             {
@@ -118,6 +124,18 @@ namespace RealLifeOverhaul
         private static readonly int SortPriorityId = Shader.PropertyToID("_TransparentSortPriority");
 
         private static readonly int[] Histogram = new int[HairRules.Levels];   // filled and read within one call
+
+        /// <summary>Which of HDRP's passes a render queue draws in, in words (for the log): <see cref="HairRules.PassOf"/>.</summary>
+        public static string PassOf(int queue)
+        {
+            return HairRules.PassOf(queue);
+        }
+
+        /// <summary>The queue a hair layer is drawn at so that it comes after a lamp glow of queue <paramref name="glow"/>: <see cref="HairRules.QueueAfter"/>.</summary>
+        public static int QueueAfter(int queue, int glow)
+        {
+            return HairRules.QueueAfter(queue, glow);
+        }
 
         public static bool IsHair(Material material)
         {
@@ -160,7 +178,7 @@ namespace RealLifeOverhaul
             {
                 // Exactly the keyword set of a material in the build: no variant is asked for that the game lacks.
                 finished.shaderKeywords = template.shaderKeywords;
-                finished.renderQueue = layer.renderQueue;
+                finished.renderQueue = QueueAfter(layer.renderQueue, settings.AfterQueue);
 
                 finished.SetFloat(AlphaCutoffEnableId, 1f);
                 finished.SetFloat(AlphaClipId, settings.EdgeAlpha);

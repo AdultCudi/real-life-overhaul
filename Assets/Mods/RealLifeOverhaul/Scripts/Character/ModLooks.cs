@@ -641,7 +641,7 @@ namespace RealLifeOverhaul
             {
                 // Scalp first, then the body of the hair, then the loose strands over it.
                 int order = layer.Role == LayerRole.Scalp ? 0 : layer.Role == LayerRole.Bulk ? 1 : 2;
-                material.renderQueue = (int)RenderQueue.Transparent + order;
+                material.renderQueue = HairFinish.QueueAfter((int)RenderQueue.Transparent + order, LampHaze.GlowQueue());
                 if (material.HasProperty(SortPriorityId))
                 {
                     material.SetFloat(SortPriorityId, order);

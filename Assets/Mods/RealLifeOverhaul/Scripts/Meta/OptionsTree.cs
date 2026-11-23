@@ -223,7 +223,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("cooking cook food kitchen exercise gym run diet"),
                 S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
                     .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
-                S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
+                S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "lamp_haze", "character_skin", "character_lighting")
                     .Also("appearance beard face"),
                 S("outfit_m").Guide("character").Opts("look2_top_m", "look2_top_m_colour", "look2_legs_m", "look2_legs_m_colour", "look_feet_m")
                     .Also("clothes wardrobe wear shirt"),

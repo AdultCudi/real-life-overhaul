@@ -108,6 +108,7 @@ namespace RealLifeOverhaul
         private const float SearchSeconds = 0.5f;
         private const int CreationSearchAttempts = 60;   // each one walks the (small) creation scene
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
+        private const float HazeSeconds = 5f;           // while the lamps' haze is off, the lamps are looked through this often for new ones
         private const float OthersSeconds = 5f;          // Going Public's other players are looked through this often for strand hair (in play)
         private const int OthersLogged = 6;              // a line for each of the first few found in a scene, then one more
         private const string DrawnSearch = "character: the drawn strand hair looked for (the scene's skinned meshes, from the engine's own list of them, behind the black screen)";
@@ -144,6 +145,8 @@ namespace RealLifeOverhaul
         private CharacterLighting _lighting;
         private GridLooks _creatorLooks;
         private bool _hairOn;
+        private bool _hazeOn = true;   // what the lamps' haze was last made to match; the lamps start as the game has them
+        private float _nextHaze;
         private bool _hairSuspended;
         private bool _hairFailed;
         private bool _skinOn;
@@ -238,6 +241,19 @@ namespace RealLifeOverhaul
                     {
                         HairLook.RestoreAll();
                     }
+                }
+
+                // The street lamps' haze: hidden or shown once when its option changes, and, while it is hidden, looked at again
+                // every few seconds for lamps that have arrived (the city streams its streets in).
+                if (Settings.LampHaze != _hazeOn)
+                {
+                    _hazeOn = Settings.LampHaze;
+                    LampHaze.Apply(_hazeOn);
+                }
+                else if (!_hazeOn && !CreationScene && Time.unscaledTime >= _nextHaze)
+                {
+                    _nextHaze = Time.unscaledTime + HazeSeconds;
+                    LampHaze.Tick();
                 }
 
                 // The skin finish needs nothing from the bundle: on and off with its option.
@@ -883,6 +899,8 @@ namespace RealLifeOverhaul
                 _creatorLooks?.Dispose();
                 _creatorLooks = null;
                 HairLook.Shutdown();
+                LampHaze.Forget();
+                _hazeOn = true;
                 HairTests.Forget();
                 ModLooks.Shutdown();
                 SkinLook.Shutdown();

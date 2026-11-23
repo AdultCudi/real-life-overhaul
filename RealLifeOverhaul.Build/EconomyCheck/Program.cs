@@ -174,6 +174,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--hair-fog")
+        {
+            HairFog();   // hair in a street lamp's haze: the order hair is drawn in against the glow, the option, the log line and the texts alone (HairFogChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--gig-music")
         {
             GigMusic();   // the player's own gig music: the folder's files, limits, order, shuffle, fallback, fade and texts alone (GigMusicChecks.cs)
@@ -1828,6 +1834,7 @@ internal static partial class Program
         CartQueue();
         GigMusic();     // the player's own gig music (GigMusicChecks.cs)
         CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
+        HairFog();      // hair in a street lamp's haze (HairFogChecks.cs)
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         UiStocksFixChecks();   // the Stocks, Company, Tech and Flare pages against the old pages (UiStocksFixChecks.cs)
