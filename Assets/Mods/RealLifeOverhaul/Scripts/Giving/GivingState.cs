@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Giving
         public int Month = -1;          // the last month whose pass is done, all its steps (the day over the month's length)
         public int PeriodStart = -1;    // the day the game cleared its list of deductions and the tax year began (a multiple of the year, 0 for the first); -1 before the first look
         public long TaxGifts;           // gifts to charities this tax year, whole money
+        public long FoodGifts;          // ... of which food from the player's shops that would have spoiled, at what it cost and what earned (a gift in kind, no cash: Economy/Logistics)
         public long TaxClaimed;         // ... of which the game's tax already deducts
         public int StandingMonth = -1;  // the month the standing points below were counted for
         public long MonthGiven;         // the player's gifts to charities this month, at the start's prices

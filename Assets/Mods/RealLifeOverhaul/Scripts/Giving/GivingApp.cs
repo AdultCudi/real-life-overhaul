@@ -273,6 +273,10 @@ namespace RealLifeOverhaul.Giving
             }
             box.Title(GivingText.Fill("reallife_giving_sec_tax"));
             box.RowWords(GivingText.Fill("reallife_giving_row_gifts"), GivingGame.Money(f.TaxGifts));
+            if (f.FoodGifts > 0)
+            {
+                box.RowWords(GivingText.Fill("reallife_giving_row_food"), GivingGame.Money(f.FoodGifts));
+            }
             box.RowWords(GivingText.Fill("reallife_giving_row_income"), GivingGame.Money(f.Income));
             box.RowWords(GivingText.Fill("reallife_giving_row_cap_share", "share", (f.DeductionShare / 10f).ToString("0.#")), GivingGame.Money(f.TaxCap));
             box.RowWords(GivingText.Fill("reallife_giving_row_deducted"), GivingGame.Money(f.TaxClaimed));

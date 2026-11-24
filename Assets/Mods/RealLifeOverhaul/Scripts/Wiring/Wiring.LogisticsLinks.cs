@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Entities;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Giving;
 using RealLifeOverhaul.Nav;
 using UnityEngine;
 
@@ -33,6 +35,11 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 LogisticsBridges.Road = Road;
+                LogisticsBridges.FoodGiftReady = () => GivingDirector.Instance != null && GivingDirector.Instance.FoodGiftReady;
+                LogisticsBridges.FoodGift = (given, earned) => GivingDirector.Instance != null && GivingDirector.Instance.GiveFood(given, earned);
+                LogisticsBridges.Neighbourhood = (district, points) =>
+                    RealLifeOverhaul.Fame.FameDirector.Instance != null ? RealLifeOverhaul.Fame.FameDirector.Instance.Upkept(district, points, 0, 0) : 0;
+                LogisticsBridges.StaffLift = StaffLift;
                 _made = _search = null;
                 _begun = false;
                 _slices = _waits = 0;
@@ -43,6 +50,23 @@ namespace RealLifeOverhaul
                 LogisticsBridges.Reset();
                 _made = _search = null;
                 _begun = false;
+            }
+
+            // The staff of a place that gave food to charity each feel a little better (the business pressure's own way of moving a mood).
+            private static void StaffLift(BuildingRegistration reg, int points)
+            {
+                try
+                {
+                    List<EmployeeInstance> staff = BusinessGame.Staff(reg);
+                    for (int i = 0; i < staff.Count; i++)
+                    {
+                        BusinessGame.Mood(staff[i], points);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("LogisticsLinks.StaffLift", e);
+                }
             }
 
             // A slice of the search for the road between two places: -1 still looking, 0 no road to be had, otherwise its metres.

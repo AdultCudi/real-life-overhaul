@@ -61,6 +61,10 @@ Left out, with the reason: **an animal charity** (the mod has no pets) and **an 
 - Standing gifts that cannot be paid (no spare cash) are skipped and said once; they are never forced.
 - Going Public, and the living population off: the city's people are the host's in a session, and absent with the option off. Causes, help, loans and gifts to people then stand down (a gift would change another player's people, or land nowhere), and **no money is taken** for a gift or a loan to a person (the call says why); the rivals rest in a session. Everything is seeded by the save's own seed through a fixed hash; nothing is sent.
 
+## Food in kind
+
+With "Give spoiling food to charity" on, a shop's food that would be thrown out at the next turn of the day is given to the food bank the evening before, as a gift in kind ([delivery trips](delivery-trips.md), "Giving spoiling food to charity"). `GivingDirector.GiveFood` puts the whole of what it cost in the food bank's pot and, for the part an ordinary shop's leftovers earn, into the year's gifts at what the stock cost, so the same deduction, cap and carry forward apply and it shows as its own row on the This year tab. No cash moves, nothing is booked, it earns no integrity from the monthly curve, and it is never taken in a Going Public session.
+
 ## The tax return
 
 Gifts to charities (every cause, a district's upkeep included, and only those) are deducted from the game's own tax, as the game deducts a business's costs (`TaxHelper.TrackTransaction`), under the name **Charitable giving**, so it is its own line on the tax statement. The game keeps its list by the name it is given and writes the statement from it when the tax falls due, translating the name if it is a key it knows (`TaxHelper.GetDeductibleExpenseLabel`), as it does for its own deductions; giving passes its key (`reallife_giving_deduct`) whenever the game's text tables hold it, so a change of language reaches the statement, and the words of the language in use if they do not. A save loaded without the mod shows the key as it is.

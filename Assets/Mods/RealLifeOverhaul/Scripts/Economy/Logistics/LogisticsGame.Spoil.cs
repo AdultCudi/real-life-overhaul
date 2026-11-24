@@ -166,6 +166,9 @@ namespace RealLifeOverhaul.Economy
             return _shelfCold.Contains(item);
         }
 
+        /// <summary>The district a place stands in, as the game names it; null when its building is not found.</summary>
+        public static string DistrictOf(BuildingRegistration reg) => GameRegistrations.District(reg);
+
         // A place the player runs as a business: a shop, a warehouse or a factory, never a home (a home's fridge is not shop equipment).
         private static bool IsShop(BuildingRegistration reg)
         {

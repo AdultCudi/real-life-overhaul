@@ -59,6 +59,32 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|').Append(N(p.Pace));
                 }
             }
+            for (int i = 0; i < keys.Count; i++)
+            {
+                SpoilPlace p = s.Places[keys[i]];
+                var sold = new List<string>(p.Sold.Keys);
+                sold.Sort(StringComparer.Ordinal);
+                for (int k = 0; k < sold.Count; k++)
+                {
+                    if (!p.Sold[sold[k]].Empty)
+                    {
+                        t.Append("^S|").Append(TripStore.Escape(keys[i])).Append('|').Append(TripStore.Escape(sold[k]));
+                        Week(t, p.Sold[sold[k]]);
+                    }
+                }
+                if (!p.GaveStanding.Empty || !p.GaveStaff.Empty)
+                {
+                    t.Append("^G|").Append(TripStore.Escape(keys[i]));
+                    Week(t, p.GaveStanding);
+                    Week(t, p.GaveStaff);
+                }
+            }
+            if (!s.GaveStanding.Empty || !s.GaveMood.Empty)
+            {
+                t.Append("^M");
+                Week(t, s.GaveStanding);
+                Week(t, s.GaveMood);
+            }
             t.Append("^N|").Append(N(s.Told));
             return t.ToString();
         }
@@ -79,7 +105,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 1; i < records.Length; i++)
             {
                 string[] c = records[i].Split('|');
-                bool ok = c[0] == "P" ? PlaceOf(c, s) : c[0] == "N" && c.Length == 2 && I(c[1], out s.Told);
+                bool ok = c[0] == "P" ? PlaceOf(c, s) : c[0] == "S" ? SoldOf(c, s) : c[0] == "G" ? GaveOf(c, s) : c[0] == "M" ? MoodOf(c, s)
+                    : c[0] == "N" && c.Length == 2 && I(c[1], out s.Told);
                 if (!ok)
                 {
                     return null;
@@ -130,6 +157,26 @@ namespace RealLifeOverhaul.Economy
             s.Places[TripStore.Unescape(c[1])] = p;
             return true;
         }
+
+        // Giving food away: a product's sales, a place's standing and lift, the player's week. Each week is two rings, the days and the counts.
+        private static bool SoldOf(string[] c, SpoilState s) =>
+            c.Length == 5 && Week(c, 3, s.Place(TripStore.Unescape(c[1])).SoldRing(TripStore.Unescape(c[2])));
+
+        private static bool GaveOf(string[] c, SpoilState s)
+        {
+            SpoilPlace p = c.Length == 6 ? s.Place(TripStore.Unescape(c[1])) : null;
+            return p != null && Week(c, 2, p.GaveStanding) && Week(c, 4, p.GaveStaff);
+        }
+
+        private static bool MoodOf(string[] c, SpoilState s) => c.Length == 5 && Week(c, 1, s.GaveStanding) && Week(c, 3, s.GaveMood);
+
+        private static void Week(StringBuilder t, WeekRing w)
+        {
+            Ring(t, w.Stamp);
+            Ring(t, w.Count);
+        }
+
+        private static bool Week(string[] c, int at, WeekRing w) => Ring(c[at], w.Stamp) && Ring(c[at + 1], w.Count);
 
         private static void Ring(StringBuilder t, int[] ring)
         {

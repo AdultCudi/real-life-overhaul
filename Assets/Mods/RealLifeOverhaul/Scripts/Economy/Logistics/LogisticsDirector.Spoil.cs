@@ -87,7 +87,13 @@ namespace RealLifeOverhaul.Economy
                 p.Lives[_spoilItems[i]] = SpoilRules.Scale(_spoilLives[i], pace);
                 p.Chilled[_spoilItems[i]] = _spoilChilled[i];
                 p.ColdLives[_spoilItems[i]] = SpoilRules.Scale(_spoilColdLives[i], pace);
-                int came = SpoilRules.Match(p.Of(_spoilItems[i]), LogisticsGame.InStock(reg, _spoilItems[i]), today);
+                List<Cohort> held = p.Of(_spoilItems[i]);
+                int had = SpoilRules.Total(held), onSite = LogisticsGame.InStock(reg, _spoilItems[i]);
+                int came = SpoilRules.Match(held, onSite, today);
+                if (GiveWanted && onSite < had)
+                {
+                    Sold(p, _spoilItems[i], had - onSite, today);
+                }
                 p.Note(today, 0, came, 0);
             }
             _gone.Clear();
@@ -100,11 +106,16 @@ namespace RealLifeOverhaul.Economy
             }
             for (int i = 0; i < _gone.Count; i++)
             {
+                if (GiveWanted)
+                {
+                    Sold(p, _gone[i], SpoilRules.Total(p.Batches[_gone[i]]), today);   // all of it left
+                }
                 p.Batches.Remove(_gone[i]);
                 p.Lives.Remove(_gone[i]);
                 p.Chilled.Remove(_gone[i]);
                 p.ColdLives.Remove(_gone[i]);
             }
+            GiveEvening(reg, p, today);
         }
 
         // The option moved since this place was last looked at: its batches keep the share of their life they have used, so nothing
@@ -160,6 +171,11 @@ namespace RealLifeOverhaul.Economy
         // The day's one notice of stock thrown out, after a whole round of the places.
         private void Told(int today)
         {
+            if (GaveLastEvening(today) && _spoil.Told < today)
+            {
+                TellGave(today);
+                return;
+            }
             if (_roundDay != today || _roundSpoiled <= 0 || _spoil.Told >= today)
             {
                 return;
