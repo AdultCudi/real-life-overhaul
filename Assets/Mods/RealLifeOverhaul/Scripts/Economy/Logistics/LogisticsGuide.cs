@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Economy
                 .Fact("spoil_prepared_cold", () => Whole(SpoilRules.UsualLife(SpoilClass.Prepared, true)))
                 .Fact("spoil_frozen", () => Whole(SpoilRules.UsualLife(SpoilClass.Frozen, false)))
                 .Fact("spoil_frozen_cold", () => Whole(SpoilRules.UsualLife(SpoilClass.Frozen, true)))
+                .Fact("cold_big", () => Whole(SpoilRules.ColdRoomBig))
+                .Fact("cold_small", () => Whole(SpoilRules.ColdRoomSmall))
+                .Fact("cold_staff", () => Whole(SpoilRules.ColdRoomStaff))
                 .Fact("spoil_short", () => Whole(SpoilRules.ShortLife));
         }
 

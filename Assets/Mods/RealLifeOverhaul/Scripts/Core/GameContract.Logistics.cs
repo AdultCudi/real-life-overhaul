@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember TripWage = Field(TripsPart, Game, "Entities.EmployeeInstance", "hourlyWage", "Single");
         public static readonly GameMember TripBoxSize = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "boxSize", "Int32");
         public static readonly GameMember TripWeighed = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "requiresWeighing", "Boolean");
+        public static readonly GameMember ColdShows = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "itemsThatCanShowcase", "String[]");
         public static readonly GameMember RivalDays = Field(TripsPart, Game, "BuildingRegistration", "dailyIncomes", "List<Single>");
         public static readonly GameMember RivalValuing = StaticMethod(TripsPart, Game, "Helpers.CompetitionHelper", "AreRecalculationsPending", "Boolean");
 

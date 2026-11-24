@@ -56,6 +56,7 @@ namespace RealLifeOverhaul
             Loaded = false;
             Builds.Clear();
             Bikes.Clear();
+            ScooterRentals.Clear();
             Helmet = false;
             Version++;
         }
@@ -97,9 +98,11 @@ namespace RealLifeOverhaul
         {
             Builds.Clear();
             Bikes.Clear();
+            ScooterRentals.Clear();
             Helmet = false;
             if (data != null)
             {
+                ScooterRentals.Read(data.TryGetValue(ScooterRentals.Key, out string days) ? days : null);
                 if (data.TryGetValue(KeyBuilds, out string builds) && !string.IsNullOrEmpty(builds))
                 {
                     foreach (string line in builds.Split('\n'))
@@ -193,6 +196,25 @@ namespace RealLifeOverhaul
             }
             data[KeyBikes] = text.ToString();
             data[KeyHelmet] = Helmet ? "1" : "0";
+            data[ScooterRentals.Key] = ScooterRentals.Write(PresentIds(vehicles));
+        }
+
+        // The ids of the save's vehicles, for the rental days to be forgotten with the scooter; null (keep every line) if the save gave no list.
+        private static HashSet<string> PresentIds(List<VehicleInstance> vehicles)
+        {
+            if (vehicles == null)
+            {
+                return null;
+            }
+            var ids = new HashSet<string>();
+            for (int i = 0; i < vehicles.Count; i++)
+            {
+                if (vehicles[i] != null)
+                {
+                    ids.Add(vehicles[i].id);
+                }
+            }
+            return ids;
         }
 
         private static bool Has(List<VehicleInstance> vehicles, string id)
