@@ -80,6 +80,8 @@ namespace RealLifeOverhaul.Markets
         public const int HandOverDays = 7;                // after a bid wins, before what is left is paid for
         public const double GrowthShrink = 0.5;           // of its own growth over the city's, what the market believes
         public const double DaySeenMost = 3.0;            // times its year's usual: a day beyond is followed as a one-off
+        public const double QuarterSeenMost = 1.25;       // a quarter this far from the middle of the eight (times it, or one over it) is a one-off in the growth reading
+        public const double GrowthStepMost = 0.02;        // the growth the market believes moves by this at most at each results: no quarter reprices the company in a day
 
         // The shareholders' meetings
         public const int AgmNoticeDays = 10;              // market days from the year's last results
