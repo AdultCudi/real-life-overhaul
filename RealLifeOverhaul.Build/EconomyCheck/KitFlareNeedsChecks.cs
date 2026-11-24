@@ -39,7 +39,8 @@ internal static partial class Program
               && desk.Contains("_flare.StarsWithPosts(shop.Place, now)") && fill.Contains("_flare.StarsWithPosts(shops[i].Place, _flare.Now)")
               && ModSource(@"Social\Flare\FlareApp.Business.cs").Contains("_director.StarsWithPosts(row.Key, now)") && ModSource(@"Social\Flare\FlareApp.City.cs").Contains("_director.StarsWithPosts(row.Key, _director.Now)"),
             "kit flare: the kit's pages and the old page's card read one rating, the city's row by its key and the lasting review book together");
-        Check(sheet.Contains("_flare.CityStarsOf(shop.Place)") && !sheet.Contains("_flare.StarsFor("), "kit flare: the reply sheet reads the answered stars by the same key");
+        Check(sheet.Contains("_flare.StarsWithPosts(shop.Place, _flare.Now)") && !sheet.Contains("_flare.StarsFor("),
+            "kit flare: the reply sheet reads the rating the page shows, by the same key");
         // What the old page draws its stars from.
         string game = MemberText(rating, "public bool GameSatisfaction(");
         Check(game.Contains("FlareGame.Satisfaction(FlareGame.Business(place), out overall") && desk.Contains("_flare.GameSatisfaction(shop.Place, out int overall)")
