@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: strona aplikacji Firma w nowym interfejsie, która jest wyższa niż okno, teraz się przewija, więc przycisk do zarezerwowania kampanii zawsze jest dostępny. Naprawiono: wcześniejsze kampanie i roszczenia firmy w aplikacji Firma są rozróżniane po jej miejscu, a nie po nazwie, więc dwie firmy o podobnych nazwach nie pokazują już wzajemnie swoich wpisów. Naprawiono: BizMan w nowym interfejsie ponownie czyta alerty gry za każdym razem, gdy zmieniają się ich słowa, nawet gdy ich liczba się nie zmienia, więc firma nie pokazuje już alertów poprzedniej firmy. Naprawiono: znaczek przy cenie na stronie cen BizMana teraz wyjaśnia, co oznacza. Naprawiono: przycisk Otwórz przy pozycji w sekcji Czeka także w aplikacji Firma teraz otwiera stronę, do której pozycja należy, czy to oferta nadgodzin, strajk, podwyżka, strata, raport, podatek lub wiersz grafiku, a wiersz, który nigdzie nie prowadzi, nie ma przycisku.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -39193,5 +39193,6 @@
   "reallife_spoil_give": "Oddawaj psujące się jedzenie na cele charytatywne",
   "reallife_opt_tip_living_spoilage_give": "Wieczorem jedzenie, które wyrzucono by w nocy, trafia zamiast tego na cele charytatywne, po cenie zakupu. Tylko resztki zwykłego sklepu dają reputację, dobry humor i ulgę podatkową.",
   "reallife_spoil_note_gave": "Jedzenie, które by się zepsuło, wczoraj wieczorem trafiło na cele charytatywne: {given} szt. z {places} twoich lokali, warte {worth} po koszcie. Nadal wyrzucone w nocy: {count} szt., warte {amount}.",
-  "reallife_giving_row_food": "Jedzenie z twoich sklepów oddane w tym roku podatkowym, po koszcie"
+  "reallife_giving_row_food": "Jedzenie z twoich sklepów oddane w tym roku podatkowym, po koszcie",
+  "reallife_ui_bizman_price_marks": "Znaczek przy cenie oznacza, że jest ona powyżej zwykłej ceny tego towaru albo powyżej ceny najtańszego konkurenta w tej dzielnicy. Czerwony znaczek oznacza co najmniej dwukrotność zwykłej ceny."
 }

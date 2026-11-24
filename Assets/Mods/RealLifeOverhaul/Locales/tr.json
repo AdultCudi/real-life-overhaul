@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: yeni arayüzdeki Şirket uygulamasının pencereden uzun olan bir sayfası artık kaydırılabiliyor, böylece bir kampanya ayırtma düğmesine her zaman ulaşılabiliyor. Düzeltildi: Şirket uygulamasında bir işletmenin önceki kampanya ve talepleri adına değil konumuna göre ayrılıyor, böylece adları benzer iki işletme artık birbirinin kayıtlarını göstermiyor. Düzeltildi: yeni arayüzdeki BizMan, oyunun uyarı metinleri değiştiğinde, sayıları aynı kalsa bile bu uyarıları yeniden okuyor, böylece bir işletme artık bir öncekinin uyarılarını göstermiyor. Düzeltildi: BizMan'in fiyatlar sayfasındaki fiyatın yanındaki işaret artık ne anlama geldiğini söylüyor. Düzeltildi: Şirket uygulamasındaki Bekleyenler altındaki bir öğenin Aç düğmesi artık ait olduğu sayfayı açıyor, mesai teklifi, grev, zam, zarar, rapor, vergi ve vardiya satırlarının hepsi için böyle, gidecek yeri olmayan bir satırda ise düğme yok.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -39193,5 +39193,6 @@
   "reallife_spoil_give": "Bozulacak yiyecekleri hayır kurumuna ver",
   "reallife_opt_tip_living_spoilage_give": "Akşamları, gece atılacak yiyecekler bunun yerine maliyeti üzerinden hayır kurumuna gider. Yalnızca sıradan bir dükkânın artıkları itibar, ruh hali ve vergi indirimi kazandırır.",
   "reallife_spoil_note_gave": "Bozulacak yiyecekler dün akşam hayır kurumuna gitti: işletmelerinizin {places} yerinden {given} adet, maliyet fiyatından {worth} değerinde. Gece hâlâ atılan: {count} adet, {amount} değerinde.",
-  "reallife_giving_row_food": "Bu vergi yılında dükkânlarınızdan verilen yiyecekler, maliyet fiyatından"
+  "reallife_giving_row_food": "Bu vergi yılında dükkânlarınızdan verilen yiyecekler, maliyet fiyatından",
+  "reallife_ui_bizman_price_marks": "Bir fiyatın yanındaki işaret, fiyatın o ürün için olağan fiyatın üzerinde olduğu ya da bu bölgedeki en ucuz rakibin fiyatının üzerinde olduğu anlamına gelir. Kırmızı işaret, olağan fiyatın iki katı veya daha fazlası anlamına gelir."
 }
