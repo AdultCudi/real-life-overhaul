@@ -28,18 +28,40 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        private const string Residential = "ba:buildingtype_residential";
+
+        private static readonly List<int> Pieces = new List<int>(8);      // per product of the look in hand: how many of it the place holds
+        private static readonly List<Item> Kinds = new List<Item>(8);     // and the game's item, for the room a fridge gives it
+        private static readonly List<Item> ColdFurniture = new List<Item>(16);
+        private static HashSet<string> _shelfCold;   // products some fridge or freezer of the game shows on its own shelf (read from the game's items once)
+
         /// <summary>
-        /// The products a place holds that spoil, each once: its name, whether any of it sits in a fridge or a freezer, and how
-        /// long it keeps there at the usual pace (the caller scales it). Shelves, tills, storage and pallets alike: every holder with goods in it.
+        /// The products a place holds that spoil, each once: its name and how long it keeps there at the usual pace (the caller scales it).
+        /// Shelves, tills, storage and pallets alike: every holder with goods in it.
         /// </summary>
-        public static void Spoilable(BuildingRegistration reg, List<string> items, List<int> lives)
+        public static void Spoilable(BuildingRegistration reg, List<string> items, List<int> lives) => Spoilable(reg, items, lives, null, null);
+
+        /// <summary>
+        /// The same, with the cold furniture's share. A product that a cold shelf of the game shows (<see cref="ShownCold"/>) is cold only
+        /// if some of it sits inside a fridge or a freezer, and then the place keeps all of it as long as its coldest holder. Any other
+        /// product keeps its ordinary life, and where the player runs a business (not a home) each fridge or freezer standing there keeps
+        /// cold up to its own room of that product (<see cref="RoomFor"/>): <paramref name="chilled"/> is those pieces and
+        /// <paramref name="coldLives"/> the days they keep (0 when none are). Read from the game's own data and the furniture, so every
+        /// machine of one game build reads the same; nothing is saved.
+        /// </summary>
+        public static void Spoilable(BuildingRegistration reg, List<string> items, List<int> lives, List<int> chilled, List<int> coldLives)
         {
             items.Clear();
             lives.Clear();
+            chilled?.Clear();
+            coldLives?.Clear();
+            Pieces.Clear();
+            Kinds.Clear();
             if (reg == null || reg.itemInstances == null)
             {
                 return;
             }
+            bool covered = false;
             foreach (ItemInstance holder in reg.itemInstances.Values)
             {
                 Item kind = holder != null ? holder.ItemCached : null;
@@ -56,7 +78,8 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     Item item = cargo.ItemCached;
-                    int life = SpoilRules.UsualLife(cargo.itemName, item != null && item.requiresWeighing, cold);
+                    bool inside = cold && ShownCold(cargo.itemName);
+                    int life = SpoilRules.UsualLife(cargo.itemName, item != null && item.requiresWeighing, inside);
                     if (life <= 0)
                     {
                         continue;
@@ -66,13 +89,112 @@ namespace RealLifeOverhaul.Economy
                     {
                         items.Add(cargo.itemName);
                         lives.Add(life);
+                        Pieces.Add(cargo.amount);
+                        Kinds.Add(item);
                     }
-                    else if (life > lives[at])
+                    else
                     {
-                        lives[at] = life;   // some of it is kept cold: the place keeps it as long as its coldest holder
+                        Pieces[at] += cargo.amount;
+                        if (life > lives[at])
+                        {
+                            lives[at] = life;   // some of it is kept cold: the place keeps it as long as its coldest holder
+                        }
+                    }
+                    covered |= !ShownCold(cargo.itemName);
+                }
+            }
+            if (chilled == null || coldLives == null)
+            {
+                return;
+            }
+            bool shop = covered && IsShop(reg);
+            if (shop)
+            {
+                ColdFurniture.Clear();
+                foreach (ItemInstance holder in reg.itemInstances.Values)
+                {
+                    Item kind = holder != null ? holder.ItemCached : null;
+                    if (kind != null && SpoilRules.IsCold(kind.itemName))
+                    {
+                        ColdFurniture.Add(kind);
                     }
                 }
             }
+            for (int i = 0; i < items.Count; i++)
+            {
+                int pieces = 0;
+                if (shop && ColdFurniture.Count > 0 && !ShownCold(items[i]))
+                {
+                    int room = 0;
+                    for (int f = 0; f < ColdFurniture.Count; f++)
+                    {
+                        room = (int)Math.Min(int.MaxValue, (long)room + RoomFor(ColdFurniture[f], Kinds[i]));
+                    }
+                    pieces = SpoilRules.Chilled(Pieces[i], room);
+                }
+                chilled.Add(pieces);
+                coldLives.Add(pieces > 0 ? SpoilRules.UsualLife(items[i], Kinds[i] != null && Kinds[i].requiresWeighing, true) : 0);
+            }
+            ColdFurniture.Clear();
+        }
+
+        /// <summary>
+        /// Whether the game lets a product stand in a cold shelf of its own: some fridge or freezer showcase lists it (Item.itemsThatCanShowcase,
+        /// which Producer.CanAddToInventory reads). Those are drinks, fresh food, frozen food and ice cream; burgers, hot dogs, pizza, kebabs,
+        /// chips, buns, raw meat, dough, dairy, bakery and produce are on no cold shelf's list. Read from the items once, at run time; if the
+        /// game's items are not there yet it says yes for everything, which is the rule as it was (cold only inside a fridge).
+        /// </summary>
+        public static bool ShownCold(string item)
+        {
+            if (_shelfCold == null)
+            {
+                IEnumerable<Item> all = ItemsGetter.AllItems;
+                if (all == null)
+                {
+                    return true;
+                }
+                var shown = new HashSet<string>(StringComparer.Ordinal);
+                foreach (Item it in all)
+                {
+                    if (it != null && SpoilRules.IsCold(it.itemName) && (it.type & ItemType.ShowcaseShelf) != 0 && it.itemsThatCanShowcase != null)
+                    {
+                        for (int i = 0; i < it.itemsThatCanShowcase.Length; i++)
+                        {
+                            shown.Add(it.itemsThatCanShowcase[i]);
+                        }
+                    }
+                }
+                _shelfCold = shown;
+            }
+            return _shelfCold.Contains(item);
+        }
+
+        /// <summary>
+        /// The pieces of a product one fridge or freezer keeps cold, by the game's own figures: a showcase shelf gives the room of its one
+        /// load (CargoInstance.GetMaxStockCapacity: the product's box size times the furniture's capacity multiplier, rounded up); a
+        /// fridge with slots (the staff fridges, FridgeController) gives its slots times that, and takes only food that fills
+        /// (FridgeController.CanStore) and what its whitelist allows (ItemInstance.TryToAddToCargo). Furniture the game gives no room
+        /// (a decorative fridge) gives 0.
+        /// </summary>
+        public static int RoomFor(Item furniture, Item product)
+        {
+            if (furniture == null || product == null)
+            {
+                return 0;
+            }
+            string[] only = furniture.itemsWhitelist;
+            if (only != null && only.Length > 0 && Array.IndexOf(only, product.itemName) < 0)
+            {
+                return 0;   // ItemInstance.TryToAddToCargo: a whitelist keeps out what it does not name
+            }
+            return SpoilRules.RoomOf((furniture.type & ItemType.ShowcaseShelf) != 0, furniture.cargoCapacity, furniture.cargoCapacityMultiplier, product.boxSize, product.saturation, true);
+        }
+
+        // A place the player runs as a business: a shop, a warehouse or a factory, never a home (a home's fridge is not shop equipment).
+        private static bool IsShop(BuildingRegistration reg)
+        {
+            string type = GameRegistrations.BuildingType(reg);
+            return type != null && type != Residential;
         }
 
         /// <summary>Whether the game weighs a product at the till: fresh produce sold by weight, which spoils whatever its name.</summary>

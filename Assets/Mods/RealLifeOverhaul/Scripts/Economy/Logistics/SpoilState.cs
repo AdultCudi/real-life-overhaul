@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Economy
         public int Pace = SpoilRules.PaceUsual;           // the pace the batches' days were last read at (a change of the option makes the place's batches read again)
         public int Turned = -1;                           // the last day whose turn was looked at (its goods past their life taken out)
         public readonly Dictionary<string, int> Lives = new Dictionary<string, int>(StringComparer.Ordinal);   // days each product keeps here, as last looked at (not saved)
+        public readonly Dictionary<string, int> Chilled = new Dictionary<string, int>(StringComparer.Ordinal);   // pieces of each product the place's fridges keep cold, as last looked at (not saved)
+        public readonly Dictionary<string, int> ColdLives = new Dictionary<string, int>(StringComparer.Ordinal);   // days those pieces keep, as last looked at (not saved)
 
         public SpoilPlace()
         {

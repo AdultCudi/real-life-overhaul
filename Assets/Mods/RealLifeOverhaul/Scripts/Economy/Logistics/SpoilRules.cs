@@ -33,6 +33,10 @@ namespace RealLifeOverhaul.Economy
     /// whatever their name), its shelf life in days out of and in cold storage, the batches a place holds of it oldest first,
     /// taking from the oldest, what is past its life at the end of a day, and the share a rival shop loses. Whole days and
     /// counts, so the same stock spoils the same on every machine. Game-free; checked offline (EconomyCheck, LogisticsChecks.cs).
+    /// Cold storage works two ways. A product some fridge or freezer of the game lists as its own (a cold shelf shows it) keeps its
+    /// cold life only while it sits inside one. Any other product, which the game lets into no cold shelf, is kept cold by the
+    /// fridges and freezers standing at the place: each covers up to its own room, the newest pieces first, and the rest keeps
+    /// its ordinary life (<see cref="Chilled"/>, <see cref="Expired(List{Cohort},int,int,int,int)"/>).
     /// </summary>
     public static class SpoilRules
     {
@@ -255,29 +259,79 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>The pieces past their life at the turn into <paramref name="today"/> (stocked on or before today minus the life); 0 when it never spoils.</summary>
-        public static int Expired(List<Cohort> batches, int life, int today)
+        public static int Expired(List<Cohort> batches, int life, int today) => Expired(batches, life, 0, 0, today);
+
+        /// <summary>
+        /// The pieces past their life at the turn into <paramref name="today"/> when <paramref name="chilled"/> of the pieces are kept cold:
+        /// the newest ones, since the oldest are sold first, so a batch that straddles the line is split by pieces. The rest keep
+        /// <paramref name="life"/> and the cold pieces <paramref name="coldLife"/> (0 for never). With none chilled it is the one life above.
+        /// What is due is always the oldest pieces (a cold piece is due only when everything older is), so taking it from the oldest batch
+        /// first (<see cref="Take"/>) removes exactly these.
+        /// </summary>
+        public static int Expired(List<Cohort> batches, int life, int coldLife, int chilled, int today)
         {
-            if (life <= 0)
+            int warm = Math.Max(0, Total(batches) - Math.Max(0, chilled)), seen = 0, n = 0;
+            for (int i = 0; i < batches.Count; i++)
             {
-                return 0;
-            }
-            int n = 0;
-            for (int i = 0; i < batches.Count && batches[i].Day + life <= today; i++)
-            {
-                n += batches[i].Count;
+                Cohort c = batches[i];
+                int inWarm = Math.Max(0, Math.Min(c.Count, warm - seen));
+                if (life > 0 && c.Day + life <= today)
+                {
+                    n += inWarm;
+                }
+                if (coldLife > 0 && c.Day + coldLife <= today)
+                {
+                    n += c.Count - inWarm;
+                }
+                seen += c.Count;
             }
             return n;
         }
 
         /// <summary>Turns of the day until the oldest batch spoils (1: tonight; 0: due now); -1 when it never does or nothing is held.</summary>
-        public static int SpoilsIn(List<Cohort> batches, int life, int today)
+        public static int SpoilsIn(List<Cohort> batches, int life, int today) => SpoilsIn(batches, life, 0, 0, today);
+
+        /// <summary>
+        /// The same with <paramref name="chilled"/> pieces kept cold: the oldest piece is an ordinary one while any ordinary piece is held,
+        /// and a cold one only when all of it is cold.
+        /// </summary>
+        public static int SpoilsIn(List<Cohort> batches, int life, int coldLife, int chilled, int today)
         {
-            if (life <= 0 || batches == null || batches.Count == 0)
+            if (batches == null || batches.Count == 0)
             {
                 return -1;
             }
-            return Math.Max(0, batches[0].Day + life - today);
+            int use = Total(batches) - Math.Max(0, chilled) > 0 ? life : coldLife;
+            if (use <= 0)
+            {
+                return -1;
+            }
+            return Math.Max(0, batches[0].Day + use - today);
         }
+
+        /// <summary>
+        /// The room one fridge or freezer gives a product, in pieces: its slots times the pieces one slot holds (the game's own figures,
+        /// Item.cargoCapacity and CargoInstance.GetMaxStockCapacity). Whole numbers, never negative.
+        /// </summary>
+        public static int Room(int slots, int stack) => (int)Math.Min(int.MaxValue, Math.Max(0L, slots) * Math.Max(0L, stack));
+
+        /// <summary>
+        /// The pieces of a product one fridge or freezer keeps cold, from the game's own figures for the furniture and the product: a
+        /// shelf (a showcase) gives the room of its one load, a fridge with slots gives its slots times that and takes only food that
+        /// fills (<c>saturation</c> above 0, FridgeController.CanStore); a whitelist that leaves the product out gives none. One load is
+        /// the product's box size times the furniture's capacity multiplier, rounded up (CargoInstance.GetMaxStockCapacity).
+        /// </summary>
+        public static int RoomOf(bool shelf, int slots, float multiplier, int boxSize, int saturation, bool allowed)
+        {
+            if (!allowed || (!shelf && (slots <= 0 || saturation <= 0)))
+            {
+                return 0;
+            }
+            return Room(shelf ? 1 : slots, (int)Math.Ceiling((float)((float)Math.Max(0, boxSize) * multiplier)));
+        }
+
+        /// <summary>The pieces of a stock the cold furniture at a place keeps cold: all of it up to the room, the rest none.</summary>
+        public static int Chilled(int stock, int room) => Math.Max(0, Math.Min(stock, room));
 
         /// <summary>A share of what came in that spoiled, whole per cent; -1 when nothing came in.</summary>
         public static int Percent(int spoiled, int came) => came <= 0 ? -1 : (int)Math.Min(100L, ((long)Math.Max(0, spoiled) * 100 + came / 2) / came);

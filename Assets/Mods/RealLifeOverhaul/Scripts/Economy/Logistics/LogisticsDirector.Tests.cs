@@ -84,7 +84,8 @@ namespace RealLifeOverhaul.Economy
                     int held = LogisticsGame.InStock(_owned[i], kv.Key), kept = SpoilRules.Total(kv.Value);
                     wrong += held == kept ? 0 : 1;
                     Logger?.Info("Spoilage check (the test, " + LogisticsGame.NameOf(_owned[i]) + "): " + kv.Key + " " + kept + " piece(s) in " + kv.Value.Count
-                                 + " batch(es), the oldest spoils in " + SpoilsIn(_owned[i], kv.Key) + " day(s), " + held + " held: " + (held == kept ? "PASS" : "FAIL"));
+                                 + " batch(es), the oldest spoils in " + SpoilsIn(_owned[i], kv.Key) + " day(s), " + Chilled(_owned[i], kv.Key) + " kept cold,"
+                                 + " " + held + " held: " + (held == kept ? "PASS" : "FAIL"));
                 }
             }
             Logger?.Info("Spoilage check (the test): " + places + " place(s), " + products + " product(s) that spoil, " + wrong + " not matched: " + (wrong == 0 ? "PASS" : "FAIL"));

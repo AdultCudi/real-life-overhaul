@@ -267,7 +267,8 @@ namespace RealLifeOverhaul.Ui
                 : UiText.Fill("reallife_trips_waiting", "time", When(t.Depart));
         }
 
-        // When the oldest of a product at a place spoils, for the stock table: tonight, in so many days, or "-" for never.
+        // When the oldest of a product at a place spoils, for the stock table: tonight, in so many days, or "-" for never; and how many
+        // pieces its fridges and freezers keep cold, where they do (a product the game's own cold shelves do not take).
         private static string SpoilsWords(BuildingRegistration place, string item, out UiRole tone)
         {
             tone = UiRole.None;
@@ -277,7 +278,9 @@ namespace RealLifeOverhaul.Ui
                 return "-";
             }
             tone = days <= 1 ? UiRole.DangerText : days <= 2 ? UiRole.WarnText : UiRole.None;
-            return days <= 1 ? UiText.T("reallife_spoil_tonight") : UiText.Fill("reallife_spoil_days", "days", UiText.Whole(days));
+            string when = days <= 1 ? UiText.T("reallife_spoil_tonight") : UiText.Fill("reallife_spoil_days", "days", UiText.Whole(days));
+            int cold = TripsDirector.Instance.Chilled(place, item);
+            return cold > 0 ? UiText.Fill("reallife_spoil_with_cold", "when", when, "cold", UiText.Whole(cold)) : when;
         }
 
         private const int SpoilColumn = 6;   // the stock table's Spoils in

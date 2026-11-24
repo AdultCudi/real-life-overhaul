@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Economy
         private readonly List<BuildingRegistration> _owned = new List<BuildingRegistration>(32);
         private readonly List<string> _spoilItems = new List<string>(8);
         private readonly List<int> _spoilLives = new List<int>(8);
+        private readonly List<int> _spoilChilled = new List<int>(8);      // pieces of each the place's fridges and freezers keep cold
+        private readonly List<int> _spoilColdLives = new List<int>(8);    // and the days those keep at the usual pace
         private readonly List<string> _gone = new List<string>(8);
         private readonly List<Cohort> _taken = new List<Cohort>(SpoilRules.CohortsMost);
         private int _ownedHour = -1;          // the absolute game hour the list of places was read in
@@ -61,7 +63,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             string key = LogisticsGame.Key(reg.Address);
-            LogisticsGame.Spoilable(reg, _spoilItems, _spoilLives);
+            LogisticsGame.Spoilable(reg, _spoilItems, _spoilLives, _spoilChilled, _spoilColdLives);
             if (_spoilItems.Count == 0 && !_spoil.Places.ContainsKey(key))
             {
                 return;   // nothing here spoils: no record is made
@@ -83,6 +85,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < _spoilItems.Count; i++)
             {
                 p.Lives[_spoilItems[i]] = SpoilRules.Scale(_spoilLives[i], pace);
+                p.Chilled[_spoilItems[i]] = _spoilChilled[i];
+                p.ColdLives[_spoilItems[i]] = SpoilRules.Scale(_spoilColdLives[i], pace);
                 int came = SpoilRules.Match(p.Of(_spoilItems[i]), LogisticsGame.InStock(reg, _spoilItems[i]), today);
                 p.Note(today, 0, came, 0);
             }
@@ -98,6 +102,8 @@ namespace RealLifeOverhaul.Economy
             {
                 p.Batches.Remove(_gone[i]);
                 p.Lives.Remove(_gone[i]);
+                p.Chilled.Remove(_gone[i]);
+                p.ColdLives.Remove(_gone[i]);
             }
         }
 
@@ -122,7 +128,8 @@ namespace RealLifeOverhaul.Economy
             {
                 int at = _spoilItems.IndexOf(kv.Key);
                 int life = at >= 0 ? SpoilRules.Scale(_spoilLives[at], p.Pace) : SpoilRules.Life(kv.Key, LogisticsGame.Weighed(kv.Key), false);
-                int due = SpoilRules.Expired(kv.Value, life, today);
+                int coldLife = at >= 0 ? SpoilRules.Scale(_spoilColdLives[at], p.Pace) : 0;
+                int due = SpoilRules.Expired(kv.Value, life, coldLife, at >= 0 ? _spoilChilled[at] : 0, today);
                 if (due <= 0)
                 {
                     continue;
@@ -229,7 +236,17 @@ namespace RealLifeOverhaul.Economy
                 return -1;
             }
             int life = p.Lives.TryGetValue(item, out int kept) ? kept : SpoilRules.Life(item, LogisticsGame.Weighed(item), false);
-            return SpoilRules.SpoilsIn(b, life, LogisticsGame.Day);
+            return SpoilRules.SpoilsIn(b, life, p.ColdLives.TryGetValue(item, out int coldLife) ? coldLife : 0, p.Chilled.TryGetValue(item, out int cold) ? cold : 0, LogisticsGame.Day);
+        }
+
+        /// <summary>
+        /// Pieces of a product at a place that its fridges and freezers keep cold as the place last looked (0 when none, when the game's
+        /// own cold shelves take the product, or when spoilage is off). For the stock page's plain line on what a fridge does.
+        /// </summary>
+        public int Chilled(BuildingRegistration place, string item)
+        {
+            return SpoilOn && place != null && place.Address != null && !string.IsNullOrEmpty(item)
+                   && _spoil.Places.TryGetValue(LogisticsGame.Key(place.Address), out SpoilPlace p) && p.Chilled.TryGetValue(item, out int n) ? n : 0;
         }
 
         /// <summary>

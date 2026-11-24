@@ -490,7 +490,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_in_day"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_out_day"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_lasts"), Kind = UiCellKind.Chip, Width = 136f },
-                    new UiDataColumn { Title = UiText.T("reallife_spoil_col"), Kind = UiCellKind.Text, Width = 112f },
+                    new UiDataColumn { Title = UiText.T("reallife_spoil_col"), Kind = UiCellKind.Text, Width = 176f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_cost_each"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_value"), Kind = UiCellKind.Money, Width = 120f },
                 },
