@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizman_foreign_title", "reallife_ui_bizman_goods_none", "reallife_ui_bizman_goods_none_body", "reallife_ui_bizman_homes",
                     "reallife_ui_bizman_kinds_none", "reallife_ui_bizman_lease", "reallife_ui_bizman_logo_more", "reallife_ui_bizman_name_hint",
                     "reallife_ui_bizman_needs", "reallife_ui_bizman_none_body", "reallife_ui_bizman_none_title", "reallife_ui_bizman_other_mods",
-                    "reallife_ui_bizman_overall", "reallife_ui_bizman_pause", "reallife_ui_bizman_prompt_section", "reallife_ui_bizman_randomise",
+                    "reallife_ui_bizman_overall", "reallife_ui_bizman_pause", "reallife_ui_bizman_prompt_section", "reallife_ui_bizman_price_marks", "reallife_ui_bizman_randomise",
                     "reallife_ui_bizman_rent_new", "reallife_ui_bizman_rented", "reallife_ui_bizman_rival", "reallife_ui_bizman_satisfaction_none", "reallife_ui_bizman_uniform_role",
                     "reallife_ui_bizman_search", "reallife_ui_bizman_shared", "reallife_ui_bizman_sold_week", "reallife_ui_bizman_start_note",
                     "reallife_ui_bizman_sum_alerts", "reallife_ui_bizman_sum_best", "reallife_ui_bizman_sum_mood", "reallife_ui_bizman_sum_open", "reallife_ui_bizman_tab_building",

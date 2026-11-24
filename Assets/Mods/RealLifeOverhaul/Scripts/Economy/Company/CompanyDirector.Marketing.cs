@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Economy
                 CompanyShop measured = shop;
                 int gave = file.PushGiven;
                 CampaignReport report = CampaignRules.Measure(shop.Name, file.Push, file.PushFrom, file.PushEnd - file.PushFrom, file.PushCost, gave,
-                    (int d, out int customers, out int takings, out int profit) => CompanyGame.DayBook(measured, d, out customers, out takings, out profit));
+                    (int d, out int customers, out int takings, out int profit) => CompanyGame.DayBook(measured, d, out customers, out takings, out profit), file.Place);
                 CampaignRules.Keep(_state.Reports, report);
                 CampaignRules.Close(file);
                 Tell(report.Extra >= 0 ? NotificationType.Success : NotificationType.Info, "reallife_co_note_report", new Dictionary<string, string>

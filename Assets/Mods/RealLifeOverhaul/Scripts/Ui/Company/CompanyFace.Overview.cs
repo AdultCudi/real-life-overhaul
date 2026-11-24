@@ -143,7 +143,8 @@ namespace RealLifeOverhaul.Ui
         {
             float pad = UiTokens.S4, size = UiTokens.AvatarRow;
             CompanyButton b = new CompanyButton { Label = row.OpenLabel, Act = row.Open, Kind = UiButtonKind.Secondary, Icon = UiIcon.Next };
-            float bw = Math.Min(UiDraw.SnapDown(w * 0.38f), UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys));
+            bool opens = row.Open.Do != CompanyDo.None;   // a card with nowhere to go offers no button
+            float bw = opens ? Math.Min(UiDraw.SnapDown(w * 0.38f), UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys)) : 0f;
             float tx = x + pad + size + UiTokens.S3, tw = Math.Max(0f, w - pad * 2f - size - UiTokens.S3 - bw - UiTokens.S3);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), lh = string.IsNullOrEmpty(row.Line) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(row.Line, UiStyle.Small, tw, 3));
             float h = Math.Max(size, th + (lh > 0f ? UiTokens.S1 + lh : 0f)) + pad * 2f;
@@ -165,7 +166,10 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, inside, tx, top + th + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, row.Line, UiFlags.Wrap | UiFlags.Truncate, 3);
             }
-            Button(s, inside, lay, v, ref b, x + w - pad - bw, y + Mid(h, UiTokens.Control), bw, keys);
+            if (opens)
+            {
+                Button(s, inside, lay, v, ref b, x + w - pad - bw, y + Mid(h, UiTokens.Control), bw, keys);
+            }
             return h;
         }
 
@@ -326,7 +330,8 @@ namespace RealLifeOverhaul.Ui
         // A row of "also waiting": the one who asks in their ring, who and what, and the link that opens it.
         private static float WaitingLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyWaiting row, float x, float y, float w, IUiKeys keys, short list = -1, int listIndex = 0)
         {
-            int index = lay.Add(new CompanyButton { Label = row.OpenLabel, Act = row.Open, Kind = UiButtonKind.Quiet });
+            bool opens = row.Open.Do != CompanyDo.None;   // a row with nowhere to go offers no button
+            int index = opens ? lay.Add(new CompanyButton { Label = row.OpenLabel, Act = row.Open, Kind = UiButtonKind.Quiet }) : -1;
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             float size = UiTokens.AvatarRow;
@@ -340,7 +345,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Portrait(s, inside, x, y + (WaitingRow - size) / 2f, size, row.Name, row.Hue, row.Ring);
             }
-            float openW = Math.Min(UiDraw.SnapDown(w * 0.2f), UiDraw.Snap(UiTextRules.Width(row.OpenLabel ?? string.Empty, UiStyle.BodyStrong) + UiTokens.IconSmall + UiTokens.S3));
+            float openW = opens ? Math.Min(UiDraw.SnapDown(w * 0.2f), UiDraw.Snap(UiTextRules.Width(row.OpenLabel ?? string.Empty, UiStyle.BodyStrong) + UiTokens.IconSmall + UiTokens.S3)) : 0f;
             float tx = x + size + UiTokens.S3, tw = w - size - UiTokens.S3 - openW - UiTokens.S3;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + UiDraw.SnapDown((WaitingRow - th - sh) / 2f);
@@ -348,6 +353,10 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, row.Line ?? string.Empty, UiFlags.Truncate);
             string open = UiTextRules.Cut(row.OpenLabel ?? string.Empty, UiStyle.BodyStrong, openW - UiTokens.IconSmall - UiTokens.S1);
             float ow = UiTextRules.Width(open, UiStyle.BodyStrong);
+            if (!opens)
+            {
+                return WaitingRow;
+            }
             UiDraw.TextMiddle(s, inside, x + w - UiTokens.IconSmall - UiDraw.LinkGap - ow - UiTokens.S1, y, WaitingRow, ow + UiTokens.S1, UiStyle.BodyStrong, UiRole.AccentText, open, UiFlags.Right);
             UiDraw.Icon(s, inside, x + w - UiTokens.IconSmall, y + (WaitingRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText,
                 UiFlags.Middle | UiFlags.Share | UiFlags.Decor);

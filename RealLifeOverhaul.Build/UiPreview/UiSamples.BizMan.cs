@@ -468,6 +468,7 @@ internal static partial class UiSamples
                 Tones = new[] { UiRole.None, UiRole.None, stock[i] == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, marks[i] }
             };
         }
+        m.MarkLine = t("reallife_ui_bizman_price_marks", "A mark beside a price means it is above the usual price for that good, or above the cheapest rival's in this district. A red mark means twice the usual price or more.");
         m.SharesTitle = t("reallife_ui_bizman_best_sellers", "Best sellers");
         m.Shares = new[] { 46f, 19f, 12f, 11f };
         m.ShareRest = 12f;   // muffins and sandwiches, past the game's four best sellers

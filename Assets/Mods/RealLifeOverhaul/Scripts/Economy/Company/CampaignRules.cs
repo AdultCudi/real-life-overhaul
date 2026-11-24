@@ -152,11 +152,11 @@ namespace RealLifeOverhaul.Economy
         /// the profit, so that the cost counts once. The days before are scaled to as many as the days during, so that the
         /// two compare day for day.
         /// </summary>
-        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, int given, DayBook book)
+        public static CampaignReport Measure(string name, int kind, int from, int days, int cost, int given, DayBook book, string place = null)
         {
             cost = Math.Max(0, cost);
             given = CompanyCatalogue.Clamp(given, 0, cost);
-            var r = new CampaignReport { Name = name ?? string.Empty, Kind = kind, From = from, Days = days, Cost = cost };
+            var r = new CampaignReport { Name = name ?? string.Empty, Place = place ?? string.Empty, Kind = kind, From = from, Days = days, Cost = cost };
             for (int d = from - days; d < from + days; d++)
             {
                 int customers, takings, profit;

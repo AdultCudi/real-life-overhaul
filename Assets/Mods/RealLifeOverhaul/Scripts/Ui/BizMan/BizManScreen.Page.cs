@@ -440,7 +440,7 @@ namespace RealLifeOverhaul.Ui
             sig = sig * 31 + (names != null ? names.SelectedOptionIndex : -1);
             sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3)
                   + (b.buildingRegistration != null && b.buildingRegistration.temporarilyClosed ? 4 : 0);   // closed or opened by no click on the toggle (the utilities, another player)
-            sig = sig * 31 + EntryCount(need) * 7 + EntryCount(alert);
+            sig = sig * 31 + RowsHash(need) * 7 + RowsHash(alert);
             sig = sig * 31 + _m.Ops.ListOpen + _opsHeld * 7 + (Ops ? 1 : 0);
             switch (_shown)
             {
@@ -560,7 +560,7 @@ namespace RealLifeOverhaul.Ui
         // The part's fields emptied, so a part never shows what another left.
         private void ClearPart()
         {
-            _m.PartTitle = _m.Lead = _m.FactsTitle = _m.MoreTitle = _m.LogoLabel = _m.GoodsTitle = null;
+            _m.PartTitle = _m.Lead = _m.MarkLine = _m.FactsTitle = _m.MoreTitle = _m.LogoLabel = _m.GoodsTitle = null;
             _m.Figures = new UiFigureModel[0];
             _m.Lines = _m.SecondLines = new BizManLine[0];
             _m.Pages = new string[0];
