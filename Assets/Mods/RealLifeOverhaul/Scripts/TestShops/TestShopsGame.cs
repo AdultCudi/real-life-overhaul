@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.TestShops
 {
     /// <summary>
     /// Options > Tests, rivals: takes over the nearest business of each kind, or only the nearest one, through the game's own
-    /// BizManPresentation.OvertakeBusiness, for free, so the new interface can be tried on shops that run without building
+    /// takeover (ServicesGame.Overtake), for free, so the new interface can be tried on shops that run without building
     /// any by hand. The search walks the save's registrations once, on the press, and nothing runs per frame. In a Going
     /// Public session it does nothing but say so: a business taken over there would change another player's save.
     /// </summary>
