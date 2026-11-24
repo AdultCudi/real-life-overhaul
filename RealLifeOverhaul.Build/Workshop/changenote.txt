@@ -1,4 +1,4 @@
-1.0.29
+1.0.30
 
-New
-- Food spoilage can now give food that would be thrown out overnight to charity in the evening, as a gift in kind at what it cost that is deducted from your tax, earns a little standing, a good mood and a lift for your staff within ceilings set by what your shops really sell, and it is off until you switch it on.
+Fixed
+- The salesperson on your Car Showroom's floor, the technicians in your data centre and the staff at the desks of a fitted floor are the same people at every visit, where each used to be somebody new every time you came in.
