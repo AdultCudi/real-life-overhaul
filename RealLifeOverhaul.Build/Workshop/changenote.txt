@@ -1,5 +1,8 @@
-1.0.27
+1.0.28
 
 Fixed
-- A rented scooter is now kept while you are indoors only for the day you rented it. After midnight it is taken back, with a notice, as soon as it is out of sight and nobody is on it, so going indoors every evening no longer keeps it for ever.
-- Burgers, hot dogs, pizza, kebabs and other food the game will not let you put in a fridge or a freezer are now kept cold by the fridges and freezers at your shops, up to the room each has, and the Guide and the stock page say how much.
+- The last piece of homework of a short course could never be done because it was set only at the class that marks the course, so every piece is now set at least one class earlier, and the Campus app says how many are open and after which class the next comes.
+- An exam counted you tired for the energy the exam itself spends, so the same preparation marked five points lower from a middling night, and now it reads your energy as the exam begins.
+- A retake you did not sit turned your last mark into a 0 overnight, and now the mark you sat stays.
+- The tutor's edge on an exam was missing in the first seconds of a session, before the city's people had loaded, and now it comes from the save alone.
+- Exam marks swung by ten points either way with nothing on the page to explain them, so the day's luck is now at most five, and the Studying tab shows a forecast of the mark with every part of it, which a student who attends, does the homework and sits rested always sees as the top band.
