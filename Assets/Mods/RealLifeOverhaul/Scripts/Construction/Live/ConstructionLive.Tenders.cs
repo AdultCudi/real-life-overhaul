@@ -105,6 +105,13 @@ namespace RealLifeOverhaul.Construction
                 BackButton(box);
                 return;
             }
+            int floors = Director.TenderFloors(t);
+            if (floors > Director.FloorsLicensed)
+            {
+                box.Line(Director.FloorsWords(ConstructionDirector.TenderFloorsKey, floors), CellTone.Yellow);   // the licence the job asks, said before a bid is tried
+                BackButton(box);
+                return;
+            }
             if (_bidFor != t.Id)
             {
                 _bidFor = t.Id;

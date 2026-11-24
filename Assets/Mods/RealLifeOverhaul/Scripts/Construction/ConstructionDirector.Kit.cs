@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Construction
@@ -14,6 +15,42 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>The floors the company's licence covers.</summary>
         public int FloorsLicensed => LevelRules.FloorsOf(_state != null ? _state.Firm.Level : 0);
+
+        /// <summary>The refusal for a building taller than the licence covers (a project's start).</summary>
+        public const string FloorsKey = "reallife_ui_cons_answer_floors";
+
+        /// <summary>The refusal for a bid on a building taller than the licence covers.</summary>
+        public const string TenderFloorsKey = "reallife_bld_answer_tender_floors";
+
+        /// <summary>The floors a won tender's building has once it is a project, 0 for the city's own works (they have no building to start): the one rule FromTender uses.</summary>
+        public int TenderFloors(TenderFile t)
+        {
+            if (t == null || t.Source == TenderSource.CityWorks)
+            {
+                return 0;
+            }
+            if (t.Source == TenderSource.Landmark && Lot(t.Lot, out LotView site))
+            {
+                return Math.Max(1, Math.Min(BuildCatalogue.UptownHeightLimit, Math.Max(1, t.Area) / Math.Max(1, site.Width * site.Depth)));
+            }
+            return Math.Max(1, t.Area / 300);
+        }
+
+        /// <summary>The words a refusal for floors fills in: the building's floors, what the licence covers, and what the licence that covers them asks and the company has.</summary>
+        private string[] FloorsPairs(int floors)
+        {
+            int level = LevelRules.LevelFor(floors);
+            FirmFile f = _state.Firm;
+            return new[]
+            {
+                "floors", floors.ToString(CultureInfo.InvariantCulture), "have", FloorsLicensed.ToString(CultureInfo.InvariantCulture),
+                "builds", LevelRules.BuildsFrom[level].ToString(CultureInfo.InvariantCulture), "done", f.Finished.ToString(CultureInfo.InvariantCulture),
+                "standing", LevelRules.StandingFrom[level].ToString(CultureInfo.InvariantCulture), "rep", f.Reputation.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+
+        /// <summary>The floors refusal's words for a project or a tender with these floors, as the page writes it.</summary>
+        public string FloorsWords(string key, int floors) => ConstructionText.Fill(key, FloorsPairs(floors));
 
         /// <summary>How many of the city's works a builder has on its hands: the quotes' risk reads it.</summary>
         public int BuilderBusy(int rival) => Busy(BuildCatalogue.Clamp(rival, 0, BuildCatalogue.RivalCount - 1));

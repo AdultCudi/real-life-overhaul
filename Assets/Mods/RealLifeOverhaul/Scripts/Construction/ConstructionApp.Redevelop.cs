@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Construction
                     }
                     else
                     {
-                        box.Line(ConstructionText.T(block), CellTone.Yellow);
+                        box.Line(_director.BlockWords(p, block), CellTone.Yellow);
                     }
                 }
                 RefitQuote q = _director.VacantQuote(p);

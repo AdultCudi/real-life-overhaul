@@ -25,6 +25,13 @@ namespace RealLifeOverhaul.Economy
                 BuildingRegistration reg = ServicesGame.Find(v.Place);
                 if (!ServicesGame.StillTheirs(reg, v))
                 {
+                    if (ServicesGame.Mend(reg, v))
+                    {
+                        Logger?.Info("Rivals selling: '" + v.Business + "' was bought from " + v.SellerName + " but its takeover stopped half way (an older version of the mod); "
+                                     + "the schedule, the map and the rival timeline are done now.");
+                        _state.RivalSales.RemoveAt(i);
+                        continue;
+                    }
                     Logger?.Info("Rivals selling: '" + v.Business + "' is no longer " + v.SellerName + "'s as it was put up (closed, bought or changed); it comes off sale.");
                     _state.RivalSales.RemoveAt(i);
                     continue;

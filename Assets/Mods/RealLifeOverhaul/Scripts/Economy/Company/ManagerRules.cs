@@ -105,7 +105,8 @@ namespace RealLifeOverhaul.Economy
         public const int StockStep = 50;            // thousandths an order must move before it is changed
         public const int LearnHours = 12;           // hours of use at least before an order is worked out from them
 
-        public const int ManagersMost = 64;         // places and districts with a manager
+        // places and districts with a manager: one for a place or a district, so the firm's own size is the real limit and this only bounds the saved line
+        public const int ManagersMost = 256;
         public const int DecisionsKept = 160;
         public const int ItemsInDecision = 12;      // products one decision changes at most
         public const int SnapsMost = 32;            // products one place's stock is followed for
