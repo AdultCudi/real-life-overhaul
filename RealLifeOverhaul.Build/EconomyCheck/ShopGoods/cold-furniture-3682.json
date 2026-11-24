@@ -1,0 +1,205 @@
+{
+ "build": "3682",
+ "furniture": {
+  "ba:itemname_drinksfridge": {
+   "type": 64,
+   "slots": 0,
+   "mult": 0.24,
+   "whitelist": [],
+   "shows": [
+    "ba:itemname_energydrink",
+    "ba:itemname_sodacan"
+   ],
+   "controller": "ShowcaseShelfController"
+  },
+  "ba:itemname_industrialfreezer": {
+   "type": 64,
+   "slots": 0,
+   "mult": 0.1,
+   "whitelist": [],
+   "shows": [
+    "ba:itemname_frozenfood",
+    "ba:itemname_icecream"
+   ],
+   "controller": "ShowcaseShelfController"
+  },
+  "ba:itemname_industrialfridge": {
+   "type": 64,
+   "slots": 0,
+   "mult": 0.1,
+   "whitelist": [],
+   "shows": [
+    "ba:itemname_freshfood"
+   ],
+   "controller": "ShowcaseShelfController"
+  },
+  "ba:itemname_largedrinksfridge": {
+   "type": 64,
+   "slots": 0,
+   "mult": 0.72,
+   "whitelist": [],
+   "shows": [
+    "ba:itemname_energydrink",
+    "ba:itemname_sodacan"
+   ],
+   "controller": "ShowcaseShelfController"
+  },
+  "ba:itemname_luxuryfridge": {
+   "type": 32768,
+   "slots": 10,
+   "mult": 0.01,
+   "whitelist": [],
+   "shows": [],
+   "controller": "FridgeController"
+  },
+  "ba:itemname_smallindustrialfreezer": {
+   "type": 64,
+   "slots": 0,
+   "mult": 0.05,
+   "whitelist": [],
+   "shows": [
+    "ba:itemname_frozenfood",
+    "ba:itemname_icecream"
+   ],
+   "controller": "ShowcaseShelfController"
+  },
+  "ba:itemname_standardfridge": {
+   "type": 32768,
+   "slots": 10,
+   "mult": 0.01,
+   "whitelist": [],
+   "shows": [],
+   "controller": "FridgeController"
+  }
+ },
+ "goods": {
+  "ba:itemname_apple": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_banana": {
+   "box": 500,
+   "saturation": 40
+  },
+  "ba:itemname_burger": {
+   "box": 500,
+   "saturation": 70
+  },
+  "ba:itemname_butter": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_carrot": {
+   "box": 500,
+   "saturation": 20
+  },
+  "ba:itemname_cheapflower": {
+   "box": 100,
+   "saturation": 0
+  },
+  "ba:itemname_cheese": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_cheeseplatter": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_chickenbreast": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_croissant": {
+   "box": 500,
+   "saturation": 25
+  },
+  "ba:itemname_cupcake": {
+   "box": 500,
+   "saturation": 25
+  },
+  "ba:itemname_donut": {
+   "box": 500,
+   "saturation": 25
+  },
+  "ba:itemname_dough": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_expensiveflower": {
+   "box": 100,
+   "saturation": 0
+  },
+  "ba:itemname_frenchfries": {
+   "box": 500,
+   "saturation": 50
+  },
+  "ba:itemname_freshfood": {
+   "box": 500,
+   "saturation": 100
+  },
+  "ba:itemname_frozenfood": {
+   "box": 500,
+   "saturation": 25
+  },
+  "ba:itemname_grapes": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_groundbeef": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_hotdog": {
+   "box": 500,
+   "saturation": 60
+  },
+  "ba:itemname_icecream": {
+   "box": 500,
+   "saturation": 50
+  },
+  "ba:itemname_kabob": {
+   "box": 500,
+   "saturation": 90
+  },
+  "ba:itemname_lettuce": {
+   "box": 250,
+   "saturation": 15
+  },
+  "ba:itemname_milk": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_onion": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_pear": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_pizza": {
+   "box": 500,
+   "saturation": 100
+  },
+  "ba:itemname_rawsausage": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_russetpotatoes": {
+   "box": 500,
+   "saturation": 30
+  },
+  "ba:itemname_salad": {
+   "box": 500,
+   "saturation": 60
+  },
+  "ba:itemname_slicedonions": {
+   "box": 300,
+   "saturation": 30
+  },
+  "ba:itemname_tomato": {
+   "box": 500,
+   "saturation": 20
+  }
+ }
+}

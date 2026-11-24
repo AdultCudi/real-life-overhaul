@@ -33,6 +33,10 @@ namespace RealLifeOverhaul.Economy
     /// whatever their name), its shelf life in days out of and in cold storage, the batches a place holds of it oldest first,
     /// taking from the oldest, what is past its life at the end of a day, and the share a rival shop loses. Whole days and
     /// counts, so the same stock spoils the same on every machine. Game-free; checked offline (EconomyCheck, LogisticsChecks.cs).
+    /// Cold storage works two ways. A product some fridge or freezer of the game lists as its own (a cold shelf shows it) keeps its
+    /// cold life only while it sits inside one. Any other product, which the game lets into no cold shelf, is kept cold by the
+    /// fridges and freezers standing at the place: each covers up to its own room, the newest pieces first, and the rest keeps
+    /// its ordinary life (<see cref="Chilled"/>, <see cref="Expired(List{Cohort},int,int,int,int)"/>).
     /// </summary>
     public static class SpoilRules
     {
@@ -43,6 +47,9 @@ namespace RealLifeOverhaul.Economy
         public const int PaceLeast = 25;             // per cent of the usual shelf life: a quarter of the time
         public const int PaceUsual = 100;            // the shelf lives above, as a save from before kept them
         public const int PaceMost = 400;             // four times as long
+        public const int ColdRoomBig = 1000;         // pieces an industrial fridge or freezer keeps cold: two boxes of 500, for a busy restaurant's day or two
+        public const int ColdRoomSmall = 500;        // a small industrial freezer: one box
+        public const int ColdRoomStaff = 50;         // a standard or luxury fridge: the game's own 10 slots of 5
 
         /// <summary>
         /// Where the shelf life's pace comes from (the option, the usual in a Going Public session); set once by Settings. Null reads as the
@@ -255,28 +262,129 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>The pieces past their life at the turn into <paramref name="today"/> (stocked on or before today minus the life); 0 when it never spoils.</summary>
-        public static int Expired(List<Cohort> batches, int life, int today)
+        public static int Expired(List<Cohort> batches, int life, int today) => Expired(batches, life, 0, 0, today);
+
+        /// <summary>
+        /// The pieces past their life at the turn into <paramref name="today"/> when <paramref name="chilled"/> of the pieces are kept cold:
+        /// the newest ones, since the oldest are sold first, so a batch that straddles the line is split by pieces. The rest keep
+        /// <paramref name="life"/> and the cold pieces <paramref name="coldLife"/> (0 for never). With none chilled it is the one life above.
+        /// What is due is always the oldest pieces (a cold piece is due only when everything older is), so taking it from the oldest batch
+        /// first (<see cref="Take"/>) removes exactly these.
+        /// </summary>
+        public static int Expired(List<Cohort> batches, int life, int coldLife, int chilled, int today)
         {
-            if (life <= 0)
+            int warm = Math.Max(0, Total(batches) - Math.Max(0, chilled)), seen = 0, n = 0;
+            for (int i = 0; i < batches.Count; i++)
             {
-                return 0;
-            }
-            int n = 0;
-            for (int i = 0; i < batches.Count && batches[i].Day + life <= today; i++)
-            {
-                n += batches[i].Count;
+                Cohort c = batches[i];
+                int inWarm = Math.Max(0, Math.Min(c.Count, warm - seen));
+                if (life > 0 && c.Day + life <= today)
+                {
+                    n += inWarm;
+                }
+                if (coldLife > 0 && c.Day + coldLife <= today)
+                {
+                    n += c.Count - inWarm;
+                }
+                seen += c.Count;
             }
             return n;
         }
 
         /// <summary>Turns of the day until the oldest batch spoils (1: tonight; 0: due now); -1 when it never does or nothing is held.</summary>
-        public static int SpoilsIn(List<Cohort> batches, int life, int today)
+        public static int SpoilsIn(List<Cohort> batches, int life, int today) => SpoilsIn(batches, life, 0, 0, today);
+
+        /// <summary>
+        /// The same with <paramref name="chilled"/> pieces kept cold: the oldest piece is an ordinary one while any ordinary piece is held,
+        /// and a cold one only when all of it is cold.
+        /// </summary>
+        public static int SpoilsIn(List<Cohort> batches, int life, int coldLife, int chilled, int today)
         {
-            if (life <= 0 || batches == null || batches.Count == 0)
+            if (batches == null || batches.Count == 0)
             {
                 return -1;
             }
-            return Math.Max(0, batches[0].Day + life - today);
+            int use = Total(batches) - Math.Max(0, chilled) > 0 ? life : coldLife;
+            if (use <= 0)
+            {
+                return -1;
+            }
+            return Math.Max(0, batches[0].Day + use - today);
+        }
+
+        /// <summary>
+        /// The pieces one piece of cold furniture keeps cold at a place, by its name, shared by all the goods that have no cold shelf of
+        /// their own; 0 for any other furniture. A box is 500 pieces and a restaurant holds hundreds to thousands, so the industrial fridge and
+        /// freezer (3,300 and 4,800 to buy) cover two boxes each, the small freezer (2,800) one, a staff fridge (the game's own 10 slots of 5)
+        /// 50. A drinks fridge is for drinks and covers nothing, so it is no way round the price of a real unit.
+        /// </summary>
+        public static int ColdRoom(string furniture)
+        {
+            switch (furniture)
+            {
+                case "ba:itemname_industrialfridge":
+                case "ba:itemname_industrialfreezer":
+                    return ColdRoomBig;
+                case "ba:itemname_smallindustrialfreezer":
+                    return ColdRoomSmall;
+                case "ba:itemname_standardfridge":
+                case "ba:itemname_luxuryfridge":
+                    return ColdRoomStaff;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// Shares a place's cold room over its goods in proportion to their stock, in whole pieces: all of it when the room holds every
+        /// stock, else each its floor of room times its stock over the total and the pieces left over one each to the largest remainders
+        /// (ties to the lower name), so the shares add to the room exactly and no machine differs. <paramref name="into"/> gets each good's pieces.
+        /// </summary>
+        public static void Share(List<int> stock, List<string> names, int room, List<int> into)
+        {
+            into.Clear();
+            long total = 0;
+            for (int i = 0; i < stock.Count; i++)
+            {
+                total += Math.Max(0, stock[i]);
+            }
+            room = Math.Max(0, room);
+            if (total <= room)
+            {
+                for (int i = 0; i < stock.Count; i++)
+                {
+                    into.Add(Math.Max(0, stock[i]));
+                }
+                return;
+            }
+            long given = 0;
+            for (int i = 0; i < stock.Count; i++)
+            {
+                int got = (int)((long)room * Math.Max(0, stock[i]) / total);
+                into.Add(got);
+                given += got;
+            }
+            var used = new bool[stock.Count];
+            for (long left = room - given; left > 0; left--)
+            {
+                int best = -1;
+                long bestRest = -1;
+                for (int i = 0; i < stock.Count; i++)
+                {
+                    long rest = (long)room * Math.Max(0, stock[i]) % total;
+                    if (!used[i] && into[i] < stock[i] && (rest > bestRest || (rest == bestRest && string.CompareOrdinal(names[i], names[best]) < 0)))
+                    {
+                        best = i;
+                        bestRest = rest;
+                    }
+                }
+                if (best < 0)
+                {
+                    break;
+                }
+                into[best]++;
+                used[best] = true;   // fewer pieces are left over than there are goods, so each wins at most one
+            }
         }
 
         /// <summary>A share of what came in that spoiled, whole per cent; -1 when nothing came in.</summary>

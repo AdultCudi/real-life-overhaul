@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-Under the living economy's master option **Living population**, with **Delivery trips** on, the player's logistics routes run as delivery trips (a vehicle and its driver from the route's warehouse at each of its departure times, round its stops and back, the goods delivered on arrival by the game's own delivery), and with **Food spoilage** on, fresh goods at the player's places keep so many days by their kind, longer in a fridge or a freezer, the oldest sold first; the city's rival shops pay the same supply and spoilage in their books.
+Under the living economy's master option **Living population**, with **Delivery trips** on, the player's logistics routes run as delivery trips (a vehicle and its driver from the route's warehouse at each of its departure times, round its stops and back, the goods delivered on arrival by the game's own delivery), and with **Food spoilage** on, fresh goods at the player's places keep so many days by their kind, longer when kept cold (inside a fridge or a freezer for the few goods the game gives a cold shelf, by the fridges and freezers standing at a shop, warehouse or factory for all the rest), the oldest sold first; the city's rival shops pay the same supply and spoilage in their books.
 
 ## Where the code is
 
@@ -15,11 +15,11 @@ Economy/Logistics/              the first six are game-free and compiled by Econ
   TripRules                       departures, the timeline, drive time by vehicle, fuel, wages, whole boxes, stops shared over the slots, the rivals' supply
   TripState                       a route's departures, a trip and its stops, a run of the log
   TripStore                       the save's line, "reallife:trips"
-  SpoilRules                      a product's kind, its shelf life out of and in cold storage, batches, oldest first, expiry, the managers' cap, the rivals' loss
+  SpoilRules                      a product's kind, its shelf life out of and in cold storage, batches, oldest first, expiry (with a cold share), the managers' cap, the rivals' loss
   SpoilState                      a place's batches and its seven days
   SpoilStore                      the save's line, "reallife:spoilage"
   LogisticsGame                   the plans, the hold, the slots, a stop's needs, the game's own delivery, the city's places, the pump's price, the fuel
-  LogisticsGame.Spoil             the places, what spoils there, throwing out by the game's own calls, the rivals' valued days
+  LogisticsGame.Spoil             the places, what spoils there and what their fridges keep cold, throwing out by the game's own calls, the rivals' valued days
   LogisticsBridges                the road between two places (the GPS's graph)
   LogisticsDirector               the start, the second, the hold of the game's run, the save
   LogisticsDirector.Trips         departures, a trip leaving, arriving and back, roads, what the pages read
@@ -41,10 +41,28 @@ Economy/Logistics/              the first six are game-free and compiled by Econ
 
 ## Spoilage
 
-1. **Kinds and lives** (days out of and in a fridge or a freezer): fruit, vegetables and flowers 6 and 12, dairy 5 and 14, bakery 4 and 7, meat 3 and 8, made food 4 and 8, frozen 3 and 90, by the product's name; any product the game weighs at the till is produce. Packaged goods, drinks and the rest never spoil. A place keeps a product as long as its coldest holder (any furniture named a fridge or a freezer).
+1. **Kinds and lives** (days out of and in cold storage): fruit, vegetables and flowers 6 and 12, dairy 5 and 14, bakery 4 and 7, meat 3 and 8, made food 4 and 8, frozen 3 and 90, by the product's name; any product the game weighs at the till is produce. Packaged goods, drinks and the rest never spoil.
+   The first figure is the life on a shelf, in storage or on a grill; the second is the life of a piece kept cold (see **Cold storage** below).
    These are the usual lives. The slider scales them all at one place, `SpoilRules.Life` (through `SpoilRules.Scale`): the usual life times the pace, rounded to whole days and never under one day for goods that spoil, so a quarter of the time keeps fruit 2 days and a fridge's frozen food 23, four times as long keeps fruit 24 days. Every reader of a life goes through it: the places' turn of a day, the managers' orders and their short-lived routes, the trips, the rivals' loss, and the stock and buy pages. The managers' cap and the short-lived test read the scaled life, so goods that keep a week or less at the usual pace may not at a slow one. The Guide's figures are the usual lives.
 2. **Batches.** Each place keeps each product as batches by the day they came in, at most six (the two oldest folded at their mean day). Once a second one place is matched to what it holds by the game's own count: less is taken from the oldest (sold, used or moved), more came in today. A trip's goods take their batches to the stop. A save from before, or a place first seen, takes all it holds as stocked that day.
 3. **The turn of a day.** A place first looked at after midnight throws out what is past its life by the game's own calls (storage first, then the shelves, a warehouse's record of goods out saying so), its cost noted. One notice a day sums it. The stock page shows **Spoils in** and what spoiled today; a factory's page shows the week's share of what came in that spoiled.
+
+### Cold storage: which products go inside a fridge, and what a fridge does for the rest
+
+What the game lets into which furniture (decompiled build 3682; the lists are data of each item, read at run time, never assumed):
+
+- A fridge or freezer that is a **shelf** (a drinks fridge, a large drinks fridge, an industrial fridge, an industrial freezer, a small industrial freezer: `ItemType.ShowcaseShelf`, `ShowcaseShelfController`) holds only what its own list `Item.itemsThatCanShowcase` names (`Producer.CanAddToInventory`). That is soda and energy drinks in the drinks fridges, **fresh food** in the industrial fridge, **frozen food** and **ice cream** in the freezers. No burger, hot dog, pizza, kebab, chips, burger bun, dough, ground beef, raw sausage or chicken, dairy, bakery or produce is on any cold shelf's list. Burgers and kebabs go on the industrial grill, hot dogs on the hot dog grill, pizza in the pizza oven, chips in the fryer, salad in the salad bar, and the rest in storage shelves and pallets.
+- The two **staff fridges** (the standard fridge and the luxury fridge, `FridgeController`) take any food that fills (`saturation` above 0, `FridgeController.CanStore`), 10 slots of 5 pieces each, so 50 pieces of a food in boxes of 500 (`Item.cargoCapacity`, `cargoCapacityMultiplier`, `CargoInstance.GetMaxStockCapacity`). So a burger can be put in a staff fridge, but only 50 at a time; the mod's rule gives the staff fridge the same 50.
+
+The rule:
+
+1. A product that some cold shelf of the game lists (`LogisticsGame.ShownCold`: fresh food, frozen food, ice cream) keeps today's rule exactly. It has its cold life only if some of it sits inside a fridge or a freezer, and then the whole place keeps all of it as long as its coldest holder.
+2. Every other product that spoils (burgers, hot dogs, pizza, kebabs, chips, dough, raw meat, dairy, bakery, produce and the rest) is kept cold by the fridges and freezers **standing at the place**, wherever the stock itself sits. Each piece of cold furniture has a room by its name (`SpoilRules.ColdRoom`): 1,000 pieces for an industrial fridge or an industrial freezer, 500 for a small industrial freezer, 50 for a standard or luxury fridge (the staff fridges, the game's own 10 slots of 5), and none for a drinks fridge or a large drinks fridge, which are for drinks. A box is 500 pieces and a busy fast food restaurant sells several hundred burgers a day, so a freezer (4,800 to buy, an industrial fridge 3,300, a small freezer 2,800) covers a day or two of one product and a very busy place wants two to four. The rooms add up over the place and are **shared by all such goods together** in proportion to their stock, in whole pieces (`SpoilRules.Share`: each good's floor of room times its stock over the total, the pieces left over one each to the largest remainders, ties to the lower name), so one unit is never 1,000 for each product. The pieces covered are the whole room or the stock, whichever is less.
+3. The **newest** pieces are the covered ones. The oldest are sold first, so the stock that leaves first is the stock that is not kept cold, and a delivery that comes in is kept cold before the older stock ever is. A batch that straddles the line is split by pieces. Covered pieces keep the cold life, the rest the ordinary life, each at the slider's pace (`SpoilRules.Expired` with a cold share, `SpoilRules.SpoilsIn`: the oldest piece is an ordinary one while any is held). What is due is always the oldest pieces, so the day's throwing out takes the oldest first as before.
+4. Only a place the player runs counts as a shop: a building that is not residential (`LogisticsGame.IsShop`). A home's fridge keeps nothing cold for the rule, and a staff fridge at home is not shop equipment. It is the player's own places only, as everything of spoilage is (`LogisticsGame.Owned`, `GoingPublic.Mine`), and in a Going Public session the pace stays 100 on every machine.
+5. Nothing is saved for it. The covered count is read again from the furniture each second a place is looked at (`SpoilPlace.Chilled`, `ColdLives`, not saved), and the batches are the same as before, so a save from before loads as it was and the new life applies from the next turn of a day. Stock already at a place keeps its batches. A fridge's own contents are not a separate case: a burger in a staff fridge counts in the place's room like any burger at the place.
+
+What the player is told: the Guide's page "Delivery trips" (Food spoilage), the notice at the turn of a day, the option's tip, and the **Spoils in** column of a warehouse's stock page, which reads for example "8 days, 400 kept cold" (the days are the oldest ordinary piece's).
 
 ### Changing the slider in a save
 
@@ -67,10 +85,12 @@ In a session (host or guest) the pace is 100 whatever the slider says (`Settings
 - Self-check lines with Verbose on: `Trips check (the night's run)`, `Trips check (a departure ...)`, `Trips check (a stop ...)`.
 
 - Options > "Food shelf life": at 100 nothing differs; move it in a save with fresh stock and the stock page's "Spoils in" changes while nothing is thrown out at once.
-- Offline: `--logistics` in EconomyCheck (`LogisticsChecks.cs`, `SpoilPace`).
+- Offline: `--logistics` in EconomyCheck (`LogisticsChecks.cs`, `SpoilPace`, `SpoilCold`).
 
 ## Known limits
 
 - Nothing is spawned in the street: the trips are timed and paid, the vehicles stay where they are.
 - The game's weekly wholesale deliveries are the game's: only the routes the logistics managers run are trips.
 - The product kinds are by name; a new product of a game update or another mod never spoils unless the game weighs it.
+- A freezer covers its room even when it is full of frozen food: the rule counts the furniture's size, not its free space.
+- The old interface's own stock page is the game's and has no Spoils in column; the covered count is shown on the kit's stock page, and the Guide, the notice and the option's tip say the rule on both.
