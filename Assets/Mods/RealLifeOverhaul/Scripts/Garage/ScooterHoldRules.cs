@@ -5,18 +5,43 @@ namespace RealLifeOverhaul
     /// rules the mod runs. The game hires out its electric scooters at their stands and takes one away again once it has not been
     /// seen for the vehicle type's own number of minutes (AutoDestroyVehicle, from VehicleType.autoDestroyAfterMinutes): the
     /// clock starts when the scooter leaves the camera, and a building the player goes into is out of its sight, so a class or
-    /// a film longer than the limit comes out to no scooter. A few comparisons a second.
+    /// a film longer than the limit comes out to no scooter. A rental lasts the game day it was made on: the hold covers that day
+    /// only (a class or a film still keeps it), and once midnight has passed the scooter is taken back the first second it is out of
+    /// sight with nobody on it, so a player who goes indoors every evening cannot keep one for ever. A few comparisons a second.
     /// </summary>
     public static class ScooterHoldRules
     {
         /// <summary>
         /// Whether the game's clock on a vehicle of the player's is put back to now. It is when the player is indoors and the vehicle is a
         /// scooter the game takes away by that clock (a limit of 0 or more), counting now (seen last at a time that is set), standing on the
-        /// street, not ridden and not one of the mod's own bicycles or motorbikes (those have their own rules, Garage/TwoWheelers).
+        /// street, not ridden, not one of the mod's own bicycles or motorbikes (those have their own rules, Garage/TwoWheelers) and
+        /// rented today (<see cref="RentedToday"/>).
         /// </summary>
-        public static bool Holds(bool optionOn, bool indoors, bool scooter, int limit, bool counting, bool onStreet, bool ridden, bool ourBike)
+        public static bool Holds(bool optionOn, bool indoors, bool scooter, int limit, bool counting, bool onStreet, bool ridden, bool ourBike, bool rentedToday)
         {
-            return optionOn && indoors && scooter && limit >= 0 && counting && onStreet && !ridden && !ourBike;
+            return optionOn && indoors && scooter && limit >= 0 && counting && onStreet && !ridden && !ourBike && rentedToday;
+        }
+
+        /// <summary>
+        /// Whether a rented scooter is taken back now: the day it was rented has ended, nothing is looking at it (the game's clock is
+        /// counting) and nobody is on it, indoors or out, asleep or awake. The same set of vehicles as <see cref="Holds"/>, so the two
+        /// never both apply: one scooter is held until midnight and returned after it.
+        /// </summary>
+        public static bool Returns(bool optionOn, bool scooter, int limit, bool counting, bool onStreet, bool ridden, bool ourBike, bool rentedToday)
+        {
+            return optionOn && scooter && limit >= 0 && counting && onStreet && !ridden && !ourBike && !rentedToday;
+        }
+
+        /// <summary>A rental lasts the day it began on. A day before the rental's (a clock set back) counts as still inside it.</summary>
+        public static bool RentedToday(int rentalDay, int today)
+        {
+            return today <= rentalDay;
+        }
+
+        /// <summary>The notices told for scooters taken back in one second: one however many, so a few at once are one line.</summary>
+        public static int Notices(int taken)
+        {
+            return taken > 0 ? 1 : 0;
         }
 
         /// <summary>

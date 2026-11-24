@@ -767,7 +767,7 @@
         public static bool GarageUnderglow = true;       // underglow kits light up after dark
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
         public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
-        public static bool GarageScooterHold = true;     // a scooter rented from the game's stands is not taken away while the player is indoors
+        public static bool GarageScooterHold = true;     // a scooter rented from the game's stands is kept while the player is indoors until midnight, then taken back
         public static bool GarageResale = true;          // a car sold with custom shop work on it fetches the work's worth on top of the game's price
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
         public static bool HomeLife = true;              // home life and health as a whole
