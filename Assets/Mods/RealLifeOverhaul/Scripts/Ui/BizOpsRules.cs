@@ -19,6 +19,12 @@ namespace RealLifeOverhaul.Ui
         public const int LastsShort = 3, LastsLow = 5;   // days of stock: under the first in the danger's colour, under the second the warning's
         public const int LaneSearchFrom = 8;   // stations from which the lanes' search shows with nothing typed in it: more than a board holds at 1080
 
+        /// <summary>
+        /// How far a table moves for a wheel's push of <paramref name="by"/> px (a notch is <see cref="UiTokens.S16"/>): a row a notch, whatever the row's height. A table keeps
+        /// its offset to whole rows, so a push shorter than half a row would otherwise never move it and one of several rows would jump past the next.
+        /// </summary>
+        public static float TableStep(float by, float rowHeight) => by / UiTokens.S16 * rowHeight;
+
         /// <summary>Tenths of a piece a day from a count over the game's week of seven days, rounded half up; 0 for none.</summary>
         public static int TenthsADay(int week) => week <= 0 ? 0 : (int)((week * 20L + 7) / 14);
 
