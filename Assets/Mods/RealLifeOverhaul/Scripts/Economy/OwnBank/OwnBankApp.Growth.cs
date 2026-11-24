@@ -248,7 +248,58 @@ namespace RealLifeOverhaul.Economy
                 }));
             box.Note(OwnBankText.T("reallife_ob_card_note"));
             WriteOwnCard(box, b, f);
+            WriteBlackTier(box, f);
             Meta.Guide.Point(box, GuideTitle);
+        }
+
+        // The Black card tier in the cards box: whom it is offered to, what it costs them and pays back, and how it stands in the books.
+        private void WriteBlackTier(InfoBox box, OwnBankFacts f)
+        {
+            box.SectionWords(OwnBankText.T(BlackTerms.NameKey));
+            box.Row("reallife_ob_black_rich", Whole(f.BlackRich));
+            box.Row("reallife_ob_black_scores", Pct(f.BlackScoreShare));
+            box.Row("reallife_ob_card_holders", OwnBankText.Fill("reallife_ob_card_holders_value", "now", Whole(f.BlackHolders), "wanted", Whole(f.BlackWanted)));
+            box.Row("reallife_ob_card_balance", OwnBankText.Money(f.BlackBook));
+            box.Row("reallife_ob_box_arrears", OwnBankText.Money(f.BlackArrears), f.BlackArrears > 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Row("reallife_ob_box_defaults", Pct(f.BlackDefaultPerMille));
+            box.Row("reallife_ob_card_yours", OwnBankText.Rate(f.BlackRateBp));
+            long month = OwnBankBuild.CardMonthProfit(f.BlackFig);
+            box.Row("reallife_ob_card_f_month", OwnBankText.Signed(month), month < 0 ? CellTone.Red : CellTone.Plain);
+            box.Switch("reallife_ob_black_switch", f.BlackOn, on => UiClone.Safe(() =>
+            {
+                _director.SetBlack(on);
+                Refresh();
+            }));
+            if (f.BlackOn && !f.CardsOn)
+            {
+                box.Line(OwnBankText.T("reallife_ob_black_needs_cards"), CellTone.Yellow);
+            }
+            box.Headline("reallife_ob_black_wealth_head");
+            box.Selector(f.BlackWealths.Length, f.BlackWealth, i => OwnBankText.Money(f.BlackWealths[i]), i => UiClone.Safe(() =>
+            {
+                _director.SetBlackLines(i, f.BlackScore, f.BlackFee, f.BlackReward);
+                Refresh();
+            }));
+            box.Headline("reallife_ob_black_score_head");
+            int scores = (f.BlackScoreMost - f.BlackScoreLeast) / f.BlackScoreStep + 1;
+            box.Selector(scores, (f.BlackScore - f.BlackScoreLeast) / f.BlackScoreStep, i => (f.BlackScoreLeast + i * f.BlackScoreStep).ToString(CultureInfo.InvariantCulture), i => UiClone.Safe(() =>
+            {
+                _director.SetBlackLines(f.BlackWealth, f.BlackScoreLeast + i * f.BlackScoreStep, f.BlackFee, f.BlackReward);
+                Refresh();
+            }));
+            box.Headline("reallife_ob_black_fee_head");
+            box.Selector(f.BlackFees.Length, f.BlackFee, i => OwnBankText.Fill("reallife_ob_card_fee_option", "fee", OwnBankText.Money(f.BlackFees[i])), i => UiClone.Safe(() =>
+            {
+                _director.SetBlackLines(f.BlackWealth, f.BlackScore, i, f.BlackReward);
+                Refresh();
+            }));
+            box.Headline("reallife_ob_black_reward_head");
+            box.Selector(f.BlackRewards.Length, f.BlackReward, i => OwnBankText.Rate(f.BlackRewards[i]), i => UiClone.Safe(() =>
+            {
+                _director.SetBlackLines(f.BlackWealth, f.BlackScore, f.BlackFee, i);
+                Refresh();
+            }));
+            box.Note(OwnBankText.T("reallife_ob_black_note"));
         }
 
         // The owner's own card in the cards box: its limit, what is owed, and the buttons that open and close it.

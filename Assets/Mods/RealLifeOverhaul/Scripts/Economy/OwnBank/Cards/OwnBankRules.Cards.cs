@@ -249,6 +249,7 @@ namespace RealLifeOverhaul.Economy
                 b.CardBal[j] = bal;
                 b.CardArr[j] = arr;
             }
+            BlackDay(b, c, into, hold, cycle, caps, stopped);
         }
 
         // The owner's card: what it did since the last day, into the bank's balance sheet and the day's books.
@@ -293,6 +294,8 @@ namespace RealLifeOverhaul.Economy
         {
             Array.Copy(b.CardFig, b.CardLast, b.CardFig.Length);
             Array.Clear(b.CardFig, 0, b.CardFig.Length);
+            Array.Copy(b.BlackFig, b.BlackLast, b.BlackFig.Length);
+            Array.Clear(b.BlackFig, 0, b.BlackFig.Length);
         }
     }
 }

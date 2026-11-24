@@ -15,6 +15,8 @@ using UI.Smartphone.Apps.MyEmployees;
 using UI.Smartphone.Apps.Shared;
 using UnityEngine;
 using UnityEngine.UI;
+using AvailabilityGame = RealLifeOverhaul.Economy.AvailabilityGame;
+using AvailabilityWindow = RealLifeOverhaul.Economy.AvailabilityWindow;
 using Dropdown = UI.Elements.Dropdown;
 
 namespace RealLifeOverhaul.Ui
@@ -831,7 +833,9 @@ namespace RealLifeOverhaul.Ui
         {
             List<string> demands = e.demands;
             int n = demands != null ? demands.Count : 0;
-            UiStaffDemand[] rows = into != null && into.Length == n ? into : new UiStaffDemand[n];
+            AvailabilityWindow window = AvailabilityGame.Of(e);   // a part-timer's set hours stand last, as one more thing they ask (Economy/Company/AvailabilityRules)
+            int total = n + (window.None ? 0 : 1);
+            UiStaffDemand[] rows = into != null && into.Length == total ? into : new UiStaffDemand[total];
             string met = UiText.T("reallife_ui_staff_met"), notMet = UiText.T("reallife_ui_staff_not_met");
             for (int i = 0; i < n; i++)
             {
@@ -843,6 +847,15 @@ namespace RealLifeOverhaul.Ui
                     Icon = DemandIcon(key), Name = key.GetLocalization(), Note = DaysNote(e, d, candidate), About = About(key),   // the hours worked stand once, in the work's rows
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
+                };
+            }
+            if (!window.None)
+            {
+                bool kept = candidate || AvailabilityGame.WeekOff(e, window) == 0;
+                rows[n] = new UiStaffDemand
+                {
+                    Icon = UiIcon.Clock, Name = AvailabilityGame.DemandWords(window), Note = AvailabilityGame.Words(window), About = UiText.T("reallife_avail_about"),
+                    Priority = UiText.T("reallife_avail_tag"), PriorityTone = UiRole.Warn, Met = candidate ? -1 : kept ? 1 : 0, MetWords = kept ? met : notMet
                 };
             }
             return rows;

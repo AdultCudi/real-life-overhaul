@@ -100,6 +100,7 @@ namespace RealLifeOverhaul
         public static int EventMoney(TravelEvent e) => Prices.At(e.Money);
         public const float InsuranceShare = 0.08f;       // of the trip's price
         public const float CompanionShare = 0.7f;        // a second traveller costs this much more
+        public const float ChildShare = 0.4f;            // and each child of the family this much more
         public const float CancelChance = 0.06f;         // a trip falls through at the gate
         public const float UninsuredRefund = 0.4f;
         public const int TicketDays = 7;                 // a ticket must be used within this many days
@@ -428,17 +429,25 @@ namespace RealLifeOverhaul
 
         public static int TripPrice(Trip trip, int day, bool first, bool companion, bool insured, int coach)
         {
+            return TripPrice(trip, day, first, companion ? 1 : 0, 0, insured, coach);
+        }
+
+        /// <summary>
+        /// A trip's price for the player and <paramref name="adults"/> more grown people (each <see cref="CompanionShare"/> more) and <paramref name="children"/> children
+        /// (each <see cref="ChildShare"/> more), a coach seat for each head, at today's prices to ten dollars. Alone, or with one adult, it is the price of before.
+        /// </summary>
+        public static int TripPrice(Trip trip, int day, bool first, int adults, int children, bool insured, int coach)
+        {
+            adults = Math.Max(0, adults);
+            children = Math.Max(0, children);
             TravelSeason season = Season(day);
             float price = trip.Price * (season == trip.Peak ? 1.25f : season == trip.Low ? 0.85f : 1f);
             if (first)
             {
                 price *= trip.FirstClass;
             }
-            if (companion)
-            {
-                price *= 1f + CompanionShare;
-            }
-            price += coach * (companion ? 2 : 1);
+            price *= 1f + adults * CompanionShare + children * ChildShare;
+            price += coach * (1 + adults + children);
             if (insured)
             {
                 price *= 1f + InsuranceShare;

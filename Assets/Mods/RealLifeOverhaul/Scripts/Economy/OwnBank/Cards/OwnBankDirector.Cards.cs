@@ -64,6 +64,29 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The Black card tier offered or withdrawn. Withdrawn, no new Black card is issued and those out run down as clients give them up.</summary>
+        public void SetBlack(bool on)
+        {
+            if (Running && _bank.Running && _bank.BlackOn != on)
+            {
+                _bank.BlackOn = on;
+                Logger?.Info("Own bank: the Black card tier is " + (on ? "offered" : "withdrawn") + " from day " + Save.Day + ".");
+                Changed();
+            }
+        }
+
+        /// <summary>The Black tier's lines: the least wealth (an index of the steps), the least credit score, the yearly fee and the rewards (indexes). Each is held to its steps.</summary>
+        public void SetBlackLines(int wealth, int score, int fee, int reward)
+        {
+            if (Running && _bank.Running)
+            {
+                _bank.BlackWealth = BlackTerms.Clamp(wealth, 0, BlackTerms.WealthLines.Length - 1);
+                _bank.BlackScore = BlackTerms.ScoreOf(score);
+                _bank.BlackFee = BlackTerms.Clamp(fee, 0, BlackTerms.FeeSteps.Length - 1);
+                _bank.BlackReward = BlackTerms.Clamp(reward, 0, BlackTerms.RewardBp.Length - 1);
+            }
+        }
+
         /// <summary>The owner's answer to the applicants queued in a kind: all approved or all declined. False with a reason key if none wait.</summary>
         public bool DecideCards(int kind, bool approve, out string why)
         {

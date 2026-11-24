@@ -140,6 +140,17 @@ namespace RealLifeOverhaul.Economy
         public readonly long[] CardFig = new long[CardTerms.Figures], CardLast = new long[CardTerms.Figures];   // this month's figures and last month's
         public long CardLostAll;                // written off and lost to fraud in all
         public bool OwnCard;                    // the owner holds the bank's top card (the credit file's own-bank card)
+
+        // Its Black card tier (Economy/OwnBank/Cards/BlackTerms).
+        public bool BlackOn;                    // offered to the rich clients who meet its lines
+        public int BlackWealth = BlackTerms.WealthDefault;   // an index of BlackTerms.WealthLines: the least a client holds
+        public int BlackScore = BlackTerms.ScoreDefault;     // the least credit score
+        public int BlackFee = BlackTerms.FeeDefault;         // an index of BlackTerms.FeeSteps
+        public int BlackReward = BlackTerms.RewardDefault;   // an index of BlackTerms.RewardBp
+        public int BlackHolders;
+        public long BlackBal, BlackArr;         // carried, paying; in arrears
+        public int BlackRisk = 1000;            // thousandths: its defaults against the best kind's, by the scores approved
+        public readonly long[] BlackFig = new long[CardTerms.Figures], BlackLast = new long[CardTerms.Figures];   // this month's figures and last month's
         public long OwnOwed;                    // what the owner owes on it, the credit file's figure in cents
         public long OwnLostAll;                 // of it, written off in all
         public long OwnLimit;                   // its limit, cents
@@ -295,7 +306,7 @@ namespace RealLifeOverhaul.Economy
         {
             get
             {
-                long sum = OwnOwed;
+                long sum = OwnOwed + BlackBal;
                 for (int j = 0; j < CardBal.Length; j++)
                 {
                     sum += CardBal[j];
@@ -308,7 +319,7 @@ namespace RealLifeOverhaul.Economy
         {
             get
             {
-                long sum = 0;
+                long sum = BlackArr;
                 for (int j = 0; j < CardArr.Length; j++)
                 {
                     sum += CardArr[j];
@@ -321,7 +332,7 @@ namespace RealLifeOverhaul.Economy
         {
             get
             {
-                int sum = 0;
+                int sum = BlackHolders;
                 for (int j = 0; j < CardHolders.Length; j++)
                 {
                     sum += CardHolders[j];

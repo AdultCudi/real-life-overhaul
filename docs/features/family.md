@@ -382,6 +382,8 @@ Home: `CareWhenSick` shortens Home's illness by eight hours, `BrokenNight` adds 
 
 A partner who is engaged, married or living in and is not Social's person stays on Family's own record (`Partner.Kept`); a dating stand-in with nobody from Social to replace them ends when Social is on, and the "Someone special" contact is not made again (an existing one answers and says where the partner is).
 
+`FamilyApi.HolidayFamily` and `HolidayTogether` are Travel's doors: who of the family could come on a holiday (the partner while the two are together, the children at home, by name), and what coming home together does (`HolidayRules`: the partner's affection and the home's harmony as after a date, more for a longer trip, each child's closeness, those still family only).
+
 `FamilyApi` is safe to read at any time: `HasPartner`, `LivesTogether`, `Engaged`, `Married`, `Children`, `PartnerName`, `WeddingToday`.
 `FamilyDirector.TakesInteractKey` is true while one of its key prompts is up (the mod's own E/F on doors stands aside, as it does for a job's prompt).
 

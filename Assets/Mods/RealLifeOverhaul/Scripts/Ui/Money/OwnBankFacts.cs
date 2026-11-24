@@ -196,6 +196,17 @@ namespace RealLifeOverhaul.Ui
         public int OwnRateBp;
         public string OwnName = string.Empty;
 
+        // The Black card tier (Economy/OwnBank/Cards/BlackTerms)
+        public bool BlackOn;
+        public int BlackWealth, BlackScore, BlackFee, BlackReward;      // the owner's lines: indexes of the steps below, and the least credit score
+        public int BlackScoreLeast = 700, BlackScoreMost = 840, BlackScoreStep = 20;
+        public long[] BlackWealths = new long[0];      // the least wealth to choose from, cents at the start's prices
+        public long[] BlackFees = new long[0];         // the yearly fees to choose from, cents at today's prices
+        public int[] BlackRewards = new int[0];        // the rewards to choose from, hundredths of a per cent of the spend
+        public int BlackHolders, BlackWanted, BlackRich, BlackScoreShare, BlackDefaultPerMille, BlackRateBp;
+        public long BlackBook, BlackArrears;
+        public long[] BlackFig = new long[0], BlackLast = new long[0];
+
         // Desk (Economy/OwnBank/Desk)
         public bool DeskOn;
         public int DeskMandate, DeskShare, DeskLimit;

@@ -40,6 +40,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True while the tech sector has its own rival's offer or a departure in hand for an employee (the game's id): the company makes no offer then.</summary>
         public static Func<string, bool> Held;
 
+        /// <summary>
+        /// True if the tech sector seats the professionals of a skill at this business by weeks of its own, so the set hours of part-timers
+        /// (Economy/Company/AvailabilityRules) leave them alone. Null: no.
+        /// </summary>
+        public static Func<BuildingRegistration, string, bool> TechSeats;
+
         /// <summary>Units a supply contract is due to bring a business of a product from a day to another, both counted (Suppliers). Null: none.</summary>
         public static Func<BuildingRegistration, string, int, int, int> SupplyComing;
 
@@ -234,6 +240,7 @@ namespace RealLifeOverhaul.Economy
             Rival = null;
             Leave = null;
             Held = null;
+            TechSeats = null;
             TaxCase = null;
             IssueFootfall = null;
             OtherIncome = null;
@@ -649,6 +656,7 @@ namespace RealLifeOverhaul.Economy
                     shop.Drivers++;
                 }
                 StaffFile f;
+                bool fresh = false;
                 if (!ById.TryGetValue(e.id, out f))
                 {
                     if (staff.Count >= CompanyCatalogue.StaffMost)
@@ -658,6 +666,7 @@ namespace RealLifeOverhaul.Economy
                     f = StaffRules.Hire(e.id, CompanyBridges.EsteemNow());
                     staff.Add(f);
                     ById[e.id] = f;
+                    fresh = state.FirstDay > 0 && state.FirstDay < (Save != null ? Save.Day : 0);   // hired since the company first ran, not found at its start
                 }
                 Skill skill = e.characterData.skills[0];
                 f.Seen = true;
@@ -671,6 +680,10 @@ namespace RealLifeOverhaul.Economy
                 int days = e.assignedWeeklyDays != null ? e.assignedWeeklyDays.Count : 0;
                 f.DayHours = days > 0 && e.assignedWeeklyHours > 0 ? e.assignedWeeklyHours * 100 / days : 0;
                 f.Going = StaffRules.Going(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skill) * 100f), StaffRules.Market(index, cycle, shop.Income));
+                AvailabilityWindow window = AvailabilityGame.Of(e);
+                f.Window = window.Kind;
+                f.Going = AvailabilityRules.Going(f.Going, window);   // somebody whose hours suit them takes a little less
+                f.Fresh |= fresh && !window.None;
                 f.GameOffer = RivalOfferGuard.OfferOpen(e);
                 f.Held = CompanyBridges.HeldAt(e.id);
                 shop.Sick += f.Sick ? 1 : 0;
@@ -766,6 +779,7 @@ namespace RealLifeOverhaul.Economy
         {
             List<StaffFile> staff = state.Staff;
             DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(endedDay);
+            AvailabilityGame.BeginDay();
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
@@ -774,6 +788,10 @@ namespace RealLifeOverhaul.Economy
                 if (e == null)
                 {
                     continue;
+                }
+                if (Settings.StaffAvailability && f.Window != AvailabilityKind.None)
+                {
+                    AvailabilityGame.Judge(e, weekday, out _);   // shifts outside their set hours cost mood: the planner's weight for a medium demand
                 }
                 bool driver = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver);
                 if (f.Raise > 0)

@@ -161,6 +161,11 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A demand's name as the game writes it.</summary>
         public static string DemandName(EmployeeInstance e, RotaDemand demand)
         {
+            AvailabilityWindow window = AvailabilityGame.Of(e);
+            if (AvailabilityGame.IsWindowDemand(window, demand))
+            {
+                return AvailabilityGame.DemandWords(window);   // the mod's own: a part-timer's set hours
+            }
             for (int i = 0; e != null && e.demands != null && i < e.demands.Count; i++)
             {
                 RotaDemand known;

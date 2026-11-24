@@ -74,6 +74,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HeldTextRules.cs" Link="Mod\HeldTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\DinnerRules.cs" Link="Mod\DinnerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChildYearRules.cs" Link="Mod\ChildYearRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HolidayRules.cs" Link="Mod\HolidayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\CreditCatalogue.cs" Link="Mod\CreditCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditFile.cs" Link="Mod\CreditFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditScoring.cs" Link="Mod\CreditScoring.cs" />
@@ -259,6 +260,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.cs" Link="Mod\JusticeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Save.cs" Link="Mod\JusticeState.Save.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Travel\TravelCatalogue.cs" Link="Mod\TravelCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Travel\TravelState.cs" Link="Mod\TravelState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EmpireMotorsLines.cs" Link="Mod\EmpireMotorsLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BillPayRules.cs" Link="Mod\BillPayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCatalogue.cs" Link="Mod\UtilitiesCatalogue.cs" />
@@ -293,6 +295,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\LicenceRules.cs" Link="Mod\LicenceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyStore.cs" Link="Mod\CompanyStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaModel.cs" Link="Mod\RotaModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\AvailabilityRules.cs" Link="Mod\AvailabilityRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.cs" Link="Mod\RotaSolver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Shifts.cs" Link="Mod\RotaSolver.Shifts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Improve.cs" Link="Mod\RotaSolver.Improve.cs" />
@@ -972,6 +975,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Risk\OwnBankRules.Risk.cs" Link="Mod\OwnBankRules.Risk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Cards\CardTerms.cs" Link="Mod\CardTerms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Cards\OwnBankRules.Cards.cs" Link="Mod\OwnBankRules.Cards.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Cards\BlackTerms.cs" Link="Mod\BlackTerms.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Cards\OwnBankRules.Black.cs" Link="Mod\OwnBankRules.Black.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Desk\BankDesk.cs" Link="Mod\BankDesk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Desk\OwnBankRules.Desk.cs" Link="Mod\OwnBankRules.Desk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\BankLines.cs" Link="Mod\BankLines.cs" />

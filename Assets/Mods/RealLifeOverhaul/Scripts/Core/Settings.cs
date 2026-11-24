@@ -231,6 +231,7 @@
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string StaffAvailabilityId = "staff_availability";
         public const string EconomyManagersId = "economy_managers";
         public const string EconomyHierarchyId = "economy_hierarchy";
         public const string EstateId = "economy_estate";
@@ -398,6 +399,7 @@
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
+        public const string HolidayRestId = "holiday_rest";
         public const string CareersId = "careers";
         public const string SideJobsId = "side_jobs";
         public const string CareersStudyId = "careers_study";
@@ -669,6 +671,7 @@
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner (off: the tab says so and nothing is worked out)
+        public static bool StaffAvailability = false;    // part-timers keep set hours: a student, a parent (a shift outside them costs mood; off: as before)
         public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
         public static bool EconomyHierarchy = true;      // the company's policy and escalations over the managers (off: each by their own limits, nothing escalated)
         public static bool Estate = true;                // property (off: every value and rent is the game's own)
@@ -858,7 +861,8 @@
         public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones, the city's most valuable and a sector's leader
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
-        public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
+        public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, the family, trade fair invitations
+        public static bool HolidayRest = false;          // a holiday fills every need, each day and on the way home (off: three meals a day, as before)
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks
         public static bool SideJobs = true;              // taxi and delivery shifts in the player's own vehicle, signed on for at the cab office's and the depot's desks (off: no desk stands)
         public static bool CareersStudy = true;          // the city's courses (off: the game's own courses alone; records are kept)
@@ -1172,6 +1176,7 @@
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            StaffAvailability = Bool(modId, StaffAvailabilityId, StaffAvailability);
             EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
             EconomyHierarchy = Bool(modId, EconomyHierarchyId, EconomyHierarchy);
             Estate = Bool(modId, EstateId, Estate);
@@ -1343,6 +1348,7 @@
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
+            HolidayRest = Bool(modId, HolidayRestId, HolidayRest);
             Careers = Bool(modId, CareersId, Careers);
             SideJobs = Bool(modId, SideJobsId, SideJobs);
             CareersStudy = Bool(modId, CareersStudyId, CareersStudy);
