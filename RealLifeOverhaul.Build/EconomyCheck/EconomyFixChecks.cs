@@ -9,6 +9,7 @@ internal static partial class Program
     {
         BrandFixes();
         ServicesFixes();
+        FixBiz24();   // a rival's business bought, a purchasing agent's row, the rent roll's empty message, the builder's licence and time limit, the managers' count (FixBiz24Checks.cs)
         DealerFixes();
         EstateFixes();
     }

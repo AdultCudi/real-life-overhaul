@@ -13,6 +13,7 @@ internal static partial class Program
     private static void Managers()
     {
         ManagerKinds();
+        FixBiz24();
         ManagerMistakes();
         ManagerAnswers();
         ManagerStock();

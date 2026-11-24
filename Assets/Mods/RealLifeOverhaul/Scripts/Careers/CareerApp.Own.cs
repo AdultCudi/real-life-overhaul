@@ -32,8 +32,9 @@ namespace RealLifeOverhaul.Careers
                 row.Set(1, CareersText.ProName(c.Prof));
                 row.Set(2, CareersText.T("reallife_own_row_hours", "done", (c.Minutes / 60).ToString(), "of", c.Hours.ToString()), c.Hours);
                 row.Set(3, CareersText.Money(Prices.At((int)c.Fee)), c.Fee);
-                row.Set(4, CareersText.Day(c.Due), c.Due, c.Stage == (int)ContractStep.Taken && day > c.Due ? TableRow.Red : TableRow.Plain);
-                row.Set(5, CareersText.ContractState(c.At),
+                row.Set(4, CareersText.Money(Prices.At(OwnRules.PerHour(c))), OwnRules.PerHour(c));
+                row.Set(5, CareersText.Day(c.Due), c.Due, c.Stage == (int)ContractStep.Taken && day > c.Due ? TableRow.Red : TableRow.Plain);
+                row.Set(6, CareersText.ContractState(c.At),
                     c.Stage == (int)ContractStep.Offered ? TableRow.Green : c.Stage == (int)ContractStep.Taken ? TableRow.Plain : TableRow.Yellow);
                 row.Kind = c.Stage <= (int)ContractStep.Taken ? CareerColumns.ContractOpen : CareerColumns.ContractDone;
                 picked = c.Id == id ? c : picked;
@@ -155,6 +156,7 @@ namespace RealLifeOverhaul.Careers
             box.Section("reallife_ibox_sec_terms");
             box.Row("reallife_own_col_hours", c.Hours.ToString());
             box.Row("reallife_own_col_fee", CareersText.Money(Prices.At((int)c.Fee)));
+            box.Row("reallife_own_col_rate", CareersText.Money(Prices.At(OwnRules.PerHour(c))));
             box.Row("reallife_own_col_due", CareersText.Day(c.Due), late ? CellTone.Red : CellTone.Plain);
             switch (c.At)
             {

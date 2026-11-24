@@ -508,7 +508,8 @@ namespace RealLifeOverhaul.Ui
             {
                 RealLifeOverhaul.Careers.Contract c = w.Contracts[i];
                 contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Client,
-                    Hint = CareersText.ProName(c.Prof) + ", " + CareersText.ContractState(c.At), Value = CareersText.Money(Prices.At((int)c.Fee)),
+                    Hint = CareersText.ProName(c.Prof) + ", " + CareersText.Fill("reallife_own_terms_line", "hours", c.Hours.ToString(Inv),
+                        "rate", CareersText.Money(Prices.At(OwnRules.PerHour(c)))) + ", " + CareersText.ContractState(c.At), Value = CareersText.Money(Prices.At((int)c.Fee)),
                     Icon = UiIcon.Wrench });
                 if (c.Stage == (int)ContractStep.Offered)
                 {

@@ -20,6 +20,12 @@ namespace RealLifeOverhaul.Ui
             float lh = string.IsNullOrEmpty(body) ? 0f : UiTextRules.WrappedHeight(body, UiStyle.Body, bw, 3);
             float ah = string.IsNullOrEmpty(action) ? 0f : UiTokens.S5 + UiTokens.Control;
             float block = tile + UiTokens.S4 + th + (lh > 0f ? UiTokens.S2 + lh : 0f) + ah;
+            if (block > h && lh > 0f)
+            {
+                body = null;   // a room too short for the whole block keeps the title and the tile, rather than spilling over what lies under it
+                lh = 0f;
+                block = tile + UiTokens.S4 + th + ah;
+            }
             float top = Snap(y + Math.Max(0f, (h - block) / 2f));
             float cx = x + SnapDown((w - tile) / 2f);
             int t = Tile(s, at, cx, top, tile, UiRole.None, false);

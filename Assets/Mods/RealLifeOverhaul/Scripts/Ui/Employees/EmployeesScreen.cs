@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _optionKeys = new List<string>(24);                 // what each option of the open list stands for
         private readonly Button _positive, _negative, _additional, _bonus;
         private string _business;          // the kit's business filter: null every business, empty the unassigned
-        private bool _picking, _armed, _dirty = true;
+        private bool _picking, _dirty = true;
         private int _open = -1, _lastPick = -1, _reveal = -1, _previewRow;
         private float _optionOffset, _offset, _next;
         private long _seen;
@@ -200,11 +200,6 @@ namespace RealLifeOverhaul.Ui
             {
                 return PutCardAway();
             }
-            if (_armed)
-            {
-                _armed = false;   // an armed discard is let go before anything closes
-                return true;
-            }
             if (_picking)
             {
                 return StopPicking();
@@ -276,7 +271,6 @@ namespace RealLifeOverhaul.Ui
             _massType = null;
             _app.ChangeTab(candidates ? CandidatesTab : EmployeesTab);
             _picking = false;
-            _armed = false;
             _open = -1;
             _business = null;
             _offset = 0f;
@@ -303,7 +297,6 @@ namespace RealLifeOverhaul.Ui
             {
                 _app.ShowEmployee(mate);
             }
-            _armed = false;
             _cardPutAway = null;
             return Done(true, "open a colleague's page: handed to the game");
         }
@@ -347,7 +340,6 @@ namespace RealLifeOverhaul.Ui
                     _app.employeeScrollerController.onRowSelected.Invoke(data[at]);
                 }
             }
-            _armed = false;
             _cardPutAway = null;
             return Done(done, "open " + (row < _rows.Count && _rows[row] != null ? "a person" : "nobody") + ": handed to the game");
         }
@@ -359,24 +351,17 @@ namespace RealLifeOverhaul.Ui
             _app.DeselectEmployee();
             _app.employeeScrollerController.SelectRow(null, null);
             _app.candidateScrollerController.SelectRow(null, null);
-            _armed = false;
             _open = -1;
         }
 
-        // The box's buttons: the danger (0), the bonus or the negotiation (1), the main (2). A discard asks twice, since the
-        // game discards at once; firing is asked by the game's own question box.
+        // The box's buttons: the danger (0), the bonus or the negotiation (1), the main (2). A candidate is discarded by one press, as the game
+        // does it; firing is asked by the game's own question box.
         private bool Action(int arg)
         {
             bool candidate = _app.SelectedEmployeeInstance != null && _app.SelectedEmployeeInstance.IsCandidate;
             switch (arg)
             {
                 case 0:
-                    if (candidate && !_armed)
-                    {
-                        _armed = true;
-                        return UiWidgets.Shows(_negative);
-                    }
-                    _armed = false;
                     return Done(UiWidgets.Press(_negative), (candidate ? "discard " : "fire ") + Who() + ": handed to the game");
                 case 1:
                     return candidate ? Done(UiWidgets.Press(_additional), "negotiate with " + Who() + ": handed to the game")

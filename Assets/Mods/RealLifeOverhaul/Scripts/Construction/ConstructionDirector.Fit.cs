@@ -59,6 +59,10 @@ namespace RealLifeOverhaul.Construction
         /// </summary>
         public string BlockWords(ProjectFile p, string key, string builder = null)
         {
+            if (p != null && string.Equals(key, FloorsKey, StringComparison.Ordinal))
+            {
+                return FloorsWords(key, p.Storeys);
+            }
             if (!LandRules.IsFitKey(key) || p == null || !Lot(p.Lot, out LotView lot))
             {
                 return ConstructionText.T(key);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -5,7 +6,8 @@ using System.Text;
 namespace RealLifeOverhaul.Sessions
 {
     /// <summary>
-    /// The sessions' line in a save: "v=1|seed|reminded" then one "^" part a record, its fields by "#": place, session,
+    /// The sessions' line in a save: "v=1|seed|reminded", then (only with a sitting in hand) "|place#session#choices#length#done#day", then one
+    /// "^" part a record, its fields by "#": place, session,
     /// held, delegated, by, a, b, until, times. New fields go at the end of a record; a record with fewer reads the rest as
     /// they start. '%', '#', '^' and '|' in a place are %25, %23, %5E and %7C. A line of a later version, or unreadable,
     /// gives nothing and is kept as it was read (SaveLines). Game-free.
@@ -21,6 +23,16 @@ namespace RealLifeOverhaul.Sessions
         {
             var t = new StringBuilder(32 + f.Records.Count * 64);
             t.Append("v=").Append(Version).Append('|').Append(f.Seed.ToString(Inv)).Append('|').Append(f.Reminded.ToString(Inv));
+            SessionSitting s = f.Sitting;
+            if (s != null)
+            {
+                t.Append('|').Append(Escape(s.Place)).Append('#').Append(Escape(s.Session)).Append('#');
+                for (int i = 0; i < s.Choices.Length; i++)
+                {
+                    t.Append(Math.Max(0, Math.Min(9, s.Choices[i])).ToString(Inv));
+                }
+                t.Append('#').Append(s.Length.ToString(Inv)).Append('#').Append(s.Done.ToString(Inv)).Append('#').Append(s.Day.ToString(Inv));
+            }
             for (int i = 0; i < f.Records.Count && i < RecordsMost; i++)
             {
                 SessionRecord r = f.Records[i];
@@ -62,6 +74,10 @@ namespace RealLifeOverhaul.Sessions
                 return null;
             }
             var f = new SessionFile { Seed = seed, Reminded = reminded };
+            if (head.Length > 3)
+            {
+                f.Sitting = Sitting(head[3]);   // an older version of the mod reads the line without it, and writes it back without it
+            }
             for (int i = 1; i < parts.Length; i++)
             {
                 string[] x = parts[i].Split('#');
@@ -81,6 +97,27 @@ namespace RealLifeOverhaul.Sessions
             }
             version = Version;
             return f;
+        }
+
+        // A sitting from its text: null if it is not whole, so a damaged one is let go rather than carried on wrongly.
+        private static SessionSitting Sitting(string text)
+        {
+            string[] x = text.Split('#');
+            if (x.Length < 6 || x[0].Length == 0 || x[1].Length == 0 || !int.TryParse(x[3], NumberStyles.Integer, Inv, out int length) || !int.TryParse(x[4], NumberStyles.Integer, Inv, out int done)
+                || !int.TryParse(x[5], NumberStyles.Integer, Inv, out int day) || length <= 0 || done < 0)
+            {
+                return null;
+            }
+            var choices = new int[x[2].Length];
+            for (int i = 0; i < choices.Length; i++)
+            {
+                if (x[2][i] < '0' || x[2][i] > '9')
+                {
+                    return null;
+                }
+                choices[i] = x[2][i] - '0';
+            }
+            return new SessionSitting { Place = Unescape(x[0]), Session = Unescape(x[1]), Choices = choices, Length = length, Done = done, Day = day };
         }
 
         private static int Int(string[] x, int i, int otherwise)

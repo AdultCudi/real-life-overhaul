@@ -944,7 +944,7 @@ namespace RealLifeOverhaul.Construction
             }
             if (p.Storeys > FloorsLicensed)
             {
-                return "reallife_ui_cons_answer_floors";   // the licence covers fewer floors: hire a builder licensed for them, or earn the next level
+                return FloorsKey;   // the licence covers fewer floors: hire a builder licensed for them, or earn the next level
             }
             if (_state.CrewsOn(p.Id) == 0)
             {
@@ -975,6 +975,10 @@ namespace RealLifeOverhaul.Construction
             string block = StartBlock(p);
             if (block != null)
             {
+                if (string.Equals(block, FloorsKey, StringComparison.Ordinal))
+                {
+                    Answering(block, FloorsPairs(p.Storeys));   // the notice names the floors and what the licence for them asks
+                }
                 return block;
             }
             int site = StartSite(p, 0, out string why);
@@ -987,7 +991,8 @@ namespace RealLifeOverhaul.Construction
             p.SiteId = site;
             p.Stage = ProjectStage.Building;
             p.StartDay = day;
-            p.DueDay = PlanningRules.AfterWorkingDays(day, TenderRules.StandardDays(p.Hours) + 2);   // the usual pace and a day for each inspection's wait
+            // the usual pace, a day for each inspection's wait and the wait for each stage's materials
+            p.DueDay = PlanningRules.AfterWorkingDays(day, TenderRules.StandardDays(p.Hours) + 2 + SiteRules.DeliveryDays(p));
             p.StageSeen = -1;
             if (ClosesShop(p))
             {

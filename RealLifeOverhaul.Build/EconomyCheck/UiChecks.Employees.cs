@@ -90,10 +90,15 @@ internal static partial class Program
         StaffViews.Staff(m, en, c);
         Check(m.Table.Mass[1].Arg == 0 && m.Table.Mass[3].Arg == 1 && m.Table.Mass[3].Kind == UiButtonKind.Primary && m.SwitchLabel != null,
             "staff: for candidates discarding stands first and hiring last, and the job board's switch stands on the tab band");
-        var person = new StaffPersonView { Name = "Kofi Mensah", Candidate = true, Positive = "Hire", Negative = "Discard", Additional = "Negotiate", NegativeArmed = true };
+        var person = new StaffPersonView { Name = "Kofi Mensah", Candidate = true, Positive = "Hire", Negative = "Discard", Additional = "Negotiate" };
         UiStaffPerson page = StaffViews.Person(en, person);
-        Check(page.Actions.Length == 3 && page.Actions[0].Kind == UiButtonKind.Armed && page.Actions[1].Key == UiAction.Option && page.Actions[2].Key == UiAction.Alt
-              && page.Actions[2].Arg == 2, "staff: a person's buttons are the box's, the danger first (armed after one press), the second on P and the main on F");
+        Check(page.Actions.Length == 3 && page.Actions[0].Kind == UiButtonKind.Destructive && page.Actions[1].Key == UiAction.Option && page.Actions[2].Key == UiAction.Alt
+              && page.Actions[2].Arg == 2, "staff: a person's buttons are the box's, the danger first (one press, as the game discards), the second on P and the main on F");
+        string screen = ModSource(@"Ui\Employees\EmployeesScreen.cs");
+        string action = MemberText(screen, "private bool Action(int arg)");
+        Check(!screen.Contains("_armed") && !ModSource(@"Ui\StaffViews.cs").Contains("NegativeArmed")
+              && action.Contains("return Done(UiWidgets.Press(_negative), (candidate ? \"discard \" : \"fire \") + Who() + \": handed to the game\");") && !action.Contains("if (candidate &&"),
+            "staff: discarding a candidate is one press of the box's own button, as the game does it, from the page and from the button beside the row");
         person.Negative = null;
         person.Additional = null;
         Check(StaffViews.Person(en, person).Actions.Length == 1, "staff: a button the game hides is left out");

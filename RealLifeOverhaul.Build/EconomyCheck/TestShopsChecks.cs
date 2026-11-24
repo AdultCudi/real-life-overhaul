@@ -118,9 +118,9 @@ internal static partial class Program
     {
         string game = File.ReadAllText(System.IO.Path.Combine(DesignLocales, "..", "Scripts", "TestShops", "TestShopsGame.cs"));
         int refuse = game.IndexOf("TestShopsRules.Refused(GoingPublic.InSession)", StringComparison.Ordinal);
-        int take = game.IndexOf("BizManPresentation.OvertakeBusiness(reg);", StringComparison.Ordinal);
-        Check(refuse > 0 && take > refuse && game.IndexOf("OvertakeBusiness(", take + 45, StringComparison.Ordinal) < 0,
-            "test shops: the Going Public refusal comes first and the game's own takeover is called in one place, never copied");
+        int take = game.IndexOf("Economy.ServicesGame.Overtake(reg);", StringComparison.Ordinal);
+        Check(refuse > 0 && take > refuse && game.IndexOf("Overtake(", take + 30, StringComparison.Ordinal) < 0 && !game.Contains("BizManPresentation.OvertakeBusiness"),
+            "test shops: the Going Public refusal comes first and the takeover is called in one place, through the one that gives the game's method its BizMan page, never copied");
         Check(!game.Contains("AddToPlayer") && !game.Contains("GenerateEmployees"), "test shops: nothing of the game's takeover body is copied");
         Check(game.Contains("RivalsHelper.GetSpecialRivalState") && game.Contains("isActive") && game.Contains("DiplomaName.OfficeBusinesses") && game.Contains("GameDlc.Gated"),
             "test shops: the game's refusals (an active special rival, the office diploma, a DLC) are read");

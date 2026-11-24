@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
         private Vector3 _officeAt;        // where the mark stands
         private float _officeReach;       // metres from it within which it comes off (CareerOfficeRules.MarkReach)
         private bool _mapped;
+        private int _mappedBoards;   // the boards that stood when the employers were last given theirs
         private bool _failed;
 
         private int _lastHour = -1;
@@ -233,11 +234,38 @@ namespace RealLifeOverhaul
             _officeMark.Hide();
         }
 
+        // Boards put up after the employers were given theirs (JobBoards.Retry): an employer left with none takes the one at its kind of
+        // building, and failing that any one nobody has. Whoever has an office keeps it, so nothing the player has seen moves.
+        private void Extend(JobBoards boards)
+        {
+            int count = boards.Count;
+            Employer[] all = CareerCatalogue.All;
+            var premises = new string[all.Length][];
+            var kinds = new string[count];
+            for (int e = 0; e < all.Length; e++)
+            {
+                premises[e] = all[e].Premises;
+            }
+            for (int b = 0; b < count; b++)
+            {
+                kinds[b] = boards.Kind(b);
+            }
+            CareerOfficeRules.Extend(premises, kinds, _mappedBoards, _depot);
+            _mappedBoards = count;
+            _text.Length = 0;
+            for (int e = 0; e < all.Length; e++)
+            {
+                _text.Append(all[e].Id).Append(_depot[e] >= 0 ? " at " + boards.Address(_depot[e]) + " (" + boards.Kind(_depot[e]) + ")" : " has no office").Append("; ");
+            }
+            _logger?.Info("Careers: a board was put up later; " + _text);
+        }
+
         // Each employer takes the board at its kind of building, best match first, the rest what is left: the same in every game.
         private void Map(JobBoards boards)
         {
             _mapped = true;
             int count = boards.Count;
+            _mappedBoards = count;
             var taken = new bool[count];
             Employer[] all = CareerCatalogue.All;
             for (int e = 0; e < all.Length; e++)
@@ -288,6 +316,10 @@ namespace RealLifeOverhaul
                 if (!_mapped && boards != null && boards.Searched)
                 {
                     Map(boards);
+                }
+                else if (_mapped && boards != null && boards.Count > _mappedBoards)
+                {
+                    Extend(boards);   // a board put up late (JobBoards.Retry)
                 }
                 int hour = TimeHelper.CurrentHour;
                 if (hour != _lastHour)

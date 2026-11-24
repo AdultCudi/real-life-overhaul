@@ -67,6 +67,7 @@ The log names all six once per load, with each one's score and whether it is wal
   - POLICE lettered on the door, where rays find the door's own face flat;
   - up to six `bollard`s on the kerb strip either side of the way in (never straight in front of the door) and a `flag_pole` further along: just beyond the edge of where people walk, only where the road is the other side of that edge, on level ground, touching nothing; each cut out of the navigation mesh;
   - up to three patrol cars at the kerb within 48 m (the game's police car prop, placed by the tests `PolicePresence` parks by, and clear of the bollards);
+  - never beside a marked crossing: `SceneParking.Stands` refuses a place within 3 m of a crossing's trigger along the car and 1.5 m beside it, since the pedestrians' mesh a kerb is found on includes the crossing and a car stood in the road beside one;
   - two officers either side of the door (`guard_stand`, or `officer_guard_idle` once it exists), and one thing at a time on a slow timer: an officer comes out of the door, walks to the nearest patrol car, talks on the radio and goes back in.
     An officer walks in off the street from out of view.
 

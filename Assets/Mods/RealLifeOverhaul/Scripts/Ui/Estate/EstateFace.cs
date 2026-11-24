@@ -169,8 +169,8 @@ namespace RealLifeOverhaul.Ui
             float lowerLeast = m.Lower != null ? LowerLeast + UiTokens.S3 : 0f;
             float notes = NotesBlock(m, w);
             float room = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - lowerLeast - notes;
-            float th = Math.Max(UiTokens.S16, Math.Min(Natural(m.Table), room));
-            if (m.Lower == null || Natural(m.Table) > room)
+            float th = Math.Max(UiTokens.S16, Math.Min(Natural(m.Table, w), room));
+            if (m.Lower == null || Natural(m.Table, w) > room)
             {
                 // A table that fills the page keeps the lists at the foot and the chart out: the page is whole without it.
                 th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - notes;
@@ -323,7 +323,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The height a table takes with every row showing.
-        private static float Natural(UiDataTableModel t) => t == null ? 0f : UiDraw.Snap(UiDataTable.Chrome(t) + t.RowCount * UiDataTable.RowHeight(t));
+        // An empty table's room is its empty state's block, not a bare head: a room of the head alone made the state spill over the lists under it.
+        private static float Natural(UiDataTableModel t, float w) => t == null ? 0f : UiDraw.Snap(UiDataTable.Chrome(t) + (t.RowCount > 0
+            ? t.RowCount * UiDataTable.RowHeight(t)
+            : UiDraw.EmptyStateHeight(w, t.EmptyTitle, t.EmptyBody, t.EmptyAction) + UiTokens.S2));
 
         // The chart that fills the floor a short page leaves: it takes what is left, never less than it needs to read, and is not drawn where the page is full.
         private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, float least = LowerLeast, float most = float.MaxValue)
@@ -464,7 +467,7 @@ namespace RealLifeOverhaul.Ui
             }
             float room = bottom - y - foot - notes - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
-            float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y - notes;
+            float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table, tw), sideH), room)) : bottom - y - notes;
             float[] widths = Spread(m.Table, tw);
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
             Unspread(m.Table, widths);

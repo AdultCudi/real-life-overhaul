@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Helpers;
+using Localizor;
 using UI.Notification;
 using UnityEngine;
 
@@ -18,7 +19,8 @@ namespace RealLifeOverhaul
         private static readonly List<Transform> Cars = new List<Transform>(16);
         private static readonly List<ParkingLaneGenerator> Relay = new List<ParkingLaneGenerator>(16);   // lanes whose spots are to be laid out again
         private static readonly List<Vector3> RelayAt = new List<Vector3>(16);                           // and where, the middle of each box
-        private static bool _told;      // the player has been told a car of theirs was moved from a bay, once a session
+        private const float TellEvery = 20f;   // seconds of real time between two notices that a vehicle of the player's was moved from a bay
+        private static float _toldAt = -TellEvery;   // when the player was last told
 
         // The cars in a zone and its margin, at once, in view or not (the car in the owner's screenshot of 10 Nov 2026 stood in the bay of 26 1st Street
         // the whole session because it was in view); a lane come back whole is cut again first. True when none of the player's is left in it.
@@ -205,10 +207,13 @@ namespace RealLifeOverhaul
                 }
                 moved++;
                 Logger?.Info("Transit: a car of the player's stood in the bay at " + stop.Name + ": moved to a free space nearby, out of view.");
-                if (!_told)
+                // Said every time, with the vehicle's name: a vehicle moved out of view while its owner is indoors is otherwise found gone, and a
+                // notice given once a session had long been forgotten. One notice for several moved together.
+                if (Time.unscaledTime - _toldAt >= TellEvery)
                 {
-                    _told = true;
-                    Notifications.Show(NotificationType.Info, "reallife_bus_car_moved", null, 10f, trackOnSaveGame: false);
+                    _toldAt = Time.unscaledTime;
+                    var data = new Dictionary<string, string>(1) { { "vehicle", vehicle.vehicleInstance.vehicleTypeName.GetLocalization() } };
+                    Notifications.Show(NotificationType.Info, "reallife_bus_car_moved", data, 10f, trackOnSaveGame: false);
                 }
             }
             return moved;

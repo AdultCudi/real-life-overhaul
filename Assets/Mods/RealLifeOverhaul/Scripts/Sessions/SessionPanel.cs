@@ -54,6 +54,17 @@ namespace RealLifeOverhaul.Sessions
         /// <summary>True from the click until it is over, whichever way.</summary>
         public bool Open => _state != PlayerActivityState.Finished;
 
+        /// <summary>True while sat at the desk with the time running: what a save made now has to carry (<see cref="Snapshot"/>).</summary>
+        public bool Sat => _state == PlayerActivityState.Started || _state == PlayerActivityState.Running;
+
+        /// <summary>The sitting as it stands: the choices made and the minutes sat, for the save (<see cref="SessionFile.Sitting"/>).</summary>
+        public SessionSitting Snapshot(string place, int day)
+        {
+            var choices = new int[Def.Steps.Length];
+            Array.Copy(_choices, choices, choices.Length);
+            return new SessionSitting { Place = place, Session = Def.Id, Choices = choices, Length = _length, Done = _done, Day = day };
+        }
+
         /// <summary>The desk it is at.</summary>
         public EmployeeStationController Station => _station;
 
@@ -91,6 +102,12 @@ namespace RealLifeOverhaul.Sessions
                         DeskGame.Label(SessionText.Fill("reallife_session_label_of", "at", SessionText.Whole(_at + 1), "count", SessionText.Whole(_defs.Length)), 0)
                     }
                     : new[] { DeskGame.Label(SessionText.T(def.AboutKey), 0), DeskGame.Label(status, colour) };
+                SessionSitting carry = can ? _director.SittingFor(def) : null;   // sat at before the save: Begin goes on from there
+                if (carry != null)
+                {
+                    Array.Resize(ref _labels, _labels.Length + 1);
+                    _labels[_labels.Length - 1] = DeskGame.Label(SessionText.Fill("reallife_session_label_carry", "done", SessionText.Whole(carry.Done), "total", SessionText.Whole(carry.Length)), 1);
+                }
                 bool work = SessionBridges.WorkHereNow(_station);   // the owner's own work at this desk, when it is the firm's only free one (Tech's own desk)
                 SessionRules.PageButtons pb = SessionRules.Buttons(can, _defs.Length, hand, work);
                 int n = 1 + (pb.Begin ? 1 : 0) + (pb.Next ? 1 : 0) + (pb.Hand ? 1 : 0) + (pb.Work ? 1 : 0), k = 0;
@@ -180,6 +197,14 @@ namespace RealLifeOverhaul.Sessions
             {
                 return;
             }
+            SessionSitting carry = _director.SittingFor(Def);
+            if (carry != null)
+            {
+                Array.Copy(carry.Choices, _choices, carry.Choices.Length);   // the choices already made, and the minutes already sat
+                SessionDirector.Note("carry on " + Def.Id + " after a save: " + carry.Done + " of " + carry.Length + " minutes were sat");
+                Start(carry.Done);
+                return;
+            }
             if (Def.Steps.Length == 0 || GoingPublic.InSession)
             {
                 _director.Sound(Def, _choices);   // the panel is hidden in a session: the sound choices, said in a notice when it begins
@@ -207,7 +232,7 @@ namespace RealLifeOverhaul.Sessions
         }
 
         // The choices made: the director checks it can still be held, then the walk to the chair and the time.
-        private void Start()
+        private void Start(int sat = 0)
         {
             string why = _director.Begins(Def, _choices, out int minutes);
             if (why != null)
@@ -225,7 +250,7 @@ namespace RealLifeOverhaul.Sessions
             }
             _pressed = true;
             _length = Math.Max(1, minutes);
-            _done = 0;
+            _done = Math.Max(0, Math.Min(sat, _length - 1));
             _running = _director.Summary(Def, _choices);
             SessionDirector.Note("begin " + Def.Id + " with the choices " + string.Join(",", new ArraySegment<int>(_choices, 0, Def.Steps.Length)) + ": " + _length + " game minutes at the desk");
             _director.StartCoroutine(Guard.Routine(Walk()));

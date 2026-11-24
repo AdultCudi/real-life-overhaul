@@ -66,6 +66,8 @@ On the day event, at least 10 days after the last, with a chance of 40% a day, o
 
 The player may buy it for 5 days: the same checks as BizMan's takeover (inside the building, the diplomas, a special rival's building, money), paid under the game's own transaction, then the game's own `BizManPresentation.OvertakeBusiness`. After that another rival that can run it (the same business, so the same goods) and whose purse covers the price takes it over: only `businessOwnerRivalId` changes and the business trades on. With none, the seller keeps it. A business that is no longer the seller's as it was put up comes off sale.
 
+The takeover is `ServicesGame.Overtake`: the game's method ends in `BizManSchedule.AutoFillSchedule(page)`, which reads the BizMan page's address, so it is given the game's page pointed at the building, as BizMan's own Open does. Called with no page (before 1.0.25) it threw after the building had become the player's, and the fault switched the Sell tab off for the session. A save that still lists such a sale as the rival's, on a building the player now rents with no rival owner, has the missing steps done on the next day's pass (`ServicesGame.Mend`: the schedule filled, the map's marker and filters, the rival timeline) and the sale dropped. The test shops' takeover goes through the same method.
+
 ## The save
 
 Version 1 still. The offer record gains three fields at its end; the header gains the day of the last rival's sale; a new part `v` holds the rivals' sales. A line written before has none of them and loads with no names and no sales.

@@ -357,6 +357,12 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_licence";
             }
+            int floors = TenderFloors(t);
+            if (floors > FloorsLicensed)
+            {
+                Answering(TenderFloorsKey, FloorsPairs(floors));   // a won job above the licence could never be started, and a tender's project cannot be handed to a builder
+                return TenderFloorsKey;
+            }
             t.BidPermille = BuildCatalogue.Clamp(permille, BuildCatalogue.BidLeastPermille, BuildCatalogue.BidMostPermille);
             t.Fast = fast;
             Changed();
@@ -402,7 +408,7 @@ namespace RealLifeOverhaul.Construction
                 _bids[count++] = TenderRules.RivalBid(_state.Seed, t.Id, r, t.Value, days, need, Busy(r));
             }
             count = RingBids(t, days, need, count);   // a ring's bids are its own, or struck out when it was reported
-            bool bid = t.BidPermille > 0 && Licensed;
+            bool bid = t.BidPermille > 0 && Licensed && TenderFloors(t) <= FloorsLicensed;   // a bid above the licence (made before bids were refused for it) is no bid: its win could never be started
             if (bid)
             {
                 bool special = FirmRules.Special(_state.Firm.Speciality, t.Source == TenderSource.Public || t.Source == TenderSource.Landmark ? ProjectKind.Plot : t.CivicKind == 4
@@ -497,7 +503,7 @@ namespace RealLifeOverhaul.Construction
                 p.Stage = ProjectStage.Building;
                 p.SiteId = t.SiteId;
                 p.StartDay = day;
-                p.DueDay = PlanningRules.AfterWorkingDays(day, Math.Max(1, t.WinningDays));
+                p.DueDay = PlanningRules.AfterWorkingDays(day, Math.Max(1, t.WinningDays) + SiteRules.DeliveryDays(p));   // the bid's days of work, and the materials' wait on top
                 p.StageSeen = -1;
                 if (ConstructionGame.Building(t.Street, t.Number, out BuildingView b))
                 {

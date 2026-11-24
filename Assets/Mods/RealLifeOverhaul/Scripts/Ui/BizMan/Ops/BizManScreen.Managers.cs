@@ -1156,6 +1156,10 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_target"), Kind = UiCellKind.Figure, Width = 96f },
                     new UiDataColumn { Title = UiText.T("bizman_purchasingagents_price"), Kind = UiCellKind.Money, Width = 128f },
                     new UiDataColumn { Title = UiText.T("bizman_purchasingagents_warehouse_stock"), Kind = UiCellKind.Figure, Width = 136f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_limit"), Kind = UiCellKind.Figure, Width = 88f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_index"), Kind = UiCellKind.Figure, Width = 72f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_previous"), Kind = UiCellKind.Figure, Width = 96f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_sold"), Kind = UiCellKind.Figure, Width = 88f },
                     new UiDataColumn { Title = UiText.T("bizman_purchasingagents_designated_warehouse"), Kind = UiCellKind.Text, Width = 200f },
                 },
                 EmptyIcon = UiIcon.ShoppingCart, EmptyTitle = UiText.T("reallife_ui_bizops_imports_goods_none"), Offset = o.Table != null ? o.Table.Offset : 0f
@@ -1166,17 +1170,22 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 PurchasingAgentProductModel p = goods.data[i];
+                string[] fig = ImportFigures(p);
                 t.Rows[i] = new UiDataRow
                 {
                     Cells = new[]
                     {
-                        p.ProductName, UiText.Whole(p.Target), p.Price.ToCurrencyFormat(), UiText.Whole(p.WarehouseStock),
+                        p.ProductName, UiText.Whole(p.Target), p.Price.ToCurrencyFormat(), UiText.Whole(p.WarehouseStock), fig[0], fig[1], fig[2], fig[3],
                         string.IsNullOrEmpty(p.AssignedWarehouse) ? UiText.T("common_unassigned") : p.AssignedWarehouse
                     },
-                    Values = new[] { (int)UiIcon.Package, 0, 0, 0, 0 }, Picked = p.isSelected,
+                    Values = new[] { (int)UiIcon.Package, 0, 0, 0, 0, 0, 0, 0, 0 }, Picked = p.isSelected,
                     Pictures = new[] { p.productRef != null ? BuyPictures.Item(p.productRef.itemName) : null },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, string.IsNullOrEmpty(p.AssignedWarehouse) ? UiRole.WarnText : UiRole.None },
-                    Sub = ImportNote(p)   // a shortage or backorder, the week's limit, index, last week's order and sales, as the game's open row says them
+                    Tones = new[]
+                    {
+                        UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None,
+                        string.IsNullOrEmpty(p.AssignedWarehouse) ? UiRole.WarnText : UiRole.None
+                    },
+                    Sub = ImportWarning(p)   // a shortage or backorder; the week's limit, index, last week's order and sales have their columns
                 };
             }
             t.RowCount = n;

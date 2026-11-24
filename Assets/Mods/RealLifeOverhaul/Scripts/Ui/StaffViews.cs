@@ -137,7 +137,6 @@ namespace RealLifeOverhaul.Ui
         public string Sick;                        // "{name} called in sick today"; null when they are not
         public string Positive, Negative, Additional;   // the box's buttons' words as the game wrote them; null for a button not shown
         public bool PositiveOn = true, NegativeOn = true, AdditionalOn = true;
-        public bool NegativeArmed;                 // a discard pressed once: the second press does it
         public string Bonus;                       // the bonus button's words ("Pay Bonus ($1,200)"); null for none
         public bool BonusOn;
         public string Cooldown;                    // the bonus's cooldown in the game's words; null when it is ready
@@ -648,7 +647,7 @@ namespace RealLifeOverhaul.Ui
             {
                 list.Add(new UiActionModel
                 {
-                    Label = v.Negative, Kind = v.NegativeArmed ? UiButtonKind.Armed : UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
+                    Label = v.Negative, Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
                     Command = UiAppWindow.ActionCommand, Arg = 0, Disabled = !v.NegativeOn
                 });
             }

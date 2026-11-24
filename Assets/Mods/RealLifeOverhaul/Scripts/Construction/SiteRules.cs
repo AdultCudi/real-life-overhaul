@@ -288,6 +288,37 @@ namespace RealLifeOverhaul.Construction
             return PlanningRules.AfterWorkingDays(day, BuildCatalogue.MerchantDays[m] + (hour >= BuildCatalogue.InspectLateHour ? 1 : 0));
         }
 
+        /// <summary>
+        /// The working days a job's time limit allows for its materials to reach the site: each stage that takes materials has its own order, and the stage waits for it for
+        /// the quickest merchant's days, and a short delivery's rest comes once more behind them. A job with no materials allows none. Roadworks and the other works take their
+        /// materials in loads that one delivery does not always bring, which the time limit used to leave out.
+        /// </summary>
+        public static int DeliveryDays(ProjectFile p)
+        {
+            if (p == null)
+            {
+                return 0;
+            }
+            int quickest = int.MaxValue;
+            for (int m = 0; m < BuildCatalogue.MerchantCount; m++)
+            {
+                quickest = Math.Min(quickest, BuildCatalogue.MerchantDays[m]);
+            }
+            int days = 0;
+            for (int s = 0; s < (int)WorkStage.Count; s++)
+            {
+                for (int m = 0; m < (int)Material.Count; m++)
+                {
+                    if (ExposureRules.StageNeed(p, (WorkStage)s, (Material)m) > 0)
+                    {
+                        days += quickest;
+                        break;
+                    }
+                }
+            }
+            return days > 0 ? days + BuildCatalogue.ShortFollowDays : 0;
+        }
+
         /// <summary>The share of an order, in thousandths, its delivery brings: all of it, or less when the merchant is short.</summary>
         public static int Delivered(int seed, int project, int order, int merchant)
         {
