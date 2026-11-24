@@ -235,7 +235,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (StudyRules.ExamMissed(e, day))
                 {
-                    Results(e, day, false);
+                    Results(e, day, false, true);
                     continue;
                 }
                 Instalment(e);

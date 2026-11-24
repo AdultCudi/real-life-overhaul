@@ -522,6 +522,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--school-marks")
+        {
+            Careers();           // the study rules the marks sit on (CareersChecks.cs)
+            OutageExcuses();     // ...and the excused classes they count (OutageExcuseChecks.cs)
+            SchoolMarks();       // what a course's marks, homework and final grade are made of, and that a sat result never moves (SchoolMarkChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--next-class")
         {
             NextClasses();   // the next class, the classes held and the Campus diary's classes alone (NextClassChecks.cs)

@@ -39,7 +39,12 @@ namespace RealLifeOverhaul.Careers
             return TalentCatalogue.SchoolLearning[TalentCatalogue.Clamp(school, 0, TalentCatalogue.Schools - 1)];
         }
 
-        /// <summary>Homework set so far: by the counted classes attended (an excused class sets none and takes none away), up to the course's number (all of a certificate's at once).</summary>
+        /// <summary>
+        /// Homework set so far: by the counted classes attended (an excused class sets none and takes none away), up to the course's number (all of a
+        /// certificate's at once). Rounded up, so the first piece comes with the first class and the last a class or more before the end: a short course
+        /// is marked at its last class, and a piece set only then could never be done (the rule used to round down, and the last piece of every short
+        /// course with homework came too late). A save in progress reads the same count or more, never fewer.
+        /// </summary>
         public static int HomeworkSet(Enrolment e)
         {
             CourseDef c = e.Def;
@@ -52,8 +57,43 @@ namespace RealLifeOverhaul.Careers
                 return c.Homework;
             }
             int counted = Counted(e);
-            return counted <= 0 ? c.Homework : Math.Min(c.Homework, e.Done * c.Homework / counted);
+            if (counted <= 0)
+            {
+                return c.Homework;
+            }
+            return Math.Min(c.Homework, (e.Done * c.Homework + counted - 1) / counted);
         }
+
+        /// <summary>The class (by the timetable, nothing excused) after which piece <paramref name="piece"/> (1 to the course's number) is set: the page's promise of when each one comes.</summary>
+        public static int HomeworkSetAfter(CourseDef c, int piece)
+        {
+            if (c == null || !c.Timetabled || c.Homework <= 0 || piece < 1 || piece > c.Homework)
+            {
+                return 0;
+            }
+            return (piece - 1) * c.Sessions / c.Homework + 1;
+        }
+
+        /// <summary>The number of counted classes attended after which the next piece is set, 0 once every piece is (a course with no classes sets all at once).</summary>
+        public static int HomeworkNext(Enrolment e)
+        {
+            CourseDef c = e.Def;
+            int set = HomeworkSet(e), counted = Counted(e);
+            if (c == null || !c.Timetabled || c.Homework <= 0 || set >= c.Homework || counted <= 0)
+            {
+                return 0;
+            }
+            return set * counted / c.Homework + 1;
+        }
+
+        /// <summary>Pieces of homework set and not yet done.</summary>
+        public static int HomeworkWaiting(Enrolment e)
+        {
+            return Math.Max(0, HomeworkSet(e) - e.Homework);
+        }
+
+        /// <summary>True for a course marked at its last class, with no exam of its own to sit: a short course (its homework has to be done before that class).</summary>
+        public static bool MarkedAtLastClass(CourseDef c) => c != null && c.Timetabled && c.Kind == CourseKind.Short;
 
         /// <summary>Game minutes in a piece of homework (or of revision): <see cref="StudyCatalogue.HomeworkHours"/> hours.</summary>
         public const int HomeworkFull = StudyCatalogue.HomeworkHours * 60;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
@@ -71,6 +72,37 @@ namespace RealLifeOverhaul.Careers
             return CampusColumns.Studying;
         }
 
+        private readonly List<MarkLine> _marks = new List<MarkLine>(10);
+
+        // The forecast of the exam's mark and what it is made of, named a forecast, with what moves it: the sum the sitting itself is marked by.
+        private void WriteMark(InfoBox box, Enrolment e)
+        {
+            _director.MarkLines(e, _marks);
+            if (_marks.Count == 0)
+            {
+                return;
+            }
+            box.Section("reallife_study_mark_title");
+            box.Note(CareersDirector.MarkAbout());
+            for (int i = 0; i < _marks.Count; i++)
+            {
+                MarkLine m = _marks[i];
+                CellTone tone = m.Warn ? CellTone.Yellow : i == 0 ? CellTone.Green : CellTone.Plain;
+                if (m.Share >= 0f)
+                {
+                    box.MeterWords(m.Label, m.Share, m.Figure, tone);
+                }
+                else if (m.Figure != null)
+                {
+                    box.Line(m.Label + ": " + m.Figure, tone);
+                }
+                else
+                {
+                    box.Note(m.Label);
+                }
+            }
+        }
+
         private void WriteEnrolment(InfoBox box, Enrolment e, int day)
         {
             CourseDef c = e.Def;
@@ -134,19 +166,26 @@ namespace RealLifeOverhaul.Careers
             box.Meter("reallife_ibox_done", LookRules.Fill(e.Homework, c.Homework),
                 CareersText.Fill("reallife_ibox_homework", "done", e.Homework.ToString(), "set", set.ToString(), "of", c.Homework.ToString()),
                 e.Homework < set ? CellTone.Yellow : CellTone.Green);
+            CareersDirector.HomeworkLines(e, out string hwOpen, out string hwNext);
+            if (hwNext != null)
+            {
+                box.Row("reallife_campus_hw_open", hwOpen, StudyRules.HomeworkWaiting(e) > 0 ? CellTone.Yellow : CellTone.Plain);
+                box.Row("reallife_campus_hw_next", hwNext);
+            }
             if (e.HomeworkMinutes > 0 && StudyRules.HomeworkOpen(e))
             {
                 bool revision = e.Homework >= set || e.Homework >= c.Homework;   // the piece sat on: homework still set, or revision once it is all done
                 box.Note(CareersText.Fill(revision ? "reallife_ibox_revision_piece" : "reallife_ibox_homework_piece", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString(),
                     "done", e.HomeworkMinutes.ToString(), "total", StudyRules.HomeworkFull.ToString()));
             }
+            WriteMark(box, e);
             box.Section("reallife_ibox_sec_money");
             box.RowPair("reallife_campus_col_paid", CareersText.Money(e.Fee), "reallife_ibox_student_loan", CareersText.Money(e.Loan));
             box.Row("reallife_ibox_instalments", CareersText.T("reallife_ibox_of", "value", e.Instalments.ToString(), "most", StudyRules.Instalments(c).ToString()));
             if (e.Stage == (int)EnrolStage.Exam || e.Stage == (int)EnrolStage.Retake)
             {
                 box.Section("reallife_campus_col_exam");
-                box.Line(CareersText.Fill(e.Stage == (int)EnrolStage.Retake ? "reallife_campus_on_retake" : "reallife_campus_on_exam",
+                box.Line(CareersText.Fill(e.Stage == (int)EnrolStage.Retake ? e.Score > 0 ? "reallife_campus_on_retake" : "reallife_campus_on_retake_unsat" : "reallife_campus_on_exam",
                     "from", CareersText.Day(e.ExamFrom), "to", CareersText.Day(e.ExamTo), "opens", CareersText.Hour(StudyCatalogue.ExamOpens),
                     "closes", CareersText.Hour(StudyCatalogue.ExamCloses), "fee", CareersText.Money(Prices.At(StudyRules.RetakeFee(c))), "score", e.Score.ToString()),
                     e.Stage == (int)EnrolStage.Retake ? CellTone.Yellow : CellTone.Plain);

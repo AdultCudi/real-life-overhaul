@@ -324,6 +324,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_tasks_range", "reallife_work_staff_range", "reallife_work_stores_range", "reallife_career_col_where",
                 // where the exam is sat and what a course or a post asks, with the levels beside it (Campus, Career)
                 "reallife_work_exam_where_lead", "reallife_work_cert_home_lead", "reallife_work_cert_home_line", "reallife_work_exam_days",
+                // homework open and next, and what the forecast of an exam's mark is made of (Campus, Studying)
+                "reallife_campus_hw_open", "reallife_campus_hw_next", "reallife_study_mark_title", "reallife_study_mark_forecast",
                 "reallife_study_ask_skill", "reallife_study_ask_have", "reallife_study_ask_course", "reallife_study_ask_passed", "reallife_study_ask_none",
                 "reallife_study_ask_seats", "reallife_study_ask_left", "reallife_study_ask_slots", "reallife_study_ask_on", "reallife_study_ask_loan",
                 "reallife_study_ask_left_money", "reallife_study_ask_cash", "reallife_study_why_said", "reallife_study_why_short_money",
