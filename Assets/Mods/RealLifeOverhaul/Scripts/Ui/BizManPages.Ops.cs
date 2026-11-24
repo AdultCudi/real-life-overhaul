@@ -495,6 +495,7 @@ namespace RealLifeOverhaul.Ui
         private static void ManagersPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;   // a form that scrolls says so as it is laid
             if (o.Plans.Length == 0)
             {
                 float ty = Title(s, at, x, y, w, o.PlansTitle);
@@ -599,6 +600,108 @@ namespace RealLifeOverhaul.Ui
                 fy = Title(s, at, x, y, w, o.FormTitle);
             }
             fy = Lead(s, at, o.FormLead, x, fy, w);
+            o.FormClip = o.FormList = o.FormListRight = -1;
+            UiMark whole = UiMark.Of(s);
+            float end = FormBody(s, at, o, x, fy, w, onTitle, keys);
+            float need = o.Table != null ? TableNeed(s, at, o, x, w, TableRowsLeast) : 0f;
+            if (end - fy + need <= bottom - fy)
+            {
+                if (o.Table != null)
+                {
+                    TableBlock(s, at, o, x, end, w, bottom, keys);
+                }
+                return;
+            }
+            // Too tall for the page: the table keeps its rows and the rows and stops above it scroll in the room left, so no row of either is lost.
+            whole.Back(s);
+            float gap = o.Table != null ? UiTokens.S4 : 0f;
+            float all = bottom - fy;
+            float least = o.Table != null ? TableNeed(s, at, o, x, w, TableRowsTwo) : 0f;
+            short clip = s.AddClip(x - UiTokens.S3, fy, w + UiTokens.S6, 0f, 0f);
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            int first = s.NodeCount;
+            float content = FormBody(s, inClip, o, UiTokens.S3, 0f, w, onTitle, keys);
+            float view = Math.Min(all, Math.Min(content, Math.Max(all - need - gap, Math.Min(FormUpperLeast, Math.Max(0f, all - least - gap)))));
+            view = UiDraw.SnapDown(view);
+            FinishClip(s, at, o, clip, first, content, view, x, fy, w);
+            if (o.Table != null)
+            {
+                TableBlock(s, at, o, x, fy + view + gap, w, bottom, keys);
+            }
+        }
+
+        // A scrolling part's last step, its body laid in its clip: the targets into two lists, the offset kept and brought to the row the pad asked for, the
+        // clip's size and its thumb.
+        private static void FinishClip(UiScene s, UiAt at, BizOpsModel o, short clip, int first, float content, float view, float x, float y, float w)
+        {
+            float mid = UiTokens.S3 + w / 2f;
+            short left = ListColumn(s, clip, first, mid, false), right = ListColumn(s, clip, first, mid, true);
+            float offset = o.FormOffset;
+            int row = RowNode(s, o.FormRevealList == right && right >= 0 ? right : left, o.FormReveal, first, clip);
+            if (o.FormReveal >= 0 && row >= 0)
+            {
+                offset = Math.Min(offset, s.Nodes[row].Y - UiTokens.S2);
+                offset = Math.Max(offset, s.Nodes[row].Y + s.Nodes[row].H + UiTokens.S2 - view);
+            }
+            offset = Math.Max(0f, Math.Min(offset, content - view));
+            o.FormReveal = o.FormRevealList = -1;
+            o.FormOffset = offset;
+            o.FormClip = clip;
+            o.FormList = left;
+            o.FormListRight = right;
+            s.Clips[clip].H = view;
+            s.Clips[clip].Offset = offset;
+            s.Clips[clip].ContentHeight = content;
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, view, offset, content);
+        }
+
+        private const int BodySlots = 0, BodyRows = 1, BodyMachine = 2;   // what a page lays in a part that scrolls where it does not fit
+
+        private static float PartBody(int kind, UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, IUiKeys keys)
+        {
+            switch (kind)
+            {
+                case BodySlots: return SlotCards(s, at, o.Slots, x, y, w);
+                case BodyRows: return Rows(s, at, o.Rows, x, y, w, keys);
+                default:
+                    y = Stack(s, at, o.Rows, x, y, w, keys);
+                    if (o.Actions.Length > 0)
+                    {
+                        Buttons(s, at, o.Actions, x + w, y + UiTokens.S2, keys, OpsAction);
+                        y += UiTokens.S2 + UiTokens.Control;
+                    }
+                    return y;
+            }
+        }
+
+        // A page's body laid as it is where it fits the room from y to the foot; where it does not, in a scroll region of its own in that room (the wheel, a drag
+        // and the pad bring each row into view), so no card, row or control is left off the page for want of room.
+        private static void Part(int kind, UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            o.FormClip = o.FormList = o.FormListRight = -1;
+            UiMark whole = UiMark.Of(s);
+            float end = PartBody(kind, s, at, o, x, y, w, keys);
+            if (end - y <= bottom - y + 0.5f)
+            {
+                return;
+            }
+            whole.Back(s);
+            short clip = s.AddClip(x - UiTokens.S3, y, w + UiTokens.S6, 0f, 0f);
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            int first = s.NodeCount;
+            float content = PartBody(kind, s, inClip, o, UiTokens.S3, 0f, w, keys);
+            FinishClip(s, at, o, clip, first, content, UiDraw.SnapDown(bottom - y), x, y, w);
+        }
+
+        private const int TableRowsLeast = 5;                      // rows of a form's table kept in view at the least, where the page has the room for them
+        private const int TableRowsTwo = 2;                        // and the rows it keeps when the page has not
+        private const float FormUpperLeast = UiTokens.S16 * 2f;    // px: what stands above the table keeps this much of the page at the least
+
+        // What a form shows above its table: its tabs, its rows in two columns, its actions where they did not fit on the title and its route's stops.
+        // Returns the y under them.
+        private static float FormBody(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, bool onTitle, IUiKeys keys)
+        {
+            float fy = y;
             if (o.FormTabs.Length > 1)
             {
                 UiDraw.Tabs(s, at, x, fy, Math.Min(w, TabsWidth(o.FormTabs)), o.FormTabs, o.FormTab, null, OpsFormTab);
@@ -613,18 +716,98 @@ namespace RealLifeOverhaul.Ui
             }
             if (o.Stops.Length > 0 || !string.IsNullOrEmpty(o.StopsTitle))
             {
-                fy = Stops(s, at, o, x, fy, w, bottom, keys) + UiTokens.S4;   // the chosen stop's goods under the route, its title the stop's
+                fy = Stops(s, at, o, x, fy, w, float.MaxValue, keys) + UiTokens.S4;   // the chosen stop's goods under the route, its title the stop's
             }
-            if (o.Table != null && bottom - fy > UiTokens.S16)
+            return fy;
+        }
+
+        // The table's title, what it says of its goods and its filter. Returns the y under them.
+        private static float TableHead(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w)
+        {
+            y = Title(s, at, x, y, w, o.TableTitle);
+            // The chosen stop's card says whose goods the table holds; the words say it where the route is a list.
+            y = Lead(s, at, o.Status ?? (StopsAsCards(o, w) ? null : o.TableLead), x, y, w);
+            return Filter(s, at, o, x, y, w);
+        }
+
+        // The room the table needs to show a number of its rows: its head, its tools and its rows. Laid and taken back, so the scene is as it was.
+        private static float TableNeed(UiScene s, UiAt at, BizOpsModel o, float x, float w, int rows)
+        {
+            UiMark mark = UiMark.Of(s);
+            float head = TableHead(s, at, o, x, 0f, w);
+            mark.Back(s);
+            UiDataTableModel t = o.Table;
+            return head + UiDataTable.Chrome(t) + Math.Min(Math.Max(t.RowCount, 2), rows) * UiDataTable.RowHeight(t);
+        }
+
+        // The table under the form, in all the room from a y to the page's foot.
+        private static void TableBlock(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            float fy = TableHead(s, at, o, x, y, w);
+            int first = s.NodeCount;
+            UiDataTable.Lay(s, at, o.Table, x, fy, w, bottom - fy, keys, Table);
+            KeepStepper(s, first, Table);
+        }
+
+        // The targets of the scrolling part that stand in one half of it as a list of their own, a row for each height they stand at, so the pad steps down a
+        // half row by row (and a row out of view is asked for) while sideways it finds the half beside it. Returns the list, or -1 for none.
+        private static short ListColumn(UiScene s, short clip, int first, float mid, bool right)
+        {
+            int rows = 0;
+            float prev = float.NegativeInfinity;
+            while (true)
             {
-                fy = Title(s, at, x, fy, w, o.TableTitle);
-                // The chosen stop's card says whose goods the table holds; the words say it where the route is a list.
-                fy = Lead(s, at, o.Status ?? (StopsAsCards(o, w) ? null : o.TableLead), x, fy, w);
-                fy = Filter(s, at, o, x, fy, w);
-                int first = s.NodeCount;
-                UiDataTable.Lay(s, at, o.Table, x, fy, w, bottom - fy, keys, Table);
-                KeepStepper(s, first, Table);
+                float top = float.PositiveInfinity;
+                for (int i = first; i < s.NodeCount; i++)
+                {
+                    if (InColumn(ref s.Nodes[i], clip, mid, right) && s.Nodes[i].Y > prev + 0.5f && s.Nodes[i].Y < top)
+                    {
+                        top = s.Nodes[i].Y;
+                    }
+                }
+                if (float.IsPositiveInfinity(top))
+                {
+                    break;
+                }
+                for (int i = first; i < s.NodeCount; i++)
+                {
+                    if (InColumn(ref s.Nodes[i], clip, mid, right) && Math.Abs(s.Nodes[i].Y - top) <= 0.5f)
+                    {
+                        s.Nodes[i].Index = rows;
+                    }
+                }
+                rows++;
+                prev = top;
             }
+            if (rows == 0)
+            {
+                return -1;
+            }
+            short list = s.AddList(rows, 0, rows, clip, -1);
+            for (int i = first; i < s.NodeCount; i++)
+            {
+                if (InColumn(ref s.Nodes[i], clip, mid, right))
+                {
+                    s.Nodes[i].List = list;
+                }
+            }
+            return list;
+        }
+
+        private static bool InColumn(ref UiNode n, short clip, float mid, bool right) =>
+            n.Clip == clip && !n.Disabled && n.List < 0 && (n.X + n.W / 2f >= mid) == right;
+
+        // The first target of a row of a scrolling part's list, or -1.
+        private static int RowNode(UiScene s, short list, int index, int first, short clip)
+        {
+            for (int i = first; list >= 0 && index >= 0 && i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Clip == clip && s.Nodes[i].List == list && s.Nodes[i].Index == index)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         // The chosen row's stepper as the table means it: right from the row along its minus, its figure and its plus, and
@@ -1050,6 +1233,7 @@ namespace RealLifeOverhaul.Ui
         private static void FactoryPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             if (o.Tabs.Length > 0)
             {
                 UiDraw.Tabs(s, at, x, y, Math.Min(w, TabsWidth(o.Tabs)), o.Tabs, o.Tab, null, OpsTab);
@@ -1069,11 +1253,7 @@ namespace RealLifeOverhaul.Ui
             UiDataTable.Lay(s, at, o.Table, x, ty, tw, bottom - ty, keys, Table);
             float fy = Title(s, at, rx, y, side, o.FormTitle);
             fy = Lead(s, at, o.FormLead, rx, fy, side);
-            fy = Stack(s, at, o.Rows, rx, fy, side, keys);
-            if (o.Actions.Length > 0)
-            {
-                Buttons(s, at, o.Actions, rx + side, fy + UiTokens.S2, keys, OpsAction);
-            }
+            Part(BodyMachine, s, at, o, rx, fy, side, bottom, keys);
             OpenList(s, at, m, x, y, w, bottom);
         }
 
@@ -1083,6 +1263,7 @@ namespace RealLifeOverhaul.Ui
         private static void DriversPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             if (o.Rows.Length == 0 && o.Slots.Length == 0)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Truck, o.PlansEmpty, o.PlansEmptyBody, null, -1, keys);
@@ -1090,14 +1271,7 @@ namespace RealLifeOverhaul.Ui
             }
             float fy = Title(s, at, x, y, w, o.FormTitle);
             fy = Lead(s, at, o.FormLead, x, fy, w);
-            if (o.Slots.Length > 0)
-            {
-                SlotCards(s, at, o.Slots, x, fy, w, bottom);
-            }
-            else
-            {
-                Rows(s, at, o.Rows, x, fy, w, keys);
-            }
+            Part(o.Slots.Length > 0 ? BodySlots : BodyRows, s, at, o, x, fy, w, bottom, keys);
             OpenList(s, at, m, x, y, w, bottom);
         }
 
@@ -1106,7 +1280,7 @@ namespace RealLifeOverhaul.Ui
 
         // A warehouse's vehicle slots as cards, as a fleet screen shows its vehicles: each its vehicle's tile, its name and
         // load, its driver as a choice, and where it is as a chip. Up to four a row, more rows under them.
-        private static void SlotCards(UiScene s, UiAt at, BizOpsSlot[] slots, float x, float y, float w, float bottom)
+        private static float SlotCards(UiScene s, UiAt at, BizOpsSlot[] slots, float x, float y, float w)
         {
             int across = Math.Max(1, Math.Min(SlotsAcross, (int)((w + UiTokens.S4) / (SlotLeast + UiTokens.S4))));
             float cw = UiDraw.SnapDown((w - UiTokens.S4 * (across - 1)) / across);
@@ -1117,10 +1291,6 @@ namespace RealLifeOverhaul.Ui
             {
                 ref BizOpsSlot sl = ref slots[i];
                 float cx = x + (i % across) * (cw + UiTokens.S4), cy = y + (i / across) * (ch + UiTokens.S4);
-                if (cy + ch > bottom)
-                {
-                    break;
-                }
                 int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Row, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(card);
                 float ix = cx + pad, iw = cw - pad * 2f;
@@ -1142,12 +1312,14 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Chip(s, inside, ix, dy + UiTokens.Control + UiTokens.S3 + (chipH - UiTokens.ControlSmall) / 2f, sl.Status, sl.Tone, iw);
                 }
             }
+            return y + ((slots.Length + across - 1) / across) * (ch + UiTokens.S4) - UiTokens.S4;
         }
 
         // The stock as the big table under how full the warehouse is, Sell all at the right of that line.
         private static void StockPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             float left = Buttons(s, at, o.Actions, x + w, y, keys, OpsAction);
             if (!string.IsNullOrEmpty(o.FormLead))
             {

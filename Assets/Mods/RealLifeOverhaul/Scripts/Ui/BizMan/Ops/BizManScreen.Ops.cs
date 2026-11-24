@@ -466,6 +466,12 @@ namespace RealLifeOverhaul.Ui
                 }
                 return false;
             }
+            if (list >= 0 && (list == o.FormList || list == o.FormListRight))
+            {
+                o.FormReveal = index;   // a row of the form's rows and stops that scroll above the table
+                o.FormRevealList = list;
+                return true;
+            }
             if ((_m.Part == BizManPart.Managers || _m.Part == BizManPart.Factory || _m.Part == BizManPart.Stock) && o.Table != null)
             {
                 o.Table.Reveal = index;
@@ -500,9 +506,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 return false;
             }
+            if (clip >= 0 && clip == o.FormClip)
+            {
+                o.FormOffset = Math.Max(0f, o.FormOffset + by);
+                return true;
+            }
             if ((_m.Part == BizManPart.Managers || _m.Part == BizManPart.Factory || _m.Part == BizManPart.Stock) && o.Table != null)
             {
-                o.Table.Offset = Math.Max(0f, o.Table.Offset + by);
+                // A notch is a row of the table, whatever the row's height: the table keeps its offset to whole rows, so a notch shorter than half a row would never move it.
+                o.Table.Offset = Math.Max(0f, o.Table.Offset + BizOpsRules.TableStep(by, UiDataTable.RowHeight(o.Table)));
                 return true;
             }
             return false;
