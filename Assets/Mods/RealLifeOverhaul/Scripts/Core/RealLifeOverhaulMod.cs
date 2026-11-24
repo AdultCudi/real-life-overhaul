@@ -853,6 +853,8 @@ namespace RealLifeOverhaul
                     v => Settings.Holidays = v)
                 .AddToggle(Settings.TravelExtrasId, "reallife_travel_extras", Settings.TravelExtras,
                     v => Settings.TravelExtras = v)
+                .AddToggle(Settings.HolidayRestId, "reallife_travel_rest", Settings.HolidayRest,
+                    v => Settings.HolidayRest = v)
                 .AddButton("reallife_travel_test_checkin_budget", () => TravelDirector.Instance?.TestCheckIn(HotelTier.Budget))
                 .AddButton("reallife_travel_test_checkin_mid", () => TravelDirector.Instance?.TestCheckIn(HotelTier.MidRange))
                 .AddButton("reallife_travel_test_checkin_luxury", () => TravelDirector.Instance?.TestCheckIn(HotelTier.Luxury))
@@ -1095,6 +1097,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.StaffAvailabilityId, "reallife_avail_option", Settings.StaffAvailability,
+                    v => Settings.StaffAvailability = v)
                 .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
                     v => Settings.EconomyManagers = v)
                 .AddToggle(Settings.EconomyHierarchyId, "reallife_hier_enabled", Settings.EconomyHierarchy,
@@ -1322,6 +1326,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_avail_test", () => Economy.CompanyDirector.Instance?.TestAvailability())
                 .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
                 .AddButton("reallife_mgr_test_fill", () => Economy.CompanyDirector.Instance?.TestManagerFill())
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())

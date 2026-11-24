@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
         private bool _skipping;
         private bool _departPending;
         private string _cancelLine;     // the notice of a trip that fell through, while it is shown
+        private readonly List<string> _kids = new List<string>(4);   // the children a family trip would take, as the family bridge listed them
+        public const string FamilyId = "reallife-family";            // the companion that is the family
 
         public Holidays(TravelDirector director)
         {
@@ -123,16 +125,55 @@ namespace RealLifeOverhaul
                 _director.Fault(e);
                 into.Clear();
             }
+            AddFamily(into);
+        }
+
+        /// <summary>The family as one more way to travel: the partner and the children at home, a price for each head. Nothing while family life has nobody to take or extras are off.</summary>
+        private void AddFamily(List<TravelCompanion> into)
+        {
+            if (!Settings.TravelExtras)
+            {
+                return;
+            }
+            try
+            {
+                _kids.Clear();
+                if (!TravelBridges.Family.Members(out string partner, _kids) || (partner == null && _kids.Count == 0))
+                {
+                    return;
+                }
+                int kids = Mathf.Min(_kids.Count, TravelState.MostKids);
+                for (int i = 0; i < kids; i++)
+                {
+                    _kids[i] = TravelState.KidName(_kids[i]);
+                }
+                into.Add(new TravelCompanion
+                {
+                    Id = FamilyId, Name = partner ?? _kids[0], Adults = partner != null ? 1 : 0, Kids = kids,
+                    KidNames = string.Join(",", _kids.GetRange(0, kids).ToArray())
+                });
+            }
+            catch (Exception e)
+            {
+                _director.Fault(e);
+            }
         }
 
         public int Price(Trip trip, bool first, bool companion, bool insured, bool coach)
+        {
+            return Price(trip, first, companion ? new TravelCompanion { Id = "one", Adults = 1 } : (TravelCompanion?)null, insured, coach);
+        }
+
+        /// <summary>The ticket's price for the player alone or with one companion, or with a family a head at a time (see <see cref="TravelCatalogue"/>).</summary>
+        public int Price(Trip trip, bool first, TravelCompanion? who, bool insured, bool coach)
         {
             int seat = 0;
             if (coach && trip.Kind == TripKind.Real)
             {
                 TravelBridges.Transport.CoachToHamptons(out seat);
             }
-            return TravelCatalogue.TripPrice(trip, TimeHelper.CurrentDay, first, companion, insured, seat);
+            int adults = who.HasValue ? (who.Value.IsFamily ? who.Value.Adults : 1) : 0, kids = who.HasValue ? who.Value.Kids : 0;
+            return TravelCatalogue.TripPrice(trip, TimeHelper.CurrentDay, first, adults, kids, insured, seat);
         }
 
         /// <summary>What leaving the player's businesses would mean, from the game's accounts: the agent warns, never refuses.</summary>
@@ -190,7 +231,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             bool coach = trip.Kind == TripKind.Real && TravelBridges.Transport.CoachToHamptons(out _);
-            int price = Price(trip, first, companion.HasValue, insured, coach);
+            int price = Price(trip, first, companion, insured, coach);
             if (!TravelEffects.Pay(price, "reallife_transaction_holiday"))
             {
                 failKey = "reallife_travel_agent_no_money";
@@ -207,14 +248,26 @@ namespace RealLifeOverhaul
             {
                 TravelState.CompanionId = companion.Value.Id;
                 TravelState.CompanionName = companion.Value.Name;
+                TravelState.KinAdults = companion.Value.IsFamily ? Mathf.Min(companion.Value.Adults, 1) : 0;
+                TravelState.KinKids = companion.Value.IsFamily && companion.Value.Kids > 0 ? companion.Value.KidNames : null;
             }
             if (trip.Kind == TripKind.Business)
             {
                 TravelState.FairOpen = false;
             }
             _director.Log("Travel: bought " + trip.Id + (first ? " first class" : " economy") + (insured ? ", insured" : "")
-                          + (companion.HasValue ? ", with a companion" : "") + " for " + price + ".");
+                          + WithWords(companion) + " for " + price + ".");
             return true;
+        }
+
+        // Who came along, for the log.
+        private static string WithWords(TravelCompanion? companion)
+        {
+            if (!companion.HasValue)
+            {
+                return string.Empty;
+            }
+            return companion.Value.IsFamily ? ", with the family (" + companion.Value.Adults + " grown, " + companion.Value.Kids + " children)" : ", with a companion";
         }
 
         /// <summary>Hands a ticket back for all of it if insured, else the share given. Returns the amount.</summary>
@@ -302,6 +355,10 @@ namespace RealLifeOverhaul
             TravelState.AwayMoneyAtStart = WholeMoney.Round(SaveGameManager.Current.Money);   // saturating: a purse past an int is not a cast (Core/WholeMoney)
             TravelState.AwaySpent = TravelState.AwayRelaxed = TravelState.AwaySouvenirs = 0;
             _director.Seclude(true);
+            if (Settings.HolidayRest)
+            {
+                TravelEffects.RestNeeds();   // the holiday begins rested, washed and fed
+            }
             _director.Log("Travel: set off on " + trip.Id + " (" + trip.Days + " days).");
             ShowStep();
             return true;

@@ -17,6 +17,8 @@ using UI.Smartphone.Apps.BizMan.Schedule;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using AvailabilityGame = RealLifeOverhaul.Economy.AvailabilityGame;
+using AvailabilityWindow = RealLifeOverhaul.Economy.AvailabilityWindow;
 using Company = RealLifeOverhaul.Economy.CompanyDirector;
 using RotaGapShift = RealLifeOverhaul.Economy.RotaGapShift;
 using RotaKind = RealLifeOverhaul.Economy.RotaKind;
@@ -338,7 +340,9 @@ namespace RealLifeOverhaul.Ui
                     return true;
                 }
             }
-            return ScheduleHelper.GetOverworkedDays(e).Count > 0;
+            AvailabilityWindow window = AvailabilityGame.Of(e);
+            // A shift outside a part-timer's set hours is warned as the game warns of its own demands.
+            return !window.None && AvailabilityGame.WeekOff(e, window) > 0 || ScheduleHelper.GetOverworkedDays(e).Count > 0;
         }
 
         // The week's actions at the board's head: the game's own auto fill and clear for every day, as it shows them.
@@ -533,12 +537,16 @@ namespace RealLifeOverhaul.Ui
             {
                 ScheduleEmployeeModel p = data[i];
                 bool demand = !string.IsNullOrEmpty(p.violatedDemandName), worn = p.overworkedDays != null && p.overworkedDays.Count > 0;
-                string fit = !p.isAvailable ? "reallife_ui_bizops_fit_busy" : demand ? "reallife_ui_bizops_fit_demand" : worn ? "reallife_ui_bizops_fit_tired"
-                    : p.perfectMatch ? "reallife_ui_bizops_fit_best" : "reallife_ui_bizops_fit_free";
-                UiRole tone = !p.isAvailable ? UiRole.Muted : demand || worn ? UiRole.Warn : UiRole.Ok;
+                // A part-timer's set hours (Economy/Company/AvailabilityRules): the hour being filled, on the day shown, is outside them.
+                EmployeeInstance who = ScheduleHelper.GetScheduleEmployeeById(p.employeeId);
+                AvailabilityWindow window = AvailabilityGame.Of(who);
+                bool outside = !window.None && hour >= 0 && ScheduleHelper.CurrentScheduleDay != null && !window.Allows((int)ScheduleHelper.CurrentScheduleDay.day - 1, hour);
+                string fit = !p.isAvailable ? "reallife_ui_bizops_fit_busy" : demand ? "reallife_ui_bizops_fit_demand" : outside ? "reallife_ui_bizops_fit_window"
+                    : worn ? "reallife_ui_bizops_fit_tired" : p.perfectMatch ? "reallife_ui_bizops_fit_best" : "reallife_ui_bizops_fit_free";
+                UiRole tone = !p.isAvailable ? UiRole.Muted : demand || worn || outside ? UiRole.Warn : UiRole.Ok;
                 // The hours they work this week against what their demand allows, and the hours free around the one being
                 // filled, each a column of its own so neither is cut from a long line under the name.
-                int most = MostHours(ScheduleHelper.GetScheduleEmployeeById(p.employeeId));
+                int most = MostHours(who);
                 string week = most > 0 ? UiText.Fill("reallife_ui_bizops_hours_of", "count", UiText.Whole(p.hoursAssigned), "most", UiText.Whole(most))
                     : UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(p.hoursAssigned));
                 t.Rows[i] = new UiDataRow
@@ -547,7 +555,8 @@ namespace RealLifeOverhaul.Ui
                     Values = new[] { 0, p.primarySkillPercentage, 0, 0, 0 },
                     Tones = new[] { UiRole.None, UiRole.None, most > 0 && p.hoursAssigned >= most ? UiRole.WarnText : UiRole.None, UiRole.None, tone },
                     Sub = string.IsNullOrEmpty(p.primarySkillName) ? null
-                        : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat()),
+                        : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat())
+                          + (window.None ? string.Empty : ", " + AvailabilityGame.Words(window)),
                     Hue = UiColour.HueOf(p.employeeName ?? string.Empty), Ring = StaffViews.Mood((int)p.satisfaction)
                 };
             }

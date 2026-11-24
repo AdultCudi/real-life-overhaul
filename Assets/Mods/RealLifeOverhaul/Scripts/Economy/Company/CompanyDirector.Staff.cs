@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.Economy
             System.Array.Clear(_sickPay, 0, _sickPay.Length);
             _fit.Clear();
             _leaving.Clear();
+            AvailabilityDay();
             for (int i = 0; i < s.Staff.Count; i++)
             {
                 StaffFile f = s.Staff[i];

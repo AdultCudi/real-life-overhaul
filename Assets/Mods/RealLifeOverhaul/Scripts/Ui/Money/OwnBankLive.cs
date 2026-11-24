@@ -263,6 +263,11 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.CardLimit: director.SetCardLimit(id, value); return true;
                 case MoneyAct.CardRate: director.SetCardRate(value); return true;
                 case MoneyAct.CardFee: director.SetCardFee(value); return true;
+                case MoneyAct.BlackOn: director.SetBlack(value == 1); return true;
+                case MoneyAct.BlackWealth: director.SetBlackLines(value, bank.BlackScore, bank.BlackFee, bank.BlackReward); return true;
+                case MoneyAct.BlackScore: director.SetBlackLines(bank.BlackWealth, value, bank.BlackFee, bank.BlackReward); return true;
+                case MoneyAct.BlackFee: director.SetBlackLines(bank.BlackWealth, bank.BlackScore, value, bank.BlackReward); return true;
+                case MoneyAct.BlackReward: director.SetBlackLines(bank.BlackWealth, bank.BlackScore, bank.BlackFee, value); return true;
                 case MoneyAct.CardAuto: director.SetCardLines(value, bank.CardDecline); return true;
                 case MoneyAct.CardBelow: director.SetCardLines(bank.CardAuto, value); return true;
                 case MoneyAct.CardApprove:

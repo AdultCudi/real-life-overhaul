@@ -167,7 +167,8 @@ namespace RealLifeOverhaul.Ui
         Found = 30, PutIn, TakeOut, Sell, SaverRate, LoanRate, Lending, Strategy, FundLimit, PayMode, PayShare, PayFixed, DividendEvery, DividendShare, MoveUp,
         // Your bank: the cards, the trading desk and the risk's tools
         CardsOn = 50, CardIssue, CardLimit, CardRate, CardFee, CardAuto, CardBelow, CardApprove, CardRefuse, OwnCardOpen, OwnCardClose,
-        DeskOn, DeskMandate, DeskShare, DeskLimit, SellLoans, Borrow, Repay
+        DeskOn, DeskMandate, DeskShare, DeskLimit, SellLoans, Borrow, Repay,
+        BlackOn, BlackWealth, BlackScore, BlackFee, BlackReward
     }
 
     /// <summary>What a step of a card does: a view's field set to its next or previous value, or an act of the game with the value it asks for.</summary>

@@ -97,7 +97,7 @@ namespace RealLifeOverhaul
                     : TravelText.T("reallife_travel_trips_ticket", "trip", TravelText.T(trip.NameKey), "days", TravelText.Number(left)));
                 if (TravelState.CompanionName != null)
                 {
-                    text.Append(' ').Append(TravelText.T("reallife_travel_trip_side_with", "name", TravelState.CompanionName));
+                    text.Append(' ').Append(TravelText.T(Holidays.SideKey(), "name", TravelState.CompanionName));
                 }
             }
             else

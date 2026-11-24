@@ -16,6 +16,10 @@ namespace RealLifeOverhaul
         public const string Burnout = "reallife_happinessmodifier_travel_burnout";       // too long without a break
         public const string Together = "reallife_happinessmodifier_travel_together";     // a trip with somebody
         public const string TradeFair = "reallife_happinessmodifier_travel_tradefair";
+        public const string HolidayJoy = "reallife_happinessmodifier_travel_holiday";     // a day of the holiday with the option on: entertainment full
+
+        /// <summary>The happiness the holiday's day adds: the game's happiness is the sum of its moods held to 100, so this much fills it for the hours it lasts.</summary>
+        internal const int HolidayJoyAmount = 100;
 
         private const float EnergyFloor = 15f;              // energy losses stop here, clear of fainting and the hospital
         private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by
@@ -23,7 +27,7 @@ namespace RealLifeOverhaul
         internal static readonly (string type, int amount, int hours)[] Modifiers =
         {
             (Rested, 8, 72), (Comfort, 6, 24), (RoughNight, -5, 10), (Relaxed, 4, 6),
-            (JetLag, -4, 36), (Burnout, -6, 6), (Together, 8, 48), (TradeFair, 4, 48)
+            (JetLag, -4, 36), (Burnout, -6, 6), (Together, 8, 48), (TradeFair, 4, 48), (HolidayJoy, HolidayJoyAmount, 12)
         };
 
         /// <summary>Adds travel's modifier types to the game's registry, before ModState restores any from a save.</summary>
@@ -106,6 +110,27 @@ namespace RealLifeOverhaul
             {
                 EnergyHelper.SetCurrentHunger(Mathf.Min(save.Hunger + amount, 100f));
             }
+        }
+
+        /// <summary>
+        /// A holiday that really rests (the option Holiday rests all needs): food and energy at their top, the player washed and entertained. Hunger and energy are
+        /// the game's own through its helpers, hygiene is home life's through its door (nothing where home life keeps none), entertainment is the happiness the game
+        /// sums from moods, filled by a mood of the holiday's own for twelve hours. Once for each day of a trip, at its start and at its end.
+        /// </summary>
+        public static void RestNeeds()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return;
+            }
+            Feed(100f - save.Hunger);
+            if (!save.gameVariables.disableEnergy && save.Energy < 100f)
+            {
+                EnergyHelper.GenerateEnergy(100f - save.Energy);
+            }
+            TravelBridges.Home.Freshen(3);
+            ModState.AddModifier(HolidayJoy);
         }
 
         public static void Apply(TravelEvent e)

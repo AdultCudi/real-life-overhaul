@@ -413,6 +413,17 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Row(CompanyText.Label("reallife_co_emp_raise"), CompanyText.Wage(p.Raise)));
                 }
             }
+            AvailabilityWindow window = p.Window != AvailabilityKind.None ? AvailabilityGame.Of(CompanyGame.Employee(p.Id)) : default(AvailabilityWindow);
+            if (!window.None)
+            {
+                // A part-timer's set hours, and what a shift outside them costs (Economy/Company/AvailabilityRules).
+                blocks.Add(Sec(CompanyText.T("reallife_avail_sec")));
+                blocks.Add(Row(CompanyText.T("reallife_avail_row_kind"), AvailabilityGame.KindWords(window)));
+                blocks.Add(Row(CompanyText.T("reallife_avail_row_days"), AvailabilityGame.DaysWords(window)));
+                blocks.Add(Row(CompanyText.T("reallife_avail_row_hours"),
+                    CompanyText.T("reallife_ui_bizops_span", "from", AvailabilityGame.HourWords(window.From), "to", AvailabilityGame.HourWords(window.To))));
+                blocks.Add(Note(CompanyText.T("reallife_avail_about")));
+            }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             blocks.Add(Sec(CompanyText.T("reallife_ibox_sec_feeling")));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_standing", "Standing"), Value = p.Standing.ToString(), Number = p.Standing,

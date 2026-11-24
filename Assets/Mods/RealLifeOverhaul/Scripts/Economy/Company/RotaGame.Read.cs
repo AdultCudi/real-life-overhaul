@@ -258,13 +258,19 @@ namespace RealLifeOverhaul.Economy
                     problem.Can[w * stations + s] = HowWell(e, sheet.Stations[s].ItemCached);
                 }
                 Demands.Clear();
-                for (int i = 0; e.demands != null && i < e.demands.Count && Demands.Count < RotaCatalogue.DemandsMost; i++)
+                AvailabilityWindow window = AvailabilityGame.Of(e);
+                int room = RotaCatalogue.DemandsMost - (window.None ? 0 : 2);   // a part-timer's set hours are two demands more, always kept
+                for (int i = 0; e.demands != null && i < e.demands.Count && Demands.Count < room; i++)
                 {
                     RotaDemand demand;
                     if (Demand(e.demands[i], sheet, reg, out demand))
                     {
                         Demands.Add(demand);
                     }
+                }
+                if (!window.None)
+                {
+                    AvailabilityGame.Demands(window, Demands);
                 }
                 problem.Worker[w].Demands = Demands.Count > 0 ? Demands.ToArray() : RotaWorker.Empty;
             }

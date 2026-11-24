@@ -313,9 +313,9 @@ namespace RealLifeOverhaul.Meta
             // Its rows stand under the company's header.
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
-                .Owns(Settings.EconomyRotaId)
+                .Owns(Settings.EconomyRotaId, Settings.StaffAvailabilityId)
                 .Data(Economy.RotaStore.Key)
-                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
+                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back", "reallife_avail_test"));
 
             // Its rows stand under the company's header too.
             Economy.ManagerGuide.AddFacts(Features.Add("economy_managers", "reallife_meta_title_economy_managers")

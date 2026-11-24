@@ -222,6 +222,7 @@ namespace RealLifeOverhaul.Ui
                 CardRulesCard(m, f, w, cards);
                 CardMonthCard(f, w, cards);
                 OwnCardCard(m, f, w, cards);
+                BlackTierCard(f, w, cards);
                 return;
             }
             CardKindCard(m, f, w, cards, selected);
@@ -420,6 +421,82 @@ namespace RealLifeOverhaul.Ui
             cards.Add(new UtilitiesCard { Title = w.F("reallife_ob_own_title", "Your {card} card", "card", f.OwnName), Sub = f.Name, Chip = f.OwnCard ? w.T("reallife_ob_own_chip",
                 "Held") : null, Lines = lines.ToArray(),
                 Steps = steps.ToArray(), Actions = actions.ToArray() }, moves.ToArray());
+        }
+
+        // The Black card tier: whom it is offered to (the least wealth and credit score), what it costs them a year and what it pays back, and how it stands in the books.
+        private static void BlackTierCard(OwnBankFacts f, UtilitiesWords w, BankCards cards)
+        {
+            var steps = new List<UtilitiesStep>(4);
+            var moves = new List<MoneyStep>(4);
+            if (f.BlackWealths.Length > 0 && f.BlackFees.Length > 0 && f.BlackRewards.Length > 0)
+            {
+                var wealthValues = new int[f.BlackWealths.Length];
+                for (int i = 0; i < wealthValues.Length; i++)
+                {
+                    wealthValues[i] = i;
+                }
+                int wealthAt = Math.Max(0, Math.Min(wealthValues.Length - 1, f.BlackWealth));
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_black_wealth_head", "Offered to savers holding at least"), C(w, f.BlackWealths[wealthAt]),
+                    w.T("reallife_ob_black_wealth_hint", "Only savers this rich are offered the card"), wealthAt, wealthValues.Length, -1, MoneyAct.BlackWealth, 0, wealthValues,
+                    out MoneyStep wealth));
+                moves.Add(wealth);
+                int scores = (f.BlackScoreMost - f.BlackScoreLeast) / f.BlackScoreStep + 1;
+                var scoreValues = new int[scores];
+                for (int i = 0; i < scores; i++)
+                {
+                    scoreValues[i] = f.BlackScoreLeast + i * f.BlackScoreStep;
+                }
+                int scoreAt = Math.Max(0, Math.Min(scores - 1, (f.BlackScore - f.BlackScoreLeast) / f.BlackScoreStep));
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_black_score_head", "And a credit score of at least"), f.BlackScore.ToString(Inv),
+                    w.T("reallife_ob_black_score_hint", "A lower line brings more clients and more cards that fail"), scoreAt, scores, -1, MoneyAct.BlackScore, 0, scoreValues,
+                    out MoneyStep score));
+                moves.Add(score);
+                var feeValues = new int[f.BlackFees.Length];
+                for (int i = 0; i < feeValues.Length; i++)
+                {
+                    feeValues[i] = i;
+                }
+                int feeAt = Math.Max(0, Math.Min(feeValues.Length - 1, f.BlackFee));
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_black_fee_head", "Yearly fee"), w.F("reallife_ob_card_fee_option", "{fee} a year", "fee", C(w, f.BlackFees[feeAt])),
+                    w.T("reallife_ob_black_fee_hint", "A high fee brings in money and keeps clients away"), feeAt, feeValues.Length, -1, MoneyAct.BlackFee, 0, feeValues, out MoneyStep fee));
+                moves.Add(fee);
+                var rewardValues = new int[f.BlackRewards.Length];
+                for (int i = 0; i < rewardValues.Length; i++)
+                {
+                    rewardValues[i] = i;
+                }
+                int rewardAt = Math.Max(0, Math.Min(rewardValues.Length - 1, f.BlackReward));
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_black_reward_head", "Rewards on what is spent"), Rate(f.BlackRewards[rewardAt]),
+                    w.T("reallife_ob_black_reward_hint", "Rewards cost the bank a share of every sale and draw clients in"), rewardAt, rewardValues.Length, -1, MoneyAct.BlackReward, 0, rewardValues,
+                    out MoneyStep reward));
+                moves.Add(reward);
+            }
+            var lines = new List<UtilitiesLine>(9)
+            {
+                BankParts.Pair(w.T("reallife_ob_black_rich", "Savers who qualify by wealth"), Whole(f.BlackRich)),
+                BankParts.Pair(w.T("reallife_ob_black_scores", "Of them with the score"), Pct(f.BlackScoreShare)),
+                BankParts.Pair(w.T("reallife_ob_card_holders", "Cards out"), w.F("reallife_ob_card_holders_value", "{now}, and its clients would hold {wanted}", "now", Whole(f.BlackHolders),
+                    "wanted", Whole(f.BlackWanted))),
+                BankParts.Pair(w.T("reallife_ob_card_balance", "Carried on them"), C(w, f.BlackBook)),
+                BankParts.Pair(w.T("reallife_ob_box_arrears", "In arrears:"), C(w, f.BlackArrears), f.BlackArrears > 0 ? UiRole.WarnText : UiRole.Text),
+                BankParts.Pair(w.T("reallife_ob_box_defaults", "Defaults a year:"), Pct(f.BlackDefaultPerMille)),
+                BankParts.Pair(w.T("reallife_ob_card_yours", "Your card rate now"), Rate(f.BlackRateBp)),
+                BankParts.Pair(w.T("reallife_ui_ob_month_title", "This month"), Signed(w, CardMonthProfit(f.BlackFig))),
+                BankParts.Say(w.T("reallife_ob_black_note",
+                    "The Black card is for your richest savers. It pays them rewards and a concierge, brings in a yearly fee and a bigger share of every sale, "
+                        + "and counts in the card books and the regulator's risk like any card."))
+            };
+            if (f.BlackOn && !f.CardsOn)
+            {
+                lines.Add(BankParts.Say(w.T("reallife_ob_black_needs_cards", "Open the card business first."), UiRole.WarnText));
+            }
+            cards.Add(new UtilitiesCard
+            {
+                Title = w.T("reallife_ob_black_tier", "Black card service"), Sub = f.Name,
+                Chip = f.BlackOn && f.CardsOn ? w.T("reallife_ob_card_chip_issuing", "Issuing") : w.T("reallife_ibox_chip_stopped", "Stopped"),
+                ChipTone = f.BlackOn && f.CardsOn ? UiRole.Ok : UiRole.Warn, Lines = lines.ToArray(), Steps = steps.ToArray(), SwitchLabel = w.T("reallife_ob_black_switch", "Offer the Black card"),
+                SwitchOn = f.BlackOn
+            }, moves.ToArray(), MoneyAct.BlackOn);
         }
 
         /// <summary>The limit asked for the owner's own card: the player's figure kept to the least and the most, else the most.</summary>

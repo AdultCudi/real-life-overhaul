@@ -28,6 +28,7 @@ namespace RealLifeOverhaul
                 Justice.Bridges.Social = new FriendsForCourt();
                 TravelBridges.Justice = new CourtForTravel();
                 TravelBridges.Home = new HomeForTravel();
+                TravelBridges.Family = new FamilyForTravel();   // each call asks the family feature, which says nobody while it is off
                 if (Settings.Social)
                 {
                     TravelBridges.Social = new FriendsForTravel();   // travel hands companions and gifts over entirely
@@ -50,6 +51,7 @@ namespace RealLifeOverhaul
                 Justice.Bridges.Social = null;
                 TravelBridges.Justice = null;
                 TravelBridges.Home = null;
+                TravelBridges.Family = null;
                 TravelBridges.Social = null;
                 GarageBridges.RoadIsWet = null;
                 HomeBridges.Sheltered = null;
@@ -277,6 +279,13 @@ namespace RealLifeOverhaul
                 public int HighStressDays => NeedsOn ? (int)(HomeState.StressHighHours / 24f) : -1;
 
                 public bool? HasBed => null;
+            }
+
+            private sealed class FamilyForTravel : ITravelFamily
+            {
+                public bool Members(out string partner, List<string> children) => RealLifeOverhaul.Family.FamilyApi.HolidayFamily(out partner, children);
+
+                public void TripTogether(bool partner, List<string> children, int days) => RealLifeOverhaul.Family.FamilyApi.HolidayTogether(partner, children, days);
             }
 
             private sealed class FriendsForTravel : ITravelSocial

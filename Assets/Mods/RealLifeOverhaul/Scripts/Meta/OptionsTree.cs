@@ -346,7 +346,7 @@ namespace RealLifeOverhaul.Meta
                         + "internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks", "heavy_licence")
                     .Also("driving test theory examiner points heavy goods truck lorry cdl hgv"),
-                S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
+                S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras", "holiday_rest").Also("holiday trip hotel stay")),
 
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds", "gig_music").Opt("gig_music_order", "gig_music").Buttons("reallife_gig_music_folder")
@@ -417,7 +417,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("shop wages insurance advertising accountant permits")
                     .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "
                         + "manager executive hr staff"),
-                S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
+                S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Opt("staff_availability", "economy_company")
+                    .Also("schedule shifts opening hours staff part time student parent availability"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
                 S("hierarchy").For("economy_hierarchy").Opt("economy_hierarchy", "economy_managers")

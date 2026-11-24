@@ -803,6 +803,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--life24")
+        {
+            Life24Checks();   // (part-timers with set hours, family holidays that rest every need and the Black card tier alone, while working on them: Life24Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bank-risk-report")
         {
             BankRiskReport();   // (what the bank earns a month before and after, by size and economy: prints a table, checks nothing: BankRiskReport.cs)
@@ -1934,6 +1940,7 @@ internal static partial class Program
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
         BankDividendChecks();   // the own bank's automatic dividends: the times, the share to the cent, what holds one back, off as before, the save, the page, the texts (BankDividendChecks.cs)
         BankRiskChecks();   // the own bank's risk, credit cards and trading desk: the levels, credit risk by the cycle, a run and its tools, the waterfall, the card book, the owner's card, the desk, the lines, the save, the texts (BankRiskChecks.cs)
+        Life24Checks(); // part-timers with set hours, family holidays that rest every need and the Black card tier: the tables, the rota, the books, the saves, the places that carry each, the texts (Life24Checks.cs)
         BankPayFixes(); // the own bank's name on its lines and a fixed pay paid in full: the report's national bank reproduced, what holds it back, the save, the texts (BankPayFixChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)

@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Economy
             return sum * BankRisk.ConcWeight[lv] / 1000;
         }
 
-        private static long KindBook(OwnBank b, int j) => b.Loans[j] + b.Arrears[j] + b.CardBal[j] + b.CardArr[j];
+        private static long KindBook(OwnBank b, int j) => b.Loans[j] + b.Arrears[j] + b.CardBal[j] + b.CardArr[j] + (j == OwnBankCatalogue.Good ? b.BlackBal + b.BlackArr : 0);
 
         private static long BookTotal(OwnBank b)
         {
@@ -439,6 +439,16 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(b.CardFig, 0, b.CardFig.Length);
             Array.Clear(b.CardLast, 0, b.CardLast.Length);
             b.CardLostAll = 0;
+            b.BlackOn = false;
+            b.BlackWealth = BlackTerms.WealthDefault;
+            b.BlackScore = BlackTerms.ScoreDefault;
+            b.BlackFee = BlackTerms.FeeDefault;
+            b.BlackReward = BlackTerms.RewardDefault;
+            b.BlackHolders = 0;
+            b.BlackBal = b.BlackArr = 0;
+            b.BlackRisk = 1000;
+            Array.Clear(b.BlackFig, 0, b.BlackFig.Length);
+            Array.Clear(b.BlackLast, 0, b.BlackLast.Length);
             b.OwnCard = false;
             b.OwnOwed = b.OwnLostAll = b.OwnLimit = 0;
             b.OwnRateBp = 0;
