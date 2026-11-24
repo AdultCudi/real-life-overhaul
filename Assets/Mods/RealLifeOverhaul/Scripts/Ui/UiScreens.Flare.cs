@@ -59,6 +59,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_kit_notice_offer", "reallife_flare_kit_notice_promo", "reallife_flare_kit_notice_promo_flop", "reallife_flare_kit_off_body",
                 "reallife_flare_kit_offer_card", "reallife_flare_kit_offer_until", "reallife_flare_kit_option_0", "reallife_flare_kit_option_1",
                 "reallife_flare_kit_option_2", "reallife_flare_kit_option_eases", "reallife_flare_kit_option_stands", "reallife_flare_kit_option_worsens",
+                "reallife_flare_kit_option_glad", "reallife_flare_kit_option_unfair", "reallife_flare_kit_option_costs_good", "reallife_flare_kit_result_eased",
+                "reallife_flare_kit_result_raised", "reallife_flare_kit_result_thanked", "reallife_flare_kit_result_soured", "reallife_flare_kit_result_stands",
                 "reallife_flare_kit_partnership", "reallife_flare_kit_perk_cap", "reallife_flare_kit_perk_investors", "reallife_flare_kit_perk_jobs", "reallife_flare_kit_perk_raise",
                 "reallife_flare_kit_perk_sponsors", "reallife_flare_kit_perk_vip", "reallife_flare_kit_photo_mine", "reallife_flare_kit_photo_n", "reallife_flare_kit_pick_thread",
                 "reallife_flare_kit_pick_thread_body", "reallife_flare_kit_poll", "reallife_flare_kit_poll_yes_no", "reallife_flare_kit_post_failed", "reallife_flare_kit_post_pay",

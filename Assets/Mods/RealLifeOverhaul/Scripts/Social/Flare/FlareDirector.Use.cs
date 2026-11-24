@@ -68,17 +68,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (p.Source == FlareSource.Reply && !string.IsNullOrEmpty(p.Place))
             {
-                int quality = c.Quality >= 0 ? c.Quality : FlareUseRules.AnswerQuality(p.Text);   // the reply sheet's option, else judged by its words
-                if (_file.Answers.Count >= 64)
-                {
-                    _file.Answers.RemoveAt(0);
-                }
-                _file.Answers.Add(new FlareReviewNote { Key = p.Place, Day = p.Day, Quality = quality, Answer = p.Text, Stars = p.Arg });
-                FlareReviewBook.Answered(_file, p, quality, Now);
-                if (quality >= FlareUseRules.GoodAnswer)
-                {
-                    SoftenPlace(p.Place);
-                }
+                ReviewAnswered(p, c);   // an answer under a review of the player's business counts as FlareReplyRules says; under any other post it counts for nothing
             }
             TierDay(Save != null ? Save.Day : p.Day);
         }
@@ -441,27 +431,6 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             return null;
-        }
-
-        /// <summary>The player answers one review. A careful answer softens it.</summary>
-        public bool AnswerReview(string place, int stars, string text)
-        {
-            if (!Running || _file == null || string.IsNullOrEmpty(place) || string.IsNullOrEmpty(text))
-            {
-                return false;
-            }
-            int quality = FlareUseRules.AnswerQuality(text);
-            if (_file.Answers.Count >= 64)
-            {
-                _file.Answers.RemoveAt(0);
-            }
-            _file.Answers.Add(new FlareReviewNote { Key = place, Stars = stars, Day = Save != null ? Save.Day : 0, Quality = quality, Answer = text });
-            if (quality >= FlareUseRules.GoodAnswer)
-            {
-                SoftenPlace(place);
-            }
-            Changed();
-            return true;
         }
 
         /// <summary>A public answer to a rival. The talk about the player's business eases when the answer is careful.</summary>

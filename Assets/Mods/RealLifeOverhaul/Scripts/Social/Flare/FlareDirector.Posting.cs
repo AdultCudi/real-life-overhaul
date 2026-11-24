@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Flare
             return p;
         }
 
-        // A reply: typed words under a post; an honest answer to a poor review of the player's business wins a little back.
+        // A reply: typed words under a post. What an answer to a review of the player's business does is FlareDirector.ReviewAnswered's, once the post is up.
         private FlarePost Reply(FlareCompose c, string text, int day, out string why)
         {
             why = null;
@@ -227,20 +227,6 @@ namespace RealLifeOverhaul.Flare
             };
             p.Likes = p.Reach / 15;
             _file.Posts.Add(p);
-            if (parent.Source == FlareSource.Review && parent.Arg <= 2 && parent.Place != null && FlareGame.Business(parent.Place) != null && p.Tone != FlareTone.Cheeky
-                && !_file.Net.Applied.Contains(-parent.Id))
-            {
-                _file.Net.Applied.Add(-parent.Id);   // once for each review
-                if (CityAnswer(parent.Place, p))
-                {
-                    Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: what put the residents off fades faster now.");
-                }
-                else
-                {
-                    Buzz(parent.Place, 1, FlareLiveRules.ReviewDays, day, FlareGame.Business(parent.Place));
-                    Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: +1% customers for " + FlareLiveRules.ReviewDays + " days.");
-                }
-            }
             return p;
         }
 

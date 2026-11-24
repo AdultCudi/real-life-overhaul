@@ -24,6 +24,7 @@ internal static partial class Program
         FlareCompleteHire();
         FlareCompleteReplies();
         FlareCompleteRivals();
+        FlareReplyFitChecks();   // each answer fits a review, stands or costs, by one rule in both interfaces, bounded, saved and told (FlareReplyFitChecks.cs)
         FlareCompleteHandlers();
         FlareCompleteCost();
         FlareCompleteCaret();
@@ -355,11 +356,11 @@ internal static partial class Program
         FlareStarRow rude = Row(2, 1, 0, 1, 1);
         FlareReplyRules.Answered(rude, 2, FlareReplyRules.Quality(FlareReplyOption.Defend, 2));
         FlareStarRow thanks = Row(2, 1, 0, 1, 1);
-        FlareReplyRules.Answered(thanks, 2, FlareReplyRules.Quality(FlareReplyOption.Thanks, 2));
         FlareReplyRules.Answered(thanks, 5, FlareReplyRules.Quality(FlareReplyOption.Thanks, 5));
+        FlareReplyRules.Answered(thanks, 4, FlareReplyRules.Quality(FlareReplyOption.Thanks, 4));
         Check(FlareReplyRules.Average(sorry) == 3555 && FlareReplyRules.Average(rude) == 3272 && FlareReplyRules.Average(thanks) == 3400,
             "Flare complete: saying sorry to a poor review halves its weight (3.40 to " + FlareReplyRules.Average(sorry) / 1000.0 + "), standing your ground gives it half again (to "
-            + FlareReplyRules.Average(rude) / 1000.0 + "), a thank you leaves the rating as it was");
+            + FlareReplyRules.Average(rude) / 1000.0 + "), a thank you to a good review leaves the rating as it was");
         var stars = new List<int> { 5, 5, 4, 2, 1 };
         var qualities = new List<int> { 0, 0, 0, FlareReplyRules.Quality(FlareReplyOption.Sorry, 2), 0 };
         Check(FlareReplyRules.Average(stars, qualities) == FlareReplyRules.Average(sorry), "Flare complete: the reply sheet's after figure is the rating the answer leaves");
