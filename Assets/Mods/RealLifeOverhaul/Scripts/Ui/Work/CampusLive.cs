@@ -219,6 +219,11 @@ namespace RealLifeOverhaul.Ui
                     StudyRules.Hour(c, StudyMode.FullTime)) : WorkBuilder.None(w)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), intake != null ? (seatsLeft == 0 ? w.T("reallife_work_full", "Full")
                     : w.F("reallife_work_seats_of", "{n} of {all}", "n", seatsLeft.ToString(Inv), "all", intake.Capacity.ToString(Inv))) : WorkBuilder.None(w)));
+                string homeworkPlan = CareersDirector.HomeworkPlan(c);
+                if (homeworkPlan != null)
+                {
+                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), homeworkPlan));
+                }
                 var learn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_you_will_learn", "What you will learn"),
                     Note = w.T("reallife_work_skill_after", "skill after the course") };
                 learn.Bars.Add(new WorkBar { Label = CareersText.Skill(c.SkillA), Value = Math.Min(100, StudyRules.Points(f, c.SkillA)), Note = "+" + c.GainA.ToString(Inv) });
@@ -355,6 +360,7 @@ namespace RealLifeOverhaul.Ui
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Diary };
             var live = new List<Enrolment>(4);
+            var marks = new List<MarkLine>(10);
             for (int i = 0; i < f.Courses.Count; i++)
             {
                 Enrolment e = f.Courses[i];
@@ -373,8 +379,26 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"),
                     next > 0 ? CareersText.Day(next / (24 * 60)) + " " + CareersText.TimeOfDay(next % (24 * 60)) : WorkBuilder.None(w)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
+                // Done of the course's pieces (the page used to say done of the pieces set so far, which read as the whole course), then what is open and when the next is set.
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), w.F("reallife_work_n_of_n", "{n} of {all}",
-                    "n", e.Homework.ToString(Inv), "all", StudyRules.HomeworkSet(e).ToString(Inv))));
+                    "n", e.Homework.ToString(Inv), "all", c.Homework.ToString(Inv))));
+                CareersDirector.HomeworkLines(e, out string hwOpen, out string hwNext);
+                if (hwNext != null)
+                {
+                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_hw_open", "Homework open"), hwOpen));
+                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_hw_next", "Next piece"), hwNext));
+                }
+                d.MarkLines(e, marks);
+                if (marks.Count > 0)
+                {
+                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_study_mark_forecast", "Forecast mark"), marks[0].Figure));
+                    var made = new System.Text.StringBuilder(CareersDirector.MarkAbout());
+                    for (int m = 1; m < marks.Count; m++)
+                    {
+                        made.Append('\n').Append(marks[m].Figure != null ? marks[m].Label + ": " + marks[m].Figure : marks[m].Label);
+                    }
+                    r.Sections.Add(new WorkSection { Part = WorkPart.Note, NoteIcon = UiIcon.Scales, Lead = w.T("reallife_study_mark_title", "What your mark is made of"), Text = made.ToString() });
+                }
                 if (examOpen)
                 {
                     r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), w.F("reallife_work_exam_days", "{from} to {to}",

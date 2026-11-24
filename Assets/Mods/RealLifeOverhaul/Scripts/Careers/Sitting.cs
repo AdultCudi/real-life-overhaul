@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Homework only: the minutes of the piece already sat in earlier sittings, carried on the enrolment when this one was made (it asks only for the rest).</summary>
         public int Carried;
 
+        /// <summary>The player's energy as it began, -1 until it has: an exam is marked tired or rested by this, never by what its own three hours have spent.</summary>
+        public float StartEnergy = -1f;
+
         /// <summary>Who or what ended it, as the activity that ran it knew (for the log line of an early end); null when it did not say.</summary>
         public string Why;
 
@@ -74,6 +77,7 @@ namespace RealLifeOverhaul.Careers
                 return;   // let go already: it never begins
             }
             _running = true;
+            StartEnergy = CareersGame.Energy;
             if (Record.Tiring)
             {
                 CareersGame.Tiring(true);

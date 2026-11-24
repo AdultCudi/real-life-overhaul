@@ -423,36 +423,21 @@ namespace RealLifeOverhaul.Careers
             return day >= e.ExamFrom && day <= e.ExamTo && weekday < 5;
         }
 
-        /// <summary>The exam's window has gone by unsat: it counts as a fail. True if it had.</summary>
+        /// <summary>
+        /// The exam's window has gone by unsat: it counts as a fail. True if it had. A mark already sat in an earlier sitting stays as it
+        /// was (the lapse is not a sitting and has no mark of its own), so a retake missed never turns a 45 into a 0 overnight.
+        /// </summary>
         public static bool ExamMissed(Enrolment e, int today)
         {
             if ((e.Stage != (int)EnrolStage.Exam && e.Stage != (int)EnrolStage.Retake) || today <= e.ExamTo)
             {
                 return false;
             }
-            Fail(e, 0, today);
+            Fail(e, e.Score, today);
             return true;
         }
 
-        /// <summary>The exam's mark out of 100: 20 for turning up, 40 by attendance, 25 by homework, 15 by skill, 2 a revision, 5 off tired, and the day's luck.</summary>
-        public static int ExamScore(Enrolment e, int skillPoints, bool tired, int luck)
-        {
-            CourseDef c = e.Def;
-            if (c == null)
-            {
-                return 0;
-            }
-            double attended = Attendance(e) / 1000.0;
-            int set = Math.Max(1, c.Homework);
-            double homework = c.Homework <= 0 ? 1.0 : Math.Min(1.0, e.Homework / (double)set);
-            int revision = Math.Max(0, Math.Min(StudyCatalogue.RevisionMost, e.Homework - c.Homework));
-            int target = Math.Max(10, Math.Min(100, 20 + c.GainA));
-            double prepared = Math.Min(1.0, skillPoints / (double)target);
-            double score = 20 + 40 * attended + 25 * homework + 15 * prepared + revision * 2 - (tired ? 5 : 0) + TalentCatalogue.Clamp(luck, -StudyCatalogue.ExamNoise, StudyCatalogue.ExamNoise);
-            return TalentCatalogue.Clamp((int)Math.Round(score), 0, 100);
-        }
-
-        /// <summary>The day's luck in an exam, the same on a reload: -10 to 10.</summary>
+        /// <summary>The day's luck in an exam, the same on a reload: <see cref="StudyCatalogue.ExamNoise"/> either way, drawn once for the sitting (the enrolment and its retake).</summary>
         public static int Luck(int seed, Enrolment e)
         {
             return TechRandom.Range(seed, 7101, e.Course, e.Start * 8 + e.Retakes, -StudyCatalogue.ExamNoise, StudyCatalogue.ExamNoise);

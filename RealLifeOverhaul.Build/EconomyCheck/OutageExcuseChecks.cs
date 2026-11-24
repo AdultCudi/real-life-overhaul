@@ -89,7 +89,7 @@ internal static partial class Program
         Check(StudyRules.ExamScore(excused, 0, false, 0) > StudyRules.ExamScore(missed, 0, false, 0)
               && StudyRules.ExamScore(excused, 0, false, 0) - StudyRules.ExamScore(missed, 0, false, 0) == 60 - (int)Math.Round(20 + 40 * StudyRules.Attendance(missed) / 1000.0),
             "outage excuse: the mark's attendance part counts excused classes neither way (" + StudyRules.ExamScore(excused, 0, false, 0) + " against " + StudyRules.ExamScore(missed, 0, false, 0) + " missed)");
-        Check(StudyRules.HomeworkSet(excused) == boot.Homework && StudyRules.HomeworkSet(missed) == (boot.Sessions - 2) * boot.Homework / boot.Sessions,
+        Check(StudyRules.HomeworkSet(excused) == boot.Homework && StudyRules.HomeworkSet(missed) == ((boot.Sessions - 2) * boot.Homework + boot.Sessions - 1) / boot.Sessions,
             "outage excuse: every counted class attended sets all the homework; excused classes take none away");
 
         // the bar: six of ten lost to an outage, four attended, is no bar; six missed is

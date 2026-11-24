@@ -288,7 +288,7 @@ namespace RealLifeOverhaul.Careers
                     {
                         Teach(c.SkillA, StudyRules.ClassGain(c.GainA, c.Sessions, StudyRules.Points(_study, c.SkillA), learning), day);
                         Teach(c.SkillB, StudyRules.ClassGain(c.GainB, c.Sessions, StudyRules.Points(_study, c.SkillB), learning), day);
-                        AfterClass(e, day, true);
+                        AfterClass(e, day, true, s.StartEnergy);
                     }
                     break;
                 case SittingKind.Homework:
@@ -316,7 +316,7 @@ namespace RealLifeOverhaul.Careers
                         Tell(NotificationType.Warning, "reallife_study_note_exam_left", Data("course", CareersText.Course(c.Id)), TabStudying, CampusApp.CourseRow + c.Id);
                         return;
                     }
-                    Examine(e, day);
+                    Examine(e, day, s.StartEnergy);
                     break;
             }
         }
@@ -342,7 +342,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>After a class is counted or missed: on to the exam (a short course's at its last class) or barred; true if anything changed.</summary>
-        private bool AfterClass(Enrolment e, int day, bool attended)
+        private bool AfterClass(Enrolment e, int day, bool attended, float startEnergy = -1f)
         {
             CourseDef c = e.Def;
             if (!StudyRules.Advance(e, day))
@@ -359,26 +359,41 @@ namespace RealLifeOverhaul.Careers
             }
             if (c.Kind == CourseKind.Short && attended)
             {
-                Examine(e, day);   // a short course's assessment is its last class
+                Examine(e, day, startEnergy);   // a short course's assessment is its last class
                 return true;
             }
             TellExam("reallife_study_note_exam_open", e);   // the classes are over: where the exam is sat, and by when
             return true;
         }
 
-        private void Examine(Enrolment e, int day)
+        /// <summary>
+        /// The mark an exam of this enrolment gives, part by part: the sitting's own (<paramref name="tired"/> as it began) and the page's forecast (rested)
+        /// are this one sum, from the attendance, homework, skill, the sitting's luck (drawn once from the save's seed, the enrolment and its retake) and the
+        /// tutor's edge (from the seed and the course), so what the page forecast is the mark the sitting gives. Cost: a few additions, read when a page is written.
+        /// </summary>
+        internal ExamMark MarkOf(Enrolment e, bool tired)
         {
             CourseDef c = e.Def;
-            int score = RealLifeOverhaul.Tech.TalentCatalogue.Clamp(StudyRules.ExamScore(e, StudyRules.Points(_study, c.SkillA), CareersGame.Energy < 30f, StudyRules.Luck(StudySeed, e))
-                                              + RosterRules.ExamEdge(TutorOf(c)), 0, 100);   // the tutor's rating moves it a little
+            return StudyRules.Mark(e, StudyRules.Points(_study, c.SkillA), tired, StudyRules.Luck(StudySeed, e), Roster == null ? 0 : RosterRules.ExamEdgeOf(Roster, c.Id));
+        }
+
+        /// <summary>The exam is marked: tired is read from the energy the student began it with (a three hour sitting spends its own), or from now when it is not known.</summary>
+        private void Examine(Enrolment e, int day, float startEnergy = -1f)
+        {
+            CourseDef c = e.Def;
+            ExamMark mark = MarkOf(e, StudyRules.SatTired(startEnergy >= 0f ? startEnergy : CareersGame.Energy));
+            int score = mark.Total;
             bool passed = StudyRules.Sit(e, score, day);
             StudyRules.Use(_study, c.SkillA, day);
             StudyRules.Use(_study, c.SkillB, day);
             Results(e, day, passed);
         }
 
-        /// <summary>A result: a pass and its grade, a fail with a retake to come, or a fail for good.</summary>
-        private void Results(Enrolment e, int day, bool passed)
+        /// <summary>
+        /// A result: a pass and its grade, a fail with a retake to come, or a fail for good. <paramref name="lapsed"/>: the exam was never sat in its days,
+        /// so there is no mark to name.
+        /// </summary>
+        private void Results(Enrolment e, int day, bool passed, bool lapsed = false)
         {
             CourseDef c = e.Def;
             string name = CareersText.Course(c.Id);
@@ -394,12 +409,12 @@ namespace RealLifeOverhaul.Careers
             CareersGame.Mood(ModState.MoodDown);
             if (e.Stage == (int)EnrolStage.Retake)
             {
-                Tell(NotificationType.Warning, "reallife_study_note_failed_retake", Data("course", name, "score", e.Score.ToString(), "day", CareersText.Day(e.ExamFrom)), TabStudying,
-                    CampusApp.CourseRow + c.Id);
+                Tell(NotificationType.Warning, lapsed ? "reallife_study_note_lapsed_retake" : "reallife_study_note_failed_retake",
+                    Data("course", name, "score", e.Score.ToString(), "day", CareersText.Day(e.ExamFrom)), TabStudying, CampusApp.CourseRow + c.Id);
                 return;
             }
             _study.Finish(e);
-            Tell(NotificationType.Warning, "reallife_study_note_failed", Data("course", name, "score", e.Score.ToString()), TabResults, null);
+            Tell(NotificationType.Warning, lapsed ? "reallife_study_note_lapsed" : "reallife_study_note_failed", Data("course", name, "score", e.Score.ToString()), TabResults, null);
         }
 
         /// <summary>What a pass brings beyond the qualification itself.</summary>
