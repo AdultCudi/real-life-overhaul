@@ -623,6 +623,17 @@ namespace RealLifeOverhaul.Ui
             float content = FormBody(s, inClip, o, UiTokens.S3, 0f, w, onTitle, keys);
             float view = Math.Min(all, Math.Min(content, Math.Max(all - need - gap, Math.Min(FormUpperLeast, Math.Max(0f, all - least - gap)))));
             view = UiDraw.SnapDown(view);
+            FinishClip(s, at, o, clip, first, content, view, x, fy, w);
+            if (o.Table != null)
+            {
+                TableBlock(s, at, o, x, fy + view + gap, w, bottom, keys);
+            }
+        }
+
+        // A scrolling part's last step, its body laid in its clip: the targets into two lists, the offset kept and brought to the row the pad asked for, the
+        // clip's size and its thumb.
+        private static void FinishClip(UiScene s, UiAt at, BizOpsModel o, short clip, int first, float content, float view, float x, float y, float w)
+        {
             float mid = UiTokens.S3 + w / 2f;
             short left = ListColumn(s, clip, first, mid, false), right = ListColumn(s, clip, first, mid, true);
             float offset = o.FormOffset;
@@ -641,11 +652,45 @@ namespace RealLifeOverhaul.Ui
             s.Clips[clip].H = view;
             s.Clips[clip].Offset = offset;
             s.Clips[clip].ContentHeight = content;
-            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, fy, view, offset, content);
-            if (o.Table != null)
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, view, offset, content);
+        }
+
+        private const int BodySlots = 0, BodyRows = 1, BodyMachine = 2;   // what a page lays in a part that scrolls where it does not fit
+
+        private static float PartBody(int kind, UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, IUiKeys keys)
+        {
+            switch (kind)
             {
-                TableBlock(s, at, o, x, fy + view + gap, w, bottom, keys);
+                case BodySlots: return SlotCards(s, at, o.Slots, x, y, w);
+                case BodyRows: return Rows(s, at, o.Rows, x, y, w, keys);
+                default:
+                    y = Stack(s, at, o.Rows, x, y, w, keys);
+                    if (o.Actions.Length > 0)
+                    {
+                        Buttons(s, at, o.Actions, x + w, y + UiTokens.S2, keys, OpsAction);
+                        y += UiTokens.S2 + UiTokens.Control;
+                    }
+                    return y;
             }
+        }
+
+        // A page's body laid as it is where it fits the room from y to the foot; where it does not, in a scroll region of its own in that room (the wheel, a drag
+        // and the pad bring each row into view), so no card, row or control is left off the page for want of room.
+        private static void Part(int kind, UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            o.FormClip = o.FormList = o.FormListRight = -1;
+            UiMark whole = UiMark.Of(s);
+            float end = PartBody(kind, s, at, o, x, y, w, keys);
+            if (end - y <= bottom - y + 0.5f)
+            {
+                return;
+            }
+            whole.Back(s);
+            short clip = s.AddClip(x - UiTokens.S3, y, w + UiTokens.S6, 0f, 0f);
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            int first = s.NodeCount;
+            float content = PartBody(kind, s, inClip, o, UiTokens.S3, 0f, w, keys);
+            FinishClip(s, at, o, clip, first, content, UiDraw.SnapDown(bottom - y), x, y, w);
         }
 
         private const int TableRowsLeast = 5;                      // rows of a form's table kept in view at the least, where the page has the room for them
@@ -1188,6 +1233,7 @@ namespace RealLifeOverhaul.Ui
         private static void FactoryPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             if (o.Tabs.Length > 0)
             {
                 UiDraw.Tabs(s, at, x, y, Math.Min(w, TabsWidth(o.Tabs)), o.Tabs, o.Tab, null, OpsTab);
@@ -1207,11 +1253,7 @@ namespace RealLifeOverhaul.Ui
             UiDataTable.Lay(s, at, o.Table, x, ty, tw, bottom - ty, keys, Table);
             float fy = Title(s, at, rx, y, side, o.FormTitle);
             fy = Lead(s, at, o.FormLead, rx, fy, side);
-            fy = Stack(s, at, o.Rows, rx, fy, side, keys);
-            if (o.Actions.Length > 0)
-            {
-                Buttons(s, at, o.Actions, rx + side, fy + UiTokens.S2, keys, OpsAction);
-            }
+            Part(BodyMachine, s, at, o, rx, fy, side, bottom, keys);
             OpenList(s, at, m, x, y, w, bottom);
         }
 
@@ -1221,6 +1263,7 @@ namespace RealLifeOverhaul.Ui
         private static void DriversPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             if (o.Rows.Length == 0 && o.Slots.Length == 0)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Truck, o.PlansEmpty, o.PlansEmptyBody, null, -1, keys);
@@ -1228,14 +1271,7 @@ namespace RealLifeOverhaul.Ui
             }
             float fy = Title(s, at, x, y, w, o.FormTitle);
             fy = Lead(s, at, o.FormLead, x, fy, w);
-            if (o.Slots.Length > 0)
-            {
-                SlotCards(s, at, o.Slots, x, fy, w, bottom);
-            }
-            else
-            {
-                Rows(s, at, o.Rows, x, fy, w, keys);
-            }
+            Part(o.Slots.Length > 0 ? BodySlots : BodyRows, s, at, o, x, fy, w, bottom, keys);
             OpenList(s, at, m, x, y, w, bottom);
         }
 
@@ -1244,7 +1280,7 @@ namespace RealLifeOverhaul.Ui
 
         // A warehouse's vehicle slots as cards, as a fleet screen shows its vehicles: each its vehicle's tile, its name and
         // load, its driver as a choice, and where it is as a chip. Up to four a row, more rows under them.
-        private static void SlotCards(UiScene s, UiAt at, BizOpsSlot[] slots, float x, float y, float w, float bottom)
+        private static float SlotCards(UiScene s, UiAt at, BizOpsSlot[] slots, float x, float y, float w)
         {
             int across = Math.Max(1, Math.Min(SlotsAcross, (int)((w + UiTokens.S4) / (SlotLeast + UiTokens.S4))));
             float cw = UiDraw.SnapDown((w - UiTokens.S4 * (across - 1)) / across);
@@ -1255,10 +1291,6 @@ namespace RealLifeOverhaul.Ui
             {
                 ref BizOpsSlot sl = ref slots[i];
                 float cx = x + (i % across) * (cw + UiTokens.S4), cy = y + (i / across) * (ch + UiTokens.S4);
-                if (cy + ch > bottom)
-                {
-                    break;
-                }
                 int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Row, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(card);
                 float ix = cx + pad, iw = cw - pad * 2f;
@@ -1280,12 +1312,14 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Chip(s, inside, ix, dy + UiTokens.Control + UiTokens.S3 + (chipH - UiTokens.ControlSmall) / 2f, sl.Status, sl.Tone, iw);
                 }
             }
+            return y + ((slots.Length + across - 1) / across) * (ch + UiTokens.S4) - UiTokens.S4;
         }
 
         // The stock as the big table under how full the warehouse is, Sell all at the right of that line.
         private static void StockPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
+            o.FormClip = o.FormList = o.FormListRight = -1;
             float left = Buttons(s, at, o.Actions, x + w, y, keys, OpsAction);
             if (!string.IsNullOrEmpty(o.FormLead))
             {

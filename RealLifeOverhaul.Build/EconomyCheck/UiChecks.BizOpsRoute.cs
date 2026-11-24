@@ -8,6 +8,7 @@ internal static partial class Program
     private static void BizOpsRouteChecks()
     {
         UiWords t = UiWords("en");
+        BizOpsSlotChecks(t);
         float[] aspects = { 16f / 9f, 16f / 10f, 4f / 3f, 21f / 9f };
         string fault = null;
         int most = 0, least = int.MaxValue;
@@ -141,5 +142,50 @@ internal static partial class Program
             }
         }
         return -1;
+    }
+
+    // A warehouse with more vehicle slots than the page holds: no card is left off, the cards scroll as a part of their own and every driver's choice
+    // can be brought into view and reached by the pad.
+    private static void BizOpsSlotChecks(UiWords t)
+    {
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
+        BizManModel m = UiSamples.OpsSlots(t, 20);
+        var s = new UiScene();
+        BizManPages.Lay(s, m, frame, true, UiDefaultKeys.Keyboard);
+        int choices = 0;
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            choices += s.Nodes[i].Command == BizManPages.OpsChoice ? 1 : 0;
+        }
+        short clip = m.Ops.FormClip;
+        bool scrolls = clip >= 0 && s.Clips[clip].ContentHeight > s.Clips[clip].H + 0.5f && m.Ops.FormList >= 0;
+        string lost = null;
+        for (int side = 0; scrolls && side < 2 && lost == null; side++)
+        {
+            short list = side == 0 ? m.Ops.FormList : m.Ops.FormListRight;
+            int rows = list < 0 ? 0 : s.Lists[list].Count;
+            for (int row = 0; row < rows && lost == null; row++)
+            {
+                m.Ops.FormReveal = row;
+                m.Ops.FormRevealList = list;
+                var r = new UiScene();
+                BizManPages.Lay(r, m, frame, true, UiDefaultKeys.Keyboard);
+                int node = -1;
+                for (int i = 0; i < r.NodeCount && node < 0; i++)
+                {
+                    node = r.Nodes[i].List == list && r.Nodes[i].Index == row ? i : -1;
+                }
+                ref UiClip c = ref r.Clips[m.Ops.FormClip];
+                r.NodeBox(node < 0 ? 0 : node, out float _, out float ny, out float _, out float nh);
+                lost = node >= 0 && ny >= c.Y - 0.5f && ny + nh <= c.Y + c.H + 0.5f ? null : "row " + row + " of column " + side;
+            }
+        }
+        m.Ops.FormReveal = -1;
+        var all = new UiScene();
+        BizManPages.Lay(all, m, frame, true, UiDefaultKeys.Keyboard);
+        int unreached = UiFocusRules.Unreached(all, out string first);
+        Check(choices == 20 && scrolls && lost == null && unreached == 0,
+            "bizops: twenty vehicle slots are all cards of a region that scrolls, each driver's choice can be brought into view and the pad reaches every one ("
+            + (choices != 20 ? choices + " of 20 laid" : !scrolls ? "it did not scroll" : lost ?? first ?? "all") + ")");
     }
 }

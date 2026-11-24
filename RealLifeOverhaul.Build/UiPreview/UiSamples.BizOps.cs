@@ -19,7 +19,7 @@ internal static partial class UiSamples
     {
         "schedule_empty", "schedule_full", "schedule_tens", "schedule_place", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
         "pricing_unassigned", "logistics", "logistics_sent", "logistics_trips", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
-        "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
+        "factory_none", "warehouse_drivers", "warehouse_drivers_many", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
     };
 
     public static readonly string[] UniformStates = { "uniforms", "uniforms_colours", "uniforms_new", "uniforms_long" };
@@ -93,6 +93,7 @@ internal static partial class UiSamples
             case "headhunters": case "headhunters_replace": return OpsHunters(t, state == "headhunters_replace");
             case "factory": case "factory_missing": case "factory_none": return OpsFactory(t, state);
             case "warehouse_drivers": return OpsDrivers(t);
+            case "warehouse_drivers_many": return OpsSlots(t, 20);
             case "warehouse_stock": case "warehouse_empty": return OpsStock(t, state == "warehouse_empty");
             default: return OpsSchedule(t, state);
         }
@@ -1133,19 +1134,34 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the warehouse
 
-    private static BizManModel OpsDrivers(UiWords t)
+    public static BizManModel OpsSlots(UiWords t, int slots) => OpsDrivers(t, slots);
+
+    private static BizManModel OpsDrivers(UiWords t, int count = 6)
     {
         BizManModel m = OpsPlace(t, "warehouse", BizManPart.Drivers, 1);
         BizOpsModel o = m.Ops;
         o.FormTitle = t("bizman_vehicle_slots", "Vehicle Slots");
         string info = t("bizman_drivers_vehicle_info", "Drive a vehicle through the warehouse's garage door to assign it to this slot");
-        o.FormLead = t("reallife_ui_bizops_slots_line", "{count} slots, {loaded} loaded.").Replace("{count}", "6").Replace("{loaded}", "3") + " " + info;
+        o.FormLead = t("reallife_ui_bizops_slots_line", "{count} slots, {loaded} loaded.").Replace("{count}", OpsWhole(count)).Replace("{loaded}", "3") + " " + info;
         o.PlansEmpty = t("reallife_ui_bizops_slots_none", "No vehicle slots");
         o.PlansEmptyBody = info;
-        string[] vehicles = { "Box truck, NY 4821", "Box truck, NY 5530", "Cargo van, NY 1177", "Cargo van, NY 2096", "Pickup, NY 6604", null };
-        string[] drivers = { "Ethan Walsh", "Samuel Adeyemi", "Lucas Ferreira", t("common_unassigned", "Unassigned"), "Tom Becker", t("common_unassigned", "Unassigned") };
-        int[] boxes = { 14, 0, 6, 0, 2, 0 }, holds = { 16, 16, 8, 8, 4, 0 };
-        bool[] home = { true, true, true, false, true, false };
+        string[] vehicle6 = { "Box truck, NY 4821", "Box truck, NY 5530", "Cargo van, NY 1177", "Cargo van, NY 2096", "Pickup, NY 6604", null };
+        string[] driver6 = { "Ethan Walsh", "Samuel Adeyemi", "Lucas Ferreira", t("common_unassigned", "Unassigned"), "Tom Becker", t("common_unassigned", "Unassigned") };
+        int[] box6 = { 14, 0, 6, 0, 2, 0 }, hold6 = { 16, 16, 8, 8, 4, 0 };
+        bool[] home6 = { true, true, true, false, true, false };
+        var vehicles = new string[count];
+        var drivers = new string[count];
+        var boxes = new int[count];
+        var holds = new int[count];
+        var home = new bool[count];
+        for (int i = 0; i < count; i++)
+        {
+            vehicles[i] = vehicle6[i % 6];
+            drivers[i] = driver6[i % 6];
+            boxes[i] = box6[i % 6];
+            holds[i] = hold6[i % 6];
+            home[i] = home6[i % 6];
+        }
         var rows = new System.Collections.Generic.List<BizOpsRow>();
         for (int i = 0; i < vehicles.Length; i++)
         {

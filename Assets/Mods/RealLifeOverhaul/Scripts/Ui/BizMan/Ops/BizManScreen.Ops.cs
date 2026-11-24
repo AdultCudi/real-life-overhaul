@@ -466,7 +466,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return false;
             }
-            if (_m.Part == BizManPart.Managers && list >= 0 && (list == o.FormList || list == o.FormListRight))
+            if (list >= 0 && (list == o.FormList || list == o.FormListRight))
             {
                 o.FormReveal = index;   // a row of the form's rows and stops that scroll above the table
                 o.FormRevealList = list;
@@ -506,7 +506,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return false;
             }
-            if (_m.Part == BizManPart.Managers && clip >= 0 && clip == o.FormClip)
+            if (clip >= 0 && clip == o.FormClip)
             {
                 o.FormOffset = Math.Max(0f, o.FormOffset + by);
                 return true;
