@@ -199,6 +199,10 @@ namespace RealLifeOverhaul.Ui
             var left = new List<VentBlock>(8);
             left.Add(VentBlock.Section(w.T("reallife_giving_sec_tax", "Your tax return")));
             left.Add(VentBlock.Row(w.T("reallife_giving_row_gifts", "Gifts to charities this tax year"), w.Money(f.TaxGifts)));
+            if (f.FoodGifts > 0)
+            {
+                left.Add(VentBlock.Row(w.T("reallife_giving_row_food", "Food from your shops given this tax year, at cost"), w.Money(f.FoodGifts)));
+            }
             left.Add(VentBlock.Row(w.T("reallife_giving_row_income", "Income so far this year"), w.Money(f.Income)));
             left.Add(VentBlock.Row(w.F("reallife_giving_row_cap_share", "The most that can be deducted ({share} of income)", "share", (f.DeductionShare / 10f).ToString("0.#")), w.Money(f.TaxCap)));
             left.Add(VentBlock.Row(w.T("reallife_giving_row_deducted", "Deducted so far"), w.Money(f.TaxClaimed)));

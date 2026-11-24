@@ -530,6 +530,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripStore.cs" Link="Mod\TripStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SendNowLimit.cs" Link="Mod\SendNowLimit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SpoilRules.cs" Link="Mod\SpoilRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\FoodGiftRules.cs" Link="Mod\FoodGiftRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SpoilState.cs" Link="Mod\SpoilState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\SpoilStore.cs" Link="Mod\SpoilStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerDirectoryRules.cs" Link="Mod\ManagerDirectoryRules.cs" />

@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Giving
             var t = new StringBuilder(256 + s.Loans.Count * 48);
             t.Append("v=").Append(Version).Append("^h:");
             Join(t, s.Seed, s.LastDay, s.Month, s.PeriodStart, s.TaxGifts, s.TaxClaimed, s.StandingMonth, s.MonthGiven, s.StandingDone, s.PressDone, s.LastAsk,
-                s.NeighbourMonth, s.NeighbourMoney, s.NeighbourYear, s.NeighbourHelped, s.PaperDay, s.MonthStep, s.MonthNumber);
+                s.NeighbourMonth, s.NeighbourMoney, s.NeighbourYear, s.NeighbourHelped, s.PaperDay, s.MonthStep, s.MonthNumber, s.FoodGifts);
             t.Append("^b:");
             for (int i = 0; i < s.Books.Length; i++)
             {
@@ -195,6 +195,7 @@ namespace RealLifeOverhaul.Giving
             int step = I(f, 16, -1);
             s.MonthStep = step >= 0 && step < GivingMonth.Steps ? step : -1;   // a line from before the month went by steps has no pass under way
             s.MonthNumber = Math.Max(0, I(f, 17));
+            s.FoodGifts = Math.Max(0, L(f, 18));   // a line from before food gifts has none
         }
 
         private static void Books(GivingState s, string body)

@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Giving
         public string[] Districts = new string[0];   // the districts a gift to upkeep can name, by the number the director takes
         public long[] DistrictTotals = new long[0];  // what the player has given to each district's upkeep in all
         public long TaxGifts, TaxClaimed, TaxCap, Income;
+        public long FoodGifts;               // food from the player's shops given to charity this tax year, at what it cost
         public long Carried;                 // gifts over the cap of earlier years, still to be deducted
         public int DeductionShare = GivingCatalogue.DeductionShare;
         public long NeighbourYear;

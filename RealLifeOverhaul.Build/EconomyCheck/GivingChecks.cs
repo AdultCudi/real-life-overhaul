@@ -141,8 +141,10 @@ internal static partial class Program
             "giving tax: what is due is the gifts held to the cap, less what is claimed already, and never under nothing");
         string gifts2 = ModSource(@"Giving\GivingDirector.Gifts.cs"), loans = ModSource(@"Giving\GivingDirector.Loans.cs"), director = ModSource(@"Giving\GivingDirector.cs");
         string all = string.Concat(Directory.GetFiles(System.IO.Path.GetDirectoryName(ModPath(@"Giving\GivingDirector.cs")), "*.cs").Select(File.ReadAllText));
-        Check(CountOfText(all, "TaxGifts +=") == 1 && gifts2.IndexOf("TaxGifts +=", StringComparison.Ordinal) > gifts2.IndexOf("GiveToCharity", StringComparison.Ordinal)
-              && gifts2.IndexOf("TaxGifts +=", StringComparison.Ordinal) < gifts2.IndexOf("GiveToPerson", StringComparison.Ordinal), "giving tax: only a gift to a charity adds to the year's gifts, nothing for a person or a loan does");
+        Check(CountOfText(all, "TaxGifts +=") == 2 && gifts2.IndexOf("TaxGifts +=", StringComparison.Ordinal) > gifts2.IndexOf("GiveToCharity", StringComparison.Ordinal)
+              && gifts2.LastIndexOf("TaxGifts +=", StringComparison.Ordinal) > gifts2.IndexOf("public bool GiveFood(", StringComparison.Ordinal)
+              && gifts2.LastIndexOf("TaxGifts +=", StringComparison.Ordinal) < gifts2.IndexOf("GiveToPerson", StringComparison.Ordinal),
+            "giving tax: only a gift to a charity, or food in kind from the player's shops, adds to the year's gifts, nothing for a person or a loan does");
         Check(!loans.Contains("GivingGame.Deduct") && !loans.Contains("TaxGifts") && !gifts2.Substring(gifts2.IndexOf("GiveToPerson", StringComparison.Ordinal)).Contains("TaxGifts"),
             "giving tax: a loan, a loan written off and a gift to a person never reach the deduction");
         // What cannot run offline: that the director calls the rules in the order the checks above drive them.
