@@ -885,6 +885,8 @@ namespace RealLifeOverhaul
                     v => Settings.GarageResale = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
+                .AddToggle(Settings.GarageScooterHoldId, "reallife_garage_scooter_hold", Settings.GarageScooterHold,
+                    v => Settings.GarageScooterHold = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())

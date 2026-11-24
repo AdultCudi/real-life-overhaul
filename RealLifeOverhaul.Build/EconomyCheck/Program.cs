@@ -354,6 +354,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--scooter-hold")
+        {
+            ScooterHold();   // a rented scooter not taken away by the game while the player is indoors for a class or a film (ScooterHoldChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--traffic-offences")
         {
             TrafficOffences();   // each traffic offence on its own option, started from the old switch, and nobody a vehicle carries is fined as a walker (TrafficOffenceChecks.cs)

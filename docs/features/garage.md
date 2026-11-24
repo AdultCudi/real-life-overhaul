@@ -28,6 +28,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `BikeMount` | one scooter as a bicycle or motorbike: body, numbers, the rider's seat, hands and feet; LegIk |
 | `BikeBody` | the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker) |
 | `BikePlaces` | bike-share docks, bicycle racks, motorbike stands: where they go and what stands there |
+| `ScooterHold`, `ScooterHoldRules` | a scooter rented from the game's stands kept while the player is indoors: the game's own away-clock put back once a second (ScooterHoldRules game-free; EconomyCheck `--scooter-hold`) |
 | `BikeClearRules` | where a bike may be left: what it may not be left in, the places tried round it, whose may be moved (game-free) |
 
 ## How it talks to other features
@@ -299,6 +300,8 @@ The test buttons and "Bring it here" use `BikePlaces.SpotAhead`: 2.2 m in front 
 
 **Saving.** The game removes a scooter four hours after it was last looked at (`AutoDestroyVehicle`); on ours that component is switched off, and they are saved with `lastSeen` empty, so with the mod they stay.
 Without the mod they are scooters, and the game clears them away by its own rule once they have been seen and left.
+
+**A scooter rented from the game's stands.** The game hires these out for one fee (`VehicleSpawnerController`, no return, no running charge) and takes one away again once it has not been seen for its type's `autoDestroyAfterMinutes` (`AutoDestroyVehicle`, asked every frame, whatever the player is doing). The clock starts when the scooter leaves the camera, and a building the player walks into is out of its sight, so a class (a degree's is four hours) or a film that outlasts the limit came out to no scooter, with no word. With the option "Keep a rented scooter while you are indoors" (`garage_scooter_hold`, on by default, needs the Garage) `ScooterHold` marks each such scooter seen now once a second while the player is inside a building, so the game's count starts afresh when they step out (`ScooterHoldRules.Holds`: a scooter the game takes away by that clock, on the street, not ridden, not one of ours). Only the save's own vehicles are read, so in a Going Public session no other player's is touched. Away from the building, out of sight for the limit, the game's rule is unchanged. The limit is a figure in the game's vehicle data, which is read at run time and not written down here. EconomyCheck `--scooter-hold` models a stay of any length against the game's own test.
 
 An owned one that went that way is stood back where it was last left, the next time the save is loaded with the mod.
 A build is dropped from modData when its car is no longer in the save (sold).
