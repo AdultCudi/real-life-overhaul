@@ -60,5 +60,30 @@ internal static partial class Program
         Check(b.FounderTop == 3 && b.FounderFrom == "Skyvault Systems" && b.RestraintWeek == 320000 && b.ColleaguesCount == 2 && b.PracticeAfter == 5, "own: the founder, the clause and the colleagues come back");
         Check(b.Practice.Prof == ProCatalogue.Accountant && b.Practice.Reputation == 44 && b.Contracts.Count == 1 && b.Contracts[0].Fee == 1234 && b.Contracts[0].Practice, "own: the practice and a contract come back");
         Check(CareersStore.Write(back) == CareersStore.Write(s), "own: the line reads back the same");
+
+        // A book that has filled with finished contracts (they stay a month after their due day, and every offer not taken ends in the book) must still save the newest:
+        // a cap by position left the last ones out, so a contract just taken was gone after a load.
+        w.Contracts.Clear();
+        for (int i = 0; i < 14; i++)
+        {
+            w.Contracts.Add(new Contract { Id = 100 + i, Prof = 4, Hours = 8, Fee = 500, Due = 10 + i, Stage = i % 2 == 0 ? (int)ContractStep.Lapsed : (int)ContractStep.Done });
+        }
+        w.Contracts.Add(new Contract { Id = 7, Prof = 4, Hours = 16, Minutes = 90, Fee = 1600, Due = 40, Stage = (int)ContractStep.Taken });
+        w.Contracts.Add(new Contract { Id = 8, Prof = 4, Hours = 12, Fee = 900, Due = 44, Lapse = 38, Stage = (int)ContractStep.Offered });
+        WorkFile full = CareersStore.Read(CareersStore.Write(s), out version).Work;
+        Contract taken = full.Contracts.Find(x => x.Id == 7), offered = full.Contracts.Find(x => x.Id == 8);
+        Check(taken != null && taken.Minutes == 90 && taken.Stage == (int)ContractStep.Taken && offered != null && offered.Stage == (int)ContractStep.Offered && full.Contracts.Count == OwnRules.ContractsKept,
+            "own: a contract just taken and an offer survive a save and load while the book holds a dozen old ones, and the save keeps no more than " + OwnRules.ContractsKept);
+        Check(full.Contracts.Find(x => x.Id == 100) == null && full.Contracts.Find(x => x.Id == 101) == null && full.Contracts.Find(x => x.Id == 113) != null && full.Contracts[0].Id < full.Contracts[1].Id,
+            "own: when the book is over the save's room the oldest finished contracts are let go, the newest kept, in their order");
+        var kept = new List<Contract>();
+        Check(OwnRules.ForSave(w.Contracts, kept) == w.Contracts.Count - OwnRules.ContractsKept && kept.Count == OwnRules.ContractsKept && OwnRules.ForSave(new List<Contract>(), kept) == 0 && kept.Count == 0,
+            "own: the rule that picks the save's contracts counts those it leaves out");
+        Check(OwnRules.PerHour(new Contract { Hours = 16, Fee = 1600 }) == 100 && OwnRules.PerHour(new Contract { Hours = 12, Fee = 900 }) == 75 && OwnRules.PerHour(new Contract { Hours = 0, Fee = 900 }) == 0,
+            "own: a contract's pay an hour is its fee over its hours");
+        string ownApp = ModSource(@"Careers\CareerApp.Own.cs"), ownKit = ModSource(@"Ui\Work\CareerLive.Manage.cs"), ownCols = ModSource(@"Careers\CareerColumns.cs");
+        Check(ownCols.Contains("\"reallife_own_col_hours\"") && ownCols.Contains("\"reallife_own_col_rate\"") && ownApp.Contains("OwnRules.PerHour(c)") && ownApp.Contains("box.Row(\"reallife_own_col_rate\"")
+              && ownKit.Contains("\"reallife_own_terms_line\", \"hours\", c.Hours.ToString(Inv)") && ownKit.Contains("OwnRules.PerHour(c)"),
+            "own: offers and contracts show their hours and their pay an hour in the old table and page and on the new interface's tiles");
     }
 }

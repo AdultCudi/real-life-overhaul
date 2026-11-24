@@ -202,6 +202,45 @@ internal static partial class Program
         }
         SessionFile cut = SessionStore.Read(SessionStore.Write(big), out _);
         Check(cut != null && cut.Records.Count == 512, "sessions save: a save keeps 512 records at the most, so no line grows without end");
+        SessionSitting();
+    }
+
+    // A session sat at when the game is saved goes on after a load: its choices and the minutes already sat are in the line, a line without them reads as before, and the sitting is
+    // let go once held, stopped or past its days. (Nothing is spent or changed by a session until its time is sat whole, so these minutes are all there is to lose.)
+    private static void SessionSitting()
+    {
+        var f = new SessionFile { Seed = 9, Reminded = 3 };
+        f.Get("Main%20Street#1^2|3~12", MeetingRules.Id).Held = 20;
+        f.Sitting = new SessionSitting { Place = "Elm%25Road#4^5|6~3", Session = "check_kind", Choices = new[] { 1, 2, 0 }, Length = 90, Done = 35, Day = 50 };
+        string line = SessionStore.Write(f);
+        SessionFile back = SessionStore.Read(line, out _);
+        SessionSitting s = back != null ? back.Sitting : null;
+        Check(s != null && s.Place == "Elm%25Road#4^5|6~3" && s.Session == "check_kind" && s.Choices.Length == 3 && s.Choices[0] == 1 && s.Choices[1] == 2 && s.Choices[2] == 0 && s.Length == 90 && s.Done == 35
+              && s.Day == 50 && back.Records.Count == 1 && back.Seed == 9 && back.Reminded == 3 && SessionStore.Write(back) == line,
+            "sessions save: a sitting comes back whole beside the records, its place holding every character a place can, and the line is the same written again");
+        string old = "v=1|9|3^Main~1#" + MeetingRules.Id + "#20";
+        SessionFile older = SessionStore.Read(old, out _);
+        Check(older != null && older.Sitting == null && older.Records.Count == 1 && SessionStore.Read(SessionStore.Write(new SessionFile { Seed = 9, Reminded = 3 }), out _).Sitting == null
+              && !SessionStore.Write(new SessionFile { Seed = 9, Reminded = 3 }).Contains("#"),
+            "sessions save: a save from before sitting at a session is kept reads with none, and a file with none writes the line it always wrote");
+        Check(SessionStore.Read("v=1|9|3|Elm~1#check_kind#12x#90#35#50", out _).Sitting == null && SessionStore.Read("v=1|9|3|Elm~1#check_kind#12#0#35#50", out _).Sitting == null
+              && SessionStore.Read("v=1|9|3|Elm~1#check_kind", out _).Sitting == null && SessionStore.Read("v=1|9|3|Elm~1#check_kind#12#90#35#50", out _).Sitting != null,
+            "sessions save: a sitting that is damaged is let go, never carried on wrongly, and the rest of the line still reads");
+        Check(f.SittingFor("Elm%25Road#4^5|6~3", "check_kind", 3, 50) != null && f.SittingFor("Elm%25Road#4^5|6~3", "check_kind", 3, 51) != null && f.SittingFor("Elm%25Road#4^5|6~3", "check_kind", 3, 52) == null
+              && f.SittingFor("Elm%25Road#4^5|6~3", "check_kind", 3, 49) == null && f.SittingFor("Elm%25Road#4^5|6~3", "check_kind", 2, 50) == null && f.SittingFor("Elsewhere", "check_kind", 3, 50) == null
+              && f.SittingFor("Elm%25Road#4^5|6~3", "other", 3, 50) == null,
+            "sessions: a sitting is carried on at its business, for its kind with as many choices as it was made with, on the day of the save and the day after");
+        Check(!f.LetSittingGo(51, "Main~1", MeetingRules.Id) && f.Sitting != null && !f.LetSittingGo(51, null, null) && f.Sitting != null && f.LetSittingGo(52, null, null) && f.Sitting == null,
+            "sessions: a sitting stays while another kind or place is held and while it is within its days, and is let go after them");
+        f.Sitting = new SessionSitting { Place = "Elm", Session = "check_kind", Choices = new[] { 0 }, Length = 30, Done = 10, Day = 50 };
+        Check(f.LetSittingGo(50, "Elm", "check_kind") && f.Sitting == null, "sessions: held or stopped whole, a sitting of that kind there is let go at once");
+        string panel = ModSource(@"Sessions\SessionPanel.cs"), director = ModSource(@"Sessions\SessionDirector.cs"), desk = ModSource(@"Sessions\SessionDirector.Desk.cs"), day = ModSource(@"Sessions\SessionDirector.Day.cs");
+        Check(director.Contains("if (_panel != null && _panel.Sat)") && director.Contains("_file.Sitting = _panel.Snapshot(_here.Place, SessionGame.Day);") && director.Contains("_file.Sitting == null && !save.modData.ContainsKey(SessionStore.Key)")
+              && panel.Contains("public bool Sat => _state == PlayerActivityState.Started || _state == PlayerActivityState.Running;") && panel.Contains("Start(carry.Done);")
+              && panel.Contains("_done = Math.Max(0, Math.Min(sat, _length - 1));") && panel.Contains("\"reallife_session_label_carry\"") && desk.Contains("internal SessionSitting SittingFor(SessionDef def)")
+              && desk.Contains("_file.LetSittingGo(ask.Day, _here.Place, def.Id);") && desk.Contains("_file?.LetSittingGo(SessionGame.Day, _here.Place, def.Id);") && day.Contains("_file.LetSittingGo(day, firm.Place, def.Id);")
+              && day.Contains("_file.LetSittingGo(day, null, null)"),
+            "sessions: a save made while sat at a session writes its choices and minutes, the first page offers to carry on from them, and held, stopped or past its days it is let go");
     }
 
     // ---------------------------------------------------------------- the weekly team meeting

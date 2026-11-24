@@ -62,12 +62,13 @@ namespace RealLifeOverhaul.Careers
         public const int ContractOpen = 0, ContractDone = 1;
         private static readonly string[] ContractKinds = { "reallife_own_kind_open", "reallife_own_kind_done" };
 
-        /// <summary>Own work: 0 client, 1 profession, 2 hours, 3 fee, 4 due, 5 state.</summary>
+        /// <summary>Own work: 0 client, 1 profession, 2 hours, 3 fee, 4 pay an hour, 5 due, 6 state.</summary>
         public static readonly TableSpec Own = new TableSpec("Career", "Own")
             .Column("reallife_own_col_client", 360f, TableSort.Text, flexible: true)
             .Column("reallife_career_col_profession", 260f, TableSort.Text)
             .Column("reallife_own_col_hours", 220f, TableSort.Number)
             .Column("reallife_own_col_fee", 200f, TableSort.Money)
+            .Column("reallife_own_col_rate", 180f, TableSort.Money)
             .Column("reallife_own_col_due", 180f, TableSort.Number)
             .Column("reallife_career_col_state", 240f, TableSort.Text, right: true)
             .Filter("reallife_own_all_contracts", ContractKinds)

@@ -674,7 +674,6 @@ namespace RealLifeOverhaul.Ui
             p.PositiveOn = UiWidgets.Shows(_positive);
             p.Negative = Shown(_negative) ? UiWidgets.Label(_negative) : null;
             p.NegativeOn = UiWidgets.Shows(_negative);
-            p.NegativeArmed = _armed;
             p.Additional = Shown(_additional) ? UiWidgets.Label(_additional) : null;
             p.AdditionalOn = UiWidgets.Shows(_additional);
             if (candidate)

@@ -417,6 +417,23 @@ namespace RealLifeOverhaul.Sessions
             return Due(def) ? null : "reallife_session_refused_not_due";
         }
 
+        /// <summary>
+        /// The sitting the last save kept for a kind here, if it can still be carried on today: its choices and the minutes already sat. Null with none, or
+        /// where a choice no longer stands among the kind's.
+        /// </summary>
+        internal SessionSitting SittingFor(SessionDef def)
+        {
+            SessionSitting s = _file != null && _here != null ? _file.SittingFor(_here.Place, def.Id, def.Steps.Length, SessionGame.Day) : null;
+            for (int i = 0; s != null && i < def.Steps.Length; i++)
+            {
+                if (s.Choices[i] >= def.Steps[i].Choices.Length)
+                {
+                    return null;
+                }
+            }
+            return s;
+        }
+
         /// <summary>The labels shown while it runs: the choices made, one a step.</summary>
         internal LabelInfo[] Summary(SessionDef def, int[] choices)
         {
@@ -455,6 +472,7 @@ namespace RealLifeOverhaul.Sessions
                 return;
             }
             Record(def, _here.Place, ask.Day, false, o);
+            _file.LetSittingGo(ask.Day, _here.Place, def.Id);   // held whole: nothing left to carry on
             Note("held " + def.Id + " at " + _here.Name + " on day " + ask.Day + " with the choices " + string.Join(",", choices)
                  + ": the record is kept, due again on day " + (ask.Day + def.EveryDays));
             if (_forced == def.Id)
@@ -474,6 +492,7 @@ namespace RealLifeOverhaul.Sessions
         /// <summary>Stopped before its time was sat: nothing changes and it stays due.</summary>
         internal void Stopped(SessionDef def, int done, int length)
         {
+            _file?.LetSittingGo(SessionGame.Day, _here.Place, def.Id);   // the player stopped it: no sitting of that kind is carried on
             SessionGame.Tell(NotificationType.Warning, "reallife_session_note_stopped", new Dictionary<string, string>(1) { { "session", SessionText.T(def.TitleKey) } }, 8f);
             Note(def.Id + " stopped after " + done + " of " + length + " minutes; nothing held, it stays due");
         }
