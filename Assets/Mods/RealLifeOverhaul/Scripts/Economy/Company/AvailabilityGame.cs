@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Economy
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Company check (availability, " + (e.characterData != null ? e.characterData.name : "?") + "): " + hoursOff + " hour(s) of the day's shifts outside "
-                                 + w.Kind + " hours, mood " + before.ToString("F1") + " to " + e.satisfaction.ToString("F1") + ": PASS");
+                                 + w.Kind + " hours, mood " + before.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " to " + e.satisfaction.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + ": PASS");
                 }
             }
             return cost;
