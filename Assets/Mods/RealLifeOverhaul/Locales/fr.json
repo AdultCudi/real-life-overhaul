@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test échoué : un parcours des entreprises de la ville a trébuché sur une fiche sans bâtiment. Le journal dit laquelle.",
   "reallife_hire_test_orphan_off": "Chargez d'abord une sauvegarde. Ce test ne tourne pas dans une session Going Public.",
   "reallife_changes_next_title": "Prochaine version",
-  "reallife_changes_next": "Rien pour l'instant.",
+  "reallife_changes_next": "Corrigé : la liste des marchandises d'un plan d'achat de stock sur l'interface RLO affiche la limite hebdo, l'indice, la commande de la semaine dernière et les ventes de la semaine dernière dans leurs propres colonnes, si bien qu'aucune n'est coupée. Corrigé : le relevé des loyers de la propriété sur l'interface RLO ne dessine plus son message vide par-dessus les listes en dessous. Corrigé : acheter une entreprise à un rival n'interrompt plus les Services ni Vendre pour la session, et un achat resté à mi-chemin dans une version précédente est terminé. Corrigé : un chantier au-dessus de votre licence de constructeur indique désormais combien d'étages il compte et ce que la licence exige pour eux, sur le chantier et lors d'une soumission, et une telle soumission est refusée au lieu d'être gagnée et bloquée. Corrigé : la limite de temps d'un chantier prend désormais en compte la livraison des matériaux étape par étape. Corrigé : la limite de 64 gestionnaires dans l'application Entreprise est désormais de 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigé : quand tous les bâtiments qui pourraient accueillir le bureau des services publics sont à vous, les comptes d'électricité et d'eau se demandent et se rétablissent dans l'app Services publics, par téléphone, aux mêmes prix, et les notifications le disent ; dès qu'un bâtiment se libère, le bureau rouvre et l'app indique où. Corrigé : après avoir retiré une candidature et postulé de nouveau au même poste, l'app Carrière ouvrait celle retirée et l'entretien restait inaccessible. Chaque candidature a maintenant sa propre ligne, et l'entretien, l'offre et le retrait vont à celle en cours. Corrigé : une sauvegarde contenant une fiche d'entreprise dont la ville n'a pas le bâtiment (un autre mod peut en laisser une) ne coupe plus le secteur de la tech à chaque chargement. Le mod laisse désormais cette fiche de côté partout où il lit les entreprises de la ville, cite son adresse une fois dans le journal et n'y change rien.",
   "reallife_co_mass_raise": "Accorder une augmentation",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "La licence couvre les bâtiments les plus hauts que la ville autorise.",
   "reallife_ui_cons_level_note": "La licence d'un constructeur couvre un nombre d'étages. Vos propres équipes montent jusqu'à ce niveau ; un bâtiment plus haut va à un constructeur dont la licence le couvre.",
   "reallife_ui_cons_level_up": "Votre licence de constructeur couvre désormais {count} étages.",
-  "reallife_ui_cons_answer_floors": "Votre licence ne couvre pas un bâtiment aussi haut. Terminez d'autres chantiers, ou embauchez un constructeur dont la licence le couvre.",
+  "reallife_ui_cons_answer_floors": "Ce bâtiment compte {floors} étages et votre licence couvre {have}. Une licence pour {floors} étages exige {builds} chantiers terminés (vous en avez {done}) et une réputation de {standing} (vous avez {rep}). Ou embauchez un constructeur dont la licence les couvre.",
   "reallife_ui_cons_answer_builder_floors": "La licence de ce constructeur ne couvre pas autant d'étages.",
   "reallife_ui_cons_sec_quote": "Le devis",
   "reallife_ui_cons_sec_means": "Ce que signifie le devis",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Attendu ce trimestre après impôt",
   "reallife_mkt_fig_statement": "{revenue} encaissés, {costs} de coûts, {pay} votre salaire, {tax} d'impôt, {net} restant",
   "reallife_stx_test_segments": "Revoir la taille de chaque entreprise à la prochaine clôture",
-  "reallife_stx_note_segments_test": "{count} entreprises verront leur taille revue à la prochaine clôture. {change} d'entre elles n'ont pas la taille que donne leur valeur boursière. Les cours restent où ils clôturent."
+  "reallife_stx_note_segments_test": "{count} entreprises verront leur taille revue à la prochaine clôture. {change} d'entre elles n'ont pas la taille que donne leur valeur boursière. Les cours restent où ils clôturent.",
+  "reallife_ui_bizops_col_limit": "Limite hebdo.",
+  "reallife_ui_bizops_col_index": "Indice",
+  "reallife_ui_bizops_col_previous": "Commandé sem. passée",
+  "reallife_ui_bizops_col_sold": "Ventes sem. passée",
+  "reallife_bld_answer_tender_floors": "Ce chantier concerne {floors} étages et votre licence couvre {have}. Une licence pour {floors} étages exige {builds} chantiers terminés (vous en avez {done}) et une réputation de {standing} (vous avez {rep}), donc vous ne pouvez pas encore soumissionner."
 }

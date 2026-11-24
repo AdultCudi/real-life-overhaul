@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: the goods list of a stock buying plan on the RLO interface shows the weekly limit, index, last week's order and last week's sales in columns of their own, so none is cut off. Fixed: the Property rent roll on the RLO interface no longer draws its empty message over the lists under it. Fixed: buying a business from a rival no longer stops Services, Sell for the session, and a purchase that stopped half way in an earlier version is finished. Fixed: a construction job above your builder licence now says how many floors it has and what the licence for them asks, on the job and when you bid, and such a bid is refused instead of won and stuck. Fixed: a job's time limit now allows for the materials to be delivered stage by stage. Fixed: the limit of 64 managers in the Company app is now 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "The licence covers the tallest buildings the city allows.",
   "reallife_ui_cons_level_note": "A builder's licence covers a number of floors. Your own crews build up to it; a taller building goes to a builder whose licence covers it.",
   "reallife_ui_cons_level_up": "Your builder licence now covers {count} floors.",
-  "reallife_ui_cons_answer_floors": "Your licence does not cover a building this tall. Finish more builds, or hire a builder whose licence does.",
+  "reallife_ui_cons_answer_floors": "This building has {floors} floors and your licence covers {have}. A licence for {floors} floors needs {builds} builds finished (you have {done}) and standing {standing} (you have {rep}). Or hire a builder whose licence covers them.",
   "reallife_ui_cons_answer_builder_floors": "That builder's licence does not cover so many floors.",
   "reallife_ui_cons_sec_quote": "The quote",
   "reallife_ui_cons_sec_means": "What the quote means",
@@ -39142,5 +39142,10 @@
   "reallife_stx_test_segments": "Review every company's size at the next close",
   "reallife_stx_note_segments_test": "{count} companies will have their size reviewed at the next close; {change} of them are not the size their market value gives. Prices stay where they close.",
   "reallife_changes_100_24_title": "1.0.24",
-  "reallife_changes_100_24": "Your broadband network can now be dug in Uptown and Cedar Heights and any district a game update adds, and a data centre there can take your own company's line. The Stocks app now says why a sector or a large company moved, sets each company's size by its market value every quarter, and your company's page shows your takings by business line and its statement for this quarter and the next. Gigs now pay by effort and skill, with less for each extra shift in a day and for your first week. A rota shift pays its whole basic wage as soon as the work is done, and every offer says how it is paid. Two options under the RLO interface make the needs bars larger and let you put them in a row along the top of the screen. Fixed: on the RLO interface a business's rating on Flare now shows what the old interface shows, and its address reads as a street name and not a raw key."
+  "reallife_changes_100_24": "Your broadband network can now be dug in Uptown and Cedar Heights and any district a game update adds, and a data centre there can take your own company's line. The Stocks app now says why a sector or a large company moved, sets each company's size by its market value every quarter, and your company's page shows your takings by business line and its statement for this quarter and the next. Gigs now pay by effort and skill, with less for each extra shift in a day and for your first week. A rota shift pays its whole basic wage as soon as the work is done, and every offer says how it is paid. Two options under the RLO interface make the needs bars larger and let you put them in a row along the top of the screen. Fixed: on the RLO interface a business's rating on Flare now shows what the old interface shows, and its address reads as a street name and not a raw key.",
+  "reallife_ui_bizops_col_limit": "Weekly limit",
+  "reallife_ui_bizops_col_index": "Index",
+  "reallife_ui_bizops_col_previous": "Ordered last week",
+  "reallife_ui_bizops_col_sold": "Sold last week",
+  "reallife_bld_answer_tender_floors": "This job is for {floors} floors and your licence covers {have}. A licence for {floors} floors needs {builds} builds finished (you have {done}) and standing {standing} (you have {rep}), so you cannot bid yet."
 }

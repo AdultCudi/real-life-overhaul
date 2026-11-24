@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test fehlgeschlagen: Ein Rundgang durch die Unternehmen der Stadt ist über einen Eintrag ohne Gebäude gestolpert. Das Log sagt welchen.",
   "reallife_hire_test_orphan_off": "Lade zuerst einen Spielstand. Dieser Test läuft nicht in einer Going-Public-Sitzung.",
   "reallife_changes_next_title": "Nächste Version",
-  "reallife_changes_next": "Noch nichts.",
+  "reallife_changes_next": "Behoben: Die Warenliste eines Einkaufsplans für Lagerbestand auf der RLO-Oberfläche zeigt das Wochenlimit, den Index, die Bestellung der letzten Woche und die Verkäufe der letzten Woche in eigenen Spalten, sodass nichts abgeschnitten wird. Behoben: Die Mietübersicht der Immobilien auf der RLO-Oberfläche zeichnet ihre Leermeldung nicht mehr über die Listen darunter. Behoben: Ein Unternehmen von einem Rivalen zu kaufen hält Dienste und Für diese Sitzung verkaufen nicht mehr an, und ein Kauf, der in einer früheren Version auf halbem Weg stehen blieb, wird abgeschlossen. Behoben: Ein Bauauftrag über deiner Bauunternehmer-Lizenz nennt jetzt, wie viele Etagen er hat und was die Lizenz dafür verlangt, im Auftrag selbst und wenn du bietest, und ein solches Gebot wird abgelehnt, statt gewonnen und festgefahren zu werden. Behoben: Das Zeitlimit eines Auftrags berücksichtigt jetzt, dass die Materialien Stufe für Stufe geliefert werden. Behoben: Das Limit von 64 Managern in der Firma-App ist jetzt 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Behoben: Gehören dir alle Gebäude, die das Versorgungsamt aufnehmen könnten, werden Strom- und Wasserkonten in der Versorger-App telefonisch beantragt und wieder angeschlossen, zu denselben Preisen, und die Hinweise sagen das; sobald ein Gebäude frei ist, öffnet das Amt wieder und die App sagt, wo. Behoben: Nach dem Zurückziehen einer Bewerbung und einer neuen Bewerbung auf dieselbe Stelle öffnete die Karriere-App die zurückgezogene, und das Vorstellungsgespräch war nicht erreichbar. Jede Bewerbung hat jetzt ihre eigene Zeile, und Gespräch, Angebot und Rückzug gehen an die aktive. Behoben: Ein Spielstand mit einem Geschäftseintrag, dessen Gebäude es in der Stadt nicht gibt (eine andere Mod kann so einen hinterlassen), schaltet den Techniksektor nicht mehr bei jedem Laden ab. Die Mod lässt solch einen Eintrag jetzt überall aus, wo sie die Geschäfte der Stadt liest, nennt seine Adresse einmal im Log und ändert nichts daran.",
   "reallife_co_mass_raise": "Gehaltserhöhung geben",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "Die Lizenz deckt die höchsten Gebäude ab, die die Stadt erlaubt.",
   "reallife_ui_cons_level_note": "Die Lizenz eines Bauunternehmers deckt eine Anzahl Etagen ab. Deine eigenen Teams bauen bis dahin; ein höheres Gebäude geht an einen Bauunternehmer, dessen Lizenz es abdeckt.",
   "reallife_ui_cons_level_up": "Deine Bauunternehmerlizenz deckt jetzt {count} Etagen ab.",
-  "reallife_ui_cons_answer_floors": "Deine Lizenz deckt ein so hohes Gebäude nicht ab. Schließe mehr Bauten ab oder stelle einen Bauunternehmer ein, dessen Lizenz es abdeckt.",
+  "reallife_ui_cons_answer_floors": "Dieses Gebäude hat {floors} Etagen, und deine Lizenz deckt {have} ab. Eine Lizenz für {floors} Etagen braucht {builds} abgeschlossene Bauten (du hast {done}) und ein Ansehen von {standing} (du hast {rep}). Oder stelle einen Bauunternehmer ein, dessen Lizenz sie abdeckt.",
   "reallife_ui_cons_answer_builder_floors": "Die Lizenz dieses Bauunternehmers deckt nicht so viele Etagen ab.",
   "reallife_ui_cons_sec_quote": "Das Angebot",
   "reallife_ui_cons_sec_means": "Was das Angebot bedeutet",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Erwartet für dieses Quartal nach Steuern",
   "reallife_mkt_fig_statement": "{revenue} rein, {costs} Kosten, {pay} dein Lohn, {tax} Steuer, {net} übrig",
   "reallife_stx_test_segments": "Größe jedes Unternehmens beim nächsten Handelsschluss prüfen",
-  "reallife_stx_note_segments_test": "Bei {count} Unternehmen wird beim nächsten Handelsschluss die Größe geprüft. {change} davon haben nicht die Größe, die ihr Marktwert ergibt. Die Kurse bleiben, wo sie schließen."
+  "reallife_stx_note_segments_test": "Bei {count} Unternehmen wird beim nächsten Handelsschluss die Größe geprüft. {change} davon haben nicht die Größe, die ihr Marktwert ergibt. Die Kurse bleiben, wo sie schließen.",
+  "reallife_ui_bizops_col_limit": "Wochenlimit",
+  "reallife_ui_bizops_col_index": "Index",
+  "reallife_ui_bizops_col_previous": "Bestellt letzte Wo.",
+  "reallife_ui_bizops_col_sold": "Verkauft letzte Wo.",
+  "reallife_bld_answer_tender_floors": "Dieser Auftrag gilt für {floors} Etagen, und deine Lizenz deckt {have} ab. Eine Lizenz für {floors} Etagen braucht {builds} abgeschlossene Bauten (du hast {done}) und ein Ansehen von {standing} (du hast {rep}), deshalb kannst du noch nicht bieten."
 }

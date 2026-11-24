@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: RLO arayüzündeki bir stok alım planının mal listesi haftalık limiti, endeksi, geçen haftaki siparişi ve geçen haftaki satışları kendi sütunlarında gösteriyor, böylece hiçbiri kesilmez. Düzeltildi: RLO arayüzündeki Mülk kira listesi artık altındaki listelerin üzerine boş mesajını çizmiyor. Düzeltildi: bir rakipten işletme satın almak artık Hizmetler ve Oturum için Sat seçeneklerini durdurmuyor ve önceki sürümde yarıda kalan bir satın alma tamamlanıyor. Düzeltildi: inşaat lisansınızın üzerindeki bir iş artık kaç katı olduğunu ve bunlar için lisansın ne istediğini hem işte hem teklif verirken gösteriyor, böyle bir teklif de kazanılıp takılmak yerine reddediliyor. Düzeltildi: bir işin süre sınırı artık malzemelerin aşama aşama teslim edilmesine izin veriyor. Düzeltildi: Şirket uygulamasındaki 64 yönetici sınırı artık 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "Ruhsat, şehrin izin verdiği en yüksek binaları kapsar.",
   "reallife_ui_cons_level_note": "Müteahhit ruhsatı belli sayıda katı kapsar. Kendi ekipleriniz oraya kadar inşa eder; daha yüksek bir bina, onu kapsayan ruhsata sahip bir müteahhide gider.",
   "reallife_ui_cons_level_up": "Müteahhit ruhsatınız artık {count} katı kapsıyor.",
-  "reallife_ui_cons_answer_floors": "Ruhsatınız bu kadar yüksek bir binayı kapsamıyor. Daha fazla inşaat tamamlayın ya da ruhsatı kapsayan bir müteahhit işe alın.",
+  "reallife_ui_cons_answer_floors": "Bu binanın {floors} katı var ve lisansınız {have} katı kapsıyor. {floors} katlı bir lisans için {builds} tamamlanmış inşaat (sizde {done} tane var) ve {standing} itibar (sizde {rep} var) gerekir. Ya da bu katları kapsayan lisansa sahip bir müteahhit tutabilirsiniz.",
   "reallife_ui_cons_answer_builder_floors": "Bu müteahhidin ruhsatı bu kadar çok katı kapsamıyor.",
   "reallife_ui_cons_sec_quote": "Teklif",
   "reallife_ui_cons_sec_means": "Teklifin anlamı",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Bu çeyrek vergi sonrası beklenen",
   "reallife_mkt_fig_statement": "{revenue} gelir, {costs} gider, {pay} maaşınız, {tax} vergi, {net} kalan",
   "reallife_stx_test_segments": "Bir sonraki kapanışta her şirketin büyüklüğünü değerlendir",
-  "reallife_stx_note_segments_test": "{count} şirketin büyüklüğü bir sonraki kapanışta değerlendirilecek. Bunlardan {change} tanesi piyasa değerinin verdiği büyüklükte değil. Fiyatlar kapanışta kaldıkları yerde kalır."
+  "reallife_stx_note_segments_test": "{count} şirketin büyüklüğü bir sonraki kapanışta değerlendirilecek. Bunlardan {change} tanesi piyasa değerinin verdiği büyüklükte değil. Fiyatlar kapanışta kaldıkları yerde kalır.",
+  "reallife_ui_bizops_col_limit": "Haftalık limit",
+  "reallife_ui_bizops_col_index": "Endeks",
+  "reallife_ui_bizops_col_previous": "Geçen hafta sipariş",
+  "reallife_ui_bizops_col_sold": "Geçen hafta satış",
+  "reallife_bld_answer_tender_floors": "Bu iş {floors} katlı ve lisansınız {have} katı kapsıyor. {floors} katlı bir iş için {builds} tamamlanmış inşaat (sizde {done} tane var) ve {standing} itibar (sizde {rep} var) gerekir, bu yüzden henüz teklif veremezsiniz."
 }

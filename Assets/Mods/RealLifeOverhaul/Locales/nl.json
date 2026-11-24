@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test mislukt: een ronde langs de bedrijven van de stad struikelde over een record zonder gebouw. Het logboek zegt welke.",
   "reallife_hire_test_orphan_off": "Laad eerst een savegame. Deze test draait niet in een sessie van Going Public.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: de goederenlijst van een inkoopplan op de RLO-interface toont de wekelijkse limiet, index, bestelling van vorige week en verkoop van vorige week in eigen kolommen, zodat niets wordt afgekapt. Opgelost: de huurlijst van Vastgoed op de RLO-interface tekent niet langer zijn lege melding over de lijsten eronder. Opgelost: een bedrijf van een concurrent kopen stopt Diensten en Verkopen voor de sessie niet meer, en een aankoop die in een eerdere versie halverwege bleef steken wordt afgemaakt. Opgelost: een bouwklus boven je bouwvergunning vermeldt nu hoeveel verdiepingen het heeft en wat de vergunning daarvoor vraagt, bij de klus en bij het bieden, en zo'n bod wordt geweigerd in plaats van gewonnen en vastgelopen. Opgelost: de tijdslimiet van een klus houdt nu rekening met het fase voor fase leveren van materialen. Opgelost: de limiet van 64 managers in de Company-app is nu 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Opgelost: als alle gebouwen die het nutsbedrijf kunnen huisvesten van jou zijn, vraag je stroom- en wateraansluitingen aan en laat je ze weer aansluiten in de Nutsvoorzieningen-app, telefonisch, voor dezelfde prijzen, en de meldingen zeggen dat; zodra een gebouw vrij is, gaat het kantoor weer open en zegt de app waar. Opgelost: na het intrekken van een sollicitatie en opnieuw solliciteren op dezelfde functie opende de Carrière-app de ingetrokken sollicitatie en was het gesprek niet te bereiken. Elke sollicitatie heeft nu een eigen regel, en het gesprek, het aanbod en het intrekken gaan naar de lopende. Opgelost: een opslag met een bedrijfsrecord waarvan de stad het gebouw niet heeft (een andere mod kan er een achterlaten) zet de techsector niet meer bij elke keer laden uit. De mod slaat zo'n record nu over overal waar hij de bedrijven van de stad leest, noemt het adres één keer in het logboek en verandert er niets aan.",
   "reallife_co_mass_raise": "Een loonsverhoging geven",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "De vergunning dekt de hoogste gebouwen die de stad toestaat.",
   "reallife_ui_cons_level_note": "De vergunning van een bouwer dekt een aantal verdiepingen. Je eigen ploegen bouwen tot dat aantal; een hoger gebouw gaat naar een bouwer wiens vergunning het dekt.",
   "reallife_ui_cons_level_up": "Je bouwvergunning dekt nu {count} verdiepingen.",
-  "reallife_ui_cons_answer_floors": "Je vergunning dekt geen gebouw van deze hoogte. Voltooi meer bouwprojecten, of huur een bouwer in wiens vergunning dat wel doet.",
+  "reallife_ui_cons_answer_floors": "Dit gebouw heeft {floors} verdiepingen en je vergunning dekt {have}. Een vergunning voor {floors} verdiepingen vereist {builds} afgeronde bouwprojecten (je hebt {done}) en aanzien {standing} (je hebt {rep}). Of huur een bouwbedrijf in wiens vergunning ze vallen.",
   "reallife_ui_cons_answer_builder_floors": "De vergunning van die bouwer dekt niet zoveel verdiepingen.",
   "reallife_ui_cons_sec_quote": "De offerte",
   "reallife_ui_cons_sec_means": "Wat de offerte betekent",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Verwacht dit kwartaal na belasting",
   "reallife_mkt_fig_statement": "{revenue} binnen, {costs} kosten, {pay} je loon, {tax} belasting, {net} over",
   "reallife_stx_test_segments": "Grootte van elk bedrijf beoordelen bij de volgende sluiting",
-  "reallife_stx_note_segments_test": "{count} bedrijven krijgen bij de volgende sluiting hun grootte beoordeeld. Van hen hebben {change} niet de grootte die hun marktwaarde geeft. Koersen blijven staan waar ze sluiten."
+  "reallife_stx_note_segments_test": "{count} bedrijven krijgen bij de volgende sluiting hun grootte beoordeeld. Van hen hebben {change} niet de grootte die hun marktwaarde geeft. Koersen blijven staan waar ze sluiten.",
+  "reallife_ui_bizops_col_limit": "Wekelijkse limiet",
+  "reallife_ui_bizops_col_index": "Index",
+  "reallife_ui_bizops_col_previous": "Besteld vorige week",
+  "reallife_ui_bizops_col_sold": "Verkocht vorige week",
+  "reallife_bld_answer_tender_floors": "Deze klus is voor {floors} verdiepingen en je vergunning dekt {have}. Een vergunning voor {floors} verdiepingen vereist {builds} afgeronde bouwprojecten (je hebt {done}) en aanzien {standing} (je hebt {rep}), dus je kunt nog niet bieden."
 }

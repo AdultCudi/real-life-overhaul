@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Prueba fallida: un recorrido por los negocios de la ciudad tropezó con un registro sin edificio. El registro dice cuál.",
   "reallife_hire_test_orphan_off": "Carga primero una partida. Esta prueba no se ejecuta en una sesión de Going Public.",
   "reallife_changes_next_title": "Próxima versión",
-  "reallife_changes_next": "Nada todavía.",
+  "reallife_changes_next": "Corregido: la lista de mercancías de un plan de compra de existencias en la interfaz de RLO muestra el límite semanal, el índice, el pedido de la semana pasada y las ventas de la semana pasada en columnas propias, de modo que ninguna queda cortada. Corregido: el listado de alquileres de propiedades en la interfaz de RLO ya no dibuja su mensaje vacío sobre las listas de debajo. Corregido: comprar un negocio a un rival ya no detiene Servicios ni Vender durante la sesión, y una compra que se había detenido a medias en una versión anterior se completa. Corregido: una obra por encima de tu licencia de constructor ahora indica cuántas plantas tiene y lo que la licencia exige para ellas, en la propia obra y al licitar, y esa licitación se rechaza en lugar de ganarse y quedar atascada. Corregido: el plazo de una obra ahora tiene en cuenta la entrega de los materiales por etapas. Corregido: el límite de 64 gerentes en la aplicación Empresa ahora es 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corregido: cuando todos los edificios que podrían albergar la oficina de servicios públicos son tuyos, las cuentas de luz y agua se solicitan y se reconectan en la app Suministros, por teléfono, a los mismos precios, y los avisos lo dicen; en cuanto un edificio queda libre, la oficina vuelve a abrir y la app dice dónde. Corregido: tras retirar una solicitud y volver a solicitar el mismo puesto, la app Carrera abría la retirada y no se podía llegar a la entrevista. Cada solicitud tiene ahora su propia fila, y la entrevista, la oferta y la retirada van a la activa. Corregido: una partida con un registro de negocio cuyo edificio no existe en la ciudad (otro mod puede dejar uno atrás) ya no apaga el sector tecnológico en cada carga. El mod ahora deja fuera ese registro en todas partes donde lee los negocios de la ciudad, nombra su dirección una vez en el registro y no cambia nada de él.",
   "reallife_co_mass_raise": "Dar un aumento",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "La licencia cubre los edificios más altos que permite la ciudad.",
   "reallife_ui_cons_level_note": "La licencia de un constructor cubre un número de plantas. Tus equipos construyen hasta ese límite; un edificio más alto va a un constructor cuya licencia lo cubra.",
   "reallife_ui_cons_level_up": "Tu licencia de constructor cubre ahora {count} plantas.",
-  "reallife_ui_cons_answer_floors": "Tu licencia no cubre un edificio tan alto. Termina más obras, o contrata a un constructor cuya licencia sí lo cubra.",
+  "reallife_ui_cons_answer_floors": "Este edificio tiene {floors} plantas y tu licencia cubre {have}. Una licencia para {floors} plantas necesita {builds} obras terminadas (tienes {done}) y reputación {standing} (tienes {rep}). O contrata a un constructor cuya licencia las cubra.",
   "reallife_ui_cons_answer_builder_floors": "La licencia de ese constructor no cubre tantas plantas.",
   "reallife_ui_cons_sec_quote": "El presupuesto",
   "reallife_ui_cons_sec_means": "Qué significa el presupuesto",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Previsto este trimestre tras impuestos",
   "reallife_mkt_fig_statement": "{revenue} ingresados, {costs} de costes, {pay} de tu sueldo, {tax} de impuestos, {net} netos",
   "reallife_stx_test_segments": "Revisar el tamaño de cada empresa en el próximo cierre",
-  "reallife_stx_note_segments_test": "{count} empresas tendrán su tamaño revisado en el próximo cierre; {change} de ellas no tienen el tamaño que indica su valor de mercado. Los precios se quedan donde cierran."
+  "reallife_stx_note_segments_test": "{count} empresas tendrán su tamaño revisado en el próximo cierre; {change} de ellas no tienen el tamaño que indica su valor de mercado. Los precios se quedan donde cierran.",
+  "reallife_ui_bizops_col_limit": "Límite semanal",
+  "reallife_ui_bizops_col_index": "Índice",
+  "reallife_ui_bizops_col_previous": "Pedido sem. pasada",
+  "reallife_ui_bizops_col_sold": "Vendido sem. pasada",
+  "reallife_bld_answer_tender_floors": "Este trabajo es para {floors} plantas y tu licencia cubre {have}. Una licencia para {floors} plantas necesita {builds} obras terminadas (tienes {done}) y reputación {standing} (tienes {rep}), así que todavía no puedes licitar."
 }

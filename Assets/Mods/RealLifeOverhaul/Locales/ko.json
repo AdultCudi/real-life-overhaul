@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "테스트 실패: 도시의 사업체 순회가 건물이 없는 기록에 걸렸습니다. 로그에 어느 것인지 나옵니다.",
   "reallife_hire_test_orphan_off": "먼저 저장 파일을 불러오세요. 이 테스트는 Going Public 세션에서는 실행되지 않습니다.",
   "reallife_changes_next_title": "다음 버전",
-  "reallife_changes_next": "아직 없음.",
+  "reallife_changes_next": "수정: RLO 인터페이스의 재고 구매 계획 상품 목록에서 주간 한도, 지수, 지난주 주문과 지난주 판매가 각자의 열에 표시되어 어느 것도 잘리지 않습니다. 수정: RLO 인터페이스의 부동산 임대 목록은 이제 그 아래 목록 위에 빈 메시지를 그리지 않습니다. 수정: 경쟁자에게서 사업체를 사는 동안 서비스와 세션 판매가 멈추지 않으며, 이전 버전에서 중간에 멈췄던 구매는 끝까지 완료됩니다. 수정: 건설업 면허보다 높은 공사는 이제 층수와 그에 필요한 면허 조건을 공사 정보와 입찰 시 표시하며, 그런 입찰은 낙찰되어 멈추는 대신 거부됩니다. 수정: 공사 기한은 이제 자재가 단계별로 배송되는 것을 고려합니다. 수정: 회사 앱의 관리자 한도 64명은 이제 256명입니다.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "수정: 공공사업소를 가질 수 있는 건물이 모두 내 것일 때, 전기와 수도 계정은 같은 요금으로 공공요금 앱에서 전화로 신청하고 다시 연결하며, 알림이 그렇다고 말합니다. 건물이 비면 사업소가 다시 열리며 앱이 그곳을 알려 줍니다. 수정: 지원을 철회한 뒤 같은 직책에 다시 지원하면 커리어 앱이 철회된 지원을 열었고 면접에 닿을 수 없었습니다. 이제 지원마다 자기 줄이 있으며, 면접, 제안, 철회는 살아 있는 지원에 갑니다. 수정: 도시에 없는 건물을 가리키는 사업체 기록 (다른 모드가 남겨 둘 수 있음)이 있는 저장 파일은 불러올 때마다 테크 업계를 끄지 않습니다. 이제 모드는 도시의 사업체를 읽는 곳마다 그런 기록을 빼고, 주소를 로그에 한 번 적고, 그 기록은 아무것도 바꾸지 않습니다.",
   "reallife_co_mass_raise": "임금 인상하기",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "이 면허는 도시가 허용하는 가장 높은 건물까지 포함합니다.",
   "reallife_ui_cons_level_note": "건설 면허는 층수를 정합니다. 내 팀은 그 층수까지 짓고, 더 높은 건물은 그 층수를 허용하는 면허의 건설사에 맡깁니다.",
   "reallife_ui_cons_level_up": "건설 면허가 이제 {count}층까지 허용합니다.",
-  "reallife_ui_cons_answer_floors": "내 면허는 이 높이의 건물을 허용하지 않습니다. 공사를 더 마치거나, 면허가 허용하는 건설사를 고용하세요.",
+  "reallife_ui_cons_answer_floors": "이 건물은 {floors}층이고 면허는 {have}층까지 적용됩니다. {floors}층 면허는 완공된 공사 {builds}건(현재 {done}건)과 신뢰도 {standing}(현재 {rep})이 필요합니다. 또는 그 층수를 덮는 면허를 가진 시공사를 고용할 수 있습니다.",
   "reallife_ui_cons_answer_builder_floors": "그 건설사의 면허는 이만큼의 층수를 허용하지 않습니다.",
   "reallife_ui_cons_sec_quote": "견적",
   "reallife_ui_cons_sec_means": "견적의 의미",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "이번 분기 세후 예상",
   "reallife_mkt_fig_statement": "수입 {revenue}, 비용 {costs}, 귀하의 임금 {pay}, 세금 {tax}, 남은 금액 {net}",
   "reallife_stx_test_segments": "다음 마감 때 모든 회사의 규모를 검토",
-  "reallife_stx_note_segments_test": "{count}개 회사가 다음 마감 때 규모를 검토받게 되며, 그중 {change}개는 시장 가치가 가리키는 규모가 아닙니다. 가격은 마감된 자리에 그대로 남습니다."
+  "reallife_stx_note_segments_test": "{count}개 회사가 다음 마감 때 규모를 검토받게 되며, 그중 {change}개는 시장 가치가 가리키는 규모가 아닙니다. 가격은 마감된 자리에 그대로 남습니다.",
+  "reallife_ui_bizops_col_limit": "주간 한도",
+  "reallife_ui_bizops_col_index": "지수",
+  "reallife_ui_bizops_col_previous": "지난주 주문",
+  "reallife_ui_bizops_col_sold": "지난주 판매",
+  "reallife_bld_answer_tender_floors": "이 일은 {floors}층짜리이고 면허는 {have}층까지 적용됩니다. {floors}층 면허는 완공된 공사 {builds}건(현재 {done}건)과 신뢰도 {standing}(현재 {rep})이 필요하므로, 아직 입찰할 수 없습니다."
 }

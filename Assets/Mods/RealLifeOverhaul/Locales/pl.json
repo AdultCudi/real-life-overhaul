@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: lista towarów planu zakupów w interfejsie RLO pokazuje tygodniowy limit, indeks, zamówienie z zeszłego tygodnia i sprzedaż z zeszłego tygodnia we własnych kolumnach, więc żadna nie jest ucięta. Naprawiono: lista czynszów Nieruchomości w interfejsie RLO nie rysuje już pustej wiadomości na listach pod nią. Naprawiono: kupno firmy od konkurenta nie zatrzymuje już Usług ani Sprzedaży na sesję, a zakup, który w poprzedniej wersji został przerwany w połowie, zostaje dokończony. Naprawiono: budowa powyżej twojej licencji budowlanej mówi teraz, ile ma pięter i czego wymaga licencja na nie, zarówno przy zleceniu, jak i przy składaniu oferty, a taka oferta jest odrzucana zamiast wygrywać i utykać. Naprawiono: limit czasu zlecenia uwzględnia teraz dostawę materiałów etapami. Naprawiono: limit 64 menedżerów w aplikacji Firma wynosi teraz 256.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
@@ -34135,7 +34135,7 @@
   "reallife_ui_cons_level_top": "Pozwolenie obejmuje najwyższe budynki, na jakie pozwala miasto.",
   "reallife_ui_cons_level_note": "Pozwolenie wykonawcy obejmuje określoną liczbę pięter. Twoje własne ekipy budują do tej liczby, a wyższy budynek trafia do wykonawcy, którego pozwolenie go obejmuje.",
   "reallife_ui_cons_level_up": "Twoje pozwolenie wykonawcy obejmuje teraz {count} pięter.",
-  "reallife_ui_cons_answer_floors": "Twoje pozwolenie nie obejmuje budynku tej wysokości. Ukończ więcej budów albo zatrudnij wykonawcę, którego pozwolenie go obejmuje.",
+  "reallife_ui_cons_answer_floors": "Ten budynek ma {floors} pięter, a twoja licencja obejmuje {have}. Licencja na {floors} pięter wymaga ukończonych budów: {builds} (masz {done}) i reputacji {standing} (masz {rep}). Albo zatrudnij wykonawcę, którego licencja je obejmuje.",
   "reallife_ui_cons_answer_builder_floors": "Pozwolenie tego wykonawcy nie obejmuje tylu pięter.",
   "reallife_ui_cons_sec_quote": "Wycena",
   "reallife_ui_cons_sec_means": "Co oznacza wycena",
@@ -39094,5 +39094,10 @@
   "reallife_mkt_fig_q_expect": "Spodziewane w tym kwartale po podatku",
   "reallife_mkt_fig_statement": "{revenue} wpływów, {costs} kosztów, {pay} twojej pensji, {tax} podatku, {net} zostaje",
   "reallife_stx_test_segments": "Sprawdź wielkość każdej firmy przy następnym zamknięciu",
-  "reallife_stx_note_segments_test": "{count} firm będzie miało sprawdzaną wielkość przy następnym zamknięciu, a {change} z nich ma inny rozmiar, niż wynika z ich wartości rynkowej. Ceny zostają tam, gdzie się zamkną."
+  "reallife_stx_note_segments_test": "{count} firm będzie miało sprawdzaną wielkość przy następnym zamknięciu, a {change} z nich ma inny rozmiar, niż wynika z ich wartości rynkowej. Ceny zostają tam, gdzie się zamkną.",
+  "reallife_ui_bizops_col_limit": "Limit tygodniowy",
+  "reallife_ui_bizops_col_index": "Indeks",
+  "reallife_ui_bizops_col_previous": "Zam. zeszły tyg.",
+  "reallife_ui_bizops_col_sold": "Sprzedaż zeszły tyg.",
+  "reallife_bld_answer_tender_floors": "Ta praca jest na {floors} pięter, a twoja licencja obejmuje {have}. Licencja na {floors} pięter wymaga ukończonych budów: {builds} (masz {done}) i reputacji {standing} (masz {rep}), więc na razie nie możesz składać oferty."
 }
