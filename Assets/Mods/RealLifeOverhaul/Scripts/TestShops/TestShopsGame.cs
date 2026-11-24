@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.TestShops
         // Kept in a method of its own: the Mono JIT fails a method as a whole when it names a member the player's build lacks.
         private static void Take(BuildingRegistration reg)
         {
-            BizManPresentation.OvertakeBusiness(reg);
+            Economy.ServicesGame.Overtake(reg);
         }
 
         private static void Read()

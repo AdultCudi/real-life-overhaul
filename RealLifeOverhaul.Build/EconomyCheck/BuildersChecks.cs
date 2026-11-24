@@ -29,6 +29,7 @@ internal static partial class Program
         SpecialityChecks();   // the speciality's first choice, its wait, its list on both apps' pages and the founding that opens it (SpecialityChecks.cs)
         BuildSourceChecks();
         BuildTextChecks();
+        FixBiz24();
     }
 
     private static void BuildCatalogueChecks()

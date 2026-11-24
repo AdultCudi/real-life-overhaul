@@ -38,28 +38,30 @@ namespace RealLifeOverhaul.Ui
             return Joined(item, limit, g.deliveryContractItem.amountOrderedLastWeek, business != null ? FinancialSummaryHelper.ProductsSoldLastWeekInRegistration(item, business) : 0);
         }
 
-        // An import plan's good: the same, from the purchasing agent's cell (PurchasingAgentProductCellView.OpenBottomPart).
-        private static string ImportNote(PurchasingAgentProductModel p)
+        // An import plan's good: the game's four figures, from the purchasing agent's cell (PurchasingAgentProductCellView.OpenBottomPart), each for a column of its own
+        // so that none is cut off the end of a long line; the shortage or backorder it is in, if any, stays the row's second line.
+        private static string[] ImportFigures(PurchasingAgentProductModel p)
         {
             if (p == null || p.productRef == null)
             {
-                return null;
+                return new[] { "-", "-", "-", "-" };
             }
             string item = p.productRef.itemName;
-            Noted.Clear();
-            string warning = MarketWarning(item, null);
-            if (warning != null)
-            {
-                Noted.Add(warning);
-            }
             string limit = "-";
             if (!DeliveryHelper.AreWholesaleAndImportLimitsDisabled() && p.productRef.ItemCached != null && DeliveryHelper.ShouldLimitImporterMaxAmount(item, p.importerAddress))
             {
                 int left = p.productRef.ItemCached.maxOrderAmountPerImporter - ImportPartnership.GetItemAmountOrderedThisWeek(p.importerAddress, item);
                 limit = (left > 0 ? left : 0).ToFormattedNumber();
             }
-            return Joined(item, limit, p.productRef.amountOrderedLastWeek, FinancialSummaryHelper.ProductsSoldLastWeek(item));
+            ProductMarketEntry market = ProductMarketHelper.GetProductMarketEntry(item);
+            return new[]
+            {
+                limit, market != null ? market.importPriceIndex.ToString("F1") : "-", p.productRef.amountOrderedLastWeek.ToFormattedNumber(),
+                FinancialSummaryHelper.ProductsSoldLastWeek(item).ToFormattedNumber()
+            };
         }
+
+        private static string ImportWarning(PurchasingAgentProductModel p) => p == null || p.productRef == null ? null : MarketWarning(p.productRef.itemName, null);
 
         // The shortage or backorder a good is in, in the game's own words for the kind of event; null when it is in neither.
         private static string MarketWarning(string item, string neighbourhood)

@@ -153,6 +153,7 @@ internal static partial class Program
     /// <summary>The Services screen's own checks, alone: <c>--services-ui</c>.</summary>
     private static void ServicesUiChecks()
     {
+        FixBiz24();   // a rival's business bought, and the rest of that report's checks (FixBiz24Checks.cs)
         // Every tab builds its own page: the model is new for each write, so no part of the tab before stays.
         var seen = new HashSet<string>();
         for (int tab = 0; tab < 4; tab++)

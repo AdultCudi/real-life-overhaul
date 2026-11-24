@@ -36,6 +36,19 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The floors a level is licensed to; a level out of range is the nearest.</summary>
         public static int FloorsOf(int level) => Floors[Math.Max(0, Math.Min(Levels - 1, level))];
 
+        /// <summary>The lowest level whose licence covers a building of these floors; the top level for one taller than any.</summary>
+        public static int LevelFor(int storeys)
+        {
+            for (int i = 0; i < Levels; i++)
+            {
+                if (Floors[i] >= storeys)
+                {
+                    return i;
+                }
+            }
+            return Levels - 1;
+        }
+
         /// <summary>True when a building of these floors is within the level's licence.</summary>
         public static bool Allows(int level, int storeys) => storeys <= FloorsOf(level);
 

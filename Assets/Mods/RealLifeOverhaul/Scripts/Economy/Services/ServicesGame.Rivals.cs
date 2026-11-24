@@ -9,7 +9,9 @@ using Helpers;
 using InteriorDesign;
 using RealLifeOverhaul.Economy.Ventures;
 using Streets;
+using UI;
 using UI.Notification;
+using UI.Smartphone.Apps.BizMan.Schedule;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -477,9 +479,63 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            BizManPresentation.OvertakeBusiness(reg, null);
+            Overtake(reg);
             RivalsHelper.RefreshRivals();
             Told(address);
+            return true;
+        }
+
+        /// <summary>
+        /// The game's own takeover of a business, with the BizMan page it expects: the game's method ends in BizManSchedule.AutoFillSchedule(page), which reads the page's address,
+        /// so with no page it threw after the building had become the player's and left out the rest of the takeover (the schedule, the map, the market's providers). The page
+        /// is pointed at the building as BizMan's own Open does before a takeover is made from it. Called on a press only.
+        /// </summary>
+        public static void Overtake(BuildingRegistration reg)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            BizManBusiness page = uis != null && uis.fullMenu != null && uis.fullMenu.bizMan != null ? uis.fullMenu.bizMan.business : null;
+            if (page != null)
+            {
+                page.SetAddress(reg.Address);
+            }
+            BizManPresentation.OvertakeBusiness(reg, page);
+        }
+
+        /// <summary>
+        /// Mends a takeover that stopped half way (before this was mended the game's method threw, see <see cref="Overtake"/>): the building is the player's and the sale is still
+        /// listed as the rival's. The steps the game never reached are done: the schedule filled, the map's marker and filters, the rival timeline. True if the building was in that
+        /// state. Read on the day event, once for each such sale, which is then dropped.
+        /// </summary>
+        public static bool Mend(BuildingRegistration reg, RivalSale sale)
+        {
+            if (reg == null || sale == null || !reg.RentedByPlayer || !string.IsNullOrEmpty(reg.businessOwnerRivalId) || !GoingPublic.Mine(reg)
+                || !string.Equals(ServicesStore.Clean(reg.BusinessName), sale.Business, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            BizManBusiness page = uis != null && uis.fullMenu != null && uis.fullMenu.bizMan != null ? uis.fullMenu.bizMan.business : null;
+            if (page != null)
+            {
+                page.SetAddress(reg.Address);
+                BizManSchedule.AutoFillSchedule(page);
+            }
+            CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
+            CityBuildingController controller = city != null && GameRegistrations.BuildingOf(reg) != null ? city.FindCityBuildingController(reg.Address) : null;
+            if (controller != null)
+            {
+                controller.UpdatePoi();
+            }
+            if (uis != null && uis.mapFilters != null)
+            {
+                uis.mapFilters.ApplyFilters();
+            }
+            string district = GameRegistrations.District(reg);
+            if (!string.IsNullOrEmpty(district))
+            {
+                RivalsHelper.CheckRivalTimeline(district);
+            }
+            Told(reg.Address);
             return true;
         }
 

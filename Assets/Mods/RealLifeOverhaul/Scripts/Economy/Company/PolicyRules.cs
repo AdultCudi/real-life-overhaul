@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Economy
 
         public const int TemplatesMost = 6;             // templates of the player's own a save keeps
         public const int RegionsMost = 32;              // regions with a policy of their own
-        public const int StoresMost = 64;               // stores with a policy of their own (ManagerCatalogue.ManagersMost)
+        public const int StoresMost = 256;              // stores with a policy of their own: as many as there can be managers (ManagerCatalogue.ManagersMost)
         public const int MoodDays = 2;                  // days under the floor in a row before a place is escalated
         public const int WaveWindow = 7;                // days a wave of leavers is counted over
 
