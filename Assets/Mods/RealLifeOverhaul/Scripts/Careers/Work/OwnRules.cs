@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Careers
         public const int OfficeBp = 1000;           // ...and more again from an office of the player's own
         public const int LateCutBp = 3000;          // a late delivery is paid this much less
         public const int ContractsMost = 6;         // offers and contracts at once
+        public const int ContractsKept = ContractsMost * 2;   // what a save holds: the live ones and the newest finished, the rest of the book let go
         public const int ContractDaysLeast = 6, ContractDaysMost = 14;
         public const int OfferDays = 3;
         public static readonly int[] HoursOf = { 8, 12, 16, 24, 32 };   // a contract's size
@@ -161,6 +162,38 @@ namespace RealLifeOverhaul.Careers
                 n += all[i].Stage <= (int)ContractStep.Taken ? 1 : 0;
             }
             return n;
+        }
+
+        /// <summary>
+        /// The contracts a save keeps, in their order: every offer and contract still live, and the newest of those over (done, late, lapsed, dropped) as
+        /// many as the room left to <see cref="ContractsKept"/> allows. Finished ones stay in the book for a month, so a book of old ones could fill the
+        /// save's room and push out the newest contract, the one just taken. Returns how many were left out.
+        /// </summary>
+        public static int ForSave(List<Contract> all, List<Contract> into)
+        {
+            into.Clear();
+            int finished = 0;
+            for (int i = 0; i < all.Count; i++)
+            {
+                finished += all[i].Stage > (int)ContractStep.Taken ? 1 : 0;
+            }
+            int skip = Math.Max(0, finished - Math.Max(0, ContractsKept - (all.Count - finished)));   // the oldest finished ones
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i].Stage > (int)ContractStep.Taken && skip > 0)
+                {
+                    skip--;
+                    continue;
+                }
+                into.Add(all[i]);
+            }
+            return all.Count - into.Count;
+        }
+
+        /// <summary>What a contract pays for an hour of its work, whole money at the start's prices (the fee over the hours asked for, rounded).</summary>
+        public static int PerHour(Contract c)
+        {
+            return c.Hours <= 0 ? 0 : (int)Math.Min(int.MaxValue, (c.Fee + c.Hours / 2) / c.Hours);
         }
 
         /// <summary>Minutes of a contract still to work.</summary>

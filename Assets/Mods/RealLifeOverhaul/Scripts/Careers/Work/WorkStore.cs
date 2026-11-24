@@ -58,9 +58,11 @@ namespace RealLifeOverhaul.Careers
                 .Add(f.RestraintEmployer).Add(f.RestraintWeek).Add(f.ClaimNumber).Add(f.RestraintTested).Add(f.ColleaguesUntil).Add(f.ColleaguesCount).Add(f.ColleaguesProf).Add(f.ColleaguesLevel)
                 .Add(f.Practice.Prof).Add(f.Practice.Opened).Add(f.Practice.Reputation).Add(f.Practice.Served).Add(f.Practice.Late).Add(f.PracticeAfter);
             w.Part('k');
-            for (int i = 0; i < f.Contracts.Count && i < OwnRules.ContractsMost * 2; i++)
+            var kept = new System.Collections.Generic.List<Contract>(OwnRules.ContractsKept);
+            OwnRules.ForSave(f.Contracts, kept);   // the live ones first of all: a cap by position dropped the newest, and so a contract just taken
+            for (int i = 0; i < kept.Count; i++)
             {
-                Contract c = f.Contracts[i];
+                Contract c = kept[i];
                 w.Record().Add(c.Id).Add(c.Prof).Add(c.Rank).Add(c.Client).Add(c.Street).Add(c.Number).Add(c.Hours).Add(c.Minutes).Add(c.Fee).Add(c.Due).Add(c.Lapse).Add(c.Stage).Add(c.Practice);
             }
         }
@@ -251,7 +253,7 @@ namespace RealLifeOverhaul.Careers
                     Id = x.Int(), Prof = x.Int(-1), Rank = Math.Max(0, x.Int()), Client = x.Text(), Street = x.Text(), Number = x.Int(), Hours = Math.Max(1, x.Int(1)), Minutes = Math.Max(0, x.Int()),
                     Fee = Math.Max(0, x.Long()), Due = x.Int(), Lapse = x.Int(), Stage = TalentCatalogue.Clamp(x.Int(), 0, (int)ContractStep.Dropped), Practice = x.Bool()
                 };
-                if (c.Def != null && f.Contracts.Count < OwnRules.ContractsMost * 2)
+                if (c.Def != null && f.Contracts.Count < OwnRules.ContractsKept)
                 {
                     f.Contracts.Add(c);
                 }
