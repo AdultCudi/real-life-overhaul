@@ -188,15 +188,50 @@ namespace RealLifeOverhaul
         /// <summary>Puts out someone only there to be seen, whom a scene may take back at any moment; null if none may be spared.</summary>
         public StreetActor SpawnPresence(Vector3 near, ActorLook look, float radius = 6f, bool onRoad = false)
         {
-            int yielding = Count(yielding: true);
-            if (yielding >= MaxPresence || yielding + Count(yielding: false) > MaxActors - PresenceHeadroom - 1)
-            {
-                return null;
-            }
-            return Put(near, look, radius, onRoad, yields: true);
+            return PresenceRoom() ? Put(near, look, radius, onRoad, yields: true) : null;
         }
 
-        private StreetActor Put(Vector3 near, ActorLook look, float radius, bool onRoad, bool yields)
+        /// <summary>
+        /// Puts out somebody who is one person, the same every time they are asked for by <paramref name="seed"/>
+        /// (StaffLookRules): the one waiting on the shelf in that look as they are, else somebody dressed in it now
+        /// (one look built). Null if nowhere or nobody.
+        /// </summary>
+        public StreetActor SpawnAs(Vector3 near, int seed, bool female, float radius = 6f, bool onRoad = false)
+        {
+            return Put(near, ActorLook.Civilian, radius, onRoad, yields: false, seed, female);
+        }
+
+        /// <summary>The same for one only there to be seen, whom a scene may take back at any moment; null if none may be spared.</summary>
+        public StreetActor SpawnPresenceAs(Vector3 near, int seed, bool female, float radius = 6f, bool onRoad = false)
+        {
+            return PresenceRoom() ? Put(near, ActorLook.Civilian, radius, onRoad, yields: true, seed, female) : null;
+        }
+
+        /// <summary>
+        /// True if <paramref name="seed"/>'s person can be put out without a long frame that shows: they wait on the shelf in
+        /// their own look, or a look may be built this frame (Looks.Free). A pass over the pool's twelve.
+        /// </summary>
+        public bool ReadyAs(int seed, bool female)
+        {
+            for (int i = 0; i < _actors.Count; i++)
+            {
+                StreetActor actor = _actors[i];
+                if (!actor.InUse && actor.IsValid && actor.Look == ActorLook.Civilian && !StaffLookRules.Redress(seed, female, actor.Seed, actor.Female))
+                {
+                    return true;
+                }
+            }
+            return Looks.Free;
+        }
+
+        // Those only out to be seen are few, and always leave characters for a scene.
+        private bool PresenceRoom()
+        {
+            int yielding = Count(yielding: true);
+            return yielding < MaxPresence && yielding + Count(yielding: false) <= MaxActors - PresenceHeadroom - 1;
+        }
+
+        private StreetActor Put(Vector3 near, ActorLook look, float radius, bool onRoad, bool yields, int seed = 0, bool female = false)
         {
             StreetActor actor = null;
             try
@@ -208,7 +243,7 @@ namespace RealLifeOverhaul
                     return null;
                 }
 
-                actor = Take(look, spot, mayReclaim: !yields);
+                actor = Take(look, spot, mayReclaim: !yields, seed, female);
                 if (actor == null)
                 {
                     return null;
@@ -255,7 +290,7 @@ namespace RealLifeOverhaul
             if (actor.Look == ActorLook.Civilian)
             {
                 actor.Uses++;
-                actor.Stale = Looks.Worn(actor.Uses, actor.DressedAt);
+                actor.Stale = StaffLookRules.Ages(actor.Seed) && Looks.Worn(actor.Uses, actor.DressedAt);   // one person's own look waits for them
             }
             Tend();
         }
@@ -572,9 +607,12 @@ namespace RealLifeOverhaul
 
         // An idle character already dressed this way (whoever came back longest ago), else a new one, else an idle
         // one re-dressed, else (for a scene) one of those who are only out to be seen, taken off the street this instant.
-        private StreetActor Take(ActorLook look, Vector3 position, bool mayReclaim)
+        // With a seed, one person is wanted (StaffLookRules): the one on the shelf in their look as they are, else an idle
+        // civilian dressed as them.
+        private StreetActor Take(ActorLook look, Vector3 position, bool mayReclaim, int seed = 0, bool female = false)
         {
             StreetActor ready = null;
+            int readyRank = 0;
             StreetActor yielding = null;
             int idleCivilians = 0, idleOfficers = 0, idleParamedics = 0;
             for (int i = _actors.Count - 1; i >= 0; i--)
@@ -607,10 +645,30 @@ namespace RealLifeOverhaul
                 {
                     idleParamedics++;
                 }
-                // Dressed for the part: sooner one whose look is not yet due a change, then whoever came back longest ago.
-                if (actor.Look == look && (ready == null || (Due(ready) && !Due(actor)) || (Due(ready) == Due(actor) && actor.ReleasedAt < ready.ReleasedAt)))
+                // Dressed for the part: sooner one whose look is not yet due a change, then whoever came back longest ago;
+                // among civilians by whose look it is and who is wanted (StaffLookRules.Rank).
+                if (actor.Look != look)
+                {
+                    continue;
+                }
+                int rank = look == ActorLook.Civilian ? StaffLookRules.Rank(seed, female, actor.Seed, actor.Female, Due(actor)) : Due(actor) ? 1 : 0;
+                if (ready == null || rank < readyRank || (rank == readyRank && actor.ReleasedAt < ready.ReleasedAt))
                 {
                     ready = actor;
+                    readyRank = rank;
+                }
+            }
+            if (ready != null && look == ActorLook.Civilian)
+            {
+                if (StaffLookRules.Redress(seed, female, ready.Seed, ready.Female))
+                {
+                    ready.Character.gameObject.SetActive(true);
+                    Dress(ready, look, seed, female);   // somebody else until now: this person's own look
+                    return ready;
+                }
+                if (seed == 0)
+                {
+                    ready.Seed = 0;   // one person's look handed to anybody: anybody's from now on, due a change like the rest
                 }
             }
             if (ready != null)
@@ -638,7 +696,7 @@ namespace RealLifeOverhaul
             if (_actors.Count < MaxActors)
             {
                 StreetActor created = Create(StreetSpots.OnPavement(position, 25f, out Vector3 pavement) ? pavement : position);
-                Dress(created, look);
+                Dress(created, look, seed, female);
                 Logger?.Info($"People: character {_actors.Count} of {MaxActors} created as {look}.");
                 return created;
             }
@@ -664,9 +722,14 @@ namespace RealLifeOverhaul
             {
                 Logger?.Info($"People: {(yielding.Visible ? "an officer in view" : "an officer out of view")} who was only on patrol was taken off the street; a scene needs the character.");
                 Release(yielding);
-                if (yielding.Look == look)
+                bool own = look != ActorLook.Civilian || !StaffLookRules.Redress(seed, female, yielding.Seed, yielding.Female);
+                if (yielding.Look == look && own)
                 {
                     CapsUpToDate(yielding);
+                    if (seed == 0)
+                    {
+                        yielding.Seed = 0;   // as on the shelf: one person's look handed to anybody is anybody's from now on
+                    }
                     return yielding;
                 }
                 spare = yielding;
@@ -674,7 +737,7 @@ namespace RealLifeOverhaul
             if (spare != null)
             {
                 spare.Character.gameObject.SetActive(true);
-                Dress(spare, look);
+                Dress(spare, look, seed, female);
             }
             return spare;
         }

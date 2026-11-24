@@ -79,11 +79,28 @@ namespace RealLifeOverhaul
             return Enter(near, look, radius, onRoad, presence: true);
         }
 
-        private bool Enter(Vector3 near, ActorLook look, float radius, bool onRoad, bool presence)
+        /// <summary>
+        /// Puts out somebody who works at the place and is the same person at every visit: a civilian in the look of
+        /// <paramref name="seed"/> (StaffLookRules), of that sex. False if nobody could be had.
+        /// </summary>
+        public bool EnterAs(Vector3 near, int seed, bool female, float radius, bool onRoad)
+        {
+            return Enter(near, ActorLook.Civilian, radius, onRoad, presence: false, seed, female);
+        }
+
+        /// <summary>The same for one only there to be seen, whom the pool may take back at any moment.</summary>
+        public bool EnterPresenceAs(Vector3 near, int seed, bool female, float radius, bool onRoad)
+        {
+            return Enter(near, ActorLook.Civilian, radius, onRoad, presence: true, seed, female);
+        }
+
+        private bool Enter(Vector3 near, ActorLook look, float radius, bool onRoad, bool presence, int seed = 0, bool female = false)
         {
             Exit();
             ActorPool pool = ActorPool.Instance;
-            StreetActor actor = pool == null ? null : presence ? pool.SpawnPresence(near, look, radius, onRoad) : pool.Spawn(near, look, radius, onRoad);
+            StreetActor actor = pool == null ? null
+                : seed != 0 ? (presence ? pool.SpawnPresenceAs(near, seed, female, radius, onRoad) : pool.SpawnAs(near, seed, female, radius, onRoad))
+                : presence ? pool.SpawnPresence(near, look, radius, onRoad) : pool.Spawn(near, look, radius, onRoad);
             if (actor == null)
             {
                 return false;

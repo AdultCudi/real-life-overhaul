@@ -113,6 +113,13 @@ namespace RealLifeOverhaul
         internal float DressedAt;
         internal float ReleasedAt;
 
+        /// <summary>
+        /// Whose look a civilian wears (StaffLookRules): 0 for a look of the free roll, anybody's; else the seed of the one
+        /// person it was rolled for, with their sex, kept on the shelf so that person is the same when put out again.
+        /// </summary>
+        internal int Seed;
+        internal bool Female;
+
         public bool IsValid => Character != null;
         public Vector3 Position => Character.transform.position;
 

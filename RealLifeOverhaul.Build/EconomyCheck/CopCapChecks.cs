@@ -87,7 +87,7 @@ internal static partial class Program
     {
         string dress = ModSource(@"People\ActorPool.Dress.cs");
         string kit = ModSource(@"People\ServiceKit.cs");
-        string dressing = MemberText(dress, "private static void Dress(StreetActor actor, ActorLook look)");
+        string dressing = MemberText(dress, "private static void Dress(StreetActor actor, ActorLook look, int seed = 0, bool female = false)");
         int caps = dressing.IndexOf("actor.CapsOn = Settings.PoliceCaps;", StringComparison.Ordinal);
         Check(caps >= 0 && caps < dressing.IndexOf("Looks.Count(", StringComparison.Ordinal),
             "cop caps: an officer is dressed for the option's value, written down before anything is built, so that a look that fails is not tried again for it");
@@ -145,9 +145,9 @@ internal static partial class Program
         string tend = MemberText(pool, "private void TendOne()");
         Check(tend.Contains("if (!actor.InUse && CapsOutOfDate(actor))") && tend.Contains("Redress(actor);   // the officer's look is made again for the option's value now"),
             "cop caps: one look at a time, when Looks says one may be built, an idle out of date officer is dressed again");
-        string take = MemberText(pool, "private StreetActor Take(ActorLook look, Vector3 position, bool mayReclaim)");
+        string take = MemberText(pool, "private StreetActor Take(ActorLook look, Vector3 position, bool mayReclaim, int seed = 0, bool female = false)");
         int handed = take.IndexOf("CapsUpToDate(yielding);", StringComparison.Ordinal);
-        Check(take.Contains("(Due(ready) && !Due(actor)) || (Due(ready) == Due(actor)") && take.Contains("CapsUpToDate(ready);")
+        Check(take.Contains(": Due(actor) ? 1 : 0;") && take.Contains("rank < readyRank || (rank == readyRank && actor.ReleasedAt < ready.ReleasedAt)") && take.Contains("CapsUpToDate(ready);")
               && handed > 0 && handed < take.IndexOf("return yielding;", StringComparison.Ordinal),
             "cop caps: a scene is handed an up to date officer when there is one, and anyone out of date is dressed again before they are handed over");
         string up = MemberText(pool, "private static void CapsUpToDate(StreetActor actor)");

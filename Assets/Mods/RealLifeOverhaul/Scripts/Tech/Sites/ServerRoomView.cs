@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Tech
         private sealed class Technician
         {
             public readonly ActorRole Role = new ActorRole();
+            public int Seed;            // who they are (StaffLookRules: the centre's place and their number): the same person at every visit
             public int Stop;
             public float Until;
             public bool Waiting;
@@ -79,6 +80,10 @@ namespace RealLifeOverhaul.Tech
             }
             ServerRoomPlan.Plan(grid, door.x, door.z, inward.x, inward.z, centre.Tier, centre.Racks, centre.GpuRacks, _plan);
             Place = centre.Place;
+            for (int i = 0; i < _technicians.Length; i++)
+            {
+                _technicians[i].Seed = StaffLookRules.Of(StaffLookRules.Technician, Place + "#" + i.ToString(CultureInfo.InvariantCulture));
+            }
             _items = RoomMeasure.Items(building);
             _staff = Math.Min(_technicians.Length, Math.Max(0, centre.Technicians));
             _said.Length = 0;
@@ -338,10 +343,13 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        // The technicians walk the cold aisles end to end, pausing at each; put out one a second at most.
+        // The technicians walk the cold aisles end to end, pausing at each; put out one a second at most. Each is one person
+        // at every visit (StaffLookRules: the centre's place and their number), put out as they wait on the pool's shelf or
+        // when their look may be built (ActorPool.ReadyAs).
         private void Cast(float now)
         {
             int points = _plan.Patrol.Count / 2;
+            ActorPool pool = ActorPool.Instance;
             for (int i = 0; i < _technicians.Length; i++)
             {
                 Technician t = _technicians[i];
@@ -354,7 +362,13 @@ namespace RealLifeOverhaul.Tech
                 if (!t.Role.Present)
                 {
                     int stop = (i * points / _technicians.Length) % points;
-                    if (RoomMeasure.Spot(PatrolPoint(stop), out Vector3 at) && t.Role.EnterPresence(at, ActorLook.Civilian, 0.5f, onRoad: false))
+                    int seed = t.Seed;
+                    bool female = StaffLookRules.Female(seed);
+                    if (pool == null || seed == 0 || !pool.ReadyAs(seed, female))
+                    {
+                        continue;   // their look next time, when one may be built: the other may be waiting as they are
+                    }
+                    if (RoomMeasure.Spot(PatrolPoint(stop), out Vector3 at) && t.Role.EnterPresenceAs(at, seed, female, 0.5f, onRoad: false))
                     {
                         t.Stop = stop;
                         t.Waiting = false;
