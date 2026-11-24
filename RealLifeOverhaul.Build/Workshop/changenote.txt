@@ -1,10 +1,5 @@
-1.0.26
-
-New
-- A big fall in your own company's share price now comes with a notice and a line on its page that say what caused it: the market, your sector, your figures or the market's mood. The notice after a social event now says how far each figure is from the next step, such as dating.
+1.0.27
 
 Fixed
-- On a game with 365 day years the banks no longer lend six times what a 60 day year lends for the same income, with an option to bring the game's own limit back.
-- The notice after a social event shows all its lines instead of being cut off. Part-timers can keep set hours, like a student after lessons or a parent in school hours, shown on their card, in the schedule's picker and on the Staff page, never planned outside by the rota and costing mood when a shift is set outside them, behind a new option. A holiday can fill every need and lift your mood, behind a new option, and your partner and children can come along for a price a head and come home closer. Your bank can offer a Black card to its richest savers on lines you set, with a yearly fee and rewards, in the same books and risk as its other cards.
-- The price of your own company no longer falls or rises by most of its value in a day when its results come out after a quarter far from the others, such as one with a building sold. Such a quarter is no longer read as growth, and the growth the market believes moves a little at each results.
-- A scooter rented from the game's stands is no longer taken away while you are in a building, so a long class or a film leaves it where you parked it.
+- A rented scooter is now kept while you are indoors only for the day you rented it. After midnight it is taken back, with a notice, as soon as it is out of sight and nobody is on it, so going indoors every evening no longer keeps it for ever.
+- Burgers, hot dogs, pizza, kebabs and other food the game will not let you put in a fridge or a freezer are now kept cold by the fridges and freezers at your shops, up to the room each has, and the Guide and the stock page say how much.
