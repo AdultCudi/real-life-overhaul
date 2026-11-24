@@ -6,6 +6,12 @@ namespace RealLifeOverhaul
     /// <summary>What a loan to a friend asks of the day: nothing, the day they said they would pay it back, or the end of the days more they asked for.</summary>
     public enum LoanStep { None, Due, GraceOver }
 
+    /// <summary>The three figures of a relationship, each 0 to 100.</summary>
+    public enum SocialMeter { Familiarity, Affection, Trust }
+
+    /// <summary>What a figure is next asked to reach in the code: a stage the person earns by the figures, or one they say yes to at them. Never saved.</summary>
+    public enum SocialGoal { None, Friend, CloseFriend, Date, Partner, MoveIn }
+
     /// <summary>The relationship model's rules: what each thing is worth in points of 0 to 100, when a stage is reached and lost, neglect.</summary>
     public static class SocialRules
     {
@@ -77,6 +83,78 @@ namespace RealLifeOverhaul
         public const float DriftFamiliarity = 8f;
 
         public static float Clamp(float value) => value < 0f ? 0f : value > 100f ? 100f : value;
+
+        public static float Value(SocialPerson person, SocialMeter meter)
+        {
+            return meter == SocialMeter.Familiarity ? person.Familiarity : meter == SocialMeter.Affection ? person.Affection : person.Trust;
+        }
+
+        // The figure a goal wants of a meter; 0 where the code asks nothing of that meter for it.
+        private static float Wants(SocialGoal goal, SocialMeter meter)
+        {
+            switch (goal)
+            {
+                case SocialGoal.Friend:
+                    return meter == SocialMeter.Familiarity ? FriendFamiliarity : meter == SocialMeter.Affection ? FriendAffection : FriendTrust;
+                case SocialGoal.CloseFriend:
+                    return meter == SocialMeter.Familiarity ? CloseFamiliarity : meter == SocialMeter.Affection ? CloseAffection : CloseTrust;
+                case SocialGoal.Date:
+                    return meter == SocialMeter.Affection ? DateAffection : meter == SocialMeter.Trust ? DateTrust : 0f;
+                case SocialGoal.Partner:
+                    return meter == SocialMeter.Affection ? PartnerAffection : meter == SocialMeter.Trust ? PartnerTrust : 0f;
+                case SocialGoal.MoveIn:
+                    return meter == SocialMeter.Trust ? MoveInTrust : 0f;
+                default:
+                    return 0f;
+            }
+        }
+
+        /// <summary>
+        /// The next figure a meter has to reach, as the code asks for it, and what for: the friend's, the close friend's, the figure at which a romantic interest says yes to going out
+        /// (<see cref="WouldDate"/>: only for somebody the player could fall for, while the player has no partner), the partner's and the move in's. False where the code asks nothing more of
+        /// that meter, or the person is not met, so a figure with no threshold shows none. Of two goals a meter is short of the nearer is named, the date before the close friend where they
+        /// ask the same. Days and shared outings that also count are not figures and are not shown.
+        /// </summary>
+        public static bool Next(SocialPerson person, SocialMeter meter, bool romantic, bool single, out float need, out SocialGoal goal)
+        {
+            need = 0f;
+            goal = SocialGoal.None;
+            if (person == null || !person.Met)
+            {
+                return false;
+            }
+            float value = Value(person, meter);
+            if (person.Together)
+            {
+                Reach(value, meter, person.Stage == SocialStage.Dating ? SocialGoal.Partner : person.MovedIn ? SocialGoal.None : SocialGoal.MoveIn, ref need, ref goal);
+                return goal != SocialGoal.None;
+            }
+            if (person.Stage < SocialStage.Friend)
+            {
+                Reach(value, meter, SocialGoal.Friend, ref need, ref goal);
+                return goal != SocialGoal.None;
+            }
+            if (romantic && single)
+            {
+                Reach(value, meter, SocialGoal.Date, ref need, ref goal);
+            }
+            if (person.Stage == SocialStage.Friend)
+            {
+                Reach(value, meter, SocialGoal.CloseFriend, ref need, ref goal);
+            }
+            return goal != SocialGoal.None;
+        }
+
+        // A goal that wants a figure of a meter above what it is now, taken if nearer than the one already found.
+        private static void Reach(float value, SocialMeter meter, SocialGoal candidate, ref float need, ref SocialGoal goal)
+        {
+            float wants = Wants(candidate, meter);
+            if (wants > 0f && Math.Floor(value) < wants && (goal == SocialGoal.None || wants < need))
+            {
+                need = wants;
+                goal = candidate;
+            }
+        }
 
         public static void Change(SocialPerson person, float familiarity, float affection, float trust)
         {

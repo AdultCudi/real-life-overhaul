@@ -883,6 +883,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--social-next")
+        {
+            SocialNext();   // (the outing's notice whole in every language and the next step of each figure, while working on them: SocialNextChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--own-fall")
         {
             OwnFallAll();   // (a fall of the player's own company's price and why it is told, while working on it: OwnFallChecks.cs)
@@ -1880,6 +1886,7 @@ internal static partial class Program
         MarketWhySegments();   // why the market moved, the size segments and the player's statement (MarketWhyChecks.cs)
         OwnFallAll();   // a fall of the player's own company's price and why it is told (OwnFallChecks.cs)
         LoanMeans();   // the loan means test held to a 60 day year (LoanMeansChecks.cs)
+        SocialNext();   // the outing's notice whole in every language and each figure's next step (SocialNextChecks.cs)
         Segments();   // who an AI model is sold to: the choice at the start and the re-launch's cost, work, days, save and both interfaces (SegmentChecks.cs)
         AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();
