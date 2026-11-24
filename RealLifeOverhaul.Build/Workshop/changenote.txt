@@ -1,4 +1,11 @@
-1.0.30
+1.0.31
 
 Fixed
-- The salesperson on your Car Showroom's floor, the technicians in your data centre and the staff at the desks of a fitted floor are the same people at every visit, where each used to be somebody new every time you came in.
+- A page of the Company app in the new interface that is taller than the window now scrolls, so the button to book a campaign can always be reached.
+- A business's earlier campaigns and claims in the Company app are told apart by its place and not by its name, so two businesses with alike names no longer show each other's.
+- BizMan in the new interface reads the game's alerts again whenever their words change, even when their count stays the same, so a business no longer shows the alerts of the one before it.
+- The mark beside a price in BizMan's prices page now says what it means.
+- The Open button of an item under Also waiting in the Company app now opens the page it belongs to, for an overtime offer, a strike, a raise, a loss, a report, tax and rota rows alike, and a row with nowhere to go has no button.
+- BizMan's logistics page no longer squeezes the goods table to one row on a 1920 by 1080 screen. The table keeps at least five rows and scrolls a row at a time, and the route's rows and stops above it scroll in the room left.
+- BizMan's warehouse vehicle slots and a factory machine's form now scroll when they do not fit, instead of leaving slots or controls off the page.
+- Answering a review on Flare used different rules in the old and the new interface, a long reply to any review could soften the talk about your shop again and again, and nothing said what a reply did. Answers to reviews now fit or do not fit: thanks fit a good review, sorry fits a poor one, standing your ground fits a poor review that is out of line with your rating, an answer that does not fit costs a little, and a notice gives the rating before and after.
