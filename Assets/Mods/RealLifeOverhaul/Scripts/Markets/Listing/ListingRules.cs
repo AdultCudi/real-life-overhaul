@@ -118,23 +118,67 @@ namespace RealLifeOverhaul.Markets
             niY = p4 / (double)d4;
             if (found >= 8)
             {
-                long r8 = 0, p8 = 0;
+                long p8 = 0;
                 int d8 = 0;
                 for (int i = 4; i < 8; i++)
                 {
-                    r8 += rev[i];
                     p8 += profit[i];
                     d8 += days[i];
                 }
                 niY = Math.Min(niY, (p4 + p8) / (double)(d4 + d8));   // a year better than the two years' mean is not taken at its word
-                double before = r8 / (double)d8;
-                growth = before > 0.0 && revY > 0.0 ? Math.Log(revY / before) : 0.0;
+                growth = GrowthLog(Rates(rev, days, 8), 8, 4);
             }
             else if (found >= 4)
             {
-                double recent = (rev[0] + rev[1]) / (double)(days[0] + days[1]), earlier = (rev[2] + rev[3]) / (double)(days[2] + days[3]);
-                growth = earlier > 0.0 && recent > 0.0 ? Math.Log(recent / earlier) * 2.0 : 0.0;
+                growth = GrowthLog(Rates(rev, days, 4), 4, 2) * 2.0;
             }
+        }
+
+        // A quarter's takings a day, newest first.
+        private static double[] Rates(long[] rev, int[] days, int n)
+        {
+            var rate = new double[n];
+            for (int i = 0; i < n; i++)
+            {
+                rate[i] = days[i] > 0 ? rev[i] / (double)days[i] : 0.0;
+            }
+            return rate;
+        }
+
+        /// <summary>
+        /// The log of the newest <paramref name="recent"/> quarters' takings against the same number before them, newest first. A quarter more than
+        /// <see cref="ListingCatalogue.QuarterSeenMost"/> times the middle one of all of them, or under one over that, is a one-off (a building sold, a contract paid at once, a part
+        /// quarter after a listing) and counts as the middle one: it says nothing of growth, so it is not read as growth while it stands in the newer half and as a collapse when it
+        /// moves to the older. A real change of level is not lost by it, the price follows the takings' level itself (<see cref="Day"/>). 0 when either half has nothing.
+        /// </summary>
+        public static double GrowthLog(double[] quarters, int n, int recent)
+        {
+            if (n < 2 * recent)
+            {
+                return 0.0;
+            }
+            var sorted = new double[n];
+            Array.Copy(quarters, sorted, n);
+            Array.Sort(sorted);
+            double middle = n % 2 == 1 ? sorted[n / 2] : 0.5 * (sorted[n / 2 - 1] + sorted[n / 2]);
+            if (middle <= 0.0)
+            {
+                return 0.0;
+            }
+            double least = middle / ListingCatalogue.QuarterSeenMost, most = middle * ListingCatalogue.QuarterSeenMost, newer = 0.0, older = 0.0;
+            for (int i = 0; i < 2 * recent; i++)
+            {
+                double seen = quarters[i] < least || quarters[i] > most ? middle : quarters[i];
+                if (i < recent)
+                {
+                    newer += seen;
+                }
+                else
+                {
+                    older += seen;
+                }
+            }
+            return Math.Log(newer / older);
         }
 
         /// <summary>A profit after the founder's pay, which is a share of a profit and nothing of a loss.</summary>
@@ -278,24 +322,21 @@ namespace RealLifeOverhaul.Markets
             OwnListing o = s.Own;
             double reported = s.PendingNi, expected = o.PendingExpect;
             // Growth: the year's takings, this quarter and the three before, against the four before them.
-            long recent = (long)(s.PendingRev / 1000.0), earlier = 0;
-            int recentCount = 1, earlierCount = 0;
-            for (int i = s.Results.Count - 1, n = 1; i >= 0 && n < 8; i--, n++)
+            // It is read from the eight quarters with a lumpy one held to the middle's band, and the belief moves a step at a time (GrowthLog, GrowthStepMost).
+            var quarters = new double[8];
+            quarters[0] = (long)(s.PendingRev / 1000.0);
+            int count = 1;
+            for (int i = s.Results.Count - 1; i >= 0 && count < 8; i--, count++)
             {
-                if (n < 4)
-                {
-                    recent += s.Results[i].RevenueK;
-                    recentCount++;
-                }
-                else
-                {
-                    earlier += s.Results[i].RevenueK;
-                    earlierCount++;
-                }
+                quarters[count] = s.Results[i].RevenueK;
             }
-            if (recentCount == 4 && earlierCount == 4 && recent > 0 && earlier > 0)
+            if (count == 8)
             {
-                s.Growth = GrowthFrom(Math.Log(recent / (double)earlier), env);
+                double reading = GrowthLog(quarters, 8, 4);
+                if (reading != 0.0)
+                {
+                    s.Growth += MarketValuation.Clamp(GrowthFrom(reading, env) - s.Growth, -ListingCatalogue.GrowthStepMost, ListingCatalogue.GrowthStepMost);
+                }
             }
             int eps = MarketLife.PerShare(reported, s.Shares), consensus = MarketLife.PerShare(expected, s.Shares);
             int declared = Declared(s);

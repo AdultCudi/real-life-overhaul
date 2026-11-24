@@ -25,6 +25,7 @@ internal static partial class Program
         public Func<MarketState> State;
         public double Revenue = 50000, Profit = 8000;   // the company's takings and profit a day
         public Func<int, double> ProfitOn;               // ...or by the statement day
+        public Func<int, double> RevenueOn;              // the takings by the statement day, when they are not the same every day
         public int Standing = 50, Press, ScandalOn = -1;
         public long Debt = 200000;
         public bool Company = true;                      // the player has a company on the market or on its way
@@ -54,7 +55,7 @@ internal static partial class Program
                 double rev = 0, profit = 0;
                 for (int d = e.OwnFrom; d < e.OwnFrom + e.OwnDays; d++)
                 {
-                    rev += Revenue;
+                    rev += RevenueOn != null ? RevenueOn(d) : Revenue;
                     profit += ProfitOn != null ? ProfitOn(d) : Profit;
                 }
                 e.OwnRev = (long)rev;
