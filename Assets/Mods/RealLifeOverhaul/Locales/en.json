@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Food spoilage can now give food that would be thrown out overnight to charity in the evening, as a gift in kind at what it cost that is deducted from your tax, earns a little standing, a good mood and a lift for your staff within ceilings set by what your shops really sell, and it is off until you switch it on.",
+  "reallife_changes_next": "Nothing yet.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -39249,5 +39249,7 @@
   "reallife_spoil_give": "Give spoiling food to charity",
   "reallife_opt_tip_living_spoilage_give": "In the evening, food that would be thrown out overnight goes to charity instead, at what it cost. Only an ordinary shop's leftovers earn standing, mood and tax relief.",
   "reallife_spoil_note_gave": "Food that would have spoiled went to charity last evening: {given} pieces from {places} of your places, worth {worth} at cost. Still thrown out overnight: {count} pieces, worth {amount}.",
-  "reallife_giving_row_food": "Food from your shops given this tax year, at cost"
+  "reallife_giving_row_food": "Food from your shops given this tax year, at cost",
+  "reallife_changes_100_29_title": "1.0.29",
+  "reallife_changes_100_29": "Food spoilage can now give food that would be thrown out overnight to charity in the evening, as a gift in kind at what it cost that is deducted from your tax, earns a little standing, a good mood and a lift for your staff within ceilings set by what your shops really sell, and it is off until you switch it on."
 }

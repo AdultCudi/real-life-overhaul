@@ -1,8 +1,4 @@
-1.0.28
+1.0.29
 
-Fixed
-- The last piece of homework of a short course could never be done because it was set only at the class that marks the course, so every piece is now set at least one class earlier, and the Campus app says how many are open and after which class the next comes.
-- An exam counted you tired for the energy the exam itself spends, so the same preparation marked five points lower from a middling night, and now it reads your energy as the exam begins.
-- A retake you did not sit turned your last mark into a 0 overnight, and now the mark you sat stays.
-- The tutor's edge on an exam was missing in the first seconds of a session, before the city's people had loaded, and now it comes from the save alone.
-- Exam marks swung by ten points either way with nothing on the page to explain them, so the day's luck is now at most five, and the Studying tab shows a forecast of the mark with every part of it, which a student who attends, does the homework and sits rested always sees as the top band.
+New
+- Food spoilage can now give food that would be thrown out overnight to charity in the evening, as a gift in kind at what it cost that is deducted from your tax, earns a little standing, a good mood and a lift for your staff within ceilings set by what your shops really sell, and it is off until you switch it on.

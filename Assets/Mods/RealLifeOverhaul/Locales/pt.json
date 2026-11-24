@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "A deterioração de alimentos agora pode dar à caridade, à noite, a comida que seria jogada fora durante a noite, como doação em espécie pelo custo, que é descontada do seu imposto, rende um pouco de reputação, bom humor e ânimo para a sua equipe, dentro de limites definidos pelo que as suas lojas realmente vendem. Fica desligado até você ligar.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -39249,5 +39249,7 @@
   "reallife_spoil_give": "Doar comida que estragaria à caridade",
   "reallife_opt_tip_living_spoilage_give": "À noite, a comida que iria para o lixo vai para instituições de caridade, pelo custo. Só as sobras de uma loja comum dão reputação, humor e alívio de imposto.",
   "reallife_spoil_note_gave": "A comida que estragaria foi para a caridade ontem à noite: {given} peças de {places} dos seus lugares, no valor de {worth} pelo custo. Ainda jogadas fora durante a noite: {count} peças, no valor de {amount}.",
-  "reallife_giving_row_food": "Comida das suas lojas doada neste ano fiscal, pelo custo"
+  "reallife_giving_row_food": "Comida das suas lojas doada neste ano fiscal, pelo custo",
+  "reallife_changes_100_29_title": "1.0.29",
+  "reallife_changes_100_29": "A deterioração de alimentos agora pode dar à caridade, à noite, a comida que seria jogada fora durante a noite, como doação em espécie pelo custo, que é descontada do seu imposto, rende um pouco de reputação, bom humor e ânimo para a sua equipe, dentro de limites definidos pelo que as suas lojas realmente vendem. Fica desligado até você ligar."
 }
