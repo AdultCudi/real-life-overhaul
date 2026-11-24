@@ -357,7 +357,7 @@ namespace RealLifeOverhaul.FitOut
                 Seats(made);
                 if (r.People && Settings.People)
                 {
-                    _cast.Begin(r.Kind, _seatsView, StopsView(r), r.Door);
+                    _cast.Begin(r.Kind, _seatsView, StopsView(r), r.Door, r.Seed);
                 }
                 Say(r, placed);
             });
@@ -619,7 +619,7 @@ namespace RealLifeOverhaul.FitOut
             }
             else if (Ready && _request != null && _request.People && Settings.People)
             {
-                _cast.Begin(_request.Kind, _seatsView, _stopsView, _request.Door);
+                _cast.Begin(_request.Kind, _seatsView, _stopsView, _request.Door, _request.Seed);
             }
         }
 

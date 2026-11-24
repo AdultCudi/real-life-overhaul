@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul.FitOut
             public readonly ActorRole Role = new ActorRole();
             public FitUse Use;          // the seat's use; None for one who walks about
             public bool Presence;       // only to be seen: gives way to a scene
+            public int Seed;            // who they are, for one who works here (StaffLookRules): the same person at every visit; 0 for a visitor, anybody
             public int Seat = -1;
             public bool Lit;            // the screens at the seat's desk are on for this one
             public int Stop = -1;
@@ -55,8 +57,12 @@ namespace RealLifeOverhaul.FitOut
         /// <summary>The crew as it was given, for the log.</summary>
         public FitCrew Crew { get; private set; }
 
-        /// <summary>The people of a floor that stands now: some there at once if the screen is still black, the rest through the door.</summary>
-        public void Begin(FitKind kind, List<SeatPlace> seats, List<Vector3> stops, Vector3 door)
+        /// <summary>
+        /// The people of a floor that stands now: some there at once if the screen is still black, the rest through the door.
+        /// Those at its desks and meeting tables work there: each is one person at every visit, by the floor's
+        /// <paramref name="seed"/> and their number (StaffLookRules); the rest are visitors, anybody.
+        /// </summary>
+        public void Begin(FitKind kind, List<SeatPlace> seats, List<Vector3> stops, Vector3 door, int seed)
         {
             End();
             _seats.AddRange(seats);
@@ -65,11 +71,11 @@ namespace RealLifeOverhaul.FitOut
             _door = door;
             int spare = ActorPool.Instance != null ? ActorPool.Instance.Free - Reserve : 0;
             Crew = FitCrew.For(kind, Count(FitUse.Desk), Count(FitUse.Meeting), Count(FitUse.Lounge), Count(FitUse.Waiting), _stops.Count, spare);
-            Add(Crew.AtDesks, FitUse.Desk, false);
-            Add(Crew.InMeeting, FitUse.Meeting, false);
-            Add(Crew.InLounge, FitUse.Lounge, true);
-            Add(Crew.Waiting, FitUse.Waiting, true);
-            Add(Crew.Walking, FitUse.None, true);
+            Add(Crew.AtDesks, FitUse.Desk, false, seed);
+            Add(Crew.InMeeting, FitUse.Meeting, false, seed);
+            Add(Crew.InLounge, FitUse.Lounge, true, 0);
+            Add(Crew.Waiting, FitUse.Waiting, true, 0);
+            Add(Crew.Walking, FitUse.None, true, 0);
             float now = Time.time;
             bool hidden = SceneFinds.Hidden;
             for (int i = 0; i < _members.Count; i++)
@@ -77,19 +83,29 @@ namespace RealLifeOverhaul.FitOut
                 Member m = _members[i];
                 m.Doing = Doing.Away;
                 m.Until = now + (hidden ? 0f : 1f + i * 1.5f);
-                if (hidden)
+                if (hidden && Ready(m))
                 {
                     Arrive(m, now, atOnce: true);   // already at work when the player comes in
                 }
             }
         }
 
-        private void Add(int count, FitUse use, bool presence)
+        // Those who work here have a number each, in the order they are added: the floor's seed and it are who they are.
+        private void Add(int count, FitUse use, bool presence, int floorSeed)
         {
             for (int i = 0; i < count; i++)
             {
-                _members.Add(new Member { Use = use, Presence = presence });
+                int who = presence ? 0 : StaffLookRules.Of(StaffLookRules.Desk, floorSeed.ToString(CultureInfo.InvariantCulture) + "#" + _members.Count.ToString(CultureInfo.InvariantCulture));
+                _members.Add(new Member { Use = use, Presence = presence, Seed = who });
             }
+        }
+
+        // One who works here comes when they wait on the pool's shelf as they are, or when their look may be built (one a
+        // black frame, else one every few seconds: ActorPool.ReadyAs); a visitor is whoever is free.
+        private static bool Ready(Member m)
+        {
+            ActorPool pool = ActorPool.Instance;
+            return m.Seed == 0 || (pool != null && pool.ReadyAs(m.Seed, StaffLookRules.Female(m.Seed)));
         }
 
         private int Count(FitUse use)
@@ -123,7 +139,7 @@ namespace RealLifeOverhaul.FitOut
                         m.Doing = Doing.Away;   // gone, or taken back by the pool: somebody else later
                         m.Until = now + Random.Range(25f, 70f);
                     }
-                    if (!arrived && now >= m.Until && DoorClear())
+                    if (!arrived && now >= m.Until && DoorClear() && Ready(m))
                     {
                         arrived = Arrive(m, now, atOnce: false);
                         if (!arrived)
@@ -188,6 +204,10 @@ namespace RealLifeOverhaul.FitOut
 
         private bool Spawn(Member m, Vector3 near)
         {
+            if (m.Seed != 0)
+            {
+                return m.Role.EnterAs(near, m.Seed, StaffLookRules.Female(m.Seed), 0.8f, onRoad: false);
+            }
             return m.Presence ? m.Role.EnterPresence(near, ActorLook.Civilian, 0.8f, onRoad: false) : m.Role.Enter(near, ActorLook.Civilian, 0.8f, onRoad: false);
         }
 
