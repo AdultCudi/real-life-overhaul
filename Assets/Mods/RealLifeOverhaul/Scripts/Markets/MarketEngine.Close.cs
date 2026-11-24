@@ -579,6 +579,7 @@ namespace RealLifeOverhaul.Markets
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.Sector, A = bestSector, B = bestBp });
             }
             WhyNews(day, bestSector, bestBp, up, upBp, down, downBp);   // what the engine applied that moved them (MarketEngine.Why.cs)
+            OwnFalls(day);   // the player's own company far under its year's high: what moved it (MarketEngine.OwnFall.cs)
             for (int i = State.Derived.Count - 1; i >= 0; i--)
             {
                 if (State.Derived[i].Day < day - 6)

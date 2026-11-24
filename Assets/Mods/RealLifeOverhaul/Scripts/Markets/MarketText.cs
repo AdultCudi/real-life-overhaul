@@ -225,6 +225,14 @@ namespace RealLifeOverhaul.Markets
                     // Why a sector or a large company moved: only a cause the engine applied that day (MarketWhy).
                     return MarketWhyText.Line(n, s, out _, out data);
                 }
+                case DerivedNews.OwnFall:
+                    if (k == null || k.Own == null || k.Own.Fall.PeakCents <= 0)
+                    {
+                        data = new string[0];
+                        return string.Empty;   // the figures it was told by are not kept past a load
+                    }
+                    data = OwnFallText.Pairs(k.Own.Fall, k);
+                    return "reallife_own_fall_note";
                 case DerivedNews.Segment:
                     data = new[] { "name", name, "segment", Size((MarketSize)Math.Max(0, Math.Min((int)MarketSize.Small, n.A))), "worth", Large(n.C * 1000000.0) };
                     return n.A < n.B ? "reallife_mkt_news_segment_up" : "reallife_mkt_news_segment_down";

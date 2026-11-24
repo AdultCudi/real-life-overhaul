@@ -135,6 +135,10 @@ namespace RealLifeOverhaul.Markets
         public int VestDay, VestCliff, VestSpan; // the day the vesting began, the days to its cliff and to its end
         public long CapCents;                    // a bank's stock only: the most all its shares may be worth, cents (three times the capital that counts); 0 none (Markets/Extras)
 
+        // Never saved: a fall of the price told to the founder and the figures it was told by. After a load the next fall is told once more at most, and only when the price crosses again.
+        public int FallDay;                      // the day the last fall was told
+        public OwnFall Fall;                     // ...as it was measured (OwnFallRules), for the line that says why
+
         public long Others(Stock s)
         {
             return s.Shares - Founder;

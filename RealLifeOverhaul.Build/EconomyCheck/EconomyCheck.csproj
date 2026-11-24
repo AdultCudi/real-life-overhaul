@@ -615,6 +615,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketWhy.cs" Link="Mod\MarketWhy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStatement.cs" Link="Mod\MarketStatement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Why.cs" Link="Mod\MarketEngine.Why.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.OwnFall.cs" Link="Mod\MarketEngine.OwnFall.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\OwnFallRules.cs" Link="Mod\OwnFallRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Segments.cs" Link="Mod\MarketStore.Segments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerEdition.cs" Link="Mod\LedgerEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerState.cs" Link="Mod\LedgerState.cs" />
