@@ -174,11 +174,26 @@ namespace RealLifeOverhaul.Ui
             if (answer != null)
             {
                 r.Flags |= FlareRowFlags.Answered;
-                r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", FlareFeedRules.Plain(answer.Text ?? string.Empty));
+                r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", FlareFeedRules.Plain(answer.Text ?? string.Empty))
+                         + ResultLine(_flare.ResultOfPost(p.Id, r.Stars));
             }
             else
             {
                 r.Button = FlareText.T("reallife_flare_kit_reply");
+            }
+        }
+
+        // What an answered review came to, after the reply's words: how it counts and what it did to the talk. Nothing for an answer that has no record.
+        private static string ResultLine(FlareResult result)
+        {
+            switch (result)
+            {
+                case FlareResult.Eased: return " · " + FlareText.T("reallife_flare_kit_result_eased");
+                case FlareResult.Raised: return " · " + FlareText.T("reallife_flare_kit_result_raised");
+                case FlareResult.Thanked: return " · " + FlareText.T("reallife_flare_kit_result_thanked");
+                case FlareResult.Soured: return " · " + FlareText.T("reallife_flare_kit_result_soured");
+                case FlareResult.Stands: return " · " + FlareText.T("reallife_flare_kit_result_stands");
+                default: return string.Empty;
             }
         }
 
@@ -210,7 +225,7 @@ namespace RealLifeOverhaul.Ui
             {
                 r.Flags |= FlareRowFlags.Answered;
                 string words = n.Answer.StartsWith("reallife_", StringComparison.Ordinal) ? FlareText.T(n.Answer) : n.Answer;
-                r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", words);
+                r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", words) + ResultLine(FlareReplyRules.ResultOf(n.Quality, r.Stars));
             }
             else
             {

@@ -10,18 +10,41 @@ namespace RealLifeOverhaul.Flare
         Defend = 2       // "We do not agree..."
     }
 
+    /// <summary>What an answer does to the review it answers: it fits it, stands (nothing happens) or costs a little.</summary>
+    public enum FlareFit
+    {
+        Costs = -1,
+        Stands = 0,
+        Fits = 1
+    }
+
+    /// <summary>What an answered review ended up as, read from the quality and the stars saved with it (so an answer from an older save reads too).</summary>
+    public enum FlareResult
+    {
+        None = 0,        // not answered
+        Eased = 1,       // a poor review that counts half, its bad talk fading faster
+        Raised = 2,      // a poor review that counts half as much again, its talk soured
+        Thanked = 3,     // a good review whose reviewer was thanked: a few more residents hear good things
+        Soured = 4,      // an answer that did not fit a review of three stars or more: the talk soured
+        Stands = 5       // nothing happened
+    }
+
     /// <summary>
     /// A business's answer to a review, by rule (PLAN part 2: "the player can answer a review; a good answer softens a bad one").
-    /// An answer is worth a quality in thousandths by what it says and the stars it answers. A good answer (at or over
-    /// FlareUseRules.GoodAnswer) to a poor review (two stars or fewer) eases it: the review then weighs half in the rating, and
-    /// what it put people off with fades faster. A rude answer (under <see cref="Rude"/>) draws eyes to it: the review weighs half
-    /// again, and the talk against the business grows. The player and every business of the city's answer by these rules; a
-    /// business of the city's picks its answer by its seed (<see cref="NpcAnswer"/>). Game-free.
+    /// Each answer fits the review, stands or costs a little, by the stars and, for a poor review, by whether it is out of line with the
+    /// business's own rating (<see cref="Unfair"/>): thanks fit a review of four or five stars and cost on one of two or fewer; sorry fits a
+    /// poor review that is fair and stands otherwise; standing your ground fits only a poor review that is unfair and costs on any other.
+    /// What a fit does: a poor review it answers weighs half in the rating and what it put people off with fades faster; thanks to a good
+    /// review let a few more residents hear good things. What a cost does: a poor review weighs half as much again, and the talk against the
+    /// business grows by a resident in each district. The effect is saved as the answer's quality (<see cref="FitQuality"/>,
+    /// <see cref="StandQuality"/>, <see cref="CostQuality"/>), never as a number of its own, so an older save and an older RLO read it as they did.
+    /// The answers of the player and of every business of the city go by these rules; a business of the city picks its answer by its seed
+    /// (<see cref="NpcAnswer"/>). However many reviews are answered, they move a rating by <see cref="MostLift"/> at the most. Game-free.
     ///
-    ///   answer    to 5 or 4 stars   to 3 stars   to 2 or 1 stars
-    ///   Thanks          800             600            300
-    ///   Sorry           500             900            900
-    ///   Defend          150             150            150
+    ///   answer    to 4 or 5 stars   to 3 stars   to 2 or 1 stars, fair   to 2 or 1 stars, unfair
+    ///   Thanks        fits            stands            costs                   costs
+    ///   Sorry        stands           stands            fits                    stands
+    ///   Defend       costs            costs             costs                   fits
     /// </summary>
     public static class FlareReplyRules
     {
@@ -32,19 +55,86 @@ namespace RealLifeOverhaul.Flare
         public const int Raised = 1500;          // ...a review a rude answer drew eyes to
         public const int NpcAnswers = 700;       // per mille of its poor reviews a business of the city answers
         public const int NpcRude = 150;          // per mille of those answers that are rude
+        public const int FitQuality = 900;       // thousandths: what an answer that fits is worth (at or over FlareUseRules.GoodAnswer)
+        public const int StandQuality = 500;     // ...one that stands
+        public const int CostQuality = 150;      // ...one that costs (under Rude)
+        public const int UnfairFrom = 4000;      // thousandths of a star: a business rated this high or more has poor reviews that are out of line
+        public const int UnfairReviews = 5;      // reviews a rating needs before a poor one can be called out of line with it
+        public const int MostLift = 400;         // thousandths of a star: the answers move a rating this far from the plain mean at the most, up or down
 
-        /// <summary>What an answer is worth, thousandths, by what it says and the stars of the review it answers.</summary>
-        public static int Quality(FlareReplyOption option, int stars)
+        /// <summary>Whether a poor review is out of line with a business rated well: two stars or fewer from a rating of four or more over at least five reviews.</summary>
+        public static bool Unfair(int stars, FlareStarRow row)
+        {
+            return stars <= 2 && row != null && row.Total >= UnfairReviews && Average(row) >= UnfairFrom;
+        }
+
+        /// <summary>How an answer sits with the review it answers.</summary>
+        public static FlareFit Fit(FlareReplyOption option, int stars, bool unfair)
         {
             switch (option)
             {
                 case FlareReplyOption.Thanks:
-                    return stars >= 4 ? 800 : stars == 3 ? 600 : 300;
+                    return stars >= 4 ? FlareFit.Fits : stars == 3 ? FlareFit.Stands : FlareFit.Costs;
                 case FlareReplyOption.Sorry:
-                    return stars >= 4 ? 500 : 900;
+                    return stars <= 2 && !unfair ? FlareFit.Fits : FlareFit.Stands;
                 default:
-                    return 150;
+                    return stars <= 2 && unfair ? FlareFit.Fits : FlareFit.Costs;
             }
+        }
+
+        /// <summary>What an answer is worth, thousandths, by how it fits.</summary>
+        public static int Quality(FlareReplyOption option, int stars, bool unfair)
+        {
+            FlareFit fit = Fit(option, stars, unfair);
+            return fit == FlareFit.Fits ? FitQuality : fit == FlareFit.Costs ? CostQuality : StandQuality;
+        }
+
+        /// <summary>What an answer is worth, thousandths, by what it says and the stars of the review it answers, the review being a fair one.</summary>
+        public static int Quality(FlareReplyOption option, int stars) => Quality(option, stars, false);
+
+        /// <summary>The option a typed reply is taken for, by the tone it is posted in: cheerful and proud thank, honest says sorry, cheeky stands its ground.</summary>
+        public static FlareReplyOption OptionOf(FlareTone tone)
+        {
+            return tone == FlareTone.Cheerful || tone == FlareTone.Proud ? FlareReplyOption.Thanks : tone == FlareTone.Cheeky ? FlareReplyOption.Defend : FlareReplyOption.Sorry;
+        }
+
+        /// <summary>What an answered review ended up as, by the quality saved with it and its stars; <see cref="FlareResult.None"/> with no quality.</summary>
+        public static FlareResult ResultOf(int quality, int stars)
+        {
+            if (quality <= 0)
+            {
+                return FlareResult.None;
+            }
+            if (Eases(quality, stars))
+            {
+                return FlareResult.Eased;
+            }
+            if (Worsens(quality))
+            {
+                return stars <= 2 ? FlareResult.Raised : FlareResult.Soured;
+            }
+            return quality >= FlareUseRules.GoodAnswer && stars >= 4 ? FlareResult.Thanked : FlareResult.Stands;
+        }
+
+        /// <summary>Which way an answer moves the talk about the business: 1 more residents hear good things, -1 the talk sours, 0 neither (an eased review's bad talk is softened apart).</summary>
+        public static int TalkOf(FlareResult result)
+        {
+            return result == FlareResult.Thanked ? 1 : result == FlareResult.Raised || result == FlareResult.Soured ? -1 : 0;
+        }
+
+        /// <summary>The text key that says, for one option on a review, how it fits and what it will do: whole keys, so the catalogue checks each one is written.</summary>
+        public static string LineKey(FlareReplyOption option, int stars, bool unfair)
+        {
+            FlareFit fit = Fit(option, stars, unfair);
+            if (fit == FlareFit.Fits)
+            {
+                return stars >= 4 ? "reallife_flare_kit_option_glad" : option == FlareReplyOption.Defend ? "reallife_flare_kit_option_unfair" : "reallife_flare_kit_option_eases";
+            }
+            if (fit == FlareFit.Costs)
+            {
+                return stars <= 2 ? "reallife_flare_kit_option_worsens" : "reallife_flare_kit_option_costs_good";
+            }
+            return "reallife_flare_kit_option_stands";
         }
 
         /// <summary>The tone an answer is posted in.</summary>
@@ -62,7 +152,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>What one review weighs in the rating once answered with this quality, thousandths.</summary>
         public static int WeightOf(int stars, int quality)
         {
-            return Eases(quality, stars) ? Eased : Worsens(quality) ? Raised : Weight;
+            return Eases(quality, stars) ? Eased : Worsens(quality) && stars <= 2 ? Raised : Weight;
         }
 
         /// <summary>An answer counted into a business's stars, so its rating moves as the rule says.</summary>
@@ -78,7 +168,7 @@ namespace RealLifeOverhaul.Flare
                 row.Eased++;
                 row.EasedStars += stars;
             }
-            else if (Worsens(quality))
+            else if (Worsens(quality) && stars <= 2)
             {
                 row.Raised++;
                 row.RaisedStars += stars;
@@ -106,7 +196,19 @@ namespace RealLifeOverhaul.Flare
                 return 0;
             }
             long avg = sum * 1000 / count;
+            long plain = Plain(row);
+            avg = avg > plain + MostLift ? plain + MostLift : avg < plain - MostLift ? plain - MostLift : avg;
             return avg < 1000 ? 1000 : avg > 5000 ? 5000 : (int)avg;
+        }
+
+        /// <summary>A business's rating with every answer left out: the plain mean of its reviews, thousandths; 0 with none.</summary>
+        public static int Plain(FlareStarRow row)
+        {
+            if (row == null || row.Total <= 0)
+            {
+                return 0;
+            }
+            return (int)((long)(row.One + row.Two * 2 + row.Three * 3 + row.Four * 4 + row.Five * 5) * 1000 / row.Total);
         }
 
         /// <summary>The rating of reviews given one by one (stars, and the quality of the answer each had, 0 for none), thousandths; 0 with none.</summary>

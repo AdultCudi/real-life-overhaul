@@ -782,6 +782,18 @@ internal static partial class Program
                 "the claims come back");
             Check(back.Reports.Count == 2 && back.Reports[0].ProfitBefore == -200 && back.Reports[0].Extra == 1100 && back.Reports[1].Name == "The Bar" && back.Reports[1].Cost == 330, "the reports come back, a loss included");
         }
+        // A report is of the business at its place: two businesses may carry one name (or names that differ by a letter's case), and each keeps its own reports across a save. A line written before
+        // the place was kept loads with none, and those reports are told by their name as before.
+        var twins = new CompanyState { Seed = 1 };
+        twins.Reports.Add(new CampaignReport { Name = "Burger King", Place = "Main%20Street~1", Kind = 1, From = 40, Days = 3 });
+        twins.Reports.Add(new CampaignReport { Name = "Burger King", Place = "Uptown%20Avenue~37", Kind = 2, From = 50, Days = 3 });
+        string twinLine = CompanyStore.Write(twins);
+        CompanyState twinsBack = CompanyStore.Read(twinLine, out version);
+        Check(twinsBack != null && twinsBack.Reports.Count == 2 && twinsBack.Reports[0].Place == "Main%20Street~1" && twinsBack.Reports[1].Place == "Uptown%20Avenue~37" && twinsBack.Reports[1].Name == "Burger King",
+            "two businesses with one name keep their own reports: the place of each comes back");
+        CompanyState noPlace = CompanyStore.Read(twinLine.Replace("|Main%20Street~1;", ";").Replace("|Uptown%20Avenue~37", string.Empty), out version);
+        Check(noPlace != null && noPlace.Reports.Count == 2 && noPlace.Reports[0].Place.Length == 0 && noPlace.Reports[0].Name == "Burger King" && noPlace.Reports[1].Kind == 2,
+            "a report written before the place was kept loads with no place and its name");
 
         // A later version: a higher number, a part this reader does not know, and fields added at the end of every record.
         string later = line.Replace("v=1^", "v=2^").Replace("^t:", "|99|98^z:something|new;more^t:").Replace("^s:", "|77^s:").Replace("^e:", "|1|2|3^e:").Replace("^c:", "|extra|9^c:").Replace("^r:", "|5^r:") + "|6|7";

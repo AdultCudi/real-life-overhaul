@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Economy
     public sealed class CampaignReport
     {
         public string Name = string.Empty;
+        public string Place = string.Empty;   // the business's place (its address key): reports are told apart by it, since two businesses may carry names that differ by a letter's case or not at all
         public int Kind;
         public int From;
         public int Days;

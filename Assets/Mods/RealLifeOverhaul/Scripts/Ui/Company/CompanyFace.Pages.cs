@@ -344,32 +344,41 @@ namespace RealLifeOverhaul.Ui
             {
                 split = c.Blocks[i].Kind == CompanyBlockKind.Break ? i : -1;
             }
+            float room = bottom - cy;
             if (split >= 0 && cw >= TwoColumns)
             {
                 // A wide page: the blocks up to the break at the left, the rest at the right, each column as wide as a line may reach; the break moves to a heading where the two would be very unlike.
                 float gap = UiTokens.S8, colW = Math.Min(CardMeasure, UiDraw.SnapDown((cw - gap) / 2f)), rx = x + colW + gap, ry = cy, ly = cy;
-                int turn = BalancedTurn(c.Blocks, split, v, w, colW, keys, bottom - cy);
+                int turn = BalancedTurn(c.Blocks, split, v, w, colW, keys, room);
                 float[] sizes = MeasureBlocks(c.Blocks, v, w, colW, keys);
-                float airL = SectionAir(c.Blocks, sizes, 0, turn, bottom - cy), airR = SectionAir(c.Blocks, sizes, turn, c.Blocks.Length, bottom - cy);
-                for (int i = 0; i < turn && ly < bottom; i++)
+                if (Math.Max(Span(sizes, 0, turn), Span(sizes, turn, sizes.Length)) - UiTokens.S3 <= room + 0.5f)
                 {
-                    if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                    float airL = SectionAir(c.Blocks, sizes, 0, turn, room), airR = SectionAir(c.Blocks, sizes, turn, c.Blocks.Length, room);
+                    for (int i = 0; i < turn && ly < bottom; i++)
                     {
-                        ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                        if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                        {
+                            ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                        }
                     }
-                }
-                for (int i = turn; i < c.Blocks.Length && ry < bottom; i++)
-                {
-                    if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                    for (int i = turn; i < c.Blocks.Length && ry < bottom; i++)
                     {
-                        ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                        if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                        {
+                            ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                        }
                     }
+                    return Math.Max(ly, ry);
                 }
-                return Math.Max(ly, ry);
+                // A column taller than the window: the page runs in one column that scrolls, as below.
             }
             float oneW = Math.Min(cw, CardMeasure);
             float[] oneSizes = MeasureBlocks(c.Blocks, v, w, oneW, keys);
-            float air = SectionAir(c.Blocks, oneSizes, 0, c.Blocks.Length, bottom - cy);
+            if (Span(oneSizes, 0, oneSizes.Length) - UiTokens.S3 > room + 0.5f && FreeSlot(lay) >= 0)
+            {
+                return ScrollingBlocks(s, at, lay, v, w, c.Blocks, PageKey(v, c.Kicker, c.Title), x, cy, oneW, bottom, keys);
+            }
+            float air = SectionAir(c.Blocks, oneSizes, 0, c.Blocks.Length, room);
             for (int i = 0; i < c.Blocks.Length; i++)
             {
                 if (cy >= bottom)
@@ -388,6 +397,101 @@ namespace RealLifeOverhaul.Ui
                 cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? air : 0f), oneW, bottom, keys);
             }
             return cy;
+        }
+
+        /// <summary>The heights of blocks <paramref name="from"/> up to <paramref name="to"/> added up.</summary>
+        internal static float Span(float[] heights, int from, int to)
+        {
+            float total = 0f;
+            for (int i = from; i < to; i++)
+            {
+                total += heights[i];
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// What tells a scrolled page's place apart from another's: the tab, the page inside it, what is picked and the page's own words. A page that is another one starts at its top; the same page
+        /// laid again (a choice on it, a figure that moved) keeps the place the player had scrolled to.
+        /// </summary>
+        internal static int PageKey(CompanyView v, string kicker, string title)
+        {
+            unchecked
+            {
+                int tab = Math.Max(0, Math.Min(CompanyView.Tabs - 1, v.Tab));
+                int h = tab * 31 + v.Sub[tab];
+                h = h * 31 + (v.Pick[tab] ?? string.Empty).GetHashCode();
+                h = h * 31 + (v.SubPick[tab] ?? string.Empty).GetHashCode();
+                h = h * 31 + (kicker ?? string.Empty).GetHashCode();
+                return h * 31 + (title ?? string.Empty).GetHashCode();
+            }
+        }
+
+        private const float Unbounded = 1000000f;   // the room a block is told it has inside a scrolling page, so that none thinks itself short of room and keeps a scroll of its own
+
+        /// <summary>
+        /// Blocks too tall for the room under them, laid in one column that scrolls in a region of its own, so that the last of them (a page's one button, say) is reached: the wheel moves it,
+        /// the pad reaches every target of it in reading order (focus on one out of view scrolls to it, as a list's rows do) and a thumb shows where it stands. The blocks are laid at their
+        /// full height, since nothing under them is dropped any more. Returns the y under the region. Cost: one layout of the blocks when the page is laid; nothing while idle.
+        /// </summary>
+        internal static float ScrollingBlocks(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyBlock[] blocks, int key,
+            float x, float y, float cw, float bottom, IUiKeys keys)
+        {
+            int slot = FreeSlot(lay);
+            float inner = cw - UiTokens.S4;   // the thumb's lane
+            float viewH = Math.Max(UiTokens.Control, bottom - y);
+            float offset = lay.SlotKey[slot] == key ? lay.Offset[slot] : 0f;
+            lay.SlotKey[slot] = key;
+            int reveal = lay.Reveal[slot];
+            lay.Reveal[slot] = -1;
+            short clip = s.AddClip(x, y, cw, viewH, offset);
+            lay.Clip[slot] = clip;
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            int first = s.NodeCount;
+            float cy = 0f;
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (blocks[i].Kind != CompanyBlockKind.Break)
+                {
+                    cy = Block(s, inClip.Arriving(i), lay, v, w, blocks[i], 0f, cy + GapBefore(blocks, i), inner, Unbounded, keys);
+                }
+            }
+            // The targets in reading order are the rows of one list, which is how the pad steps through them and how a focus out of view asks the page to scroll to it.
+            int count = 0;
+            for (int n = first; n < s.NodeCount; n++)
+            {
+                count += s.Nodes[n].Clip == clip && !s.Nodes[n].Disabled ? 1 : 0;
+            }
+            short list = count > 0 ? s.AddList(count, 0, count, clip, -1) : (short)-1;
+            lay.List[slot] = list;
+            float top = -1f, height = 0f;
+            int k = 0;
+            for (int n = first; n < s.NodeCount && list >= 0; n++)
+            {
+                if (s.Nodes[n].Clip != clip || s.Nodes[n].Disabled)
+                {
+                    continue;
+                }
+                s.Nodes[n].List = list;
+                s.Nodes[n].Index = k;
+                if (k == reveal)
+                {
+                    top = s.Nodes[n].Y;
+                    height = s.Nodes[n].H;
+                }
+                k++;
+            }
+            if (top >= 0f)
+            {
+                offset = Math.Min(offset, Math.Max(0f, top - UiTokens.S3));
+                offset = Math.Max(offset, top + height + UiTokens.S3 - viewH);
+            }
+            offset = Math.Max(0f, Math.Min(offset, Math.Max(0f, cy - viewH)));
+            lay.Offset[slot] = offset;
+            s.Clips[clip].Offset = offset;
+            s.Clips[clip].ContentHeight = cy;
+            UiDraw.ScrollThumb(s, at, x + cw - UiTokens.S1, y, viewH, offset, cy);
+            return y + viewH;
         }
 
         // The run of buttons that follows a row or a link has a gap above it: the dismiss button stood 2 px under the last figure of the seat's page.

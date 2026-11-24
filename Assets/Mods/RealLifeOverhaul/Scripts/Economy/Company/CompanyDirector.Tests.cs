@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Economy
                     bool found = CompanyGame.DayBook(shop, d, out customers, out takings, out profit);
                     profit -= d == from - 1 ? price : 0;
                     return found;
-                });
+                }, shop.File.Place);
                 CampaignRules.Keep(_state.Reports, report);
                 TestDone("a report for flyers at " + shop.Name + " over days " + report.From + " to " + (Save.Day - 1) + " (not run, not charged): figures for "
                          + report.DaysBefore + " day(s) before and " + report.DaysDuring + " during, extra " + report.Extra, TabMarketing, "rep:" + (_state.Reports.Count - 1));

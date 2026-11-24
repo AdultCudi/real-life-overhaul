@@ -18,8 +18,8 @@ internal static partial class UiSamples
     public static readonly string[] BizOpsStates =
     {
         "schedule_empty", "schedule_full", "schedule_tens", "schedule_place", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
-        "pricing_unassigned", "logistics", "logistics_sent", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
-        "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
+        "pricing_unassigned", "logistics", "logistics_sent", "logistics_trips", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
+        "factory_none", "warehouse_drivers", "warehouse_drivers_many", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
     };
 
     public static readonly string[] UniformStates = { "uniforms", "uniforms_colours", "uniforms_new", "uniforms_long" };
@@ -87,11 +87,13 @@ internal static partial class UiSamples
             case "pricing": case "pricing_none": case "pricing_unassigned": case "pricing_plan": return OpsPricing(t, state);
             case "no_manager_popup": return OpsNoManager(t);
             case "logistics": case "logistics_sent": return OpsLogistics(t, state == "logistics_sent");
+            case "logistics_trips": return OpsRoute(t, 12);
             case "purchasing": return OpsPurchasing(t);
             case "hr": case "hr_assign": return OpsHr(t, state == "hr_assign");
             case "headhunters": case "headhunters_replace": return OpsHunters(t, state == "headhunters_replace");
             case "factory": case "factory_missing": case "factory_none": return OpsFactory(t, state);
             case "warehouse_drivers": return OpsDrivers(t);
+            case "warehouse_drivers_many": return OpsSlots(t, 20);
             case "warehouse_stock": case "warehouse_empty": return OpsStock(t, state == "warehouse_empty");
             default: return OpsSchedule(t, state);
         }
@@ -734,7 +736,13 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static BizManModel OpsLogistics(UiWords t, bool sent)
+    /// <summary>
+    /// A route as the game shows it with delivery trips on, a player's page: its vehicles and notes down the left, its departures at the right, three stops
+    /// as cards, and as many goods in the chosen stop's table as are asked. The form above the table is as tall as the longest real one.
+    /// </summary>
+    public static BizManModel OpsRoute(UiWords t, int products) => OpsLogistics(t, false, products, true);
+
+    private static BizManModel OpsLogistics(UiWords t, bool sent, int products = 6, bool trips = false)
     {
         BizManModel m = OpsPlace(t, "headquarters", BizManPart.Managers, 3);
         BizOpsModel o = m.Ops;
@@ -753,6 +761,18 @@ internal static partial class UiSamples
             OpsInfo(t("reallife_ui_bizops_out_day", "Goods out a day"), "412.6", true),
             OpsNote(t("reallife_ui_bizops_runs_at", "The manager runs this route each night at {hour}, filling each stop up to its targets.").Replace("{hour}", "02:00"))
         };
+        if (trips)
+        {
+            var more = new System.Collections.Generic.List<BizOpsRow>(o.Rows)
+            {
+                OpsHeading("Vehicles"), OpsInfo("UMC Desert, Edward Sepulveda", "Parked"), OpsInfo("Box truck, Maria Lopez", "On route, back 14:20"),
+                OpsNote("No run yet. The first leaves tomorrow 02:00."),
+                OpsNote("This route runs as delivery trips: each vehicle leaves at the times set, drives to its stops and delivers when it arrives. The wages are the drivers' own; the game already pays them."),
+                OpsHeading("Departures", true), OpsChoice("First run", "02:00", true), OpsChoice("Runs a day", "1", true), OpsChoice("Hours between runs", "12 hours", true),
+                OpsInfo("Next run", "tomorrow 02:00", true)
+            };
+            o.Rows = more.ToArray();
+        }
         o.FormLead = "Will deliver up to 4 destinations";
         o.Actions = new[]
         {
@@ -776,12 +796,18 @@ internal static partial class UiSamples
         };
         o.TableLead = t("reallife_ui_bizops_stop_goods", "Goods the route keeps in stock at {place}.").Replace("{place}", Businesses[0]);
         o.Status = sent ? t("reallife_ui_bizops_sent", "Sent {count} pieces to {stops} stops.").Replace("{count}", "1,240").Replace("{stops}", "3") : null;
-        string[] names = { "Coffee beans", "Whole milk", "Croissant", "Paper cups", "Sugar sachets", "Bottled water" };
+        string[] base6 = { "Coffee beans", "Whole milk", "Croissant", "Paper cups", "Sugar sachets", "Bottled water" };
+        var names = new string[products];
+        for (int i = 0; i < products; i++)
+        {
+            names[i] = i < base6.Length ? base6[i] : base6[i % base6.Length] + " " + (i / base6.Length + 1);
+        }
         string[] inShop = { "84", "40", "12", "640", "75", "100" };
         string[] stock = { "1,240", "860", "420", "3,600", "540", "960" };
         string[] takes = { "36", "160", "68", "0", "0", "0" };
         string[] runs = { "6 days", "3 days", "2 days", "12 days", "9 days", "Never" };
         string[] least = { "120", "200", "80", "500", "60", "100" };
+        int six = base6.Length;
         var table = new UiDataTableModel
         {
             Columns = new[]
@@ -800,7 +826,7 @@ internal static partial class UiSamples
         {
             table.Rows[i] = new UiDataRow
             {
-                Cells = new[] { names[i], inShop[i], least[i], stock[i], sent ? "0" : takes[i], runs[i] }, Values = new[] { 0, 0, UiDataTable.CanLess | UiDataTable.CanMore, 0, 0, 0 }
+                Cells = new[] { names[i], inShop[i % six], least[i % six], stock[i % six], sent ? "0" : takes[i % six], runs[i % six] }, Values = new[] { 0, 0, UiDataTable.CanLess | UiDataTable.CanMore, 0, 0, 0 }
             };
         }
         table.RowCount = names.Length;
@@ -1108,19 +1134,34 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the warehouse
 
-    private static BizManModel OpsDrivers(UiWords t)
+    public static BizManModel OpsSlots(UiWords t, int slots) => OpsDrivers(t, slots);
+
+    private static BizManModel OpsDrivers(UiWords t, int count = 6)
     {
         BizManModel m = OpsPlace(t, "warehouse", BizManPart.Drivers, 1);
         BizOpsModel o = m.Ops;
         o.FormTitle = t("bizman_vehicle_slots", "Vehicle Slots");
         string info = t("bizman_drivers_vehicle_info", "Drive a vehicle through the warehouse's garage door to assign it to this slot");
-        o.FormLead = t("reallife_ui_bizops_slots_line", "{count} slots, {loaded} loaded.").Replace("{count}", "6").Replace("{loaded}", "3") + " " + info;
+        o.FormLead = t("reallife_ui_bizops_slots_line", "{count} slots, {loaded} loaded.").Replace("{count}", OpsWhole(count)).Replace("{loaded}", "3") + " " + info;
         o.PlansEmpty = t("reallife_ui_bizops_slots_none", "No vehicle slots");
         o.PlansEmptyBody = info;
-        string[] vehicles = { "Box truck, NY 4821", "Box truck, NY 5530", "Cargo van, NY 1177", "Cargo van, NY 2096", "Pickup, NY 6604", null };
-        string[] drivers = { "Ethan Walsh", "Samuel Adeyemi", "Lucas Ferreira", t("common_unassigned", "Unassigned"), "Tom Becker", t("common_unassigned", "Unassigned") };
-        int[] boxes = { 14, 0, 6, 0, 2, 0 }, holds = { 16, 16, 8, 8, 4, 0 };
-        bool[] home = { true, true, true, false, true, false };
+        string[] vehicle6 = { "Box truck, NY 4821", "Box truck, NY 5530", "Cargo van, NY 1177", "Cargo van, NY 2096", "Pickup, NY 6604", null };
+        string[] driver6 = { "Ethan Walsh", "Samuel Adeyemi", "Lucas Ferreira", t("common_unassigned", "Unassigned"), "Tom Becker", t("common_unassigned", "Unassigned") };
+        int[] box6 = { 14, 0, 6, 0, 2, 0 }, hold6 = { 16, 16, 8, 8, 4, 0 };
+        bool[] home6 = { true, true, true, false, true, false };
+        var vehicles = new string[count];
+        var drivers = new string[count];
+        var boxes = new int[count];
+        var holds = new int[count];
+        var home = new bool[count];
+        for (int i = 0; i < count; i++)
+        {
+            vehicles[i] = vehicle6[i % 6];
+            drivers[i] = driver6[i % 6];
+            boxes[i] = box6[i % 6];
+            holds[i] = hold6[i % 6];
+            home[i] = home6[i % 6];
+        }
         var rows = new System.Collections.Generic.List<BizOpsRow>();
         for (int i = 0; i < vehicles.Length; i++)
         {

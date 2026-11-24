@@ -77,6 +77,11 @@ namespace RealLifeOverhaul.Flare
                     }, ref x, ref y, width);
                 }
                 y += ChipHeight + 24f;
+                string hint = reply ? _director.ReplyHint(parent, (FlareTone)tone) : null;   // how this tone fits the review it answers, and what it will do
+                if (hint != null)
+                {
+                    y = Label(hint, y, width);
+                }
             }
             y = Mentions(file, c, y, width);
             y = Tags(file, c, y, width);

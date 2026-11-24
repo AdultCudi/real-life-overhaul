@@ -187,41 +187,51 @@ namespace RealLifeOverhaul.Ui
             {
                 split = blocks[i].Kind == CompanyBlockKind.Break ? i : -1;
             }
+            float room = bottom - y;
             if (split >= 0 && pw >= ProfileWide)
             {
                 float gap = UiTokens.S6, colW = Math.Min(CardMeasure, UiDraw.SnapDown((pw - gap) / 2f)), rx = x + colW + gap, ry = y, ly = y;
-                int turn = BalancedTurn(blocks, split, v, w, colW, keys, bottom - y);
+                int turn = BalancedTurn(blocks, split, v, w, colW, keys, room);
                 float[] sizes = MeasureBlocks(blocks, v, w, colW, keys);
-                float airL = SectionAir(blocks, sizes, 0, turn, bottom - y), airR = SectionAir(blocks, sizes, turn, blocks.Length, bottom - y);
-                for (int i = 0; i < turn && ly < bottom; i++)
+                if (Math.Max(Span(sizes, 0, turn), Span(sizes, turn, sizes.Length)) - UiTokens.S3 <= room + 0.5f)
                 {
-                    if (blocks[i].Kind != CompanyBlockKind.Break)
+                    float airL = SectionAir(blocks, sizes, 0, turn, room), airR = SectionAir(blocks, sizes, turn, blocks.Length, room);
+                    for (int i = 0; i < turn && ly < bottom; i++)
                     {
-                        ly = Block(s, at, lay, v, w, blocks[i], x, ly + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                        if (blocks[i].Kind != CompanyBlockKind.Break)
+                        {
+                            ly = Block(s, at, lay, v, w, blocks[i], x, ly + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                        }
                     }
-                }
-                UiAt side = at.InRegion(RegionSide);
-                for (int i = turn; i < blocks.Length && ry < bottom; i++)
-                {
-                    if (blocks[i].Kind != CompanyBlockKind.Break)
+                    UiAt side = at.InRegion(RegionSide);
+                    for (int i = turn; i < blocks.Length && ry < bottom; i++)
                     {
-                        ry = Block(s, side, lay, v, w, blocks[i], rx, ry + (blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                        if (blocks[i].Kind != CompanyBlockKind.Break)
+                        {
+                            ry = Block(s, side, lay, v, w, blocks[i], rx, ry + (blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                        }
                     }
+                    return;
                 }
-                return;
+                // A column taller than the window: one column that scrolls, as below.
             }
             float cy = y;
-            float[] one = MeasureBlocks(blocks, v, w, Math.Min(pw, CardMeasure), keys);
-            float air = SectionAir(blocks, one, 0, blocks.Length, bottom - y);
+            float oneW = Math.Min(pw, CardMeasure);
+            float[] one = MeasureBlocks(blocks, v, w, oneW, keys);
+            if (Span(one, 0, one.Length) - UiTokens.S3 > room + 0.5f && FreeSlot(lay) >= 0)
+            {
+                ScrollingBlocks(s, at, lay, v, w, blocks, PageKey(v, null, null), x, y, oneW, bottom, keys);
+                return;
+            }
+            float air = SectionAir(blocks, one, 0, blocks.Length, room);
             for (int i = 0; i < blocks.Length && cy < bottom; i++)
             {
                 if (blocks[i].Kind != CompanyBlockKind.Break)
                 {
-                    cy = Block(s, at, lay, v, w, blocks[i], x, cy + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? air : 0f), Math.Min(pw, CardMeasure), bottom, keys);
+                    cy = Block(s, at, lay, v, w, blocks[i], x, cy + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? air : 0f), oneW, bottom, keys);
                 }
             }
         }
-
         // A decision a manager owns: its glyph on a tile, what it is and its limit in a line, the one who decides now and the switch.
         private static float TaskLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyTask t, float x, float y, float w)
         {

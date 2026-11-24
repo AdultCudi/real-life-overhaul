@@ -224,11 +224,10 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < alerts.Count && rows.Count < AlertsMost; i++)
             {
                 CompanyAlert a = alerts[i];
-                int tab = AlertTab(a.A, out UiIcon icon);
+                CompanyAct open = AlertOpen(d, a, out UiIcon icon);
                 rows.Add(new CompanyWaiting
                 {
-                    Name = a.Title, Line = UiTextRules.Sentences(a.What, a.Money), Icon = icon, OpenLabel = w.T("reallife_co_open", "Open"),
-                    Open = CompanyAct.Of(CompanyDo.Go, null, tab)
+                    Name = a.Title, Line = UiTextRules.Sentences(a.What, a.Money), Icon = icon, OpenLabel = open.Do != CompanyDo.None ? w.T("reallife_co_open", "Open") : null, Open = open
                 });
             }
             o.Waiting = rows.ToArray();
@@ -236,23 +235,62 @@ namespace RealLifeOverhaul.Ui
             o.WaitingCount = alerts.Count > rows.Count ? (alerts.Count + (o.Lead != null ? 1 : 0)).ToString() : total.ToString();
         }
 
-        // The planner's row kinds (CompanyDirector.Alert's first figure): the tab they belong to and the glyph that says what they are about.
-        private static int AlertTab(int kind, out UiIcon icon)
+        // The planner's row kinds (CompanyDirector.Alert's first figure): where Open takes the owner and the glyph that says what the row is about. Every kind the director raises has a place of its
+        // own: a loss opens the business it is about, an offer, strike, overtime or raise the Staff page, a report the campaign's, the cover and tax rows their pages. A kind the page does not know
+        // gets no button, since Open to the page the owner is already on did nothing at all (the overtime offer's did, and so did every kind that fell to the overview).
+        private static CompanyAct AlertOpen(CompanyDirector d, CompanyAlert a, out UiIcon icon)
         {
-            switch (kind)
+            switch (a.A)
             {
-                case 1: icon = UiIcon.TrendDown; return CompanyView.Overview;
+                case 1:
+                    icon = UiIcon.TrendDown;
+                    return CompanyAct.Of(CompanyDo.Go, PlaceOfNumber(d, a.B), CompanyView.Overview);
                 case 2:
                 case 5:
-                case 11: icon = UiIcon.ShieldCheck; return CompanyView.Cover;
+                case 11:
+                    icon = UiIcon.ShieldCheck;
+                    return CompanyAct.Of(CompanyDo.Go, null, CompanyView.Cover);
                 case 3:
-                case 14: icon = UiIcon.Receipt; return CompanyView.Tax;
-                case CompanyAlertRota: icon = UiIcon.Calendar; return CompanyView.Rota;
-                default: icon = UiIcon.Info; return CompanyView.Overview;
+                case 4:
+                case 8:
+                case 13:
+                case 14:
+                    icon = UiIcon.Receipt;
+                    return CompanyAct.Of(CompanyDo.Go, null, CompanyView.Tax);
+                case 6:
+                case 7:
+                case 9:
+                case 10:
+                    icon = UiIcon.People;
+                    return CompanyAct.Of(CompanyDo.Go, null, CompanyView.Staff);
+                case 12:
+                {
+                    icon = UiIcon.Megaphone;
+                    string place = PlaceOfNumber(d, a.B);
+                    return CompanyAct.Of(CompanyDo.Go, place != null ? "push:" + place : null, CompanyView.Marketing);
+                }
+                case CompanyAlertRota:
+                    icon = UiIcon.Calendar;
+                    return CompanyAct.Of(CompanyDo.Go, null, CompanyView.Rota);
+                default:
+                    icon = UiIcon.Info;
+                    return default(CompanyAct);
             }
         }
 
-        private const int CompanyAlertRota = 20;   // RotaAlertKind (CompanyDirector.Rota)
+        // The place a Planner row's number stands for (CompanyDirector.PlaceNumber), or null where none of the businesses has it.
+        private static string PlaceOfNumber(CompanyDirector d, int number)
+        {
+            for (int i = 0; i < d.Shops.Count; i++)
+            {
+                if (CompanyDirector.PlaceNumber(d.Shops[i].File.Place) == number)
+                {
+                    return d.Shops[i].File.Place;
+                }
+            }
+            return null;
+        }
+        private const int CompanyAlertRota = 30;   // RotaAlertKind (CompanyDirector.Rota)
 
         // What the managers did today, newest first, each with what it cost or saved where the decision says.
         private static void ReadDone(CompanyOverviewFacts o, CompanyDirector d, Words w)

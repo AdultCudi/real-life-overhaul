@@ -123,6 +123,9 @@ namespace RealLifeOverhaul.Ui
         public string StopsTitle;
         public BizOpsStop[] Stops = new BizOpsStop[0];
         public UiActionModel[] Actions = new UiActionModel[0];       // the form's actions, the main one last
+        public float FormOffset;                        // px the form's rows and stops above its table are scrolled, where the page is too short to hold them whole
+        public int FormReveal = -1, FormRevealList = -1;   // a row of that scrolling part the pad stepped to (its list), brought into view as it is laid
+        public short FormClip = -1, FormList = -1, FormListRight = -1;   // that part's scroll region and its two columns' lists, as the last layout made them
 
         // A choice's list open over the page: a form row's, a stop's, the people's filter
         public int ListOpen = -1;                       // the row (or BizManPages.OpsStopList + a stop, BizManPages.OpsPeopleList for the people's filter) whose list is open

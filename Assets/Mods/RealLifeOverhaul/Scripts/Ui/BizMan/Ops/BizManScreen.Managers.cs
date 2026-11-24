@@ -1495,6 +1495,7 @@ namespace RealLifeOverhaul.Ui
             _good = -1;
             _sent = null;
             _sentOn = null;
+            _m.Ops.FormOffset = 0f;   // another plan's form starts at its top
             ReorderableListItem e = _plans[index];
             if (e.GetComponent<PricingManagersPlanListEntry>() is PricingManagersPlanListEntry price && b.pricingManagersPlanList != null)
             {

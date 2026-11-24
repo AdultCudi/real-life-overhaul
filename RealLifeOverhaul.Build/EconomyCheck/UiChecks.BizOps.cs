@@ -262,6 +262,7 @@ internal static partial class Program
     private static void BizOpsLayoutChecks()
     {
         BizOpsShadeChecks();
+        BizOpsRouteChecks();
         UiWords t = UiWords("en");
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
         var s = new UiScene();

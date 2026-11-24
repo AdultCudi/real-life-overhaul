@@ -230,6 +230,166 @@ internal static partial class Program
         Check(wrong.Length == 0 && states > 40, "company pad: Right from the sidebar lands on the page's first content target in every state (" + states + " states), by name" + (wrong.Length > 0 ? ", not so in:" + wrong : string.Empty));
     }
 
+    // A card taller than the window scrolls, and its last control can be reached by the wheel and by the pad. The marketing card once laid only the blocks that fitted and dropped the rest, so a
+    // business with a few earlier campaigns lost the button to book one and nothing scrolled. Every card that has a booking button is laid in every frame as the sample has it and then made
+    // tall, to prove that the button is in the scene, out of view at the top of the page, brought into view by the pad's reveal and by the wheel's end, and reached by Down from the first target.
+    private static void CompanyScrollChecks()
+    {
+        UiWords en = UiWords("en");
+        int cards = 0;
+        var wrong = new StringBuilder();
+        foreach (string state in UiSamples.CompanyStates)
+        {
+            if (!state.StartsWith("marketing_", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            CompanyFacts facts = UiSamples.CompanyFactsOf(en, state);
+            CompanyCard card = facts.Marketing.Card;
+            int book = -1;
+            for (int i = 0; card != null && i < card.Blocks.Length; i++)
+            {
+                book = card.Blocks[i].Kind == CompanyBlockKind.Buttons && card.Blocks[i].Buttons.Length > 0 && card.Blocks[i].Buttons[0].Act.Do == CompanyDo.CampaignBook ? i : book;
+            }
+            if (book < 0)
+            {
+                continue;
+            }
+            cards++;
+            CompanyBlock[] sample = card.Blocks;
+            var tall = new List<CompanyBlock>(sample);
+            for (int i = 0; i < 30; i++)
+            {
+                tall.Insert(book, new CompanyBlock { Kind = CompanyBlockKind.Row, Text = "Earlier figure " + i, Value = i.ToString() });
+            }
+            foreach (float aspect in UiAspects)
+            {
+                UiFrame frame = UiFrame.FullMenu(aspect, "Company");
+                string where = state + " at " + aspect.ToString("0.00");
+                // The card as the sample has it: its button is in the scene, and in view or reached by scrolling.
+                card.Blocks = sample;
+                if (!BookReachable(facts, state, frame, en, false, false, out string why1))
+                {
+                    wrong.Append(" ").Append(where).Append(" [").Append(why1).Append("]");
+                }
+                // The same card made taller than any window.
+                card.Blocks = tall.ToArray();
+                if (!BookReachable(facts, state, frame, en, true, true, out string why2))
+                {
+                    wrong.Append(" ").Append(where).Append(" tall [").Append(why2).Append("]");
+                }
+            }
+            card.Blocks = sample;
+        }
+        Check(cards >= 2 && wrong.Length == 0, "company scroll: a campaign card taller than the window scrolls, and its booking button is reached by the wheel, by the pad's reveal and by Down from the first target, in every frame (" + cards
+            + " cards)" + (wrong.Length > 0 ? ", not so in:" + wrong : string.Empty));
+    }
+
+    // Lays the company page and looks for the booking button. With mustScroll the card has to scroll and the button has to start out of view; either way, after the wheel is turned to the end and
+    // after the pad's reveal of the button it has to stand inside the card's region, and Down from the card's first target has to reach it.
+    private static bool BookReachable(CompanyFacts facts, string state, UiFrame frame, UiWords en, bool mustScroll, bool mustStartHidden, out string why)
+    {
+        why = null;
+        var lay = new CompanyLayout();
+        var s = new UiScene();
+        CompanyFace.Lay(s, facts, UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), lay, frame, true, UiDefaultKeys.Keyboard);
+        int node = BookNode(s, lay);
+        if (node < 0)
+        {
+            why = "no booking button in the scene";
+            return false;
+        }
+        int slot = CompanyLayout.SlotCard;
+        bool scrolls = lay.Clip[slot] >= 0 && s.Clips[lay.Clip[slot]].ContentHeight > s.Clips[lay.Clip[slot]].H + 0.5f;
+        if (!scrolls)
+        {
+            s.NodeBox(node, out _, out float fy, out _, out float fh);
+            if (mustScroll)
+            {
+                why = "the card did not scroll";
+                return false;
+            }
+            if (fy + fh > frame.BandY)
+            {
+                why = "the button stands below the window and nothing scrolls";
+                return false;
+            }
+            return true;
+        }
+        UiClip clip = s.Clips[lay.Clip[slot]];
+        s.NodeBox(node, out _, out float by, out _, out float bh);
+        if (mustStartHidden && by < clip.Y + clip.H)
+        {
+            why = "the button is in view before anything scrolls, so the card is not tall enough to prove the scroll";
+            return false;
+        }
+        if (s.Nodes[node].List < 0)
+        {
+            why = "the button is not a row of the card's list, so the pad could not scroll to it";
+            return false;
+        }
+        // The pad: Down from the first target of the card's list, one step at a time, reaches the button.
+        int at = -1;
+        for (int i = 0; i < s.NodeCount && at < 0; i++)
+        {
+            at = s.Nodes[i].List == s.Nodes[node].List && s.Nodes[i].Index == 0 ? i : -1;
+        }
+        int steps = 0;
+        while (at >= 0 && at != node && steps++ < s.NodeCount)
+        {
+            at = UiFocusRules.Next(s, at, 0, 1);
+        }
+        if (at != node)
+        {
+            why = "Down from the first target does not reach the button";
+            return false;
+        }
+        // The pad's reveal: focus on the button asks the screen to show it; the page is laid again and the button stands inside the region.
+        lay.Reveal[slot] = s.Nodes[node].Index;
+        var s2 = new UiScene();
+        CompanyFace.Lay(s2, facts, UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), lay, frame, true, UiDefaultKeys.Keyboard);
+        if (!InsideCard(s2, lay, BookNode(s2, lay)))
+        {
+            why = "after the pad's reveal the button is still out of view";
+            return false;
+        }
+        // The wheel, turned to the end.
+        var lay3 = new CompanyLayout();
+        var s3 = new UiScene();
+        CompanyFace.Lay(s3, facts, UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), lay3, frame, true, UiDefaultKeys.Keyboard);
+        lay3.Offset[slot] = 1000000f;
+        var s4 = new UiScene();
+        CompanyFace.Lay(s4, facts, UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), lay3, frame, true, UiDefaultKeys.Keyboard);
+        if (!InsideCard(s4, lay3, BookNode(s4, lay3)))
+        {
+            why = "at the end of the wheel the button is still out of view";
+            return false;
+        }
+        return true;
+    }
+
+    private static int BookNode(UiScene s, CompanyLayout lay)
+    {
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            if (s.Nodes[i].Command == CompanyFace.Act && s.Nodes[i].Arg >= 0 && s.Nodes[i].Arg < lay.ActCount && lay.Acts[s.Nodes[i].Arg].Act.Do == CompanyDo.CampaignBook)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static bool InsideCard(UiScene s, CompanyLayout lay, int node)
+    {
+        if (node < 0 || lay.Clip[CompanyLayout.SlotCard] < 0)
+        {
+            return false;
+        }
+        UiClip clip = s.Clips[lay.Clip[CompanyLayout.SlotCard]];
+        s.NodeBox(node, out _, out float y, out _, out float h);
+        return y >= clip.Y - 0.5f && y + h <= clip.Y + clip.H + 0.5f;
+    }
     // The rota's on-shift-by-hour chart reads each person's day as the live rota writes it: one run "07-15", or several joined by a comma and a space "07-11, 13-17". A person with two runs in a day
     // counts in both of them (and in none of the hours between), so the chart's hours and crew are not too low where shifts are split.
     private static void CompanyShapeChecks()
@@ -523,6 +683,7 @@ internal static partial class Program
         CompanyCost();
         CompanyFilterChecks();
         CompanyPadOrderChecks();
+        CompanyScrollChecks();
         CompanyWorldChecks();
         CompanyShapeChecks();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
