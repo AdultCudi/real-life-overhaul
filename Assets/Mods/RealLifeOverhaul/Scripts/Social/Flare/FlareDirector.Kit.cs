@@ -224,7 +224,8 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The player answers a review post of the city's people about one of their businesses with an option of the reply sheet:
-        /// the answer goes up under it, and the rating and the talk move as FlareReplyRules says. False when it cannot be answered.
+        /// the answer goes up under it, and the rating and the talk move as FlareReplyRules says (<see cref="ReviewAnswered"/>, which a reply
+        /// typed in the old panel reaches too). False when it cannot be answered.
         /// </summary>
         public bool ReplyToReview(int postId, FlareReplyOption option, string words)
         {
@@ -235,20 +236,11 @@ namespace RealLifeOverhaul.Flare
                 return false;
             }
             int stars = FlareRules.Clamp(review.Arg, 1, 5);
-            int quality = FlareReplyRules.Quality(option, stars);
             var c = new FlareCompose
             {
-                Kind = FlareSource.Reply, ReplyTo = postId, Text = words, Tone = FlareReplyRules.Tone(option), ToneChosen = true, Quality = quality
+                Kind = FlareSource.Reply, ReplyTo = postId, Text = words, Tone = FlareReplyRules.Tone(option), ToneChosen = true, Quality = QualityFor(option, stars, review.Place)
             };
-            if (!Compose(c, out _))
-            {
-                return false;
-            }
-            if (FlareReplyRules.Worsens(quality))
-            {
-                Worse(review.Place, Save != null ? Save.Day : review.Day);
-            }
-            return true;
+            return Compose(c, out _);
         }
 
         /// <summary>Whether the player has answered a review post already.</summary>
@@ -280,19 +272,18 @@ namespace RealLifeOverhaul.Flare
             {
                 return false;   // only the player's own business answers here
             }
-            int quality = FlareReplyRules.Quality(option, note.Stars);
+            int stars = FlareRules.Clamp(note.Stars, 1, 5);
+            FlareStarRow shown = StarsWithPosts(place, Now);
+            int before = FlareReplyRules.Average(shown);
+            int quality = FlareReplyRules.Quality(option, stars, FlareReplyRules.Unfair(stars, shown));
             note.Answer = words;
             note.Quality = quality;
-            FlareReplyRules.Answered(FlareUseRules.StarsOf(_city.StarRows, note.Key), note.Stars, quality);
-            if (FlareReplyRules.Eases(quality, note.Stars))
-            {
-                SoftenPlace(place);
-            }
-            else if (FlareReplyRules.Worsens(quality))
-            {
-                Worse(place, Save != null ? Save.Day : note.Day);
-            }
-            Logger?.Info("Flare in the city: the player answers a " + note.Stars + " star review (" + option + ", worth " + quality + ").");
+            FlareReplyRules.Answered(FlareUseRules.StarsOf(_city.StarRows, note.Key), stars, quality);
+            FlareResult result = FlareReplyRules.ResultOf(quality, stars);
+            AnswerTalk(place, result, null, CurrentDay);
+            FlareStarRow now = StarsWithPosts(place, Now);
+            Told(NameOfPlace(place), stars, result, before, FlareReplyRules.Average(now), now);
+            Logger?.Info("Flare in the city: the player answers a " + stars + " star review (" + option + ", " + result + ", worth " + quality + ").");
             Changed();
             return true;
         }

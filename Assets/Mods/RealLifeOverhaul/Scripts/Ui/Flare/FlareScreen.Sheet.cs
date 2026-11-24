@@ -269,7 +269,7 @@ namespace RealLifeOverhaul.Ui
                 FlareShop shop = ShopOfKey(r.Note.Key);
                 business = shop.Name ?? "?";
                 words = NoteWords(r.Note, business);
-                row = shop.Place != null ? _flare.CityStarsOf(shop.Place) : null;
+                row = shop.Place != null ? _flare.StarsWithPosts(shop.Place, _flare.Now) : null;   // the rating the page shows, which the answer is counted into
             }
             else if (r.Act == RowAct.Review && r.Post != null)
             {
@@ -277,6 +277,7 @@ namespace RealLifeOverhaul.Ui
                 stars = FlareRules.Clamp(r.Post.Arg, 1, 5);
                 business = r.Post.Name ?? "?";
                 words = FlareFeedRules.Plain(r.Post.Text ?? _flare.WordsFor(r.Post, name));
+                row = r.Post.Place != null ? _flare.StarsWithPosts(r.Post.Place, _flare.Now) : null;
             }
             else
             {
@@ -293,16 +294,15 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < FlareReplyRules.Options; i++)
             {
                 var option = (FlareReplyOption)i;
-                int quality = FlareReplyRules.Quality(option, stars);
                 k.Options[i] = FlareText.T(OptionKeys[Math.Min(i, OptionKeys.Length - 1)]);
-                k.OptionLines[i] = FlareReplyRules.Eases(quality, stars) ? FlareText.T("reallife_flare_kit_option_eases")
-                    : FlareReplyRules.Worsens(quality) ? FlareText.T("reallife_flare_kit_option_worsens") : FlareText.T("reallife_flare_kit_option_stands");
+                k.OptionLines[i] = FlareText.T(FlareReplyRules.LineKey(option, stars, FlareReplyRules.Unfair(stars, row)));
             }
             k.Option = _option;
+            bool unfair = FlareReplyRules.Unfair(stars, row);
             if (row != null && row.Total > 0)
             {
                 int before = FlareReplyRules.Average(row);
-                int after = _option >= 0 ? After(row, stars, FlareReplyRules.Quality((FlareReplyOption)_option, stars)) : before;
+                int after = _option >= 0 ? After(row, stars, FlareReplyRules.Quality((FlareReplyOption)_option, stars, unfair)) : before;
                 k.FigureLabels = new[] { FlareText.T("reallife_flare_kit_fig_rating_now"), FlareText.T("reallife_flare_kit_fig_rating_after") };
                 k.Figures = new[] { (before / 1000f).ToString("0.00", CultureInfo.InvariantCulture), (after / 1000f).ToString("0.00", CultureInfo.InvariantCulture) };
             }
