@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Careers
             t = new Tutor
             {
                 Course = course, Name = teacher.Name, PersonId = teacher.Id, Years = TechRandom.Range(f.Seed, 7831, course, 0, 2, 28),
-                Rating = (TechRandom.Range(f.Seed, 7832, course, 0, 30, 50) + TechRandom.Range(f.Seed, 7833, course, 0, 36, 50)) / 2
+                Rating = RatingOf(f.Seed, course)
             };
             f.Tutors.Add(t);
             while (f.Tutors.Count > TutorsMost)
@@ -210,8 +210,27 @@ namespace RealLifeOverhaul.Careers
             return t;
         }
 
+        /// <summary>A course's tutor's rating in tenths, from the seed and the course alone: the same whenever and wherever it is asked, with no one yet made.</summary>
+        public static int RatingOf(int seed, int course)
+        {
+            return (TechRandom.Range(seed, 7832, course, 0, 30, 50) + TechRandom.Range(seed, 7833, course, 0, 36, 50)) / 2;
+        }
+
         /// <summary>Points a tutor adds to an exam score (or takes off): a little, from how the students rate them against 4.0.</summary>
-        public static int ExamEdge(Tutor t) => t == null ? 0 : Math.Max(-EdgeMost, Math.Min(EdgeMost, (t.Rating - 40) / 4));
+        public static int ExamEdge(Tutor t) => t == null ? 0 : EdgeOfRating(t.Rating);
+
+        /// <summary>The edge of a rating in tenths.</summary>
+        public static int EdgeOfRating(int rating) => Math.Max(-EdgeMost, Math.Min(EdgeMost, (rating - 40) / 4));
+
+        /// <summary>
+        /// The edge a course's tutor gives an exam: the tutor kept in the file, else the one the seed makes. Asked at any moment it gives the same
+        /// answer, where the tutor as a person waits for the people pool and an exam sat in the first seconds of a session used to get no edge at all.
+        /// </summary>
+        public static int ExamEdgeOf(RosterFile f, int course)
+        {
+            Tutor t = f.TutorOf(course);
+            return EdgeOfRating(t != null ? t.Rating : RatingOf(f.Seed, course));
+        }
 
         // --- a skill floor -------------------------------------------------------------------------------------------------
 

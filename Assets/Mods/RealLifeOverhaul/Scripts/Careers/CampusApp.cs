@@ -322,6 +322,11 @@ namespace RealLifeOverhaul.Careers
             box.Note(c.Timetabled
                 ? CareersText.Fill("reallife_campus_course_exam", "pass", c.Pass.ToString(), "homework", c.Homework.ToString(), "share", CareersText.Mille(StudyCatalogue.Barred))
                 : CareersText.Fill("reallife_campus_course_home", "homework", c.Homework.ToString(), "hours", StudyCatalogue.HomeworkHours.ToString(), "pass", c.Pass.ToString()));
+            string plan = CareersDirector.HomeworkPlan(c);
+            if (plan != null)
+            {
+                box.Row("reallife_campus_col_homework", plan);
+            }
             if (live != null)
             {
                 box.Section("reallife_campus_col_exam");

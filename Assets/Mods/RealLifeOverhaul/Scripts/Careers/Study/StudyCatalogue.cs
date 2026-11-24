@@ -224,7 +224,8 @@ namespace RealLifeOverhaul.Careers
         public const int RetakeDays = 7;              // days after a fail before the retake can be sat
         public const int RetakeFeeShare = 150;        // thousandths of the course's fee a retake costs
         public const int RetakeFeeLeast = 50;         // whole money at the start's prices
-        public const int ExamNoise = 10;              // points either way that the day itself brings
+        public const int ExamNoise = 5;               // points either way that the day brings, drawn once for a sitting: small enough that a diligent student stays in the top band
+        public const int ExamTired = 30;              // energy under which an exam sat takes five points off, read as it begins (a three hour exam would otherwise tire its own student)
         public const int RevisionMost = 4;            // pieces of homework beyond the set ones that still count as revision
 
         public const int GainAtTop = 500;             // thousandths of a class's gain that is still learnt at 100 points (less the nearer the top)

@@ -38,6 +38,15 @@ namespace RealLifeOverhaul.Careers
                 .Fact("study_learn_none", () => Mille(1000 - TalentCatalogue.SchoolLearning[TalentCatalogue.SelfTaught]))
                 .Fact("study_learn_degree", () => Mille(TalentCatalogue.SchoolLearning[TalentCatalogue.Bachelor] - 1000))
                 .Fact("study_learn_master", () => Mille(TalentCatalogue.SchoolLearning[TalentCatalogue.Master] - 1000))
+                .Fact("study_mark_turning", () => Whole(StudyRules.MarkTurning))
+                .Fact("study_mark_attendance", () => Whole(StudyRules.MarkAttendance))
+                .Fact("study_mark_homework", () => Whole(StudyRules.MarkHomework))
+                .Fact("study_mark_skill", () => Whole(StudyRules.MarkSkill))
+                .Fact("study_mark_revision", () => Whole(StudyRules.MarkRevision))
+                .Fact("study_mark_tutor", () => Whole(RosterRules.EdgeMost))
+                .Fact("study_mark_tired", () => Whole(StudyRules.MarkTired))
+                .Fact("study_noise", () => Whole(StudyCatalogue.ExamNoise))
+                .Fact("study_exam_tired", () => Whole(StudyCatalogue.ExamTired))
                 .Fact("study_exam_open", () => CareersText.Hour(StudyCatalogue.ExamOpens))
                 .Fact("study_exam_close", () => CareersText.Hour(StudyCatalogue.ExamCloses));
         }
