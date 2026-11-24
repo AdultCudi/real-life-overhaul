@@ -1,7 +1,17 @@
-1.0.24
-
-New
-- Your broadband network can now be dug in Uptown and Cedar Heights and any district a game update adds, and a data centre there can take your own company's line. The Stocks app now says why a sector or a large company moved, sets each company's size by its market value every quarter, and your company's page shows your takings by business line and its statement for this quarter and the next. Gigs now pay by effort and skill, with less for each extra shift in a day and for your first week. A rota shift pays its whole basic wage as soon as the work is done, and every offer says how it is paid. Two options under the RLO interface make the needs bars larger and let you put them in a row along the top of the screen.
+1.0.25
 
 Fixed
-- On the RLO interface a business's rating on Flare now shows what the old interface shows, and its address reads as a street name and not a raw key.
+- The goods list of a stock buying plan on the RLO interface shows the weekly limit, index, last week's order and last week's sales in columns of their own, so none is cut off.
+- The Property rent roll on the RLO interface no longer draws its empty message over the lists under it.
+- Buying a business from a rival no longer stops Services, Sell for the session, and a purchase that stopped half way in an earlier version is finished.
+- A construction job above your builder licence now says how many floors it has and what the licence for them asks, on the job and when you bid, and such a bid is refused instead of won and stuck.
+- A job's time limit now allows for the materials to be delivered stage by stage.
+- The limit of 64 managers in the Company app is now 256. Own work contracts show their hours and what they pay an hour, in both interfaces.
+- A freelance contract you took on no longer disappears after you save and load, because finished contracts could crowd the newest out of the save.
+- A desk session you are sat at when you save is carried on after you load, from the minutes already sat.
+- The notice of rivals' offers matched by themselves is no longer lost when the game is saved just after midnight.
+- Discarding a candidate in the new interface takes one press, as it does in the game.
+- A help-wanted board whose building could not take it when the city loaded is asked again when you are near, instead of being left out for the whole session.
+- A cleaning or stocking gig at a cinema or theatre lets you through the ticket gates, so every screen can be reached.
+- The notice that a vehicle of yours was moved out of a bus stop's bay now comes every time and names the vehicle.
+- Patrol cars are no longer parked beside a marked crossing, where they stood in the middle of the road.
