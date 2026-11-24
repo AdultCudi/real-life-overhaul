@@ -19,12 +19,30 @@ namespace RealLifeOverhaul.Economy
         public readonly Dictionary<string, int> Chilled = new Dictionary<string, int>(StringComparer.Ordinal);   // pieces of each product the place's fridges keep cold, as last looked at (not saved)
         public readonly Dictionary<string, int> ColdLives = new Dictionary<string, int>(StringComparer.Ordinal);   // days those pieces keep, as last looked at (not saved)
 
+        // Giving food away (FoodGiftRules): what the place sold of each product (pieces that left it and were not thrown out, given or carried off by a trip), and the
+        // days its standing and its staff's lift were earned in. Kept only while the option is on, so a place that never gave writes nothing.
+        public readonly Dictionary<string, WeekRing> Sold = new Dictionary<string, WeekRing>(StringComparer.Ordinal);
+        public readonly WeekRing GaveStanding = new WeekRing();
+        public readonly WeekRing GaveStaff = new WeekRing();
+        public int GaveDay = -1;   // the day the place last looked at what the evening would give (not saved: what was given is already gone from the stock)
+
         public SpoilPlace()
         {
             for (int i = 0; i < Days; i++)
             {
                 Stamp[i] = -1;
             }
+        }
+
+        /// <summary>A product's week of sales, made when asked to.</summary>
+        public WeekRing SoldRing(string item)
+        {
+            if (!Sold.TryGetValue(item, out WeekRing r))
+            {
+                r = new WeekRing();
+                Sold[item] = r;
+            }
+            return r;
         }
 
         public List<Cohort> Of(string item)
@@ -73,6 +91,8 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed class SpoilState
     {
+        public readonly WeekRing GaveStanding = new WeekRing();   // the player's own week of neighbourhood standing from giving, over all places
+        public readonly WeekRing GaveMood = new WeekRing();       // and of the days the good mood came
         public readonly Dictionary<string, SpoilPlace> Places = new Dictionary<string, SpoilPlace>(StringComparer.Ordinal);
         public int Told = -1;
 

@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_giving_naming_hint", "reallife_giving_need_debt", "reallife_giving_need_none", "reallife_giving_need_rent",
                 "reallife_giving_need_work", "reallife_giving_no_district", "reallife_giving_off_body", "reallife_giving_off_title",
                 "reallife_giving_people_none", "reallife_giving_row_cap", "reallife_giving_row_cap_share", "reallife_giving_row_carried",
-                "reallife_giving_row_deducted", "reallife_giving_row_district", "reallife_giving_row_district_yours", "reallife_giving_row_gifts",
+                "reallife_giving_row_deducted", "reallife_giving_row_district", "reallife_giving_row_district_yours", "reallife_giving_row_food", "reallife_giving_row_gifts",
                 "reallife_giving_row_held", "reallife_giving_row_income", "reallife_giving_row_last", "reallife_giving_row_last_value",
                 "reallife_giving_row_neighbours", "reallife_giving_row_neighbours_value", "reallife_giving_row_paid_value", "reallife_giving_row_rivals",
                 "reallife_giving_row_yours", "reallife_giving_sec_charities", "reallife_giving_sec_city", "reallife_giving_sec_how_loans",

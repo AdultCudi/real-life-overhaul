@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Giving
             }
             CarryOn(s);
             s.TaxGifts = 0;
+            s.FoodGifts = 0;
             s.TaxClaimed = 0;
             s.NeighbourYear = 0;
             s.NeighbourHelped = 0;

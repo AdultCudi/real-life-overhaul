@@ -84,6 +84,44 @@ namespace RealLifeOverhaul.Giving
             return named ? GiveResult.Named : GiveResult.Done;
         }
 
+        /// <summary>Whether a gift of food in kind can be taken now: giving runs and the city's people are there to be fed (never in a Going Public session).</summary>
+        public bool FoodGiftReady => Running && CauseWhy == 0;
+
+        /// <summary>
+        /// Food from the player's shops that would have spoiled, given to the food bank in kind. <paramref name="given"/> is what all of it cost (whole money), put in the
+        /// food bank's pot for the city's households; <paramref name="earned"/> is the part of that cost that an ordinary shop's leftovers earn (Economy/Logistics,
+        /// FoodGiftRules): only that counts as the player's giving, and is deducted from tax within the same cap as any gift. No cash moves, so the gift is always a loss: the food
+        /// was paid for already and a deduction saves only a share of its cost. It earns no integrity here: the shops' standing, staff and mood come from the gift's own rules.
+        /// Returns whether it was taken.
+        /// </summary>
+        public bool GiveFood(long given, long earned)
+        {
+            if (!FoodGiftReady || given <= 0)
+            {
+                return false;
+            }
+            earned = Math.Max(0, Math.Min(earned, given));
+            Roll(GivingGame.Day);
+            _state.Credit(Charity.FoodBank, given, -1);
+            if (earned > 0)
+            {
+                _state.TaxGifts += earned;
+                _state.FoodGifts += earned;
+                CharityBook b = _state.Book(Charity.FoodBank);
+                b.PlayerMonth += earned;
+                b.PlayerYear += earned;
+                b.PlayerTotal += earned;
+                ClaimNow();
+            }
+            _revision++;
+            if (Verbose)
+            {
+                Logger?.Info("Giving check (food in kind, " + given + " at cost, " + earned + " earning): the pot holds " + _state.Book(Charity.FoodBank).Pot
+                             + ", the year's gifts " + _state.TaxGifts + ": PASS");
+            }
+            return true;
+        }
+
         // Standing and the press earned this month by the player's gifts so far: only what the curve has newly earned is asked, so ten gifts of a tenth earn what one of the whole does.
         // What Fame really applied is what is counted as earned (it holds a part to a most a day, and recognition to its own top), so a part it left over is asked again by the next gift.
         private void Reward(out int standing, out int press)

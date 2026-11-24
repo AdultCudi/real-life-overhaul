@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
         {
             Features.Add("trips", "reallife_meta_title_trips")
                 .About("reallife_guide_trips_about").Help("reallife_guide_trips")
-                .Owns(Settings.LivingTripsId, Settings.LivingSpoilageId, Settings.LivingSpoilagePaceId)
+                .Owns(Settings.LivingTripsId, Settings.LivingSpoilageId, Settings.LivingSpoilagePaceId, Settings.LivingSpoilageGiveId)
                 .StandsAside(GoingPublic.SpoilPaceSentence, Settings.LivingSpoilagePaceId)   // every machine of a session spoils at the usual pace
                 .Data(TripStore.Key, SpoilStore.Key, SendNowLimit.Key)
                 .Test("reallife_trips_test", "reallife_spoil_test")
@@ -41,6 +41,13 @@ namespace RealLifeOverhaul.Economy
                 .Fact("cold_big", () => Whole(SpoilRules.ColdRoomBig))
                 .Fact("cold_small", () => Whole(SpoilRules.ColdRoomSmall))
                 .Fact("cold_staff", () => Whole(SpoilRules.ColdRoomStaff))
+                .Fact("give_hour", () => Whole(FoodGiftRules.EveningHour))
+                .Fact("give_share", () => Whole(FoodGiftRules.SalesShare))
+                .Fact("give_standing", () => Whole(FoodGiftRules.StandingDay))
+                .Fact("give_place_week", () => Whole(FoodGiftRules.PlaceStandingWeek))
+                .Fact("give_player_week", () => Whole(FoodGiftRules.PlayerStandingWeek))
+                .Fact("give_staff_week", () => Whole(FoodGiftRules.StaffWeek))
+                .Fact("give_mood_week", () => Whole(FoodGiftRules.MoodWeek))
                 .Fact("spoil_short", () => Whole(SpoilRules.ShortLife));
         }
 

@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Giving
             }
             f.Carried = GivingYear.CarryLeft(_state);
             f.TaxGifts = _state.TaxGifts;
+            f.FoodGifts = _state.FoodGifts;
             f.TaxClaimed = GivingYear.Claimed(_state, GivingGame.Deducted());   // what the game's tax will deduct under giving's name
             f.Income = YearIncome(GivingGame.Day);
             f.TaxCap = GivingRules.DeductionCap(f.Income);
