@@ -1,17 +1,10 @@
-1.0.25
+1.0.26
+
+New
+- A big fall in your own company's share price now comes with a notice and a line on its page that say what caused it: the market, your sector, your figures or the market's mood. The notice after a social event now says how far each figure is from the next step, such as dating.
 
 Fixed
-- The goods list of a stock buying plan on the RLO interface shows the weekly limit, index, last week's order and last week's sales in columns of their own, so none is cut off.
-- The Property rent roll on the RLO interface no longer draws its empty message over the lists under it.
-- Buying a business from a rival no longer stops Services, Sell for the session, and a purchase that stopped half way in an earlier version is finished.
-- A construction job above your builder licence now says how many floors it has and what the licence for them asks, on the job and when you bid, and such a bid is refused instead of won and stuck.
-- A job's time limit now allows for the materials to be delivered stage by stage.
-- The limit of 64 managers in the Company app is now 256. Own work contracts show their hours and what they pay an hour, in both interfaces.
-- A freelance contract you took on no longer disappears after you save and load, because finished contracts could crowd the newest out of the save.
-- A desk session you are sat at when you save is carried on after you load, from the minutes already sat.
-- The notice of rivals' offers matched by themselves is no longer lost when the game is saved just after midnight.
-- Discarding a candidate in the new interface takes one press, as it does in the game.
-- A help-wanted board whose building could not take it when the city loaded is asked again when you are near, instead of being left out for the whole session.
-- A cleaning or stocking gig at a cinema or theatre lets you through the ticket gates, so every screen can be reached.
-- The notice that a vehicle of yours was moved out of a bus stop's bay now comes every time and names the vehicle.
-- Patrol cars are no longer parked beside a marked crossing, where they stood in the middle of the road.
+- On a game with 365 day years the banks no longer lend six times what a 60 day year lends for the same income, with an option to bring the game's own limit back.
+- The notice after a social event shows all its lines instead of being cut off. Part-timers can keep set hours, like a student after lessons or a parent in school hours, shown on their card, in the schedule's picker and on the Staff page, never planned outside by the rota and costing mood when a shift is set outside them, behind a new option. A holiday can fill every need and lift your mood, behind a new option, and your partner and children can come along for a price a head and come home closer. Your bank can offer a Black card to its richest savers on lines you set, with a yearly fee and rewards, in the same books and risk as its other cards.
+- The price of your own company no longer falls or rises by most of its value in a day when its results come out after a quarter far from the others, such as one with a building sold. Such a quarter is no longer read as growth, and the growth the market believes moves a little at each results.
+- A scooter rented from the game's stands is no longer taken away while you are in a building, so a long class or a film leaves it where you parked it.
