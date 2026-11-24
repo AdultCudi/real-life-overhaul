@@ -284,6 +284,7 @@ namespace RealLifeOverhaul.Economy
                     KeepTerms("the banks were found");
                 }
             }
+            KeepAtTheBank();
             if (!CreditLedger.Score.Lends)
             {
                 TellAtTheBank();

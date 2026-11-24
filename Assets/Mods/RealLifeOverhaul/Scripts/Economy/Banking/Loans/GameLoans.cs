@@ -111,23 +111,37 @@ namespace RealLifeOverhaul.Economy
                 : loan != null && loan.bankAddress != null ? loan.bankAddress.ToFormattedString() : string.Empty;
         }
 
-        /// <summary>The most the borrower's means allow in new loans: BankDialog.GetEconomyMaxLoanAmount (private there), term for term.</summary>
+        /// <summary>
+        /// The most the borrower's means allow in new loans: BankDialog.GetEconomyMaxLoanAmount (private there), term for term, with the days a loan is paid back in held to the 60 day
+        /// year's while the option says so (<see cref="LoanMeansRules"/>: at 365 days a year the game's own test lends six times as much for the same income).
+        /// </summary>
         public static float MeansLimit(BankSettings settings)
         {
             GameInstance save = SaveGameManager.Current;
-            float most = 0f;
-            if (TutorialHelper.IsTutorialEnabled() && !save.CompletedQuestEntries.Contains(BankTerms.TutorialLoanObjective))
-            {
-                most = 15500f;
-            }
-            most = Mathf.Max(most, PlayerHelper.GetPersonalWealth().WealthBeforeLoans);
-            most = Mathf.Max(most, PlayerHelper.CalculateDailyIncome() * LoanHelper.CalculatePayBackDays(settings) * 0.25f);
+            bool tutorial = TutorialHelper.IsTutorialEnabled() && !save.CompletedQuestEntries.Contains(BankTerms.TutorialLoanObjective);
             float owed = 0f;
             for (int i = 0; i < save.Loans.Count; i++)
             {
                 owed += save.Loans[i].remainingAmount;
             }
-            return WholeMoney.Floor(most - owed);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
+            int days = LoanMeansRules.PayBackDays(save.gameVariables.daysPerYear, settings.yearsToPayLoan, Settings.EconomyLoanYear);
+            float most = LoanMeansRules.Limit(PlayerHelper.GetPersonalWealth().WealthBeforeLoans, PlayerHelper.CalculateDailyIncome(), days, owed, tutorial);
+            return WholeMoney.Floor(most);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
+        }
+
+        /// <summary>What is owed at the banks that share these settings (their branches' loans together): the part of a bank's cap that is already used.</summary>
+        public static float OwedAt(BankSettings settings)
+        {
+            List<Loan> loans = Loans;
+            float sum = 0f;
+            for (int i = 0; loans != null && i < loans.Count; i++)
+            {
+                if (loans[i] != null && loans[i].bankAddress != null && ReferenceEquals(LoanHelper.GetBankSettings(loans[i].bankAddress), settings))
+                {
+                    sum += loans[i].remainingAmount;
+                }
+            }
+            return sum;
         }
 
         /// <summary>Writes a fixed rate onto the game's loan. The mark keeps the same figures so a later save does not put the old rate back.</summary>

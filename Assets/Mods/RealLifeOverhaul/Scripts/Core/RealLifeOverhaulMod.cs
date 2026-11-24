@@ -968,6 +968,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.StartDebtDegreeId, "reallife_econ_opt_start_debt_degree",
                     Economy.StartDebtRules.DegreeKeys, Settings.StartDebtDegree,
                     v => Settings.StartDebtDegree = v)
+                .AddToggle(Settings.EconomyLoanYearId, "reallife_econ_opt_loan_year", Settings.EconomyLoanYear,
+                    v => Settings.EconomyLoanYear = v)
                 .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
                 .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
                 .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())

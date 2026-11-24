@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Markets
     {
         public const MarketNewsKind Why = (MarketNewsKind)100;       // Stock (0 for a sector), A the cause (WhyCause) with the sector above it, B the move in bp, C the cause's detail
         public const MarketNewsKind Segment = (MarketNewsKind)101;   // Stock, A the new segment, B the old, C its market value in millions
+        public const MarketNewsKind OwnFall = (MarketNewsKind)102;   // Stock (the player's own), A the cause (OwnFallCause), B bp under its year's high; the rest is on OwnListing.Fall
     }
 
     /// <summary>One cause picked: what it was, its detail and the move it applied, in basis points.</summary>

@@ -43,6 +43,11 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             OwnListing o = k.Own;
+            OwnFall fall = OwnFallRules.Measure(s, k, day, k.Last, env);
+            if (fall.Fell)
+            {
+                into.Add(new FigureRow { Key = "reallife_mkt_fig_fall", English = "Price against its high", Value = OwnFallText.Row(fall, k) });
+            }
             var sectors = new int[LinesShown];
             var bps = new int[LinesShown];
             int lines = ListingSector.Top(o, sectors, bps);

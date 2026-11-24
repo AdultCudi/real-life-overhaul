@@ -383,9 +383,10 @@ namespace RealLifeOverhaul.Meta
                     .Opt("economy_goal_rewards", "economy")
                     .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income")
                     .Also("economy_goal_rewards", "personal goal goals reward rewards prize persona achievement achievements"),
-                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level", "start_debt")
+                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level", "start_debt", "economy_loan_year")
                     .Opt("start_debt_degree", "start_debt")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance")
+                    .Also("economy_loan_year", "loan limit means income year length days per year 365 bank borrow most lend")
                     .Also("start_debt", "student loan debt degree university hard hardcore new game start owe owing repay")
                     .Also("start_debt_degree", "student loan debt diploma bachelor master mba degree study course amount"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),

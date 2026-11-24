@@ -301,9 +301,9 @@ namespace RealLifeOverhaul
             CardLine("reallife_social_card_mood", SocialLife.T(wentWell ? "reallife_social_card_mood_up" : "reallife_social_card_mood_down"));
             if (!_test)
             {
-                CardLine("reallife_social_card_familiarity", Signed(familiarity));
-                CardLine("reallife_social_card_affection", Signed(affection));
-                CardLine("reallife_social_card_trust", Signed(trust));
+                CardLine("reallife_social_card_familiarity", Signed(familiarity) + NextOf(SocialMeter.Familiarity));
+                CardLine("reallife_social_card_affection", Signed(affection) + NextOf(SocialMeter.Affection));
+                CardLine("reallife_social_card_trust", Signed(trust) + NextOf(SocialMeter.Trust));
                 if (_lateBy > SocialRules.LateMinutes && !_who.Has(SocialTrait.Late))
                 {
                     _text.Append(SocialLife.T("reallife_social_card_late")).Append('\n');
@@ -321,6 +321,32 @@ namespace RealLifeOverhaul
                                         + ": paid " + _paid + ", familiarity " + familiarity.ToString("F1", CultureInfo.InvariantCulture) + ", affection "
                                         + affection.ToString("F1", CultureInfo.InvariantCulture) + ", trust "
                                         + trust.ToString("F1", CultureInfo.InvariantCulture) + (_test ? " (test: nothing recorded)." : "."));
+        }
+
+        // Where the code has a next figure for it (SocialRules.Next), how far the figure now stands from it: "(74 of 90 for dating)". Nothing for a figure with no step ahead.
+        private string NextOf(SocialMeter meter)
+        {
+            if (!SocialRules.Next(_who, meter, SocialLife.Romantic(_who), SocialState.Partner == null, out float need, out SocialGoal goal))
+            {
+                return string.Empty;
+            }
+            return "   " + SocialLife.T("reallife_social_card_next", new Dictionary<string, string>(3)
+            {
+                { "now", Mathf.FloorToInt(SocialRules.Value(_who, meter)).ToString(CultureInfo.InvariantCulture) }, { "need", Mathf.RoundToInt(need).ToString(CultureInfo.InvariantCulture) },
+                { "goal", SocialLife.T(GoalKey(goal)) }
+            });
+        }
+
+        private static string GoalKey(SocialGoal goal)
+        {
+            switch (goal)
+            {
+                case SocialGoal.Friend: return "reallife_social_goal_friend";
+                case SocialGoal.CloseFriend: return "reallife_social_goal_close";
+                case SocialGoal.Date: return "reallife_social_goal_date";
+                case SocialGoal.Partner: return "reallife_social_goal_partner";
+                default: return "reallife_social_goal_movein";
+            }
         }
 
         private void CardLine(string key, string value)

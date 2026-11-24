@@ -15,10 +15,12 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
                 .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId,
                     Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId, Settings.EconomyGoalRewardsId)
+                .Owns(Settings.EconomyLoanYearId)   // how long the game's year lends: no preset sets it, it is only the player's wish to have the game's own test back
                 .Owns(Settings.StartDebtId, Settings.StartDebtDegreeId)   // a new game's student loan: no preset sets these, as they are the player's choice for the next game begun
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)
+                .Fact("econ_loan_year", () => Whole(Economy.LoanMeansRules.ReferenceYear))
                 .Fact("econ_min", () => Whole(Economy.CreditCatalogue.ScoreMin))
                 .Fact("econ_max", () => Whole(Economy.CreditCatalogue.ScoreMax))
                 .Fact("econ_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
