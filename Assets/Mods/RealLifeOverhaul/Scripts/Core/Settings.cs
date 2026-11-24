@@ -200,6 +200,7 @@
         public const string EconomyLevelId = "economy_level";
         public const string StartDebtId = "start_debt";                     // a new game begins owing a student loan (Economy/Banking/Terms/StartDebtRules)
         public const string StartDebtDegreeId = "start_debt_degree";        // ...and what the loan paid for
+        public const string EconomyLoanYearId = "economy_loan_year";        // the means test for a loan counts a 60 day year's paying-back days at most (Banking/Terms/LoanMeansRules)
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
         public const string EconomyAppId = "economy_app";                   // the Economy app on the phone (Scripts/Outlook)
@@ -231,6 +232,7 @@
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string StaffAvailabilityId = "staff_availability";
         public const string EconomyManagersId = "economy_managers";
         public const string EconomyHierarchyId = "economy_hierarchy";
         public const string EstateId = "economy_estate";
@@ -301,6 +303,7 @@
         public const string GaragePoliceId = "garage_police";
         public const string GarageSoundsId = "garage_sounds";
         public const string GarageResaleId = "garage_resale";
+        public const string GarageScooterHoldId = "garage_scooter_hold";
         public const string TwoWheelersId = "two_wheelers";
         public const string HomeLifeId = "home_life";
         public const string HomeNeedsId = "home_needs";
@@ -398,6 +401,7 @@
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
+        public const string HolidayRestId = "holiday_rest";
         public const string CareersId = "careers";
         public const string SideJobsId = "side_jobs";
         public const string CareersStudyId = "careers_study";
@@ -637,6 +641,7 @@
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool StartDebt = false;            // a game begun from now on starts owing a student loan (off: it starts owing nothing, as before)
+        public static bool EconomyLoanYear = true;       // a long game year lends no more for the same income than a 60 day one (off: the game's own test, six times as much at 365 days)
         public static int StartDebtDegree = 1;           // ...what the loan paid for: 0 a diploma, 1 a bachelor's degree, 2 a master's degree, 3 a bachelor's degree and an MBA
         public static bool EconomyCity = true;           // the city's economy (off: every figure is the game's own and the model stands still)
         public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects
@@ -669,6 +674,7 @@
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner (off: the tab says so and nothing is worked out)
+        public static bool StaffAvailability = false;    // part-timers keep set hours: a student, a parent (a shift outside them costs mood; off: as before)
         public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
         public static bool EconomyHierarchy = true;      // the company's policy and escalations over the managers (off: each by their own limits, nothing escalated)
         public static bool Estate = true;                // property (off: every value and rent is the game's own)
@@ -761,6 +767,7 @@
         public static bool GarageUnderglow = true;       // underglow kits light up after dark
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
         public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
+        public static bool GarageScooterHold = true;     // a scooter rented from the game's stands is not taken away while the player is indoors
         public static bool GarageResale = true;          // a car sold with custom shop work on it fetches the work's worth on top of the game's price
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
         public static bool HomeLife = true;              // home life and health as a whole
@@ -858,7 +865,8 @@
         public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones, the city's most valuable and a sector's leader
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
-        public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
+        public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, the family, trade fair invitations
+        public static bool HolidayRest = false;          // a holiday fills every need, each day and on the way home (off: three meals a day, as before)
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks
         public static bool SideJobs = true;              // taxi and delivery shifts in the player's own vehicle, signed on for at the cab office's and the depot's desks (off: no desk stands)
         public static bool CareersStudy = true;          // the city's courses (off: the game's own courses alone; records are kept)
@@ -1141,6 +1149,7 @@
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
             StartDebt = Bool(modId, StartDebtId, StartDebt);
             StartDebtDegree = Int(modId, StartDebtDegreeId, StartDebtDegree);
+            EconomyLoanYear = Bool(modId, EconomyLoanYearId, EconomyLoanYear);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             EconomyApp = Bool(modId, EconomyAppId, EconomyApp);
@@ -1172,6 +1181,7 @@
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            StaffAvailability = Bool(modId, StaffAvailabilityId, StaffAvailability);
             EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
             EconomyHierarchy = Bool(modId, EconomyHierarchyId, EconomyHierarchy);
             Estate = Bool(modId, EstateId, Estate);
@@ -1245,6 +1255,7 @@
             GaragePolice = Bool(modId, GaragePoliceId, GaragePolice);
             GarageSounds = Bool(modId, GarageSoundsId, GarageSounds);
             GarageResale = Bool(modId, GarageResaleId, GarageResale);
+            GarageScooterHold = Bool(modId, GarageScooterHoldId, GarageScooterHold);
 
             TwoWheelers = Bool(modId, TwoWheelersId, TwoWheelers);
             HomeLife = Bool(modId, HomeLifeId, HomeLife);
@@ -1343,6 +1354,7 @@
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
+            HolidayRest = Bool(modId, HolidayRestId, HolidayRest);
             Careers = Bool(modId, CareersId, Careers);
             SideJobs = Bool(modId, SideJobsId, SideJobs);
             CareersStudy = Bool(modId, CareersStudyId, CareersStudy);

@@ -159,6 +159,32 @@ namespace RealLifeOverhaul.Economy
             f.OwnLeast = OwnBankRules.At(CardTerms.BlackLeastCents, world.Level);
             f.OwnStep = OwnBankRules.At(CardTerms.BlackStepCents, world.Level);
             f.OwnName = say.T(CardTerms.BlackKey);
+            f.BlackOn = b.BlackOn;
+            f.BlackWealth = b.BlackWealth;
+            f.BlackScore = b.BlackScore;
+            f.BlackFee = b.BlackFee;
+            f.BlackReward = b.BlackReward;
+            f.BlackScoreLeast = BlackTerms.ScoreLeast;
+            f.BlackScoreMost = BlackTerms.ScoreMost;
+            f.BlackScoreStep = BlackTerms.ScoreStep;
+            f.BlackWealths = (long[])BlackTerms.WealthLines.Clone();
+            f.BlackFees = new long[BlackTerms.FeeSteps.Length];
+            for (int i = 0; i < f.BlackFees.Length; i++)
+            {
+                f.BlackFees[i] = BlackTerms.FeeCents(i, c.Level);
+            }
+            f.BlackRewards = (int[])BlackTerms.RewardBp.Clone();
+            f.BlackHolders = b.BlackHolders;
+            f.BlackWanted = b.CardsOn && b.BlackOn ? OwnBankRules.BlackWanted(b) : 0;
+            f.BlackRich = OwnBankRules.BlackRich(b, b.BlackWealth);
+            OwnBankRules.BlackScores(b.BlackScore, out int share, out _);
+            f.BlackScoreShare = share;
+            f.BlackDefaultPerMille = OwnBankRules.BlackDefaultPerMille(c, b);
+            f.BlackRateBp = OwnBankRules.BlackBp(c, b);
+            f.BlackBook = b.BlackBal;
+            f.BlackArrears = b.BlackArr;
+            f.BlackFig = (long[])b.BlackFig.Clone();
+            f.BlackLast = (long[])b.BlackLast.Clone();
         }
 
         private static void ReadDesk(OwnBankFacts f, OwnBank b, BankCity c, IOwnBankSay say)

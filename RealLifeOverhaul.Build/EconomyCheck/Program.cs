@@ -354,6 +354,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--scooter-hold")
+        {
+            ScooterHold();   // a rented scooter not taken away by the game while the player is indoors for a class or a film (ScooterHoldChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--traffic-offences")
         {
             TrafficOffences();   // each traffic offence on its own option, started from the old switch, and nobody a vehicle carries is fined as a walker (TrafficOffenceChecks.cs)
@@ -803,6 +809,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--life24")
+        {
+            Life24Checks();   // (part-timers with set hours, family holidays that rest every need and the Black card tier alone, while working on them: Life24Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bank-risk-report")
         {
             BankRiskReport();   // (what the bank earns a month before and after, by size and economy: prints a table, checks nothing: BankRiskReport.cs)
@@ -873,6 +885,31 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--net-districts")
         {
             NetDistricts();   // (the player's own broadband network in every district, the mod's own and later ones, and its own line for a data centre alone: NetDistrictChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--loan-means")
+        {
+            LoanMeans();   // (the loan means test and the game's year, with the bank's checks beside it, while working on them: LoanMeansChecks.cs, BankChecks.cs)
+            Banks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--social-next")
+        {
+            SocialNext();   // (the outing's notice whole in every language and the next step of each figure, while working on them: SocialNextChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--own-quarter")
+        {
+            OwnQuarterAll();   // (the own company's quarters and the growth the market reads from them, while working on them: OwnQuarterChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--own-fall")
+        {
+            OwnFallAll();   // (a fall of the player's own company's price and why it is told, while working on it: OwnFallChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1865,6 +1902,10 @@ internal static partial class Program
         LeasedLines();   // the data centres' leased lines: the table, a rack's profit, who may have one, fees and waits, the line beside a plan, the limits, the save (LeasedLineChecks.cs)
         NetDistricts();   // the player's own network in every district and its own line for a data centre (NetDistrictChecks.cs)
         MarketWhySegments();   // why the market moved, the size segments and the player's statement (MarketWhyChecks.cs)
+        OwnFallAll();   // a fall of the player's own company's price and why it is told (OwnFallChecks.cs)
+        OwnQuarterAll();   // the own company's quarters are whole and its results never reprice it by most of its value (OwnQuarterChecks.cs)
+        LoanMeans();   // the loan means test held to a 60 day year (LoanMeansChecks.cs)
+        SocialNext();   // the outing's notice whole in every language and each figure's next step (SocialNextChecks.cs)
         Segments();   // who an AI model is sold to: the choice at the start and the re-launch's cost, work, days, save and both interfaces (SegmentChecks.cs)
         AiTraining();   // a lab's own AI racks train its models first, a cloud or not, and set how fast; rented compute tops up to 200 a day; rival labs alike (AiTrainingChecks.cs)
         Ventures2();
@@ -1934,6 +1975,7 @@ internal static partial class Program
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
         BankDividendChecks();   // the own bank's automatic dividends: the times, the share to the cent, what holds one back, off as before, the save, the page, the texts (BankDividendChecks.cs)
         BankRiskChecks();   // the own bank's risk, credit cards and trading desk: the levels, credit risk by the cycle, a run and its tools, the waterfall, the card book, the owner's card, the desk, the lines, the save, the texts (BankRiskChecks.cs)
+        Life24Checks(); // part-timers with set hours, family holidays that rest every need and the Black card tier: the tables, the rota, the books, the saves, the places that carry each, the texts (Life24Checks.cs)
         BankPayFixes(); // the own bank's name on its lines and a fixed pay paid in full: the report's national bank reproduced, what holds it back, the save, the texts (BankPayFixChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)

@@ -501,6 +501,10 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Reverse:
                     Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
+                case DerivedNews.OwnFall:
+                    // Its figures are on the company (OwnListing.Fall), measured the moment this was said.
+                    Queue(NotificationType.Warning, "reallife_own_fall_note", OwnFallText.Pairs(o.Fall, k));
+                    break;
             }
             return true;
         }

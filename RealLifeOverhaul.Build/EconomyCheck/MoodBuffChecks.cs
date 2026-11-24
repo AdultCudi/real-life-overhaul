@@ -197,7 +197,7 @@ internal static partial class Program
         MoodTable(@"Core\ModState.cs", "ModState", "ModifierDefs =", types, lengths, order);
         MoodTable(@"Family\FamilyModifiers.cs", "FamilyModifiers", "Defs =", types, lengths, order);
         MoodTable(@"Travel\TravelEffects.cs", "TravelEffects", "Modifiers =", types, lengths, order);
-        Check(order.Count == 52 && lengths.Count == 52, "mood buffs: the three catalogues (the mod's, family's, travel's) are read: 52 moods, each once (" + order.Count + ", " + lengths.Count + ")");
+        Check(order.Count == 53 && lengths.Count == 53, "mood buffs: the three catalogues (the mod's, family's, travel's) are read: 53 moods, each once (" + order.Count + ", " + lengths.Count + ")");
 
         // Every call that names a mood and its hours as a number: never past the mood's cap, so no cap cuts what a feature meant.
         int calls = 0;
@@ -361,7 +361,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(declared.Count == 52 && inTables == declared.Count && new HashSet<string>(declared, StringComparer.Ordinal).Count == declared.Count,
+        Check(declared.Count == 53 && inTables == declared.Count && new HashSet<string>(declared, StringComparer.Ordinal).Count == declared.Count,
             "mood definitions: every one of the mod's " + declared.Count + " mood ids is in a catalogue table that the load registers, each once (" + inTables + " listed)");
 
         // No other source names a mood id of its own: a mood nobody registers cannot be added.

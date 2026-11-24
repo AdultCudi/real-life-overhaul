@@ -8,6 +8,7 @@ using Entities.Employee.JobDemands;
 using Enums;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.Economy;
 using Streets;
 using UI.Smartphone.Apps.BizMan.Schedule;
 using UnityEngine;
@@ -141,6 +142,18 @@ namespace RealLifeOverhaul.Ui
                 b.Sub = UiText.T(UiTooltipRules.MoodStep(mood) == 0 ? "reallife_ui_tip_mood_low" : UiTooltipRules.MoodStep(mood) == 1 ? "reallife_ui_tip_mood_fair" : "reallife_ui_tip_mood_good");
                 b.Value = Mathf.Clamp(mood, 0, 100);
                 b.Tone = UiTooltipRules.MoodTone(mood);
+            }
+            AvailabilityWindow window = AvailabilityGame.Of(e);
+            if (!window.None)
+            {
+                // The set hours a part-timer keeps (Economy/Company/AvailabilityRules), in words, warned when their week has a shift outside them.
+                m.Rule();
+                bool off = AvailabilityGame.WeekOff(e, window) > 0;
+                m.Text(AvailabilityGame.Words(window), off ? UiRole.WarnText : UiRole.None, false, false);
+                if (off)
+                {
+                    m.Text(UiText.T("reallife_avail_tip_off"), UiRole.WarnText, false, false);
+                }
             }
             int served = Served(e, reg);
             if (served >= 0)

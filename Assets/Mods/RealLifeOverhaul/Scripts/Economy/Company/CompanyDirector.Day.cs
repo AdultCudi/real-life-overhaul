@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Economy
                 int day = Save.Day;
                 if (day > _state.LastDay)
                 {
+                    AvailabilityGame.Logger = Logger;
                     CompanyGame.NoteHours(_state, day - 1);   // before the game's run pays and clears them: the day that has ended
                     return;                          // the day event writes every figure in a moment
                 }

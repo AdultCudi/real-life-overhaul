@@ -135,6 +135,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_hier_what_others", "reallife_hier_what_yours", "reallife_hier_you", "reallife_ibox_chip_called",
                 "reallife_ibox_chip_covered", "reallife_ibox_chip_due", "reallife_ibox_chip_late", "reallife_ibox_chip_missing",
                 "reallife_ibox_chip_not_covered", "reallife_ibox_chip_open", "reallife_ibox_chip_running", "reallife_ibox_profit",
+                "reallife_avail_sec", "reallife_avail_row_kind", "reallife_avail_row_days", "reallife_avail_row_hours", "reallife_avail_about", "reallife_ui_bizops_span",
+                "reallife_avail_student", "reallife_avail_parent", "reallife_avail_early", "reallife_avail_weekend", "reallife_avail_weekdays", "reallife_avail_weekend_days",
                 "reallife_ibox_sec_before_during", "reallife_ibox_sec_campaign", "reallife_ibox_sec_feeling", "reallife_ibox_sec_how",
                 "reallife_ibox_sec_money", "reallife_ibox_sec_pay", "reallife_ibox_sec_return", "reallife_ibox_sec_risk", "reallife_ibox_sec_terms",
                 "reallife_mgr_allowance", "reallife_mgr_allowance_label", "reallife_mgr_appoint", "reallife_mgr_appoint_replaces",

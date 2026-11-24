@@ -413,7 +413,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("room_suite", () => Guide.Money(TravelCatalogue.SuiteRate))
                 .Fact("trip_hamptons", () => Guide.Money(Prices.At(TravelCatalogue.TripById("hamptons").Price)))
                 .Fact("trip_europe", () => Guide.Money(Prices.At(TravelCatalogue.TripById("europe").Price)))
-                .Owns(Settings.HotelsId, Settings.HolidaysId, Settings.TravelExtrasId)
+                .Owns(Settings.HotelsId, Settings.HolidaysId, Settings.TravelExtrasId, Settings.HolidayRestId)
                 .StandsAside(GoingPublic.ClockSentence, Settings.HolidaysId)   // days away cannot pass for one player of a session
                 .Data(TravelState.SaveKey)
                 .Contact(TravelPhone.TripsId, TravelPhone.AgentId)
@@ -542,7 +542,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("helmet_price", () => Guide.Money(BikeCatalogue.HelmetPrice))
                 .Fact("fine_helmet", () => Guide.Money(BikeCatalogue.HelmetFine))
                 .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId, Settings.GarageSoundsId,
-                    Settings.GarageResaleId)
+                    Settings.GarageResaleId, Settings.GarageScooterHoldId)
 
                 .OnFrom(Settings.GaragePoliceId, Intensity.Standard)
                 .Rows("reallife_garage_test_vehicles")   // the player's list of vehicles, not a test

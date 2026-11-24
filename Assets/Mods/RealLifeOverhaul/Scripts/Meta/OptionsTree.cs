@@ -332,7 +332,8 @@ namespace RealLifeOverhaul.Meta
 
                     .Also("tuning paint parts custom dyno figures gearbox resale sell"),
 
-                S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
+                S("bikes").Guide("garage").Opt("two_wheelers", "garage").Opt("garage_scooter_hold", "garage")
+                    .Also("bicycle bicycles motorbike motorbikes motorcycle scooter rented rental two-wheelers"),
                 S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets", "city_drivers").Opt("tow_trucks", "traffic_accidents")
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
@@ -346,7 +347,7 @@ namespace RealLifeOverhaul.Meta
                         + "internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks", "heavy_licence")
                     .Also("driving test theory examiner points heavy goods truck lorry cdl hgv"),
-                S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
+                S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras", "holiday_rest").Also("holiday trip hotel stay")),
 
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds", "gig_music").Opt("gig_music_order", "gig_music").Buttons("reallife_gig_music_folder")
@@ -383,9 +384,10 @@ namespace RealLifeOverhaul.Meta
                     .Opt("economy_goal_rewards", "economy")
                     .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income")
                     .Also("economy_goal_rewards", "personal goal goals reward rewards prize persona achievement achievements"),
-                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level", "start_debt")
+                S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level", "start_debt", "economy_loan_year")
                     .Opt("start_debt_degree", "start_debt")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance")
+                    .Also("economy_loan_year", "loan limit means income year length days per year 365 bank borrow most lend")
                     .Also("start_debt", "student loan debt degree university hard hardcore new game start owe owing repay")
                     .Also("start_debt_degree", "student loan debt diploma bachelor master mba degree study course amount"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
@@ -417,7 +419,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("shop wages insurance advertising accountant permits")
                     .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "
                         + "manager executive hr staff"),
-                S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
+                S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Opt("staff_availability", "economy_company")
+                    .Also("schedule shifts opening hours staff part time student parent availability"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
                 S("hierarchy").For("economy_hierarchy").Opt("economy_hierarchy", "economy_managers")

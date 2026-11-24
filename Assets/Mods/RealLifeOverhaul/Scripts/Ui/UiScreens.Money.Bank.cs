@@ -73,7 +73,10 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ob_stress_ratio", "reallife_ob_stress_repay_button", "reallife_ob_stress_shock_next", "reallife_ob_stress_shock_now",
                 "reallife_ob_stress_signs", "reallife_ob_stress_sold", "reallife_ob_stress_sold_value", "reallife_ob_stress_title", "reallife_ob_stress_warn_line",
                 "reallife_ob_stress_warned", "reallife_ob_stress_watched", "reallife_ob_stress_wf", "reallife_ob_stress_wf_short", "reallife_ob_stress_wf_value",
-                "reallife_ob_tab_cards", "reallife_ob_tab_desk"
+                "reallife_ob_tab_cards", "reallife_ob_tab_desk", "reallife_ob_black_tier", "reallife_ob_black_wealth_head", "reallife_ob_black_wealth_hint",
+                "reallife_ob_black_score_head", "reallife_ob_black_score_hint", "reallife_ob_black_fee_head", "reallife_ob_black_fee_hint", "reallife_ob_black_reward_head",
+                "reallife_ob_black_reward_hint", "reallife_ob_black_rich", "reallife_ob_black_scores", "reallife_ob_black_switch", "reallife_ob_black_needs_cards",
+                "reallife_ob_black_note"
             };
         }
 

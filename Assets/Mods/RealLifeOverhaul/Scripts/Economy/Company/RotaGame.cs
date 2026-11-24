@@ -255,6 +255,7 @@ namespace RealLifeOverhaul.Economy
             h = RotaLedger.Mix(h, place.Place);
             h = RotaLedger.Mix(h, Save != null ? Save.Day : 0);
             h = RotaLedger.Mix(h, extra);
+            h = RotaLedger.Mix(h, Settings.StaffAvailability ? 1 : 0);   // the set hours of part-timers are demands of the sheet
             h = RotaLedger.Mix(h, reg.businessTypeName);
             h = RotaLedger.Mix(h, reg.promotion != null ? reg.promotion.total : 0);
             h = RotaLedger.Mix(h, reg.satisfaction != null ? reg.satisfaction.overall : 0);

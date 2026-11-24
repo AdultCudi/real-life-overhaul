@@ -236,6 +236,66 @@ namespace RealLifeOverhaul.Family
             return false;
         }
 
+        /// <summary>
+        /// Travel: who of the family could come on a holiday: the partner, while the two are together, and the children at home, by name, added to the list (cleared first).
+        /// False, with the list empty, when family life is off or has nobody to take.
+        /// </summary>
+        public static bool HolidayFamily(out string partner, List<string> children)
+        {
+            partner = null;
+            children.Clear();
+            if (!Active)
+            {
+                return false;
+            }
+            if (FamilyState.Together)
+            {
+                partner = Partner.Name;
+            }
+            List<ChildRecord> kids = FamilyState.S.Children;
+            for (int i = 0; i < kids.Count; i++)
+            {
+                if (!kids[i].Grown && !string.IsNullOrEmpty(kids[i].Name))
+                {
+                    children.Add(kids[i].Name);
+                }
+            }
+            return partner != null || children.Count > 0;
+        }
+
+        /// <summary>
+        /// Travel: the family came home from a holiday of so many days. The partner (if the two are still together) is told it is time shared, the home's harmony rises and
+        /// each child named who is still at home grows closer, as <see cref="HolidayRules"/> sets. Nothing for those who are no longer family.
+        /// </summary>
+        public static void HolidayTogether(bool partner, List<string> children, int days)
+        {
+            if (!Active)
+            {
+                return;
+            }
+            FamilyDirector.Instance.Guarded(() =>
+            {
+                if (partner && FamilyState.Together)
+                {
+                    Partner.Tell(FamilyEvent.SharedTime, HolidayRules.Affection(days), HolidayRules.TrustGiven);
+                    FamilyState.Harmony(HolidayRules.Harmony(days));
+                    FamilyState.S.LastSharedDay = TimeHelper.CurrentDay;
+                }
+                List<ChildRecord> kids = FamilyState.S.Children;
+                for (int c = 0; children != null && c < children.Count; c++)
+                {
+                    for (int i = 0; i < kids.Count; i++)
+                    {
+                        if (!kids[i].Grown && kids[i].Name == children[c])
+                        {
+                            kids[i].Closeness = UnityEngine.Mathf.Min(100f, kids[i].Closeness + HolidayRules.Closeness(days));
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
         /// <summary>Social or Leisure: time well spent with the partner that Family did not start itself.</summary>
         public static void SharedTime(float harmony)
         {

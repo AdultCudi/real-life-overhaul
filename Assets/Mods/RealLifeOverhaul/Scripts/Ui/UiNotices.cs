@@ -82,7 +82,9 @@ namespace RealLifeOverhaul.Ui
         public const int MostCards = 3;           // cards at once: the game's stack shows a few, the rest wait their turn
         public const float CardWidth = 400f;      // px
         public const float ListWidth = 440f;      // px: as the info panel and All apps
-        public const int BodyLines = 6;           // a notice of the mod's holds 240 characters at most (NoticeCheck): six lines of a card show it whole, where three cut it and the list shows one line
+        // A notice of the mod's holds 240 characters at most (NoticeCheck): six lines of a card. A card of lines (an outing's: what it cost, what changed and how far
+        // each figure is from its next step, in any language) takes up to this many, and only a body longer than that ends at a whole word.
+        public const int BodyLines = 18;
         private const float Glyph = 40f;          // px: a card's tile
         private const float RowTile = 32f;        // px: a row's tile
 
@@ -164,8 +166,7 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        // A card's body at most six lines, which hold a notice of 240 characters whole; a longer one (another mod's, a long
-        // translation) ends at a whole word. Once a layout.
+        // A card's body at most BodyLines lines, which hold a notice of 240 characters whole and a card of lines whole; a longer one (another mod's) ends at a whole word. Once a layout.
         private static string Clip(string body, float width)
         {
             if (UiTextRules.Lines(body, UiStyle.Body, width, BodyLines + 1, out float _) <= BodyLines)

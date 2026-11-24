@@ -49,6 +49,8 @@ namespace RealLifeOverhaul
         public static bool TicketCoach;
         public static string CompanionId;
         public static string CompanionName;
+        public static int KinAdults;           // a family trip: the partner (1) who comes besides the player; 0 on any other
+        public static string KinKids;          // and the names of the children who come, joined by commas
         public static int TicketPaid;
         public static int TicketDay;
 
@@ -83,6 +85,29 @@ namespace RealLifeOverhaul
         public static bool HasRoom => HotelId != null;
         public static bool HasTicket => TicketId != null;
 
+        /// <summary>The children of a family trip, by name; the list is the caller's and is cleared first.</summary>
+        public static int KidList(List<string> into)
+        {
+            into.Clear();
+            if (!string.IsNullOrEmpty(KinKids))
+            {
+                foreach (string name in KinKids.Split(','))
+                {
+                    if (name.Length > 0 && into.Count < MostKids)
+                    {
+                        into.Add(name);
+                    }
+                }
+            }
+            return into.Count;
+        }
+
+        /// <summary>A child's name as it is kept on the ticket: the line's separators and the list's comma taken out.</summary>
+        public static string KidName(string name) => string.IsNullOrEmpty(name) ? string.Empty : name.Replace(';', ' ').Replace('=', ' ').Replace(',', ' ').Trim();
+
+        /// <summary>The most children who may come: the family life's own most (a family has three).</summary>
+        public const int MostKids = 3;
+
         public static void Reset()
         {
             ClearRoom();
@@ -108,7 +133,8 @@ namespace RealLifeOverhaul
 
         public static void ClearTicket()
         {
-            TicketId = CompanionId = CompanionName = null;
+            TicketId = CompanionId = CompanionName = KinKids = null;
+            KinAdults = 0;
             TicketFirst = TicketInsured = TicketCoach = false;
             TicketPaid = TicketDay = 0;
         }
@@ -167,6 +193,8 @@ namespace RealLifeOverhaul
             Put(text, "tcoach", TicketCoach);
             Put(text, "comp", CompanionId);
             Put(text, "compname", Clean(CompanionName));
+            Put(text, "kina", KinAdults);
+            Put(text, "kinn", KinKids);
             Put(text, "tpaid", TicketPaid);
             Put(text, "tday", TicketDay);
             Put(text, "away", Away);
@@ -246,6 +274,8 @@ namespace RealLifeOverhaul
             TicketCoach = Bool(data, "tcoach");
             CompanionId = Text(data, "comp");
             CompanionName = Text(data, "compname");
+            KinAdults = Math.Min(Math.Max(Int(data, "kina"), 0), 1);
+            KinKids = Text(data, "kinn");
             TicketPaid = Int(data, "tpaid");
             TicketDay = Int(data, "tday");
             Away = Bool(data, "away");

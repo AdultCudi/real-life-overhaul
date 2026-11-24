@@ -49,6 +49,26 @@ namespace RealLifeOverhaul.Economy
             Badge();
         }
 
+        private object _keptDialogue;   // the bank's dialogue the cap was brought up to date for: once for each
+
+        // The counter reads a bank's cap when an amount is asked for, and with the means test held to the 60 day year (Settings.EconomyLoanYear) the cap follows the means, which move with
+        // the cash and the week's income. So when a bank's dialogue opens (at the counter or on a call) the terms are written once more before an amount is typed.
+        private void KeepAtTheBank()
+        {
+            DialogController open = DialogController.current;
+            if (!Settings.EconomyLoanYear || open == null || open.dialog == null || !(open.dialog is BankDialog))
+            {
+                _keptDialogue = null;
+                return;
+            }
+            if (ReferenceEquals(open.dialog, _keptDialogue))
+            {
+                return;
+            }
+            _keptDialogue = open.dialog;
+            KeepTerms("a bank's dialogue");
+        }
+
         // Under the threshold the bank's cap is 0 and the game's dialogue says only "the most we can lend you is $0", so when a
         // bank's dialogue opens (at the counter or on a call) the reason is said once, through the game's notification.
         private void TellAtTheBank()

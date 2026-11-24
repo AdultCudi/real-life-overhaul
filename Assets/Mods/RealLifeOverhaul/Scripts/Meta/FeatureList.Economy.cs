@@ -15,10 +15,12 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
                 .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId,
                     Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId, Settings.EconomyGoalRewardsId)
+                .Owns(Settings.EconomyLoanYearId)   // how long the game's year lends: no preset sets it, it is only the player's wish to have the game's own test back
                 .Owns(Settings.StartDebtId, Settings.StartDebtDegreeId)   // a new game's student loan: no preset sets these, as they are the player's choice for the next game begun
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)
+                .Fact("econ_loan_year", () => Whole(Economy.LoanMeansRules.ReferenceYear))
                 .Fact("econ_min", () => Whole(Economy.CreditCatalogue.ScoreMin))
                 .Fact("econ_max", () => Whole(Economy.CreditCatalogue.ScoreMax))
                 .Fact("econ_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
@@ -313,9 +315,9 @@ namespace RealLifeOverhaul.Meta
             // Its rows stand under the company's header.
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
-                .Owns(Settings.EconomyRotaId)
+                .Owns(Settings.EconomyRotaId, Settings.StaffAvailabilityId)
                 .Data(Economy.RotaStore.Key)
-                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
+                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back", "reallife_avail_test"));
 
             // Its rows stand under the company's header too.
             Economy.ManagerGuide.AddFacts(Features.Add("economy_managers", "reallife_meta_title_economy_managers")

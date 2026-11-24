@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Tech
 
         // The business is the player's own tech firm with shifts, and the skill one it hires under: the pass seats them. A lawyer or an HR manager at a
         // software studio, an account manager at the game's web development agency, and anyone at a law firm, a headquarters or a bank are not.
-        private static bool SeatsAt(BuildingRegistration at, string skill)
+        internal static bool SeatsAt(BuildingRegistration at, string skill)
         {
             return at != null && GoingPublic.Mine(at) && TalentGame.Shifts(at) && SeatRules.Seats(FirmsGame.KindOf(TalentGame.TypeOf(at)), skill);
         }

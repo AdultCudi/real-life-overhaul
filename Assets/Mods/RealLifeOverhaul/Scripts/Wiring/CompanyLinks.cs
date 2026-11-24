@@ -57,6 +57,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.Pressure = Rivals.RivalDirector.PremiumOf;
                 CompanyBridges.Leave = Leave;
                 CompanyBridges.Held = TechLinks.Holds;
+                CompanyBridges.TechSeats = TechLinks.Seats;
                 BusinessDirector.Held = Offered;
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;

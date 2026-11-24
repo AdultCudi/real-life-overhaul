@@ -100,6 +100,20 @@ namespace RealLifeOverhaul
                 }
             }
 
+            /// <summary>True if the tech sector seats a professional of this skill at this business by weeks of its own (the set hours of part-timers leave them alone).</summary>
+            internal static bool Seats(BuildingRegistration at, string skill)
+            {
+                try
+                {
+                    return TechDirector.SeatsAt(at, skill);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Seats", e);
+                    return false;
+                }
+            }
+
             /// <summary>
             /// The tech sector's own rival's offer is open to an employee (the game's id), or a departure is in hand for them:
             /// the company and business pressure make them no offer then.

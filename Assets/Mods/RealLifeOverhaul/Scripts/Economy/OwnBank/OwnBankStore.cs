@@ -204,6 +204,7 @@ namespace RealLifeOverhaul.Economy
                         case 'c':
                         case 'q':
                         case 'w':
+                        case 'x':
                         case 't':
                         case 'g':
                             ReadNew(part[0], body, b);
@@ -335,6 +336,15 @@ namespace RealLifeOverhaul.Economy
             {
                 t.Append('|').Append(b.CardLast[i].ToString(Inv));
             }
+            t.Append("^x:").Append(Join(b.BlackOn ? 1 : 0, b.BlackWealth, b.BlackScore, b.BlackFee, b.BlackReward, b.BlackHolders, b.BlackBal, b.BlackArr, b.BlackRisk));
+            for (int i = 0; i < CardTerms.Figures; i++)
+            {
+                t.Append('|').Append(b.BlackFig[i].ToString(Inv));
+            }
+            for (int i = 0; i < CardTerms.Figures; i++)
+            {
+                t.Append('|').Append(b.BlackLast[i].ToString(Inv));
+            }
             t.Append("^t:").Append(Join(b.DeskOn ? 1 : 0, b.DeskMandate, b.DeskShare, b.DeskLimit, b.DeskPeak, b.DeskCutDay, b.DeskCuts, b.DeskBrokerage, b.DeskDerivs, b.DeskCommissionAll,
                 b.DeskLastBrokerage, b.DeskLastDerivs, b.DeskDirty ? 1 : 0));
             if (b.Book.Count > 0)
@@ -413,6 +423,23 @@ namespace RealLifeOverhaul.Economy
                     {
                         b.CardFig[i] = Math.Max(0, L(c, i));
                         b.CardLast[i] = Math.Max(0, L(c, CardTerms.Figures + i));
+                    }
+                    break;
+                case 'x':
+                    // A line from before the Black tier has no such part: the tier is off, at its default lines.
+                    b.BlackOn = I(c, 0) != 0;
+                    b.BlackWealth = Clamp(c.Length > 1 ? I(c, 1) : BlackTerms.WealthDefault, 0, BlackTerms.WealthLines.Length - 1);
+                    b.BlackScore = Step(c.Length > 2 ? I(c, 2) : BlackTerms.ScoreDefault, BlackTerms.ScoreLeast, BlackTerms.ScoreMost, BlackTerms.ScoreStep);
+                    b.BlackFee = Clamp(c.Length > 3 ? I(c, 3) : BlackTerms.FeeDefault, 0, BlackTerms.FeeSteps.Length - 1);
+                    b.BlackReward = Clamp(c.Length > 4 ? I(c, 4) : BlackTerms.RewardDefault, 0, BlackTerms.RewardBp.Length - 1);
+                    b.BlackHolders = Math.Max(0, I(c, 5));
+                    b.BlackBal = Math.Max(0, L(c, 6));
+                    b.BlackArr = Math.Max(0, L(c, 7));
+                    b.BlackRisk = c.Length > 8 ? Clamp(I(c, 8), 100, 10000) : 1000;
+                    for (int i = 0; i < CardTerms.Figures; i++)
+                    {
+                        b.BlackFig[i] = Math.Max(0, L(c, 9 + i));
+                        b.BlackLast[i] = Math.Max(0, L(c, 9 + CardTerms.Figures + i));
                     }
                     break;
                 case 't':

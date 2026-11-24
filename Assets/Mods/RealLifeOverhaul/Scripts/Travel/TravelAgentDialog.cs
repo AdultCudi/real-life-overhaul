@@ -144,10 +144,16 @@ namespace RealLifeOverhaul
             bool first = extras ? how >= 2 : how == 1;
             bool insured = extras && how % 2 == 1;
             TravelCompanion? companion = who > 0 ? Companions[who - 1] : (TravelCompanion?)null;
-            int price = Host.Price(trip, first, companion.HasValue, insured, true);
+            int price = Host.Price(trip, first, companion, insured, true);
             string line = TravelText.T(first ? "reallife_travel_agent_option_first" : "reallife_travel_agent_option_economy",
                 "trip", TravelText.T(trip.NameKey), "price", TravelText.Money(price));
-            if (companion.HasValue)
+            if (companion.HasValue && companion.Value.IsFamily)
+            {
+                string names = (companion.Value.Adults > 0 ? companion.Value.Name + (companion.Value.Kids > 0 ? ", " : string.Empty) : string.Empty)
+                               + (companion.Value.Kids > 0 ? companion.Value.KidNames.Replace(",", ", ") : string.Empty);
+                line += " " + TravelText.T("reallife_travel_agent_option_family", "count", TravelText.Number(companion.Value.Adults + companion.Value.Kids), "names", names);
+            }
+            else if (companion.HasValue)
             {
                 line += " " + TravelText.T("reallife_travel_agent_option_with", "name", companion.Value.Name);
             }

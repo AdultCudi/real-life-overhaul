@@ -67,7 +67,8 @@ namespace RealLifeOverhaul.Markets
                 .Fact("lst_yearly_least", () => Guide.Money(Prices.At((float)ListingCatalogue.YearlyFeeLeastAtStart)))
                 .Fact("lst_bid_days_least", () => Whole(ListingCatalogue.OwnTakeoverDaysLeast))
                 .Fact("lst_bid_days_most", () => Whole(ListingCatalogue.OwnTakeoverDaysMost))
-                .Fact("lst_sale_days", () => Whole(ListingCatalogue.SaleBidDays));
+                .Fact("lst_sale_days", () => Whole(ListingCatalogue.SaleBidDays))
+                .Fact("lst_fall", () => Bp(OwnFallRules.FallBp));
         }
 
         private static int Year()

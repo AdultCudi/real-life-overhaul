@@ -19,6 +19,7 @@ namespace RealLifeOverhaul
         private const int SetOff = 101, Relax = 102, Explore = 103, Splurge = 104, NextDay = 105, Home = 106, Close = 107;   // list entries
         private const string ButtonDo = "reallife_travel_list_do";
 
+        private static readonly List<string> FamilyKids = new List<string>(4);   // the children of the family trip coming home
         private Action<int> _onPick;
         private Action _onClosed;
 
@@ -219,15 +220,22 @@ namespace RealLifeOverhaul
             {
                 yield break;   // cut short meanwhile
             }
-            // Three meals a day are part of any holiday.
+            // Three meals a day are part of any holiday; with the option on, the day also washes, rests and amuses the player: the needs are full each morning.
             GameInstance save = SaveGameManager.Current;
-            if (save.Hunger < 70f)
+            if (Settings.HolidayRest)
+            {
+                TravelEffects.RestNeeds();
+            }
+            else if (save.Hunger < 70f)
             {
                 TravelEffects.Feed(70f - save.Hunger);
             }
             TravelState.AwayStep++;
             ShowStep();
         }
+
+        // The line under a trip's name that says who is travelling: one companion, or the family.
+        internal static string SideKey() => TravelState.CompanionId == FamilyId ? "reallife_travel_trip_side_family" : "reallife_travel_trip_side_with";
 
         // The window for this trip's screens, made ready; null if the game's list cannot be copied.
         private TravelList Screen()
@@ -298,7 +306,7 @@ namespace RealLifeOverhaul
             int last = 1 + 2 * trip.Days;
             string with = TravelState.CompanionName;
             string side = TravelText.T(TravelState.TicketFirst ? "reallife_travel_trip_side_first" : "reallife_travel_trip_side_economy")
-                          + (with != null ? "  " + TravelText.T("reallife_travel_trip_side_with", "name", with) : string.Empty)
+                          + (with != null ? "  " + TravelText.T(SideKey(), "name", with) : string.Empty)
                           + (TravelState.TicketInsured ? "  " + TravelText.T("reallife_travel_trip_side_insured") : string.Empty);
             list.Begin(TravelText.T(trip.NameKey), side);
             string heading;
@@ -502,6 +510,10 @@ namespace RealLifeOverhaul
         {
             if (restedHours > 0)
             {
+                if (Settings.HolidayRest)
+                {
+                    TravelEffects.RestNeeds();   // before the jet lag below: that is the trip's own cost and stays
+                }
                 TravelBridges.Home.Holiday(days);
                 ModState.AddModifier(TravelEffects.Rested, restedHours);
                 TravelState.Streak = 0;
@@ -518,7 +530,14 @@ namespace RealLifeOverhaul
             {
                 TravelEffects.Energy(20f);
             }
-            if (TravelState.CompanionId != null)
+            if (TravelState.CompanionId == FamilyId)
+            {
+                // The family's own rules for time spent together (the partner's affection and the home's harmony, each child's closeness), by those who still are family.
+                TravelState.KidList(FamilyKids);
+                TravelBridges.Family.TripTogether(TravelState.KinAdults > 0, FamilyKids, days);
+                ModState.AddModifier(TravelEffects.Together);
+            }
+            else if (TravelState.CompanionId != null)
             {
                 TravelBridges.Social.TripTogether(TravelState.CompanionId, days);
                 ModState.AddModifier(TravelEffects.Together);

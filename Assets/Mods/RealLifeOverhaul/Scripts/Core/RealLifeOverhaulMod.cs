@@ -853,6 +853,8 @@ namespace RealLifeOverhaul
                     v => Settings.Holidays = v)
                 .AddToggle(Settings.TravelExtrasId, "reallife_travel_extras", Settings.TravelExtras,
                     v => Settings.TravelExtras = v)
+                .AddToggle(Settings.HolidayRestId, "reallife_travel_rest", Settings.HolidayRest,
+                    v => Settings.HolidayRest = v)
                 .AddButton("reallife_travel_test_checkin_budget", () => TravelDirector.Instance?.TestCheckIn(HotelTier.Budget))
                 .AddButton("reallife_travel_test_checkin_mid", () => TravelDirector.Instance?.TestCheckIn(HotelTier.MidRange))
                 .AddButton("reallife_travel_test_checkin_luxury", () => TravelDirector.Instance?.TestCheckIn(HotelTier.Luxury))
@@ -883,6 +885,8 @@ namespace RealLifeOverhaul
                     v => Settings.GarageResale = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
+                .AddToggle(Settings.GarageScooterHoldId, "reallife_garage_scooter_hold", Settings.GarageScooterHold,
+                    v => Settings.GarageScooterHold = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())
@@ -966,6 +970,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.StartDebtDegreeId, "reallife_econ_opt_start_debt_degree",
                     Economy.StartDebtRules.DegreeKeys, Settings.StartDebtDegree,
                     v => Settings.StartDebtDegree = v)
+                .AddToggle(Settings.EconomyLoanYearId, "reallife_econ_opt_loan_year", Settings.EconomyLoanYear,
+                    v => Settings.EconomyLoanYear = v)
                 .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
                 .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
                 .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())
@@ -1095,6 +1101,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.StaffAvailabilityId, "reallife_avail_option", Settings.StaffAvailability,
+                    v => Settings.StaffAvailability = v)
                 .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
                     v => Settings.EconomyManagers = v)
                 .AddToggle(Settings.EconomyHierarchyId, "reallife_hier_enabled", Settings.EconomyHierarchy,
@@ -1322,6 +1330,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_avail_test", () => Economy.CompanyDirector.Instance?.TestAvailability())
                 .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
                 .AddButton("reallife_mgr_test_fill", () => Economy.CompanyDirector.Instance?.TestManagerFill())
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())

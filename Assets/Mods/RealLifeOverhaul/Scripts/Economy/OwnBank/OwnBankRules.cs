@@ -244,7 +244,8 @@ namespace RealLifeOverhaul.Economy
                 sum += b.Loans[j] * OwnBankCatalogue.LoanWeight[j] / 1000 + b.Arrears[j] * OwnBankCatalogue.ArrearsWeight / 1000
                        + b.CardBal[j] * CardTerms.CardWeight / 1000 + b.CardArr[j] * OwnBankCatalogue.ArrearsWeight / 1000;
             }
-            return sum + (b.FundValue + b.BookValue) * OwnBankCatalogue.FundWeight / 1000 + b.OwnOwed * CardTerms.BlackWeight / 1000 + ConcentrationCharge(b);
+            return sum + (b.FundValue + b.BookValue) * OwnBankCatalogue.FundWeight / 1000 + b.OwnOwed * CardTerms.BlackWeight / 1000
+                   + b.BlackBal * CardTerms.CardWeight / 1000 + b.BlackArr * OwnBankCatalogue.ArrearsWeight / 1000 + ConcentrationCharge(b);
         }
 
         /// <summary>The capital ratio, thousandths; RatioMost with nothing at risk.</summary>
@@ -508,6 +509,10 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(b.CardArr, 0, b.CardArr.Length);
             Array.Clear(b.CardQueue, 0, b.CardQueue.Length);
             Array.Clear(b.CardFig, 0, b.CardFig.Length);
+            b.BlackOn = false;
+            b.BlackHolders = 0;
+            b.BlackBal = b.BlackArr = 0;
+            Array.Clear(b.BlackFig, 0, b.BlackFig.Length);
             b.OwnCard = false;
             b.OwnOwed = b.OwnLimit = 0;
             b.OwnRateBp = 0;

@@ -182,6 +182,16 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Note(CompanyText.T("reallife_wage_rested_line", "day", f.AskRest.ToString()));   // one raise in the rest's time
             }
+            AvailabilityWindow window = f.Window != AvailabilityKind.None ? AvailabilityGame.Of(CompanyGame.Employee(id)) : default(AvailabilityWindow);
+            if (!window.None)
+            {
+                // A part-timer's set hours, and what a shift outside them costs (Economy/Company/AvailabilityRules).
+                box.Section("reallife_avail_sec");
+                box.Row("reallife_avail_row_kind", AvailabilityGame.KindWords(window));
+                box.Row("reallife_avail_row_days", AvailabilityGame.DaysWords(window));
+                box.Row("reallife_avail_row_hours", CompanyText.T("reallife_ui_bizops_span", "from", AvailabilityGame.HourWords(window.From), "to", AvailabilityGame.HourWords(window.To)));
+                box.Note(CompanyText.T("reallife_avail_about"));
+            }
             box.Section("reallife_ibox_sec_pay");
             // The parts are named only when they differ from the game's own figure, which is all the game's screens ever showed.
             int city = f.Wage - f.Base;

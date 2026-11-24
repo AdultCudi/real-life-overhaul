@@ -26,6 +26,20 @@ namespace RealLifeOverhaul
     {
         public string Id;      // the social feature's own id for them
         public string Name;    // already localised
+        public int Adults;     // a family's grown people besides the player (the partner); 0 for one companion
+        public int Kids;       // a family's children who come; 0 for one companion
+        public string KidNames; // their names, joined by commas
+        public bool IsFamily => Adults + Kids > 0;
+    }
+
+    /// <summary>The player's family: the partner and the children at home, who may come on a holiday.</summary>
+    public interface ITravelFamily
+    {
+        /// <summary>Whether family life has people to take: the partner's name (null with none) and the children's names added to the list (cleared first). False for nobody.</summary>
+        bool Members(out string partner, List<string> children);
+
+        /// <summary>The family came back from a holiday of this many days: time well spent, by family life's own rules for it. Those who are no longer family are left out.</summary>
+        void TripTogether(bool partner, List<string> children, int days);
     }
 
     /// <summary>Friends and partner.</summary>
@@ -89,12 +103,14 @@ namespace RealLifeOverhaul
         private static ITravelJustice _justice;
         private static ITravelTransport _transport;
         private static ITravelLeisure _leisure;
+        private static ITravelFamily _family;
 
         public static ITravelHome Home { get => _home ?? Fallback; set => _home = value; }
         public static ITravelSocial Social { get => _social ?? Fallback; set => _social = value; }
         public static ITravelJustice Justice { get => _justice ?? Fallback; set => _justice = value; }
         public static ITravelTransport Transport { get => _transport ?? Fallback; set => _transport = value; }
         public static ITravelLeisure Leisure { get => _leisure ?? Fallback; set => _leisure = value; }
+        public static ITravelFamily Family { get => _family ?? Fallback; set => _family = value; }
 
         /// <summary>True while the social feature holds its door: travel then leaves gifts and companions to it.</summary>
         public static bool HasSocial => _social != null;
@@ -114,11 +130,12 @@ namespace RealLifeOverhaul
             _justice = null;
             _transport = null;
             _leisure = null;
+            _family = null;
             UtilitiesPicked = null;
         }
 
         // Nothing handled, so the caller applies its own effect; the one companion is the mod's Friend contact.
-        private sealed class DefaultBridge : ITravelHome, ITravelSocial, ITravelJustice, ITravelTransport, ITravelLeisure
+        private sealed class DefaultBridge : ITravelHome, ITravelSocial, ITravelJustice, ITravelTransport, ITravelLeisure, ITravelFamily
         {
             public bool Freshen(int quality) => false;
             public bool Laundry(int quality) => false;
@@ -163,6 +180,17 @@ namespace RealLifeOverhaul
             public bool PlayGolf() => false;
             public bool DinnerOut(UnityEngine.Vector3 near) => false;
             public float DemandToday => 1f;
+
+            public bool Members(out string partner, List<string> children)
+            {
+                partner = null;
+                children.Clear();
+                return false;
+            }
+
+            public void TripTogether(bool partner, List<string> children, int days)
+            {
+            }
         }
     }
 }
