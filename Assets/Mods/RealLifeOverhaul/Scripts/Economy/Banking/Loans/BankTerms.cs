@@ -217,7 +217,27 @@ namespace RealLifeOverhaul.Economy
             {
                 terms.Cap += Mathf.Max(0f, Secured(settings));
             }
+            if (terms.Lends)
+            {
+                terms.Cap = Mathf.Min(terms.Cap, MeansCap(settings));
+            }
             return terms;
+        }
+
+        /// <summary>
+        /// The most a bank's cap may be while the loan means test is held to the 60 day year (<see cref="LoanMeansRules"/>): what the means allow in new loans and what is owed at these
+        /// banks already. The game's own means test is private and counts the paying-back days of the game's year, so at 365 days a year it lends six times what a 60 day year does, and
+        /// the in-person bank reads only the cap and that test: a cap held here is the only way the counter's limit follows the scaled one. Unlimited with the option off or in a year
+        /// of 60 days or fewer, where the game's own test is the smaller or the same.
+        /// </summary>
+        public static float MeansCap(BankSettings settings)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (!Settings.EconomyLoanYear || save == null || save.gameVariables == null || save.gameVariables.daysPerYear <= LoanMeansRules.ReferenceYear)
+            {
+                return float.MaxValue;
+            }
+            return GameLoans.MeansLimit(settings) + GameLoans.OwedAt(settings);
         }
 
         /// <summary>The lender at an address as the credit file writes one; null if the city has no bank there.</summary>

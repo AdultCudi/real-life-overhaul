@@ -200,6 +200,7 @@
         public const string EconomyLevelId = "economy_level";
         public const string StartDebtId = "start_debt";                     // a new game begins owing a student loan (Economy/Banking/Terms/StartDebtRules)
         public const string StartDebtDegreeId = "start_debt_degree";        // ...and what the loan paid for
+        public const string EconomyLoanYearId = "economy_loan_year";        // the means test for a loan counts a 60 day year's paying-back days at most (Banking/Terms/LoanMeansRules)
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
         public const string EconomyAppId = "economy_app";                   // the Economy app on the phone (Scripts/Outlook)
@@ -637,6 +638,7 @@
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool StartDebt = false;            // a game begun from now on starts owing a student loan (off: it starts owing nothing, as before)
+        public static bool EconomyLoanYear = true;       // a long game year lends no more for the same income than a 60 day one (off: the game's own test, six times as much at 365 days)
         public static int StartDebtDegree = 1;           // ...what the loan paid for: 0 a diploma, 1 a bachelor's degree, 2 a master's degree, 3 a bachelor's degree and an MBA
         public static bool EconomyCity = true;           // the city's economy (off: every figure is the game's own and the model stands still)
         public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects
@@ -1141,6 +1143,7 @@
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
             StartDebt = Bool(modId, StartDebtId, StartDebt);
             StartDebtDegree = Int(modId, StartDebtDegreeId, StartDebtDegree);
+            EconomyLoanYear = Bool(modId, EconomyLoanYearId, EconomyLoanYear);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             EconomyApp = Bool(modId, EconomyAppId, EconomyApp);

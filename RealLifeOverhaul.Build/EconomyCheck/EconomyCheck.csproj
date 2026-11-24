@@ -82,6 +82,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanBook.cs" Link="Mod\LoanBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanMark.cs" Link="Mod\LoanMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\LendingTerms.cs" Link="Mod\LendingTerms.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\LoanMeansRules.cs" Link="Mod\LoanMeansRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\ProductCatalogue.cs" Link="Mod\ProductCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\ProductTerms.cs" Link="Mod\ProductTerms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Accounts\CreditAccount.cs" Link="Mod\CreditAccount.cs" />
