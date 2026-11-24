@@ -13,6 +13,29 @@ namespace RealLifeOverhaul
     {
         private static readonly RivalMatchTally Tally = new RivalMatchTally();
 
+        /// <summary>The save's line of the matches not yet told: they are told from the first hour of the day, which a save left in the night's first hour would have lost.</summary>
+        public const string Key = "reallife:rival_matches";
+
+        /// <summary>The tally of the save just loaded (RivalOfferGuard), replacing whatever the last save counted.</summary>
+        public static void Load(System.Collections.Generic.Dictionary<string, string> data)
+        {
+            Tally.Read(data != null && data.TryGetValue(Key, out string line) ? line : null);
+        }
+
+        /// <summary>Puts the matches waiting to be told into the save being written; with none, the line is taken out.</summary>
+        public static void Write(System.Collections.Generic.Dictionary<string, string> data)
+        {
+            string line = Tally.Write();
+            if (line.Length > 0)
+            {
+                data[Key] = line;
+            }
+            else
+            {
+                data.Remove(Key);
+            }
+        }
+
         /// <summary>An offer was matched on <paramref name="day"/>; <paramref name="monthlyCents"/> is what it adds to the monthly pay.</summary>
         public static void Matched(int day, long monthlyCents)
         {

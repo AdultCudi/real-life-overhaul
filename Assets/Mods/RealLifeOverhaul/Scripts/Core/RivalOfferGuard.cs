@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
         private static readonly FieldInfo OfferDayField = GameContract.OfferDay.Field;
 
         private Action<string> _onGameEvent, _gameEventSeen;
+        private Action _onSave;                 // the matches not yet told go into the save (RivalMatches.Write)
         private GameInstance _of;              // the save looked through as it loaded
         private RivalOfferWatch _watch;
 
@@ -51,11 +52,13 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             _onGameEvent = Guard.Wrap<string>(FrameGuard, OnGameEvent);
+            _onSave = OnSave;
             StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
         {
+            SaveHook.Drop(_onSave);
             GameEvent.onGameEventTriggered -= _onGameEvent;
         }
 
@@ -72,6 +75,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 EventHold.Keep(ref GameEvent.onGameEventTriggered, _onGameEvent, ref _gameEventSeen);
+                SaveHook.Keep(_onSave);
                 if (_watch == null)
                 {
                     _watch = RivalOfferWatch.Install();   // null until this city's interface is there
@@ -79,8 +83,19 @@ namespace RealLifeOverhaul
                 if (!ReferenceEquals(_of, Save))
                 {
                     _of = Save;
+                    RivalMatches.Load(Save.modData);   // the matches the save was left holding, told from the next hour
                     Sweep("the save just loaded");
                 }
+            }
+        }
+
+        // Inside the game's save event, once the save has been looked through: the matches made and not yet told.
+        private void OnSave()
+        {
+            GameInstance save = Save;
+            if (save != null && save.modData != null && ReferenceEquals(save, _of))
+            {
+                RivalMatches.Write(save.modData);
             }
         }
 

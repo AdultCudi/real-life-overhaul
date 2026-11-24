@@ -61,11 +61,39 @@ namespace RealLifeOverhaul
             if (_count > 0 && day != _day)
             {
                 _count = 0;
-                _monthly = 0;   // one of an earlier day that was never told (the save was left before the hour): let go, not told as today's
+                _monthly = 0;   // one of an earlier day that was never told (a part that matches was off all that time): let go, not told as today's
             }
             _day = day;
             _count++;
             _monthly += Math.Max(0L, monthly);
+        }
+
+        /// <summary>The tally as a save keeps it ("v=1|day|count|monthly"); empty with nothing waiting to be told.</summary>
+        public string Write()
+        {
+            return _count > 0 ? "v=1|" + _day.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + _count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + "|" + _monthly.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+        }
+
+        /// <summary>
+        /// Takes the tally from a save's text, whatever was counted before it (another save's matches are never told in this one). Empty, or a line that cannot
+        /// be read, leaves nothing waiting.
+        /// </summary>
+        public void Read(string text)
+        {
+            _day = -1;
+            _count = 0;
+            _monthly = 0;
+            string[] x = (text ?? string.Empty).Split('|');
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            if (x.Length >= 4 && x[0] == "v=1" && int.TryParse(x[1], System.Globalization.NumberStyles.Integer, inv, out int day)
+                && int.TryParse(x[2], System.Globalization.NumberStyles.Integer, inv, out int count) && long.TryParse(x[3], System.Globalization.NumberStyles.Integer, inv, out long monthly)
+                && count > 0)
+            {
+                _day = day;
+                _count = count;
+                _monthly = Math.Max(0L, monthly);
+            }
         }
 
         /// <summary>True, with what to say, once only: from the first hour of the day the matches were made on, or on any later day.</summary>

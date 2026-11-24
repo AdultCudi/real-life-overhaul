@@ -299,6 +299,25 @@ internal static partial class Program
         tally.Add(20, 10);
         Check(tally.Take(21, 0, out count, out _) && count == 1, "match rivals: matches left untold are told in the first hour of any later day");
 
+        // The matches made in the night's first hour and not yet told must survive a save left then, and never leak into another save.
+        var held = new RivalMatchTally();
+        held.Add(30, 700);
+        held.Add(30, 50);
+        string heldLine = held.Write();
+        var loaded = new RivalMatchTally();
+        loaded.Add(5, 999);   // another save's, replaced by the one loaded
+        loaded.Read(heldLine);
+        Check(heldLine == "v=1|30|2|750" && !loaded.Take(30, 0, out _, out _) && loaded.Take(30, 1, out int heldCount, out long heldMonthly) && heldCount == 2 && heldMonthly == 750 && loaded.Write().Length == 0,
+            "match rivals: the matches not yet told are written into the save and told after a load, once, from the same hour as before");
+        loaded.Read(string.Empty);
+        Check(!loaded.Take(31, 5, out _, out _) && new RivalMatchTally().Write().Length == 0, "match rivals: a save with none leaves nothing to tell, and another save's count is not carried into it");
+        loaded.Read("v=1|30|-2|750");
+        Check(!loaded.Take(31, 5, out _, out _), "match rivals: a damaged line leaves nothing to tell");
+        string guard = ModSource(@"Core\RivalOfferGuard.cs"), matchSrc = ModSource(@"Core\RivalMatches.cs");
+        Check(guard.Contains("SaveHook.Keep(_onSave);") && guard.Contains("RivalMatches.Load(Save.modData);") && guard.Contains("RivalMatches.Write(save.modData);") && guard.Contains("SaveHook.Drop(_onSave);")
+              && guard.Contains("ReferenceEquals(save, _of)") && matchSrc.Contains("public const string Key = \"reallife:rival_matches\";") && matchSrc.Contains("data.Remove(Key);"),
+            "match rivals: the guard puts the tally into the save as it is written, takes it from the save as it loads, and the line is taken out when nothing waits");
+
         string company = ModSource(@"Economy\Company\CompanyDirector.Staff.cs"), rivals = ModSource(@"Economy\Company\CompanyDirector.Rivals.cs");
         string staff = MemberText(company, "private bool MatchRival(StaffFile f, int day)");
         Check(staff.Contains("Settings.EconomyCompanyMatchRivals") && staff.Contains("StaffRules.GivesWay(f)") && staff.Contains("Manages(f.Place, ManagerTask.Offers, f.Id)")
