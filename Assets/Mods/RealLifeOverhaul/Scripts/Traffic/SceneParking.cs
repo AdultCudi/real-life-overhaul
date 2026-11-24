@@ -47,7 +47,21 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool Stands(Vector3 position, Quaternion rotation, float halfWidth, float halfLength, float margin)
         {
-            return IsFree(position, rotation, halfWidth, halfLength, margin) && !BusZones.Holds(position, rotation * Vector3.forward, halfLength + margin, halfWidth + margin);
+            return IsFree(position, rotation, halfWidth, halfLength, margin) && !BusZones.Holds(position, rotation * Vector3.forward, halfLength + margin, halfWidth + margin)
+                   && ClearOfCrossings(position, rotation, halfWidth, halfLength);
+        }
+
+        private const float CrossingAhead = 3.0f;   // metres of road kept clear of a marked crossing beyond each end of a standing vehicle
+        private const float CrossingAside = 1.5f;   // ...and beyond each side
+
+        /// <summary>
+        /// True if no marked crossing (the game's Crosswalk triggers) lies under a vehicle that size, or within <see cref="CrossingAhead"/> of its
+        /// ends and <see cref="CrossingAside"/> of its sides. The kerb a parked patrol car looks for is found on the pedestrians' mesh, and a
+        /// crossing is part of it, so a car beside a crossing found a "kerb" in the middle of the road. One physics query, on the event that chooses a place.
+        /// </summary>
+        public static bool ClearOfCrossings(Vector3 position, Quaternion rotation, float halfWidth, float halfLength)
+        {
+            return CitySpots.ClearOfCrossings(position + Vector3.up * 0.5f, new Vector3(halfWidth + CrossingAside, 0.5f, halfLength + CrossingAhead), rotation, out _);
         }
 
         /// <summary>What the car would overlap in that pose, apart from itself and the bodies named; null if nothing. For a check and its log line.</summary>

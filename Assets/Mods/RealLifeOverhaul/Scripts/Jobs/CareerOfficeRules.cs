@@ -175,5 +175,50 @@ namespace RealLifeOverhaul
             }
             return place == EmployerPlace.Practice ? "reallife_career_works_practice" : "reallife_career_works_sites";
         }
+
+        /// <summary>
+        /// Gives the boards from <paramref name="from"/> on, put up after the employers were given theirs, to employers left with none: each
+        /// takes the one at its kind of building (the first of its premises that matches), and an employer that has premises at all takes
+        /// any other one nobody has. Whoever has an office keeps it, so nothing the player has seen moves; an employer with no premises
+        /// (the building trades) never takes a board. <paramref name="depot"/> is each employer's board, or -1.
+        /// </summary>
+        public static void Extend(string[][] premises, string[] kinds, int from, int[] depot)
+        {
+            int count = kinds.Length;
+            var taken = new bool[count];
+            for (int e = 0; e < depot.Length; e++)
+            {
+                if (depot[e] >= 0 && depot[e] < count)
+                {
+                    taken[depot[e]] = true;
+                }
+            }
+            for (int e = 0; e < depot.Length; e++)
+            {
+                for (int p = 0; p < premises[e].Length && depot[e] < 0; p++)
+                {
+                    for (int b = from; b < count; b++)
+                    {
+                        if (!taken[b] && kinds[b] != null && kinds[b].IndexOf(premises[e][p], System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            depot[e] = b;
+                            taken[b] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            for (int e = 0; e < depot.Length; e++)
+            {
+                for (int b = from; b < count && depot[e] < 0 && premises[e].Length > 0; b++)
+                {
+                    if (!taken[b])
+                    {
+                        depot[e] = b;
+                        taken[b] = true;
+                    }
+                }
+            }
+        }
     }
 }

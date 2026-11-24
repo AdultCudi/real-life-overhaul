@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
         private bool _cardFailed;
         private JobRental _rental;
         private JobBoards _boards;
+        private JobGates _gates;   // a cinema's or theatre's ticket gates, open to a worker on a client's floor
         private CareerDirector _career;
         private float _lastInside = -100f;   // when the player was last inside the building the job works in
         private Job _job;
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul
             _onBoard = BoardClicked;
             _rental = new JobRental(this, Logger);
             _boards = new JobBoards(_props, Logger);
+            _gates = new JobGates(Logger);
             _career = new CareerDirector(this, Logger);
             CareerState.Reset();
             _context.Props = _props;
@@ -119,6 +121,7 @@ namespace RealLifeOverhaul
                 _card = null;
             }
             _rental.Dispose();
+            _gates.Release();
             _boards.Dispose();
             _career.Dispose();
             CareerState.Reset();
@@ -668,6 +671,14 @@ namespace RealLifeOverhaul
                 return;   // being taken through a door: nothing is asked of anyone until they are through
             }
             RefreshContext();
+            if (premises != null && BuildingManager.IsInsideBuilding && _job.WorksInside(premises.building))
+            {
+                _gates.Keep();   // a ticket gate the game switches back on when the hands change is opened again here
+            }
+            else
+            {
+                _gates.Release();
+            }
             _body.Tick(now);
 
             // Signalled to pull over for something done: not a patrol on its way, nor the wait after a crash, which cost the job already.

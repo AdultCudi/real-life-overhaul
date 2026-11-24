@@ -77,6 +77,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _job = null;
+            _gates.Release();   // the game's own rule for a ticket gate again
             Unhook();
             Unguide();
             _context.Car = null;
