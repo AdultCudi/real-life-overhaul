@@ -21,12 +21,57 @@ namespace RealLifeOverhaul.Sessions
         public int Times;                       // how often it has been held
     }
 
-    /// <summary>Everything the sessions keep for a save: its seed for the managers' rolls, the day of the last reminder, and the records.</summary>
+    /// <summary>
+    /// A session the player was sat at when the game was saved: its choices and the minutes sat. Nothing is spent or changed by a session until its
+    /// time is sat whole, so this is all that a save in the middle of one has to carry for the player to go on from there after a load.
+    /// </summary>
+    public sealed class SessionSitting
+    {
+        public string Place = string.Empty;     // the business, as a place key
+        public string Session = string.Empty;   // SessionDef.Id
+        public int[] Choices = new int[0];      // a choice for each step, as made
+        public int Length;                      // the minutes the session takes with those choices
+        public int Done;                        // the minutes sat so far
+        public int Day;                         // the day it was saved on
+    }
+
+    /// <summary>Everything the sessions keep for a save: its seed for the managers' rolls, the day of the last reminder, the records, and a sitting in hand.</summary>
     public sealed class SessionFile
     {
+        public const int SittingDays = 1;           // days after the save's day that a sitting in hand can still be carried on
         public int Seed = 1;
         public int Reminded = SessionRules.Never;   // the day the one reminder of a day last went
         public readonly List<SessionRecord> Records = new List<SessionRecord>(8);
+        public SessionSitting Sitting;              // the session the player was sat at when the game was saved; null with none
+
+        /// <summary>The sitting in hand for a kind at a business, if it can still be carried on today with <paramref name="steps"/> choices.</summary>
+        public SessionSitting SittingFor(string place, string session, int steps, int day)
+        {
+            SessionSitting s = Sitting;
+            if (s == null || s.Choices.Length != steps || day < s.Day || day > s.Day + SittingDays || s.Length <= 0 || s.Done < 0 || s.Done >= s.Length
+                || !string.Equals(s.Place, place, StringComparison.Ordinal) || !string.Equals(s.Session, session, StringComparison.Ordinal))
+            {
+                return null;
+            }
+            return s;
+        }
+
+        /// <summary>The sitting let go if it is past its days, or if <paramref name="place"/> and <paramref name="session"/> were held whole; true if it was.</summary>
+        public bool LetSittingGo(int day, string place, string session)
+        {
+            SessionSitting s = Sitting;
+            if (s == null)
+            {
+                return false;
+            }
+            bool held = place != null && string.Equals(s.Place, place, StringComparison.Ordinal) && string.Equals(s.Session, session, StringComparison.Ordinal);
+            if (!held && day >= s.Day && day <= s.Day + SittingDays)
+            {
+                return false;
+            }
+            Sitting = null;
+            return true;
+        }
 
         public SessionRecord Find(string place, string session)
         {

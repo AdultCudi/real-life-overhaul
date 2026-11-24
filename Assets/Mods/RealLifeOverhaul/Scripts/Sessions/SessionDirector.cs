@@ -193,7 +193,11 @@ namespace RealLifeOverhaul.Sessions
             {
                 return;
             }
-            if (_file.Records.Count == 0 && !save.modData.ContainsKey(SessionStore.Key))
+            if (_panel != null && _panel.Sat)
+            {
+                _file.Sitting = _panel.Snapshot(_here.Place, SessionGame.Day);   // sat at a session as the game is saved: a load goes on from there
+            }
+            if (_file.Records.Count == 0 && _file.Sitting == null && !save.modData.ContainsKey(SessionStore.Key))
             {
                 return;
             }

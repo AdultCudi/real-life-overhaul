@@ -29,6 +29,10 @@ namespace RealLifeOverhaul.Sessions
             {
                 Logger?.Info("Sessions: " + pruned + " record(s) of kinds of session no longer held let go.");
             }
+            if (_file.LetSittingGo(day, null, null))
+            {
+                Logger?.Info("Sessions: the sitting kept by the last save is past its days and let go.");
+            }
             int waiting = 0, held = 0;
             SessionFirm firstFirm = null;
             SessionDef firstKind = null;
@@ -119,6 +123,7 @@ namespace RealLifeOverhaul.Sessions
                 return false;
             }
             Record(def, firm.Place, day, true, o);
+            _file.LetSittingGo(day, firm.Place, def.Id);   // held whole by the manager: no sitting of that kind is left to carry on
             string title = SessionText.T(def.TitleKey);
             string result = SessionText.Fill(o.Key, o.Pairs).Replace("{session}", title);   // the feature's own words, said after the manager's name
             SessionGame.Tell(NotificationType.Success, "reallife_session_note_manager",
