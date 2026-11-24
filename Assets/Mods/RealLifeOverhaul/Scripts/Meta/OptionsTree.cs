@@ -332,7 +332,8 @@ namespace RealLifeOverhaul.Meta
 
                     .Also("tuning paint parts custom dyno figures gearbox resale sell"),
 
-                S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
+                S("bikes").Guide("garage").Opt("two_wheelers", "garage").Opt("garage_scooter_hold", "garage")
+                    .Also("bicycle bicycles motorbike motorbikes motorcycle scooter rented rental two-wheelers"),
                 S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets", "city_drivers").Opt("tow_trucks", "traffic_accidents")
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),

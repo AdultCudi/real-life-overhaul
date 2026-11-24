@@ -214,6 +214,10 @@ namespace RealLifeOverhaul
 
             LoudExhaust(gm);
             _bikes.Slow(gm);
+            if (on)
+            {
+                ScooterHold.Tick(save);
+            }
         }
 
         // A straight-through exhaust is not street legal: driven hard it is noticed now and then, once a day at most.
