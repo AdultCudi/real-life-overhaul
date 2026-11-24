@@ -215,12 +215,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; staff != null && i < staff.Count; i++)
             {
                 EmployeeInstance e = staff[i];
-                if (e == null || e.assignedAddress == null || e.assignedAddress != reg.Address || e.isAbsent
-                    || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0)
-                {
-                    continue;
-                }
-                if (e.GetPrimarySkill() != CustomerService || !e.IsWorking())
+                if (!Selling(e, reg))
                 {
                     continue;
                 }
@@ -228,6 +223,36 @@ namespace RealLifeOverhaul.Economy.Dealership
                 sum += e.GetSkillValue(CustomerService);
             }
             skill = count > 0 ? Mathf.RoundToInt(sum / count) : 0;
+        }
+
+        // A salesperson of a business on shift now: customer service their main skill, at work, not absent.
+        private static bool Selling(EmployeeInstance e, BuildingRegistration reg)
+        {
+            return e != null && e.assignedAddress != null && e.assignedAddress == reg.Address && !e.isAbsent
+                   && e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0
+                   && e.GetPrimarySkill() == CustomerService && e.IsWorking();
+        }
+
+        /// <summary>
+        /// The first of a business's salespeople on shift now, in the save's own order (the order they were hired in, the same
+        /// on every machine): their id and sex, for the one seen on the showroom's floor. False with nobody on shift.
+        /// </summary>
+        public static bool OnShift(BuildingRegistration reg, out string id, out bool female)
+        {
+            id = null;
+            female = false;
+            List<EmployeeInstance> staff = Save != null ? Save.EmployeeInstances : null;
+            for (int i = 0; reg != null && staff != null && i < staff.Count; i++)
+            {
+                EmployeeInstance e = staff[i];
+                if (Selling(e, reg) && !string.IsNullOrEmpty(e.id))
+                {
+                    id = e.id;
+                    female = e.characterData.gender == BigAmbitions.Characters.Gender.Female;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Everyone assigned to a business with customer service as their main skill, on shift or not.</summary>

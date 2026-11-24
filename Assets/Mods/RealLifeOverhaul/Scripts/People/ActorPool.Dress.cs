@@ -16,7 +16,8 @@ namespace RealLifeOverhaul
     public partial class ActorPool : MonoBehaviour
     {
         // Everyone's age, build, face and hair are rolled; officers and paramedics then get their uniform and its equipment.
-        private static void Dress(StreetActor actor, ActorLook look)
+        // A civilian asked for by a seed (StaffLookRules) is rolled from it, so they are the same person every time.
+        private static void Dress(StreetActor actor, ActorLook look, int seed = 0, bool female = false)
         {
             actor.CapsOn = Settings.PoliceCaps;   // first: whatever follows, this look is not made again for the same value
             Looks.Count("people: a street character's look being built (a mesh merge)");   // named for the long-frame line of the session record
@@ -28,9 +29,15 @@ namespace RealLifeOverhaul
             AppearanceSetter appearance = actor.Character.appearanceSetter;
             Uniforms.Restore(actor.Dyes);   // the colours of whatever uniform this character wore before
             actor.Shirt = default;
+            actor.Seed = look == ActorLook.Civilian ? seed : 0;
+            actor.Female = female;
             if (look == ActorLook.Officer || look == ActorLook.Paramedic)
             {
                 ServiceLook(appearance);
+            }
+            else if (seed != 0)
+            {
+                OwnLook(appearance, seed, female);
             }
             else
             {
@@ -66,6 +73,64 @@ namespace RealLifeOverhaul
             if (look == ActorLook.Officer && Meta.Dev.Verbose)
             {
                 HeadCheck(actor, appearance, modelled);
+            }
+        }
+
+        // One person's own look: the game's roll as for anybody, every draw of it from their seed (the game's own random
+        // sequence is put back as it was, as Jobs/JobCast and Social/SocialCast do for theirs), so the same seed is the
+        // same age, build, face, hair and clothes on every visit and on every machine.
+        private static void OwnLook(AppearanceSetter appearance, int seed, bool female)
+        {
+            try
+            {
+                AsNew(appearance);
+            }
+            catch (Exception e)
+            {
+                if (!_asNewFailed)
+                {
+                    _asNewFailed = true;
+                    Logger?.Error(e);
+                    Logger?.Warn("People: a character could not be put back as the game makes one before its own look; a face may keep a shape of the last. (Logged once.)");
+                }
+            }
+            Random.State dice = Random.state;
+            try
+            {
+                Random.InitState(seed);
+                appearance.SetRandomAge();
+                appearance.RandomizeElements(female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), CasualWear, seed);
+            }
+            finally
+            {
+                Random.state = dice;
+            }
+        }
+
+        private static bool _asNewFailed;
+
+        // The game's roll writes over what a character has and leaves the rest: a piece of a kind the roll has none of, and
+        // the shapes of the last face that the new head does not set. A pooled character has been many people, so before
+        // one person's own look it is put back as the game makes a character (no pieces, every shape of the face at rest,
+        // by the game's own reset for either sex): the same seed then gives the same person whoever wore the body before.
+        private static void AsNew(AppearanceSetter appearance)
+        {
+            CharacterData data = appearance.data;
+            if (data.elements != null)
+            {
+                data.elements.Clear();
+            }
+            data.gender = Gender.Male;
+            AtRest(appearance.Blendshapes);
+            data.gender = Gender.Female;
+            AtRest(appearance.Blendshapes);
+        }
+
+        private static void AtRest(BlendshapeWrapper shapes)
+        {
+            if (shapes != null)
+            {
+                shapes.ResetAllBlendShapes();
             }
         }
 

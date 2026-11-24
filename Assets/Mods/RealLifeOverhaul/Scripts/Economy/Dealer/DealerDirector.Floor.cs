@@ -164,6 +164,23 @@ namespace RealLifeOverhaul.Economy.Dealership
             staffed = h.Open && h.Staff > 0;
         }
 
+        /// <summary>
+        /// Who the salesperson on a showroom's floor is (StaffLookRules): the first of its salespeople on shift now, by their id
+        /// and of their sex, so each of the staff is one person at every visit; with nobody on shift this moment (the hour
+        /// heard had somebody), the showroom's own, the same every time.
+        /// </summary>
+        internal void FloorSales(DealerYard y, out int seed, out bool female)
+        {
+            BuildingRegistration reg = RegOf(y);
+            if (reg != null && DealerGame.OnShift(reg, out string id, out female))
+            {
+                seed = StaffLookRules.Of(StaffLookRules.Employee, id);
+                return;
+            }
+            seed = StaffLookRules.Of(StaffLookRules.Sales, y.Place);
+            female = StaffLookRules.Female(seed);
+        }
+
         /// <summary>The cars of a lot offers were made on in an hour, by their places in its list.</summary>
         internal void FloorOffers(DealerYard y, int hour, List<int> offerCars)
         {

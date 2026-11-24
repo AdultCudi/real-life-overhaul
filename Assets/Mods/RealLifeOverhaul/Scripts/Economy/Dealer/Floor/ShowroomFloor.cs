@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         private Visitor _talking;        // the visitor the salesperson is with, or going to
         private float _salesUntil;
         private bool _salesGoing;
+        private int _salesSeed;          // whose look the salesperson out on the floor wears (StaffLookRules); 0 with nobody out
         private int _shown, _skipped;    // visitors put on the floor and left out this hour, for the self-check
 
         /// <summary>The showroom the player stands in, while the floor is shown; null otherwise.</summary>
@@ -171,6 +172,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 _visitors[i].Step = Step.Leaving;
             }
             _sales.Exit();
+            _salesSeed = 0;
             _talking = null;
             _salesGoing = false;
             _yard = null;
@@ -233,19 +235,30 @@ namespace RealLifeOverhaul.Economy.Dealership
             Staff(staffed);
         }
 
-        // The salesperson on the floor while somebody is on shift, by the desk.
+        // The salesperson on the floor while somebody is on shift, by the desk: whoever of the staff has the shift, the same
+        // person at every visit (DealerDirector.FloorSales), and another only when the shift is another's.
         private void Staff(bool staffed)
         {
             _staffed = staffed;
-            if (!staffed)
+            DealerDirector director = DealerDirector.Instance;
+            if (!staffed || director == null)
             {
                 _sales.Exit();
+                _salesSeed = 0;
                 _talking = null;
                 _salesGoing = false;
                 return;
             }
-            if (!_sales.Present && _hasHome && _sales.EnterPresence(_home, ActorLook.Civilian, 1.5f, false))
+            director.FloorSales(_yard, out int seed, out bool female);
+            if (_sales.Present && seed != _salesSeed)
             {
+                _sales.Exit();   // the shift has changed hands: whoever was being seen to carries on (Tend)
+                _talking = null;
+                _salesGoing = false;
+            }
+            if (!_sales.Present && _hasHome && _sales.EnterPresenceAs(_home, seed, female, 1.5f, false))
+            {
+                _salesSeed = seed;
                 _sales.Stand(ShowroomGame.FloorMiddleOf(_yard));
             }
         }
