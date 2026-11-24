@@ -145,7 +145,8 @@ internal static partial class Program
             "food gifts: with the option off nothing is given, no sale is counted and nothing is saved, so the game goes on exactly as without it");
         Check(evening.Contains("FoodGiftRules.DueTomorrow(kv.Value, life, coldLife, _spoilChilled[at], today)") && evening.Contains("SpoilRules.Take(kv.Value, gone, null)")
               && evening.Contains("LogisticsGame.Discard(reg, kv.Key, due, out int paid)") && evening.Contains("p.GaveDay = today;") && evening.Contains("FoodGiftRules.Earning(gone, sold)")
-              && evening.Contains("FoodGiftRules.ValueOf(") && evening.Contains("LogisticsBridges.FoodGiftReady"),
+              && evening.Contains("FoodGiftRules.ValueOf(FoodGiftRules.Earning(gone, sold), gone, paid)") && !evening.Contains("SellingPrice") && !evening.Contains("1250")
+              && evening.Contains("LogisticsBridges.FoodGiftReady"),
             "food gifts: the evening takes exactly the pieces due at the next turn out of the stock and the batches once a day a place, at what they cost, and only when giving can take them");
         Check(giving.Contains("public bool GiveFood(long given, long earned)") && giving.Contains("_state.TaxGifts += earned;") && giving.Contains("_state.Credit(Charity.FoodBank, given, -1);")
               && giving.Contains("public bool FoodGiftReady => Running && CauseWhy == 0;") && !MemberText(giving, "public bool GiveFood(long given, long earned)").Contains("GivingGame.Pay"),
