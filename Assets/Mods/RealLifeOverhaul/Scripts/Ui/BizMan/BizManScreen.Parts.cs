@@ -434,10 +434,13 @@ namespace RealLifeOverhaul.Ui
             _m.Lead = managed ? UiText.Fill("inventory_pricing_covered_by_pricing_manager", "employeeName",
                 covering.AnalystInstance != null && covering.AnalystInstance.characterData != null ? covering.AnalystInstance.characterData.name : UiText.T("common_unassigned")) : null;
             RivalGoods(district);
+            bool marked = false;
             for (int i = 0; i < n; i++)
             {
                 t.Rows[i] = Good(table.data[i], managed, district);
+                marked |= t.Rows[i].Tones != null && t.Rows[i].Tones.Length > 4 && (t.Rows[i].Tones[4] == UiRole.Warn || t.Rows[i].Tones[4] == UiRole.Danger);
             }
+            _m.MarkLine = marked ? UiText.T("reallife_ui_bizman_price_marks") : null;
             t.RowCount = n;
             t.Hover = _goodHover < n ? _goodHover : -1;
             _m.Goods = t;

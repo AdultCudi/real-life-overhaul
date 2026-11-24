@@ -425,6 +425,25 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // What a list of the game's rows holds, as a number that changes when a row does: how many are showing and their words. The game rebuilds its alerts a frame after it changes the business,
+        // and a business with as many alerts as the one before it has the same count, so a count alone left the page with the rows of the business it had just left.
+        private static int RowsHash(Transform template)
+        {
+            Transform parent = template != null ? template.parent : null;
+            int h = 0;
+            for (int i = 0; parent != null && i < parent.childCount; i++)
+            {
+                Transform c = parent.GetChild(i);
+                if (c == template || !c.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                TMP_Text text = c.GetComponentInChildren<TMP_Text>(true);
+                h = h * 31 + 1 + Hash(text != null ? text.text : null);
+            }
+            return h;
+        }
+
         private static int EntryCount(Transform template)
         {
             Transform parent = template != null ? template.parent : null;

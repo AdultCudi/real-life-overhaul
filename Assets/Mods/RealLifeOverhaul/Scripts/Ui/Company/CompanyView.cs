@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Ui
         public readonly int[] Reveal = Minus(Slots);
         public readonly short[] List = MinusShort(Slots);
         public readonly short[] Clip = MinusShort(Slots);
+        public readonly int[] SlotKey = new int[Slots];   // which page a slot's offset belongs to (CompanyFace.PageKey), so that another page starts at its top
 
         public const int SlotList = 0, SlotTree = 1, SlotCard = 2, SlotPage = 3, SlotGrid = 4, SlotLog = 5, SlotLicences = 6, SlotWaiting = 7, SlotBusinesses = 8;
 

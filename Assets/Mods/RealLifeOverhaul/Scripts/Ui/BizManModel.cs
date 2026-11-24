@@ -190,6 +190,7 @@ namespace RealLifeOverhaul.Ui
         public BizManFact[] BuildingFacts = new BizManFact[0];   // the building's own facts on a page whose first block is another's (real estate)
         public string MoreTitle;
         public string Lead;                             // a sentence over the part (who owns the building, a note on its state)
+        public string MarkLine;                         // what the mark beside a price means, said once under the week's figures where any price carries one; null for none
         public UiActionModel[] Actions = new UiActionModel[0];   // the part's actions, the main one last
         public BizManAmount Amount;                     // an amount to offer or set
         public BizManAmount Second;                     // a second (the building's offer beside the business's)

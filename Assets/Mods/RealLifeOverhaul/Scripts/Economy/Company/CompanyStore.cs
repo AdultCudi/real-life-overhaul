@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(n > 0 ? ";" : string.Empty);
                 Join(t, r.Kind, r.From, r.Days, r.DaysBefore, r.DaysDuring, r.CustomersBefore, r.CustomersDuring, r.TakingsBefore, r.TakingsDuring, r.ProfitBefore, r.ProfitDuring, r.Cost);
                 t.Append('|').Append(Clean(r.Name));
+                t.Append('|').Append(Clean(r.Place));   // after the name, so a save written before it was kept loads with no place
             }
             return t.ToString();
         }
@@ -212,7 +213,8 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Kind = kind, From = I(c, 1), Days = Math.Max(0, I(c, 2)), DaysBefore = Math.Max(0, I(c, 3)), DaysDuring = Math.Max(0, I(c, 4)),
                                         CustomersBefore = Math.Max(0, I(c, 5)), CustomersDuring = Math.Max(0, I(c, 6)), TakingsBefore = I(c, 7), TakingsDuring = I(c, 8),
-                                        ProfitBefore = I(c, 9), ProfitDuring = I(c, 10), Cost = Math.Max(0, I(c, 11)), Name = c.Length > 12 ? c[12] : string.Empty
+                                        ProfitBefore = I(c, 9), ProfitDuring = I(c, 10), Cost = Math.Max(0, I(c, 11)),
+                                        Name = c.Length > 12 ? c[12] : string.Empty, Place = c.Length > 13 ? c[13] : string.Empty
                                     });
                                 }
                             }

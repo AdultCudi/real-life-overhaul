@@ -162,14 +162,14 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Note(CompanyText.T("reallife_co_push_report_due", "day", days.Report.ToString())));
                 AddParts(blocks, d, shop, file.Push, w);
                 KindRecord(blocks, d.State, file.Push, w);
-                Earlier(blocks, d, shop.Name, -1, w);
+                Earlier(blocks, d, shop.File.Place, shop.Name, -1, w);
                 card.Blocks = blocks.ToArray();
                 return card;
             }
             if (!d.Promoted(shop))
             {
                 blocks.Add(Note(CompanyText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_co_push_empire" : "reallife_co_push_no_figure")));
-                Earlier(blocks, d, shop.Name, -1, w);
+                Earlier(blocks, d, shop.File.Place, shop.Name, -1, w);
                 card.Blocks = blocks.ToArray();
                 return card;
             }
@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Row(CompanyText.Label("reallife_co_push_length"), CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day
                 + 1).ToString())));
             AddParts(blocks, d, shop, kind, w);
-            Earlier(blocks, d, shop.Name, -1, w);
+            Earlier(blocks, d, shop.File.Place, shop.Name, -1, w);
             blocks.Add(Sec(w.T("reallife_ibox_sec_how", "How it is measured")));
             blocks.Add(Note(CompanyText.T("reallife_co_push_measure")));
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_push_book"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.CampaignBook, shop.File.Place, kind), UiAction.Alt, UiIcon.Check)));
@@ -256,14 +256,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What the business's earlier campaigns did, newest first: the kind, the day it ended, the customers it brought and the profit it left; a row opens its report.
-        private static void Earlier(List<CompanyBlock> blocks, CompanyDirector d, string business, int except, Words w)
+        private static void Earlier(List<CompanyBlock> blocks, CompanyDirector d, string place, string business, int except, Words w)
         {
             CompanyState s = d.State;
             var items = new List<CompanyItem>(3);
             for (int i = s.Reports.Count - 1; i >= 0 && items.Count < 3; i--)
             {
                 CampaignReport r = s.Reports[i];
-                if (r.Name != business || i == except)
+                if (!OfBusiness(r, place, business) || i == except)
                 {
                     continue;
                 }
@@ -280,6 +280,10 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
             }
         }
+
+        // A report belongs to the business at its place. One kept before the place was recorded has only the name to go by, and is told apart by that.
+        private static bool OfBusiness(CampaignReport r, string place, string business) =>
+            r.Place.Length > 0 && !string.IsNullOrEmpty(place) ? string.Equals(r.Place, place, StringComparison.Ordinal) : string.Equals(r.Name, business, StringComparison.Ordinal);
 
         private static CompanyCard ReportCard(CompanyDirector d, CampaignReport r, int index, Words w)
         {
@@ -333,7 +337,7 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Note(CompanyText.T("reallife_co_report_no_return")));
             }
-            Earlier(blocks, d, r.Name, index, w);
+            Earlier(blocks, d, r.Place, r.Name, index, w);
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -509,7 +513,7 @@ namespace RealLifeOverhaul.Ui
             // The cover's record with this insurer and the claims the business has made before: how near the insurer is to refusing, and what the others came to.
             for (int i = 0; i < d.Shops.Count; i++)
             {
-                if (d.Shops[i].Name != c.Name)
+                if (!string.Equals(d.Shops[i].File.Place, c.Place, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -524,7 +528,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = d.State.Claims.Count - 1; i >= 0 && before.Count < 3; i--)
             {
                 Claim o = d.State.Claims[i];
-                if (o.Id == c.Id || o.Name != c.Name)
+                if (o.Id == c.Id || !string.Equals(o.Place, c.Place, StringComparison.Ordinal))
                 {
                     continue;
                 }

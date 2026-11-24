@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 
@@ -273,6 +273,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--kit-lists")
         {
             KitListsAll();   // the kit's lists that ran past their room, a delivery's typed amount, the lowest price and the hire button (KitListsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui27")
+        {
+            Ui27Checks();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -2076,6 +2082,7 @@ internal static partial class Program
         DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
         KitFlareNeeds(); // Flare's rating and address on the kit, raw keys among words, the needs' bars' size and place (KitFlareNeedsChecks.cs)
         BizManOfferAll(); // BizMan makes offers on the kit: the game's boxes and buttons, the press that reaches its method (BizManOfferChecks.cs)
+        Ui27Checks();     // BizMan's alert rows and price marks, the Company's reports and claims by place (Ui27Checks.cs)
         BizManUniformsAll(); // BizMan's settings page gives a role its uniform preset on the kit, the editor's name kept on every word (BizManUniformChecks.cs)
         UiBizman20Checks();   // the purchasing tab says why no plan is added, an employee's card on hover and focus, blank columns and cut text (UiBizman20Checks.cs)
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)

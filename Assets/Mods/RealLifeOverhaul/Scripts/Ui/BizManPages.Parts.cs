@@ -195,6 +195,7 @@ namespace RealLifeOverhaul.Ui
                 float ly = Title(s, at, x, y, half, m.MoreTitle);
                 ly = Facts(s, at, m.More, x, ly, half);
                 ly = Lead(s, at, m.Lead, x, ly + UiTokens.S2, half);   // who holds the prices, where a pricing manager does
+                ly = Lead(s, at, m.MarkLine, x, ly, half);              // what the mark beside a price says
                 float ry = y;
                 if (m.Shares.Length > 0)
                 {

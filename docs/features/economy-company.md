@@ -140,7 +140,7 @@ A business needs the late opening permit by its own opening hours in the game (`
 
 ## In the save
 
-One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven, four licences of three, when the last campaign of each kind offered from outside ended, and what the running campaign has given away so far), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports.
+One line, `reallife:economy_company`: `v=1^h:...^t:...^s:...^e:...^c:...^r:...` (`CompanyStore`): the header's seven numbers, tax's twenty, a record per business (its place, twenty numbers, three policies of seven, four licences of three, when the last campaign of each kind offered from outside ended, and what the running campaign has given away so far), a record per employee (the game's id, the place, ten numbers, a rival's name), the claims and the reports (a report's last field is the business's place, so businesses that share a name keep their own; a report from an older save has none and is told by its name).
 Parts are divided by `^` because a place, written as business pressure writes one, contains `~`.
 Every figure is a whole number.
 
