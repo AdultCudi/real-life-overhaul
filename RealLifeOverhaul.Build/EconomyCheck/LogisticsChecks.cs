@@ -404,11 +404,11 @@ internal static partial class Program
         using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(ColdFurnitureFile));
         JsonElement furniture = doc.RootElement.GetProperty("furniture"), goods = doc.RootElement.GetProperty("goods");
         var shown = new HashSet<string>(StringComparer.Ordinal);
-        var room = new Dictionary<string, int>(StringComparer.Ordinal);   // what each piece of cold furniture gives a burger
-        bool shelves = true, staff = true;
-        JsonElement burger = goods.GetProperty("ba:itemname_burger");
+        bool shelves = true, staff = true, rooms = true;
+        int count = 0;
         foreach (JsonProperty f in furniture.EnumerateObject())
         {
+            count++;
             bool shelf = (f.Value.GetProperty("type").GetInt32() & 0x40) != 0;   // ItemType.ShowcaseShelf
             foreach (JsonElement one in f.Value.GetProperty("shows").EnumerateArray())
             {
@@ -420,8 +420,7 @@ internal static partial class Program
             string controller = f.Value.GetProperty("controller").GetString();
             shelves &= !shelf || controller == "ShowcaseShelfController";
             staff &= shelf || controller == "FridgeController";
-            room[f.Name] = SpoilRules.RoomOf(shelf, f.Value.GetProperty("slots").GetInt32(), (float)f.Value.GetProperty("mult").GetDouble(), burger.GetProperty("box").GetInt32(),
-                burger.GetProperty("saturation").GetInt32(), f.Value.GetProperty("whitelist").GetArrayLength() == 0);
+            rooms &= (SpoilRules.ColdRoom(f.Name) > 0) == !f.Name.Contains("drinksfridge");   // every fridge of the game has a room in the mod but the drinks fridges
         }
         string[] noShelf = { "burger", "hotdog", "pizza", "kabob", "frenchfries", "dough", "groundbeef", "rawsausage", "chickenbreast", "milk", "apple", "croissant", "salad" };
         bool none = true;
@@ -429,33 +428,42 @@ internal static partial class Program
         {
             none &= goods.TryGetProperty("ba:itemname_" + g, out JsonElement _) && !shown.Contains("ba:itemname_" + g) && SpoilRules.Of("ba:itemname_" + g, false) != SpoilClass.Packaged;
         }
-        Check(none && shown.Contains("ba:itemname_freshfood") && shown.Contains("ba:itemname_frozenfood") && shown.Contains("ba:itemname_icecream") && shelves && staff,
-            "cold storage, the game's data: no fridge or freezer shelf lists a burger, hot dog, pizza, kebab, chips, dough, raw meat, milk, fruit, bakery or salad, only fresh food, frozen food and ice cream (and drinks); the shelves are showcases and the two staff fridges take food by slots");
-        Check(room["ba:itemname_industrialfridge"] == 50 && room["ba:itemname_industrialfreezer"] == 50 && room["ba:itemname_smallindustrialfreezer"] == 25 && room["ba:itemname_drinksfridge"] == 120
-              && room["ba:itemname_largedrinksfridge"] == 360 && room["ba:itemname_standardfridge"] == 50 && room["ba:itemname_luxuryfridge"] == 50,
-            "cold storage: each fridge's room for a burger is the game's own figure (the box size times its capacity multiplier, rounded up, times its slots for a staff fridge)");
-        Check(SpoilRules.RoomOf(false, 10, 0.01f, 500, 0, true) == 0 && SpoilRules.RoomOf(false, 0, 0.01f, 500, 70, true) == 0 && SpoilRules.RoomOf(true, 0, 0.1f, 500, 70, false) == 0
-              && SpoilRules.RoomOf(true, 0, 0f, 500, 70, true) == 0 && SpoilRules.RoomOf(true, 0, 0.1f, 1, 70, true) == 1 && SpoilRules.Room(-3, 5) == 0 && SpoilRules.Room(int.MaxValue, int.MaxValue) == int.MaxValue,
-            "cold storage: a staff fridge takes no food that does not fill and a fridge without slots gives none; a whitelist that leaves the product out gives none; a decorative fridge with no capacity gives none; a stack is at least one; whole numbers");
+        Check(none && shown.Contains("ba:itemname_freshfood") && shown.Contains("ba:itemname_frozenfood") && shown.Contains("ba:itemname_icecream") && shelves && staff && rooms && count == 7,
+            "cold storage, the game's data: no fridge or freezer shelf lists a burger, hot dog, pizza, kebab, chips, dough, raw meat, milk, fruit, bakery or salad, only fresh food, frozen food and ice cream (and drinks); every fridge of the game has a room in the mod but the drinks fridges");
+        Check(SpoilRules.ColdRoom("ba:itemname_industrialfridge") == 1000 && SpoilRules.ColdRoom("ba:itemname_industrialfreezer") == 1000 && SpoilRules.ColdRoom("ba:itemname_smallindustrialfreezer") == 500
+              && SpoilRules.ColdRoom("ba:itemname_standardfridge") == 50 && SpoilRules.ColdRoom("ba:itemname_luxuryfridge") == 50 && SpoilRules.ColdRoom("ba:itemname_drinksfridge") == 0
+              && SpoilRules.ColdRoom("ba:itemname_largedrinksfridge") == 0 && SpoilRules.ColdRoom(null) == 0 && SpoilRules.ColdRoom("ba:itemname_storageshelf") == 0,
+            "cold storage: an industrial fridge or freezer keeps 1,000 pieces cold, a small freezer 500, a staff fridge 50, a drinks fridge nothing");
+        var shareA = new List<int>();
+        SpoilRules.Share(new List<int> { 700, 500, 300 }, new List<string> { "a", "b", "c" }, 1000, shareA);
+        var shareB = new List<int>();
+        SpoilRules.Share(new List<int> { 100, 100 }, new List<string> { "b", "a" }, 101, shareB);
+        var allCovered = new List<int>();
+        SpoilRules.Share(new List<int> { 300, 200 }, new List<string> { "a", "b" }, 1000, allCovered);
+        var noRoom = new List<int>();
+        SpoilRules.Share(new List<int> { 300, 200 }, new List<string> { "a", "b" }, 0, noRoom);
+        Check(shareA[0] == 467 && shareA[1] == 333 && shareA[2] == 200 && shareB[0] == 50 && shareB[1] == 51
+              && allCovered[0] == 300 && allCovered[1] == 200 && noRoom[0] == 0 && noRoom[1] == 0,
+            "cold storage: a place's rooms add up and are shared over its goods in proportion to their stock, whole pieces adding to the room exactly, a tie going to the lower name whatever the order, not 1,000 for each good");
 
         // The rule on batches: a restaurant's burgers, life 4 out of the cold and 8 in it (made food).
         int life = SpoilRules.Life(SpoilClass.Prepared, false), cold = SpoilRules.Life(SpoilClass.Prepared, true);
         var burgers = new List<Cohort> { new Cohort(5, 40) };
-        bool bare = life == 4 && cold == 8 && SpoilRules.Chilled(40, 0) == 0 && SpoilRules.Expired(burgers, life, cold, SpoilRules.Chilled(40, 0), 8) == 0
+        bool bare = life == 4 && cold == 8 && SpoilRules.Expired(burgers, life, cold, 0, 8) == 0
                     && SpoilRules.Expired(burgers, life, cold, 0, 9) == 40 && SpoilRules.SpoilsIn(burgers, life, cold, 0, 5) == 4;
         Check(bare, "cold storage: burgers at a restaurant with no cold furniture keep 4 days, as before");
-        int covers = SpoilRules.Chilled(40, room["ba:itemname_industrialfreezer"]);
+        int covers = Math.Min(40, SpoilRules.ColdRoom("ba:itemname_industrialfreezer"));
         bool freezer = covers == 40 && SpoilRules.Expired(burgers, life, cold, covers, 9) == 0 && SpoilRules.Expired(burgers, life, cold, covers, 12) == 0
                        && SpoilRules.Expired(burgers, life, cold, covers, 13) == 40 && SpoilRules.SpoilsIn(burgers, life, cold, covers, 5) == 8;
         Check(freezer, "cold storage: 40 burgers with a freezer that covers them keep 8 days");
         var held = new List<Cohort> { new Cohort(5, 30), new Cohort(7, 30), new Cohort(9, 30) };
-        int part = SpoilRules.Chilled(90, room["ba:itemname_industrialfreezer"]);
+        int part = SpoilRules.ColdRoom("ba:itemname_standardfridge");   // a staff fridge's room against 90 pieces
         bool split = part == 50 && SpoilRules.Expired(held, life, cold, part, 9) == 30 && SpoilRules.Expired(held, life, cold, part, 11) == 40 && SpoilRules.Expired(held, life, cold, part, 15) == 60
                      && SpoilRules.Expired(held, life, cold, part, 17) == 90 && SpoilRules.Expired(held, life, 0, 0, 12) == 60 && SpoilRules.SpoilsIn(held, life, cold, part, 5) == 4;
         var thrown = new List<Cohort>(held);
         int gone = SpoilRules.Take(thrown, SpoilRules.Expired(held, life, cold, part, 15), null);
         split &= gone == 60 && thrown.Count == 1 && thrown[0].Day == 9 && thrown[0].Count == 30;
-        Check(split, "cold storage: with more stock than the furniture covers, the newest pieces (50 of 90) are the cold ones, a batch across the line is split by pieces, the covered part and the rest each keep their own life, and the day's throwing out takes the oldest first");
+        Check(split, "cold storage: with more stock than the furniture covers (a staff fridge's 50 of 90), the newest pieces are the cold ones, a batch across the line is split by pieces, the covered part and the rest each keep their own life, and the day's throwing out takes the oldest first");
         var oneBatch = new List<Cohort> { new Cohort(6, 120) };
         Check(SpoilRules.Expired(oneBatch, life, cold, 50, 10) == 70 && SpoilRules.Expired(oneBatch, life, cold, 50, 14) == 120 && SpoilRules.Expired(oneBatch, life, cold, 500, 10) == 0
               && SpoilRules.Expired(oneBatch, life, cold, -5, 10) == 120 && SpoilRules.Expired(oneBatch, life, 0, 50, 99) == 70 && SpoilRules.SpoilsIn(oneBatch, life, cold, 120, 6) == 8,
@@ -479,8 +487,8 @@ internal static partial class Program
         // The game side, read as source: what is left alone, where the rule stops, what the pages say.
         string game = ModSource(@"Economy\Logistics\LogisticsGame.Spoil.cs");
         string look = MemberText(game, "public static void Spoilable(BuildingRegistration reg, List<string> items, List<int> lives, List<int> chilled");
-        Check(look.Contains("bool inside = cold && ShownCold(cargo.itemName);") && look.Contains("!ShownCold(items[i])") && look.Contains("bool shop = covered && IsShop(reg);")
-              && look.Contains("SpoilRules.Chilled(Pieces[i], room)") && MemberText(game, "private static bool IsShop(BuildingRegistration reg)").Contains("type != Residential"),
+        Check(look.Contains("bool inside = cold && ShownCold(cargo.itemName);") && look.Contains("!ShownCold(items[i])") && look.Contains("if (covered && IsShop(reg))")
+              && look.Contains("SpoilRules.Share(CoverStock, CoverNames, room, CoverShare)") && MemberText(game, "private static bool IsShop(BuildingRegistration reg)").Contains("type != Residential"),
             "cold storage: a product with a cold shelf of its own is cold only inside a fridge as before and is not helped by the new rule; a home's fridge is not shop equipment");
         string spoil = ModSource(@"Economy\Logistics\LogisticsDirector.Spoil.cs"), place = ModSource(@"Economy\Logistics\SpoilState.cs"), store = ModSource(@"Economy\Logistics\SpoilStore.cs");
         Check(spoil.Contains("SpoilRules.Expired(kv.Value, life, coldLife, at >= 0 ? _spoilChilled[at] : 0, today)") && spoil.Contains("p.Chilled.TryGetValue(item, out int cold)")
@@ -491,12 +499,12 @@ internal static partial class Program
         Dictionary<string, string> en = LocaleFile("en");
         string guidePage = en.TryGetValue("reallife_guide_trips", out string g1) ? g1 : "", tip = en.TryGetValue("reallife_opt_tip_living_spoilage", out string t1) ? t1 : "";
         Check(en.TryGetValue("reallife_spoil_with_cold", out string cell) && cell.Contains("{when}") && cell.Contains("{cold}")
-              && guidePage.Contains("fresh food, frozen food and ice cream") && guidePage.Contains("burgers, hot dogs, pizza, kebabs") && guidePage.Contains("a fridge at home does not count") && guidePage.Contains("<b>Spoils in</b>")
+              && guidePage.Contains("fresh food, frozen food and ice cream") && guidePage.Contains("burgers, hot dogs, pizza, kebabs") && guidePage.Contains("{cold_big}") && guidePage.Contains("a drinks fridge keeps nothing but drinks") && guidePage.Contains("a fridge at home does not count") && guidePage.Contains("<b>Spoils in</b>")
               && en["reallife_spoil_note"].Length <= 240 && en["reallife_spoil_note"].Contains("how much each covers") && tip.Length <= 190 && tip.Split(' ').Length <= 32 && tip.Contains("Fridges and freezers at your shops")
               && WhatsNewHas(en, "kept cold by the fridges and freezers at your shops"),
             "cold storage texts: the Guide, the notice and the option's tip say which goods go inside a fridge and what a fridge covers for the rest, the stock cell has its words, What's new tells of it");
         string docs = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features\delivery-trips.md")));
-        Check(docs.Contains("Cold storage: which products go inside a fridge") && docs.Contains("50 pieces for an industrial fridge") && docs.Contains("The **newest** pieces are the covered ones"),
+        Check(docs.Contains("Cold storage: which products go inside a fridge") && docs.Contains("1,000 pieces for an industrial fridge") && docs.Contains("The **newest** pieces are the covered ones"),
             "cold storage: the feature page states the rule, the rooms and which pieces are covered");
     }
 }

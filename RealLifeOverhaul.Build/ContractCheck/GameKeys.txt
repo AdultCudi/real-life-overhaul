@@ -139,6 +139,8 @@ ba:itemname_hops
 ba:itemname_hotdog
 ba:itemname_icecream
 ba:itemname_industrialcoffeemachine
+ba:itemname_industrialfreezer
+ba:itemname_industrialfridge
 ba:itemname_integratedcircuits
 ba:itemname_jobboard
 ba:itemname_juniperberries
@@ -149,6 +151,7 @@ ba:itemname_lettuceseeds
 ba:itemname_limejuice
 ba:itemname_limitededitionbook
 ba:itemname_loudspeaker2
+ba:itemname_luxuryfridge
 ba:itemname_margarita
 ba:itemname_martini
 ba:itemname_metalband
@@ -185,6 +188,7 @@ ba:itemname_sealedcardboardbox
 ba:itemname_securitycamera
 ba:itemname_slicedonions
 ba:itemname_slushi
+ba:itemname_smallindustrialfreezer
 ba:itemname_smartphone1
 ba:itemname_smartphone2
 ba:itemname_smartwatch1
@@ -194,6 +198,7 @@ ba:itemname_sofaluxury
 ba:itemname_speaker
 ba:itemname_specialemployeedesk
 ba:itemname_stackofshoppingbaskets
+ba:itemname_standardfridge
 ba:itemname_storageshelf
 ba:itemname_sugar
 ba:itemname_tealeaves

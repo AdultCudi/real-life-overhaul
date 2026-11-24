@@ -47,6 +47,9 @@ namespace RealLifeOverhaul.Economy
         public const int PaceLeast = 25;             // per cent of the usual shelf life: a quarter of the time
         public const int PaceUsual = 100;            // the shelf lives above, as a save from before kept them
         public const int PaceMost = 400;             // four times as long
+        public const int ColdRoomBig = 1000;         // pieces an industrial fridge or freezer keeps cold: two boxes of 500, for a busy restaurant's day or two
+        public const int ColdRoomSmall = 500;        // a small industrial freezer: one box
+        public const int ColdRoomStaff = 50;         // a standard or luxury fridge: the game's own 10 slots of 5
 
         /// <summary>
         /// Where the shelf life's pace comes from (the option, the usual in a Going Public session); set once by Settings. Null reads as the
@@ -310,28 +313,79 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The room one fridge or freezer gives a product, in pieces: its slots times the pieces one slot holds (the game's own figures,
-        /// Item.cargoCapacity and CargoInstance.GetMaxStockCapacity). Whole numbers, never negative.
+        /// The pieces one piece of cold furniture keeps cold at a place, by its name, shared by all the goods that have no cold shelf of
+        /// their own; 0 for any other furniture. A box is 500 pieces and a restaurant holds hundreds to thousands, so the industrial fridge and
+        /// freezer (3,300 and 4,800 to buy) cover two boxes each, the small freezer (2,800) one, a staff fridge (the game's own 10 slots of 5)
+        /// 50. A drinks fridge is for drinks and covers nothing, so it is no way round the price of a real unit.
         /// </summary>
-        public static int Room(int slots, int stack) => (int)Math.Min(int.MaxValue, Math.Max(0L, slots) * Math.Max(0L, stack));
-
-        /// <summary>
-        /// The pieces of a product one fridge or freezer keeps cold, from the game's own figures for the furniture and the product: a
-        /// shelf (a showcase) gives the room of its one load, a fridge with slots gives its slots times that and takes only food that
-        /// fills (<c>saturation</c> above 0, FridgeController.CanStore); a whitelist that leaves the product out gives none. One load is
-        /// the product's box size times the furniture's capacity multiplier, rounded up (CargoInstance.GetMaxStockCapacity).
-        /// </summary>
-        public static int RoomOf(bool shelf, int slots, float multiplier, int boxSize, int saturation, bool allowed)
+        public static int ColdRoom(string furniture)
         {
-            if (!allowed || (!shelf && (slots <= 0 || saturation <= 0)))
+            switch (furniture)
             {
-                return 0;
+                case "ba:itemname_industrialfridge":
+                case "ba:itemname_industrialfreezer":
+                    return ColdRoomBig;
+                case "ba:itemname_smallindustrialfreezer":
+                    return ColdRoomSmall;
+                case "ba:itemname_standardfridge":
+                case "ba:itemname_luxuryfridge":
+                    return ColdRoomStaff;
+                default:
+                    return 0;
             }
-            return Room(shelf ? 1 : slots, (int)Math.Ceiling((float)((float)Math.Max(0, boxSize) * multiplier)));
         }
 
-        /// <summary>The pieces of a stock the cold furniture at a place keeps cold: all of it up to the room, the rest none.</summary>
-        public static int Chilled(int stock, int room) => Math.Max(0, Math.Min(stock, room));
+        /// <summary>
+        /// Shares a place's cold room over its goods in proportion to their stock, in whole pieces: all of it when the room holds every
+        /// stock, else each its floor of room times its stock over the total and the pieces left over one each to the largest remainders
+        /// (ties to the lower name), so the shares add to the room exactly and no machine differs. <paramref name="into"/> gets each good's pieces.
+        /// </summary>
+        public static void Share(List<int> stock, List<string> names, int room, List<int> into)
+        {
+            into.Clear();
+            long total = 0;
+            for (int i = 0; i < stock.Count; i++)
+            {
+                total += Math.Max(0, stock[i]);
+            }
+            room = Math.Max(0, room);
+            if (total <= room)
+            {
+                for (int i = 0; i < stock.Count; i++)
+                {
+                    into.Add(Math.Max(0, stock[i]));
+                }
+                return;
+            }
+            long given = 0;
+            for (int i = 0; i < stock.Count; i++)
+            {
+                int got = (int)((long)room * Math.Max(0, stock[i]) / total);
+                into.Add(got);
+                given += got;
+            }
+            var used = new bool[stock.Count];
+            for (long left = room - given; left > 0; left--)
+            {
+                int best = -1;
+                long bestRest = -1;
+                for (int i = 0; i < stock.Count; i++)
+                {
+                    long rest = (long)room * Math.Max(0, stock[i]) % total;
+                    if (!used[i] && into[i] < stock[i] && (rest > bestRest || (rest == bestRest && string.CompareOrdinal(names[i], names[best]) < 0)))
+                    {
+                        best = i;
+                        bestRest = rest;
+                    }
+                }
+                if (best < 0)
+                {
+                    break;
+                }
+                into[best]++;
+                used[best] = true;   // fewer pieces are left over than there are goods, so each wins at most one
+            }
+        }
 
         /// <summary>A share of what came in that spoiled, whole per cent; -1 when nothing came in.</summary>
         public static int Percent(int spoiled, int came) => came <= 0 ? -1 : (int)Math.Min(100L, ((long)Math.Max(0, spoiled) * 100 + came / 2) / came);

@@ -28,10 +28,6 @@ namespace RealLifeOverhaul
         public static readonly GameMember TripBoxSize = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "boxSize", "Int32");
         public static readonly GameMember TripWeighed = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "requiresWeighing", "Boolean");
         public static readonly GameMember ColdShows = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "itemsThatCanShowcase", "String[]");
-        public static readonly GameMember ColdWhitelist = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "itemsWhitelist", "String[]");
-        public static readonly GameMember ColdSlots = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "cargoCapacity", "Int32");
-        public static readonly GameMember ColdScale = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "cargoCapacityMultiplier", "Single");
-        public static readonly GameMember ColdFills = Field(TripsPart, ItemsAsm, "BigAmbitions.Items.Item", "saturation", "Int32");
         public static readonly GameMember RivalDays = Field(TripsPart, Game, "BuildingRegistration", "dailyIncomes", "List<Single>");
         public static readonly GameMember RivalValuing = StaticMethod(TripsPart, Game, "Helpers.CompetitionHelper", "AreRecalculationsPending", "Boolean");
 
