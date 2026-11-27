@@ -147,10 +147,13 @@ internal static partial class Program
     private static void SocialNextSources()
     {
         string after = ModSource(@"Social\OutingScene.After.cs"), rules = ModSource(@"Social\SocialRules.cs"), notices = ModSource(@"Ui\UiNotices.cs");
+        // The card's figures and goals are built in SocialCardText, shared with the card after meeting somebody's friends.
+        string card = ModSource(@"Social\SocialCardText.cs");
         Check(after.Contains("Signed(familiarity) + NextOf(SocialMeter.Familiarity)") && after.Contains("Signed(affection) + NextOf(SocialMeter.Affection)") && after.Contains("Signed(trust) + NextOf(SocialMeter.Trust)")
-              && after.Contains("SocialRules.Next(_who, meter, SocialLife.Romantic(_who), SocialState.Partner == null,"), "outing notice: each figure's line carries its next step from the rules, for a romance only where one is possible");
-        Check(after.Contains("\"reallife_social_goal_friend\"") && after.Contains("\"reallife_social_goal_close\"") && after.Contains("\"reallife_social_goal_date\"") && after.Contains("\"reallife_social_goal_partner\"")
-              && after.Contains("\"reallife_social_goal_movein\"") && after.Contains("\"reallife_social_card_next\""), "outing notice: the goals' words are whole keys");
+              && after.Contains("NextOf(SocialMeter meter) => SocialCardText.NextOf(_who, meter);")
+              && card.Contains("SocialRules.Next(who, meter, SocialLife.Romantic(who), LoveHooks.CanDate,"), "outing notice: each figure's line carries its next step from the rules, for a romance only where one is possible");
+        Check(card.Contains("\"reallife_social_goal_friend\"") && card.Contains("\"reallife_social_goal_close\"") && card.Contains("\"reallife_social_goal_date\"") && card.Contains("\"reallife_social_goal_partner\"")
+              && card.Contains("\"reallife_social_goal_movein\"") && card.Contains("\"reallife_social_card_next\""), "outing notice: the goals' words are whole keys");
         Check(rules.Contains("public static bool Next(SocialPerson person, SocialMeter meter,") && !rules.Contains("UnityEngine"), "outing notice: the rule is game-free");
         Check(notices.Contains("public const int BodyLines = 18;"), "outing notice: the card takes up to eighteen lines of body");
         Dictionary<string, string> en = LocaleFile("en");

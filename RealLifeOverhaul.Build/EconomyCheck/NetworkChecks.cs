@@ -231,7 +231,7 @@ internal static partial class Program
         string links = ModSource(@"Wiring\Wiring.NetworkLinks.cs");
         Check(links.Contains("SocialLinks.Met = Met") && links.Contains("SocialLinks.Met = null") && links.Contains("NetworkBridges.Reset()"), "networking sources: the links are put on and taken off");
         string meet = ModSource(@"Social\MeetScene.cs");
-        Check(meet.Contains("SocialLife.Meet(_who, talk.Warm, _kind == Kind.Introduction ? _friend : null)") && meet.Contains("Via = _kind == Kind.Introduction ? _friend : null"),
+        Check(meet.Contains("SocialLife.Meet(_who, talk.Warm, _kind == Kind.Introduction ? _friend : null,") && meet.Contains("Via = _kind == Kind.Introduction ? _friend : null"),
             "networking sources: an introduction's friend counts for the roll whether or not they are still beside the person, so the words and the record agree");
     }
 

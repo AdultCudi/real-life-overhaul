@@ -46,7 +46,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            int yearDays = Family.ChildYearRules.Days(Settings.FamilyYearWeeks);
+            int yearDays = Family.Children.DaysPerYear;   // the one reading of the child's year, so a baby of love keeps the family's pace
             f.Babies.Add(new LoveBaby
             {
                 Person = p.Index, Day = day, NewsDay = LoveRules.NewsDay(day, yearDays), DueDay = LoveRules.DueDay(day, yearDays), Carrier = carrier,

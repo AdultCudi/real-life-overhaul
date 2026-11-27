@@ -756,8 +756,8 @@ internal static partial class Program
             "techplan29 texts: the crunch's and the contractors' trade lines say a faster pace shortens them, and the studio's Guide page tells of the option in three languages");
         // What's new
         string[] lines = { "team lines now say how many people", "The way up now explains each of its seven steps", "A new option, Game development pace" };
-        string[] ptLines = { "As linhas da equipe do app Tech agora dizem", "O caminho de crescimento agora explica", "Ritmo de desenvolvimento dos jogos" };
-        string[] zhLines = { "团队各行现在会说明", "向上发展的路径现在会解释", "游戏开发节奏" };
+        string[] ptLines = { "As linhas de equipe do app Tecnologia agora dizem", "O caminho para cima agora explica", "Ritmo de desenvolvimento de jogos" };
+        string[] zhLines = { "团队条目现在会说明", "升级之路现在会说明", "游戏开发节奏" };
         bool news = true;
         for (int i = 0; i < lines.Length; i++)
         {
