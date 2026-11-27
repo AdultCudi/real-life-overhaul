@@ -1,6 +1,0 @@
-build: OK
-ContractCheck: ALL CHECKS PASSED (6125)
-StandardCheck: ALL CHECKS PASSED (222713)
-check.pl non-zero counts: 2
-locales: LOCALES: 62 fault(s)
-STOP: QUICK CHECK FAILED
