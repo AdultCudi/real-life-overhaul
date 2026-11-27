@@ -17,9 +17,6 @@ namespace RealLifeOverhaul
     {
         private const string ButtonNext = "reallife_social_btn_next";
 
-        /// <summary>The key of the verdict's line last shown, for the self-test's probe.</summary>
-        internal static string LastVerdict;
-
         private readonly SceneTalk _talk;
         private readonly SocialQuiz _quiz;
         private readonly SocialPerson _who;       // the new person, who asks
@@ -151,8 +148,7 @@ namespace RealLifeOverhaul
             Dictionary<string, string> names = Names();
             string[] pool = right >= SocialFriendsRules.Questions ? SocialInterests.Perfect
                 : right == 2 ? SocialInterests.VerdictTwo : right == 1 ? SocialInterests.VerdictOne : SocialInterests.Disaster;
-            LastVerdict = Pick(pool, 70);
-            string verdict = SocialLife.T(LastVerdict, names);
+            string verdict = SocialLife.T(Pick(pool, 70), names);
             string after = SocialLife.T(Pick(SocialInterests.After[right], 80), names);
             DialogEntry entry = Page(verdict + "\n\n" + after);
             entry.ConfirmTextOverride = "reallife_friends_btn_on".Localize();

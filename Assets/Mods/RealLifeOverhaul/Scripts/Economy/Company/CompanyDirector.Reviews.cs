@@ -93,36 +93,6 @@ namespace RealLifeOverhaul.Economy
             ManagerReviews.Clear(w);
         }
 
-        /// <summary>
-        /// The self-test's read-only probe: how many managers have the duty Answers reviews, how many rounds of it are in the log with what they answered and missed, and the
-        /// week's count so far: "managers 1 duty 1 rounds 3 thanks 9 sorry 2 mixed 1 missed 0 week 12". Changes nothing.
-        /// </summary>
-        public string ReviewsProbe()
-        {
-            if (_mgr == null)
-            {
-                return "no managers";
-            }
-            int managers = _mgr.Managers.Count, duty = 0, rounds = 0, thanks = 0, sorry = 0, mixed = 0, missed = 0;
-            for (int i = 0; i < _mgr.Managers.Count; i++)
-            {
-                duty += !_mgr.Managers[i].Region && ManagerRules.Has(_mgr.Managers[i].Tasks, ManagerTask.Reviews) ? 1 : 0;
-            }
-            for (int i = 0; i < _mgr.Decisions.Count; i++)
-            {
-                Decision d = _mgr.Decisions[i];
-                if (d.Task == (int)ManagerTask.Reviews)
-                {
-                    rounds++;
-                    thanks += d.A;
-                    sorry += d.B;
-                    mixed += d.C;
-                    missed += d.G;
-                }
-            }
-            return "managers " + managers + " duty " + duty + " rounds " + rounds + " thanks " + thanks + " sorry " + sorry + " mixed " + mixed + " missed " + missed + " week " + _mgr.Week.Answered;
-        }
-
         private static string ReviewParts(ReviewWeek w)
         {
             string parts = string.Empty;
