@@ -692,7 +692,7 @@
         public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
-        public static bool TechDealKinds = true;         // ...clients that are city departments, individuals and the city's companies, beside the old ones (off: the old clients and the council's tenders)
+        public static bool TechDealKinds = true;         // ...clients that are city departments, individuals and companies, beside the old ones (off: the old ones only)
         public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters

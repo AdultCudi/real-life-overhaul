@@ -2,7 +2,7 @@ using RealLifeOverhaul.Markets;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>Who puts a piece of work out. Saved as a number on the contract: never renumber, add at the end. 0 is every contract made before the kinds, and every one the option leaves alone.</summary>
+    /// <summary>Who puts a piece of work out. Saved on the contract: never renumber, add at the end. 0 is every contract made before the kinds.</summary>
     public enum ClientKind
     {
         Classic = 0, Government = 1, Individual = 2, Company = 3, Count = 4

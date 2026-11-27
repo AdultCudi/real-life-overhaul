@@ -223,7 +223,7 @@ namespace RealLifeOverhaul.Tech
                     w.End = day;
                     notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteLapsed });
                 }
-                else if (w.Stage >= (int)WorkStage.Done && day > w.End + FirmsCatalogue.MonthDays && day > w.Due + FirmsCatalogue.MonthDays && w.Owed <= 0)   // one still owed money is kept until it is paid
+                else if (w.Stage >= (int)WorkStage.Done && day > w.End + FirmsCatalogue.MonthDays && day > w.Due + FirmsCatalogue.MonthDays && w.Owed <= 0)   // kept until paid
                 {
                     f.Contracts.RemoveAt(i);
                 }
