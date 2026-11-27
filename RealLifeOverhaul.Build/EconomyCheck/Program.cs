@@ -1647,6 +1647,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--techdeals29")
+        {
+            TechDeals29();   // (the new kinds of client: departments, individuals and the city's companies, no software or design client, their terms, risks and income: TechDeals29Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech-points")
         {
             TechPoints();   // (a model's wait for its training and a product's reason for no customers alone: TechPointsChecks.cs)
@@ -1840,6 +1846,7 @@ internal static partial class Program
         Titles();       // products and games have names: typed ones cleaned and kept, made-up ones of their kind or genre, the rivals' too, none shared (TitleChecks.cs)
         Tech23();   // the tech fixes of 23 Nov (Tech23Checks.cs)
         Tech28();   // the tech fixes of 27 Nov (Tech28Checks.cs)
+        TechDeals29();   // the new kinds of client of a tech firm (TechDeals29Checks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)

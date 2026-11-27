@@ -147,5 +147,160 @@ namespace RealLifeOverhaul.Tech
             }
             ChangedTech();
         }
+
+        // ------------------------------------------------------------------------------- the in-game self-test: a read-only probe and its set-ups
+
+        /// <summary>
+        /// A read-only account of the firms contracts for the in-game self-test, in plain words: "offers" (the open ones by kind of client and how many are from a barred business),
+        /// "colo" (the data centres clients and how many are barred), "hold" (the audit hold), "contract N" or "first KIND" (one contract terms). Changes nothing; costs nothing unless called.
+        /// </summary>
+        public string Probe(string what)
+        {
+            if (!_firmsOn || _firmsFile == null)
+            {
+                return "off";
+            }
+            what = what ?? string.Empty;
+            if (what == "offers")
+            {
+                int[] kinds = new int[(int)ClientKind.Count];
+                int barred = 0, open = 0;
+                foreach (Contract w in _firmsFile.Contracts)
+                {
+                    if (w.Stage > (int)WorkStage.Bid)
+                    {
+                        continue;
+                    }
+                    open++;
+                    kinds[Math.Max(0, Math.Min(kinds.Length - 1, w.Deal))]++;
+                    string type = string.IsNullOrEmpty(w.OwnPlace) ? null : TypeAt(w.OwnPlace);
+                    barred += type != null && ClientFilter.TypeExcluded(type) ? 1 : 0;
+                }
+                return "open " + open + " classic " + kinds[0] + " government " + kinds[1] + " individual " + kinds[2] + " company " + kinds[3] + " barred " + barred;
+            }
+            if (what == "colo")
+            {
+                int n = 0, bad = 0;
+                for (int i = 0; _infra != null && i < _infra.Colo.Count; i++)
+                {
+                    n++;
+                    bad += ColoRules.ClientOpen(_infra.Colo[i].Client) ? 0 : 1;
+                }
+                return "colo " + n + " barred " + bad;
+            }
+            if (what == "hold")
+            {
+                return "hold " + _firmsFile.GovHold;
+            }
+            if (what == "rep")
+            {
+                return "rep " + (_firmsFile.Firms.Count > 0 ? _firmsFile.Firms[0].Reputation : -1);
+            }
+            Contract found = null;
+            if (what.StartsWith("contract ", StringComparison.Ordinal) && int.TryParse(what.Substring(9), out int id))
+            {
+                found = _firmsFile.ContractOf(id);
+            }
+            else if (what.StartsWith("first ", StringComparison.Ordinal))
+            {
+                string kind = what.Substring(6);
+                for (int i = _firmsFile.Contracts.Count - 1; i >= 0 && found == null; i--)
+                {
+                    Contract w = _firmsFile.Contracts[i];
+                    found = ((ClientKind)w.Deal).ToString().ToLowerInvariant() == kind && w.Stage <= (int)WorkStage.Active ? w : null;
+                }
+            }
+            if (found == null)
+            {
+                return "none";
+            }
+            return "id " + found.Id + " kind " + ((ClientKind)found.Deal).ToString().ToLowerInvariant() + " stage " + ((WorkStage)found.Stage).ToString().ToLowerInvariant() + " points " + found.Points
+                   + " done " + found.Done + " value " + found.Value * Prices.Level / 100000 + " paid " + found.Paid * Prices.Level / 100000 + " owed " + found.Owed * Prices.Level / 100000
+                   + " lag " + found.Lag + " payday " + found.PayDay + " due " + found.Due + " extra " + found.Extra + " need " + found.NeedSecurity + " " + found.NeedReliability
+                   + " brief " + found.Brief + " client " + found.Client.Replace(' ', '_') + " council " + (found.Council ? "yes" : "no");
+        }
+
+        /// <summary>
+        /// The self-test set-up: an offer of a kind of client ("government", "individual", "company"; "tender" for a department tender) to the first firm that takes the work, with the case
+        /// asked for ("late": pays late, "creep": asks for one more change). Returns its id, or 0.
+        /// </summary>
+        public int SelfOffer(string kind, string flavour)
+        {
+            if (!_firmsOn || Save == null)
+            {
+                return 0;
+            }
+            ReadFirms(Save.Day);
+            bool tender = kind == "tender";
+            ClientKind ck = kind == "government" || tender ? ClientKind.Government : kind == "individual" ? ClientKind.Individual : ClientKind.Company;
+            for (int i = 0; i < _firms.Count; i++)
+            {
+                int kinds = FirmsCatalogue.TakesWork[_firms[i].File.Kind];
+                for (int k = 0; k < (int)WorkKind.Count; k++)
+                {
+                    if ((kinds & (1 << k)) == 0 || k == (int)WorkKind.Incident || (tender && k != (int)WorkKind.Integration && k != (int)WorkKind.Managed))
+                    {
+                        continue;
+                    }
+                    Contract w = ClientRules.Make(_firmsFile, _firms[i].File.Place, ck, (WorkKind)k, tender, Save.Day, 300);
+                    if (w == null || (flavour == "creep" && w.Monthly))
+                    {
+                        continue;
+                    }
+                    w.Lag = flavour == "late" ? 10 : w.Lag;
+                    w.CreepMille = flavour == "creep" ? 1000 : w.CreepMille;
+                    _firmsFile.Contracts.Add(w);
+                    ChangedTech();
+                    return w.Id;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>The self-test set-up: an open offer whose client is the player own business of a barred type (a web development agency or graphic designer), as an old save held it. Returns its id, or 0.</summary>
+        public int SelfBarredOffer()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                return 0;
+            }
+            ReadFirms(Save.Day);
+            if (_firms.Count == 0)
+            {
+                return 0;
+            }
+            List<BuildingRegistration> all = Save.BuildingRegistrations;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && ClientFilter.TypeExcluded(reg.businessTypeName) && FirmsGame.KindOf(reg.businessTypeName) >= 0)
+                {
+                    var w = new Contract { Id = _firmsFile.Next(), Kind = (int)WorkKind.Website, Stage = (int)WorkStage.Offered, End = Save.Day + FirmsCatalogue.OfferDays, Place = _firms[0].File.Place,
+                        Client = TalentGame.NameOf(reg), OwnPlace = TalentGame.Place(reg), Points = 60 };
+                    w.Value = FirmsRules.ValueOf(WorkKind.Website, w.Points, false);
+                    _firmsFile.Contracts.Add(w);
+                    ChangedTech();
+                    return w.Id;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>The self-test way into the Take button own handler.</summary>
+        public bool SelfTake(int id) => TakeContract(id);
+
+        /// <summary>The self-test way into the Bid button own handler, on the first firm that takes the tender work.</summary>
+        public bool SelfBid(int id, int share)
+        {
+            Contract t = _firmsOn ? _firmsFile.ContractOf(id) : null;
+            for (int i = 0; t != null && i < _firms.Count; i++)
+            {
+                if (FirmsRules.Takes(_firms[i].File.K, t.K))
+                {
+                    return BidTender(id, _firms[i].File.Place, share);
+                }
+            }
+            return false;
+        }
     }
 }
