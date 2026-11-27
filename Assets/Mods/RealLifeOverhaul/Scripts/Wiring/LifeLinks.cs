@@ -210,20 +210,10 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                public int FitnessLevel => HomeState.Loaded && Settings.HomeLife && Settings.HomeFitness ? (int)System.Math.Round(HomeState.Fitness) : -1;
+                // Home's own reading answers -1 while fitness is not kept, the same value the passions treat as unknown.
+                public int FitnessLevel => HomeFitness.Level;
 
-                public int DietBand
-                {
-                    get
-                    {
-                        if (!HomeState.Loaded || !Settings.HomeLife || !Settings.HomeFitness)
-                        {
-                            return -1;
-                        }
-                        float diet = HomeState.DietScore;
-                        return diet >= HomeBalance.DietGood ? 2 : diet <= HomeBalance.DietPoor ? 0 : 1;
-                    }
-                }
+                public int DietBand => HomeFitness.DietBand;
 
                 public void Ate()
                 {
