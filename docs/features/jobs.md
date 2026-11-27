@@ -24,7 +24,9 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `JobKeys` | the interaction key and the key names in texts: fills {key} and {key1} to {key3} |
 | `JobPhone` | the Gig Line contact and its conversation, on the phone or face to face at a board |
 | `JobBoards` | help-wanted boards outside a few service buildings: the same list as the Gig Line |
-| | a kind whose buildings all failed their asks (a car at the door, people on the pavement) is asked again every 10 s while the player is within 120 m of one, and the employer left without an office takes the board when it is up (`CareerOfficeRules.Extend`); nobody who has an office moves |
+| | the kinds are chosen from the whole city list once it has been seen (`BoardHomeRules.Kinds`): each employer's own kind first (its first premises the city has), then the other kinds in list order up to six; a board's home is the first building of its kind in the list |
+| | a kind whose buildings all failed their asks (a car at the door, people on the pavement) is asked again every 10 s while the player is within 120 m of one, and the employer left without an office takes the board when it is up (`CareerOfficeRules.Extend`); an office left over at a kind of none of the employer's premises moves to its own kind's late board, one at its own kind never moves |
+| | a board put up at a spare building (the first failed three asks) keeps its rank and is asked at the better buildings again every 10 s (`Mend`): taken down and put up at the first that takes it, only with the player 150 m from both places; a far building is asked six times, then only with the player within 120 m. Nothing about a board is saved: the home is derived from the list at every load |
 | `JobGates`, `JobGateRules` | the ticket gates of a cinema or theatre, open to a worker on the client's floor |
 | `JobCast` | the two characters jobs put on the street (never the accident pool's) |
 | `JobSpots` | door fronts and the ground beside the player's car, tested before anyone is put there |

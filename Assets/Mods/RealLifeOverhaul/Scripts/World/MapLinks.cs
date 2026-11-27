@@ -359,7 +359,7 @@ namespace RealLifeOverhaul
                     {
                         return 0;
                     }
-                    long stamp = 1 + jobs.HelpBoards.Count;
+                    long stamp = jobs.HelpBoards.Stamp;
                     if (CareerDirector.On && jobs.Career != null)
                     {
                         for (int e = 0; e < CareerCatalogue.All.Length; e++)
@@ -393,7 +393,7 @@ namespace RealLifeOverhaul
                     {
                         return 0;
                     }
-                    long stamp = 1 + jobs.HelpBoards.Count;
+                    long stamp = jobs.HelpBoards.Stamp;
                     for (int e = 0; e < CareerCatalogue.All.Length; e++)
                     {
                         stamp = stamp * 9 + jobs.Career.DepotOf(e) + 2;
