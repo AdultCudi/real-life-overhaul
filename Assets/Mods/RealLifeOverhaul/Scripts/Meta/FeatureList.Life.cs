@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => SocialDirector.Instance?.StopAll())
                 .Group("reallife_social_header")
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
-                .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
+                .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId, Settings.SocialPassionsId, Settings.SocialMomentsId)
                 .Owns(Settings.FamilyInterestId)   // who the player is interested in: the people who can fall for them, who they can ask out; no preset sets it, it is their own
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)

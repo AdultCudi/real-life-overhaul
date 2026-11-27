@@ -463,6 +463,34 @@ namespace RealLifeOverhaul
         private static readonly List<BuildingRegistration> Own = new List<BuildingRegistration>(8);
 
         /// <summary>
+        /// How many days the player has had the business they opened last; -1 with none of their own (a passion that is glad of a new
+        /// business reads it, SocialPassionRules). Asked once an outing, never per frame.
+        /// </summary>
+        public static int NewestBusinessDays(int day)
+        {
+            int newest = -1;
+            try
+            {
+                Economy.Books.Businesses(Own);
+                for (int i = 0; i < Own.Count; i++)
+                {
+                    int since = FoundingGame.Of(Own[i]);
+                    if (since > 0)
+                    {
+                        int days = Mathf.Max(0, day - since);
+                        newest = newest < 0 ? days : Mathf.Min(newest, days);
+                    }
+                }
+                Own.Clear();
+            }
+            catch (Exception)
+            {
+                newest = -1;   // what cannot be read is not there
+            }
+            return newest;
+        }
+
+        /// <summary>
         /// How many days the player has had the business they have had longest; -1 with no business of their own (the test
         /// Finance counts them by: theirs in a Going Public session, started, of a kind that takes money). A business whose
         /// first day is not known counts as long had. Asked when somebody gets in touch and once a day, never per frame.

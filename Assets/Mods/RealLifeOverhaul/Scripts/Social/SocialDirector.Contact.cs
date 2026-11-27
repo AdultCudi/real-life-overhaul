@@ -11,7 +11,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed partial class SocialDirector
     {
-        private static readonly float[] WealthTiers = { 10000f, 50000f, 250000f, 1000000f, 5000000f };   // money they react to
+        private static readonly float[] WealthTiers = SocialPassionRules.WealthTiers;   // money they react to
 
         private static readonly int[] CircleScratch = new int[SocialRules.CircleSize];
 
@@ -350,6 +350,7 @@ namespace RealLifeOverhaul
             bool business = SocialPlaces.BusinessHeldDays(day) >= 0;   // nobody wishes for the tour of a business that is not there
             ISocialLaw law = SocialLinks.Law;
             int bar = CircleBar();
+            int tierToday = SocialPassionRules.TierOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f);
             for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
@@ -361,6 +362,7 @@ namespace RealLifeOverhaul
                 {
                     p.AfterDay = 0;   // (an outing nobody could text about the day after: let go)
                 }
+                DailyPassion(p, day, tierToday);
                 // Mostly fine, now and then rough or grand; a birthday is a good day.
                 float roll = Random.value;
                 p.Mood = roll < 0.08f ? -2 : roll < 0.25f ? -1 : roll < 0.65f ? 0 : roll < 0.9f ? 1 : 2;

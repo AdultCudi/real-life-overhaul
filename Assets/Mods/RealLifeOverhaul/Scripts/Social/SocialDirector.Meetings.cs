@@ -127,6 +127,7 @@ namespace RealLifeOverhaul
         {
             if (!_broken && SocialState.Loaded && Settings.Social)
             {
+                SocialState.HelpedDay = SocialLife.Day;   // a kind soul among the cast is glad of it for a week (SocialPassionRules)
                 Pend(SocialOrigin.Helped, 0.6f, Time.unscaledTime, 25f);
             }
         }

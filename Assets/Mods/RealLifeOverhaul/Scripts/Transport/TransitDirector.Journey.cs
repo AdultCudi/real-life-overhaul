@@ -460,6 +460,7 @@ namespace RealLifeOverhaul
                                          + (_jOff.Metres - _jFrom.Metres).ToString("F0") + " m of line and " + _jCalls + " stop(s) on the way; they get off by the middle door"
                                          + (_jOff == _jFinal ? "" : " short of their own stop, as they asked") + ": PASS.");
                             Notifications.Show(NotificationType.Info, "reallife_transit_ride_arrived", new Dictionary<string, string>(1) { { "name", StopName(_jOff) } }, 6f);
+                            SocialHooks.RodeTransit();   // the people they meet next read that they came by bus (Scripts/Social)
                             ModState.AddModifier(ModState.MoodUp);
                             _jPanel?.Close();
                             _jPanel = null;

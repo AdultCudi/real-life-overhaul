@@ -30,6 +30,9 @@ namespace RealLifeOverhaul
         void Ate();
     }
 
+    /// <summary>Fills in what a neighbouring feature knows of the player (<see cref="SocialLinks.FillFacts"/>).</summary>
+    public delegate void SocialFactsFill(ref SocialFacts facts);
+
     /// <summary>The social life's neighbours, set by Wiring. Each is null while nobody fills it in, and is then not asked.</summary>
     public static class SocialLinks
     {
@@ -96,6 +99,13 @@ namespace RealLifeOverhaul
         /// the one who brought them (true) or by themselves (false); null when there is nothing to say.
         /// </summary>
         public static Func<SocialPerson, SocialPerson, bool, string> Position;
+
+        /// <summary>
+        /// What other features say of the player when an outing is judged by a person's passion (SocialPassionRules): fitness and diet from
+        /// Home, net worth from the books, what was given to charity this month from Giving, and whether a work uniform is on. Filled in by
+        /// Wiring/TraitLinks, asked once an outing; null while nobody fills it, and then those facts are not known.
+        /// </summary>
+        public static SocialFactsFill FillFacts;
 
         public const string WordsKey = SocialFollowRules.WordsKey;   // RLO Texts' line for a model's words: "{text}"
     }
@@ -605,7 +615,8 @@ namespace RealLifeOverhaul
                 return;
             }
             bool shortNotice = plan.Time - Now < 60f;
-            Change(person, 0f, shortNotice ? SocialRules.CancelledAffection : -1f, shortNotice ? SocialRules.CancelledTrust : -1f);
+            float minds = SocialPassionRules.PlanMinds(person);   // a career focused person moves plans for work too
+            Change(person, 0f, (shortNotice ? SocialRules.CancelledAffection : -1f) * minds, (shortNotice ? SocialRules.CancelledTrust : -1f) * minds);
             Logger?.Info("Social: the player called off " + plan.Kind + " with " + person.Name + (shortNotice ? " at short notice." : "."));
             plan.Clear();
         }
@@ -621,7 +632,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            float weight = person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f;
+            float weight = (person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f) * SocialPassionRules.PlanMinds(person);
             Change(person, 0f, SocialRules.StoodUpAffection * weight, SocialRules.StoodUpTrust * weight);
             Remember(person, MemoryCode.StoodUp);
             SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), data, true, true);

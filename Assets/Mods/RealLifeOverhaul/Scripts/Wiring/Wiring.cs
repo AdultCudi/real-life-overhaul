@@ -38,6 +38,7 @@ namespace RealLifeOverhaul
             Step("the recorded car sounds", CarSoundLinks.Connect);
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
+            Step("people's passions and the moments on outings", TraitLinks.Connect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Connect);
             Step("family life", FamilyLinks.Connect);
             Step("family life's difficult moments", HardTimesLinks.Connect);
@@ -202,6 +203,7 @@ namespace RealLifeOverhaul
             Step("family life's difficult moments", HardTimesLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Disconnect);
+            Step("people's passions and the moments on outings", TraitLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);
             Step("police reports for the insurers", ReportLinks.Disconnect);

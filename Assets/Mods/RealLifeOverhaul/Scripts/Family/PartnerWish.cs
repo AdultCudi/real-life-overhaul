@@ -55,6 +55,10 @@ namespace RealLifeOverhaul.Family
                 FamilyState.Harmony(PartnerWishRules.HarmonyNo);
                 return;
             }
+            if (!PartnerWishRules.MayAsk(PartnerWishRules.WishOf(s.PSeed), s.PWishGranted, Partner.Kept(out PersonInfo kept) && kept.CareerFocused))
+            {
+                return;   // a partner whose passion is their work never asks to stop it: they would only retrain for something bigger
+            }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
             if (!PartnerWishRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, PartnerWork.Work, s.PWishGranted, s.PWishAsk, cash,
                     Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay,

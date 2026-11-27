@@ -46,6 +46,7 @@ namespace RealLifeOverhaul
             Vector3 player = D.PlayerPosition;
             float atSpot = JobSpots.Flat(player, _spot);
             NotePlayer(nowMinutes, _friend != null ? Mathf.Min(atSpot, JobSpots.Flat(_friend.Position, player)) : atSpot);
+            SocialArrivalNote.Sample(D.OnFoot, D.Car, nowMinutes);   // how they are getting there, for a person who minds (SocialPassionRules)
             Nudge(nowMinutes);
             if (_friend == null)
             {
@@ -555,13 +556,14 @@ namespace RealLifeOverhaul
             _lateBy = SocialDateRules.LateBy(SocialLife.Now, _time, _playerAt);
             ClearPlan();
             SocialLife.Contacted(_who);
+            NoteHowTheyCame();
             if (_test)
             {
                 return;
             }
-            if (_lateBy > SocialRules.LateMinutes && !_who.Has(SocialTrait.Late))
+            if (_lateBy > SocialRules.LateMinutes && !LateIsFine)
             {
-                float weight = _who.Has(SocialTrait.Punctual) ? 2f : 1f;
+                float weight = (_who.Has(SocialTrait.Punctual) ? 2f : 1f) * SocialPassionRules.PlanMinds(_who);
                 SocialLife.Change(_who, 0f, SocialRules.LateAffection * weight, SocialRules.LateTrust * weight);
                 SocialLife.Remember(_who, MemoryCode.Late);
             }
@@ -575,7 +577,7 @@ namespace RealLifeOverhaul
         {
             if (_lateBy > SocialRules.LateMinutes)
             {
-                return SocialLines.Pick(_who.Has(SocialTrait.Late) ? SocialCatalogue.GreetLateEasy : SocialCatalogue.GreetLate);
+                return SocialLines.Pick(LateIsFine ? SocialCatalogue.GreetLateEasy : SocialCatalogue.GreetLate);
             }
             if (SocialDateRules.KeptWaiting(_playerAt, _partnerAt))
             {

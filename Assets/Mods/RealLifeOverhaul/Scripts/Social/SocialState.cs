@@ -45,6 +45,8 @@ namespace RealLifeOverhaul
         public static int WealthTier;        // the last wealth milestone they reacted to
         public static int LastArrestDay;
         public static int TestPerson;        // whom the test buttons act on
+        public static int RiseDay;           // the day the player's career last rose (SocialHooks.CareerRose): a career focused person is glad of it for a while
+        public static int HelpedDay;         // the day the player last helped somebody (SocialHooks.Helped): a kind soul is glad of it for a week
 
         public static void Reset()
         {
@@ -70,6 +72,8 @@ namespace RealLifeOverhaul
             WealthTier = 0;
             LastArrestDay = 0;
             TestPerson = 0;
+            RiseDay = 0;
+            HelpedDay = 0;
         }
 
         /// <summary>Null while nothing is loaded, or outside the cast.</summary>
@@ -225,6 +229,10 @@ namespace RealLifeOverhaul
                 Reset();
                 CastSeed = seed;
                 SocialCatalogue.MakeCast(People, seed, day, daysPerYear, districts, playerAge, interest);
+                for (int i = 0; i < SocialRules.BaseCast; i++)
+                {
+                    _ = People[i].Passion;   // each one's passion, rolled from their own seed on a stream of its own (the cast's rolls are all made)
+                }
                 Count = SocialRules.BaseCast;
                 Day = day;
             }
@@ -241,7 +249,8 @@ namespace RealLifeOverhaul
             var text = new StringBuilder(2048);
             text.Append(Version).Append(Field).Append(CastSeed).Append(Field).Append(Day).Append(Field).Append(TextsDay).Append(Field).Append(TextsToday)
                 .Append(Field).Append(LastMeetDay).Append(Field).Append(LastDropByDay).Append(Field).Append(LastCallInDay).Append(Field).Append(CoffeeBuys)
-                .Append(Field).Append(WealthTier).Append(Field).Append(LastArrestDay).Append(Field).Append(TestPerson);
+                .Append(Field).Append(WealthTier).Append(Field).Append(LastArrestDay).Append(Field).Append(TestPerson)
+                .Append(Field).Append(RiseDay).Append(Field).Append(HelpedDay);   // (a version that reads 12 fields leaves them)
             data[KeyMain] = text.ToString();
 
             text.Length = 0;
@@ -321,6 +330,10 @@ namespace RealLifeOverhaul
                 // The line they sent last, then the tour of the player's business asked for and given (Social/SocialAskRules):
                 // a version that reads 48 fields leaves them.
                 text.Append(Field).Append(Clean(p.LastLine)).Append(Field).Append(p.TourAskDay).Append(Field).Append(p.TourDay);
+                // Their passion's finding out and the moments on outings (Social/SocialPassionRules, SocialMomentRules): a version that reads
+                // 51 fields leaves them. The passion itself is a bit of the traits' number (field 6), above the twelve every version holds.
+                text.Append(Field).Append((p.PassionFound ? 1 : 0) | (p.MomentRow ? 2 : 0) | (p.MomentEcho ? 4 : 0)).Append(Field).Append(p.PassionClues)
+                    .Append(Field).Append(p.MomentLast).Append(Field).Append(p.MomentDay).Append(Field).Append(p.HintDay);
             }
         }
 
@@ -428,6 +441,25 @@ namespace RealLifeOverhaul
             p.TourDay = Math.Max(0, Int(f[50]));
         }
 
+        // Fields 51 to 55, the finding out of their passion and the moments they had. A record from before them has none found, no clue and no
+        // moment, and gets its passion here, rolled from its own seed on a stream of its own (SocialPassionRules.Roll) the way every person
+        // made before passions existed does: nothing else of the record is touched, and no other roll moves.
+        private static void ReadPassion(SocialPerson p, string[] f)
+        {
+            if (f.Length >= 56)
+            {
+                int flags = Int(f[51]);
+                p.PassionFound = (flags & 1) != 0;
+                p.MomentRow = (flags & 2) != 0;
+                p.MomentEcho = (flags & 4) != 0;
+                p.PassionClues = Math.Max(0, Int(f[52]));
+                p.MomentLast = Int(f[53]);
+                p.MomentDay = Math.Max(0, Int(f[54]));
+                p.HintDay = Math.Max(0, Int(f[55]));
+            }
+            _ = p.Passion;   // rolled now if the saved traits hold none (a record of an older version, or a roommate's)
+        }
+
         // Field 41, the look kept from the street, gives them its seed; one that cannot be read is let go.
         private static void ReadLook(SocialPerson p, string[] f)
         {
@@ -466,6 +498,8 @@ namespace RealLifeOverhaul
             WealthTier = Int(m[9]);
             LastArrestDay = Int(m[10]);
             TestPerson = Int(m[11]);
+            RiseDay = m.Length > 12 ? Math.Max(0, Int(m[12])) : 0;
+            HelpedDay = m.Length > 13 ? Math.Max(0, Int(m[13])) : 0;
 
             // Every one of the first eight, or the cast is not this save's.
             int found = 0;
@@ -582,6 +616,7 @@ namespace RealLifeOverhaul
             p.AgeDay = AgeDayOf(f, day);
             ReadFollow(p, f);
             ReadAsks(p, f);
+            ReadPassion(p, f);
             SocialCatalogue.FixedFor(p, "the social life's people");   // the one fixed look, before a later version's origin is read as an old friend below
             if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
             {

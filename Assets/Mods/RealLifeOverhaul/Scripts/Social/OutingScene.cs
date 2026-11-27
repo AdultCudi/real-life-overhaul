@@ -107,6 +107,7 @@ namespace RealLifeOverhaul
                 Refusal = TestRefusal.NoVenue;
                 return false;
             }
+            SocialArrivalNote.Forget();
             _spot = _venue.Front;
             _first = SocialLife.First(_who);
             Dictionary<string, string> data = SocialLife.Data(_who, "outing", SocialLife.T(_def.Name));

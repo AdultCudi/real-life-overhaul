@@ -694,6 +694,16 @@ namespace RealLifeOverhaul
                 t |= p.Has(SocialTrait.Foodie) ? FlareTaste.Food : FlareTaste.None;
                 t |= p.Has(SocialTrait.NightOwl) ? FlareTaste.Night : FlareTaste.None;
                 t |= p.Has(SocialTrait.Flaky) ? FlareTaste.Flaky : FlareTaste.None;
+                // The passion each has (Social/SocialPassionRules) leans their taste too, once the option for passions is on.
+                switch (SocialPassionRules.Of(p))
+                {
+                    case SocialTrait.KindSoul: t |= FlareTaste.Cheers; break;
+                    case SocialTrait.FitnessMinded: t |= FlareTaste.Sport; break;
+                    case SocialTrait.Clubber:
+                    case SocialTrait.Cinephile: t |= FlareTaste.Night; break;
+                    case SocialTrait.SocialButterfly: t |= FlareTaste.Food; break;
+                    case SocialTrait.CareerFocused: t |= FlareTaste.Shops; break;
+                }
                 return t;
             }
 
