@@ -93,12 +93,12 @@ internal static partial class Program
             {
                 _ = a[i].Passion;
                 same &= a[i].Name == b[i].Name && a[i].Age == b[i].Age && a[i].Seed == b[i].Seed && a[i].Birthday == b[i].Birthday && a[i].Job == b[i].Job
-                        && a[i].District == b[i].District && ((int)a[i].Traits & 4095) == (int)b[i].Traits && a[i].Female == b[i].Female && a[i].FreeFrom == b[i].FreeFrom;
+                        && a[i].District == b[i].District && ((int)a[i].Traits & 4095) == ((int)b[i].Traits & 4095) && a[i].Traits == b[i].Traits && a[i].Female == b[i].Female && a[i].FreeFrom == b[i].FreeFrom;
             }
             var later = SocialCatalogue.MakeNew(9, SocialOrigin.Street, -1, seed, 5, TraitYear, TraitDistricts, a, SocialRules.BaseCast);
             var later2 = SocialCatalogue.MakeNew(9, SocialOrigin.Street, -1, seed, 5, TraitYear, TraitDistricts, b, SocialRules.BaseCast);
             _ = later.Passion;
-            same &= later.Name == later2.Name && later.Age == later2.Age && later.Seed == later2.Seed && ((int)later.Traits & 4095) == (int)later2.Traits;
+            same &= later.Name == later2.Name && later.Age == later2.Age && later.Seed == later2.Seed && later.Traits == later2.Traits;
         }
         Check(same, "traits: asking for every passion changes no other roll of a cast, nor of somebody met later");
     }
