@@ -280,14 +280,10 @@ namespace RealLifeOverhaul.Tech
         // The firm's burn a day at the start's prices: what it loses a day, nothing for a firm that makes a profit.
         private long BurnOf(FirmPlace firm) => Math.Max(0L, Base(-FirmProfit(firm)));
 
-        /// <summary>A firm's worth by its books (FirmsRules.Value) and how its takings grew over the month before, basis points; cents at the start's prices.</summary>
+        /// <summary>A firm's worth by its books on its steady month (FirmsRules.Value) and how its takings have grown (FirmsRules.Growth), basis points; cents at the start's prices.</summary>
         internal void FirmValue(FirmPlace firm, out long value, out int growthBp)
         {
-            growthBp = 0;
-            if (TechStatusRules.Change(firm.File.Revenue30, firm.File.Prev30, firm.File.PrevDays, out int percent))
-            {
-                growthBp = TalentCatalogue.Clamp(percent * 100, -5000, 20000);
-            }
+            growthBp = FirmsRules.Growth(firm.File);   // over three months, so one spike buys none
             long arr = FirmsRules.Arr(_firmsFile, firm.File.Place);
             value = FirmsRules.Value(firm.File, arr, growthBp);
         }
@@ -575,6 +571,13 @@ namespace RealLifeOverhaul.Tech
             return ExitRules.ListValue(value, books != null ? books(firm.File.Place) : 0L);
         }
 
+        /// <summary>The refusal to take a firm to the market, in the words of its real reason: money counted as taken (with the sum and where to put it back), or a ladder step still open.</summary>
+        private void RefuseListing(FirmPlace firm, Cap c, int blocked)
+        {
+            Notifications.Show(NotificationType.Error, blocked == ExitStockRules.BlockedTaken ? "reallife_exit_refuse_taken" : "reallife_exit_refuse_ladder",
+                Data("firm", firm != null ? firm.File.Name : string.Empty, "amount", TechText.Cents(c != null ? Level(c.Acc.Taken) : 0L)), 8f, null, null, true, false);
+        }
+
         /// <summary>The bankers engaged: the retainer is paid by the firm, and the firm's worth is taken from its books.</summary>
         internal bool ExitBankers(string place, int index)
         {
@@ -584,10 +587,11 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;   // before any fee: a firm a contract holds is its owner's and cannot be taken to the market
             }
-            int owed = ExitStockRules.ListBlocked(_venture.CapOf(place));
+            Cap listing = _venture.CapOf(place);
+            int owed = ExitStockRules.ListBlocked(listing);
             if (owed != ExitStockRules.BlockedNone)
             {
-                Notifications.ShowError(owed == ExitStockRules.BlockedTaken ? "reallife_exit_refuse_taken" : "reallife_exit_refuse_ladder");   // not while the firm owes its investors
+                RefuseListing(firm, listing, owed);   // not while the firm owes its investors
                 return false;
             }
             IReadOnlyList<string> banks = ExitBanks();

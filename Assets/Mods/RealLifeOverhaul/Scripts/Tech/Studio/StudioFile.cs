@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Tech
         public int SaleUntil;                 // the day a sale ends (not counted)
         public int Lift = 1000;               // thousandths of its life's sales its free updates and localisation have brought it to
         public long NetMonth;                 // cents of the net kept since the leads were last paid
+        public long Daily;                    // a subscription's net kept on its last day on sale, cents at the start's prices: what the page says it takes a month; 0 for any other model
         public bool Converted;                // a game of an older save: it sells on from where it stood, not from the audience
         public long Left;                     // a converted game's copies still to come
         // after launch

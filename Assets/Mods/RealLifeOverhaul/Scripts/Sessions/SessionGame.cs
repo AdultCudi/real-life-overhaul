@@ -236,6 +236,12 @@ namespace RealLifeOverhaul.Sessions
         /// <summary>The game's destination marker on a firm.</summary>
         public static bool Route(SessionFirm firm) => firm != null && DeskGame.Route(firm.Street, firm.Number);
 
+        /// <summary>Where a firm's office stands in the game's words, for the notice that a session waits there; its name when the game's list has no street for it.</summary>
+        public static string AddressOf(SessionFirm firm)
+        {
+            return firm == null ? string.Empty : string.IsNullOrEmpty(firm.Street) ? firm.Name : WorkGame.Address(firm.Street, firm.Number);
+        }
+
         /// <summary>A notice of the game's, in its own words and colours.</summary>
         public static void Tell(NotificationType type, string key, Dictionary<string, string> data, float seconds = 10f)
         {

@@ -705,8 +705,44 @@ namespace RealLifeOverhaul
 
         public static readonly string[] GreetAcquaintance = { "reallife_social_greet_acq_1", "reallife_social_greet_acq_2", "reallife_social_greet_acq_3" };
         public static readonly string[] GreetFriend = { "reallife_social_greet_friend_1", "reallife_social_greet_friend_2", "reallife_social_greet_friend_3" };
-        public static readonly string[] GreetClose = { "reallife_social_greet_close_1", "reallife_social_greet_close_2", "reallife_social_greet_close_3" };
-        public static readonly string[] GreetLove = { "reallife_social_greet_love_1", "reallife_social_greet_love_2", "reallife_social_greet_love_3" };
+        // Each greeting that speaks of time apart is kept for the days that fit it (SocialDateRules.GreetSpanOf): "it's been too long" only
+        // after ten days, "so much to tell you" after five, "I missed you today" not on the day of the last meeting. The rest fit any gap.
+        public static readonly string[] GreetCloseLines =
+        {
+            "reallife_social_greet_close_3", "reallife_social_greet_close_4", "reallife_social_greet_close_5", "reallife_social_greet_close_2", "reallife_social_greet_close_1"
+        };
+        public static readonly int[] GreetCloseDays = { 0, 0, 0, SocialDateRules.GreetWeekDays, SocialDateRules.GreetLongDays };
+        public static readonly string[] GreetLoveLines = { "reallife_social_greet_love_1", "reallife_social_greet_love_2", "reallife_social_greet_love_4", "reallife_social_greet_love_3" };
+        public static readonly int[] GreetLoveDays = { 0, 0, 0, SocialDateRules.GreetDays };
+
+        /// <summary>The close friends' and family's greetings, one pool for each <see cref="GreetSpan"/>: a line is in the pools whose days reach what it needs.</summary>
+        public static readonly string[][] GreetClose = BySpan(GreetCloseLines, GreetCloseDays);
+
+        /// <summary>The partner's greetings, one pool for each <see cref="GreetSpan"/>.</summary>
+        public static readonly string[][] GreetLove = BySpan(GreetLoveLines, GreetLoveDays);
+
+        private static string[][] BySpan(string[] lines, int[] needs)
+        {
+            var pools = new string[Enum.GetValues(typeof(GreetSpan)).Length][];
+            for (int span = 0; span < pools.Length; span++)
+            {
+                int days = SocialDateRules.SpanDays((GreetSpan)span), count = 0;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    count += needs[i] <= days ? 1 : 0;
+                }
+                pools[span] = new string[count];
+                count = 0;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (needs[i] <= days)
+                    {
+                        pools[span][count++] = lines[i];
+                    }
+                }
+            }
+            return pools;
+        }
         public static readonly string[] GreetLate = { "reallife_social_greet_late_1", "reallife_social_greet_late_2", "reallife_social_greet_late_3" };
         public static readonly string[] GreetLateEasy = { "reallife_social_greet_late_easy_1", "reallife_social_greet_late_easy_2" };
         public static readonly string[] TheyAreLate = { "reallife_social_they_late_1", "reallife_social_they_late_2", "reallife_social_they_late_3" };

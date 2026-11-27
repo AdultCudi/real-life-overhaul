@@ -259,6 +259,25 @@ namespace RealLifeOverhaul.Tech
             a.Misuse.Add(new MisuseLine { Day = day, Cents = cents, Burning = burning, Routine = routine, Key = key ?? string.Empty, Name = name });
         }
 
+        /// <summary>Whether money is counted as taken that the player can put back: the one test of both interfaces' Put cash back button, and what the listing blocks on.</summary>
+        public static bool OwedBack(Cap c) => Has(c) && c.Acc.Taken > 0;
+
+        /// <summary>
+        /// A ladder step left standing with nothing counted as taken (a save made before putting everything back cleared it, or a removal that was paid up after):
+        /// the ladder only moves on while something is taken, so such a step would block a listing and the board's votes for good. Cleared; true if it was.
+        /// </summary>
+        public static bool Settle(Cap c)
+        {
+            FirmAccount a = c.Acc;
+            if (!a.Open || a.Wound || a.Taken > 0 || (a.Step == StepNone && !a.Stonewalled))
+            {
+                return false;
+            }
+            a.Step = StepNone;
+            a.Stonewalled = false;
+            return true;
+        }
+
         /// <summary>The player puts free cash back: counted against what was taken, oldest first. Returns the cents put back.</summary>
         public static long Repay(Cap c, long free, long want, int day)
         {
@@ -286,7 +305,7 @@ namespace RealLifeOverhaul.Tech
                 a.Taken = 0;
                 a.Misuse.Clear();
                 a.Stonewalled = false;
-                a.Step = a.Step >= StepRemoved ? a.Step : StepNone;
+                a.Step = StepNone;   // nothing is owed, so nothing can stand: only a Taken above 0 ever moves the ladder on
             }
             a.Calm = day + MoneyCatalogue.PackDays;
             a.Event = day;
@@ -427,6 +446,9 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>The mod's figure for a unit of work between the player's businesses: so many days of what the stage burns. Priced fair at this.</summary>
         public static long Fair(Cap c) => VentureCatalogue.BurnByStage[Math.Max(0, Math.Min(VentureCatalogue.BurnByStage.Length - 1, c.Stage))] * MoneyCatalogue.RelatedDays;
+
+        /// <summary>The price of a deal at a tier (0 the fair price, 1 half again, 2 double): the one figure both interfaces show and the deal pays.</summary>
+        public static long TierPrice(long fair, int tier) => fair * (tier <= 0 ? 1000 : tier == 1 ? 1500 : 2000) / 1000;
 
         /// <summary>
         /// A deal with another business of the player's, paid by the firm. What is paid over the fair price is counted as taken; the firm's

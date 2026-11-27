@@ -38,6 +38,8 @@ namespace RealLifeOverhaul
         private bool _onFootSaid;
         private int _paid;
         private float _lateBy;                  // game minutes
+        private float _playerAt = -1f;          // the game minute the player first stood at the place or by whoever waits there; negative: not yet
+        private float _partnerAt = -1f;         // the game minute whoever waits was put out or began to walk in; negative: not yet
         private bool _heldWarned;
         private string _heldLine;
         private SceneBreak _cut;

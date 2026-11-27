@@ -656,6 +656,60 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
+        /// <summary>The words of the question put before a data centre is closed, with what the closing comes to: false when the centre is not one of the player's.</summary>
+        internal bool CloseAsk(string place, out string title, out string body)
+        {
+            title = body = string.Empty;
+            DataCentre d = CentreOf(place);
+            if (d == null || _infra == null || Save == null)
+            {
+                return false;
+            }
+            CentreClose q = InfraClose.Quote(_infra, d, Save.Day, InfraGame.SellingMillis());
+            title = TechText.Fill("reallife_infra_close_title", "name", d.Name);
+            body = TechText.Fill("reallife_infra_close_body", "name", d.Name, "racks", q.Racks.ToString(), "salvage", TechText.Cents(Level(q.Salvage)), "contracts", q.Contracts.ToString(),
+                "penalty", TechText.Cents(Level(q.Penalty)), "staff", d.Technicians.ToString());
+            if (_infra.Cloud.Open && _infra.Centres.Count == 1)
+            {
+                body += " " + TechText.T("reallife_infra_close_cloud", "cloud", _infra.Cloud.Name);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// A data centre closed: its racks sold back at the game's selling multiplier on their value in the books, its colocation contracts ended with their clients paid for the early end,
+        /// its leased line cancelled, and the centre struck off, so its power, water, upkeep and crews are no longer booked. The warehouse stays the player's as the game has it, and so do
+        /// the people on its payroll. False, with the reason said, when the cash cannot pay the clients.
+        /// </summary>
+        internal bool CloseCentre(string place)
+        {
+            DataCentre d = CentreOf(place);
+            BuildingRegistration reg = TalentGame.Find(place);
+            if (d == null || reg == null || _infra == null || Save == null)
+            {
+                return false;
+            }
+            CentreClose q = InfraClose.Quote(_infra, d, Save.Day, InfraGame.SellingMillis());
+            long salvage = Level(q.Salvage), penalty = Level(q.Penalty);
+            if (VentureGame.Cash + salvage < penalty)
+            {
+                Notifications.ShowInsufficientMoney();
+                return false;
+            }
+            string name = d.Name;
+            VentureGame.Give(salvage, InfraGame.SaleKey, name, reg);
+            InfraGame.Pay(penalty, InfraGame.EndedKey, reg, name, true);
+            int ended = InfraClose.End(_infra, d);
+            TechBridges.DropLine?.Invoke(reg);
+            ReadInfra();
+            ChangedTech();
+            TellTech(NotificationType.Info, "reallife_infra_note_closed", Data("name", name, "salvage", TechText.Cents(salvage), "contracts", ended.ToString(), "penalty", TechText.Cents(penalty)),
+                TabInfra, null);
+            Logger?.Info("Tech: the data centre " + name + " was closed: " + q.Racks + " rack(s) sold back for " + salvage + ", " + ended + " colocation contract(s) ended with " + penalty
+                         + " paid to their clients; the warehouse is the player's as before.");
+            return true;
+        }
+
         /// <summary>
         /// What a page or notice says of the leased lines the Utilities app sells (the way past a full connection): pairs for <see cref="TechText.Fill"/> of the smallest and
         /// largest step's size, the racks each carries and its month's price, and the days the smallest takes to install where fibre runs. Null while the utilities have none to sell.

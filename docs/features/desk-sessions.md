@@ -26,6 +26,10 @@ Tech/People/MeetingRules         the weekly team meeting's rules
 Wiring/Wiring.SessionLinks       the meeting as the first kind; the managers; the meeting's week read by the firms' work and the people's day
 ```
 
+## Finding the desk
+
+The owner's desk is the first computer workstation with a chair that nobody is on the rota at, by the layout's ids; it is found when the player is inside the office. The notice that a session waits names the office's address, and a tech firm's page (the Tech app, both interfaces, and the firm page of the kit) always has **Go to the desk** while sessions are held there, with a line under At your desk saying which desk is meant. The button sets the office as the destination, the same way the My job page's does for an employer, and the game's marker is on the desk once the player is inside and a session is due (`SectorViews.Firm`, `SessionGame.AddressOf`).
+
 ## A kind of session
 
 A feature makes a `SessionDef` and adds it to `SessionRegistry` in its wiring:

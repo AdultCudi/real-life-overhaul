@@ -99,11 +99,7 @@ internal static partial class Program
         Check(ReportedRepair.Fresh(20, 20, 7) && ReportedRepair.Fresh(20, 27, 7) && !ReportedRepair.Fresh(20, 28, 7) && !ReportedRepair.Fresh(0, 5, 7) && !ReportedRepair.Fresh(20, 19, 7),
             "police report: a car's report is good for the report's days and not before it was handed over");
 
-        string all = string.Empty;
-        foreach (string file in System.IO.Directory.GetFiles(DesignScripts, "*.cs", System.IO.SearchOption.AllDirectories))
-        {
-            all += System.IO.File.ReadAllText(file);
-        }
+        string all = JoinedText(System.IO.Directory.GetFiles(DesignScripts, "*.cs", System.IO.SearchOption.AllDirectories), string.Empty);
         Check(Occurs(all, "Law.Bridges.PoliceReport =") >= 2 && all.Contains("Law.Bridges.PoliceReport = Handed;"), "police report: the bridge the desk calls is set, and put back");
         string links = ModSource(@"Wiring\Wiring.ReportLinks.cs");
         Check(links.Contains("CompanyDirector.Instance?.PoliceReport(Law.Bridges.ReportDays)") && links.Contains("CarGarage.Reported("),

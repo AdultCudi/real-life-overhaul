@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
                 TechBridges.Mbps = Mbps;
                 TechBridges.PlanMbps = reg => UtilityLinks.Speed(reg, -1, false);
                 TechBridges.LineMbps = LineMbps;
+                TechBridges.DropLine = DropLine;
                 TechBridges.LineStep = which =>
                 {
                     int s = which <= 0 ? 0 : Utilities.LeasedLineCatalogue.Steps - 1;
@@ -305,6 +306,23 @@ namespace RealLifeOverhaul
                 {
                     Fault("TechLinks.LineMbps", e);
                     return 0;
+                }
+            }
+
+            // A hall that closes keeps no leased line: the utilities cancel it as the player's own button does, the month so far staying billed.
+            private static void DropLine(BuildingRegistration reg)
+            {
+                try
+                {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    if (d != null && d.State != null && Settings.Utilities && reg != null)
+                    {
+                        d.DropLineAt(reg);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.DropLine", e);
                 }
             }
 

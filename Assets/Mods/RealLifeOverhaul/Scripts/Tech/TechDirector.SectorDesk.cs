@@ -502,6 +502,7 @@ namespace RealLifeOverhaul.Tech
                 ProductsAll = FirmsRules.LiveCount(_firmsFile, null), Products = FirmsRules.LiveCount(_firmsFile, place)
             };
             s.Team = TeamAt(place);
+            s.Address = FirmsGame.Where(place, out string street, out int number, out _) ? FirmsGame.AddressWords(street, number) : string.Empty;
             for (int i = 0; i < _firmsFile.Products.Count; i++)
             {
                 Product p = _firmsFile.Products[i];
@@ -632,6 +633,18 @@ namespace RealLifeOverhaul.Tech
                     Key = "reallife_tech_mkt_product_niche_off", Tone = ViewTone.Warn,
                     Pairs = new[] { "niche", TechText.T(NicheCatalogue.NameKey(founded.Niche)), "who", TechText.SegmentName(p.S) }
                 });
+            }
+            if (firm != null && p.Stage < 2 && p.Put >= 0)
+            {
+                section.Lines.Insert(0, SectorViews.Points(p.Put, firm.Crew.Engineering, firm.Contracted, fmt));
+            }
+            if (p.K == ProductKind.Licence && p.Stage < 2)
+            {
+                long former = SectorRules.Former(_firmsFile, p, Save.Day, _sector.YearDays);
+                if (former > 0)
+                {
+                    section.Lines.Add(SectorViews.Former(former, fmt));
+                }
             }
             return section;
         }

@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Tech
                     .Add(g.Reported).Add(g.Asks).Add(g.Project).Add(g.ProjectArg).Add(g.ProjectDone).Add(g.ProjectWork).Add(g.Updates).Add(g.AddOns).Add(g.AddOnSold)
                     .Add(g.AddOnWindow).Add(g.AddOnStart).Add(g.Localised).Add(g.DrmRemoved).Add(g.Advance).Add(g.Royalties).Add(g.Fans).Add(g.Burnt).Add(g.Award)
                     .Add(g.RoyaltyGross)
-                    .Add(g.Bonus).Add(g.Leads).Add(g.BonusDone).Add(g.LeadsPaid).Add(g.LastLeadsPay).Add(g.SalesLast).Add(SalesText(g)).Add(ReviewsText(g));
+                    .Add(g.Bonus).Add(g.Leads).Add(g.BonusDone).Add(g.LeadsPaid).Add(g.LastLeadsPay).Add(g.SalesLast).Add(SalesText(g)).Add(ReviewsText(g)).Add(g.Daily);
             }
             w.Part('d');
             foreach (GameDraft d in f.Drafts)
@@ -282,6 +282,7 @@ namespace RealLifeOverhaul.Tech
                 g.SalesLast = x.Int(-1);
                 ReadSales(g, x.Text());
                 ReadReviews(g, x.Text());
+                g.Daily = Math.Max(0L, x.Long());   // appended after them: a game of an older save says nothing of its month until its next day
                 if (f.Games.Count < StudioCatalogue.GamesStored)
                 {
                     f.Games.Add(g);

@@ -34,6 +34,8 @@ internal static partial class Program
         SectorSims(print);
         SectorTimings();
         SectorTexts();
+        FirmDeskFixChecks();
+        FirmCloseChecks();
         Console.WriteLine("  Tech firms' markets: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 

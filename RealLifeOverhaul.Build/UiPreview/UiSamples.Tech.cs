@@ -795,7 +795,7 @@ internal static partial class UiSamples
             .Row(TW(t, "books_wallet", "Your wallet"), "$1,280,000")
             .Say(WF(t, "reallife_vc_acct_taken", "Counted as taken: $360,000. Latest: Speedy Bites running costs, day 214. Putting cash back clears it.", "taken", "$360,000", "what", "Speedy Bites running costs", "day", "214"), UiRole.WarnText)
             .Say(WF(t, "reallife_vc_acct_pack", "Board pack: burning $4,200 a day, 61 days of runway, revenue $41,000 a month against a target of $60,000. Next pack on day 241.", "burn", "$4,200", "runway", "61", "revenue", "$41,000", "target", "$60,000", "day", "241"))
-            .Say(WF(t, "reallife_vc_acct_related", "Deals with your other businesses: 2, $8,000 paid, of which $0 over the fair price and counted as taken.", "count", "2", "paid", "$8,000", "over", "$0"))
+            .Say(WF(t, "reallife_vc_acct_related", "Deals with your other businesses: 2, $8,000 paid, of which $0 over the fair price (that part was counted as taken when it was paid).", "count", "2", "paid", "$8,000", "over", "$0"))
             .Say(WF(t, "reallife_vc_acct_salary", "Salary this month $9,000 of the $14,000 the board allows.", "drawn", "$9,000", "band", "$14,000"))
             .Say(WF(t, "reallife_vc_acct_loan_free", "A founder's loan of up to $100,000 can be taken once, repaid within 180 days with interest.", "max", "$100,000", "days", "180"))
             .Say(asked ? W(t, "reallife_vc_mood_2", "The board is asking about the books.") : W(t, "reallife_vc_mood_1", "The board is a little uneasy about the books."), asked ? UiRole.WarnText : UiRole.None);

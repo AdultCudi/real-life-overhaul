@@ -23,6 +23,7 @@ internal static partial class Program
         SendNowCap();
         StockSent();
         LogisticsTexts();
+        LogisticsPage();
     }
 
     // BizMan's Send now, once a game day for each route: a second send on the day is refused, the next day is allowed, a route
@@ -59,7 +60,9 @@ internal static partial class Program
         Check(managers.Contains("Disabled = today || !CanSend(route)") && managers.Contains("\"reallife_ui_bizops_sent_today\"")
               && MemberText(managers, "private bool SendNow()").Contains("SentToday(route)") && MemberText(managers, "private void Sent(string id)").Contains("SentToday(route)")
               && MemberText(managers, "private void Sent(string id)").Contains("Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay)")
-              && MemberText(trips, "private bool SendTrips(LogisticsManagerPlan route)").Contains("Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay)")
+              && MemberText(trips, "private bool SendTrips(LogisticsManagerPlan route)").Contains("SendNowOnce(id)")
+              && MemberText(ModSource(@"Economy\Logistics\LogisticsDirector.Trips.cs"), "public int SendNowOnce(string id)").Contains("SendNowLimit.Allowed(id, LogisticsGame.Day)")
+              && MemberText(ModSource(@"Economy\Logistics\LogisticsDirector.Trips.cs"), "public int SendNowOnce(string id)").Contains("SendNowLimit.Sent(id, LogisticsGame.Day)")
               && !managers.Contains("RunMainGameTick"),
             "send now: both ways of sending, the game's run and the trips, refuse a route sent today and use the day only when something went out; the 02:00 run is not touched");
         Check(ModSource(@"Core\ModState.cs").Contains("Economy.SendNowLimit.ReadSave(data);") && ModSource(@"Core\ModState.cs").Contains("Economy.SendNowLimit.WriteSave(data, TimeHelper.CurrentDay);")

@@ -29,6 +29,8 @@ internal static partial class Program
         MoneyGoingPublic();
         MoneyCost();
         MoneyWiring();
+        FirmMoneyFixChecks();
+        FirmAccountCountsChecks();
     }
 
     private static Cap FundedCap(int vc = 6, long amount = Raise, int day = 10)
@@ -437,9 +439,10 @@ internal static partial class Program
     {
         string money = ModSource(@"Tech\TechDirector.Money.cs");
         string hook = MemberText(money, "private void OnMoneyEvent(string gameEvent)");
-        int compare = hook.IndexOf("gameEvent != MoneyChange", StringComparison.Ordinal), wall = hook.IndexOf("wallet >= _floorNow", StringComparison.Ordinal), look = hook.IndexOf("LastTransaction(save)", StringComparison.Ordinal);
-        Check(hook.Length > 0 && compare >= 0 && wall > compare && look > wall && hook.IndexOf("now >= was", StringComparison.Ordinal) < look && hook.Contains("MoneyCatalogue.ScansPerDay"),
-            "startup money: the floor is checked only when money moves, the transactions are looked at only when the wallet falls under it, at most " + MoneyCatalogue.ScansPerDay + " times a day");
+        int compare = hook.IndexOf("gameEvent != MoneyChange", StringComparison.Ordinal), wall = hook.IndexOf("bool under = wallet < _floorNow", StringComparison.Ordinal), look = hook.IndexOf("LastTransaction(save)", StringComparison.Ordinal);
+        Check(hook.Length > 0 && compare >= 0 && wall > compare && look > wall && hook.IndexOf("now >= was", StringComparison.Ordinal) < look && hook.IndexOf("drop < Level(MoneyCatalogue.NoiseCents)", StringComparison.Ordinal) < look
+              && hook.Contains("MoneyCatalogue.ScansPerDay"),
+            "startup money: the floor is checked only when money moves, the transactions are looked at only when a firm account is open and the wallet fell by more than the noise sum, at most " + MoneyCatalogue.ScansPerDay + " times a day for each of the floor and the firm's own purchases");
         Check(!Regex.IsMatch(money, @"\b(Update|LateUpdate|FixedUpdate|OnGUI|StartCoroutine)\(") && Occurs(ModSource(@"Tech\TechDirector.cs"), "KeepMoney()") == 1,
             "startup money: nothing per frame, the hook is kept attached once a second with a reference compare");
         var caps = new List<Cap> { FundedCap(6), FundedCap(2), FundedCap(1), FundedCap(0) };

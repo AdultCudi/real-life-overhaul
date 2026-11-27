@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Ui
             Face("Ventures", "Investors, offers and holdings", "ventures", "Economy/Ventures/"),
             Row("Ventures", "Investors tab, Meet an investor", "the investor's pitch meeting", AuditWindow.Scene, Scenes, "Economy/Ventures/"),
             Row("Ventures", "Accept, refuse, counter", "a yes or no box", AuditWindow.Question, Question, "Economy/Ventures/"),
+            Row("BizMan logistics", "The route's Departures and Send now on the game's own page", "the list window", AuditWindow.Picker, Picker, "Economy/Logistics/"),
+            Row("BizMan logistics", "Send now", "a yes or no box", AuditWindow.Question, Question, "Economy/Logistics/"),
             Face("Brands", "Brands, Deals and Shops tabs", "brands", "Economy/Brands/"),
             Row("Brands", "End a brand, a deal or a shop", "a yes or no box", AuditWindow.Question, Question, "Economy/Brands/"),
             Row("Brands", "Brands, Deals and Shops: end, sell, rename", "the mod's question", AuditWindow.ModBox, ModBox, "Economy/Brands/"),

@@ -331,7 +331,7 @@ namespace RealLifeOverhaul.Tech
             {
                 market = NicheView(firm, p, market, day, SectorRules.Attraction(appeal, aware), ref appeal, ref aware, ref selling);   // a founded firm sells into its niche
             }
-            ProductDay r = SectorRules.SellDay(_firmsFile, file, p, selling, c.Support, day, market, appeal, aware, hostingRate);
+            ProductDay r = SectorRules.SellDay(_firmsFile, file, p, selling, c.Support, day, market, appeal, aware, hostingRate, SectorRules.Former(_firmsFile, p, day, _sector.YearDays));
             p.Last = r;   // yesterday's won and lost, by cause, for the product's page
             p.LastDay = day;
             if (_founding != null)

@@ -43,11 +43,13 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Nudge(nowMinutes);
             Vector3 player = D.PlayerPosition;
+            float atSpot = JobSpots.Flat(player, _spot);
+            NotePlayer(nowMinutes, _friend != null ? Mathf.Min(atSpot, JobSpots.Flat(_friend.Position, player)) : atSpot);
+            Nudge(nowMinutes);
             if (_friend == null)
             {
-                if (JobSpots.Flat(player, _spot) > Appear || now < _nextTry)
+                if (atSpot > Appear || now < _nextTry)
                 {
                     return;
                 }
@@ -119,9 +121,9 @@ namespace RealLifeOverhaul
                 if (Prompt == null)
                 {
                     Offer(SocialLife.Say("reallife_social_hello_prompt", SocialLife.Data(_who)), "reallife_social_button_hello", _friend);
-                    if (!_test && !(_early && _arrives - _time > 8f))
+                    if (!_test && !SocialDateRules.KeptWaiting(_playerAt, _partnerAt))
                     {
-                        SocialLinks.GuessGreeting?.Invoke(_who, _kind, _venue.Name, Mathf.RoundToInt(_lateBy));
+                        SocialLinks.GuessGreeting?.Invoke(_who, _kind, _venue.Name, Mathf.RoundToInt(SocialDateRules.LateBy(SocialLife.Now, _time, _playerAt)));
                     }
                 }
             }
@@ -145,14 +147,40 @@ namespace RealLifeOverhaul
                 {
                     SocialLife.Toast(NotificationType.Warning, "reallife_social_test_expired", null, 6f);
                 }
-                else
+                else if (SocialDateRules.StoodUpByPlayer(_time, _playerAt, _partnerAt))
                 {
                     SocialLife.StoodUp();
+                }
+                else
+                {
+                    // The player was at the place in time and nobody came: they are not the one who stood anybody up.
+                    SocialDirector.Logger?.Info("Social: " + _who.Name + " never appeared at " + _venue.Name + " although the player was there in time; nobody is stood up.");
+                    Say(_who, "reallife_social_plan_lost", null, NotificationType.Warning);
+                    ClearPlan();
                 }
                 Abandon(now);
                 return true;
             }
             return false;
+        }
+
+        // The minute the player first stands at the place or by whoever waits there. Lateness is judged on it and not on when the other
+        // turned up or the hello was said: a partner who came late, or took a while to be put out, never makes the player late.
+        private void NotePlayer(float nowMinutes, float nearest)
+        {
+            if (_playerAt < 0f && nearest < WaveWithin)
+            {
+                _playerAt = nowMinutes;
+            }
+        }
+
+        // Whoever waits is out, or walking in: the first time only.
+        private void PartnerPlaced()
+        {
+            if (_partnerAt < 0f)
+            {
+                _partnerAt = SocialLife.Now;
+            }
         }
 
         private void ShowEarly()
@@ -167,7 +195,7 @@ namespace RealLifeOverhaul
         // The one warning before being stood up: sent whatever the day's cap on texts.
         private void Nudge(float nowMinutes)
         {
-            if (_nudged || _test || _greeted || nowMinutes < Mathf.Max(_time + SocialRules.LateMinutes, _arrives + 10f))
+            if (_nudged || _test || _greeted || _playerAt >= 0f || nowMinutes < Mathf.Max(_time + SocialRules.LateMinutes, _arrives + 10f))
             {
                 return;
             }
@@ -232,6 +260,7 @@ namespace RealLifeOverhaul
                 if (_friend != null && SocialCast.Walk(_friend, _spot, out float length, out bool whole) && whole && length <= WalkMost * 1.3f && _friend.WalkTo(_spot))
                 {
                     _walkingIn = true;
+                    PartnerPlaced();
                     _walkTries = 0;
                     _stepFrom = now;
                     _walkUntil = now + WalkSeconds;
@@ -259,6 +288,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _walkingIn = false;
+            PartnerPlaced();
             WaitingPose();
             MarkPerson(_friend, _first);
             Line = SocialLife.T(Rides ? "reallife_social_obj_meet_car" : "reallife_social_obj_there", SocialLife.Data(_who, "place", _venue.Name));
@@ -522,7 +552,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _greeted = true;
-            _lateBy = SocialLife.Now - _time;
+            _lateBy = SocialDateRules.LateBy(SocialLife.Now, _time, _playerAt);
             ClearPlan();
             SocialLife.Contacted(_who);
             if (_test)
@@ -547,12 +577,14 @@ namespace RealLifeOverhaul
             {
                 return SocialLines.Pick(_who.Has(SocialTrait.Late) ? SocialCatalogue.GreetLateEasy : SocialCatalogue.GreetLate);
             }
-            if (_early && _arrives - _time > 8f)
+            if (SocialDateRules.KeptWaiting(_playerAt, _partnerAt))
             {
                 return SocialLines.Pick(SocialCatalogue.TheyAreLate);
             }
-            return SocialLines.Pick(_who.Together ? SocialCatalogue.GreetLove
-                : _who.Stage >= SocialStage.CloseFriend || _who.IsFamily ? SocialCatalogue.GreetClose
+            // What the greeting says of time apart has to fit the days since they last met (SocialCatalogue.GreetClose).
+            GreetSpan span = SocialDateRules.GreetSpanOf(SocialLife.Day, _who.LastOutingDay, _who.MetDay);
+            return SocialLines.Pick(_who.Together ? SocialCatalogue.GreetLove[(int)span]
+                : _who.Stage >= SocialStage.CloseFriend || _who.IsFamily ? SocialCatalogue.GreetClose[(int)span]
                 : _who.Stage == SocialStage.Friend ? SocialCatalogue.GreetFriend
                 : SocialCatalogue.GreetAcquaintance);
         }

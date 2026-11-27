@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _text = new StringBuilder(256);
         private readonly GuideMark _officeMark = new GuideMark("the career's office");   // the game's destination marker, for "Show me the office"
         private float _officeUntil;       // unscaled time the mark comes off; 0 while it is not up
+        private int _officeMoves;         // the boards' moves when the mark went up: a board that has moved since is not where the mark stands
         private int _officeBoard = -1;    // the board the mark is on, or -1 for a works site or the practice (the building trades have none)
         private Vector3 _officeAt;        // where the mark stands
         private float _officeReach;       // metres from it within which it comes off (CareerOfficeRules.MarkReach)
@@ -197,6 +198,7 @@ namespace RealLifeOverhaul
             if (shown)
             {
                 _officeBoard = DepotOf(employer);
+                _officeMoves = _director.HelpBoards != null ? _director.HelpBoards.Moves : 0;
                 _officeAt = place;
                 _officeReach = CareerOfficeRules.MarkReach(WhereOf(employer));
                 _officeUntil = Time.unscaledTime + OfficeSeconds;
@@ -217,7 +219,8 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (CareerOfficeRules.MarkOff(Time.unscaledTime, _officeUntil, CareerOfficeRules.BoardGone(_officeBoard, boards.Count), FlatSqr(_officeAt - player), _officeReach))
+            bool boardGone = CareerOfficeRules.BoardGone(_officeBoard, boards.Count) || (_officeBoard >= 0 && boards.Moves != _officeMoves);
+            if (CareerOfficeRules.MarkOff(Time.unscaledTime, _officeUntil, boardGone, FlatSqr(_officeAt - player), _officeReach))
             {
                 HideOffice();
             }
@@ -275,7 +278,7 @@ namespace RealLifeOverhaul
                 {
                     for (int b = 0; b < count; b++)
                     {
-                        if (!taken[b] && boards.Kind(b) != null && boards.Kind(b).IndexOf(all[e].Premises[p], StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (!taken[b] && BoardHomeRules.Matches(boards.Kind(b), all[e].Premises[p]))
                         {
                             _depot[e] = b;
                             taken[b] = true;

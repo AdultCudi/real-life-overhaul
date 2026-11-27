@@ -546,6 +546,10 @@ namespace RealLifeOverhaul.Tech
             }
             Line(s, g.M == GameModel.FreeToPlay ? P + "sales_players" : g.M == GameModel.Subscription ? P + "sales_subscribers" : P + "sales_copies", ViewTone.Plain,
                 "sold", fmt.Whole(g.Sold), "subs", fmt.Whole(g.Subscribers), "gross", fmt.Money(g.Gross), "net", fmt.Money(g.Net));
+            if (g.M == GameModel.Subscription && g.Daily > 0)
+            {
+                Line(s, P + "sales_month", ViewTone.Good, "month", fmt.Money(g.Daily * FirmsCatalogue.MonthDays), "subs", fmt.Whole(g.Subscribers));
+            }
             Line(s, P + "sales_return", g.Net >= g.Spent ? ViewTone.Good : ViewTone.Plain, "spent", fmt.Money(g.Spent), "return", fmt.Mille(StudioRules.ReturnOf(g)));
             if (g.Pirated > 0 || g.Drm)
             {

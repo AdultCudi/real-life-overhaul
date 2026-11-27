@@ -422,6 +422,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialState.cs" Link="Mod\SocialState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialCatalogue.cs" Link="Mod\SocialCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowRules.cs" Link="Mod\SocialFollowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialDateRules.cs" Link="Mod\SocialDateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowCatalogue.cs" Link="Mod\SocialFollowCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.TextsMemoryFacts.cs" Link="Mod\Wiring.TextsMemoryFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventCatalogue*.cs" Link="Mod\%(Filename)%(Extension)" />
@@ -833,6 +834,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraClose.cs" Link="Mod\InfraClose.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\TrainingViews.cs" Link="Mod\TrainingViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPlace.cs" Link="Mod\Staffing\StaffPlace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffEffects.cs" Link="Mod\Staffing\StaffEffects.cs" />
@@ -1449,6 +1451,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeText.cs" Link="Mod\LifeText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerOfficeRules.cs" Link="Mod\CareerOfficeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\BoardHomeRules.cs" Link="Mod\BoardHomeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobGateRules.cs" Link="Mod\JobGateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeCatalogue.cs" Link="Mod\TradeCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeRules.cs" Link="Mod\TradeRules.cs" />

@@ -10,7 +10,7 @@ internal static partial class Program
         string search = MemberText(boards, "private void Search()");
         Check(search.Contains("_candidates") && search.Contains("Spares") && search.Contains("Tries") && !search.Contains("|| !Place(building, kind)"),
             "board places: which building stands for a kind is settled by the city's list, and a clear pavement on one second is not what decides it");
-        Check(search.Contains("++_tries >= Tries") && search.Contains("_spare++") && search.Contains("if (Place(list[_spare], kind))"),
+        Check(search.Contains("++_tries >= Tries") && search.Contains("_spare++") && search.Contains("if (Place(list[_spare], kind, _spare))"),
             "board places: the first building of a kind is asked again before the next of its kind is used");
         Check(search.Contains("string kind = _order[_head];") && boards.Contains("private readonly List<string> _order"),
             "board places: boards are put up in the order the city's list first shows their kinds, so an employer's board index is the same every load");
@@ -40,6 +40,7 @@ internal static partial class Program
             "parked bicycle: nobody is thrown down in the seconds after the player gets on a two-wheeler");
 
         BoardLateChecks();
+        BoardHomeChecks();
         BoardGateChecks();
         BoardParkingChecks();
     }
@@ -54,9 +55,9 @@ internal static partial class Program
         string retry = MemberText(boards, "private void Retry(Vector3 player)");
         Check(search.Contains("_late.Add(kind);") && !search.Contains("no building of this kind can hold a board: it has none"),
             "late board: a kind that every one of its buildings failed is kept to be asked again, not dropped for the session");
-        Check(tick.Contains("else if (_late.Count > 0 && _boards.Count < Most)") && tick.Contains("Retry(player);"),
+        Check(tick.Contains("if (_late.Count > 0 && _boards.Count < Most)") && tick.Contains("Retry(player);"),
             "late board: the ask is made from the one-second tick while the player is on foot, never per frame");
-        Check(retry.Contains("now < _retryAt") && retry.Contains("RetryReach") && retry.Contains("Place(building, name)") && retry.Contains("_late.RemoveAt(kind);"),
+        Check(retry.Contains("now < _retryAt") && retry.Contains("RetryReach") && retry.Contains("Place(building, name, at)") && retry.Contains("_late.RemoveAt(kind);"),
             "late board: one ask in RetryEvery seconds, only at a building near the player, and a board that is up leaves the list");
         string director = ModSource(@"Jobs\CareerDirector.cs");
         Check(MemberText(director, "public void Slow(Vector3 player, bool onFoot, bool jobOn)").Contains("boards.Count > _mappedBoards") && director.Contains("CareerOfficeRules.Extend(premises, kinds, _mappedBoards, _depot);"),

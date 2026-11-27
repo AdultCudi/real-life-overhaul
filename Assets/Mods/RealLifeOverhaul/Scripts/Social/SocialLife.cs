@@ -45,6 +45,13 @@ namespace RealLifeOverhaul
         /// <summary>RLO Texts: true when it holds a text for the model's words, to send it itself through the last argument.</summary>
         public static Func<SocialPerson, string, Dictionary<string, string>, Action<string, Dictionary<string, string>>, bool> HoldText;
 
+        /// <summary>
+        /// Leisure's sights: how many are known (none before they are found, or with Leisure off), and whether a point is at a pleasant one.
+        /// Null without Leisure: a walk is then set anywhere.
+        /// </summary>
+        public static Func<int> SightCount;
+        public static Func<Vector3, bool> NearSight;
+
         /// <summary>RLO Texts: the player walks up to somebody they meet (who, the outing, the place, minutes late).</summary>
         public static Action<SocialPerson, PlanKind, string, int> GuessGreeting;
 

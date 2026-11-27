@@ -203,7 +203,8 @@ A warm answer +1.5 affection, a curt one -2.
 An outing +6 to +8 familiarity, affection by how much it is their kind of thing (0.7 to 1.4), +2 to +5 trust; on time +2 trust.
 
 Over 20 game minutes late -3 trust, -2 affection (twice that for somebody punctual, nothing for somebody who runs late themselves).
-Not turning up within 75 minutes -12 trust, -10 affection and a text.
+Late is counted from the game minute the player first stood at the place or within 11 m of whoever waits there (`OutingScene.NotePlayer`, `SocialDateRules.LateBy`), never from the hello or from when the other turned up: somebody who arrives after the player, by their own time or because they took long to be put out, never makes the player late, and the player who has been there is not sent the "where are you" text.
+Not turning up within 75 minutes -12 trust, -10 affection and a text; when the player was at the place in time and the other never appeared, nobody is stood up and the plan is off with "could not make it" (`SocialDateRules.StoodUpByPlayer`).
 Calling a plan off -1 / -1, at under an hour's notice -4 / -3.
 A favour done +8 trust, +4 affection.
 A birthday remembered +8 affection, +3 trust, forgotten -4.
@@ -236,10 +237,13 @@ See  [Arriving, and what holds a scene up](#arriving-and-what-holds-a-scene-up).
 | the cinema | cinema, theater | 18 | 130 min, rested as in the game's own cinema seat (its `RestActivity`): through the skip no walking drain and the bench's recovery at the default multiplier (`OutingDef.SeatedRest`, `OutingScene.Rest`), given back when the skip ends, when the outing ends and when the feature faults | |
 | a workout | gym | 15 | 60 min, -14 energy | |
 | a look round your business | a business the player rents | | 30 min | friend |
-| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk); by one of the game's street benches the panel offers "Sit down", once a walk, and a rest counts as 40 m (Family,  [Sitting](family.md#sitting-peopleseatingcs-the-partner-at-home-a-bench-on-a-walk)) | |
+| a walk | outside any business, at a place near one of Leisure's sights (its parks, squares and waterfronts, through `SocialLinks.NearSight`) when there is one within reach, else anywhere | | 160 m walked with them beside the player, at the player's own pace (`SocialDateRules.PartnerPace`: the speed the game has set on the player's agent, kept between the game's walk and run figures, a little more behind them and the run when far behind; the game's walk, 1.2 m/s, is a third of the jog the player goes at); twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk); by one of the game's street benches the panel offers "Sit down", once a walk, and a rest counts as 40 m (Family,  [Sitting](family.md#sitting-peopleseatingcs-the-partner-at-home-a-bench-on-a-walk)) | |
 | a drive | outside any business | | 650 m driven with them in the back, then pull over | friend, a car |
 | a lift (favour) | from one address to another | | to the door they name; petrol money | |
 | helping them move (favour) | between two doors 22 to 75 m apart | | three boxes carried (`carry_box_hold`; the box is `moving_box` when the bundle has it, else `parcel_m`) | friend |
+
+The greeting line is chosen by the days since the last outing or, failing one, since they met (`SocialDateRules.GreetSpanOf`): "it's been too long" needs ten days, "so much to tell you" five, and the partner's "I missed you today" one; the other lines fit any gap, so two outings on one day never say either (`SocialCatalogue.GreetClose` and `GreetLove` hold a pool for each span).
+RLO Texts' own greeting is not given the days apart.
 
 Greeting: the greeting clips are made for two people facing 0.80 m apart.
 So on hello the player is held where they stand and whoever is met walks the last steps up to them (`CityPerson.StepTo`: to 0.80 m on the line between the two, the agent's own stopping distance allowed for; four and a half seconds at most), and both turn to each other.
@@ -288,7 +292,7 @@ The director asks once a tick what, if anything, has the player (`SceneBreak`, o
 | the game's standing objectives ("pay off your bank loans") | nothing: they are not missions (`currentPlayerMission` is only ever a delivery or food-delivery job) | nothing |
 | driving up | they wave at 11 m; "Park up and walk over" within 40 m (a drive or a lift: pull up beside them) | |
 | arriving early | "You are early. Mom will be here about 08:57"; she comes at her own time, walking in | |
-| arriving late | a text 20 game minutes after the time ("I'm outside Five Cups. Are you far?"), over 20 late costs trust, stood up at 75 with a text | |
+| arriving late | a text 20 game minutes after the time ("I'm outside Five Cups. Are you far?"; not once the player has been at the place), over 20 late costs trust, stood up at 75 with a text | |
 | rain | may make them cancel beforehand (by text; a walk more than the rest); once somebody is out the scene plays as it is | a walk goes on |
 | met a little way from the door (they had stopped short, or the player went to meet them) | hello is said there | they walk to the door from there (up to 30 s), or the walk starts there |
 
@@ -297,7 +301,7 @@ They wait outside a door the player went through for as long as they would have 
 
 Whenever they give up or are cut off the player is told ("Dana saw you were busy and went on their way").
 
-There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a fast food restaurant, and a walk is along the pavement wherever the player leads.
+There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a fast food restaurant, and a walk is along the pavement wherever the player leads, starting near one of Leisure's sights when the city has them.
 
 `OutingScene.Food` runs once, at the settlement behind its `_settled` guard, whether the company went well or badly: Home is told a meal was eaten, and fullness rises by the item's saturation unless the game already reads the player full. A called-off plan, an aborted scene and a closed restaurant give no food. Hunger is set directly, because the game's food-eaten event would record the meal a second time. The saved plan is cleared at greeting (`Arrived`) and the scene is not saved, so a load can't serve it twice. Coffee and drinks keep their own effects. With Developer diagnostics on, one `Social check (meal)` line gives the hunger before and after.
 
