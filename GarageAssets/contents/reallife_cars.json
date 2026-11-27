@@ -1,0 +1,20 @@
+{
+ "bundle": "reallife_cars",
+ "bytes": 895644,
+ "meshes": [
+  {"name": "haldenpip_body", "vertices": 1809, "triangles": 2304, "size": [2.098, 1.356, 3.900], "centre": [0.000, 0.875, 0.000]},
+  {"name": "haldenpip_collider", "vertices": 313, "triangles": 220, "size": [1.798, 1.356, 3.902], "centre": [0.000, 0.875, 0.000]},
+  {"name": "haldenpip_wheel_left", "vertices": 345, "triangles": 440, "size": [0.200, 0.600, 0.600], "centre": [0.000, 0.000, 0.000]},
+  {"name": "haldenpip_wheel_right", "vertices": 345, "triangles": 440, "size": [0.200, 0.600, 0.600], "centre": [0.000, 0.000, 0.000]}
+ ],
+ "textures": [
+  {"name": "haldenpip_d", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
+  {"name": "haldenpip_dirt", "width": 512, "height": 512, "format": "BC7", "mips": 10},
+  {"name": "haldenpip_dirtmask", "width": 256, "height": 256, "format": "BC7", "mips": 9},
+  {"name": "haldenpip_e", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldenpip_em", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldenpip_im", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldenpip_mask", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
+  {"name": "haldenpip_n", "width": 1024, "height": 1024, "format": "BC5", "mips": 11}
+ ]
+}
