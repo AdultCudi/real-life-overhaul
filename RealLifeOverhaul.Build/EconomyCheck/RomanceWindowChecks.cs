@@ -254,7 +254,7 @@ internal static partial class Program
         string person = ModSource(@"Social\PersonDialog.cs");
         int official = person.IndexOf("_actions.Add(\"official\");", StringComparison.Ordinal);
         string beforeOfficial = official > 200 ? person.Substring(official - 200, 200) : string.Empty;
-        Check(person.Contains("if (!_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && SocialLife.Romantic(_p))") && beforeOfficial.Contains("_p.Stage == SocialStage.Dating")
+        Check(person.Contains("if (LoveHooks.MayAskOut(_p))") && ModSource(@"Social\Love\LoveHooks.cs").Contains("return p != null && !p.Together && p.Stage >= SocialStage.Friend && CanDate && SocialLife.Romantic(p);") && beforeOfficial.Contains("_p.Stage == SocialStage.Dating")
               && !beforeOfficial.Contains("Romantic"),
             "romance window: only Ask them out reads the window, and only for somebody the player is not with; making it official asks the stage and the figures alone");
 

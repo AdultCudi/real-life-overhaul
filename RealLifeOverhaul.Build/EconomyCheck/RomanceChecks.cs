@@ -652,7 +652,7 @@ internal static partial class Program
         string tests = ModSource(@"Social\SocialDirector.Tests.cs"), life = ModSource(@"Social\SocialLife.cs");
         Check(person.Contains("SocialLife.Romantic(_p)") && person.Contains("SocialRules.WouldDate(_p, SocialLife.Romantic(_p))") && !person.Contains("_p.Compatible"),
             "romance: the phone offers Ask them out, and asking decides, by the one rule (SocialLife.Romantic), never by the roll alone");
-        Check(people.Contains("SocialLife.Romantic(p)") && people.Contains("reallife_social_people_romance"), "romance: a person's page in People says when they could be more than a friend");
+        Check(people.Contains("LoveHooks.MayAskOut(p)") && ModSource(@"Social\Love\LoveHooks.cs").Contains("SocialLife.Romantic(p)") && people.Contains("reallife_social_people_romance"), "romance: a person's page in People says when they could be more than a friend");
         Check(flare.Contains("Compatible = SocialRules.Romantic(p, interest, years,") && !flare.Contains("Compatible = p.Compatible"), "romance: Flare is told who the player could fall for by the one rule too");
         Check(tests.Contains("SocialLife.Romantic(p)") && !tests.Contains("p.Compatible"), "romance: the test that advances a relationship follows the one rule");
         Check(life.Contains("return Settings.FamilyInterest;") && life.Contains("ApplyWindow();") && life.Contains("TimeHelper.GetYearsByDays(data.ageInDays)")
