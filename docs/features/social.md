@@ -13,7 +13,10 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 | --- | --- |
 | `SocialModel` | the cast's records, the plan, what waits for an answer: game-free |
 | `SocialRules` | stages, what things are worth, neglect: game-free |
-| `RomanceRules` | who the player can fall for: the sex they are interested in, an age near their own: game-free |
+| `RomanceRules` | who the player can fall for: the sex they are interested in, an age inside the window the two age options set: game-free |
+| `SocialInterests`, `SocialFriendsRules`, `SocialFriendsStore` | what each person is into, hints, the quiz of meeting their friends and what it is worth, their save: game-free |
+| `SocialImpression` | first impressions: trust at a first meeting from the player's name: game-free |
+| `SocialHintGame`, `SceneQuiz`, `SocialCardText` | the hints in chats, texts and the People page; the quiz in the dialogue panel; the figures on a card |
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
@@ -146,7 +149,7 @@ One rule now judges everybody, every time it is asked (`SocialRules.Romantic`, g
 |---|---|
 | open to a romance | `SocialPerson.Compatible`: a roll made when they were dealt, or (a street figure) talked to; nothing else about them follows from it |
 | of a sex the player is interested in | the option **Who you are interested in** (Options, Friends and social life; `family_interest`, saved under the id it had as Family's option; anyone by default): `RomanceRules.SexFits`, a woman for "women", a man for "men", everybody for "anyone" |
-| near the player's age | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) no more than `RomanceRules.AgeGap` (8) years above or below the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it |
+| inside the player's age window | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) at most `RomanceRules.Younger` years under and `RomanceRules.Older` years over the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it. Both sides are 8 (`AgeGap`) unless the two options below move them |
 
 The gap is the one the city's own people pair up by (`Population/LifeRules.AgeGapMost`, which `RomanceRules.AgeGap` reads), so the player is held to what the city's couples keep.
 They pair only within it, and a few in a hundred are of the same sex (`LifeRules.SameSexShare`), as the player's "anyone" allows.
@@ -183,6 +186,79 @@ Not changed: Family's own stand-in partner (the "Someone special" contact while 
 
 Self-check (Developer diagnostics): `Social check (romance)` for each new person open to a romance, with their sex and age, the player's and the wish, PASS or FAIL.
 The test "Move the chosen person one stage closer" (`SocialDirector.TestAdvance`) asks the same rule before it starts a dating.
+
+## The age window (`RomanceRules.Window`)
+
+A player (24 Nov) asked for "a slider for age range limit in case some people find it too broad or too narrow".
+Two options under Friends and social life, beside "Who you are interested in": **Partners younger than you, at most** (`romance_younger`) and **Partners older than you, at most** (`romance_older`).
+Each is in years, from 2 to 25 (`RomanceRules.WindowLeast`, `WindowMost`), 8 by default (`AgeGap`, the gap the city's couples keep), so nothing changes for a player who leaves them alone.
+
+- `RomanceRules.Younger` and `Older` hold the window; only `Window(younger, older)` moves it, and it keeps each side between 2 and 25 so a saved value from nowhere never rules everybody out.
+  `Settings.RomanceYounger` and `RomanceOlder` are the saved options.
+  `SocialLife.Interest` (asked beside the wish and the player's age by every judge: the cast, a new person, the street, Flare, the People page) hands the options to the rules (`SocialLife.ApplyWindow`), so a value moved by a preset or a reset is never stale.
+- `AgeFits`: an adult, at most `Younger` under and `Older` over.
+  `AgeSteady` and `AgeNear` keep everybody the mod makes for the player one year inside each edge (`AgeMargin`), each side by its own number of years, and never under 18.
+  `FitToPlayer` draws a person made on or past either edge again, from their own seed on the stream it always used.
+  Overloads take the window as arguments, for the checks.
+- Somebody already dating the player, or with them, is never parted by a narrower window: Ask them out is the only thing that reads it, and only for somebody the player is not with.
+- The city's own couples (`LifeRules`, `AgeGapMost` 8) are not the option's business.
+- Checks: EconomyCheck `--romance` (`RomanceWindowChecks.cs`) runs fourteen windows, asymmetric ones among them, over every pair of birthdays for three years, the cast, new people and the redraw.
+
+## Meeting the friends as a game (`SocialInterests`, `SocialFriendsRules`, `SceneQuiz`)
+
+A player (26 Nov) asked for hints to be dropped in dates and for the friends to ask what the player and the person have in common, right answers giving big trust gains and wrong ones the opposite.
+
+**How "Ask to meet their friends" played before.** `PersonDialog.Introduce` was offered to a friend or closer while anybody was left to meet (`SocialDirector.AnyStranger`), and needed trust 40.
+It queued an introduction (`QueueIntroduction`): the next time the player was on foot in the street the person walked up with the first person of the cast not yet met (a real cast member, or a new one made by `Newcomer`), and `MeetScene` (Kind.Introduction) ran `SceneDialog`: the friend says who they are, the new person says hello, the player is warm, cool or brushes them off, and swaps numbers.
+It gave the person trust and affection for it (`Change(1, 2, 1)`, the memory `Introduced`) and the new person the usual first figures.
+Texts of "I want you to meet" (`TextIntro`) queue the same thing.
+
+**Interests.** Each person has nine things (`InterestKind`: a show, a hobby, a sport, music, a dream trip, a food loved, a food hated, a plan, a pet hate), twelve to be for each kind.
+They are never saved: `SocialInterests.Roll` makes them from the person's seed (`SeedOf`, kept in `SocialPerson.InterestSeed` once used, so a new look never changes them) with a generator of its own (`InterestSalt`), so no other roll of the cast moves and a save made before it gets its people's things when it loads.
+What is saved is which kinds the player has heard (`SocialPerson.Heard`, a bit each), when (`InterestHintDay`), the last introduction (`IntroDay`) and the quizzes (`Quizzes`, `QuizBest`), in the key `reallife:social_friends` (`SocialFriendsStore`; nothing is written for a player who never uses it).
+
+**Hints.** With the option **Meet the friends quiz** on (`friends_quiz`, on by default) people let one thing slip at a time (`SocialHintGame`): after the opening line of a chat on an outing (`SceneDialog.Chat`) or a call (`PersonDialog.Chat`) through one call, `SocialHintGame.Weave`, and now and then as a text of their own in the day's round (`SocialDirector.Contact`).
+Chances: 0.30 an outing chat, 0.22 a call chat, 0.14 a text on a day they would text about something ordinary; one a day a person; nothing from a stranger, three kinds at most from an acquaintance, six from a friend, all nine from anybody closer.
+The first time ever a notice says where it is kept; the People page's person page has a section "Things you know about them (n of 9)" (`SocialHintGame.KnownLines`), and nothing of it with the option off.
+
+**The quiz.** When the friend is there to make the introduction and the option is on, `SceneTalk.QuizFor` makes a `SocialQuiz` and `SceneQuiz` plays it in the game's dialogue panel (so both interfaces show it) between the friend's introduction and the new person's own hello: three questions about the person, each about another kind, each with three answers (the panel's three buttons), one true.
+A kind the player heard is shown as known ("You remember ... mentioning it: ..."): a sure answer.
+The player may say "Maybe another time", which plays the introduction as it was.
+Each answer changes the person's figures at once and is told by the friends' banter (eight right and eight wrong lines, four for a sure answer).
+
+| | familiarity | affection | trust |
+|---|---|---|---|
+| a right answer, at a friend | +1.5 | +3 | +4 |
+| a wrong answer | +0.5 | -2 | -3 |
+| three right, on top | +2 | +4 | +4 |
+| three wrong, on top (they laugh) | +2 | +4 | 0 |
+
+At a close friend everything is worth a quarter more, at somebody dating or a partner half more (`Stake`).
+Three right is the memory "You knew them better than their friends did" and the perfect lines; none is "a lovely disaster" with its own lines and memory.
+The verdict page then carries the person's own reaction (four lines for each score).
+The new person's first standing from the answers (`SocialFriendsRules.Standing`, added to the figures they start with if numbers are swapped): three right +10, +10, +8; two right +5, +5, +4; one right nothing; none affection +4 and trust -4.
+A card like an outing's follows (`SocialCardText`, `MeetScene.QuizCard`): the answers right, the three figures with "(44 of 45 for dating)", and the first standing.
+Who it is open to: a friend or closer (what the button already needed) with trust 40, once every `IntroGapDays` (10) game days a person; with the option off there is no wait and the words are the old ones.
+If there was no room for two on the pavement the new person comes alone and there is no quiz.
+
+**Probe.** None; the rules are game-free and checked offline (`--friends29`, `Friends29Checks.cs`).
+
+## First impressions (`SocialImpression`)
+
+A player (26 Nov): "Some trust should be inferred from your reputation."
+Whoever the player meets, in any way (every one goes through `SocialLife.Meet`; the cast's first eight and a roommate who moves in are not first meetings), starts with trust moved by what they could have heard, from the mod's own measures through `SocialLinks.Repute` (`LifeLinks.Repute`): Law's public standing and record (`Standing.Public`, `HasRecord`, `Charged`), Standing's recognition, integrity (charity and good deeds raise it, bribes lower it) and scandal, and the Flare followers.
+
+| factor | trust |
+|---|---|
+| public standing above 55 / below 55 | +1 for each 9 points (up to +5) / -1 for each 11 points (up to -5) |
+| renown (recognition 35, 55, 75), when the standing is 55 or more / under 40 | +1, +2, +3 / -1, -2, -3 |
+| Flare followers 200 / 2000, unless the standing is under 40 | +1 / +2 |
+| integrity 60, 75 / 40 or less, 25 or less | +1, +2 / -1, -2 |
+| a record / an open case / a scandal | -3 / -1 more / -3 |
+
+The sum is held to -10 and +10 (`SocialImpression.Most`).
+A short line says it when numbers are swapped ("Your name gets around: Trust +6", "{first} has heard about you, and not the good parts: Trust -5").
+The option **First impressions follow your name** (`social_first_impressions`, on) switches it; off, a first meeting gives exactly the figures every version gave (`SocialImpression.Start`).
 
 ## The relationship model (`SocialRules`)
 
@@ -408,6 +484,34 @@ Read when an edition is first printed (`LedgerDirector.Stories`), kept when it i
 - Self-check (Developer diagnostics): `City Ledger check (milestones and rivals)` once an edition, with the new sector leaders in it. Test: "Put a takeover, a milestone and a sector lead in the City Ledger" (the player's company in its sector against the most valuable other company there, else the most valuable company that has another in its sector; nothing of the record changes).
 - Checks: EconomyCheck's `--ledgerstories` (`LedgerStoriesChecks.cs`, `LedgerLeadsChecks.cs`).
 
+## Seeing more than one person, nights, scandals (`Scripts/Social/Love`)
+
+Players asked for double dates and the chance of being caught, one night stands with different outcomes, drunken hook-ups, accidental pregnancies and scandals (24 and 26 Nov 2026). Marriage and divorce already existed (see [Family](family.md#engagement-and-wedding)); the Guide now tells the whole path, and the partner's page in People says what comes next after living together (`LoveLinks.NextStep`, from `FamilyAffairs.NextStep`: the ring, the proposal, the wedding planner, hard times).
+
+| File | What it is |
+| --- | --- |
+| `LoveRules` | every rule, game-free and seeded: the catch chance and what raises it, signs, what each answer is worth, when a night is offered, its outcome table, the pregnancy gate, support, a scandal's scale |
+| `LoveFile`, `LoveStore`, `LoveState` | the save under `reallife:love`: the second person, suspicion, who found out, the nights, the children; new fields at the end of their line, a line of a later version kept |
+| `LoveCatalogue` | every line's key, in pools picked by a seeded roll |
+| `LoveHooks` | the few questions the social life asks: may somebody be asked out while taken, who is the second, who is quiet |
+| `LoveLife` | an outing rolled, the signs, being found out, the talk and what each answer does, scandals, the daily round |
+| `LoveNight`, `LoveTalk`, `OutingScene.Love`, `SocialDirector.Love` | the offer, the night under a black screen with the game's time machine, the morning told in the panel |
+| `LoveBabies` | the news, the choice, the birth into Family's children, support |
+
+**The second person.** With the option **Seeing more than one person** (`love_seeing`) on, Ask them out is on the menu while the player has a partner, for a friend or closer who is open to a romance. The phone warns first ("You are with Sam. Ask Jo out anyway?", `PersonDialog.AskOut`). A yes makes them the second (`LoveHooks.BeginSecond`, before their stage is set so Family goes on seeing the first as the partner; `SocialState.Partner` is the first, and the second only when nobody else is with the player). Each is secret from the other. The second can reach dating and partner but never moves in. Off: Ask them out is offered only to a single player, as before.
+
+**Being found out.** Every public outing with one of the two (all but a lift, a move and a look round a business) is rolled for the other (`LoveLife.OutingDone`, a seeded roll). The chance (`LoveRules.Chance`, per mille, at most 850) is the kind's own (a far walk 8, drinks 58), plus 80 for their district (50 for a walk), 35 for their free hours, 28 for each of up to three friends of both (the old friend, a flatmate, anybody met through a friend), 110 for a post on Flare that tags the person (`LoveHooks.Tagged`), 30, 110 or 230 for two plans one day, near in time (180 minutes) and near in time and place, 55 for the envious, 35 for the careful, 25 for the punctual, 1.5 per point of suspicion, 180 while a night that got round is still talked of, 45 for somebody who lives with the player (30 more late at night); less 30 for a denial that held. Just beyond the catch is a sign: an odd text from them ("Who was that at the cinema?"), a friend's word, a text about a picture, and after two plans close together a notice that plays it for laughs. Each sign adds 20 suspicion, which falls 3 a day.
+
+**When they have found out** they text and wait: by call, or at home if they live with the player (the same ask as the partner's other questions, `FamilyAffairs.Raise`; speaking to them opens the talk). After four days unanswered they give up. The talk has four answers: confess and ask forgiveness, deny it, or "Say it is over", which asks in the game's question box who it is over with. A denial can hold (not a child, thinner for a friend's word or a post), but a lie found out or a second chance already used costs twice. Forgiving is a seeded roll (`LoveRules.ForgiveChance`) by their affection and trust, Supportive and Generous (more), Envious, Careful and Punctual (less). The figures that moved are shown on a card as an outing shows them. A partner who lives with the player, is engaged or married leaves through Family's own separation (`HardTimes.Separate`, then its divorce flow); nobody else leaves through a second flow of ours. The other person may hear and react, and may leave. Mom, and the in-laws where there are any, hear and say so. New memories (`MemoryCode.Night` to `CoParent`, at the end of the enum) are brought up in later calls as topics of their own (`LoveTalk.Topic`).
+
+**Nights.** With **One night stands** (`love_hookups`) on, after a drinks outing that went well, or a good party (`LoveLinks.PartyGuest`, from `PartyDesk.Settle`), somebody open to a romance with the player (a friend or closer, not the partner, adults both) may offer to go back to theirs or to the player's (`LoveRules.OfferChance`: affection, mood, the hour, drink, traits; at most one a day, not twice with one person in six days). A drinks outing now counts two drinks (Leisure's own state, so tipsy and its drink-driving rules see them). The player may say not tonight, or suggest their own place, and they say yes by `YesChance` (more the more they have had). The night: the game's black screen, the clock to the morning (`LoveRules.NightHours`), the energy as a bench's, then the morning told in the panel with nothing described. The outcome is a seeded roll weighed by the person (`LoveRules.Weights`): warm (they text next day), awkward (they keep quiet six days), regret (the player's mood dips), wants more (an offer to date, answered on a call), got round (feeds the first partner's catch chance, a friend's text) or a small mishap (18 to 48 at the start's prices, `reallife_transaction_love_mishap`). No night passes under a Going Public shared clock.
+
+**Surprise pregnancies** (`love_surprise`, needs Family's children): a few in a hundred (22 per mille, more after drinks, less for the careful), only for a woman and a man, the one who carries 18 to 44, and only with room under Family's three children. The news comes by text part of the way through (`LoveRules.NewsDay`, by the child's year). The player chooses: be involved (the child is at home and the other parent pays half of what it costs, as after a divorce), pay support (the child lives with them, `Away`, and 400 a month goes by the bank through `reallife_transaction_love_support`, 500 from school age), or stay out of it (a confirmation first; it costs with Mom, on Flare and in integrity). The child joins Family's list through `Children.ArriveFromNight` with `OtherParent` set; the home's routines skip a child who is away (`FamilyState.AtHome`, `Smallest`, `AnyUnder`, the check-ups, the school run, the cot and chair, the allowance's count). When the player is the one who carries, the choices are to tell them and raise the child together, or alone. The player's partner hears at once of a child the player is involved in, and by chance of the rest.
+
+**Scandals.** A secret that comes out (found out in public, a child of a night) is gossip among friends for anybody. By how known the player is (Standing's recognition, `LoveRules.Scandal`): from a local name the City Ledger may print a story (`LoveCatalogue.StoryAffair`, `StoryChild`, finished pieces with no names through `News.Report(NewsKind.Story)`), Flare's followers fall by some per mille and a scandal draws a few more (`FlareDirector.Gossip`), and from a known name business standing takes a small dent that fades by itself (`FameDirector.PrivateScandal`, customers 2 to 4 points). A story is printed once a week at most. A story stays on this machine (a Story is not a `LedgerShare.CityKind`).
+
+**Options:** `love_seeing`, `love_hookups`, `love_surprise`, in the options section Seeing people (the social section already holds its ten rows). With all three off everything is as before. **Going Public:** the love life is this machine's own, nothing is sent. Self-checks (Developer diagnostics): `Love check (catch)`, `(found out)`, `(offer)`, `(night)`, `(child)`, `(scandal)`. Checks: EconomyCheck `--love29` (`LoveChecks.cs`).
+
 ## Rules kept
 
 - Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).
@@ -506,3 +610,28 @@ Props (pivot at the grip unless said): `wine_glass` 0.07 x 0.20 x 0.07, pivot th
 `beer_bottle`, `popcorn_tub`, `gift_box`, `flowers_bunch` and `gym_bag` were made for this list and, as nothing placed them, taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender").
 `moving_box` 0.45 x 0.35 x 0.35 printed "FRAGILE" (until then `parcel_m`), ground centre.
 `newspaper_ledger` (the `newspaper` prop with the Ledger's masthead), as `newspaper`.
+
+## Passions and moments (`SocialPassionRules`, `SocialMomentRules`)
+
+Players asked for NPC traits that decide how a person reacts, a quest to find them out, and event pop ups on outings (Nov 2026). Each person has, besides their two traits, one **passion** of ten: Social butterfly, Cinephile, Career focused, Gold digger, Kind soul, Clubber, Loves uniforms, Child of the Earth, Romantic, Fitness minded. They are bits of `SocialTrait` above 2048 (`PassionMask`), so a save's traits number is wider and an older version ignores them. The twelve old traits and their display are untouched (`SocialCatalogue.TraitNames` stays twelve long).
+
+| passion | what it does (all small tilts, `SocialPassionRules`) |
+|---|---|
+| Social butterfly | coffee x1.6, drinks x1.5, meal x1.4, anything else x1.2; a chat or call worth half as much again; a party x1.5; neglect bites two days sooner and 0.5 affection a day more; brings friends along (+0.12 on the introduction roll) |
+| Cinephile | cinema x1.5 and +2 affection, +1 familiarity |
+| Career focused | a moved or missed plan costs half; +2.5 after a promotion (10 days) or a new business (14); the look round the shop x1.2 and +2; a partner waits for 4 times the cash and income before asking to cut back and never asks to stop (`PartnerWorkRules.Scale`, `PartnerWishRules.MayAsk`); neglect two days later |
+| Gold digger | affection by the player's net worth tier (-0.9 to +3.6), +3 for a luxury car, +2 when the player pays for both, -1.2 split, -2 theirs; trust grows at half; -3 and a text the day money falls a tier, -0.3 a day while broke |
+| Kind soul | +2.5 after charity this month, +2 after a good turn this week, -1.5 while they remember rudeness |
+| Clubber | drinks x2; coffee and walks -1.5; lateness costs nothing |
+| Loves uniforms | +4 affection and +1 trust when the player wears a work uniform (`JobUniform.AnyOn`) |
+| Child of the Earth | arriving on foot +1.5, by bike +2.5, by bus or subway +2; a petrol car -3 (-4 luxury), an electric one nothing; walks x1.4, +1.5 at a sight |
+| Romantic | walks x1.4 (+1 at a sight), a meal +1.5, a birthday or anniversary x2 and +2, a gift +3 |
+| Fitness minded | workouts x2; fitness 70 or more +2 (+3 on a workout or walk), under 30 -1.5; a poor diet at a meal -1 |
+
+How the player arrived is read at the hello (`SocialArrivalNote`: the car seen in the last 6 game minutes with its engine and `isLuxuryCar`, a two wheeler, a bus or subway ride ended within 14, else on foot). Fitness and diet come through `ISocialWellbeing` (`FitnessLevel`, `DietBand`, -1 unknown, no effect), net worth from the books, charity from Giving, the uniform from Jobs, all in `Wiring/Wiring.TraitLinks.cs`.
+
+**Rolling and finding out.** The passion is a hash of the person's seed on its own stream (`PassionSalt`), never a draw from the cast's generator, so no other roll moves; for Mom only the four that suit a mother, and never one that clashes with a trait (a homebody a clubber). Old saves get theirs when they load (`SocialState.ReadPassion`). It is saved in the traits number; `PassionFound`, the clues, the last moment, whether it had one and a text owed are fields 51 to 55 of the person's record, and `RiseDay` and `HelpedDay` fields 12 and 13 of the main record. It acts from the first day and stays hidden until clues reach the bar: 4 points for an acquaintance, 3 for a friend, 2 for a close friend, partner or family, at most 3 from one outing. Clues come from outings that touch it, a text where they let it slip (one in five days at most, 40 in 100 on a day), a moment they weighed in on, and a gift. A partner shows it of themselves after 7 days (12 dating). People says "There is more to Dana than you know" (with a hint once there is a clue) until a notice, a memory and the page name it.
+
+**Moments.** After an outing that went well (coffee, meal, drinks, cinema, walk, drive, workout, the look round the business), `OutingScene.Moments` may open the game's own dialogue panel (`SceneDialog` hands over to `SocialMomentTalk`): a situation and three reactions, 48 moments, six for each outing, tense, sweet and silly. Rule for the first outing: none. After that a seeded 50 in 100 roll from the person's seed and the outings shared, never right after one, so about one outing in three. Each reaction has a style (bold, kind, funny, calm, generous, tender, lively); its score is the tone's worth of the style, mood x0.3, +0.3 for a friend, their old traits and their passion. Tiers: loved 2.0 (familiarity +1.5, affection +4, trust +1.5), liked 0.9 (+1, +2.5, +1), flat -0.3 (+0.5, +0.5, 0), sour (0, -2, -1). A generous reaction may cost money. The reply, the figures and the next step ("44 of 45 for dating") show in the panel, the person remembers it (`MemoryCode.MomentSweet`, `MomentTense`, `MomentSilly`) and texts about it a day later. A passion that weighed in gives a clue. Test outings always have one and record nothing.
+
+Options (Friends and social life): `social_passions` (Hidden passions) and `social_moments` (Moments on outings), both on. Off, every rule hands back today's game (EconomyCheck `--traits29`). Test: Options, Tests, "Social: find out the chosen person's passion". Self-checks (Developer diagnostics): `Social check (passion)` and `Social check (moment)`.

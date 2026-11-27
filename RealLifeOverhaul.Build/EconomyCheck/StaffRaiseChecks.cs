@@ -722,7 +722,7 @@ internal static partial class Program
         string batch = ModSource(@"Ui\Employees\StaffBatchHire.cs"), shown = ModSource(@"Core\WageShown.cs");
         Check(batch.Contains("Wages.Add(WageShown.PaidCents(e));") && !batch.Contains("e.hourlyWage * 100f"),
             "one wage: the review before hiring several candidates shows what each costs an hour at the city's prices, the figure of the candidates' table, not the game's");
-        Check(shown.Contains("return e == null ? 0 : PaidWage.Shown(e.hourlyWage, e.id, Ours(e));"), "one wage: that figure is PaidWage.Shown, for somebody this machine pays or not");
+        Check(shown.Contains("return e == null ? 0 : PaidWage.Shown(e.hourlyWage, e.id, Ours(e), e.candidateInfo != null);"), "one wage: that figure is PaidWage.Shown, for somebody this machine pays or not");
         // The candidates ask 18.00, 21.00 and 25.50 at prices 25% up, and a raise of 1.50 is agreed for the first: 24.00 and 21.00 and 25.50 are the game's own, 24.00, 26.25 and 31.88 what is paid.
         Func<int> held = Prices.Factor;
         Func<string, int> raise = PaidWage.Raise;

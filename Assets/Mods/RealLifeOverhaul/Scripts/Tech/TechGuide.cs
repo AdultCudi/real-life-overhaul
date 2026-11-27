@@ -45,7 +45,14 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_wage_cap", () => (WageRules.CapBp / 10000f).ToString("0.#", Inv))
                 .Fact("talent_degree_days", () => Whole(TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, GameCalendar.DaysPerYear)))
                 .Fact("talent_degree_gain", () => Whole(TalentCatalogue.DegreeGain))
-                .Fact("talent_certs", Certs);
+                .Fact("talent_certs", Certs)
+                .Fact("mgr_rise", () => Bp(FirmManagerCatalogue.RiseBp))
+                .Fact("mgr_own", () => Mille(1000 - FirmManagerCatalogue.OwnWorkShare))
+                .Fact("mgr_sees", () => Whole(FirmManagerCatalogue.SeesThroughAt))
+                .Fact("mgr_targets", () => Whole(FirmManagerCatalogue.TargetsMost))
+                .Fact("mgr_vacancy", () => Whole(FirmManagerCatalogue.VacancyDays))
+                .Fact("mgr_ceiling", () => Bp(FirmManagerCatalogue.RaiseCeilingBp))
+                .Fact("mgr_report", () => Whole(FirmManagerCatalogue.ReportDays));
         }
 
         public static void AddSectorFacts(Feature f)
@@ -92,6 +99,15 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_tender_every", () => Whole(FirmsCatalogue.TenderEvery))
                 .Fact("tech_tender_days", () => Whole(FirmsCatalogue.TenderDays))
                 .Fact("tech_council", () => Mille(FirmsCatalogue.CouncilShare - 1000))
+                .Fact("tech_deal_gov_upfront", () => Mille(ClientCatalogue.Upfront[(int)ClientKind.Government]))
+                .Fact("tech_deal_gov_lag_least", () => Whole(ClientCatalogue.GovernmentLagLeast))
+                .Fact("tech_deal_gov_lag_most", () => Whole(ClientCatalogue.GovernmentLagMost))
+                .Fact("tech_deal_audit_late", () => Whole(ClientCatalogue.ScrutinyLateDays))
+                .Fact("tech_deal_audit_days", () => Whole(ClientCatalogue.ScrutinyDays))
+                .Fact("tech_deal_ind_upfront", () => Mille(ClientCatalogue.Upfront[(int)ClientKind.Individual]))
+                .Fact("tech_deal_ind_lag", () => Whole(ClientCatalogue.IndividualLagMost))
+                .Fact("tech_deal_creep", () => Mille(ClientCatalogue.CreepShare))
+                .Fact("tech_deal_co_days", () => Whole(ClientCatalogue.CompanyTermsDays))
                 .Fact("tech_outage_churn", () => Mille(FirmsCatalogue.OutageChurn))
                 .Fact("tech_sla", () => Mille(FirmsCatalogue.SlaCredit))
                 .Fact("tech_fine_customer", () => Guide.Money(Prices.At(FirmsCatalogue.FinePerCustomer) / 100f))

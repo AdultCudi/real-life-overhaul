@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
             m.PlaceLines = string.IsNullOrEmpty(j.Post.Street) ? new string[0] : new[] { PostPlace(j.Post.Street, j.Post.Number) };
             if (m.State == UiActivityState.NotStarted)
             {
-                int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek())));
+                int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek()) - (int)DayOfWeekOrdered.Monday));   // the game counts Monday as 1
                 m.Kicker = UiText.Fill("reallife_ui_activity_work_kicker", "day", ActivityRead.Words(DayKeys[day], null));
                 m.Title = UiText.T("reallife_ui_activity_work_title");
                 m.Lines = new[]

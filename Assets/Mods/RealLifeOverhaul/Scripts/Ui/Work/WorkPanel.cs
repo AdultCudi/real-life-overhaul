@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Ui
         public static float WidthFor(float w) => Math.Max(Least, Math.Min(Most, UiDraw.SnapDown(w * Share)));
 
         /// <summary>Lays the panel into its box; the buttons come from the page's actions that are not chips. Returns the y of its foot.</summary>
-        public static float Lay(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, float x, float y, float w, float h, IUiKeys keys, WorkAmount[] amounts, string why = null)
+        public static float Lay(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, float x, float y, float w, float h, IUiKeys keys, WorkAmount[] amounts,
+            string why = null, WorkScroll scroll = null)
         {
             int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f, iy = y + UiTokens.S4;
@@ -26,7 +27,7 @@ namespace RealLifeOverhaul.Ui
             {
                 buttons |= actions[k].Kind != UiButtonKind.Chip;
             }
-            float whyH = buttons && !string.IsNullOrEmpty(why) ? UiDraw.Snap(UiTextRules.WrappedHeight(why, UiStyle.Small, iw, 2) + UiTokens.S2) : 0f;
+            float whyH = buttons && !string.IsNullOrEmpty(why) ? UiDraw.Snap(UiTextRules.WrappedHeight(why, UiStyle.Small, iw, 3) + UiTokens.S2) : 0f;
             int rows = buttons ? ButtonRows(actions, iw, keys) : 0;
             float buttonsH = rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
             if (buttons)
@@ -43,19 +44,48 @@ namespace RealLifeOverhaul.Ui
             {
                 iy = Figures(s, at, r, ix, iy, iw) + UiTokens.S3;
             }
-            for (int i = 0; i < r.Sections.Count; i++)
+            if (scroll == null)
             {
-                float need = Height(r.Sections[i], iw);
-                if (iy + need > footer)
-                {
-                    continue;   // a section that does not fit is left out whole, and a later, shorter one may still stand
-                }
-                iy = Section(s, at, r.Sections[i], ix, iy, iw, amounts, keys) + UiTokens.S3;
+                iy = Body(s, at, r, ix, iy, iw, footer, false, false, amounts, keys);
             }
-            if (!string.IsNullOrEmpty(r.Hint) && iy + NoteHeight(r.HintLead, r.Hint, iw) <= footer)
+            else
             {
-                Note(s, at, r.HintIcon, r.HintLead, r.Hint, ix, iy, iw);
-                iy += NoteHeight(r.HintLead, r.Hint, iw) + UiTokens.S3;
+                // What does not fit the room scrolls (the wheel over the panel) where it used to be left out; a pinned section, the choice that the button
+                // below acts on, stands above the buttons whatever the room, so it is always in sight and in reach.
+                float pinned = Pinned(r, iw);
+                bool hold = pinned > 0f && footer - iy - pinned >= ScrollLeast;
+                float content = Content(r, iw, !hold);
+                float limit = hold ? footer - pinned : footer;
+                scroll.Clip = -1;
+                if (content <= limit - iy + 0.5f)
+                {
+                    iy = Body(s, at, r, ix, iy, iw, limit, false, hold, amounts, keys);
+                }
+                else
+                {
+                    float view = UiDraw.SnapDown(limit - iy);
+                    float offset = Math.Max(0f, Math.Min(scroll.Offset, Math.Max(0f, content - view)));
+                    scroll.Offset = offset;
+                    short clip = s.AddClip(ix - UiTokens.S2, iy, iw + UiTokens.S4, view, offset);
+                    var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+                    float end = Body(s, inClip, r, UiTokens.S2, 0f, iw, 0f, true, hold, amounts, keys);
+                    s.Clips[clip].ContentHeight = Math.Max(content, end);
+                    UiDraw.ScrollThumb(s, at, ix + iw + UiTokens.S1, iy, view, offset, Math.Max(content, end));
+                    scroll.Clip = clip;
+                    scroll.Content = Math.Max(content, end);
+                    scroll.View = view;
+                    iy += view + UiTokens.S3;
+                }
+                if (hold)
+                {
+                    for (int i = 0; i < r.Sections.Count; i++)
+                    {
+                        if (r.Sections[i].Pinned)
+                        {
+                            iy = Section(s, at, r.Sections[i], ix, iy, iw, amounts, keys) + UiTokens.S3;
+                        }
+                    }
+                }
             }
             // The panel ends under its last line, with its buttons straight beneath: a panel as high as the window held a run of nothing between the two
             // whenever the thing had little to say, and the column beside it ran on while this one stopped.
@@ -67,7 +97,7 @@ namespace RealLifeOverhaul.Ui
                 float by = bottom - UiTokens.S4 - UiTokens.Control, right = ix + iw;
                 if (whyH > 0f)
                 {
-                    UiDraw.Text(s, at, ix, bottom - UiTokens.S4 - buttonsH - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 2);
+                    UiDraw.Text(s, at, ix, bottom - UiTokens.S4 - buttonsH - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 3);
                 }
                 for (int k = 0; k < actions.Length; k++)
                 {
@@ -88,6 +118,54 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return bottom;
+        }
+
+        private const float ScrollLeast = 120f;   // px of the detail's own sections that must stay in view: with less, a pinned section scrolls with the rest
+
+        // The sections and the hint as they stand one under another from y: where they are not in a scroll region (<paramref name="clipped"/> false) one that does
+        // not fit above <paramref name="limit"/> is left out whole, and a later, shorter one may still stand. Pinned sections are left to their own place when held.
+        private static float Body(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float limit, bool clipped, bool held, WorkAmount[] amounts, IUiKeys keys)
+        {
+            for (int i = 0; i < r.Sections.Count; i++)
+            {
+                if (held && r.Sections[i].Pinned)
+                {
+                    continue;
+                }
+                if (!clipped && y + Height(r.Sections[i], w) > limit)
+                {
+                    continue;
+                }
+                y = Section(s, at, r.Sections[i], x, y, w, amounts, keys) + UiTokens.S3;
+            }
+            if (!string.IsNullOrEmpty(r.Hint) && (clipped || y + NoteHeight(r.HintLead, r.Hint, w) <= limit))
+            {
+                Note(s, at, r.HintIcon, r.HintLead, r.Hint, x, y, w);
+                y += NoteHeight(r.HintLead, r.Hint, w) + UiTokens.S3;
+            }
+            return y;
+        }
+
+        // What the pinned sections take, each with the gap after it.
+        private static float Pinned(WorkRow r, float w)
+        {
+            float h = 0f;
+            for (int i = 0; i < r.Sections.Count; i++)
+            {
+                h += r.Sections[i].Pinned ? Height(r.Sections[i], w) + UiTokens.S3 : 0f;
+            }
+            return h;
+        }
+
+        // What every section and the hint take, with the gap after each; the pinned ones left out when asked not to count them.
+        private static float Content(WorkRow r, float w, bool withPinned)
+        {
+            float h = 0f;
+            for (int i = 0; i < r.Sections.Count; i++)
+            {
+                h += withPinned || !r.Sections[i].Pinned ? Height(r.Sections[i], w) + UiTokens.S3 : 0f;
+            }
+            return h + (string.IsNullOrEmpty(r.Hint) ? 0f : NoteHeight(r.HintLead, r.Hint, w) + UiTokens.S3);
         }
 
         // How many rows the buttons take: they stand from the right, and one that does not fit starts a row above.

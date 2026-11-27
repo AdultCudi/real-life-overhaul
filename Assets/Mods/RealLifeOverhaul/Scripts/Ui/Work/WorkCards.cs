@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Ui
         public string SortLabel;                       // "Newest first", at the right of the tool row: the order the cards stand in
         public bool Sorts;                             // the choice has another order to change to (a press of it changes the order)
         public string Why;
+        public WorkScroll Scroll = new WorkScroll();   // the detail's scroll: its offset in, its clip out
         public float CardHeightNow;                    // written by the layout: the height the cards stand at
         public int DescLines = 2;                      // written by the layout: the lines a course card's description takes (the most any card needs, so the cards are one height)
         public int Columns = 1, FirstList = -1;        // written by the layout: the grid's columns and its first list, to find the card a focus stands for
@@ -78,7 +79,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Detail != null)
             {
-                WorkPanel.Lay(s, at, m.Detail, m.Actions, x + w - panel, y, panel, bottom - y, keys, m.Amounts, m.Why);
+                WorkPanel.Lay(s, at, m.Detail, m.Actions, x + w - panel, y, panel, bottom - y, keys, m.Amounts, m.Why, m.Scroll);
             }
         }
 

@@ -260,6 +260,7 @@ namespace RealLifeOverhaul.Parties
             }
             int liking = (int)Math.Round(SocialRules.Liking(p, PartyCatalogue.KindOf(place)) * 1000f);
             long worth = (long)PartyCatalogue.TierWorth[PartyCatalogue.Clamp((int)tier, 0, PartyCatalogue.TierWorth.Length - 1)] * quality / 100 * liking / 1000;
+            worth = (long)Math.Round(SocialPassionRules.Party(p, worth));   // a social butterfly takes a party for half as much again (Social/SocialPassionRules)
             return (int)Math.Min(1000L, worth);
         }
 

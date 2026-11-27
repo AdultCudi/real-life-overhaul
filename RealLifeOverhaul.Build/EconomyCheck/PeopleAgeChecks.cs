@@ -199,5 +199,10 @@ internal static partial class Program
                   "Het contact Mensen toont ieders leeftijd", "Kişiler kişisi artık her kişinin yaşını gösteriyor"
               }),
             "people's age: What's new has the age line, as a feature's line, in some row of every language");
+        // Mom's People page said "lives in Global": the game's district of nowhere was one of the places a person could live.
+        string named = MemberText(ModSource(@"Social\SocialPlaces.cs"), "public static string District(int index)");
+        Check(named.Contains("if (all[at] == CityDistricts.Global && all.Count > 1)") && named.Contains("at = (at + 1) % all.Count;")
+              && named.Contains("return all[at].GetLocalization();") && RealLifeOverhaul.CityDistricts.Global == "ba:neighborhood_global",
+            "people: a person's district is never the game's Global one, the next district stands in and every other keeps theirs");
     }
 }

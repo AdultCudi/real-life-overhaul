@@ -17,7 +17,9 @@ namespace RealLifeOverhaul.Flare
                 r.Text = FlareGame.Name(shops[i]);
                 int overall;
                 r.Number = FlareGame.Satisfaction(shops[i], out overall, parts) ? overall : -1;
+                AnswerAllRow(r.Key, r.Text);   // "Answer all reviews of ...", when some wait
             }
+            AnswerAllRow(null, null);          // ...and for every business at once
             if (shops.Count == 0)
             {
                 Note(FlareText.T("reallife_flare_business_none"));
@@ -57,6 +59,20 @@ namespace RealLifeOverhaul.Flare
             }
             Note(CityShown ? FlareText.T("reallife_flare_city_business_note")
                 : FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
+        }
+
+        // The button that answers the waiting reviews of a business (every business with no place), when some wait; with several businesses the all-in-one is added after the last.
+        private void AnswerAllRow(string place, string name)
+        {
+            int waiting = _director.ReviewsWaiting(place);
+            if (waiting <= 0 || (place == null && _director.MyShops().Count < 2))
+            {
+                return;
+            }
+            FlareRow b = Row(CellButton);
+            b.Key = place == null ? "answerall" : "answerall:" + place;
+            b.Text = place == null ? FlareText.Fill("reallife_flare_answer_all_every", "count", waiting.ToString())
+                : FlareText.Fill("reallife_flare_answer_all", "business", name ?? "?", "count", waiting.ToString());
         }
 
         private static string DealLines(FlareFile file, FlareHire h, int day)

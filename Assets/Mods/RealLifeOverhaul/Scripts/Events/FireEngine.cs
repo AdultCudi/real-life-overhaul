@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Events
             {
                 _unit.Driver.Begin(car, _unit.Path, scene, back, 28f);
             }
+            _unit.Driver.Urgent(ResponseRules.FireSpeed);   // at the speed of an emergency, as the ambulance and the patrol car answer a call
             string wears = Modelled ? "wearing the modelled body with its axles on the truck's"
                 : PropLibrary.TryGet(EngineLivery.Body, out _, out _) ? FormattableString.Invariant($"repainted (wheelbase {car.wheelDistance:F2}: not the truck the modelled body is made to)")
                 : "repainted (no modelled body in the prop bundle)";

@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (board.Address == null)
                 {
-                    box.Line(CareersText.Fill("reallife_career_boards_phone", "employer", board.Name), CellTone.Plain);
+                    box.Line(CareersText.NoBoard(board), CellTone.Plain);
                     continue;
                 }
                 box.Line(CareersText.Fill("reallife_career_boards_at", "employer", board.Name, "address", board.Address, "place", board.Place ?? string.Empty), CellTone.Plain);

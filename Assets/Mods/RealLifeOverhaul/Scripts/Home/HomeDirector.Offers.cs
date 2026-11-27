@@ -157,6 +157,7 @@ namespace RealLifeOverhaul
                 }
                 note = _note;
             }
+            HomeNeedsBar.Fitness = HomeFitness.On ? HomeState.Fitness : -1f;   // the fourth bar stands while fitness is kept
             HomeNeedsBar.Show(HomeState.Hygiene, HomeState.Stress, HomeState.Tidy, HomeTidy.HasHome, note);
         }
     }

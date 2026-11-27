@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Ui
             new NeedLook { Glyph = 36f, Meter = 20f, Label = UiStyle.Display, Value = UiStyle.Display }
         };
 
-        private static readonly UiIcon[] NeedIcons = { UiIcon.Lightning, UiIcon.ForkKnife, UiIcon.SmileyHappy, UiIcon.Drop, UiIcon.Brain, UiIcon.Home };
+        private static readonly UiIcon[] NeedIcons = { UiIcon.Lightning, UiIcon.ForkKnife, UiIcon.SmileyHappy, UiIcon.Drop, UiIcon.Brain, UiIcon.Home, UiIcon.Heartbeat };
 
         private static int NeedValue(UiStatusModel m, int i)
         {
@@ -61,7 +61,8 @@ namespace RealLifeOverhaul.Ui
                 case 2: return m.Happiness;
                 case 3: return m.Hygiene;
                 case 4: return m.Stress;
-                default: return m.HomeNeed;
+                case 5: return m.HomeNeed;
+                default: return m.Fitness;
             }
         }
 

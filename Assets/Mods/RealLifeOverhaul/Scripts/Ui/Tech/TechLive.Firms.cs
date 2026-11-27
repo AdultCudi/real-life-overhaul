@@ -208,6 +208,12 @@ namespace RealLifeOverhaul.Ui
                 }
                 FirmsLead(fullest);
                 LeagueCard(total);
+                if (_m.Side == null)
+                {
+                    var way = new TechCard(_runs, TechText.T("reallife_tech_path_title"));
+                    PathLines(way);
+                    _m.Side = way.Build();
+                }
                 float[] days = DaysOfAll(out _);
                 var points = new string[days.Length];
                 for (int k = 0; k < days.Length; k++)
@@ -348,7 +354,32 @@ namespace RealLifeOverhaul.Ui
                     card.Say(move, UiRole.WarnText);
                     card.Go(TechText.T("reallife_ui_tech_open_roles"), Do(() => _d.OpenRoles(TechDirector.TabJobs, null)));
                 }
+                card.Space();
+                card.Section(TechText.T("reallife_tech_path_title"));
+                PathLines(card);
                 _m.Side = card.Build();
+            }
+
+            // The way up, a step at a time as the Tech app's own page says it (TechPathViews): the step with its state, what it is and where to do it,
+            // what it gave once done, and what it still asks for with each figure ticked or not.
+            private void PathLines(TechCard card)
+            {
+                TechPathStep[] steps = TechPathViews.Build(_d.PathNow(), W);
+                for (int i = 0; i < _d.PathShown; i++)
+                {
+                    TechPathStep s = steps[i];
+                    card.Tick(TechText.T(s.TitleKey) + " " + TechText.T(s.Done ? "reallife_tech_path_done" : "reallife_tech_path_not_yet"), s.Done);
+                    card.Say(TechText.T(s.WhatKey), UiRole.Muted);
+                    if (s.Done)
+                    {
+                        card.Say(TechText.T(s.GaveKey), UiRole.OkText);
+                        continue;
+                    }
+                    for (int r = 0; r < s.Reqs.Count; r++)
+                    {
+                        card.Tick(TechText.Fill(s.Reqs[r].Key, s.Reqs[r].Pairs), s.Reqs[r].Met);
+                    }
+                }
             }
 
             // What a rival did lately to the player's people: a bid for one of them, else the ad it has up.

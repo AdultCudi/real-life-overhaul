@@ -15,6 +15,21 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The player's career rose a rung (a promotion on the job, or on the ladder): a career focused person is glad of it for a while.</summary>
+        public static void CareerRose(int day)
+        {
+            if (SocialState.Loaded && day > 0)
+            {
+                SocialState.RiseDay = day;
+            }
+        }
+
+        /// <summary>The player got off a bus or out of the subway: the people they meet in the next while read that they came by the city's transport.</summary>
+        public static void RodeTransit()
+        {
+            SocialArrivalNote.Transit(SocialLife.Now);
+        }
+
         /// <summary>At a coffee cart.</summary>
         public static void BoughtCoffee()
         {

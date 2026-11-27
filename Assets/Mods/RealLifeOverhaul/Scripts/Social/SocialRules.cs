@@ -173,6 +173,11 @@ namespace RealLifeOverhaul
         /// <summary>Days without a word before things start to slip.</summary>
         public static int Grace(SocialPerson person)
         {
+            return SocialPassionRules.Grace(person, StageGrace(person));   // a social butterfly feels a silence sooner, a career focused person later
+        }
+
+        private static int StageGrace(SocialPerson person)
+        {
             if (person.IsFamily)
             {
                 return 6;
@@ -194,7 +199,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Change(person, -1f, person.Together ? -1.5f : -1f, -0.5f);
+            Change(person, -1f, (person.Together ? -1.5f : -1f) + SocialPassionRules.ExtraDecay(person), -0.5f);
             return true;
         }
 
@@ -329,6 +334,7 @@ namespace RealLifeOverhaul
                     liking = With(With(liking, person.Has(SocialTrait.Supportive), 0.3f), person.Has(SocialTrait.Envious), -0.3f);
                     break;
             }
+            liking += SocialPassionRules.Liking(person, kind);   // their passion: what they are glad to be asked to, nothing while passions are off
             return liking < 0.7f ? 0.7f : liking > 1.4f ? 1.4f : liking;
         }
 

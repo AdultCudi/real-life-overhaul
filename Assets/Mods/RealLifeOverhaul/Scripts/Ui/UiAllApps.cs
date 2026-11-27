@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
         public UiAllAppsRow[] Rows = new UiAllAppsRow[0];
         public int RowCount;
         public int First;          // the first row in view, when a folder holds more than fit
+        public int Fit = 1;        // rows the panel holds, set by the layout: the furthest First is RowCount - Fit, so the last app stands at the bottom
         public string Empty;       // the chosen folder has no app: what will fill it
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
@@ -111,6 +112,8 @@ namespace RealLifeOverhaul.Ui
         {
             // One height for every folder, so changing folder never moves the panel: its rows scroll, an empty one says so in the room.
             int room = Math.Min(MostRows, RowsFit(frame));
+            m.Fit = room;
+            m.First = Math.Max(0, Math.Min(m.First, m.RowCount - room));   // never a page past the last app, whatever scrolled it or however the window shrank
             int shown = Math.Min(room, Math.Max(0, m.RowCount - m.First));
             float bodyH = room * RowHeight;
             float h = UiDraw.Snap(UiFrame.Strip + BandH + UiTokens.S2 + bodyH);

@@ -1,4 +1,5 @@
 using System;
+using Localizor;
 using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Flare
@@ -154,6 +155,11 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
+            if (row.Key != null && row.Key.StartsWith("answerall", StringComparison.Ordinal))
+            {
+                AnswerAllAsk(row.Key.Length > "answerall:".Length ? row.Key.Substring("answerall:".Length) : null);
+                return;
+            }
             switch (row.Key)
             {
                 case "reply":
@@ -173,6 +179,26 @@ namespace RealLifeOverhaul.Flare
                     OpenCompose(-1, -1);
                     break;
             }
+        }
+
+        // "Answer all reviews": the game's own question box says what it would do (the same preview the kit's sheet shows), and a yes answers them.
+        private void AnswerAllAsk(string place)
+        {
+            FlareBatchSummary sum = _director.BatchPreview(place);
+            if (sum.Answers == 0)
+            {
+                return;
+            }
+            string parts = _director.BatchParts(sum, true);
+            string rating = sum.Before > 0 ? FlareText.Fill("reallife_flare_batch_ask_rating",
+                "before", (sum.Before / 1000f).ToString("0.00"), "after", (sum.After / 1000f).ToString("0.00")) : string.Empty;
+            GameConfirm.Show(
+                "reallife_flare_batch_ask_title".Localize(), "reallife_flare_batch_ask_body".Localize(new { parts, rating, left = FlareDirector.BatchLeftLine(sum.Left) }),
+                () => UiClone.Safe(() =>
+                {
+                    _director.BatchAnswer(place);
+                    Refresh(false);
+                }), null, null, null, true, false);
         }
 
         /// <summary>The game's own text box, the one it names a business with, for what the player types.</summary>

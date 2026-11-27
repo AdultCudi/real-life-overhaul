@@ -228,6 +228,7 @@ namespace RealLifeOverhaul.Careers
             Tell2(NotificationType.Success, "reallife_ladder_note_promoted", Data("title", title, "employer", employer, "pay", CareersText.Rate(Prices.At(j.Pay))),
                 TabLadder, null);
             CareersGame.Mood(ModState.MoodUp);
+            SocialHooks.CareerRose(day);   // a career focused person among the cast is glad of it (Scripts/Social)
             if (f.Rung == (int)Rung.Executive)
             {
                 Story("reallife_life_news_top", "name", PlayerName(), "title", title + ", " + employer);

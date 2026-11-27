@@ -148,7 +148,7 @@ namespace RealLifeOverhaul
             VehicleComponent car = drivers != null ? drivers.GiveUpStriker() : null;
             if (accidents.StageCasualty(casualty, casualty.Position, car, casualty.Dead, byPlayer: false, asItStands: true))
             {
-                TrafficAccidents.Notice(casualty.Dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
+                TrafficAccidents.NoticeHelp(casualty.Dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
             }
             else if (car != null)
             {

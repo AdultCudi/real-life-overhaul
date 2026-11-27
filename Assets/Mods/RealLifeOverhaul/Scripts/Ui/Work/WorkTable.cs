@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Ui
         public List<WorkFormBand> Below;                        // bands under a short table and its figures: what fills the foot of the list's column
         public UiActionModel[] PageActs = new UiActionModel[0]; // buttons of the page itself, in the tool row's right
         public string Why;                                      // why a disabled button of the detail is disabled
+        public WorkScroll Scroll = new WorkScroll();            // the detail's scroll: its offset in, its clip out
     }
 
     /// <summary>
@@ -101,7 +102,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (m.Detail != null && w > 0f)
             {
-                return WorkPanel.Lay(s, at, m.Detail, m.Actions, x, y, w, h, keys, m.Amounts, m.Why);
+                return WorkPanel.Lay(s, at, m.Detail, m.Actions, x, y, w, h, keys, m.Amounts, m.Why, m.Scroll);
             }
             return y;
         }

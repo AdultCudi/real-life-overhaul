@@ -202,6 +202,7 @@ namespace RealLifeOverhaul.Tech
             }
             _personNext[p] = person;
             person.File = p;
+            p.Managing = IsManager(p);   // named the firm's manager: part of their hours is the team's
             person.Game = e;
             person.At = null;
             person.Assigned = null;
@@ -632,7 +633,11 @@ namespace RealLifeOverhaul.Tech
                         TalentRules.StandDown(p);
                     }
                     bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
-                    if (reviews <= TalentCatalogue.NoticesMost)
+                    if (p.RaiseAsk > 0 && ManagerHandles(p))
+                    {
+                        // the firm's manager answers this request this morning: the player is not asked as well (the week's notice says what they agreed)
+                    }
+                    else if (reviews <= TalentCatalogue.NoticesMost)
                     {
                         Tell(rating <= 2 ? NotificationType.Warning : NotificationType.Info,
                             p.RaiseAsk > 0 ? "reallife_talent_note_review_ask" : promote ? "reallife_talent_note_review_promote" : "reallife_talent_note_review",
@@ -790,6 +795,7 @@ namespace RealLifeOverhaul.Tech
                     TalentGame.Resign(person.Game);
                 }
             }
+            ManagerLeft(person, why, day);   // the firm's manager means to fill the place of one who resigned
             _talent.People.Remove(p);
             Tell(NotificationType.Info, "reallife_talent_note_left", Data("name", person.Name), TabTeam, null);
         }

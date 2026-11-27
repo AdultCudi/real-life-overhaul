@@ -78,29 +78,29 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Firms;
         }
 
-        /// <summary>The way from a studio up, one line a step: done, or what it still needs.</summary>
+        /// <summary>
+        /// The way from a studio up, a step at a time: what it is and where to do it, what it gave once done, and what it still asks for with each
+        /// figure and whether it is met (TechPathViews, which the RLO interface draws too).
+        /// </summary>
         private void Path(InfoBox box, FirmsFile f)
         {
-            int studios = 0, live = 0, people = 0;
-            long monthly = 0;
-            IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
-            for (int i = 0; i < firms.Count; i++)
+            TechPathStep[] steps = TechPathViews.Build(_director.PathNow(), _studioWords);
+            for (int i = 0; i < _director.PathShown; i++)
             {
-                studios += firms[i].File.Kind <= (int)FirmKind.AiLab ? 1 : 0;
-                people += firms[i].People;
-                monthly += Level(FirmsRules.Arr(f, firms[i].File.Place) / 12);
+                TechPathStep s = steps[i];
+                Step(box, s.Done, s.TitleKey, null);
+                box.Line(TechText.T(s.WhatKey));
+                if (s.Done)
+                {
+                    box.Line(TechText.T(s.GaveKey));
+                    continue;
+                }
+                for (int r = 0; r < s.Reqs.Count; r++)
+                {
+                    TechPathReq q = s.Reqs[r];
+                    box.Line(TechText.T(q.Met ? "reallife_tech_path_req_met" : "reallife_tech_path_req_unmet", "what", TechText.Fill(q.Key, q.Pairs)), q.Met ? CellTone.Plain : CellTone.Yellow);
+                }
             }
-            for (int i = 0; i < f.Products.Count; i++)
-            {
-                live += f.Products[i].Live ? 1 : 0;
-            }
-            long scale = Level(TechPath.ScaleUpMonthly);
-            Step(box, studios > 0, "reallife_tech_path_studio", null);
-            Step(box, live > 0, "reallife_tech_path_product", null);
-            Step(box, monthly >= scale && people >= TechPath.ScaleUpPeople, "reallife_tech_path_scale",
-                TechText.Fill("reallife_tech_path_scale_needs", "monthly", TechText.Cents(monthly), "target", TechText.Cents(scale), "people", people.ToString(),
-                    "least", TechPath.ScaleUpPeople.ToString()));
-            _director.PathMore(box);
         }
 
         // The office's connection and what it does to the firm's work, as the morning's work read it (or as it reads now,
@@ -755,7 +755,7 @@ namespace RealLifeOverhaul.Tech
                 bool waiting = w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender || w.Stage == (int)WorkStage.Bid;
                 row.Pinned = w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender;
                 row.Set(0, w.Client);
-                row.Set(1, TechText.Work(w.K));
+                row.Set(1, ClientWords.WorkTag(w));   // the kind of client after the work, for a department, an individual or a company
                 row.Set(2, firm != null ? firm.File.Name : "-");
                 Cents(row, 3, Level(w.Stage == (int)WorkStage.Bid ? w.Bid : w.Value));
                 int progress = w.Monthly ? -1 : w.Points > 0 ? w.Done * 1000 / w.Points : 0;
@@ -782,15 +782,23 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Contracts;
         }
 
+        private readonly List<DealLine> _dealLines = new List<DealLine>(10);
+
         private void WriteContract(InfoBox box, FirmsFile f, Contract w, int day)
         {
             FirmPlace firm = _director.FirmOf(w.Place);
             int id = w.Id;
             Idle idle = Idle.None;
             box.Title(w.Client);
-            box.Subtitle(TechText.Work(w.K));
+            box.Subtitle(ClientWords.WorkTag(w));
             box.Chip(TechText.StageName(w.At),
                 w.At == WorkStage.Offered || w.At == WorkStage.Active ? CellTone.Green : w.At == WorkStage.Tender || w.At == WorkStage.Bid ? CellTone.Plain : CellTone.Yellow);
+            string brief = ClientWords.Brief(w);
+            if (brief.Length > 0)
+            {
+                box.Section("reallife_deal_sec_brief");   // the client's own words
+                box.Line(brief);
+            }
             box.Section("reallife_ibox_sec_now");
             switch (w.At)
             {
@@ -826,6 +834,16 @@ namespace RealLifeOverhaul.Tech
             if (!string.IsNullOrEmpty(w.OwnPlace))
             {
                 box.Line(TechText.T("reallife_tech_contract_own"));
+            }
+            _dealLines.Clear();
+            ClientViews.Lines(_dealLines, w, firm != null, firm != null ? firm.Crew : default(Crew), firm != null ? firm.File.Name : string.Empty);
+            if (_dealLines.Count > 0)
+            {
+                box.Section("reallife_deal_sec_asks");   // what the client asks of the firm and what it risks
+                for (int i = 0; i < _dealLines.Count; i++)
+                {
+                    box.Line(ClientWords.Say(_dealLines[i], Prices.Level), _dealLines[i].Warn ? CellTone.Yellow : CellTone.Plain);
+                }
             }
             string bidPlace = null;
             int bidShare = 0;

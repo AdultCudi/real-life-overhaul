@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Family
                     for (int i = 0; i < s.Children.Count; i++)
                     {
                         ChildRecord c = s.Children[i];
-                        if (!c.Grown && c.School > 0 && c.Age < 12f)
+                        if (!c.Grown && !c.Away && c.School > 0 && c.Age < 12f)
                         {
                             AtSchool(Errands.Add(Errands.SchoolRun, day, hour, 10, i), c);
                             break;
@@ -347,47 +347,51 @@ namespace RealLifeOverhaul.Family
         internal static int WeekCharges(out int care, out int school, out int pocket)
         {
             FamilySave s = FamilyState.S;
-            int small = 0, privateSchool = 0, campusDay = 0;
-            pocket = 0;
+            int small = 0;
+            float smallW = 0f, privateW = 0f, campusDay = 0f, pocketSum = 0f;
             for (int i = 0; i < s.Children.Count; i++)
             {
                 ChildRecord c = s.Children[i];
-                if (c.Grown)
+                if (c.Grown || c.Away)
                 {
-                    continue;
+                    continue;   // a child with the other parent costs support, not care
                 }
+                // The other parent of a child of a night (Social/Love) pays half of what the child costs, as after a divorce; a partner's child goes by the bond.
+                float w = c.OtherParent != null ? 1f - FamilyBalance.SupportShare : Share;
                 if (c.Age < FamilyBalance.SchoolFrom)
                 {
                     small++;
+                    smallW += w;
                 }
                 if (c.School == 2)
                 {
                     int fee = CampusFee(c);
                     if (fee >= 0)
                     {
-                        campusDay += fee;   // at the schools' campus: its own fee, none at the player's own school
+                        campusDay += fee * w;   // at the schools' campus: its own fee, none at the player's own school
                     }
                     else
                     {
-                        privateSchool++;
+                        privateW += w;
                     }
                 }
                 if (c.Age >= FamilyBalance.PocketFrom && c.Pocket > 0)
                 {
-                    pocket += FamilyBalance.PocketMoney(c.Pocket);
+                    pocketSum += FamilyBalance.PocketMoney(c.Pocket) * (c.OtherParent != null ? w : 1f);
                 }
             }
-            care = 0;
+            pocket = Mathf.RoundToInt(pocketSum);
+            float careSum = 0f;
             if (small > 0 && FamilyState.Care == Care.Nursery)
             {
-                care = FamilyBalance.NurseryPerDay * 7 * small;
+                careSum = FamilyBalance.NurseryPerDay * 7 * smallW;
             }
             if (small > 0 && FamilyState.Care == Care.Nanny)
             {
-                care = FamilyBalance.NannyPerDay * 7;
+                careSum = FamilyBalance.NannyPerDay * 7 * (smallW / small);
             }
-            care = Mathf.RoundToInt(care * Share);
-            school = Mathf.RoundToInt((FamilyBalance.PrivateSchoolPerDay * privateSchool + campusDay) * 7 * Share);
+            care = Mathf.RoundToInt(careSum);
+            school = Mathf.RoundToInt((FamilyBalance.PrivateSchoolPerDay * privateW + campusDay) * 7);
             return care + school + pocket;
         }
 

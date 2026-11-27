@@ -76,7 +76,10 @@ namespace RealLifeOverhaul.Flare
             FlareResult result = FlareReplyRules.ResultOf(quality, stars);
             AnswerTalk(review.Place, result, reply, CurrentDay);
             Told(review.Name, stars, result, before, FlareReplyRules.Average(StarsWithPosts(review.Place, now)), StarsWithPosts(review.Place, now));
-            Logger?.Info("Flare: the player answered a " + stars + " star review of " + review.Name + " (" + result + ", worth " + quality + ").");
+            if (!_batchQuiet)
+            {
+                Logger?.Info("Flare: the player answered a " + stars + " star review of " + review.Name + " (" + result + ", worth " + quality + ").");
+            }
         }
 
         // How many replies of the player's sit under a review: the first is the one that counts.
@@ -135,6 +138,10 @@ namespace RealLifeOverhaul.Flare
         // The player is told what the answer did, in words and figures: the rating before and after, or why it did not move.
         private void Told(string business, int stars, FlareResult result, int before, int after, FlareStarRow row)
         {
+            if (_batchQuiet)
+            {
+                return;   // a bulk answer tells once for all of them (FlareDirector.Batch)
+            }
             string key;
             switch (result)
             {

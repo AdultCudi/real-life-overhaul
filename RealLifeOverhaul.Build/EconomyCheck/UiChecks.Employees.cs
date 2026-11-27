@@ -210,7 +210,8 @@ internal static partial class Program
                 }
             }
         }
-        Check(titles > 0 && found == null, "kit: no window's title is a joined code name (" + titles + " titles read)" + (found == null ? string.Empty : ": " + found));
+        // A run of one screen (--ui-only) may hold no window with a title; the whole run must read some.
+        Check((titles > 0 || UiOnly != null) && found == null, "kit: no window's title is a joined code name (" + titles + " titles read)" + (found == null ? string.Empty : ": " + found));
         Check(CamelWord("MyEmployees") && CamelWord("MarketInsider") && !CamelWord("BizMan") && !CamelWord("Employees") && !CamelWord("RLO"),
             "kit: a joined code name is told from a word, an initialism and the game's own joined brand names");
     }

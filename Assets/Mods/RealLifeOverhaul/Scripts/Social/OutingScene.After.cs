@@ -26,6 +26,10 @@ namespace RealLifeOverhaul
 
         private void Wrap(float now, bool wentWell)
         {
+            if (StartMoment(now, wentWell))
+            {
+                return;   // a moment on the outing first (OutingScene.Moments); it calls Wrap again
+            }
             Prompt = null;
             Line = null;
             Unmark();
@@ -78,6 +82,10 @@ namespace RealLifeOverhaul
             }
             if (!_parted)
             {
+                if (LoveAfterwards(now))
+                {
+                    return;   // an evening that may go on: its offer is on the panel (Social/Love)
+                }
                 _parted = true;
                 _stepEnd = now + 1.5f;
                 D.Body.Rest();
@@ -223,6 +231,14 @@ namespace RealLifeOverhaul
             {
                 trust -= 4f;
             }
+            // Their passion tilts what the outing was worth (SocialPassionRules): a cinephile at a film, a clubber at the bar, a gold digger
+            // when the player pays; and what the player may notice of it is a clue to what it is.
+            float untilted = affection;
+            SocialTilt tilt = SocialPassionRules.Outing(_who, _kind, OutingFacts(), pay);
+            affection = SocialPassionRules.Tilted(affection, tilt, quality);
+            trust = SocialPassionRules.TiltedTrust(trust, tilt, quality);
+            familiarity += tilt.FamAdd * quality;
+            float passionDelta = affection - untilted;
             int gift = 0;
             if (wentWell && (_kind == PlanKind.Lift || _kind == PlanKind.Moving) && !_who.Has(SocialTrait.Careful))
             {
@@ -247,12 +263,15 @@ namespace RealLifeOverhaul
                 _who.Wants = (PlanKind)(((int)_who.Wants + 1 + Random.Range(0, 3)) % ((int)PlanKind.Walk + 1));
                 _who.WantsDay = SocialLife.Day;
                 SocialLife.Change(_who, familiarity, affection, trust);
+                SocialPassionGame.Clue(_who, tilt.Clue, "an outing: " + _kind);
+                _who.MomentRow = _momentShown;   // (the next outing with them has none if this one had)
                 // Kept for a text the day after about how it went (SocialFollowRules.NextDay, in the save).
                 _who.AfterDay = SocialLife.Day;
                 _who.AfterKind = _kind;
                 _who.AfterWell = wentWell;
                 _who.AfterPlace = _venue.Valid ? _venue.Name : null;
             }
+            LoveSettled();
             if (gift > 0)
             {
                 SocialLife.Give(gift, _def.Transaction);
@@ -304,10 +323,11 @@ namespace RealLifeOverhaul
                 CardLine("reallife_social_card_familiarity", Signed(familiarity) + NextOf(SocialMeter.Familiarity));
                 CardLine("reallife_social_card_affection", Signed(affection) + NextOf(SocialMeter.Affection));
                 CardLine("reallife_social_card_trust", Signed(trust) + NextOf(SocialMeter.Trust));
-                if (_lateBy > SocialRules.LateMinutes && !_who.Has(SocialTrait.Late))
+                if (_lateBy > SocialRules.LateMinutes && !LateIsFine)
                 {
                     _text.Append(SocialLife.T("reallife_social_card_late")).Append('\n');
                 }
+                PassionCardLines(passionDelta, tilt);
                 _text.Append('\n').Append(SocialLife.T(_who.Stage != before ? "reallife_social_card_now" : "reallife_social_card_still")).Append("   <b>")
                     .Append(SocialLife.StageName(_who)).Append("</b>");
             }
@@ -324,40 +344,13 @@ namespace RealLifeOverhaul
         }
 
         // Where the code has a next figure for it (SocialRules.Next), how far the figure now stands from it: "(74 of 90 for dating)". Nothing for a figure with no step ahead.
-        private string NextOf(SocialMeter meter)
-        {
-            if (!SocialRules.Next(_who, meter, SocialLife.Romantic(_who), SocialState.Partner == null, out float need, out SocialGoal goal))
-            {
-                return string.Empty;
-            }
-            return "   " + SocialLife.T("reallife_social_card_next", new Dictionary<string, string>(3)
-            {
-                { "now", Mathf.FloorToInt(SocialRules.Value(_who, meter)).ToString(CultureInfo.InvariantCulture) }, { "need", Mathf.RoundToInt(need).ToString(CultureInfo.InvariantCulture) },
-                { "goal", SocialLife.T(GoalKey(goal)) }
-            });
-        }
-
-        private static string GoalKey(SocialGoal goal)
-        {
-            switch (goal)
-            {
-                case SocialGoal.Friend: return "reallife_social_goal_friend";
-                case SocialGoal.CloseFriend: return "reallife_social_goal_close";
-                case SocialGoal.Date: return "reallife_social_goal_date";
-                case SocialGoal.Partner: return "reallife_social_goal_partner";
-                default: return "reallife_social_goal_movein";
-            }
-        }
+        private string NextOf(SocialMeter meter) => SocialCardText.NextOf(_who, meter);
 
         private void CardLine(string key, string value)
         {
             _text.Append(SocialLife.T(key)).Append("   ").Append(value).Append('\n');
         }
 
-        private static string Signed(float value)
-        {
-            int rounded = Mathf.RoundToInt(value);
-            return rounded >= 0 ? "<color=#7CE08A>+" + rounded + "</color>" : "<color=#FF8A70>" + rounded + "</color>";
-        }
+        private static string Signed(float value) => SocialCardText.Signed(value);
     }
 }

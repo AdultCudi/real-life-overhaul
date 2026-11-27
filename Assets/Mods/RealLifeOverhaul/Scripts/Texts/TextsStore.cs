@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Texts
             {
                 return null;
             }
+            words = TextCheck.NoEmoji(words, lang);   // a line kept in a save, or shared by an older RLO, from before emoji nothing draws were taken out
             if (_byKey.TryGetValue(key, out TextKept old))
             {
                 _order.Remove(old);

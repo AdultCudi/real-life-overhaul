@@ -21,6 +21,11 @@ namespace RealLifeOverhaul.Family
         public const float HarmonyNo = -3f;      // ...and when they say not yet
         public const float AffectionYes = 3f;
 
+        public const int CareerScale = 4;        // how many times the cash and the income a career focused partner waits for before asking to cut back
+
+        /// <summary>What the cash and the income that make the partner ask are multiplied by: a partner whose passion is their work waits for far more.</summary>
+        public static int Scale(bool careerFocused) => careerFocused ? CareerScale : 1;
+
         /// <summary>Whether the partner asks today: the option on, living together, on full days, the income held all week and the cash reached, and no recent no.</summary>
         public static bool Asks(bool on, bool livesIn, int work, bool asking, float cash, int atCash, int day, int lastAskDay, int held, int atIncome)
         {

@@ -1,20 +1,4 @@
-1.0.32
+1.0.34
 
 Fixed
-- Every stop of a route in BizMan has its Remove button again in the RLO interface, where the button had no picture and could not be seen.
-- The departures and Send now of delivery trips are on the game's own Logistics Managers page too, under a Departures button.
-- The mouse wheel moved the list of goods at a supplier the wrong way in the RLO interface, and the drop-downs of the tool screens with it.
-- My Job showed Hand in notice and Walk out twice, and again at every redraw, so a police cadet saw four leaving buttons.
-- A salary offer's wage and signing bonus in Contacts now show their cents, so a counter-offer of $27.90 steps and reads as $27.90, not $27.
-- The money card's Yesterday row now shows the same figure as the line under your money, and says it is the whole of yesterday and that today's result comes tomorrow.
-- A game on a subscription now shows what it takes a month on its page and in the lists, and a day of few copies no longer brings it no subscribers.
-- A firm's price in an offer or a funding round no longer counts one good month, or a run of licence deals, as growth.
-- A firm that withdraws a licence and launches another no longer finds the same buyers again for a year.
-- A product's page says where the firm's engineers' work went yesterday, so a product that gains no features says why. A data centre can be closed from its page: its racks are sold back, its colocation contracts end with the clients paid for the early end, and its leased line is cancelled.
-- The bankers refused a firm for a board question, demand or removal that stayed open after all the money counted as taken was put back, and no button could close it. It now closes when the cash is put back, saves already in that state are mended on loading, and a refusal for money counted as taken says the sum and where to put it back.
-- The firm account fell for a purchase at the firm's address only while your wallet was under what the investors are owed. It now falls whatever your wallet holds, and the page says what the account counts.
-- The notice that a desk session is due now says where the office is, and the firm's page always has Go to the desk, with a line saying which desk is yours.
-- An employer's office could stand at a help-wanted board across the city, such as Brightline Promotions in the Hamptons. Each employer now has its board at its own kind of building where the city has one, and a board put up at a spare building because the first was blocked goes back to the first.
-- A greeting no longer says it has been too long when you saw that person a few hours ago, the lines that speak of time apart now fit the days since you last met.
-- You are no longer counted late when your date turns up after you, because lateness is judged from when you reach the place and not when they appear, and nobody is stood up if you were there on time and they never came.
-- On a walk date your companion now keeps your walking pace instead of half of it, and the walk starts near one of the city's parks or sights when there is one.
+- The Guide's People page has its section on hidden passions and moments back, and the People and Family pages no longer show some sections twice.

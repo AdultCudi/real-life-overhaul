@@ -20,8 +20,12 @@ namespace RealLifeOverhaul
         private readonly Action<AppearanceSetter, List<AppearanceElementData>> _overDouble;
         private AppearanceSetter _look;
         private CityLook _outfit;
+        private static int _onCount;   // uniforms on the player now, from any owner (a job's, a police duty's)
         private bool _on;
         private bool _failed;
+
+        /// <summary>Whether the player wears a work uniform of any owner now: the people they meet read it (Social/SocialPassionRules).</summary>
+        public static bool AnyOn => _onCount > 0;
 
         public JobUniform(IModLogger logger)
         {
@@ -58,6 +62,7 @@ namespace RealLifeOverhaul
                 _look = look;
                 _outfit = outfit;
                 _on = true;
+                _onCount++;
                 PlayerDouble.Workwear = _overDouble;
                 Looks.Count("jobs: the player's uniform put on");
                 look.UpdateVisuals(_worn);   // their own data untouched; the double is dressed through OverDouble
@@ -88,6 +93,10 @@ namespace RealLifeOverhaul
             }
             bool was = _on;
             _on = false;
+            if (was && _onCount > 0)
+            {
+                _onCount--;
+            }
             if (ReferenceEquals(PlayerDouble.Workwear, _overDouble))
             {
                 PlayerDouble.Workwear = null;
@@ -123,6 +132,10 @@ namespace RealLifeOverhaul
             if (ReferenceEquals(PlayerDouble.Workwear, _overDouble))
             {
                 PlayerDouble.Workwear = null;
+            }
+            if (_on && _onCount > 0)
+            {
+                _onCount--;
             }
             _on = false;
             _look = null;

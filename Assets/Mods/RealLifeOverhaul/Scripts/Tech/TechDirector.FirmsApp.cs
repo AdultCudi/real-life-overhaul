@@ -274,7 +274,7 @@ namespace RealLifeOverhaul.Tech
         {
             Contract w = _firmsOn ? _firmsFile.ContractOf(id) : null;
             FirmPlace firm = w != null ? FirmOf(w.Place) : null;
-            if (w == null || firm == null || w.Stage != (int)WorkStage.Offered || Save == null)
+            if (w == null || firm == null || w.Stage != (int)WorkStage.Offered || Save == null || NeedRefused(w, firm))
             {
                 return false;
             }
@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.Tech
         {
             Contract t = _firmsOn ? _firmsFile.ContractOf(id) : null;
             FirmPlace firm = FirmOf(place);
-            if (t == null || firm == null || t.Stage != (int)WorkStage.Tender || !FirmsRules.Takes(firm.File.K, t.K))
+            if (t == null || firm == null || t.Stage != (int)WorkStage.Tender || !FirmsRules.Takes(firm.File.K, t.K) || NeedRefused(t, firm))
             {
                 return false;
             }

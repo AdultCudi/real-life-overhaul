@@ -333,6 +333,10 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             HierarchyHour(day, hour);   // an exception to the pay band raised as the requests were answered goes to its approver at once
+            if (ManagerReviews.Due(day, hour) && !_mgrBroken)
+            {
+                ReviewsWeekly(day);   // Sunday evening: the week's answers to reviews, in one notice
+            }
             if (hour == ManagerCatalogue.DigestHour && _mgr.Today > 0 && !_mgrBroken)
             {
                 // The policy says how often: every day (as before it), only on a Sunday with the week's count, or never.
@@ -396,6 +400,7 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Hiring: DecideHiring(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Marketing: DecideMarketing(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Leases: DecideLeases(mp, skill, review, who, day, hour); break;
+                case ManagerTask.Reviews: DecideReviews(mp, skill, review, who, day, hour); break;
             }
         }
 
@@ -728,6 +733,10 @@ namespace RealLifeOverhaul.Economy
             if (!LeasesOn)
             {
                 blocked |= ManagerRules.Bit(ManagerTask.Leases);
+            }
+            if (!ManagerReviews.May(Settings.FlareManagerReplies, CompanyBridges.ReviewsReady()))
+            {
+                blocked |= ManagerRules.Bit(ManagerTask.Reviews);   // Flare off, or the option: the duty waits
             }
             if (mp != null && mp.Kind == ManagedKind.Shop && (ManagerGame.PricingManagerCovers(mp.District) || CompanyBridges.PricesKeptAt(mp.Place.Place)))
             {

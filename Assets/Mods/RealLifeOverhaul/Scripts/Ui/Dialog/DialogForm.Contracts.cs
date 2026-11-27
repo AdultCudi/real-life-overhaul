@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            string kind = RotaGame.TypeName(reg), district = GameRegistrations.District(reg);
+            string kind = RotaGame.TypeName(reg), district = GameRegistrations.DistrictWords(GameRegistrations.District(reg));
             return string.IsNullOrEmpty(district) ? kind : string.IsNullOrEmpty(kind) ? district : kind + ", " + district;
         }
 
@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Ui
                 BuildingRegistration reg = regs[i];
                 if (reg != null && reg.RentedByPlayer && GameRegistrations.BuildingType(reg) == "ba:buildingtype_warehouse" && reg.businessTypeName != "ba:businesstype_empty")
                 {
-                    string district = GameRegistrations.District(reg);
+                    string district = GameRegistrations.DistrictWords(GameRegistrations.District(reg));
                     return string.IsNullOrEmpty(district) ? reg.GetDisplayName() : reg.GetDisplayName() + ", " + district;
                 }
             }

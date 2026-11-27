@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Help-wanted boards beside the door of the first building of each kind of special service (the kinds being each employer's own, see
     /// <see cref="BoardHomeRules.Kinds"/>), the same places in every game; at one, the interact key opens the Gig Line's list. Looked for once
-    /// a city load, a few buildings a second, the boards put up when the whole list has been seen. A kind whose buildings all failed their
+    /// a city load (whatever the player is doing, see <see cref="Survey"/>), a few buildings a second, the boards put up when the whole list has been seen. A kind whose buildings all failed their
     /// asks (a car parked at the door, the pavement full of people, the street not streamed in yet) is asked again every
     /// <see cref="RetryEvery"/> seconds while the player is within <see cref="RetryReach"/> of one of its buildings, a board at a time.
     /// A board that was put up at a spare building because the first of its kind failed its asks is only there for a while: it is asked at the
@@ -117,6 +117,28 @@ namespace RealLifeOverhaul
             Near = -1;
         }
 
+        /// <summary>
+        /// Once a second while no job is on and the player is NOT on foot out of doors (indoors, in a car): only the looking at the city's buildings, so
+        /// the employers have their boards' addresses before the player first stands in a street. The city's list and the doors are data and need no
+        /// street, and a board is put up by the same asks, the same retries and the same far-fail rules as on foot; what needs the player near (the
+        /// late retry, the mending of a spare, reach and the panel) waits for <see cref="Tick"/>. Cost: a hundred and fifty list entries a second until done, then nothing.
+        /// </summary>
+        public void Survey()
+        {
+            if (_failed || _searched)
+            {
+                return;
+            }
+            try
+            {
+                Search();
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
         /// <summary>Once a second while no job is on and the player is on foot out of doors.</summary>
         public void Tick(Vector3 player)
         {
@@ -155,12 +177,40 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                _failed = true;
-                InReach = false;
-                Near = -1;
-                _logger?.Error(e);
-                _logger?.Warn("Jobs: the help-wanted boards are off for this session after the error above; the Gig Line still has every job.");
+                Fail(e);
             }
+        }
+
+        private void Fail(Exception e)
+        {
+            _failed = true;
+            InReach = false;
+            Near = -1;
+            _logger?.Error(e);
+            _logger?.Warn("Jobs: the help-wanted boards are off for this session after the error above; the Gig Line still has every job.");
+        }
+
+        /// <summary>
+        /// Whether an employer with no board is waiting for one (true) or the city has no building of its kind to put one at (false): the board is not up
+        /// yet while the search is still on, or while its kind is among those asked again near the player. <paramref name="kind"/> is the game's name
+        /// for that kind of building, or null while the search has not settled which. Read only, never saved.
+        /// </summary>
+        public bool Pending(string[] premises, out string kind)
+        {
+            kind = null;
+            if (_failed)
+            {
+                return false;
+            }
+            if (!BoardHomeRules.Pending(premises, _late, _searched, out string late))
+            {
+                return false;
+            }
+            if (late != null)
+            {
+                kind = LocalizorManager.IsLocalizedKey(late) ? late.GetLocalization() : late;
+            }
+            return true;
         }
 
         public void Dispose()

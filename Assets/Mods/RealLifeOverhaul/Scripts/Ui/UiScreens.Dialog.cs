@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
                     "dialog_recruitment_agency_start_new_campaign", "dialog_recruitment_agency_candidate_properties_header", "dialog_recruitment_agency_primary_skills",
                     "ba:skill_customerservice", "dialog_recruitment_agency_schedule_types", "ba:jobdemand_parttime", "ba:jobdemand_fulltime",
                     "dialog_recruitment_agency_amount_of_candidates", "dialog_recruitment_agency_days_to_deliver", "common_days", "reallife_ui_dialog_cost_candidates",
+                    "reallife_ui_dialog_cost_candidates_day", "reallife_ui_dialog_cost_candidate", "reallife_ui_dialog_cost_candidate_day",
                     "reallife_ui_dialog_cost_now", "dialog_private_driver_service_npc_name", "dialog_private_driver_start", "dialog_private_driver_hire_driver",
                     "dialog_private_driver_select", "ba:private_driver_type_advanced", "ba:private_driver_type_advanced_description", "dialog_private_driver_max_cars",
                     "dialog_private_driver_cost_per_day", "common_cancel", "reallife_travel_desk_name", "reallife_travel_desk_nights", "reallife_travel_desk_book",

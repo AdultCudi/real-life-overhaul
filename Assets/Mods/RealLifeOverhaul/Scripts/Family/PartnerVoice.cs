@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Family
                 case Car: return PartnerCar.Offer;
                 case Allowance: return PartnerExpect.AllowanceTalk;
                 case Date: return PartnerExpect.DateTalk;
+                case FamilyAffairs.ConfrontKind: return FamilyBridges.LoveTalk;   // they found out about somebody else (Social/Love)
                 default: return null;
             }
         }

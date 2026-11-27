@@ -25,7 +25,21 @@ namespace RealLifeOverhaul
         Reliable = 256,    // never cancels; always repays
         Flaky = 512,       // cancels; repays when it suits
         Supportive = 1024, // kind about arrests and money
-        Envious = 2048     // not kind about money
+        Envious = 2048,    // not kind about money
+
+        // The passion each person also has (SocialPassionRules): one of these, hidden until the player finds it out. Above the twelve a
+        // save has always held, so an older save reads its number as before and an older version ignores the new bits.
+        SocialButterfly = 4096,      // calls, coffee and parties count for much more; neglect bites sooner
+        Cinephile = 8192,            // the cinema counts for far more
+        CareerFocused = 16384,       // does not mind a plan moved for work; will not step back for a successful partner
+        GoldDigger = 32768,          // drawn by money
+        KindSoul = 65536,            // drawn by charity and good turns
+        Clubber = 131072,            // drinks count double; coffee and walks bore them
+        LovesUniforms = 262144,      // a player in a work uniform is a big lift
+        ChildOfEarth = 524288,       // loves arriving on foot, by bike or by bus; dislikes a petrol car at the door
+        Romantic = 1048576,          // gifts, flowers, sights, birthdays and anniversaries count double
+        FitnessMinded = 2097152,     // reads the player's fitness and diet; workouts together count double
+        PassionMask = SocialButterfly | Cinephile | CareerFocused | GoldDigger | KindSoul | Clubber | LovesUniforms | ChildOfEarth | Romantic | FitnessMinded
     }
 
     /// <summary>What a plan is for: the eight outings, and the two favours that are played on the street.</summary>
@@ -39,7 +53,20 @@ namespace RealLifeOverhaul
         Posted,    // tagged in a post of the player's on Flare
         Party,     // came to a party the player hosted (Parties)
         PartyBad,  // ...one that went badly
-        PartyTheirs   // the player came to a party of theirs
+        PartyTheirs,  // the player came to a party of theirs
+        Night,        // a night together (Social/Love)
+        NightAwkward, // ...that was awkward after
+        NightRegret,  // ...that one of them regretted
+        CaughtOut,    // found out about somebody else
+        Forgave,      // forgave it
+        Denied,       // the player denied it and it held
+        CoParent,     // the other parent of the player's child
+        MomentSweet,  // a sweet moment on an outing (SocialMomentRules): a busker, a dog, the barista who knows their order
+        MomentTense,  // ...a tense one: somebody cut in, somebody got too close
+        MomentSilly,  // ...a silly one: both reached for the last roll, the alarm in the big scene
+        PassionFound, // the player found out what they are passionate about
+        QuizAced,     // answered all three of the friends' questions about them right (SocialFriendsRules)
+        QuizFlop      // ...and got all three wrong
     }
 
     /// <summary>
@@ -109,9 +136,41 @@ namespace RealLifeOverhaul
         public string LastLine;      // the key of the line they last sent by text: never sent twice running (SocialAskRules.Next); null none yet
         public int TourAskDay;       // the game day they last asked for the tour of the player's business; 0 never
         public int TourDay;          // the game day they were shown round it, after which they do not ask; 0 not yet
+        public bool PassionFound;    // the player has found out their passion (SocialPassionRules); hidden until then
+        public int PassionClues;     // what the player has noticed of it so far, in points (SocialPassionRules.Bar says how many find it out)
+        public int MomentLast = -1;  // the number of the moment their last outing had (SocialMomentRules); -1 none yet
+        public int MomentDay;        // the game day of it; 0 none
+        public bool MomentRow;       // their last outing had a moment: never two outings in a row with the same person
+        public bool MomentEcho;      // they still owe a text about it, the day after (SocialDirector.Contact)
+        public int HintDay;          // the game day they last texted a hint of their passion; 0 never
+        public int InterestSeed;     // the seed their things come from (SocialInterests), kept the first time it was needed so a new look never changes them; 0 not yet
+        public int Heard;            // the bits of InterestKind the player has heard them let slip: what People shows, and what the quiz counts as known
+        public int InterestHintDay;  // the game day they last let one of their things slip (SocialHintGame), apart from the passion's hint day; 0 never
+        public int IntroDay;         // the game day they last brought friends to be met (the quiz, when it is on); 0 never
+        public int Quizzes;          // quizzes about them the player has sat
+        public int QuizBest;         // the most answers right in one of them, 0 to 3; read only while Quizzes is above 0
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;
+
+        /// <summary>
+        /// Their passion: the one of the ten new traits they have. Rolled the first time it is asked for, from their seed on a stream of
+        /// its own (<see cref="SocialPassionRules.Roll"/>), and then kept in <see cref="Traits"/>; so people made before it get theirs
+        /// the same way, from the same seed, and no other roll of the cast moves. Whether it acts or shows is the option's
+        /// (<see cref="SocialPassionRules.Active"/>), not this.
+        /// </summary>
+        public SocialTrait Passion
+        {
+            get
+            {
+                if ((Traits & SocialTrait.PassionMask) == 0)
+                {
+                    Traits |= SocialPassionRules.Roll(Seed, IsFamily, Traits);
+                }
+                return Traits & SocialTrait.PassionMask;
+            }
+        }
+
         public bool IsFamily => Origin == SocialOrigin.Family;
         public bool Together => Stage == SocialStage.Dating || Stage == SocialStage.Partner;
 

@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Meta
                 S("needs").For("home").Main("home_life").Opts("home_needs", "home_strip", "home_easy", "home_sleep", "home_morning")
                     .Opt("home_morning_news", "home_morning").Opts("home_illness")
                     .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
-                S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
+                S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog").Opt("home_diet", "home_fitness")
                     .Also("cooking cook food kitchen exercise gym run diet"),
                 S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
                     .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
@@ -241,19 +241,31 @@ namespace RealLifeOverhaul.Meta
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_year_weeks").FreeOpts("family_mom_contact").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
-                S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
-                    .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
-                    .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
-                    .Also("friends dating date people calls typing staff gossip")
-                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
+                S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact")
+                    .FreeOpts("family_interest").FreeOpts("romance_younger", "romance_older")
+                    .Also("friends dating date people calls staff")
+                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special")
+                    .Also("romance_younger", "age range gap younger partner dating romance window years limit too broad too narrow")
+                    .Also("romance_older", "age range gap older partner dating romance window years limit too broad too narrow"),
+                S("socialtexts").Guide("social").Need("social").Opts("social_texts").Opt("social_texts_max", "social_texts")
+                    .Opt("social_composer", "texts", "texts_people").Opt("texts_city", "texts", "texts_people")
+                    .Also("texts messages typing reply gossip staff news"),
+                S("knowing").Guide("social").Need("social").Opts("social_passions", "social_moments").Opts("friends_quiz", "social_first_impressions")
+                    .Also("traits passion hidden moment moments outing reaction cinephile clubber romantic")
+                    .Also("friends_quiz", "meet their friends introduction quiz questions hints listen know them best trust")
+                    .Also("social_first_impressions", "reputation name fame record trust first impression newly met stranger"),
+                S("love").Guide("social").Need("social").Opts("love_seeing", "love_hookups").Opt("love_surprise", "love_hookups", "family_children")
+                    .Also("second partner double date affair cheating caught confront one night stand hook up drunk pregnancy baby child support scandal secret"),
                 S("networking").For("networking").Need("social").Opts("social_networking")
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media")
-                    .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
+                    .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures",
+                        "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
-                S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population")
-                    .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull"),
+                S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population").Opts("flare_manager_replies")
+                    .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull")
+                    .Also("flare_manager_replies", "manager duty answer answers reviews reply replies thanks sorry morning"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite staff gossip memory language"),
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
@@ -365,6 +377,7 @@ namespace RealLifeOverhaul.Meta
                 S("familystudy").For("careers_family").Opt("careers_family", "careers_study")
                     .Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs")
+                    .Opt("careers_fitness", "careers_jobs")
                     .Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
                     .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "
@@ -439,7 +452,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
                     .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes")
                     .With("population_demand"),   // the Guide's page on where the businesses' customers come from
-                S("studio").For("studio").Opt("living_studio", "living_population")
+                S("studio").For("studio").Opt("living_studio", "living_population").Opt("tech_game_pace", "living_studio")
                     .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
                 S("firms").For("firms").Opt("living_firms", "living_population")
                     .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
@@ -463,11 +476,13 @@ namespace RealLifeOverhaul.Meta
                 S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first", "rivals_holdings")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game buildings property ranking fortune"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
-                S("people").For("tech_people").Opts("tech_people").Opt("tech_seat_hires", "tech_people")
-                    .Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach desk seat shift schedule hire"),
+                S("people").For("tech_people").Opts("tech_people").Opt("tech_seat_hires", "tech_people").Opt("tech_manager", "tech_people")
+                    .Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach desk seat shift schedule hire")
+                    .Also("manager managers balance roles move bulk targets replace rehire flag burnout idle"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Opt("tech_search_rush", "tech_jobs")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates rush rushed faster sooner quicker expedite days saved"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
+                    .Opt("tech_deal_kinds", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
                     .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),

@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Family
         public int FreeTo;
         public bool NightOwl;        // they keep late hours: up late, asleep in the morning
         public int Leaning;          // how they take the player's money: PartnerWealthRules.Neither, Supportive or Envious
+        public bool CareerFocused;   // their passion is their work: they will not step back, or stop, for a successful partner (PartnerWorkRules.CareerScale)
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>
@@ -128,6 +129,8 @@ namespace RealLifeOverhaul.Family
         public static ISchoolBridge School;
         /// <summary>Who carries on after the player, in a sentence (the dynasty's will or the law's order); null or empty while there is none to say.</summary>
         public static Func<string> WillLine;
+        /// <summary>The talk with the partner who found out about somebody else (Social/Love): opens when the player speaks to them at home; null for none.</summary>
+        public static Func<DialogEntry> LoveTalk;
 
         public static void Reset()
         {
@@ -138,6 +141,7 @@ namespace RealLifeOverhaul.Family
             Law = null;
             School = null;
             WillLine = null;
+            LoveTalk = null;
         }
     }
 
@@ -255,7 +259,7 @@ namespace RealLifeOverhaul.Family
             List<ChildRecord> kids = FamilyState.S.Children;
             for (int i = 0; i < kids.Count; i++)
             {
-                if (!kids[i].Grown && !string.IsNullOrEmpty(kids[i].Name))
+                if (!kids[i].Grown && !kids[i].Away && !string.IsNullOrEmpty(kids[i].Name))
                 {
                     children.Add(kids[i].Name);
                 }

@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
         private static float _effortDrain;
         private static float _noticedAt = -1000f;
         private static bool _bodyBroken;
+        private static Doing _lastDoing = Doing.Nothing;   // what the last look found, to count a session once when it begins
 
         public static bool Ill => HomeState.Ill != Illness.None;
         public static bool SickNoteActive => HomeState.Loaded && HomeState.SickNoteUntil > 0f && TimeHelper.NowInMinutes() < HomeState.SickNoteUntil;
@@ -49,7 +50,11 @@ namespace RealLifeOverhaul
             }
             _fitDrain = float.NaN;
             _noticedAt = -1000f;
+            _lastDoing = Doing.Nothing;
         }
+
+        /// <summary>The share of Home's own illness chances a body at this fitness meets (1 when fitness is not kept): a fitter player catches a little less.</summary>
+        private static float FitShare => Settings.HomeFitness ? FitnessRules.IllnessShare(HomeState.Fitness) / 1000f : 1f;
 
         private static float _cutSaid = -999f;
 
@@ -142,7 +147,7 @@ namespace RealLifeOverhaul
                 {
                     float before = HomeState.WetMinutes;
                     HomeState.WetMinutes += minutes;
-                    if (before < HomeBalance.WetLimit && HomeState.WetMinutes >= HomeBalance.WetLimit && Draw(1) < HomeBalance.ColdFromRain * Easy)
+                    if (before < HomeBalance.WetLimit && HomeState.WetMinutes >= HomeBalance.WetLimit && Draw(1) < HomeBalance.ColdFromRain * Easy * FitShare)
                     {
                         Catch(Illness.Cold, "reallife_health_cause_rain", false);
                     }
@@ -160,16 +165,25 @@ namespace RealLifeOverhaul
 
             if (Settings.HomeFitness)
             {
+                if (doing != _lastDoing && (doing == Doing.Workout || doing == Doing.Exercise || doing == Doing.Sport))
+                {
+                    HomeState.Today.Sessions++;   // counted as it begins: the "why" lines say how many
+                }
                 switch (doing)
                 {
-                    case Doing.Workout: Trained(minutes, HomeBalance.FitWorkout, true); break;
-                    case Doing.Exercise: Trained(minutes, HomeBalance.FitExercise, true); break;
-                    case Doing.Sport: Trained(minutes, HomeBalance.FitSport, false); break;
-                    case Doing.Jogging: Trained(minutes, HomeBalance.FitJog * boost, false); break;
+                    case Doing.Workout: Trained(minutes, HomeBalance.FitWorkout, true, false); break;
+                    case Doing.Exercise: Trained(minutes, HomeBalance.FitExercise, true, false); break;
+                    case Doing.Sport: Trained(minutes, HomeBalance.FitSport, false, false); break;
+                    case Doing.Jogging: Trained(minutes, HomeBalance.FitJog * boost, false, true); break;
                 }
             }
+            _lastDoing = doing;
             float effort = doing == Doing.Jogging ? HomeBalance.JogDrain : doing == Doing.Exercise ? HomeBalance.ExerciseDrain
                 : doing == Doing.HomeRoutine ? HomeBalance.RoutineDrain : 0f;
+            if (effort > 0f && Settings.HomeFitness)
+            {
+                effort *= FitnessRules.EffortShare(HomeState.Fitness);   // a fit body spends less of its energy on the same run
+            }
             if (effort > 0f && SaveGameManager.Current.Energy <= HomeBalance.EnergyFloor)
             {
                 effort = 0f;   // nothing of ours takes the player down to fainting
@@ -177,13 +191,19 @@ namespace RealLifeOverhaul
             SetDrain(EffortDrain, ref _effortDrain, effort);
         }
 
-        private static void Trained(float minutes, float perHour, bool builds)
+        private static void Trained(float minutes, float perHour, bool builds, bool run)
         {
             float hours = minutes / 60f;
             float before = HomeState.ExerciseToday;
             float returns = 1f / (1f + before / 60f);          // the second hour of a day is worth half the first
             float gain = perHour * hours * returns * (Ill ? 0.5f : 1f);
+            float was = HomeState.Fitness;
             HomeState.Fitness = HomeState.Clamp(HomeState.Fitness + gain, 0f, 100f);
+            HomeState.Today.Exercise += HomeState.Fitness - was;   // what it really added, for the "why" lines
+            if (run)
+            {
+                HomeState.Today.RunGain += HomeState.Fitness - was;
+            }
             HomeState.ExerciseToday = before + minutes;
             HomeState.LastWorkoutDay = TimeHelper.CurrentDay;
             if (builds)
@@ -354,10 +374,10 @@ namespace RealLifeOverhaul
             HomeState.WorkHours *= 0.5f;
             if (Settings.HomeFitness)
             {
-                if (day - HomeState.LastWorkoutDay >= 3)
-                {
-                    HomeState.Fitness = HomeState.Clamp(HomeState.Fitness + HomeBalance.FitIdlePerDay * passed * Easy, 0f, 100f);
-                }
+                // The third day without exercise is the first that costs (several days passing at once, a time skip, charge only the days past that), and with the diet
+                // option on yesterday's food and drink move it a little: FitnessRules.Morning is the one rule, and what it moved goes into today's ledger for the pages.
+                HomeState.Fitness = FitnessRules.Morning(HomeState.Fitness, day, HomeState.LastWorkoutDay, passed, Easy, Settings.HomeDiet, HomeState.EndedHome, HomeState.EndedPlain,
+                    HomeState.EndedJunk, HomeState.EndedWeekMeals, HomeState.EndedWeekJunk, HomeState.EndedDrinks, ref HomeState.Today);
                 float diet = HomeState.DietScore;
                 if (diet <= HomeBalance.DietPoor && day - HomeState.LastWorkoutDay >= 2)
                 {
@@ -368,23 +388,51 @@ namespace RealLifeOverhaul
                     HomeState.FatDue += HomeBalance.FatPerGoodDay * passed;
                 }
             }
+            HomeState.StartedDay();   // today's first figure for the fourteen days' trend, after the morning's moves
+            FirstNotice();
             if (!Settings.HomeIllness || Ill || ModState.IsSick || day < 4)
             {
                 return;
             }
             float flu = HomeBalance.FluADay * (HomeState.DietScore <= HomeBalance.DietPoor ? 2f : 1f) * (HomeState.SleepDebt > HomeBalance.DebtHigh ? 2f : 1f);
-            if (Draw(3) < flu * Easy)
+            if (Draw(3) < flu * Easy * FitShare)
             {
                 Catch(Illness.Flu, HomeState.DietScore <= HomeBalance.DietPoor ? "reallife_health_cause_diet" : "reallife_health_cause_going_round", false);
             }
-            else if (HomeState.SleepDebt > HomeBalance.DebtHigh && Draw(4) < HomeBalance.ColdWhenRunDown * Easy)
+            else if (HomeState.SleepDebt > HomeBalance.DebtHigh && Draw(4) < HomeBalance.ColdWhenRunDown * Easy * FitShare)
             {
                 Catch(Illness.Cold, "reallife_health_cause_no_sleep", false);
             }
-            else if (HomeState.Hygiene < HomeBalance.HygieneNotice && Draw(5) < HomeBalance.ColdWhenUnwashed * Easy)
+            else if (HomeState.Hygiene < HomeBalance.HygieneNotice && Draw(5) < HomeBalance.ColdWhenUnwashed * Easy * FitShare)
             {
                 Catch(Illness.Cold, "reallife_health_cause_unwashed", false);
             }
+        }
+
+        // The first time fitness has moved noticeably, once for the save: what moves it, in a line, and where to see more.
+        private static void FirstNotice()
+        {
+            if (!Settings.HomeFitness || HomeState.FitTold)
+            {
+                return;
+            }
+            float since = HomeState.StartOf(HomeState.FitKnown - 1);
+            if (since < 0f || !FitnessRules.Noticeable(HomeState.Fitness, since, HomeState.FitKnown))
+            {
+                return;
+            }
+            HomeState.FitTold = true;
+            bool up = HomeState.Fitness > since;
+            int variant = (TimeHelper.CurrentDay & 1);
+            string key = up ? (variant == 0 ? "reallife_fitness_first_up_1" : "reallife_fitness_first_up_2") : (variant == 0 ? "reallife_fitness_first_down_1" : "reallife_fitness_first_down_2");
+            var data = new Dictionary<string, string>(3)
+            {
+                { "fitness", FitnessRules.Whole(HomeState.Fitness).ToString(CultureInfo.InvariantCulture) },
+                { "change", Mathf.Abs(FitnessRules.Whole(HomeState.Fitness) - FitnessRules.Whole(since)).ToString(CultureInfo.InvariantCulture) },
+                { "days", Mathf.Max(1, HomeState.FitKnown - 1).ToString(CultureInfo.InvariantCulture) }
+            };
+            Notifications.Show(up ? NotificationType.Success : NotificationType.Warning, key, data, 14f);
+            Logger?.Info("Home: fitness " + FitnessRules.Whole(since) + " to " + FitnessRules.Whole(HomeState.Fitness) + " over " + (HomeState.FitKnown - 1) + " days: the first notice is given.");
         }
 
         /// <summary>A sleep ended: its quality pays off sleep debt, sets the mood, eases an illness and shows on the body. Returns the quality, 0..100.</summary>
@@ -441,7 +489,7 @@ namespace RealLifeOverhaul
             {
                 Shorten(HomeBalance.RestCure * 60f);
             }
-            if (Settings.HomeIllness && inCar && Draw(6) < HomeBalance.BackFromCar * Easy)
+            if (Settings.HomeIllness && inCar && Draw(6) < HomeBalance.BackFromCar * Easy * FitShare)
             {
                 Catch(Illness.BackPain, "reallife_health_cause_car", false);
             }

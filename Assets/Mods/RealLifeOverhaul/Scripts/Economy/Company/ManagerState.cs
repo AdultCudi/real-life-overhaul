@@ -126,6 +126,7 @@ namespace RealLifeOverhaul.Economy
         public int Today;                       // decisions made since the last notice of them
         public readonly List<ManagerFile> Managers = new List<ManagerFile>(8);
         public readonly List<Decision> Decisions = new List<Decision>(32);
+        public readonly ReviewWeek Week = new ReviewWeek();   // the reviews the managers answered this week, for Sunday's notice
 
         public ManagerFile At(string place)
         {

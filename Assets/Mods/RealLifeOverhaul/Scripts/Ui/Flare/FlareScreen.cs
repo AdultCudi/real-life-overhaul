@@ -298,6 +298,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.SortCommand:
                 case FlareFace.NicheCommand: return KitPress(command, arg);
                 case FlareFace.PromoteCommand: return OpenAd(arg);
+                case FlareFace.AnswerAllCommand: return OpenBatch(arg);
                 case FlareFace.EditCommand: return OpenEdit();
                 case FlareFace.ProfileActCommand: return ProfileAct(arg);
                 default: return false;

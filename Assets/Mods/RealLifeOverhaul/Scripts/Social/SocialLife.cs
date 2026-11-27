@@ -28,7 +28,16 @@ namespace RealLifeOverhaul
         void Stress(float change);
 
         void Ate();
+
+        /// <summary>The player's fitness, 0 to 100; -1 when it is not known (home life or the fitness option is off): a passion then reads nothing of it.</summary>
+        int FitnessLevel { get; }
+
+        /// <summary>How the player's meals have been lately: 0 poor, 1 fair, 2 good; -1 when not known.</summary>
+        int DietBand { get; }
     }
+
+    /// <summary>Fills in what a neighbouring feature knows of the player (<see cref="SocialLinks.FillFacts"/>).</summary>
+    public delegate void SocialFactsFill(ref SocialFacts facts);
 
     /// <summary>The social life's neighbours, set by Wiring. Each is null while nobody fills it in, and is then not asked.</summary>
     public static class SocialLinks
@@ -97,6 +106,19 @@ namespace RealLifeOverhaul
         /// </summary>
         public static Func<SocialPerson, SocialPerson, bool, string> Position;
 
+        /// <summary>
+        /// What other features say of the player when an outing is judged by a person's passion (SocialPassionRules): fitness and diet from
+        /// Home, net worth from the books, what was given to charity this month from Giving, and whether a work uniform is on. Filled in by
+        /// Wiring/TraitLinks, asked once an outing; null while nobody fills it, and then those facts are not known.
+        /// </summary>
+        public static SocialFactsFill FillFacts;
+
+        /// <summary>
+        /// Law, Standing and Flare: what the city could have heard of the player, read when somebody is met (SocialImpression). Null while nobody
+        /// fills it in: a newcomer's, which moves nothing.
+        /// </summary>
+        public static Func<SocialRepute> Repute;
+
         public const string WordsKey = SocialFollowRules.WordsKey;   // RLO Texts' line for a model's words: "{text}"
     }
 
@@ -123,8 +145,25 @@ namespace RealLifeOverhaul
             return weekday == DayOfWeekOrdered.Saturday || weekday == DayOfWeekOrdered.Sunday;
         }
 
-        /// <summary>Who the player is interested in (<see cref="RomanceRules"/>): the option of that name. A field read.</summary>
-        public static int Interest => Settings.FamilyInterest;
+        /// <summary>
+        /// Who the player is interested in (<see cref="RomanceRules"/>): the option of that name. Asking it also hands the rules the two age
+        /// options (<see cref="ApplyWindow"/>), because everything that judges somebody's age asks for the wish beside the player's age, so
+        /// a value moved by a preset or a reset is never stale. A few field reads.
+        /// </summary>
+        public static int Interest
+        {
+            get
+            {
+                ApplyWindow();
+                return Settings.FamilyInterest;
+            }
+        }
+
+        /// <summary>The options "Partners younger than you, at most" and "Partners older than you, at most" given to <see cref="RomanceRules"/>, which keeps each between 2 and 25 years.</summary>
+        public static void ApplyWindow()
+        {
+            RomanceRules.Window(Settings.RomanceYounger, Settings.RomanceOlder);
+        }
 
         /// <summary>
         /// The played character's age in whole years, as the game counts it; 0 when the game does not say, which rules nobody out
@@ -380,6 +419,7 @@ namespace RealLifeOverhaul
             Toast(NotificationType.Error, "reallife_social_broke_up", Data(person), 12f);
             ModState.AddModifier(ModState.MoodDownBig);
             TellPartnerChanged();
+            LoveHooks.Changed();
             if (SocialState.Plan.Active && SocialState.Plan.Person == person.Index)
             {
                 SocialState.Plan.Clear();
@@ -387,8 +427,12 @@ namespace RealLifeOverhaul
             Logger?.Info("Social: " + person.Name + " ended it (affection " + person.Affection.ToString("F0") + ", trust " + person.Trust.ToString("F0") + ").");
         }
 
-        /// <summary>Numbers swapped: an acquaintance from now, in the phone. <paramref name="by"/>: who brought them along, or null.</summary>
-        public static void Meet(SocialPerson person, bool warm, SocialPerson by = null)
+        /// <summary>
+        /// Numbers swapped: an acquaintance from now, in the phone. <paramref name="by"/>: who brought them along, or null. <paramref name="standing"/>: the
+        /// answers right at the quiz their friends gave the player, for the first standing it earns (-1 when there was none). Every way of meeting comes
+        /// through here, so the first figures and the first impression (<see cref="SocialImpression"/>) are one rule for all of them.
+        /// </summary>
+        public static void Meet(SocialPerson person, bool warm, SocialPerson by = null, int standing = -1)
         {
             if (person.Met)
             {
@@ -398,21 +442,25 @@ namespace RealLifeOverhaul
             person.MetDay = Day;
             person.Stage = SocialStage.Acquaintance;
             person.StageDay = Day;
-            person.Familiarity = warm ? 12f : 8f;
-            person.Affection = warm ? 14f : 8f;
-            person.Trust = warm ? 12f : 9f;
-            if (person.Origin == SocialOrigin.Helped)
-            {
-                person.Trust += 14f;   // they have seen what the player is like
-                person.Affection += 8f;
-            }
+            int impression = FirstImpression();
+            SocialImpression.Start(warm, person.Origin, impression, standing, out float familiarity, out float affection, out float trust);
+            person.Familiarity = familiarity;
+            person.Affection = affection;
+            person.Trust = trust;
+            person.InterestSeed = person.Seed;   // their things are theirs from here, whatever look they are given later
             person.LastContactDay = Day;
             Remember(person, MemoryCode.Met);
             SocialState.LastMeetDay = Day;
             SocialPhone.Add(person, true);
             Toast(NotificationType.Success, "reallife_social_met", Data(person), 10f);
+            if (impression != 0)
+            {
+                Dictionary<string, string> data = Data(person, "trust", (impression > 0 ? "+" : string.Empty) + impression);
+                Toast(NotificationType.Info, SocialFollowRules.Line(impression > 0 ? SocialInterests.NameGood : SocialInterests.NameBad, Day, person.Seed), data, 9f);
+            }
             ModState.AddModifier(ModState.Social);
             Logger?.Info("Social: met " + person.Name + " (" + person.Origin + "), traits " + person.Traits
+                         + (impression != 0 ? ", first impression " + (impression > 0 ? "+" : string.Empty) + impression + " trust" : string.Empty)
                          + (Romantic(person) ? ", a romance is possible" : person.Compatible ? ", open to a romance but not with this player (their sex or age)" : string.Empty) + ".");
             try
             {
@@ -421,6 +469,28 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Error(e);   // the meeting stands whatever the networking life made of it
+            }
+        }
+
+        /// <summary>
+        /// The trust points a person newly met starts with for what they could have heard of the player (<see cref="SocialImpression.Of"/>), 0 with
+        /// 'First impressions follow your name' off or with nothing to ask. Read once, when somebody is met.
+        /// </summary>
+        public static int FirstImpression()
+        {
+            if (!Settings.FirstImpressions || SocialLinks.Repute == null)
+            {
+                return 0;
+            }
+            try
+            {
+                SocialRepute repute = SocialLinks.Repute();
+                return SocialImpression.Of(in repute);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return 0;
             }
         }
 
@@ -605,7 +675,8 @@ namespace RealLifeOverhaul
                 return;
             }
             bool shortNotice = plan.Time - Now < 60f;
-            Change(person, 0f, shortNotice ? SocialRules.CancelledAffection : -1f, shortNotice ? SocialRules.CancelledTrust : -1f);
+            float minds = SocialPassionRules.PlanMinds(person);   // a career focused person moves plans for work too
+            Change(person, 0f, (shortNotice ? SocialRules.CancelledAffection : -1f) * minds, (shortNotice ? SocialRules.CancelledTrust : -1f) * minds);
             Logger?.Info("Social: the player called off " + plan.Kind + " with " + person.Name + (shortNotice ? " at short notice." : "."));
             plan.Clear();
         }
@@ -621,7 +692,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            float weight = person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f;
+            float weight = (person.Has(SocialTrait.Punctual) ? 1.4f : person.Has(SocialTrait.Late) ? 0.7f : 1f) * SocialPassionRules.PlanMinds(person);
             Change(person, 0f, SocialRules.StoodUpAffection * weight, SocialRules.StoodUpTrust * weight);
             Remember(person, MemoryCode.StoodUp);
             SendText(person, SocialLines.Pick(SocialCatalogue.TextStoodUp), data, true, true);

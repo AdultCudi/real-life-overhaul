@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
                 LedgerBridges.TextsEdition = Edition;
                 LedgerBridges.TextsBody = Body;
                 TextsDirector.StillThere = StillThere;
+                TextCheck.Drawable = Ui.UiFonts.Draws;
                 LedgerShown.Clear();
                 News.ReportedAt -= _onNews ?? (_onNews = Heard);
                 News.ReportedAt += _onNews;
@@ -64,6 +65,7 @@ namespace RealLifeOverhaul
                 LedgerBridges.TextsEdition = null;
                 LedgerBridges.TextsBody = null;
                 TextsDirector.StillThere = null;
+                TextCheck.Drawable = null;
                 if (_onNews != null)
                 {
                     News.ReportedAt -= _onNews;

@@ -127,6 +127,7 @@ namespace RealLifeOverhaul
         {
             if (!_broken && SocialState.Loaded && Settings.Social)
             {
+                SocialState.HelpedDay = SocialLife.Day;   // a kind soul among the cast is glad of it for a week (SocialPassionRules)
                 Pend(SocialOrigin.Helped, 0.6f, Time.unscaledTime, 25f);
             }
         }
@@ -247,6 +248,10 @@ namespace RealLifeOverhaul
             _introFriend = friend;
             _introStranger = stranger;
             _introUntil = Time.unscaledTime + IntroSeconds;
+            if (Settings.FriendsQuiz)
+            {
+                friend.IntroDay = SocialLife.Day;   // their friends need a few days between two evenings (SocialFriendsRules.IntroWait)
+            }
             return true;
         }
 

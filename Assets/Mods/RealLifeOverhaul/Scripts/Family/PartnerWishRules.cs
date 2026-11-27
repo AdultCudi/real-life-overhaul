@@ -24,6 +24,9 @@ namespace RealLifeOverhaul.Family
                    && IncomeRules.Reached(held, cash, atIncome, atCash) && (lastAskDay <= 0 || day - lastAskDay >= PartnerWorkRules.AskAgainDays);
         }
 
+        /// <summary>Whether the wish can be put to the player at all: a career focused partner never asks to stop working, however well the player does.</summary>
+        public static bool MayAsk(int wish, bool granted, bool careerFocused) => granted || !(careerFocused && wish == Stop);
+
         /// <summary>What they wish for, from their seed: about half would stop, half would retrain.</summary>
         public static int WishOf(int seed) => ((seed >> 4) & 1) == 0 ? Stop : Retrain;
 

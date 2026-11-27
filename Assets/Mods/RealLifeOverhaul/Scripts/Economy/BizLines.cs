@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_", P + "love_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
             P + "tech_colo_ended",   // what a closed data centre's clients are paid for their terms ended early
-            P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
+            P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_pace", P + "tech_game_bonus", P + "tech_game_royalty",
             P + "tech_founding_fees", P + "tech_founding_expand", P + "tech_founding_reseller",   // a startup's incorporation, a neighbouring niche opened, a partner's cut of what it resells
             P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
             P + "tech_listing_bankers",   // the bankers' retainer on the way to the market, at the firm
@@ -92,7 +92,8 @@ namespace RealLifeOverhaul.Economy
             P + "bld_demolition", P + "bld_demolition_back", P + "bld_fees_back", P + "bld_insurance", P + "bld_investor_in", P + "bld_investor_out",
             P + "bld_land", P + "bld_land_auction", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
             P + "bld_materials", P + "bld_plant_buy", P + "bld_plant_sale", P + "bld_refit", P + "bld_refit_back", P + "bld_repay",
-            P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land"
+            P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land",
+            P + "love_support", P + "love_mishap"   // a child's monthly support and a night's small mishap: the player's own money, never a business's
         };
 
         private static readonly Dictionary<string, BizLine> Lines = Build();
