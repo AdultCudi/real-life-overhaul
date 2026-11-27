@@ -98,6 +98,7 @@ namespace RealLifeOverhaul
             type.isLuxuryCar = d.Luxury;
             type.fitsFlatbed = d.FitsFlatbed;
             type.taxDeductible = d.TaxDeductible;
+            type.autoParkSupported = d.AutoPark;
             type.destinationsThatCanDeliver = d.Destinations;
             type.enclosed = true;
             if (ModdingAPI.RegisterModVehicleType(type))

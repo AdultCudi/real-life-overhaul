@@ -334,6 +334,7 @@ A car made for the mod is a vehicle type of its own, registered through the game
 | Halden Marlow Estate, estate car | 24 000 | Vord Tiara Vic | top speed 72, power 95, brakes 4 000, turn radius 35, tank 62, cargo 16 |
 | Halden Drover, pickup | 29 000 | Vord V150 | top speed 70, power 98, brakes 4 500, turn radius 40, tank 80, cargo 18; takes the flatbed trolley, tax deductible, two delivery stops |
 | Halden Carrier, panel van | 21 000 | UMC Desert | top speed 60, power 68, brakes 3 000, turn radius 38, tank 120, cargo 20; takes the flatbed trolley, tax deductible, two delivery stops |
+| Halden Tarn, off-roader | 38 000 | UMC Nunavut | top speed 65, power 120, brakes 5 000, turn radius 36, tank 95, cargo 16; parks itself, takes the flatbed trolley, two delivery stops |
 
 Option `garage_mod_cars` (on): off, none is sold; the types stay registered, so a car already owned stays what it is.
 

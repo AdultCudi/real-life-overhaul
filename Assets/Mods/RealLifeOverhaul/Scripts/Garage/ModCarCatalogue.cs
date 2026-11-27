@@ -23,6 +23,7 @@ namespace RealLifeOverhaul
         public bool Luxury;
         public bool FitsFlatbed;       // takes the game's flatbed trolley, as its vans and pickups do
         public bool TaxDeductible;     // a working vehicle to the game's tax, as its vans and pickups are
+        public bool AutoPark;          // parks itself, as the game's UMC Nunavut does
         public int Destinations = 1;   // how many stops a delivery in it may make: 1 on the game's cars, 2 on its vans and pickups
         public float AxleFront, AxleRear;   // metres along the car from its middle (Unity z)
         public float TrackHalf;             // a wheel's centre from the middle line
@@ -145,7 +146,18 @@ namespace RealLifeOverhaul
             HalfWidth = 0.985f, Front = 2.65f, Rear = -2.65f, Height = 2.05f, BonnetHeight = 1.17f
         };
 
-        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier };
+        public static readonly ModCarDef HaldenTarn = new ModCarDef
+        {
+            Id = "haldentarn", TypeName = Prefix + "haldentarn", Donor = GamePrefix + "umcnunavut", KindKey = "reallife_cars_kind_offroad",
+            // The off-roader under the UMC Nunavut (65,000: faster, stronger, 18 boxes): it parks itself and takes 16 boxes and a flatbed trolley,
+            // and is slower than the saloons. The spare wheel on its tailgate is part of its length (the rear is 2.66 m from the middle).
+            Price = 38000, MaxFuel = 95f, Cargo = 16, MaxSpeed = 65, EnginePower = 120f, BrakeForce = 5000f, TurnRadius = 36, DamageIntensity = 0.24f,
+            FitsHandTruck = true, Luxury = false, FitsFlatbed = true, TaxDeductible = false, AutoPark = true, Destinations = 2,
+            AxleFront = 1.55f, AxleRear = -1.40f, TrackHalf = 0.83f, WheelRadius = 0.42f, WheelWidth = 0.28f,
+            HalfWidth = 0.98f, Front = 2.45f, Rear = -2.66f, Height = 1.90f, BonnetHeight = 1.22f
+        };
+
+        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier, HaldenTarn };
 
         /// <summary>True for a vehicle type of the mod's own.</summary>
         public static bool IsOurs(string typeName)
