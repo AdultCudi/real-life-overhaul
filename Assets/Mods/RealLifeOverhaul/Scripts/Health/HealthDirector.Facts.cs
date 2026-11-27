@@ -12,6 +12,25 @@ namespace RealLifeOverhaul.Health
         /// </summary>
         public float HomeDraw(int slot) => HealthRules.Draw(_state, HealthGame.Day, slot);
 
+        // The fitness meter for the You page, from Home through its bridge; a fault leaves the meter out and the rest of the page as it was.
+        private static void FitFacts(FitnessView view)
+        {
+            view.Known = false;
+            if (HealthBridges.Fitness == null)
+            {
+                return;
+            }
+            try
+            {
+                HealthBridges.Fitness(view);
+            }
+            catch (Exception e)
+            {
+                view.Known = false;
+                Logger?.Error(e);   // the meter is left out of the page and the rest is as it was
+            }
+        }
+
         /// <summary>Fills the facts of the pages. False while health is not running (the page then says so).</summary>
         public bool Facts(HealthFacts f)
         {
@@ -43,6 +62,7 @@ namespace RealLifeOverhaul.Health
             f.Wave = _wave;
             f.IllAtHome = _illAtHome;
             f.Lifestyle = HealthRules.Lifestyle(HealthGame.Factors());
+            FitFacts(f.Fit);
 
             HealthAppointment a = _state.Appointment;
             f.Booked = a.Booked;

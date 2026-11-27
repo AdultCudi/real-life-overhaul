@@ -427,6 +427,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_moved", () => Careers.CareersDirector.Instance?.TestMoved())
                 .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
                     v => Settings.CareersAgencyNote = v)
+                .AddToggle(Settings.CareersFitnessId, "reallife_work_opt_fitness", Settings.CareersFitness,
+                    v => Settings.CareersFitness = v)
+                .AddButton("reallife_test_fitness_job", () => Careers.CareersDirector.Instance?.TestFitnessJob())
                 .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
                     v => Settings.CareersRejectReason = v)
                 .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
@@ -511,6 +514,8 @@ namespace RealLifeOverhaul
                     v => Settings.HomeIllness = v)
                 .AddToggle(Settings.HomeFitnessId, "reallife_home_fitness", Settings.HomeFitness,
                     v => Settings.HomeFitness = v)
+                .AddToggle(Settings.HomeDietId, "reallife_home_diet", Settings.HomeDiet,
+                    v => Settings.HomeDiet = v)
                 .AddToggle(Settings.HomeBodyId, "reallife_home_body", Settings.HomeBody,
                     v => Settings.HomeBody = v)
                 .AddToggle(Settings.HomeJogId, "reallife_home_jog", Settings.HomeJog,

@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Health
             Line("reallife_hc_row_wave", HealthText.Fill(HealthPages.WaveKey(f.Wave)));
             Line("reallife_hc_row_home", f.IllAtHome.ToString());
             Line("reallife_hc_row_living", HealthText.Fill(HealthPages.LivingKey(f.Lifestyle)));
+            FitnessRows(f.Fit);
             if (f.Booked)
             {
                 Line("reallife_hc_row_booked", HealthText.Fill("reallife_hc_row_booked_value", "day", f.BookedDay.ToString(), "hour", f.BookedHour.ToString()));
@@ -188,6 +189,7 @@ namespace RealLifeOverhaul.Health
             {
                 box.Note(HealthText.Fill(f.Treated ? "reallife_hc_you_ill_treated" : "reallife_hc_you_ill", "illness", illness));
             }
+            FitnessNotes(box, f.Fit);
             box.Note(HealthText.Fill("reallife_hc_doctor_how", "wait", HealthCatalogue.AppointmentWait.ToString(), "fee",
                 HealthGame.Money(HealthRules.At(HealthCatalogue.MissedFee, f.Level))));
             Transform buttons = box.ButtonRow();
@@ -199,6 +201,41 @@ namespace RealLifeOverhaul.Health
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_hc_book", () => { HealthLive.Instance.Book(); Refresh(); });
             }
+        }
+
+        // The fitness meter in the table: the figure with its words, then where it stood at the start of the days kept.
+        private void FitnessRows(FitnessView fit)
+        {
+            if (!fit.Known)
+            {
+                return;
+            }
+            string band = HealthText.Fill(FitnessRules.BandKeys[fit.Band]);
+            Line("reallife_fitness_row", HealthText.Fill("reallife_fitness_value", "fitness", fit.Level.ToString(), "band", band));
+            if (fit.TrendCount >= 2)
+            {
+                Line("reallife_fitness_row_trend", HealthText.Fill("reallife_fitness_trend_value", "from", fit.Trend[0].ToString(), "to", fit.Level.ToString()));
+            }
+            else
+            {
+                Line("reallife_fitness_row_trend", HealthText.Fill("reallife_fitness_trend_none"));
+            }
+        }
+
+        // What moved it this week, a sentence a line in one note of the box, and one line on how fitness works.
+        private static void FitnessNotes(InfoBox box, FitnessView fit)
+        {
+            if (!fit.Known)
+            {
+                return;
+            }
+            var lines = new System.Text.StringBuilder(160);
+            for (int i = 0; i < fit.WhyCount && i < 3; i++)
+            {
+                WhyLine line = fit.Why[i];
+                lines.Append(i > 0 ? "\n" : string.Empty).Append(HealthText.Fill(FitnessRules.WhyKey(line), "n", line.N.ToString(), "amount", FitnessRules.Signed(line.Amount)));
+            }
+            box.Note(fit.WhyCount == 0 ? HealthText.Fill("reallife_fitness_why_none") : lines.ToString());
         }
 
         private TableSpec Cover(InfoBox box)

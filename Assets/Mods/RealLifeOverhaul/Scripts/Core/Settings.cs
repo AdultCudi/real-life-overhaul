@@ -318,6 +318,7 @@
         public const string HomeMorningNewsId = "home_morning_news";
         public const string HomeStripId = "home_strip";
         public const string HomeEasyId = "home_easy";
+        public const string HomeDietId = "home_diet";
         public const string LawPrecinctsId = "law_precincts";
         public const string LawCustodyId = "law_custody";
         public const string LawArrestsId = "law_arrests";
@@ -416,6 +417,7 @@
         public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
+        public const string CareersFitnessId = "careers_fitness";
         public const string CareersClassStartId = "careers_class_start";
         public const string CareersSkillFadeId = "careers_skill_fade";
         public const string CareersRejectReasonId = "careers_reject_reason";
@@ -783,6 +785,7 @@
         public static bool HomeMorning = true;           // the morning summary
         public static bool HomeMorningNews = true;       // ...with the city's news held while the player slept in it, one notification or few
         public static bool HomeStrip = true;             // the small needs strip on screen
+        public static bool HomeDiet = true;              // what is eaten (and drunk) moves fitness a little, a day at a time
         public static bool HomeEasy = false;             // needs wear down half as fast, illness is half as likely
         public static bool LawPrecincts = true;          // a police precinct in each district
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
@@ -880,6 +883,7 @@
         public static bool CareersSkillFade = true;      // a skill left unused for weeks fades a little each day (off: nothing fades, and fading starts again from the day it is switched on)
         public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
+        public static bool CareersFitness = true;        // the physical jobs (the police first) ask for a fitness, and a worker far below it is warned (off: applications are judged as before)
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
         public static bool CareersOwnDesk = true;        // ...a contract's work started at a free desk of an office business of the player's, not from the Career app (off: the app starts it)
@@ -1273,6 +1277,7 @@
             HomeMorningNews = Bool(modId, HomeMorningNewsId, HomeMorningNews);
             HomeStrip = Bool(modId, HomeStripId, HomeStrip);
             HomeEasy = Bool(modId, HomeEasyId, HomeEasy);
+            HomeDiet = Bool(modId, HomeDietId, HomeDiet);
             LawPrecincts = Bool(modId, LawPrecinctsId, LawPrecincts);
             LawCustody = Bool(modId, LawCustodyId, LawCustody);
             LawArrests = Bool(modId, LawArrestsId, LawArrests);
@@ -1371,6 +1376,7 @@
             CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
+            CareersFitness = Bool(modId, CareersFitnessId, CareersFitness);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);
             CareersSkillFade = Bool(modId, CareersSkillFadeId, CareersSkillFade);
             CareersRejectReason = Bool(modId, CareersRejectReasonId, CareersRejectReason);

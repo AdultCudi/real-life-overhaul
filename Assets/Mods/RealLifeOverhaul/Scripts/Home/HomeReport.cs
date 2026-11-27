@@ -33,6 +33,20 @@ namespace RealLifeOverhaul
                 : "reallife_health_tip_none";
         }
 
+        private static readonly FitnessView View = new FitnessView();
+
+        // What moved fitness most this week, in brackets after the trend ("improving (3 runs this week: Fitness +18)"); nothing while it is not kept or nothing moved it.
+        private static string WhyBrackets()
+        {
+            HomeFitness.Fill(View);
+            if (!View.Known || View.WhyCount == 0)
+            {
+                return string.Empty;
+            }
+            WhyLine line = View.Why[0];
+            return " (" + JobText.T(FitnessRules.WhyKey(line), "n", line.N.ToString(), "amount", FitnessRules.Signed(line.Amount)) + ")";
+        }
+
         private static int Count(Meal meal)
         {
             int count = 0;
@@ -60,6 +74,7 @@ namespace RealLifeOverhaul
             }
             float change = HomeState.Fitness - HomeState.FitnessWeekAgo;
             string trend = change > 1f ? "reallife_health_word_improving" : change < -1f ? "reallife_health_word_slipping" : "reallife_health_word_steady";
+            string trendWords = JobText.T(trend) + WhyBrackets();
             return "reallife_health_page".Localize(new
             {
                 hygiene = Mathf.RoundToInt(HomeState.Hygiene),
@@ -70,7 +85,7 @@ namespace RealLifeOverhaul
                 homeWord = JobText.T(TidyWord),
                 illness,
                 fitness = Mathf.RoundToInt(HomeState.Fitness),
-                trend = JobText.T(trend),
+                trend = trendWords,
                 diet = JobText.T(DietWord),
                 cooked = Count(Meal.Home),
                 plain = Count(Meal.Plain),

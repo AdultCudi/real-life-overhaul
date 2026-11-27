@@ -275,6 +275,21 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>The player's fitness, 0 to 100, or -1 when it is not kept (Home/HomeFitness.Level). Default: not known, so no post asks anything of it.</summary>
+        public static Func<int> Fitness;
+
+        public static int FitnessNow()
+        {
+            try
+            {
+                return Fitness != null ? Fitness() : -1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
         public static PoliceRules.Conduct ConductOver(int days)
         {
             try
@@ -315,6 +330,7 @@ namespace RealLifeOverhaul.Careers
         {
             Precincts = null;
             Conduct = null;
+            Fitness = null;
             Incident = null;
             Settle = null;
             Hurt = null;

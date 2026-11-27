@@ -210,6 +210,10 @@ namespace RealLifeOverhaul
             _marked = -1;
             int minutes = Mathf.Max(0, Mathf.RoundToInt(TimeHelper.NowInMinutes() - _startMinutes));
             float gained = HomeState.Fitness - _startFitness;
+            if (gained >= 1f)
+            {
+                HomeState.Today.Runs++;   // a run that moved fitness by a point is a run for the "why" lines (a stop after a few steps is not)
+            }
             var data = new Dictionary<string, string>(3)
             {
                 { "minutes", minutes.ToString() }, { "legs", _next.ToString() }, { "fitness", gained.ToString("F1") }

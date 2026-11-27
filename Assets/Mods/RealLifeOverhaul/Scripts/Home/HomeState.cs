@@ -70,8 +70,17 @@ namespace RealLifeOverhaul
         public static int MorningDay;       // the day the morning summary was last given
         public static float FitnessWeekAgo; // for the trend
         public static int TrendDay;
+        public static int FitKnown;         // how many days of FitStart are kept (0 on a save from before the history)
+        public static bool FitTold;         // the first notice of fitness moving has been given
+        public static float DrinksToday;    // units drunk today (Leisure's bar), for the diet's night of drinks
+
+        /// <summary>What the day that just ended held, read by HomeHealth.NewDay for the diet (not saved: it only means something the morning it is made).</summary>
+        public static int EndedHome, EndedPlain, EndedJunk, EndedWeekMeals, EndedWeekJunk;
+        public static float EndedDrinks;
 
         private static readonly int[] Diet = new int[DietDays * 4];   // per day: skipped, junk, plain, home (today first)
+        private static readonly float[] FitStart = new float[FitnessView.Days];   // fitness at the start of each day (today first)
+        private static readonly FitDay[] Ledger = new FitDay[FitnessView.Days];   // what moved it, per day (today first)
 
         public static void Reset()
         {
@@ -116,7 +125,14 @@ namespace RealLifeOverhaul
             MorningDay = 0;
             FitnessWeekAgo = 30f;
             TrendDay = 0;
+            FitKnown = 0;
+            FitTold = false;
+            DrinksToday = 0f;
+            EndedHome = EndedPlain = EndedJunk = EndedWeekMeals = EndedWeekJunk = 0;
+            EndedDrinks = 0f;
             System.Array.Clear(Diet, 0, Diet.Length);
+            System.Array.Clear(FitStart, 0, FitStart.Length);
+            System.Array.Clear(Ledger, 0, Ledger.Length);
         }
 
         public static void Ate(Meal meal)
@@ -131,6 +147,72 @@ namespace RealLifeOverhaul
         public static int Meals(int daysAgo, Meal meal)
         {
             return daysAgo >= 0 && daysAgo < DietDays ? Diet[daysAgo * 4 + (int)meal] : 0;
+        }
+
+        /// <summary>A drink at a bar (units, a beer 0.8): counted for today's night of drinks.</summary>
+        public static void Drank(float units)
+        {
+            if (units > 0f && DrinksToday < 40f)
+            {
+                DrinksToday += units;
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------- the fitness ledger
+
+        /// <summary>Today's ledger, to be added to as the day goes (the day's entry moves back at midnight).</summary>
+        public static ref FitDay Today => ref Ledger[0];
+
+        /// <summary>The ledger of a day (0 today, 1 yesterday, up to 13).</summary>
+        public static FitDay LedgerOf(int daysAgo) => daysAgo >= 0 && daysAgo < Ledger.Length ? Ledger[daysAgo] : default(FitDay);
+
+        public static FitDay[] LedgerDays => Ledger;
+
+        /// <summary>The fitness at the start of a day (0 today, 1 yesterday...), or -1 where the history does not reach.</summary>
+        public static float StartOf(int daysAgo) => daysAgo >= 0 && daysAgo < FitKnown && daysAgo < FitStart.Length ? FitStart[daysAgo] : -1f;
+
+        /// <summary>Puts today's start-of-day figure right after the morning's moves (the idle days and the diet) have been made.</summary>
+        public static void StartedDay()
+        {
+            if (FitKnown <= 0)
+            {
+                FitKnown = 1;
+            }
+            FitStart[0] = Fitness;
+        }
+
+        // Moves the fitness history on by the days that went by: yesterday's entries go back, the days nobody lived through in play are held at the figure now
+        // (nothing is known of them), and today starts empty.
+        private static void ShiftFitness(int shift)
+        {
+            for (int i = FitnessView.Days - 1; i >= 0; i--)
+            {
+                FitStart[i] = i - shift >= 0 ? FitStart[i - shift] : 0f;
+                Ledger[i] = i - shift >= 0 ? Ledger[i - shift] : default(FitDay);
+            }
+            for (int k = 0; k < shift && k < FitnessView.Days; k++)
+            {
+                FitStart[k] = Fitness;
+            }
+            FitKnown = FitKnown <= 0 ? 1 : (FitKnown + shift > FitnessView.Days ? FitnessView.Days : FitKnown + shift);
+        }
+
+        // What the day that ends held, for the diet's rule: its meals, the last days' meals in all and how many were junk, and what was drunk.
+        private static void CaptureEnded()
+        {
+            EndedHome = Diet[3];
+            EndedPlain = Diet[2];
+            EndedJunk = Diet[1];
+            EndedWeekMeals = 0;
+            EndedWeekJunk = 0;
+            for (int day = 0; day < DietDays; day++)
+            {
+                int at = day * 4;
+                EndedWeekMeals += Diet[at + 1] + Diet[at + 2] + Diet[at + 3];
+                EndedWeekJunk += Diet[at + 1];
+            }
+            EndedDrinks = DrinksToday;
+            DrinksToday = 0f;
         }
 
         /// <summary>0 (junk and missed meals) .. 100 (cooked at home), 50 when nothing is known.</summary>
@@ -173,7 +255,9 @@ namespace RealLifeOverhaul
             {
                 Diet[0] += 2 - MealsToday;   // the day that just ended: fewer than two meals is one or two skipped
             }
+            CaptureEnded();
             CoffeesToday = 0;
+            ShiftFitness(passed > FitnessView.Days ? FitnessView.Days : passed);
             int shift = passed > DietDays ? DietDays : passed;
             for (int i = DietDays - 1; i >= 0; i--)
             {
@@ -217,6 +301,11 @@ namespace RealLifeOverhaul
                 }
                 string name = parts[i].Substring(0, equals);
                 string value = parts[i].Substring(equals + 1);
+                if (name == "fs" || name == "led")
+                {
+                    ReadFitness(name, value);
+                    continue;
+                }
                 if (name == "diet")
                 {
                     string[] meals = value.Split(',');
@@ -240,6 +329,8 @@ namespace RealLifeOverhaul
             Stress = Clamp(Stress, 0f, 100f);
             Tidy = Clamp(Tidy, 0f, 100f);
             Fitness = Clamp(Fitness, 0f, 100f);
+            FitKnown = FitKnown < 0 ? 0 : FitKnown > FitnessView.Days ? FitnessView.Days : FitKnown;
+            DrinksToday = Clamp(DrinksToday, 0f, 40f);
             SleepDebt = Clamp(SleepDebt, 0f, 24f);
             Strength = Clamp(Strength, -0.5f, 0.5f);
             Fat = Clamp(Fat, -0.5f, 0.5f);
@@ -296,6 +387,10 @@ namespace RealLifeOverhaul
             Put(text, "tko", Takeout);   // appended under h1: a build without takeout reads past names it does not know
             Put(text, "tkd", TakeoutDish);
             Put(text, "tkf", TakeoutFill);
+            Put(text, "fk", FitKnown);   // appended under h1 with the fitness history: a build without it reads past the names it does not know
+            Put(text, "fnt", FitTold ? 1 : 0);
+            Put(text, "dk", DrinksToday);
+            WriteFitness(text);
             text.Append(";diet=");
             for (int i = 0; i < Diet.Length; i++)
             {
@@ -347,7 +442,66 @@ namespace RealLifeOverhaul
                 case "tko": Takeout = (int)v; break;
                 case "tkd": TakeoutDish = (int)v; break;
                 case "tkf": TakeoutFill = (int)v; break;
+                case "fk": FitKnown = (int)v; break;
+                case "fnt": FitTold = v > 0.5f; break;
+                case "dk": DrinksToday = v; break;
             }
+        }
+
+        private const int LedgerFields = 11;
+
+        private static void WriteFitness(StringBuilder text)
+        {
+            text.Append(";fs=");
+            for (int i = 0; i < FitStart.Length; i++)
+            {
+                text.Append(i > 0 ? "," : string.Empty).Append(FitStart[i].ToString("0.#", CultureInfo.InvariantCulture));
+            }
+            text.Append(";led=");
+            for (int i = 0; i < Ledger.Length; i++)
+            {
+                FitDay d = Ledger[i];
+                text.Append(i > 0 ? "," : string.Empty)
+                    .Append(F(d.Exercise)).Append(',').Append(F(d.RunGain)).Append(',').Append(F(d.Idle)).Append(',').Append(F(d.DietHome)).Append(',').Append(F(d.DietJunk)).Append(',')
+                    .Append(F(d.DietDrink)).Append(',').Append(d.Runs).Append(',').Append(d.Sessions).Append(',').Append(d.HomeMeals).Append(',').Append(d.JunkMeals).Append(',')
+                    .Append(d.DrinkNights);
+            }
+        }
+
+        private static string F(float v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+
+        // The history's two lists: a value that does not read is left at nothing, so a damaged line costs a trend and never a load.
+        private static void ReadFitness(string name, string value)
+        {
+            string[] part = value.Split(',');
+            if (name == "fs")
+            {
+                for (int i = 0; i < part.Length && i < FitStart.Length; i++)
+                {
+                    FitStart[i] = Number(part[i], 0f, 0f, 100f);
+                }
+                return;
+            }
+            for (int day = 0; day < Ledger.Length && (day + 1) * LedgerFields <= part.Length; day++)
+            {
+                int at = day * LedgerFields;
+                Ledger[day] = new FitDay
+                {
+                    Exercise = Number(part[at], 0f, -200f, 200f), RunGain = Number(part[at + 1], 0f, -200f, 200f), Idle = Number(part[at + 2], 0f, -200f, 0f),
+                    DietHome = Number(part[at + 3], 0f, 0f, 10f), DietJunk = Number(part[at + 4], 0f, -10f, 0f), DietDrink = Number(part[at + 5], 0f, -10f, 0f),
+                    Runs = (int)Number(part[at + 6], 0f, 0f, 99f), Sessions = (int)Number(part[at + 7], 0f, 0f, 99f), HomeMeals = (int)Number(part[at + 8], 0f, 0f, 99f),
+                    JunkMeals = (int)Number(part[at + 9], 0f, 0f, 99f), DrinkNights = (int)Number(part[at + 10], 0f, 0f, 99f)
+                };
+            }
+        }
+
+        private static float Number(string text, float fallback, float low, float high)
+        {
+            if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) || float.IsNaN(v) || float.IsInfinity(v))
+            {
+                return fallback;
+            }
+            return v < low ? low : v > high ? high : v;
         }
 
         private static void Put(StringBuilder text, string name, float value)
