@@ -391,7 +391,7 @@ namespace RealLifeOverhaul
             }
             LoveFile f = LoveState.File;
             int day = SocialLife.Day;
-            int recognition = LoveTests.Recognition >= 0 ? LoveTests.Recognition : LoveLinks.Recognition != null ? Math.Max(0, LoveLinks.Recognition()) : 0;
+            int recognition = LoveLinks.Recognition != null ? Math.Max(0, LoveLinks.Recognition()) : 0;
             ScandalScale s = LoveRules.Scandal(recognition, child, bound);
             SocialPerson friend = Confidant();
             if (s.Gossip && friend != null)

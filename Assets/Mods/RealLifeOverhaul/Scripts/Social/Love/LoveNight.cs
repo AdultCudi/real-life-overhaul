@@ -28,9 +28,6 @@ namespace RealLifeOverhaul
     /// </summary>
     internal static class LoveNight
     {
-        /// <summary>An outcome a test settles on (NightOutcome as a number); -1 for the roll.</summary>
-        internal static int ForcedOutcome = -1;
-
         /// <summary>Drinks in the blood now (Leisure's own state), 0 when there is none or Leisure is off.</summary>
         public static float DrinksNow()
         {
@@ -123,8 +120,7 @@ namespace RealLifeOverhaul
             var weights = new int[6];
             LoveRules.Weights(nf, weights);
             int roll = LoveRules.Roll(LoveState.Seed, day, p.Index * 31 + hour, LoveRules.SaltOutcome);
-            NightOutcome outcome = ForcedOutcome >= 0 ? (NightOutcome)ForcedOutcome : LoveRules.Pick(roll, weights);
-            ForcedOutcome = -1;
+            NightOutcome outcome = LoveRules.Pick(roll, weights);
             var hook = new LoveHook
             {
                 Person = p.Index, Day = day, Hour = hour, Outcome = outcome, Drinks = (int)(nf.Drinks * 10f), Taken = nf.Taken, Mine = o.Chosen == 2,

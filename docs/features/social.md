@@ -421,7 +421,6 @@ Players asked for double dates and the chance of being caught, one night stands 
 | `LoveLife` | an outing rolled, the signs, being found out, the talk and what each answer does, scandals, the daily round |
 | `LoveNight`, `LoveTalk`, `OutingScene.Love`, `SocialDirector.Love` | the offer, the night under a black screen with the game's time machine, the morning told in the panel |
 | `LoveBabies` | the news, the choice, the birth into Family's children, support |
-| `LoveTests` | the read-only probe and test entries |
 
 **The second person.** With the option **Seeing more than one person** (`love_seeing`) on, Ask them out is on the menu while the player has a partner, for a friend or closer who is open to a romance. The phone warns first ("You are with Sam. Ask Jo out anyway?", `PersonDialog.AskOut`). A yes makes them the second (`LoveHooks.BeginSecond`, before their stage is set so Family goes on seeing the first as the partner; `SocialState.Partner` is the first, and the second only when nobody else is with the player). Each is secret from the other. The second can reach dating and partner but never moves in. Off: Ask them out is offered only to a single player, as before.
 
@@ -435,7 +434,7 @@ Players asked for double dates and the chance of being caught, one night stands 
 
 **Scandals.** A secret that comes out (found out in public, a child of a night) is gossip among friends for anybody. By how known the player is (Standing's recognition, `LoveRules.Scandal`): from a local name the City Ledger may print a story (`LoveCatalogue.StoryAffair`, `StoryChild`, finished pieces with no names through `News.Report(NewsKind.Story)`), Flare's followers fall by some per mille and a scandal draws a few more (`FlareDirector.Gossip`), and from a known name business standing takes a small dent that fades by itself (`FameDirector.PrivateScandal`, customers 2 to 4 points). A story is printed once a week at most. A story stays on this machine (a Story is not a `LedgerShare.CityKind`).
 
-**Options:** `love_seeing`, `love_hookups`, `love_surprise`, in the options section Seeing people (the social section already holds its ten rows). With all three off everything is as before. **Going Public:** the love life is this machine's own, nothing is sent. **Probe:** `LoveTests.Probe(person)` says in plain words who the second is, whether it is secret, suspicion, who has found out, the nights, the child and the support; it changes nothing. Self-checks (Developer diagnostics): `Love check (catch)`, `(found out)`, `(offer)`, `(night)`, `(child)`, `(scandal)`. Checks: EconomyCheck `--love29` (`LoveChecks.cs`).
+**Options:** `love_seeing`, `love_hookups`, `love_surprise`, in the options section Seeing people (the social section already holds its ten rows). With all three off everything is as before. **Going Public:** the love life is this machine's own, nothing is sent. Self-checks (Developer diagnostics): `Love check (catch)`, `(found out)`, `(offer)`, `(night)`, `(child)`, `(scandal)`. Checks: EconomyCheck `--love29` (`LoveChecks.cs`).
 
 ## Rules kept
 
