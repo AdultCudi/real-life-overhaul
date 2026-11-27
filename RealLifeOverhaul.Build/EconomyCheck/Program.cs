@@ -1797,6 +1797,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--rescue29")
+        {
+            Rescue();   // (how fast the emergency services answer: the delays, the start, the drive, the words, the crews' pace, the scene's length, the self-check and the wiring: RescueChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--staff-looks")
         {
             StaffLooks();   // (the pool's people who stand for staff are the same people at every visit, alone: StaffLookChecks.cs)
@@ -1970,6 +1976,7 @@ internal static partial class Program
         FlareCommentsAsked();   // every comment the count promises written and shown: each asked again after a miss, the open thread first, the budget not locked by what the queue held back, the times, the post's own words (FlareCommentAskChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
+        Rescue();   // the emergency services answer like an emergency, and say when: the delays, the start, the drive, the words, the crews' pace, the scene's length, the self-check and the wiring (RescueChecks.cs)
         StaffLooks();   // a showroom's salesperson, a data centre's technicians and a fitted floor's desk staff are the same people at every visit: the seed, the shelf, thirty visits, the sources (StaffLookChecks.cs)
         FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
         FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)

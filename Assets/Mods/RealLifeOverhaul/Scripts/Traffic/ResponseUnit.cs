@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
         private const float KitLinger = 9f;   // seconds the lights stay on a car that drives off
         private const int RouteTries = 4;     // random walks back from the place before it is said to have no road leading to it
         private const int StartTries = 3;     // road points at the start of a route tried for a free one
+        private const float NearCamera = 45f; // metres: a start this near the camera shows, whichever way it looks (as TrafficAccidents.Seen has it)
 
         private static readonly List<Waypoint> RouteScratch = new List<Waypoint>();
         private static bool _poolLogged;
@@ -53,6 +54,26 @@ namespace RealLifeOverhaul
         /// <summary>Why the last Spawn put nothing on the road, for the log; null if it did.</summary>
         public string Refusal { get; private set; }
 
+        /// <summary>True if the last Spawn put nothing on the road only because every start it found would have shown in the camera.</summary>
+        public bool StartShown { get; private set; }
+
+        /// <summary>True while its emergency lights are on the car (an ambulance, a patrol car): for the response's self-check.</summary>
+        public bool Flashing => InUse && _kit != null;
+
+        /// <summary>True while its siren sounds.</summary>
+        public bool Sounding => InUse && _siren != null && _siren.isPlaying;
+
+        /// <summary>True if the camera could be looking at the point, or it is close to the camera: somebody might see a car appear there.</summary>
+        public static bool Shows(Vector3 point)
+        {
+            if (StreetSpots.IsInView(point))
+            {
+                return true;
+            }
+            Camera camera = GameManager.GetMainCamera();
+            return camera != null && (camera.transform.position - point).sqrMagnitude < NearCamera * NearCamera;
+        }
+
         /// <summary>The road points the driver follows. Filled by Spawn; the owner may add to it at any time.</summary>
         public List<Vector3> Path { get; } = new List<Vector3>(128);
 
@@ -62,9 +83,11 @@ namespace RealLifeOverhaul
         public bool IsLost => InUse && !TrafficTools.IsHeld(Car);
 
         /// <summary>Puts a vehicle of the kind on the road some way back from the anchor and fills Path to it. False with no road, no car, or no free start.</summary>
-        public bool Spawn(UnitKind kind, Waypoint anchor, float routeLength, float minimumLength)
+        /// <param name="unseen">The start must be out of the camera's sight: a route that starts in view is walked again, and with none left the unit is not put on the road (StartShown).</param>
+        public bool Spawn(UnitKind kind, Waypoint anchor, float routeLength, float minimumLength, bool unseen = false)
         {
             Refusal = null;
+            StartShown = false;
             if (InUse || anchor == null || !TrafficTools.Ready)
             {
                 Refusal = InUse ? "the unit is still out" : anchor == null ? "there is no road point to head for" : "traffic is not running";
@@ -73,9 +96,18 @@ namespace RealLifeOverhaul
 
             // Walked back from the anchor so the route is drivable; a walk turns at random and may hit a dead end, so it is tried again.
             float walked = 0f;
-            for (int attempt = 0; attempt < RouteTries && walked < minimumLength; attempt++)
+            bool shown = false;
+            for (int attempt = 0; attempt < RouteTries && (walked < minimumLength || shown); attempt++)
             {
                 walked = TrafficTools.WalkBack(anchor, routeLength, 160, RouteScratch);
+                shown = unseen && walked >= minimumLength && RouteScratch.Count > 0 && Shows(RouteScratch[0].position);
+            }
+            if (shown)
+            {
+                StartShown = true;
+                Refusal = "every start it found, " + walked.ToString("F0") + " m back, would have shown in the camera";
+                RouteScratch.Clear();
+                return false;
             }
             if (walked < minimumLength || RouteScratch.Count == 0)
             {
@@ -96,11 +128,16 @@ namespace RealLifeOverhaul
             for (int i = 0; i < StartTries && i < RouteScratch.Count - 2 && car == null; i++)
             {
                 start = i;
+                if (unseen && Shows(RouteScratch[i].position))
+                {
+                    continue;
+                }
                 car = TrafficTools.Load(prefab, RouteScratch[i]);   // an idle car of that prefab, never one taken by its model
             }
             if (car == null)
             {
-                Refusal = "the first " + StartTries + " road points of its route are all taken";
+                StartShown = unseen && Shows(RouteScratch[0].position);
+                Refusal = StartShown ? "its start would have shown in the camera" : "the first " + StartTries + " road points of its route are all taken";
                 RouteScratch.Clear();
                 return false;
             }

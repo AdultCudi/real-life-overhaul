@@ -497,14 +497,14 @@ namespace RealLifeOverhaul
                     _heading = Quaternion.identity;   // no car to take the road's direction from: the cordon asks the road
                 }
 
-                _deadline = now + Mathf.Min(Random.Range(120f, 165f), MaxSceneTime);
+                _deadline = now + Mathf.Min(ResponseRules.SingleScene(Random.value), MaxSceneTime);
                 _single = false;
                 _people.BeginCasualty(casualty, _scene, car, fatal, now);
                 if (car != null)
                 {
                     _people.AtFault(worst: true);   // the driver who knocked them down and stayed: questioned and ticketed
                 }
-                PlanResponse(now, true, Settings.Police, now + Random.Range(4f, 10f), now + Random.Range(3f, 14f), casualty, shut: true);
+                PlanResponse(now, true, Settings.Police, now + ResponseRules.Delay(false, Random.value), now + ResponseRules.Delay(true, Random.value), casualty, shut: true);
                 News.Report(NewsKind.PedestrianHit, _scene, null, fatal ? 1 : 0);
                 Logger?.Info($"Accident: pedestrian down ({(fatal ? "fatal" : "injured")}{(car != null ? ", traffic car held" : "")}), clears within {_deadline - now:F0} s.");
                 return true;
@@ -535,18 +535,40 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Called by the 911 contact: sends whoever is still waiting to be dispatched right away.</summary>
+        /// <summary>Called by the 911 contact: sends whoever is still waiting to be dispatched, within a second.</summary>
         public bool ReportAccident()
         {
+            return ReportAccident(out _);
+        }
+
+        /// <summary>The same, and how many seconds it is before the help is there (what the caller is told: ResponseRules.When).</summary>
+        public bool ReportAccident(out float arriveIn)
+        {
+            float now = Time.time;
             if (_ambulance.Stage == Stage.Waiting)
             {
-                _ambulance.At = 0f;
+                _ambulance.At = Mathf.Min(_ambulance.At, now + ResponseRules.CallDelay);
             }
             if (_police.Stage == Stage.Waiting)
             {
-                _police.At = 0f;
+                _police.At = Mathf.Min(_police.At, now + ResponseRules.CallDelay);
             }
+            arriveIn = _phase != Phase.None ? ArriveIn(_ambulance.Stage != Stage.Idle ? _ambulance : _police, now) : 0f;
             return _phase != Phase.None;
+        }
+
+        // Seconds until a unit is at the scene as far as it is known: its wait, then its drive; what is left of its road once it is under way.
+        private static float ArriveIn(Attendance attendance, float now)
+        {
+            switch (attendance.Stage)
+            {
+                case Stage.Waiting:
+                    return ResponseRules.TypicalArrival(attendance.Police, Mathf.Max(0f, attendance.At - now));
+                case Stage.EnRoute:
+                    return ResponseRules.DriveSeconds(attendance.Unit.Driver.RouteLeft, ResponseRules.Speed);
+                default:
+                    return 0f;
+            }
         }
 
         private void CheckPlayerHelp()
@@ -576,6 +598,15 @@ namespace RealLifeOverhaul
             if (Settings.AccidentNotices)
             {
                 Notifications.Show(type, key, null, seconds, group);
+            }
+        }
+
+        /// <summary>The same for a text that says when the help comes ({when}): what the services answer a call with, from ResponseRules.</summary>
+        public static void NoticeHelp(NotificationType type, string key, float seconds, bool police = false, string group = "reallife_accident")
+        {
+            if (Settings.AccidentNotices)
+            {
+                Notifications.Show(type, key, ResponseWords.Args(ResponseRules.TypicalArrival(police)), seconds, group);
             }
         }
 

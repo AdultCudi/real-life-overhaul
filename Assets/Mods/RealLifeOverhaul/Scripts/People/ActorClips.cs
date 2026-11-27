@@ -39,7 +39,27 @@ namespace RealLifeOverhaul
         public static string Notes => ClipLibrary.Has(TakeNotes) ? TakeNotes : Clipboard;
 
         /// <summary>Metres per second the crews and the cuffed walk at in a walking clip.</summary>
-        public const float WalkPace = 1.2f;
+        public const float WalkPace = ResponseRules.WalkPace;
+
+        /// <summary>
+        /// Metres per second an ambulance crew carries the bag and pushes the stretcher at: briskly, as people do to somebody lying in the road. The same
+        /// clips, played 1.5 times their own speed (the clip's playback follows the ground speed up to 1.6 times: ActivityAnimator.MatchSpeed).
+        /// </summary>
+        public const float CrewPace = ResponseRules.CrewPace;
+
+        /// <summary>How somebody with nothing in their hands goes to a place that far off in an emergency: running if it is a way, walking if it is a step.</summary>
+        public static Pace PaceFor(float metres)
+        {
+            return ResponseRules.Runs(metres) ? Pace.Run : Pace.Walk;
+        }
+
+        /// <summary>The same from where they stand to where they are going (flat, in metres).</summary>
+        public static Pace PaceTo(Vector3 from, Vector3 to)
+        {
+            float x = to.x - from.x;
+            float z = to.z - from.z;
+            return PaceFor(Mathf.Sqrt(x * x + z * z));
+        }
 
         public const float CprReach = 0.40f;   // metres from the kneeler to the middle of the chest the compressions are made on
         public const float CprSlack = 0.12f;   // ...give or take; further off than that the hands would be working on air

@@ -545,7 +545,8 @@ namespace RealLifeOverhaul
             TrafficAccidents.EndActive();
             if (accidents.StageCasualty(casualty, casualty.Position, null, casualty.Dead, byPlayer: true))
             {
-                Notifications.Show(NotificationType.Warning, "reallife_pedhit_scene", null, 8f, "reallife_accident");
+                Notifications.Show(NotificationType.Warning, ResponseWords.Pick(ResponseWords.Struck, 913),
+                    ResponseWords.Args(ResponseRules.TypicalArrival(false)), 8f, "reallife_accident");
             }
         }
 

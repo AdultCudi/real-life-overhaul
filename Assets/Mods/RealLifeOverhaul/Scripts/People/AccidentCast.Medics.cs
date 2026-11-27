@@ -139,12 +139,12 @@ namespace RealLifeOverhaul
             }
             if (down && !_wheeled)
             {
-                paced = ToTheChest(treats, Pace.Jog, reachFor);
+                paced = ToTheChest(treats, SceneClips.PaceFor(straight), reachFor);
                 reachFor = ReachFor(distance, paced);
                 if (gotA && gotB)
                 {
                     _goB = _secondKneel;
-                    Send(_medicB, _secondKneel, paced ? Pace.Walk : Pace.Jog, _patientAt, reachFor);
+                    Send(_medicB, _secondKneel, paced ? Pace.Jog : SceneClips.PaceFor(straight), _patientAt, reachFor);
                     _medicB.Kneel();
                 }
             }
@@ -152,9 +152,9 @@ namespace RealLifeOverhaul
             {
                 Vector3 near = Towards(_patientAt, from, 1.4f);
                 Vector3 apart = Vector3.Cross(Vector3.up, Flat(_patientAt - from).normalized) * 0.8f;
-                paced = treats.Gait(SceneClips.CarryBag);
+                paced = treats.Gait(SceneClips.CarryBag, SceneClips.CrewPace);
                 reachFor = ReachFor(distance, paced);
-                Pace pace = paced ? Pace.Walk : Pace.Jog;
+                Pace pace = paced ? Pace.Jog : SceneClips.PaceFor(straight);
                 _goA = Stand(near - apart, "paramedic seeing to the driver");
                 _goB = Stand(near + apart, "second paramedic seeing to the driver");
                 _medicA.Go(_goA, pace, _patientAt, reachFor);
@@ -163,15 +163,16 @@ namespace RealLifeOverhaul
 
             float home = _wheeled ? _way.Home.Travel + (_way.Swing ? 4f : 0f) + (_way.Square ? 0f : 4f) : distance;
             float back = home / WheelSpeed + (down ? LiftAllowance + 8f : 3f);
-            float reach = distance / (paced ? SceneClips.WalkPace : JogSpeed) + (_wheeled && _way.Swing ? 6f : 2f);
-            float treat = _fatal ? Random.Range(5f, 8f) : down ? Random.Range(9f, 16f) : Random.Range(8f, 14f);
+            float reach = distance / (paced ? SceneClips.CrewPace : JogSpeed) + (_wheeled && _way.Swing ? 6f : 2f);
+            float treat = ResponseRules.TreatFor(_fatal, down, Random.value);   // briskly: the road is shut while they work
             _careLatest = Mathf.Max(now + reach + 4f, latest - back);
             _careUntil = now + reachFor;
             _care = Care.Out;
             _treatFor = treat;
             Phase(now, reach);
             Logger?.Info($"People: paramedics out ({(gotA && gotB ? 2 : 1)}){(_stretcher != null ? " with the stretcher" : "")}, {straight:F0} m from "
-                         + (down ? "the casualty" : "the driver") + (paced ? System.FormattableString.Invariant($", at the {SceneClips.WalkPace:F1} m/s their walking clips are made for") : "")
+                         + (down ? "the casualty" : "the driver")
+                         + (paced ? System.FormattableString.Invariant($", at the brisk {SceneClips.CrewPace:F1} m/s (their walking clips are made for {SceneClips.WalkPace:F1})") : "")
                          + System.FormattableString.Invariant(
                              $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F1} ms ({_way.Cost}), the two characters {_msCrew:F0} ms, ")
                          + $"the stretcher taken {_msWheel:F0} ms, the cordon run round it {_msCordon:F0} ms, the lane shut {_msLane:F0} ms.");
@@ -326,14 +327,14 @@ namespace RealLifeOverhaul
         // Seconds a crew is given to reach the people over a distance: jogging, or held to the pace of a walking clip.
         private static float ReachFor(float distance, bool paced)
         {
-            return Mathf.Max(ReachMinimum, distance / (paced ? SceneClips.WalkPace : JogSpeed) + 6f);
+            return Mathf.Max(ReachMinimum, distance / (paced ? SceneClips.CrewPace : JogSpeed) + 6f);
         }
 
         // To the casualty's chest with the bag, and down beside it. True if they walk there in the bag-carrying
         // clip, which holds them to its pace.
         private bool ToTheChest(ActorRole medic, Pace pace, float allow)
         {
-            bool paced = medic == _treats && medic.Gait(SceneClips.CarryBag);   // only whoever has the bag walks as if carrying one
+            bool paced = medic == _treats && medic.Gait(SceneClips.CarryBag, SceneClips.CrewPace);   // only whoever has the bag walks as if carrying one
             if (medic == _medicA)
             {
                 _goA = _kneelAt;

@@ -134,7 +134,7 @@ namespace RealLifeOverhaul
                 Vector3 to = _walkBy[i * 3 + _walkNext[i]];
                 Vector3 run = Flat(to - _walkAt[i]);
                 float left = run.magnitude;
-                float pace = last ? Mathf.Min(SceneClips.WalkPace, Mathf.Max(0.3f, left * 3f)) : SceneClips.WalkPace;
+                float pace = last ? Mathf.Min(SceneClips.CrewPace, Mathf.Max(0.3f, left * 3f)) : SceneClips.CrewPace;
                 _walkSpeed[i] = Mathf.MoveTowards(_walkSpeed[i], pace, Quicken * dt);
                 float step = _walkSpeed[i] * dt;
                 if (left <= step + 0.004f)

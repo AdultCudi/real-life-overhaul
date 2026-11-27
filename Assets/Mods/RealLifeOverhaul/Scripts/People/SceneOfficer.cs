@@ -268,7 +268,7 @@ namespace RealLifeOverhaul
             {
                 case Duty.Inspect:
                     _kneeling = true;
-                    Role.Go(brief.BodyKneel, Pace.Walk, brief.Body);
+                    Role.Go(brief.BodyKneel, SceneClips.PaceTo(here, brief.BodyKneel), brief.Body);
                     Role.Kneel();
                     break;
 
@@ -280,7 +280,7 @@ namespace RealLifeOverhaul
 
                 case Duty.Gate:
                     // Outside the opening, looking up the road: nobody wanders in past them.
-                    Role.Go(brief.EntryPost, Pace.Walk, brief.EntryLook);
+                    Role.Go(brief.EntryPost, SceneClips.PaceTo(here, brief.EntryPost), brief.EntryLook);
                     break;
 
                 case Duty.Evidence:
@@ -305,7 +305,7 @@ namespace RealLifeOverhaul
 
                 case Duty.Traffic:
                     Role.HiVis(true);   // for the rest of the scene; the pool puts the shirt back when they leave the street
-                    Role.Go(brief.TrafficPost, Pace.Walk, brief.Oncoming);
+                    Role.Go(brief.TrafficPost, SceneClips.PaceTo(here, brief.TrafficPost), brief.Oncoming);
                     Role.Work(SceneClips.DirectTraffic);   // one hand holding traffic, the other waving it on; without the clip...
                     Role.Repeat(HoldGesture, 3.5f, 6f);   // ...the flat of the hand, again and again
                     break;

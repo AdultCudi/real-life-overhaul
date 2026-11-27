@@ -522,6 +522,7 @@ namespace RealLifeOverhaul
             {
                 car.Driver.Begin(car.Car, car.Path, scene, 10f, 30f);
             }
+            car.Driver.Urgent(ResponseRules.Speed);   // an officer answering a call comes at the speed of an emergency
             return true;
         }
 

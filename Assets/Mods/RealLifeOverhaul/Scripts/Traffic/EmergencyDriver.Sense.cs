@@ -150,7 +150,7 @@ namespace RealLifeOverhaul
                 }
                 float room = free - StopGap;
                 // (A careless driver plans with all the braking they have, which is to say late.)
-                float plan = _stopping < Slowing ? _stopping : CruiseSpeed > FastFrom ? FastBraking : Braking;
+                float plan = _stopping < Slowing ? _stopping : CruiseSpeed > FastFrom || Brisk ? FastBraking : Braking;
                 _limit = room > 0.1f ? Mathf.Sqrt(2f * plan * room) : 0f;
                 _blocker = blocker;
                 if (_limit > 0f)
