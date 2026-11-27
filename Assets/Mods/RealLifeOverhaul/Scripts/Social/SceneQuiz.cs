@@ -17,6 +17,9 @@ namespace RealLifeOverhaul
     {
         private const string ButtonNext = "reallife_social_btn_next";
 
+        /// <summary>The key of the verdict's line last shown, for the self-test's probe.</summary>
+        internal static string LastVerdict;
+
         private readonly SceneTalk _talk;
         private readonly SocialQuiz _quiz;
         private readonly SocialPerson _who;       // the new person, who asks
@@ -146,16 +149,19 @@ namespace RealLifeOverhaul
                 SocialLife.Remember(_friend, MemoryCode.QuizFlop);
             }
             Dictionary<string, string> names = Names();
-            string[] pool = right >= SocialFriendsRules.Questions ? SocialInterests.Perfect : right == 2 ? SocialInterests.VerdictTwo : right == 1 ? SocialInterests.VerdictOne : SocialInterests.Disaster;
-            string verdict = SocialLife.T(Pick(pool, 70), names);
+            string[] pool = right >= SocialFriendsRules.Questions ? SocialInterests.Perfect
+                : right == 2 ? SocialInterests.VerdictTwo : right == 1 ? SocialInterests.VerdictOne : SocialInterests.Disaster;
+            LastVerdict = Pick(pool, 70);
+            string verdict = SocialLife.T(LastVerdict, names);
             string after = SocialLife.T(Pick(SocialInterests.After[right], 80), names);
             DialogEntry entry = Page(verdict + "\n\n" + after);
             entry.ConfirmTextOverride = "reallife_friends_btn_on".Localize();
             entry.OnConfirm = _onward;
-            SocialDirector.Logger?.Info("Social check (the quiz): " + _friend.Name + " (" + _friend.Stage + ") asked about, " + right + " of " + SocialFriendsRules.Questions
-                                        + " right, familiarity " + _quiz.Familiarity.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + ", affection "
-                                        + _quiz.Affection.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + ", trust "
-                                        + _quiz.Trust.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " (" + _friend.Quizzes + " quiz(zes) with them): PASS.");
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            SocialDirector.Logger?.Info("Social check (the quiz): " + _friend.Name + " (" + _friend.Stage + ") asked about, " + right + " of "
+                                        + SocialFriendsRules.Questions + " right, familiarity " + _quiz.Familiarity.ToString("F1", inv) + ", affection "
+                                        + _quiz.Affection.ToString("F1", inv) + ", trust " + _quiz.Trust.ToString("F1", inv) + " ("
+                                        + _friend.Quizzes + " quiz(zes) with them): PASS.");
             return entry;
         }
     }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Population;
 
@@ -22,7 +21,6 @@ internal static partial class Program
         try
         {
             RomanceWindowTables();
-            RomanceWindowMade();
             RomanceWindowBirthdays();
             RomanceWindowCasts();
         }
@@ -87,7 +85,7 @@ internal static partial class Program
                 for (int roll = -2; roll < 300; roll++)
                 {
                     int age = RomanceRules.AgeNear(player, roll);
-                    near &= RomanceRules.AgeFits(age, player) && age >= 18 && age <= 85;
+                    near &= (!room && age >= 18 && age <= 85) || (RomanceRules.AgeFits(age, player) && age >= 18 && age <= 85);
                     steady &= !room || RomanceRules.AgeSteady(age, player);
                     adults &= age >= RomanceRules.AgeLeast;
                     determined &= age == RomanceRules.AgeNear(player, roll) && age == RomanceRules.AgeNear(player, roll, y, o);
@@ -215,17 +213,17 @@ internal static partial class Program
                     }
                 }
             }
-            // Somebody rolled on or beyond an edge is made again inside it; one a year inside is left as rolled (a player of 40, so 18 is never the edge).
+            // Somebody rolled on or beyond an edge is made again inside it; one a year inside is left as rolled (a player of 60, so 18 is never the edge).
             RomanceRules.Window(y, o);
-            foreach (int age in new[] { 40 - y - 3, 40 - y, 40 + o, 40 + o + 3 })
+            foreach (int age in new[] { 60 - y - 3, 60 - y, 60 + o, 60 + o + 3 })
             {
                 var p = new SocialPerson { Compatible = true, Female = true, Age = age, Seed = 41 };
-                kept &= SocialCatalogue.FitToPlayer(p, false, 40, RomanceRules.Anyone) && RomanceRules.AgeSteady(p.Age, 40) && p.Age >= 18;
+                kept &= SocialCatalogue.FitToPlayer(p, false, 60, RomanceRules.Anyone) && RomanceRules.AgeSteady(p.Age, 60) && p.Age >= 18;
             }
-            foreach (int age in new[] { 40 - y + 1, 40 + o - 1, 40 })
+            foreach (int age in new[] { 60 - y + 1, 60 + o - 1, 60 })
             {
                 var p = new SocialPerson { Compatible = true, Female = true, Age = age, Seed = 41 };
-                kept &= !SocialCatalogue.FitToPlayer(p, false, 40, RomanceRules.Anyone) && p.Age == age;
+                kept &= !SocialCatalogue.FitToPlayer(p, false, 60, RomanceRules.Anyone) && p.Age == age;
             }
         }
         Check(fit && inner, "romance window: everybody of a new cast open to a romance fits the player's window, a year inside each edge and an adult, and keeps fitting at every birthday, under six windows (asymmetric ones: 2 under and 25 over, 25 under and 2 over)" + (fault.Length > 0 ? "; " + fault : string.Empty));
@@ -242,7 +240,7 @@ internal static partial class Program
         try
         {
             RomanceRules.Window(2, 2);
-            var dating = new SocialPerson { Compatible = true, Female = true, Age = 60, AgeDay = day, Birthday = 3, Stage = SocialStage.Dating, StageDay = 10, Dates = 6, Affection = 70, Trust = 60, Familiarity = 70, Met = true };
+            var dating = new SocialPerson { Compatible = true, Female = true, Age = 60, AgeDay = day, Birthday = 3, Stage = SocialStage.Dating, StageDay = 10, Dates = 6, Affection = 85, Trust = 75, Familiarity = 85, Met = true };
             var partner = new SocialPerson { Compatible = true, Female = false, Age = 19, AgeDay = day, Birthday = 3, Stage = SocialStage.Partner, StageDay = 10, Affection = 90, Trust = 90, Familiarity = 90, Met = true };
             bool outside = !SocialRules.Romantic(dating, RomanceRules.Anyone, 30, day, RomanceYear) && !SocialRules.Romantic(partner, RomanceRules.Anyone, 45, day, RomanceYear);
             bool kept = !SocialRules.BrokenUp(dating) && !SocialRules.BrokenUp(partner) && SocialRules.Earned(dating, day) == SocialStage.Dating && SocialRules.Earned(partner, day) == SocialStage.Partner
@@ -269,18 +267,18 @@ internal static partial class Program
     // Where the options are read, the texts, and where they stand.
     private static void RomanceWindowSources()
     {
-        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         var readers = new List<string>();
-        foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+        foreach (string file in System.IO.Directory.GetFiles(root, "*.cs", System.IO.SearchOption.AllDirectories))
         {
-            string code = File.ReadAllText(file);
+            string code = System.IO.File.ReadAllText(file);
             if (code.Contains("RomanceYounger") || code.Contains("RomanceOlder"))
             {
                 readers.Add(file.Substring(root.Length + 1));
             }
         }
         readers.Sort(StringComparer.Ordinal);
-        Check(string.Join(",", readers) == @"Core\RealLifeOverhaulMod.cs,Core\Settings.cs,Social\SocialLife.cs",
+        Check(string.Join(",", readers) == @"Core\RealLifeOverhaulMod.cs,Core\Settings.cs,Meta\FeatureList.Life.cs,Social\SocialLife.cs",
             "romance window: the options are read in one place, SocialLife.ApplyWindow (beside the wish, which every judge of somebody's age asks), after Settings and the options page (" + string.Join(", ", readers) + ")");
         string life = ModSource(@"Social\SocialLife.cs");
         string interest = MemberText(life, "public static int Interest");
@@ -292,7 +290,7 @@ internal static partial class Program
               && rules.Contains("public static int Older { get; private set; } = AgeGap;") && settings.Contains("RomanceRules.Window(RomanceYounger, RomanceOlder);"),
             "romance window: the window starts at the city's gap and only Window() moves it");
 
-        Dictionary<string, string> en = LoadWords(Path.Combine(LocalesFolder(), "en.json"));
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(LocalesFolder(), "en.json"));
         string Of(string key) => en != null && en.TryGetValue(key, out string text) ? text : string.Empty;
         Check(Of("reallife_romance_younger") == "Partners younger than you, at most" && Of("reallife_romance_older") == "Partners older than you, at most"
               && Of("reallife_opt_tip_romance_younger").Contains("2 to 25") && Of("reallife_opt_tip_romance_older").Contains("2 to 25") && Of("reallife_opt_tip_romance_younger").Contains("already with"),

@@ -247,6 +247,10 @@ namespace RealLifeOverhaul
             _introFriend = friend;
             _introStranger = stranger;
             _introUntil = Time.unscaledTime + IntroSeconds;
+            if (Settings.FriendsQuiz)
+            {
+                friend.IntroDay = SocialLife.Day;   // their friends need a few days between two evenings (SocialFriendsRules.IntroWait)
+            }
             return true;
         }
 

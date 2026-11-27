@@ -353,7 +353,7 @@ internal static partial class Program
             "friends: the same person brings friends again only after " + SocialFriendsRules.IntroGapDays + " days, never asking longer for a save set back or for one who never did");
 
         // Applied to a person: the figures move as the rules say, clamped, and family never falls below its floor.
-        var friend = new SocialPerson { Stage = SocialStage.Friend, Familiarity = 40, Affection = 40, Trust = 40, Met = true };
+        var friend = new SocialPerson { Origin = SocialOrigin.Street, Stage = SocialStage.Friend, Familiarity = 40, Affection = 40, Trust = 40, Met = true };
         foreach (bool ok in new[] { true, true, true })
         {
             SocialWorth w = SocialFriendsRules.Answered(friend.Stage, ok);
@@ -361,7 +361,7 @@ internal static partial class Program
         }
         SocialWorth bonus = SocialFriendsRules.Finished(friend.Stage, 3);
         SocialRules.Change(friend, bonus.Familiarity, bonus.Affection, bonus.Trust);
-        var wreck = new SocialPerson { Stage = SocialStage.Friend, Familiarity = 3, Affection = 2, Trust = 1, Met = true };
+        var wreck = new SocialPerson { Origin = SocialOrigin.Street, Stage = SocialStage.Friend, Familiarity = 3, Affection = 2, Trust = 1, Met = true };
         for (int i = 0; i < 3; i++)
         {
             SocialWorth w = SocialFriendsRules.Answered(wreck.Stage, false);
@@ -374,7 +374,7 @@ internal static partial class Program
             SocialRules.Change(mom, w.Familiarity, w.Affection, w.Trust);
         }
         Check(F29Near(friend.Trust, 56f) && F29Near(friend.Affection, 53f) && F29Near(friend.Familiarity, 46.5f) && wreck.Trust == 0f && wreck.Affection == 0f && mom.Trust == 40f && mom.Affection >= 45f,
-            "friends: three right answers move a friend of 40 to trust 56, affection 53 and familiarity 46.5; wrong ones never take a figure under nothing, and Mom's never under what family keeps");
+            "friends: three right answers move a friend of 40 to trust 56, affection 53 and familiarity 46.5; wrong ones never take a figure under nothing, and Mom's never under what family keeps (" + friend.Familiarity + "/" + friend.Affection + "/" + friend.Trust + ", " + wreck.Affection + "/" + wreck.Trust + ", " + mom.Affection + "/" + mom.Trust + ")");
     }
 
     // ---------------------------------------------------------------- first impressions
@@ -608,7 +608,7 @@ internal static partial class Program
         Check(hint.Contains("public static bool On => Settings.Social && Settings.FriendsQuiz;") && MemberText(hint, "public static bool Pick(").Contains("if (!On ||")
               && MemberText(hint, "public static string KnownLines(").Contains("if (!On ||"),
             "friends: with 'Meet the friends quiz' off nobody lets anything slip and the People page has no section for it");
-        Check(meet.Contains("if (talk.Mode == SceneTalk.Introduction && Settings.FriendsQuiz &&") && dialog.Contains("_talk.Quiz != null && friend != null ? Quizzed : (Func<DialogEntry>)MeetFirst")
+        Check(meet.Contains("talk.Quiz = SceneTalk.QuizFor(talk.Mode, _friend);") && dialog.Contains("mode == Introduction && Settings.FriendsQuiz && friend != null && friend.Met ?") && dialog.Contains("_talk.Quiz != null && friend != null ? Quizzed : (Func<DialogEntry>)MeetFirst")
               && meet.Contains("talk.QuizRight"), "friends: the quiz is made only with the option on and a friend there to be asked about; without it the introduction goes straight to the hello it always did");
         Check(person.Contains("Settings.FriendsQuiz ? SocialFriendsRules.IntroWait(_p.IntroDay, SocialLife.Day) : 0") && person.Contains(": \"reallife_social_introduce_yes\"")
               && contact.Contains("(!Settings.FriendsQuiz || SocialFriendsRules.IntroWait(person.IntroDay, day) == 0)") && meetings.Contains("if (Settings.FriendsQuiz)")

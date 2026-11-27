@@ -263,11 +263,9 @@ namespace RealLifeOverhaul
                 Person = _who, Introducer = brought ? _friend : null, Via = _kind == Kind.Introduction ? _friend : null,
                 Mode = _kind == Kind.DropBy ? SceneTalk.DropBy : brought ? SceneTalk.Introduction : SceneTalk.Meet
             };
-            if (talk.Mode == SceneTalk.Introduction && Settings.FriendsQuiz && _friend != null && _friend.Met)
+            talk.Quiz = SceneTalk.QuizFor(talk.Mode, _friend);   // their friends will quiz the player on the one who brought them: three questions made from that person's own things
+            if (talk.Quiz != null)
             {
-                // Their friends will quiz the player on the one who brought them: three questions made from that person's own things.
-                int seed = SocialInterests.SeedOf(_friend);
-                talk.Quiz = SocialFriendsRules.Make(seed, _friend.Heard, _friend.Quizzes);
                 SocialDirector.Logger?.Info("Social: " + _who.Name + " will quiz the player on " + _friend.Name + " (" + SocialInterests.Count(_friend.Heard) + " of " + SocialInterests.Kinds
                                             + " things heard, " + _friend.Quizzes + " earlier quiz(zes)).");
             }

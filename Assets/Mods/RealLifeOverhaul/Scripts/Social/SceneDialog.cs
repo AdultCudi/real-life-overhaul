@@ -28,6 +28,15 @@ namespace RealLifeOverhaul
         public int Pay;
         public SocialQuiz Quiz;         // an introduction with the quiz on: what their friends ask the player about the one who brought them; null when there is none or it was let go
 
+        /// <summary>
+        /// The quiz an introduction brings: made from the friend's own things when the option is on and a friend is there to be asked about; null otherwise, and
+        /// the introduction goes straight to the new person's hello as it always did.
+        /// </summary>
+        public static SocialQuiz QuizFor(int mode, SocialPerson friend)
+        {
+            return mode == Introduction && Settings.FriendsQuiz && friend != null && friend.Met ? SocialFriendsRules.Make(SocialInterests.SeedOf(friend), friend.Heard, friend.Quizzes) : null;
+        }
+
         /// <summary>The answers right at the quiz, once all three were given; -1 when there was none, so the new person gets no first standing for it.</summary>
         public int QuizRight => Quiz != null && Quiz.Over ? Quiz.Right : -1;
     }
