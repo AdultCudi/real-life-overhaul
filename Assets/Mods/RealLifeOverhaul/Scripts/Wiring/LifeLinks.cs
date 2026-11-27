@@ -22,6 +22,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 SocialLinks.Law = new RecordForFriends();
+                SocialLinks.Repute = Repute;
                 SocialLinks.Wellbeing = new HomeForFriends();
                 SocialLinks.SightCount = SightCount;
                 SocialLinks.NearSight = NearSight;
@@ -47,6 +48,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SocialLinks.Law = null;
+                SocialLinks.Repute = null;
                 SocialLinks.Wellbeing = null;
                 SocialLinks.SightCount = null;
                 SocialLinks.NearSight = null;
@@ -63,6 +65,31 @@ namespace RealLifeOverhaul
                 LifeAccounts.Home = null;
                 LineNeeds.Read = null;
                 Events.Weather.Wardrobe = null;
+            }
+
+            // What the city could have heard of the player, for a first impression (SocialImpression): Law's public standing and record, Standing's
+            // recognition, integrity and scandal, and the player's Flare followers. Asked once, when somebody is met.
+            private static SocialRepute Repute()
+            {
+                SocialRepute repute = SocialRepute.Newcomer;
+                try
+                {
+                    repute.Public = Standing.Public;
+                    repute.HasRecord = Standing.HasRecord;
+                    repute.Charged = Standing.Charged;
+                    repute.Recognition = Standing.Recognition;
+                    repute.Integrity = Standing.Integrity;
+                    RealLifeOverhaul.Fame.FameDirector fame = RealLifeOverhaul.Fame.FameDirector.Instance;
+                    RealLifeOverhaul.Fame.FameFile file = fame != null ? fame.File : null;
+                    repute.Scandal = file != null && RealLifeOverhaul.Fame.FameCity.InScandal(file, SocialLife.Day);
+                    RealLifeOverhaul.Flare.FlareDirector flare = RealLifeOverhaul.Flare.FlareDirector.Instance;
+                    repute.Followers = flare != null && flare.File != null ? flare.File.Followers : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("LifeLinks.Repute", e);
+                }
+                return repute;
             }
 
             // Leisure's list of sights, found once behind the loading screen: a walk is set near one when it can be.

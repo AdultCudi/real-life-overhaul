@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
                 AskFavour(person, real, -1);
             }
             else if (roll < 0.58f + SocialPassionRules.IntroExtra(person) && person.Stage >= SocialStage.Friend && Settings.SocialMeetings && day - SocialState.LastMeetDay >= SocialRules.MeetGapDays
-                     && _introStranger == null && AnyStranger())
+                     && _introStranger == null && (!Settings.FriendsQuiz || SocialFriendsRules.IntroWait(person.IntroDay, day) == 0) && AnyStranger())
             {
                 SocialPerson stranger = NextStranger();
                 if (stranger != null && SocialLife.SendText(person, SocialLines.Pick(SocialCatalogue.TextIntro), SocialLife.Data(person, "other", stranger.Name)))
@@ -128,6 +128,14 @@ namespace RealLifeOverhaul
             else if (PassionHint(person, day) is string hint && SendHint(person, hint, day))
             {
                 return;   // what they live for slipped into a text (SocialDirector.Passion)
+            }
+            else if (SocialHintGame.Pick(person, HintWhere.Text, out int hintKind, out string hintKey, out Dictionary<string, string> hintData))
+            {
+                // A line of their own that lets something about themselves slip (the quiz's hints): heard once it is really sent.
+                if (SocialLife.SendText(person, hintKey, hintData))
+                {
+                    SocialHintGame.Learned(person, hintKind);
+                }
             }
             else
             {

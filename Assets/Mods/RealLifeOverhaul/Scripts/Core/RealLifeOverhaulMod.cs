@@ -697,6 +697,14 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
+                .AddSlider(Settings.RomanceYoungerId, "reallife_romance_younger", RomanceRules.WindowLeast, RomanceRules.WindowMost, Settings.RomanceYounger,
+                    v => { Settings.RomanceYounger = v; SocialLife.ApplyWindow(); }, Meta.SettingsTable.SliderValue)
+                .AddSlider(Settings.RomanceOlderId, "reallife_romance_older", RomanceRules.WindowLeast, RomanceRules.WindowMost, Settings.RomanceOlder,
+                    v => { Settings.RomanceOlder = v; SocialLife.ApplyWindow(); }, Meta.SettingsTable.SliderValue)
+                .AddToggle(Settings.FriendsQuizId, "reallife_friends_quiz", Settings.FriendsQuiz,
+                    v => Settings.FriendsQuiz = v)
+                .AddToggle(Settings.FirstImpressionsId, "reallife_social_first_impressions", Settings.FirstImpressions,
+                    v => Settings.FirstImpressions = v)
                 .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
                     v => Settings.SocialNetworking = v)
                 .AddToggle(Settings.LoveSeeingId, "reallife_love_seeing", Settings.LoveSeeing,

@@ -189,6 +189,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
                 .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId, Settings.SocialPassionsId, Settings.SocialMomentsId)
                 .Owns(Settings.FamilyInterestId)   // who the player is interested in: the people who can fall for them, who they can ask out; no preset sets it, it is their own
+                .Owns(Settings.RomanceYoungerId, Settings.RomanceOlderId)   // the age window of the same: years younger and older than the player; their own, like the wish
+                .Owns(Settings.FriendsQuizId, Settings.FirstImpressionsId)   // hints and the quiz of meeting their friends, and a first trust that follows the player's name: no preset sets them
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
                 .OnFrom(Settings.LoveSeeingId, Intensity.Standard)    // a second, secret relationship that can be found out (Social/Love)
                 .OnFrom(Settings.LoveHookupsId, Intensity.Standard)   // an evening that can end at theirs or the player's, and what comes of it
@@ -212,6 +214,13 @@ namespace RealLifeOverhaul.Meta
                 .Fact("social_date_aff", () => Guide.Number(SocialRules.DateAffection))
                 .Fact("social_date_trust", () => Guide.Number(SocialRules.DateTrust))
                 .Fact("social_age_gap", () => RomanceRules.AgeGap.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_age_least", () => RomanceRules.WindowLeast.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_age_most", () => RomanceRules.WindowMost.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_quiz_gap", () => SocialFriendsRules.IntroGapDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_quiz_right_trust", () => Guide.Number(SocialFriendsRules.RightTrust))
+                .Fact("social_quiz_wrong_trust", () => Guide.Number(-SocialFriendsRules.WrongTrust))
+                .Fact("social_quiz_perfect_trust", () => Guide.Number(SocialFriendsRules.PerfectTrust))
+                .Fact("social_impression_most", () => SocialImpression.Most.ToString(CultureInfo.InvariantCulture))
                 .Fact("social_partner_aff", () => Guide.Number(SocialRules.PartnerAffection))
                 .Fact("social_partner_trust", () => Guide.Number(SocialRules.PartnerTrust))
                 .Fact("social_partner_days", () => SocialRules.PartnerDays.ToString(CultureInfo.InvariantCulture))

@@ -13,7 +13,10 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 | --- | --- |
 | `SocialModel` | the cast's records, the plan, what waits for an answer: game-free |
 | `SocialRules` | stages, what things are worth, neglect: game-free |
-| `RomanceRules` | who the player can fall for: the sex they are interested in, an age near their own: game-free |
+| `RomanceRules` | who the player can fall for: the sex they are interested in, an age inside the window the two age options set: game-free |
+| `SocialInterests`, `SocialFriendsRules`, `SocialFriendsStore` | what each person is into, hints, the quiz of meeting their friends and what it is worth, their save: game-free |
+| `SocialImpression` | first impressions: trust at a first meeting from the player's name: game-free |
+| `SocialHintGame`, `SceneQuiz`, `SocialCardText` | the hints in chats, texts and the People page; the quiz in the dialogue panel; the figures on a card |
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
@@ -146,7 +149,7 @@ One rule now judges everybody, every time it is asked (`SocialRules.Romantic`, g
 |---|---|
 | open to a romance | `SocialPerson.Compatible`: a roll made when they were dealt, or (a street figure) talked to; nothing else about them follows from it |
 | of a sex the player is interested in | the option **Who you are interested in** (Options, Friends and social life; `family_interest`, saved under the id it had as Family's option; anyone by default): `RomanceRules.SexFits`, a woman for "women", a man for "men", everybody for "anyone" |
-| near the player's age | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) no more than `RomanceRules.AgeGap` (8) years above or below the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it |
+| inside the player's age window | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) at most `RomanceRules.Younger` years under and `RomanceRules.Older` years over the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it. Both sides are 8 (`AgeGap`) unless the two options below move them |
 
 The gap is the one the city's own people pair up by (`Population/LifeRules.AgeGapMost`, which `RomanceRules.AgeGap` reads), so the player is held to what the city's couples keep.
 They pair only within it, and a few in a hundred are of the same sex (`LifeRules.SameSexShare`), as the player's "anyone" allows.
@@ -183,6 +186,79 @@ Not changed: Family's own stand-in partner (the "Someone special" contact while 
 
 Self-check (Developer diagnostics): `Social check (romance)` for each new person open to a romance, with their sex and age, the player's and the wish, PASS or FAIL.
 The test "Move the chosen person one stage closer" (`SocialDirector.TestAdvance`) asks the same rule before it starts a dating.
+
+## The age window (`RomanceRules.Window`)
+
+A player (24 Nov) asked for "a slider for age range limit in case some people find it too broad or too narrow".
+Two options under Friends and social life, beside "Who you are interested in": **Partners younger than you, at most** (`romance_younger`) and **Partners older than you, at most** (`romance_older`).
+Each is in years, from 2 to 25 (`RomanceRules.WindowLeast`, `WindowMost`), 8 by default (`AgeGap`, the gap the city's couples keep), so nothing changes for a player who leaves them alone.
+
+- `RomanceRules.Younger` and `Older` hold the window; only `Window(younger, older)` moves it, and it keeps each side between 2 and 25 so a saved value from nowhere never rules everybody out.
+  `Settings.RomanceYounger` and `RomanceOlder` are the saved options.
+  `SocialLife.Interest` (asked beside the wish and the player's age by every judge: the cast, a new person, the street, Flare, the People page) hands the options to the rules (`SocialLife.ApplyWindow`), so a value moved by a preset or a reset is never stale.
+- `AgeFits`: an adult, at most `Younger` under and `Older` over.
+  `AgeSteady` and `AgeNear` keep everybody the mod makes for the player one year inside each edge (`AgeMargin`), each side by its own number of years, and never under 18.
+  `FitToPlayer` draws a person made on or past either edge again, from their own seed on the stream it always used.
+  Overloads take the window as arguments, for the checks.
+- Somebody already dating the player, or with them, is never parted by a narrower window: Ask them out is the only thing that reads it, and only for somebody the player is not with.
+- The city's own couples (`LifeRules`, `AgeGapMost` 8) are not the option's business.
+- Checks: EconomyCheck `--romance` (`RomanceWindowChecks.cs`) runs fourteen windows, asymmetric ones among them, over every pair of birthdays for three years, the cast, new people and the redraw.
+
+## Meeting the friends as a game (`SocialInterests`, `SocialFriendsRules`, `SceneQuiz`)
+
+A player (26 Nov) asked for hints to be dropped in dates and for the friends to ask what the player and the person have in common, right answers giving big trust gains and wrong ones the opposite.
+
+**How "Ask to meet their friends" played before.** `PersonDialog.Introduce` was offered to a friend or closer while anybody was left to meet (`SocialDirector.AnyStranger`), and needed trust 40.
+It queued an introduction (`QueueIntroduction`): the next time the player was on foot in the street the person walked up with the first person of the cast not yet met (a real cast member, or a new one made by `Newcomer`), and `MeetScene` (Kind.Introduction) ran `SceneDialog`: the friend says who they are, the new person says hello, the player is warm, cool or brushes them off, and swaps numbers.
+It gave the person trust and affection for it (`Change(1, 2, 1)`, the memory `Introduced`) and the new person the usual first figures.
+Texts of "I want you to meet" (`TextIntro`) queue the same thing.
+
+**Interests.** Each person has nine things (`InterestKind`: a show, a hobby, a sport, music, a dream trip, a food loved, a food hated, a plan, a pet hate), twelve to be for each kind.
+They are never saved: `SocialInterests.Roll` makes them from the person's seed (`SeedOf`, kept in `SocialPerson.InterestSeed` once used, so a new look never changes them) with a generator of its own (`InterestSalt`), so no other roll of the cast moves and a save made before it gets its people's things when it loads.
+What is saved is which kinds the player has heard (`SocialPerson.Heard`, a bit each), when (`InterestHintDay`), the last introduction (`IntroDay`) and the quizzes (`Quizzes`, `QuizBest`), in the key `reallife:social_friends` (`SocialFriendsStore`; nothing is written for a player who never uses it).
+
+**Hints.** With the option **Meet the friends quiz** on (`friends_quiz`, on by default) people let one thing slip at a time (`SocialHintGame`): after the opening line of a chat on an outing (`SceneDialog.Chat`) or a call (`PersonDialog.Chat`) through one call, `SocialHintGame.Weave`, and now and then as a text of their own in the day's round (`SocialDirector.Contact`).
+Chances: 0.30 an outing chat, 0.22 a call chat, 0.14 a text on a day they would text about something ordinary; one a day a person; nothing from a stranger, three kinds at most from an acquaintance, six from a friend, all nine from anybody closer.
+The first time ever a notice says where it is kept; the People page's person page has a section "Things you know about them (n of 9)" (`SocialHintGame.KnownLines`), and nothing of it with the option off.
+
+**The quiz.** When the friend is there to make the introduction and the option is on, `SceneTalk.QuizFor` makes a `SocialQuiz` and `SceneQuiz` plays it in the game's dialogue panel (so both interfaces show it) between the friend's introduction and the new person's own hello: three questions about the person, each about another kind, each with three answers (the panel's three buttons), one true.
+A kind the player heard is shown as known ("You remember ... mentioning it: ..."): a sure answer.
+The player may say "Maybe another time", which plays the introduction as it was.
+Each answer changes the person's figures at once and is told by the friends' banter (eight right and eight wrong lines, four for a sure answer).
+
+| | familiarity | affection | trust |
+|---|---|---|---|
+| a right answer, at a friend | +1.5 | +3 | +4 |
+| a wrong answer | +0.5 | -2 | -3 |
+| three right, on top | +2 | +4 | +4 |
+| three wrong, on top (they laugh) | +2 | +4 | 0 |
+
+At a close friend everything is worth a quarter more, at somebody dating or a partner half more (`Stake`).
+Three right is the memory "You knew them better than their friends did" and the perfect lines; none is "a lovely disaster" with its own lines and memory.
+The verdict page then carries the person's own reaction (four lines for each score).
+The new person's first standing from the answers (`SocialFriendsRules.Standing`, added to the figures they start with if numbers are swapped): three right +10, +10, +8; two right +5, +5, +4; one right nothing; none affection +4 and trust -4.
+A card like an outing's follows (`SocialCardText`, `MeetScene.QuizCard`): the answers right, the three figures with "(44 of 45 for dating)", and the first standing.
+Who it is open to: a friend or closer (what the button already needed) with trust 40, once every `IntroGapDays` (10) game days a person; with the option off there is no wait and the words are the old ones.
+If there was no room for two on the pavement the new person comes alone and there is no quiz.
+
+**Probe.** None; the rules are game-free and checked offline (`--friends29`, `Friends29Checks.cs`).
+
+## First impressions (`SocialImpression`)
+
+A player (26 Nov): "Some trust should be inferred from your reputation."
+Whoever the player meets, in any way (every one goes through `SocialLife.Meet`; the cast's first eight and a roommate who moves in are not first meetings), starts with trust moved by what they could have heard, from the mod's own measures through `SocialLinks.Repute` (`LifeLinks.Repute`): Law's public standing and record (`Standing.Public`, `HasRecord`, `Charged`), Standing's recognition, integrity (charity and good deeds raise it, bribes lower it) and scandal, and the Flare followers.
+
+| factor | trust |
+|---|---|
+| public standing above 55 / below 55 | +1 for each 9 points (up to +5) / -1 for each 11 points (up to -5) |
+| renown (recognition 35, 55, 75), when the standing is 55 or more / under 40 | +1, +2, +3 / -1, -2, -3 |
+| Flare followers 200 / 2000, unless the standing is under 40 | +1 / +2 |
+| integrity 60, 75 / 40 or less, 25 or less | +1, +2 / -1, -2 |
+| a record / an open case / a scandal | -3 / -1 more / -3 |
+
+The sum is held to -10 and +10 (`SocialImpression.Most`).
+A short line says it when numbers are swapped ("Your name gets around: Trust +6", "{first} has heard about you, and not the good parts: Trust -5").
+The option **First impressions follow your name** (`social_first_impressions`, on) switches it; off, a first meeting gives exactly the figures every version gave (`SocialImpression.Start`).
 
 ## The relationship model (`SocialRules`)
 

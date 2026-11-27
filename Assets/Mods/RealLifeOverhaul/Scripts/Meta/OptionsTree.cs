@@ -244,8 +244,14 @@ namespace RealLifeOverhaul.Meta
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts", "social_passions", "social_moments")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
                     .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
+                    .FreeOpts("romance_younger", "romance_older")
+                    .Opts("friends_quiz", "social_first_impressions")
                     .Also("friends dating date people calls typing staff gossip traits passion hidden moment moments outing reaction cinephile clubber romantic")
-                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
+                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special")
+                    .Also("romance_younger", "age range gap younger partner dating romance window years limit too broad too narrow")
+                    .Also("romance_older", "age range gap older partner dating romance window years limit too broad too narrow")
+                    .Also("friends_quiz", "meet their friends introduction quiz questions hints listen know them best trust")
+                    .Also("social_first_impressions", "reputation name fame record trust first impression newly met stranger"),
                 S("love").Guide("social").Need("social").Opts("love_seeing", "love_hookups").Opt("love_surprise", "love_hookups", "family_children")
                     .Also("second partner double date affair cheating caught confront one night stand hook up drunk pregnancy baby child support scandal secret"),
                 S("networking").For("networking").Need("social").Opts("social_networking")

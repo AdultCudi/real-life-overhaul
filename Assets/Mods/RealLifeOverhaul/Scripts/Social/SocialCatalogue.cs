@@ -589,6 +589,8 @@ namespace RealLifeOverhaul
                 case MemoryCode.MomentTense: return SocialMomentCatalogue.MemoryTense;
                 case MemoryCode.MomentSilly: return SocialMomentCatalogue.MemorySilly;
                 case MemoryCode.PassionFound: return SocialMomentCatalogue.MemoryPassion;
+                case MemoryCode.QuizAced: return "reallife_social_memory_quiz_aced";
+                case MemoryCode.QuizFlop: return "reallife_social_memory_quiz_flop";
                 default: return LoveCatalogue.MemoryKey(code) ?? "reallife_social_memory_met";
             }
         }

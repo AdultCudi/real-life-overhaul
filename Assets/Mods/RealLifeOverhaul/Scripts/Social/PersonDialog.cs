@@ -149,7 +149,9 @@ namespace RealLifeOverhaul
             }
             SocialTopic topic = SocialTalk.Pick(_p, out Dictionary<string, string> data, _testTopic);
             _testTopic = -1;
-            DialogEntry entry = Line(SocialLines.Pick(topic.Open), data);
+            string open = SocialLines.Pick(topic.Open);
+            DialogEntry entry = Line(open, data);
+            SocialHintGame.Weave(entry, _p, open, data, HintWhere.Call);   // now and then they let something about themselves slip
             if (Composing(topic, data, entry))
             {
                 return entry;   // (the player's own words answer it: PersonDialog.Composer)
@@ -789,12 +791,19 @@ namespace RealLifeOverhaul
         private DialogEntry Introduce()
         {
             SocialLife.Contacted(_p);
+            int wait = Settings.FriendsQuiz ? SocialFriendsRules.IntroWait(_p.IntroDay, SocialLife.Day) : 0;
+            if (wait > 0)
+            {
+                return Close("reallife_friends_wait", SocialLife.Data(_p, "days", wait.ToString()));   // their friends need a few days between two evenings
+            }
             SocialPerson stranger = SocialDirector.NextStranger();
             if (stranger == null || _p.Trust < 40f || SocialDirector.Instance == null || !SocialDirector.Instance.QueueIntroduction(_p, stranger))
             {
                 return Close("reallife_social_introduce_no");
             }
-            return Close("reallife_social_introduce_yes", SocialLife.Data(_p, "other", stranger.Name));
+            // With the quiz on they say so, so the player knows to listen; the other way, the words every version had.
+            string yes = Settings.FriendsQuiz ? SocialFollowRules.Line(SocialInterests.Yes, SocialLife.Day, _p.Seed) : "reallife_social_introduce_yes";
+            return Close(yes, SocialLife.Data(_p, "other", stranger.Name));
         }
     }
 }

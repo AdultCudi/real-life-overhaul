@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dialogs;
 using Entities;
@@ -28,6 +29,19 @@ namespace RealLifeOverhaul
         public bool Warm, Swapped, Brushed, Chatted;
         public int Pay;
         public LoveOffer Offer;         // Love: the evening's offer, or the morning after (Social/Love)
+        public SocialQuiz Quiz;         // an introduction with the quiz on: what their friends ask the player about the one who brought them; null when there is none or it was let go
+
+        /// <summary>
+        /// The quiz an introduction brings: made from the friend's own things when the option is on and a friend is there to be asked about; null otherwise, and
+        /// the introduction goes straight to the new person's hello as it always did.
+        /// </summary>
+        public static SocialQuiz QuizFor(int mode, SocialPerson friend)
+        {
+            return mode == Introduction && Settings.FriendsQuiz && friend != null && friend.Met ? SocialFriendsRules.Make(SocialInterests.SeedOf(friend), friend.Heard, friend.Quizzes) : null;
+        }
+
+        /// <summary>The answers right at the quiz, once all three were given; -1 when there was none, so the new person gets no first standing for it.</summary>
+        public int QuizRight => Quiz != null && Quiz.Over ? Quiz.Right : -1;
     }
 
     /// <summary>A conversation in the street, in the game's dialogue panel; the scene reads <see cref="SceneTalk"/> after.</summary>
@@ -87,8 +101,14 @@ namespace RealLifeOverhaul
                 messageData = said != null ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T(intro, data) + " " + said } }) : intro.Localize(data)
             };
             entry.ConfirmTextOverride = "reallife_social_btn_hello".Localize();
-            entry.OnConfirm = MeetFirst;
+            entry.OnConfirm = _talk.Quiz != null && friend != null ? Quizzed : (Func<DialogEntry>)MeetFirst;
             return entry;
+        }
+
+        // Their friends test the player on the one who brought them (SceneQuiz), and then the new person's own hello goes on as it always did.
+        private DialogEntry Quizzed()
+        {
+            return new SceneQuiz(_talk, _p, _talk.Introducer, MeetFirst).Open();
         }
 
         private DialogEntry MeetFirst()
@@ -145,7 +165,9 @@ namespace RealLifeOverhaul
         private DialogEntry Chat()
         {
             SocialTopic topic = SocialTalk.Pick(_p, out Dictionary<string, string> data);
-            DialogEntry entry = Say(SocialLines.Pick(topic.Open), data);
+            string open = SocialLines.Pick(topic.Open);
+            DialogEntry entry = Say(open, data);
+            SocialHintGame.Weave(entry, _p, open, data, HintWhere.Outing);   // now and then they let something about themselves slip
             entry.ConfirmTextOverride = topic.ReplyA.Localize(data);
             entry.OnConfirm = () => Answered(topic, true, data);
             entry.SecondOptionTextOverride = topic.ReplyB;

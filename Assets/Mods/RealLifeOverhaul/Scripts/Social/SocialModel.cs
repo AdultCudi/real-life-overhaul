@@ -64,7 +64,9 @@ namespace RealLifeOverhaul
         MomentSweet,  // a sweet moment on an outing (SocialMomentRules): a busker, a dog, the barista who knows their order
         MomentTense,  // ...a tense one: somebody cut in, somebody got too close
         MomentSilly,  // ...a silly one: both reached for the last roll, the alarm in the big scene
-        PassionFound  // the player found out what they are passionate about
+        PassionFound, // the player found out what they are passionate about
+        QuizAced,     // answered all three of the friends' questions about them right (SocialFriendsRules)
+        QuizFlop      // ...and got all three wrong
     }
 
     /// <summary>
@@ -141,6 +143,12 @@ namespace RealLifeOverhaul
         public bool MomentRow;       // their last outing had a moment: never two outings in a row with the same person
         public bool MomentEcho;      // they still owe a text about it, the day after (SocialDirector.Contact)
         public int HintDay;          // the game day they last texted a hint of their passion; 0 never
+        public int InterestSeed;     // the seed their things come from (SocialInterests), kept the first time it was needed so a new look never changes them; 0 not yet
+        public int Heard;            // the bits of InterestKind the player has heard them let slip: what People shows, and what the quiz counts as known
+        public int InterestHintDay;  // the game day they last let one of their things slip (SocialHintGame), apart from the passion's hint day; 0 never
+        public int IntroDay;         // the game day they last brought friends to be met (the quiz, when it is on); 0 never
+        public int Quizzes;          // quizzes about them the player has sat
+        public int QuizBest;         // the most answers right in one of them, 0 to 3; read only while Quizzes is above 0
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;

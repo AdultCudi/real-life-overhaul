@@ -1360,6 +1360,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--friends29")
+        {
+            Friends29();   // (meeting somebody's friends as a game: what each person is into, hints and the sure answer they give, the quiz and what it is worth, first impressions from the player's name, the save, the options off; Friends29Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--redevelop")
         {
             Redevelop();   // (redevelopment alone, while working on it: RedevelopChecks.cs)
@@ -2163,6 +2169,7 @@ internal static partial class Program
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, nobody made on the edge of the gap, the age a face brings, the city's couples, the option, the People page's texts (RomanceChecks.cs)
+        Friends29();    // meeting somebody's friends as a game: what each person is into, hints, the quiz and its worth, first impressions from the player's name, the save, the options off (Friends29Checks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
         OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
