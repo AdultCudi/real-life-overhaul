@@ -66,7 +66,10 @@ namespace RealLifeOverhaul
             { "umcnunavut", new CarFit(-2.61f, 2.61f, 1.14f, 1.88f, -2.31f, 0.45f, 1.88f, 0.70f, 1.88f, 1.82f, 72.8f, 0.60f, 1.81f, 0.35f, 0.79f, 0.60f, 1.30f) },
             { "vordpony", new CarFit(-2.37f, 2.41f, 0.92f, 1.38f, -0.87f, 0.21f, 1.38f, 0.56f, 1.32f, 0.98f, 12.4f, 0.62f, 0.98f, 0.52f, 0.82f, 0.56f, 0.90f) },
             { "vordtiaravic", new CarFit(-2.52f, 2.38f, 0.97f, 1.34f, -1.14f, 0.22f, 1.34f, 0.54f, 1.30f, 0.92f, 41.3f, 0.64f, 0.91f, 0.26f, 0.49f, 0.64f, 0.79f) },
-            { "vordv150", new CarFit(-2.72f, 2.41f, 1.13f, 1.77f, -0.98f, 0.58f, 1.77f, 0.66f, 1.74f, 0.73f, 56.5f, 0.88f, 0.72f, 0.49f, 1.03f, 0.54f, 1.23f) }
+            { "vordv150", new CarFit(-2.72f, 2.41f, 1.13f, 1.77f, -0.98f, 0.58f, 1.77f, 0.66f, 1.74f, 0.73f, 56.5f, 0.88f, 0.72f, 0.49f, 1.03f, 0.54f, 1.23f) },
+            { "reallife:vehicletype_haldenpip", new CarFit(-1.95f, 1.95f, 0.88f, 1.50f, -1.41f, 0.19f, 1.50f, 0.64f, 1.45f, 1.22f, 46.7f, 0.68f, 1.20f, 0.20f, 0.55f, 0.58f, 0.83f) },
+            { "reallife:vehicletype_haldenmarlow", new CarFit(-2.35f, 2.35f, 0.91f, 1.44f, -1.00f, 0.08f, 1.44f, 0.66f, 1.41f, 1.00f, 2.9f, 0.80f, 1.00f, 0.20f, 0.52f, 0.56f, 0.78f) },
+            { "reallife:vehicletype_haldenmarlowestate", new CarFit(-2.35f, 2.35f, 0.91f, 1.44f, -2.00f, 0.08f, 1.44f, 0.66f, 1.40f, 1.27f, 49.4f, 0.48f, 1.25f, 0.20f, 0.52f, 0.56f, 0.78f) }
         };
 
         public const float MaxDeckSlope = 25f;     // degrees: steeper than this is a rear window or a rounded tail, not a deck

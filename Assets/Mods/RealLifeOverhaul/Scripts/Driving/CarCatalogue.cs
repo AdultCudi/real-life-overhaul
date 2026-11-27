@@ -89,6 +89,10 @@ namespace RealLifeOverhaul
                 case "mersaididash": return new CarSpec(CarKind.Van, 14.5f, 150f);            // modern panel van
                 case "deliverytruck": return new CarSpec(CarKind.Truck, 18.0f, 135f);         // box truck
                 case "freighttruckt1": return new CarSpec(CarKind.Truck, 20.0f, 130f);        // heavy truck
+                // The mod's own cars (Garage/ModCarCatalogue), by their whole names.
+                case "reallife:vehicletype_haldenpip": return new CarSpec(CarKind.Economy, 13.0f, 165f);      // city hatchback
+                case "reallife:vehicletype_haldenmarlow": return new CarSpec(CarKind.Saloon, 9.6f, 200f);     // family saloon
+                case "reallife:vehicletype_haldenmarlowestate": return new CarSpec(CarKind.Saloon, 10.2f, 195f);   // its estate
                 // Two cars of other mods' sold through Empire Motors' desk, by their whole names.
                 case "empiremustanggt:vehicletype_mustanggt": return new CarSpec(CarKind.Sports, 4.5f, 250f);   // muscle coupe of today
                 case "empirebmwg82:vehicletype_empirebmwg82": return new CarSpec(CarKind.Sports, 4.0f, 250f);   // sports coupe, limited to 250
@@ -142,6 +146,7 @@ namespace RealLifeOverhaul
                 case "vordpony": case "empiremustanggt:vehicletype_mustanggt": case "empirebmwg82:vehicletype_empirebmwg82": return 4;
                 case "umcdesert": case "umcdesertdeliveryjob": case "mersaididash": case "deliverytruck": return 3;
                 case "honzamimic": case "vordtiaravic": case "bima320": case "mersaidis500": case "missamvillian": case "petrollsfanton": case "vordv150": return 5;
+                case "reallife:vehicletype_haldenpip": case "reallife:vehicletype_haldenmarlow": case "reallife:vehicletype_haldenmarlowestate": return 5;
                 case "umcnunavut": return 7;
                 case "ferdinand112": case "mersaidimgagt": case "anselmoaf90": case "freighttruckt1": return 2;
                 default: return 0;

@@ -59,6 +59,12 @@ internal static partial class Program
             string wrong = ModCarCatalogue.Wrong(d);
             Check(wrong == null, "mod cars: " + d.Id + " is sound for the game" + (wrong != null ? " (" + wrong + ")" : string.Empty));
             Check(ids.Add(d.Id), "mod cars: " + d.Id + " is listed once");
+            // Each car has its own line in the driving model and its own measured row for fitted parts: without them it would be
+            // placed by a guess and offered no spoiler or roof bars.
+            Check(ModSource(@"Driving\CarCatalogue.cs").Contains("case \"" + d.TypeName + "\": return new CarSpec("), "mod cars: " + d.Id + " has its line in the driving model (Driving/CarCatalogue)");
+            Check(ModSource(@"Driving\CarCatalogue.cs").Contains("case \"" + d.TypeName + "\": return ") && CarCatalogue.SeatsKnown(d.TypeName), "mod cars: " + d.Id + "'s seats are known");
+            Check(GarageFit.TryGet(d.TypeName, out CarFit fit) && System.Math.Abs(fit.Front - d.Front) < 0.03f && System.Math.Abs(fit.Rear - d.Rear) < 0.03f && System.Math.Abs(fit.Top - d.Height) < 0.03f,
+                "mod cars: " + d.Id + " has its measured row for fitted parts (Garage/GarageFit), of the same body the code describes");
             string unfair = ModCarCatalogue.Unfair(d, CarsOfTheGame);
             Check(unfair == null, "mod cars: " + d.Id + " at " + d.Price + " neither is nor makes a must-buy" + (unfair != null ? " (" + unfair + ")" : string.Empty));
             Check(ModCarCatalogue.PrefabKey(d.TypeName) == "Prefabs/Vehicles/PlayerVehicles/" + d.Id + ".prefab",

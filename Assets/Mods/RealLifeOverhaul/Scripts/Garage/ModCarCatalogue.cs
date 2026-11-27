@@ -99,7 +99,28 @@ namespace RealLifeOverhaul
             HalfWidth = 0.885f, Front = 1.95f, Rear = -1.95f, Height = 1.50f, BonnetHeight = 0.86f
         };
 
-        public static readonly ModCarDef[] All = { HaldenPip };
+        public static readonly ModCarDef HaldenMarlow = new ModCarDef
+        {
+            Id = "haldenmarlow", TypeName = Prefix + "haldenmarlow", Donor = GamePrefix + "vordtiaravic", KindKey = "reallife_cars_kind_saloon",
+            // The family saloon in the gap above the Vord Tiara Vic (11,000: slower, a little more room) and far under the BIMA 320 (48,000: more power).
+            Price = 19000, MaxFuel = 62f, Cargo = 10, MaxSpeed = 75, EnginePower = 95f, BrakeForce = 4000f, TurnRadius = 35, DamageIntensity = 0.48f,
+            FitsHandTruck = true, Luxury = false,
+            AxleFront = 1.42f, AxleRear = -1.30f, TrackHalf = 0.78f, WheelRadius = 0.32f, WheelWidth = 0.215f,
+            HalfWidth = 0.915f, Front = 2.35f, Rear = -2.35f, Height = 1.44f, BonnetHeight = 0.86f
+        };
+
+        public static readonly ModCarDef HaldenMarlowEstate = new ModCarDef
+        {
+            Id = "haldenmarlowestate", TypeName = Prefix + "haldenmarlowestate", Donor = GamePrefix + "vordtiaravic", KindKey = "reallife_cars_kind_estate",
+            // The Marlow with a load bay: 16 boxes where the saloon takes 10, a little slower for the weight. More room than any car under the
+            // Vord V150 pickup (44,000: 20 boxes, faster, stronger) without being a van.
+            Price = 24000, MaxFuel = 62f, Cargo = 16, MaxSpeed = 72, EnginePower = 95f, BrakeForce = 4000f, TurnRadius = 35, DamageIntensity = 0.48f,
+            FitsHandTruck = true, Luxury = false,
+            AxleFront = 1.42f, AxleRear = -1.30f, TrackHalf = 0.78f, WheelRadius = 0.32f, WheelWidth = 0.215f,
+            HalfWidth = 0.915f, Front = 2.35f, Rear = -2.35f, Height = 1.44f, BonnetHeight = 0.86f
+        };
+
+        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate };
 
         /// <summary>True for a vehicle type of the mod's own.</summary>
         public static bool IsOurs(string typeName)

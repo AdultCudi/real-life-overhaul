@@ -1,0 +1,51 @@
+{
+ "id": "haldenmarlow",
+ "meshes": [
+  "haldenmarlow_body",
+  "haldenmarlow_wheel_left",
+  "haldenmarlow_wheel_right",
+  "haldenmarlow_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldenmarlow_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlow_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlow_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlow_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlow_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlow_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlow_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlow_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}
