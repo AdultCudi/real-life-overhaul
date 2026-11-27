@@ -463,7 +463,7 @@ namespace RealLifeOverhaul.Tech
                 int owed = ExitStockRules.ListBlocked(c);
                 if (owed != ExitStockRules.BlockedNone)
                 {
-                    Notifications.ShowError(owed == ExitStockRules.BlockedTaken ? "reallife_exit_refuse_taken" : "reallife_exit_refuse_ladder");
+                    RefuseListing(firm, c, owed);
                     return;
                 }
                 IReadOnlyList<string> banks = ExitBanks();

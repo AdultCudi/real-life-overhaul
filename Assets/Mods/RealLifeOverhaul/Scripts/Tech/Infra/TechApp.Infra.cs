@@ -203,6 +203,19 @@ namespace RealLifeOverhaul.Tech
                 _director.OpenRoles(TechDirector.TabJobs, null);
             });
             InfoBox.Button(more, InfoBox.Additional, "reallife_crew_button_brief", () => _director.BriefCrew(place));   // the search firm, briefed from headquarters
+            InfoBox.Button(more, InfoBox.Negative, "reallife_infra_button_close", () =>
+            {
+                if (_director.CloseAsk(place, out string closeTitle, out string closeBody))
+                {
+                    GameConfirm.Show(closeTitle, closeBody, () => UiClone.Safe(() => Do(() =>
+                    {
+                        if (_director.CloseCentre(place))
+                        {
+                            _picked = null;
+                        }
+                    })), null, null, null, true, true);
+                }
+            });
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             box.Line(TechText.Fill("reallife_infra_centre_prices", "rack", TechText.Cents(_director.Level(InfraRules.RackPrice(false, buy))),
                 "gpu", TechText.Cents(_director.Level(InfraRules.RackPrice(true, buy)))));

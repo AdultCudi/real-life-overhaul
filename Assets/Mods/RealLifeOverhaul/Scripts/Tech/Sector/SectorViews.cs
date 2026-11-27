@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Tech
         public int Idle;                 // FirmsRules.Why now (Idle)
         public string IdleWords;         // ...in words
         public bool Desks = true;        // desk sessions run
+        public string Address = string.Empty;   // where the office stands, in words; empty when the game's list does not have it
         public string Manager;           // its manager's name, or null
         public readonly List<SectorDue> Due = new List<SectorDue>(4);
     }
@@ -103,6 +104,11 @@ namespace RealLifeOverhaul.Tech
             if (s.Due.Count > 0)
             {
                 Desk(v.Section(P + "sec_desk"), s, fmt);
+            }
+            // The way to the desk is always on the page while sessions are held here, not only when it is the next step: a firm with a hire or a product first never offered it.
+            if (s.Due.Count > 0 && s.Desks && (primary == null || primary.Act != SectorAct.Desk))
+            {
+                v.Others.Add(new ViewAction { Key = P + "button_desk", Act = SectorAct.Desk });
             }
             ViewSection limits = v.Section(P + "sec_limits");
             if (makes)
@@ -257,6 +263,10 @@ namespace RealLifeOverhaul.Tech
         // The firm's desk sessions: due or when, who takes them, or why not now.
         private static void Desk(ViewSection sec, SectorPlace s, IStudioFormat fmt)
         {
+            if (s.Desks)
+            {
+                Line(sec, string.IsNullOrEmpty(s.Address) ? P + "desk_where_plain" : P + "desk_where", ViewTone.Plain, "firm", s.Name, "address", s.Address ?? string.Empty);
+            }
             for (int i = 0; i < s.Due.Count; i++)
             {
                 SectorDue d = s.Due[i];

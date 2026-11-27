@@ -225,7 +225,7 @@ internal static partial class Program
         asked.Acc.Step = StartupMoney.StepAsked;
         Check(ExitStockRules.ListBlocked(asked) == ExitStockRules.BlockedLadder, "money: nor with the board's question open");
         string exits = ModSource(@"Tech\TechDirector.Exits.cs");
-        Check(Regex.IsMatch(exits, @"ListBlocked\(c\) != ExitStockRules\.BlockedNone[\s\S]{0,260}ListStage\.CalledOff") && Regex.IsMatch(exits, @"ListBlocked\(_venture\.CapOf\(place\)\)[\s\S]{0,400}return false;"),
+        Check(Regex.IsMatch(exits, @"ListBlocked\(c\) != ExitStockRules\.BlockedNone[\s\S]{0,260}ListStage\.CalledOff") && Regex.IsMatch(exits, @"ListBlocked\(listing\)[\s\S]{0,400}return false;"),
             "money: the bankers are not engaged and the book is called off at the pricing day for such a firm");
         // the investors are paid once: at the listing nothing, in a sale or a wind down the waterfall, and the stock's holders by what the waterfall owes the public
         SxFirm g = SxMake(7402);

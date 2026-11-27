@@ -36,6 +36,14 @@ namespace RealLifeOverhaul.Tech
             {
                 DrawSection(box, v.Sections[s]);
             }
+            for (int o = 0; o < v.Others.Count; o++)
+            {
+                ViewAction a = v.Others[o];
+                if (a.Act == SectorAct.Desk)
+                {
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Additional, a.Key, () => SectorAction(a.Act, place, a.Arg));   // the way to the desk, as the kit's page offers it
+                }
+            }
             if (_director.StudioRuns(m.K))
             {
                 WriteStudioPart(box, firm);

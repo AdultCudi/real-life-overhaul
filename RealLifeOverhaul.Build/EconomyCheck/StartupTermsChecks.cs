@@ -395,7 +395,7 @@ internal static partial class Program
         Check(d.Contains("Spend(own, Base(dropCents), save.Day)") && d.Contains("VentureTerms.Breach(own, save.Day)") && d.Contains("StatementLine(t)"),
             "terms: a spend at the firm's address over the provision with no approval is a breach, the firm's own running costs never are");
         string hook = MemberText(ModSource(@"Tech\TechDirector.Money.cs"), "private void OnMoneyEvent(string gameEvent)");
-        int provision = hook.IndexOf("WatchProvision(save", StringComparison.Ordinal), floor = hook.IndexOf("_floorNow <= 0 || now >= was", StringComparison.Ordinal);
+        int provision = hook.IndexOf("WatchProvision(save", StringComparison.Ordinal), floor = hook.IndexOf("!_funded || now >= was", StringComparison.Ordinal);
         Check(provision > 0 && hook.Contains("_provisionLeast > 0 && now < was") && provision < floor,
             "terms: the provision is watched on a money move only when the move is as big as the smallest provision, and the floor check stays as it was");
         string money = ModSource(@"Tech\TechDirector.Money.cs");

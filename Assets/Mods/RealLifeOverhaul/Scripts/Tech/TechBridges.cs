@@ -247,6 +247,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The speed of a building's leased line today, Mbps (Utilities/LeasedLineRules); 0 with none, one still being installed, or the utilities off. Default: none.</summary>
         public static Func<BuildingRegistration, int> LineMbps;
 
+        /// <summary>The leased line of a building given up (Utilities' CancelLine): a data centre that closes keeps none. Default: nothing.</summary>
+        public static Action<BuildingRegistration> DropLine;
+
         /// <summary>A leased line's size, month's price at the start's prices (cents) and the days it takes to install where fibre runs.</summary>
         public struct LineQuote
         {
@@ -598,6 +601,7 @@ namespace RealLifeOverhaul.Tech
             PlanMbps = null;
             LineMbps = null;
             LineStep = null;
+            DropLine = null;
             Net = null;
             NetDays = null;
             OpenInternet = null;

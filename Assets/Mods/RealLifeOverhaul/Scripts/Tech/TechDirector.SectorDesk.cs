@@ -502,6 +502,7 @@ namespace RealLifeOverhaul.Tech
                 ProductsAll = FirmsRules.LiveCount(_firmsFile, null), Products = FirmsRules.LiveCount(_firmsFile, place)
             };
             s.Team = TeamAt(place);
+            s.Address = FirmsGame.Where(place, out string street, out int number, out _) ? FirmsGame.AddressWords(street, number) : string.Empty;
             for (int i = 0; i < _firmsFile.Products.Count; i++)
             {
                 Product p = _firmsFile.Products[i];
