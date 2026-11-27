@@ -1,11 +1,6 @@
 build: OK
-ContractCheck: ALL CHECKS PASSED (6122)
-StandardCheck: 6 of 221814 CHECKS FAILED
-FAIL  RLO-STY-014 Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/CompanyApp.Managers.cs: 1 found, the baseline allows 0 (docs/standards, RLO-STY-014)
-FAIL  RLO-STY-014 Assets/Mods/RealLifeOverhaul/Scripts/Meta/OptionsTree.cs: 1 found, the baseline allows 0 (docs/standards, RLO-STY-014)
-FAIL  RLO-STY-014 Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareApp.Clicks.cs: 1 found, the baseline allows 0 (docs/standards, RLO-STY-014)
-FAIL  RLO-STY-014 Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareReplyWords.cs: 13 found, the baseline allows 0 (docs/standards, RLO-STY-014)
-FAIL  RLO-STY-014 Assets/Mods/RealLifeOverhaul/Scripts/Ui/Flare/FlareScreen.Batch.cs: 1 found, the baseline allows 0 (docs/standards, RLO-STY-014)
+ContractCheck: ALL CHECKS PASSED (6125)
+StandardCheck: ALL CHECKS PASSED (222713)
 check.pl non-zero counts: 2
 locales: LOCALES: 62 fault(s)
 STOP: QUICK CHECK FAILED

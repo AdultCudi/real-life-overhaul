@@ -225,7 +225,9 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(n.Answer))
             {
                 r.Flags |= FlareRowFlags.Answered;
-                string words = n.Answer.StartsWith("reallife_", StringComparison.Ordinal) ? FlareText.Fill(n.Answer, "name", FlareBatchRules.FirstName(r.Name), "business", shop.Name ?? "?") : n.Answer;   // a kept key, with the reviewer and the business filled in
+                // a kept key is shown with the reviewer and the business filled in
+                string words = n.Answer.StartsWith("reallife_", StringComparison.Ordinal)
+                    ? FlareText.Fill(n.Answer, "name", FlareBatchRules.FirstName(r.Name), "business", shop.Name ?? "?") : n.Answer;
                 r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", words) + ResultLine(FlareReplyRules.ResultOf(n.Quality, r.Stars));
             }
             else

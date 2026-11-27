@@ -82,7 +82,8 @@ namespace RealLifeOverhaul.Ui
                 k.Note = FlareText.T(_sheetWhy);
                 k.NoteBad = true;
             }
-            k.Confirm = sum.Answers > 0 ? FlareText.Fill("reallife_flare_kit_batch_confirm", "count", sum.Answers.ToString(CultureInfo.InvariantCulture)) : FlareText.T("reallife_flare_kit_batch_confirm_none");
+            k.Confirm = sum.Answers > 0
+                ? FlareText.Fill("reallife_flare_kit_batch_confirm", "count", sum.Answers.ToString(CultureInfo.InvariantCulture)) : FlareText.T("reallife_flare_kit_batch_confirm_none");
             k.ConfirmOff = sum.Answers == 0;
         }
 

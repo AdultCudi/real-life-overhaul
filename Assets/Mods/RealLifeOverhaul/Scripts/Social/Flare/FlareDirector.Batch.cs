@@ -312,6 +312,76 @@ namespace RealLifeOverhaul.Flare
             return made;
         }
 
+        /// <summary>
+        /// The self-test's read-only probe (docs/features/flare-city.md): where a business's reviews stand, in plain words, for a plan to assert on:
+        /// "unanswered 3 answered 12 costs 0 unfair 2 rating 3.90 businesses 2". The business is named by part of its name; empty is the first. Changes nothing.
+        /// </summary>
+        public string BatchProbe(string name)
+        {
+            if (!Running || Save == null)
+            {
+                return "flare off";
+            }
+            List<FlareShop> shops = MyShops();
+            FlareShop shop = default(FlareShop);
+            for (int i = 0; i < shops.Count && shop.Place == null; i++)
+            {
+                if (string.IsNullOrEmpty(name) || (shops[i].Name ?? string.Empty).IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    shop = shops[i];
+                }
+            }
+            if (shop.Place == null)
+            {
+                return "no business " + name;
+            }
+            int unanswered = BatchCollect(shop.Place, int.MinValue), answered = 0, costs = 0;
+            string key = CityOn ? FlareCityPass.PlaceToKey(shop.Place) : null;
+            for (int i = 0; key != null && i < _city.ReviewNotes.Count; i++)
+            {
+                FlareReviewNote n = _city.ReviewNotes[i];
+                if (n.Key == key && !string.IsNullOrEmpty(n.Answer))
+                {
+                    answered++;
+                    costs += FlareReplyRules.Worsens(n.Quality) ? 1 : 0;
+                }
+            }
+            for (int i = 0; _file != null && i < _file.Answers.Count; i++)
+            {
+                if (_file.Answers[i].Key == shop.Place)
+                {
+                    answered++;
+                    costs += FlareReplyRules.Worsens(_file.Answers[i].Quality) ? 1 : 0;
+                }
+            }
+            int unfair = FlaggedAt(shop.Place), rating = RatingOf(shop.Place);
+            return "unanswered " + unanswered + " answered " + answered + " costs " + costs + " unfair " + unfair + " rating " + (rating / 1000f).ToString("0.00", CultureInfo.InvariantCulture)
+                   + " businesses " + shops.Count + " waiting " + ReviewsWaiting(null);
+        }
+
+        /// <summary>
+        /// What the old panel's question box does when it is answered yes, for the self-test to call (the old interface's button is not one a plan can press): the same
+        /// <see cref="BatchAnswer"/> for the business named by part of its name (empty or "all" for every business), its figures in words.
+        /// </summary>
+        public string BatchAnswerFor(string name)
+        {
+            string place = null;
+            if (!string.IsNullOrEmpty(name) && name != "all")
+            {
+                List<FlareShop> shops = MyShops();
+                for (int i = 0; i < shops.Count && place == null; i++)
+                {
+                    place = (shops[i].Name ?? string.Empty).IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0 ? shops[i].Place : null;
+                }
+                if (place == null)
+                {
+                    return "no business " + name;
+                }
+            }
+            FlareBatchSummary s = BatchAnswer(place);
+            return s == null ? "answered 0" : "answered " + s.Answers + " thanks " + s.Thanks + " sorry " + s.Sorry + " mixed " + s.Mixed + " left " + s.Left;
+        }
+
         // The self-check line: the rating the press left is within the cap of the plain mean of the reviews, however many were answered.
         private void BatchCheck(string place)
         {
@@ -327,7 +397,7 @@ namespace RealLifeOverhaul.Flare
                          + " of the plain mean: " + (ok ? "PASS" : "FAIL"));
         }
 
-        /// <summary>Test: eight reviews of the first business of the player's go up at once, one to five stars, so "Answer all" has something to answer.</summary>
+        /// <summary>Test: eight reviews of each business of the player's (the first four) go up at once, one to five stars, so "Answer all" has something to answer.</summary>
         public void TestReviewsMany()
         {
             if (!TestReady("Flare many reviews"))
@@ -342,20 +412,25 @@ namespace RealLifeOverhaul.Flare
                     Tell(NotificationType.Warning, "reallife_flare_test_review_none", null);
                     return;
                 }
-                FlareBiz b = FlareLiveGame.Biz(shops[0], true);
                 int[] stars = { 5, 5, 4, 3, 2, 1, 5, 1 };
-                for (int i = 0; i < stars.Length; i++)
+                string names = string.Empty;
+                for (int s = 0; s < shops.Count && s < 4; s++)
                 {
-                    int id = _file.NextId++;
-                    _file.Posts.Add(new FlarePost
+                    FlareBiz b = FlareLiveGame.Biz(shops[s], true);
+                    names += (s > 0 ? ", " : string.Empty) + b.Name;
+                    for (int i = 0; i < stars.Length; i++)
                     {
-                        Id = id, Day = Save.Day, Hour = Save.Hour, Minute = FlareGame.MinuteOfDay % 60, Author = FlareAuthor.Citizen,
-                        Who = FlareLiveRules.PickCitizen(FlareLiveRules.CitySeed(_file), id, 541), Source = FlareSource.Review, Arg = stars[i],
-                        Place = b.Place, Name = b.Name, District = b.District, Topic = FlareLiveRules.NicheTag(b.Niche), Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000,
-                        Reach = 200, Likes = FlareRules.Roll(_file.Seed, id, 3) % 20
-                    });
+                        int id = _file.NextId++;
+                        _file.Posts.Add(new FlarePost
+                        {
+                            Id = id, Day = Save.Day, Hour = Save.Hour, Minute = FlareGame.MinuteOfDay % 60, Author = FlareAuthor.Citizen,
+                            Who = FlareLiveRules.PickCitizen(FlareLiveRules.CitySeed(_file), id, 541), Source = FlareSource.Review, Arg = stars[i],
+                            Place = b.Place, Name = b.Name, District = b.District, Topic = FlareLiveRules.NicheTag(b.Niche), Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000,
+                            Reach = 200, Likes = FlareRules.Roll(_file.Seed, id, 3) % 20
+                        });
+                    }
                 }
-                Tell(NotificationType.Info, "reallife_flare_test_reviews_many_up", _openBusinessTab, "business", b.Name);
+                Tell(NotificationType.Info, "reallife_flare_test_reviews_many_up", _openBusinessTab, "business", names);
                 Recount();
                 Changed();
             });

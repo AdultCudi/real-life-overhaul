@@ -13,35 +13,182 @@ namespace RealLifeOverhaul.Flare
 
         public static readonly string[][] Thanks =
         {
-            new[] { "reallife_flare_batch_thanks_food_1", "reallife_flare_batch_thanks_food_2", "reallife_flare_batch_thanks_food_3", "reallife_flare_batch_thanks_food_4", "reallife_flare_batch_thanks_food_5", "reallife_flare_batch_thanks_food_6" },
-            new[] { "reallife_flare_batch_thanks_fashion_1", "reallife_flare_batch_thanks_fashion_2", "reallife_flare_batch_thanks_fashion_3", "reallife_flare_batch_thanks_fashion_4", "reallife_flare_batch_thanks_fashion_5", "reallife_flare_batch_thanks_fashion_6" },
-            new[] { "reallife_flare_batch_thanks_fitness_1", "reallife_flare_batch_thanks_fitness_2", "reallife_flare_batch_thanks_fitness_3", "reallife_flare_batch_thanks_fitness_4", "reallife_flare_batch_thanks_fitness_5", "reallife_flare_batch_thanks_fitness_6" },
-            new[] { "reallife_flare_batch_thanks_night_1", "reallife_flare_batch_thanks_night_2", "reallife_flare_batch_thanks_night_3", "reallife_flare_batch_thanks_night_4", "reallife_flare_batch_thanks_night_5", "reallife_flare_batch_thanks_night_6" },
-            new[] { "reallife_flare_batch_thanks_tech_1", "reallife_flare_batch_thanks_tech_2", "reallife_flare_batch_thanks_tech_3", "reallife_flare_batch_thanks_tech_4", "reallife_flare_batch_thanks_tech_5", "reallife_flare_batch_thanks_tech_6" },
-            new[] { "reallife_flare_batch_thanks_shop_1", "reallife_flare_batch_thanks_shop_2", "reallife_flare_batch_thanks_shop_3", "reallife_flare_batch_thanks_shop_4", "reallife_flare_batch_thanks_shop_5", "reallife_flare_batch_thanks_shop_6" },
-            new[] { "reallife_flare_batch_thanks_pro_1", "reallife_flare_batch_thanks_pro_2", "reallife_flare_batch_thanks_pro_3", "reallife_flare_batch_thanks_pro_4", "reallife_flare_batch_thanks_pro_5", "reallife_flare_batch_thanks_pro_6" }
+            new[]
+            {
+                "reallife_flare_batch_thanks_food_1",
+                "reallife_flare_batch_thanks_food_2",
+                "reallife_flare_batch_thanks_food_3",
+                "reallife_flare_batch_thanks_food_4",
+                "reallife_flare_batch_thanks_food_5",
+                "reallife_flare_batch_thanks_food_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_fashion_1",
+                "reallife_flare_batch_thanks_fashion_2",
+                "reallife_flare_batch_thanks_fashion_3",
+                "reallife_flare_batch_thanks_fashion_4",
+                "reallife_flare_batch_thanks_fashion_5",
+                "reallife_flare_batch_thanks_fashion_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_fitness_1",
+                "reallife_flare_batch_thanks_fitness_2",
+                "reallife_flare_batch_thanks_fitness_3",
+                "reallife_flare_batch_thanks_fitness_4",
+                "reallife_flare_batch_thanks_fitness_5",
+                "reallife_flare_batch_thanks_fitness_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_night_1",
+                "reallife_flare_batch_thanks_night_2",
+                "reallife_flare_batch_thanks_night_3",
+                "reallife_flare_batch_thanks_night_4",
+                "reallife_flare_batch_thanks_night_5",
+                "reallife_flare_batch_thanks_night_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_tech_1",
+                "reallife_flare_batch_thanks_tech_2",
+                "reallife_flare_batch_thanks_tech_3",
+                "reallife_flare_batch_thanks_tech_4",
+                "reallife_flare_batch_thanks_tech_5",
+                "reallife_flare_batch_thanks_tech_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_shop_1",
+                "reallife_flare_batch_thanks_shop_2",
+                "reallife_flare_batch_thanks_shop_3",
+                "reallife_flare_batch_thanks_shop_4",
+                "reallife_flare_batch_thanks_shop_5",
+                "reallife_flare_batch_thanks_shop_6"
+            },
+            new[]
+            {
+                "reallife_flare_batch_thanks_pro_1",
+                "reallife_flare_batch_thanks_pro_2",
+                "reallife_flare_batch_thanks_pro_3",
+                "reallife_flare_batch_thanks_pro_4",
+                "reallife_flare_batch_thanks_pro_5",
+                "reallife_flare_batch_thanks_pro_6"
+            }
         };
 
         public static readonly string[][] Sorry =
         {
-            new[] { "reallife_flare_batch_sorry_food_1", "reallife_flare_batch_sorry_food_2", "reallife_flare_batch_sorry_food_3", "reallife_flare_batch_sorry_food_4", "reallife_flare_batch_sorry_food_5" },
-            new[] { "reallife_flare_batch_sorry_fashion_1", "reallife_flare_batch_sorry_fashion_2", "reallife_flare_batch_sorry_fashion_3", "reallife_flare_batch_sorry_fashion_4", "reallife_flare_batch_sorry_fashion_5" },
-            new[] { "reallife_flare_batch_sorry_fitness_1", "reallife_flare_batch_sorry_fitness_2", "reallife_flare_batch_sorry_fitness_3", "reallife_flare_batch_sorry_fitness_4", "reallife_flare_batch_sorry_fitness_5" },
-            new[] { "reallife_flare_batch_sorry_night_1", "reallife_flare_batch_sorry_night_2", "reallife_flare_batch_sorry_night_3", "reallife_flare_batch_sorry_night_4", "reallife_flare_batch_sorry_night_5" },
-            new[] { "reallife_flare_batch_sorry_tech_1", "reallife_flare_batch_sorry_tech_2", "reallife_flare_batch_sorry_tech_3", "reallife_flare_batch_sorry_tech_4", "reallife_flare_batch_sorry_tech_5" },
-            new[] { "reallife_flare_batch_sorry_shop_1", "reallife_flare_batch_sorry_shop_2", "reallife_flare_batch_sorry_shop_3", "reallife_flare_batch_sorry_shop_4", "reallife_flare_batch_sorry_shop_5" },
-            new[] { "reallife_flare_batch_sorry_pro_1", "reallife_flare_batch_sorry_pro_2", "reallife_flare_batch_sorry_pro_3", "reallife_flare_batch_sorry_pro_4", "reallife_flare_batch_sorry_pro_5" }
+            new[]
+            {
+                "reallife_flare_batch_sorry_food_1",
+                "reallife_flare_batch_sorry_food_2",
+                "reallife_flare_batch_sorry_food_3",
+                "reallife_flare_batch_sorry_food_4",
+                "reallife_flare_batch_sorry_food_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_fashion_1",
+                "reallife_flare_batch_sorry_fashion_2",
+                "reallife_flare_batch_sorry_fashion_3",
+                "reallife_flare_batch_sorry_fashion_4",
+                "reallife_flare_batch_sorry_fashion_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_fitness_1",
+                "reallife_flare_batch_sorry_fitness_2",
+                "reallife_flare_batch_sorry_fitness_3",
+                "reallife_flare_batch_sorry_fitness_4",
+                "reallife_flare_batch_sorry_fitness_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_night_1",
+                "reallife_flare_batch_sorry_night_2",
+                "reallife_flare_batch_sorry_night_3",
+                "reallife_flare_batch_sorry_night_4",
+                "reallife_flare_batch_sorry_night_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_tech_1",
+                "reallife_flare_batch_sorry_tech_2",
+                "reallife_flare_batch_sorry_tech_3",
+                "reallife_flare_batch_sorry_tech_4",
+                "reallife_flare_batch_sorry_tech_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_shop_1",
+                "reallife_flare_batch_sorry_shop_2",
+                "reallife_flare_batch_sorry_shop_3",
+                "reallife_flare_batch_sorry_shop_4",
+                "reallife_flare_batch_sorry_shop_5"
+            },
+            new[]
+            {
+                "reallife_flare_batch_sorry_pro_1",
+                "reallife_flare_batch_sorry_pro_2",
+                "reallife_flare_batch_sorry_pro_3",
+                "reallife_flare_batch_sorry_pro_4",
+                "reallife_flare_batch_sorry_pro_5"
+            }
         };
 
         public static readonly string[][] Mixed =
         {
-            new[] { "reallife_flare_batch_mixed_food_1", "reallife_flare_batch_mixed_food_2", "reallife_flare_batch_mixed_food_3", "reallife_flare_batch_mixed_food_4" },
-            new[] { "reallife_flare_batch_mixed_fashion_1", "reallife_flare_batch_mixed_fashion_2", "reallife_flare_batch_mixed_fashion_3", "reallife_flare_batch_mixed_fashion_4" },
-            new[] { "reallife_flare_batch_mixed_fitness_1", "reallife_flare_batch_mixed_fitness_2", "reallife_flare_batch_mixed_fitness_3", "reallife_flare_batch_mixed_fitness_4" },
-            new[] { "reallife_flare_batch_mixed_night_1", "reallife_flare_batch_mixed_night_2", "reallife_flare_batch_mixed_night_3", "reallife_flare_batch_mixed_night_4" },
-            new[] { "reallife_flare_batch_mixed_tech_1", "reallife_flare_batch_mixed_tech_2", "reallife_flare_batch_mixed_tech_3", "reallife_flare_batch_mixed_tech_4" },
-            new[] { "reallife_flare_batch_mixed_shop_1", "reallife_flare_batch_mixed_shop_2", "reallife_flare_batch_mixed_shop_3", "reallife_flare_batch_mixed_shop_4" },
-            new[] { "reallife_flare_batch_mixed_pro_1", "reallife_flare_batch_mixed_pro_2", "reallife_flare_batch_mixed_pro_3", "reallife_flare_batch_mixed_pro_4" }
+            new[]
+            {
+                "reallife_flare_batch_mixed_food_1",
+                "reallife_flare_batch_mixed_food_2",
+                "reallife_flare_batch_mixed_food_3",
+                "reallife_flare_batch_mixed_food_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_fashion_1",
+                "reallife_flare_batch_mixed_fashion_2",
+                "reallife_flare_batch_mixed_fashion_3",
+                "reallife_flare_batch_mixed_fashion_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_fitness_1",
+                "reallife_flare_batch_mixed_fitness_2",
+                "reallife_flare_batch_mixed_fitness_3",
+                "reallife_flare_batch_mixed_fitness_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_night_1",
+                "reallife_flare_batch_mixed_night_2",
+                "reallife_flare_batch_mixed_night_3",
+                "reallife_flare_batch_mixed_night_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_tech_1",
+                "reallife_flare_batch_mixed_tech_2",
+                "reallife_flare_batch_mixed_tech_3",
+                "reallife_flare_batch_mixed_tech_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_shop_1",
+                "reallife_flare_batch_mixed_shop_2",
+                "reallife_flare_batch_mixed_shop_3",
+                "reallife_flare_batch_mixed_shop_4"
+            },
+            new[]
+            {
+                "reallife_flare_batch_mixed_pro_1",
+                "reallife_flare_batch_mixed_pro_2",
+                "reallife_flare_batch_mixed_pro_3",
+                "reallife_flare_batch_mixed_pro_4"
+            }
         };
 
         /// <summary>The set of words for a business of this niche: one of the seven; the local news niche has the shop's.</summary>

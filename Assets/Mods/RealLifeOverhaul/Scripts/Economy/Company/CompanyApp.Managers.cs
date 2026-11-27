@@ -551,7 +551,8 @@ namespace RealLifeOverhaul.Economy
                     return CompanyText.T(d.A == 1 ? "reallife_mgr_did_lease_accept" : "reallife_mgr_did_lease_decline", "rent", CompanyText.Money(d.C), "now", CompanyText.Money(d.B));
                 case ManagerTask.Reviews:
                     return d.G > 0 ? CompanyText.T("reallife_mgr_did_reviews_missed", "count", d.G.ToString())
-                        : CompanyText.Fill(d.D > 0 ? "reallife_mgr_did_reviews_left" : "reallife_mgr_did_reviews", "count", (d.A + d.B + d.C).ToString(), "thanks", d.A.ToString(), "sorry", d.B.ToString(),
+                        : CompanyText.Fill(d.D > 0 ? "reallife_mgr_did_reviews_left" : "reallife_mgr_did_reviews",
+                            "count", (d.A + d.B + d.C).ToString(), "thanks", d.A.ToString(), "sorry", d.B.ToString(),
                             "mixed", d.C.ToString(), "left", d.D.ToString(), "before", (d.E / 1000f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                             "after", (d.F / 1000f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
                 case ManagerTask.Hiring:

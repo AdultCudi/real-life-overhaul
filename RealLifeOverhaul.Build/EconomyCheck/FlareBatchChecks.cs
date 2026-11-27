@@ -227,10 +227,14 @@ internal static partial class Program
         Check(all.Count == total && total == 105 && missing == 0, "Flare words: 105 different variants, every one written (" + missing + " missing, " + all.Count + " distinct keys)");
         Check(braces == 0 && tooLong == 0, "Flare words: each variant fills in whole and fits in a reply of " + FlareLiveRules.TextMost + " characters, with a long business name (" + braces + " unfilled, " + tooLong + " too long)");
         Check(unnamed * 10 <= total * 3, "Flare words: at least seven in ten variants use the reviewer's or the business's name (" + unnamed + " of " + total + " use neither)");
-        string[] markers = { "kitchen", "stitch", "weights", "dance floor", "ticket", "professional" };
+        string[] markers = { "kitchen", "stitch", "weights", "dance floor", "ticket", null, "professional" };   // by set: the shop's has none of its own
         bool own = true, other = false;
         for (int s = 0; s < markers.Length; s++)
         {
+            if (markers[s] == null)
+            {
+                continue;
+            }
             for (int t = 0; t < FlareReplyWords.Sets; t++)
             {
                 string joined = string.Empty;
@@ -432,7 +436,7 @@ internal static partial class Program
             ManagerReviews.Record(many, 5, "P" + i, 3000, 1, 0, 0);
         }
         Check(many.Places.Count == ManagerReviews.PlacesMost && many.Thanks == ManagerReviews.PlacesMost + 10, "Flare duty: the record follows at most " + ManagerReviews.PlacesMost + " businesses and still counts every answer");
-        Check(ManagerRules.Allowance(ManagerCatalogue.RolePlace, 60, 100) == ManagerCatalogue.AllowanceBase[0] + ManagerCatalogue.AllowancePerSkill[0] * 60, "Flare duty: the manager's allowance is what it was, the duty adds no fee");
+        Check(ManagerRules.Allowance(ManagerCatalogue.RolePlace, 60, 100) == CompanyCatalogue.AtPrices(ManagerCatalogue.AllowanceBase[0] + ManagerCatalogue.AllowancePerSkill[0] * 60, 100), "Flare duty: the manager's allowance is what it was, the duty adds no fee");
     }
 
     // The save: a line from before loads as it was and writes back the same, the week's part comes after and is skipped by what does not know it, a damaged one is ignored.

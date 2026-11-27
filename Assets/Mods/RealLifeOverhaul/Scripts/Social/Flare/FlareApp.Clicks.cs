@@ -190,7 +190,8 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             string parts = _director.BatchParts(sum, true);
-            string rating = sum.Before > 0 ? FlareText.Fill("reallife_flare_batch_ask_rating", "before", (sum.Before / 1000f).ToString("0.00"), "after", (sum.After / 1000f).ToString("0.00")) : string.Empty;
+            string rating = sum.Before > 0 ? FlareText.Fill("reallife_flare_batch_ask_rating",
+                "before", (sum.Before / 1000f).ToString("0.00"), "after", (sum.After / 1000f).ToString("0.00")) : string.Empty;
             GameConfirm.Show(
                 "reallife_flare_batch_ask_title".Localize(), "reallife_flare_batch_ask_body".Localize(new { parts, rating, left = FlareDirector.BatchLeftLine(sum.Left) }),
                 () => UiClone.Safe(() =>

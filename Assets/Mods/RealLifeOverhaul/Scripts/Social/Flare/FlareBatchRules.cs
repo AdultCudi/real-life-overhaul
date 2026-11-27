@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Flare
             return unfair ? FlareBatchWay.Left : FlareBatchWay.Sorry;
         }
 
-        /// <summary>The option of the reply sheet a way answers with; never <see cref="FlareReplyOption.Defend"/>.</summary>
+        /// <summary>The option of the reply sheet a way answers with; never the answer that stands your ground.</summary>
         public static FlareReplyOption Option(FlareBatchWay way)
         {
             return way == FlareBatchWay.Sorry ? FlareReplyOption.Sorry : FlareReplyOption.Thanks;
