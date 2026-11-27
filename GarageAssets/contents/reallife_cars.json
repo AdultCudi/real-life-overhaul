@@ -1,6 +1,6 @@
 {
  "bundle": "reallife_cars",
- "bytes": 6819578,
+ "bytes": 6829920,
  "meshes": [
   {"name": "haldencarrier_body", "vertices": 5338, "triangles": 5712, "size": [2.384, 1.801, 5.317], "centre": [0.000, 1.198, 0.002]},
   {"name": "haldencarrier_collider", "vertices": 636, "triangles": 212, "size": [1.966, 1.748, 5.308], "centre": [0.000, 1.173, -0.001]},
@@ -10,8 +10,8 @@
   {"name": "haldendrover_collider", "vertices": 658, "triangles": 220, "size": [1.871, 1.462, 5.199], "centre": [0.000, 1.091, 0.000]},
   {"name": "haldendrover_wheel_left", "vertices": 551, "triangles": 564, "size": [0.262, 0.800, 0.800], "centre": [-0.001, 0.000, 0.000]},
   {"name": "haldendrover_wheel_right", "vertices": 551, "triangles": 564, "size": [0.262, 0.800, 0.800], "centre": [0.001, 0.000, 0.000]},
-  {"name": "haldenember_body", "vertices": 5660, "triangles": 6130, "size": [1.948, 1.147, 4.506], "centre": [0.000, 0.731, -0.006]},
-  {"name": "haldenember_collider", "vertices": 635, "triangles": 212, "size": [1.827, 1.146, 4.501], "centre": [0.000, 0.733, -0.003]},
+  {"name": "haldenember_body", "vertices": 5887, "triangles": 6502, "size": [1.948, 1.138, 4.517], "centre": [0.000, 0.727, 0.000]},
+  {"name": "haldenember_collider", "vertices": 618, "triangles": 206, "size": [1.827, 1.135, 4.498], "centre": [0.000, 0.727, -0.005]},
   {"name": "haldenember_wheel_left", "vertices": 561, "triangles": 544, "size": [0.233, 0.653, 0.660], "centre": [-0.001, 0.000, 0.000]},
   {"name": "haldenember_wheel_right", "vertices": 561, "triangles": 544, "size": [0.233, 0.653, 0.660], "centre": [0.001, 0.000, 0.000]},
   {"name": "haldenmarlow_body", "vertices": 6056, "triangles": 6382, "size": [2.043, 1.294, 4.713], "centre": [0.000, 0.832, 0.006]},

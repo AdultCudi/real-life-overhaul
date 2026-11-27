@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
             { "reallife:vehicletype_haldendrover", new CarFit(-2.60f, 2.60f, 0.94f, 1.82f, -0.86f, 0.34f, 1.82f, 0.70f, 1.77f, 0.63f, 0.0f, 0.90f, 0.63f, 0.38f, 1.06f, 0.86f, 1.19f) },
             { "reallife:vehicletype_haldencarrier", new CarFit(-2.65f, 2.65f, 0.98f, 2.05f, -2.47f, 0.85f, 2.05f, 0.86f, 2.00f, 2.03f, 43.8f, 0.86f, 2.01f, 0.32f, 0.80f, 0.84f, 1.14f) },
             { "reallife:vehicletype_haldentarn", new CarFit(-2.66f, 2.45f, 0.98f, 1.90f, -2.28f, 0.32f, 1.90f, 0.80f, 1.86f, 1.25f, 55.0f, 0.88f, 1.23f, 0.41f, 1.09f, 0.92f, 1.21f) },
-            { "reallife:vehicletype_haldenember", new CarFit(-2.25f, 2.25f, 0.91f, 1.30f, -0.87f, -0.03f, 1.29f, 0.64f, 1.26f, 0.94f, 4.2f, 0.80f, 0.94f, 0.17f, 0.53f, 0.50f, 0.75f) }
+            { "reallife:vehicletype_haldenember", new CarFit(-2.25f, 2.25f, 0.91f, 1.30f, -0.83f, -0.07f, 1.28f, 0.64f, 1.25f, 0.94f, 4.2f, 0.80f, 0.94f, 0.17f, 0.58f, 0.52f, 0.80f) }
         };
 
         public const float MaxDeckSlope = 25f;     // degrees: steeper than this is a rear window or a rounded tail, not a deck

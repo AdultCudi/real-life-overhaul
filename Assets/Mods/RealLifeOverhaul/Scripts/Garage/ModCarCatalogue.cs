@@ -165,7 +165,7 @@ namespace RealLifeOverhaul
             Price = 58000, MaxFuel = 60f, Cargo = 4, MaxSpeed = 85, EnginePower = 140f, BrakeForce = 6000f, TurnRadius = 34, DamageIntensity = 0.48f,
             FitsHandTruck = true, Luxury = true,
             AxleFront = 1.38f, AxleRear = -1.27f, TrackHalf = 0.785f, WheelRadius = 0.33f, WheelWidth = 0.24f,
-            HalfWidth = 0.915f, Front = 2.25f, Rear = -2.25f, Height = 1.30f, BonnetHeight = 0.84f
+            HalfWidth = 0.915f, Front = 2.25f, Rear = -2.25f, Height = 1.29f, BonnetHeight = 0.87f
         };
 
         public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier, HaldenTarn, HaldenEmber };
