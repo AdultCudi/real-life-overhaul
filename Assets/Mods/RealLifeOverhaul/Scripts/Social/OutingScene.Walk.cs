@@ -271,7 +271,9 @@ namespace RealLifeOverhaul
             }
             _followGoal = goal;
             _stood = false;
-            _friend.WalkTo(goal, gap > 7f);
+            // At the player's own pace: the game's walk is a third of the jog the player goes at, so a companion on it never kept up.
+            CityPerson.PaceFigures(out float walk, out float jog, out float run);
+            _friend.WalkTo(goal, false, SocialDateRules.PartnerPace(D.PlayerPace, gap, walk, jog, run));
         }
 
         private void LeftBehind(float now)
