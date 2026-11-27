@@ -268,11 +268,11 @@ namespace RealLifeOverhaul.Ui
                 var offer = default(CandidateSalaryOffer);
                 if (salary.GetAmounts(ref offer))
                 {
-                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_wage", "wage", Money(offer.hourlyWage), "bonus", Money(offer.signingBonus)), -1, -1);
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_wage", "wage", UiText.Wage(offer.hourlyWage), "bonus", UiText.Wage(offer.signingBonus)), -1, -1);
                 }
                 if (Asked(out CandidateSalaryOffer ask))
                 {
-                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_asked", "wage", Money(ask.hourlyWage), "bonus", Money(ask.signingBonus)), 0);
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_asked", "wage", UiText.Wage(ask.hourlyWage), "bonus", UiText.Wage(ask.signingBonus)), 0);
                 }
                 return true;
             }

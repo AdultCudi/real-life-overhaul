@@ -1,4 +1,5 @@
 using System.Globalization;
+using Extensions;
 using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Ui
@@ -20,6 +21,12 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>Money as the game writes it.</summary>
         public static string Money(float amount) => FinanceText.Money(amount);
+
+        /// <summary>
+        /// A wage or bonus the game takes to the cent (its offer fields step 0.01 and hold two decimals): whole dollars when it is whole, else with its cents
+        /// as the game writes them, never cut to dollars as <see cref="Money"/> cuts.
+        /// </summary>
+        public static string Wage(float amount) => ContactsRules.HasCents(amount) ? amount.ToCurrencyFormat() : Money(amount);
 
         /// <summary>A whole count, as the game's lists write their counts.</summary>
         public static string Whole(int n) => n.ToString(Inv);

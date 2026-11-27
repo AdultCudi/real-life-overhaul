@@ -87,6 +87,25 @@ internal static partial class Program
             "contacts: a call stands as its card alone, its replies on the number keys and Hang up its way out, the window not reachable under it");
         WaitingChecks();
         ContactPictureChecks();
+        WageCentsChecks();
+    }
+
+    // The game's offer fields step 0.01 and hold two decimals (PlayerOfferSettings), so a candidate's $27.90 is shown and asked as $27.90, never cut to $27 as
+    // the whole-dollar money text cuts it, which made the stepper look as if it stepped in dollars and the asked line say less than was asked.
+    private static void WageCentsChecks()
+    {
+        Check(ContactsRules.HasCents(27.9f) && ContactsRules.HasCents(27.01f) && ContactsRules.HasCents(0.05f) && ContactsRules.HasCents(-1.5f)
+              && !ContactsRules.HasCents(27f) && !ContactsRules.HasCents(0f) && !ContactsRules.HasCents(250f) && !ContactsRules.HasCents(27.999f),
+            "contacts wage: a wage has cents from one cent up, a whole figure and one that rounds to whole has none");
+        string read = MemberText(ModSource("Ui/Contacts/ContactsScreen.Read.cs"), "private static string Figure(TMP_InputField input)");
+        string costs = ModSource("Ui/Dialog/DialogForm.Costs.cs");
+        string offers = MemberText(costs, "internal static bool Offers(Transform form, DialogEntry entry)");
+        Check(read.Contains("UiText.Wage(v)") && !read.Contains("UiText.Money(") && read.Contains("NumberStyles.Number"),
+            "contacts wage: a salary field's stepper shows its figure with the cents the game's field holds, so $27.90 steps as $27.91");
+        Check(offers.Contains("\"wage\", UiText.Wage(offer.hourlyWage)") && offers.Contains("\"wage\", UiText.Wage(ask.hourlyWage)") && !offers.Contains("Money(offer") && !offers.Contains("Money(ask"),
+            "contacts wage: the offered and the asked lines show the wage and bonus to the cent, so the asked line is the real ask");
+        string read2 = ModSource("Ui/Contacts/ContactsScreen.Read.cs");
+        Check(read2.Contains("UiText.Wage(paid)") && read2.Contains("UiText.Wage(n.hourlyWage)"), "contacts wage: the wage in the details and in a negotiation's terms keep their cents");
     }
 
     // Who is waiting: every contact with unread messages is marked in the list and stands first, the foot's count of them is a control
