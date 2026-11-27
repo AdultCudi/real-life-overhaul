@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Events
                         patrol.Path.Add(stand);
                     }
                     patrol.Driver.BeginRoute(patrol.Car, patrol.Path, 30f);
+                    patrol.Driver.Urgent(ResponseRules.Speed);
                     EventDirector.Logger?.Info("Fire: a patrol car is sent to work the traffic.");
                 }
                 else

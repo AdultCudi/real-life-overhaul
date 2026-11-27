@@ -94,7 +94,7 @@ namespace RealLifeOverhaul
             _anyone = true;
             _nextTick = now + TickInterval;
             Logger?.Info($"Pedestrian incident staged: {(dead ? "fatal" : "injury")}, {Vector3.Distance(PlayerHelper.GetPosition(), body.position):F0} m away.");
-            TrafficAccidents.Notice(dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
+            TrafficAccidents.NoticeHelp(dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
             return true;
         }
 
