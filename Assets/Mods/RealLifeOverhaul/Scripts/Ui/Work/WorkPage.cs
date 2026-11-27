@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     _row = value;
                     _set = 0;
+                    DetailOffset = 0f;   // another row's detail starts at its top
                 }
             }
         }
@@ -49,6 +50,7 @@ namespace RealLifeOverhaul.Ui
         public string Query = string.Empty;   // what the search field holds
         public string Text = string.Empty;    // what a typed field of a form holds (a new name)
         public float Offset;      // how far the page's list or grid has scrolled
+        public float DetailOffset;   // how far the chosen row's detail has scrolled, where its sections do not fit (WorkScroll)
         public int Reveal = -1;   // a row or card scrolled into view on the next layout
         public readonly int[] Amount = new int[AmountsMost];
         private int _set;         // bit i: Amount[i] has been stepped, and no longer follows the source's start
@@ -66,6 +68,7 @@ namespace RealLifeOverhaul.Ui
             Query = string.Empty;
             Text = string.Empty;
             Offset = 0f;
+            DetailOffset = 0f;
             Reveal = -1;
             _set = 0;
         }
@@ -105,6 +108,7 @@ namespace RealLifeOverhaul.Ui
         public WorkDo[] Entries = new WorkDo[0];    // by the diary's entries
         public WorkDo Empty;                        // what an empty page's button does
         public WorkAmount[] Amounts = new WorkAmount[0];
+        public WorkScroll Scroll;                   // the chosen row's detail scroll, for the screen's wheel and the offset it keeps
         public UiDataTableModel Table;              // the squad page's table, for its offset and its reveal
         public WorkCardsModel Cards;                // the catalogue page's
         public UiDiaryModel Diary;                  // the diary page's
