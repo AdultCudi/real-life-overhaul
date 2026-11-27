@@ -67,7 +67,12 @@ namespace RealLifeOverhaul
                 var all = NeighborhoodHelper.Neighborhoods;
                 if (all != null && all.Count > 0)
                 {
-                    return all[Mathf.Abs(index) % all.Count].GetLocalization();
+                    int at = Mathf.Abs(index) % all.Count;
+                    if (all[at] == CityDistricts.Global && all.Count > 1)
+                    {
+                        at = (at + 1) % all.Count;   // the game's district of nowhere is no place to live ("lives in Global"): the next one, everyone else keeps theirs
+                    }
+                    return all[at].GetLocalization();
                 }
             }
             catch (Exception)

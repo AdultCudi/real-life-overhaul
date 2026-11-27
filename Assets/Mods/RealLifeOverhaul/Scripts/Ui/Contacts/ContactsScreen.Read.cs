@@ -80,11 +80,28 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // Another app opened Contacts on someone (a candidate's Negotiate): a search left from before would hide them from the
+        // list beside their own page, so it goes. One picked from the list matches the search, and keeps it.
+        private void Reveal(Contact open)
+        {
+            if (open == _revealed)
+            {
+                return;
+            }
+            _revealed = open;
+            if (open != null && _query.Length > 0 && Name(open).IndexOf(_query, StringComparison.CurrentCultureIgnoreCase) < 0)
+            {
+                _query = string.Empty;
+                _m.List.Offset = 0f;
+            }
+        }
+
         private void Build()
         {
             List<Contact> all = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : new List<Contact>();
             ContactCategoryName? shown = ContactCategorySelection.SelectedCategory;
             _m.Title = UiText.T("reallife_ui_contacts_app");
+            Reveal(_app.selectedContact);
             Groups(all, shown);
             Rows(all, shown);
             Foot(all);
