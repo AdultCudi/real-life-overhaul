@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "이 고용주의 게시판은 아직 올라오지 않았습니다. 게시판이 올라올 때까지는 휴대폰의 근무 연락처에서 지원하세요.",
   "reallife_ui_dialog_cost_candidates_day": "1일 안에 후보 최대 {count}명",
   "reallife_ui_dialog_cost_candidate": "{days}일 안에 후보 1명까지",
-  "reallife_ui_dialog_cost_candidate_day": "1일 안에 후보 1명까지"
+  "reallife_ui_dialog_cost_candidate_day": "1일 안에 후보 1명까지",
+  "reallife_opt_sec_socialtexts": "사람들이 보낸 문자",
+  "reallife_opt_sec_knowing": "사람 알아가기"
 }

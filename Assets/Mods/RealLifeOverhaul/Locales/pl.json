@@ -40017,7 +40017,7 @@
   "reallife_love_story_child_1": "Wyszło na jaw tajne dziecko. Znana lokalna postać ma być jego rodzicem i prawie nikomu o tym nie powiedziano.",
   "reallife_love_story_child_2": "RODZINNY SEKRET: Lokalne nazwisko jest rodzicem dziecka, o którego istnieniu niewielu wiedziało. Drugi rodzic odmówił komentarza.",
   "reallife_love_story_child_3": "Szepty o dziecku, jednej nocy i bardzo wąskim kręgu przyjaciół dotarły do gazety. Rodzina milczy.",
-  "reallife_love_story_child_4": "Niespodziewane dziecko, zaskoczony partner i bardzo publiczna cisza. Historia dotyczy znanej lokalnej postaci.",
+  "reallife_love_story_child_4": "Niespodziewane dziecko, zaskoczony partner i bardzo publiczne milczenie. Historia śledzi znaną lokalną postać.",
   "reallife_love_gossip_1": "Pół miasta o tobie mówi. Nikomu nic nie powiedziałem, obiecuję.",
   "reallife_love_gossip_2": "Plotka o twoim prywatnym życiu krąży. Nie czytaj komentarzy.",
   "reallife_love_gossip_3": "Dziś czterech ludzi pytało mnie o ciebie. Powiedziałem, że jestem zbyt zajęty, żeby wiedzieć.",
@@ -40058,7 +40058,7 @@
   "reallife_love_people_dateoffer": "Chcieliby się z tobą umówić. Zadzwoń, żeby odpowiedzieć.",
   "reallife_love_next_ring": "Dalej: pierścionek. Rodzina, Rzeczy do zrobienia, potem jubiler, gdy będziecie razem jeszcze {days} dni.",
   "reallife_love_next_propose": "Dalej: oświadcz się. Rodzina, Rzeczy do zrobienia, potem Oświadczyny.",
-  "reallife_love_next_plan": "Dalej: wesele. Rodzina, Rzeczy do zrobienia, potem Zaplanuj wesele albo okienko agencji eventowej.",
+  "reallife_love_next_plan": "Dalej czeka cię wesele. Rodzina, Rzeczy do zrobienia, potem Zaplanuj wesele albo okienko agencji eventowej.",
   "reallife_love_next_wedding": "Wesele jest zaplanowane. Zachowaj dzień i miejsce.",
   "reallife_love_next_married": "Jesteście małżeństwem. Trudne chwile, terapia i rozwód są w Rodzinie i w Przewodniku.",
   "reallife_love_next_hard": "W domu jest napięcie. Terapia jest w Rodzinie, w Rzeczach do zrobienia.",
@@ -41043,9 +41043,11 @@
   "reallife_social_first_impressions": "Pierwsze wrażenie zależy od twojego imienia",
   "reallife_opt_tip_social_first_impressions": "Pierwsze zaufanie nowej osoby lekko się przesuwa, do 10 w obie strony, zależnie od tego, co o tobie słyszała: imię, kartotekę, działalność charytatywną i sławę. Wyłączone: wszyscy zaczynają tak samo.",
   "reallife_career_boards_late": "{employer}: jego tablica jeszcze nie wisi. Pojawi się na zewnątrz {kind}, gdy zaczniesz kręcić się po mieście. Do tego czasu zatrudnia kontakt Praca w twoim telefonie.",
-  "reallife_career_boards_soon": "{employer}: jego tablica jeszcze nie wisi. Do tego czasu zatrudnia kontakt Praca w twoim telefonie.",
+  "reallife_career_boards_soon": "{employer}: jego tablica ogłoszeń nie jest jeszcze gotowa. Do tego czasu zatrudnia kontakt Praca w twoim telefonie.",
   "reallife_career_why_board_late": "Tablica tego pracodawcy jeszcze nie wisi. Składaj podania z kontaktu Praca w telefonie, dopóki nie zawiśnie.",
   "reallife_ui_dialog_cost_candidates_day": "Do {count} kandydatów w ciągu 1 dnia",
   "reallife_ui_dialog_cost_candidate": "Do 1 kandydata w ciągu {days} dni",
-  "reallife_ui_dialog_cost_candidate_day": "Do 1 kandydata w ciągu 1 dnia"
+  "reallife_ui_dialog_cost_candidate_day": "Do 1 kandydata w ciągu 1 dnia",
+  "reallife_opt_sec_socialtexts": "Wiadomości od ludzi",
+  "reallife_opt_sec_knowing": "Poznawanie ludzi"
 }

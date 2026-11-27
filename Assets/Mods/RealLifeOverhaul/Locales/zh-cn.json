@@ -41111,5 +41111,7 @@
   "reallife_career_why_board_late": "这家雇主的招聘牌还没挂出来。在它挂出来之前，你可以通过手机上的工作联系人申请。",
   "reallife_ui_dialog_cost_candidates_day": "1天内最多{count}名候选人",
   "reallife_ui_dialog_cost_candidate": "{days}天内最多1名候选人",
-  "reallife_ui_dialog_cost_candidate_day": "1天内最多1名候选人"
+  "reallife_ui_dialog_cost_candidate_day": "1天内最多1名候选人",
+  "reallife_opt_sec_socialtexts": "收到的消息",
+  "reallife_opt_sec_knowing": "认识他人"
 }

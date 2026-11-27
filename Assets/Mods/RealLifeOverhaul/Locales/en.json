@@ -41111,5 +41111,7 @@
   "reallife_career_why_board_late": "This employer's board is not up yet. Apply from the Work contact on your phone until it is.",
   "reallife_ui_dialog_cost_candidates_day": "Up to {count} candidates within 1 day",
   "reallife_ui_dialog_cost_candidate": "Up to 1 candidate within {days} days",
-  "reallife_ui_dialog_cost_candidate_day": "Up to 1 candidate within 1 day"
+  "reallife_ui_dialog_cost_candidate_day": "Up to 1 candidate within 1 day",
+  "reallife_opt_sec_socialtexts": "Texts from people",
+  "reallife_opt_sec_knowing": "Getting to know people"
 }

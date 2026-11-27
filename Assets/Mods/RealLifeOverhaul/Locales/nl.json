@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "Het bord van deze werkgever is nog niet opgehangen. Solliciteer via het Werk-contact op je telefoon tot het zover is.",
   "reallife_ui_dialog_cost_candidates_day": "Tot {count} kandidaten binnen 1 dag",
   "reallife_ui_dialog_cost_candidate": "Tot 1 kandidaat binnen {days} dagen",
-  "reallife_ui_dialog_cost_candidate_day": "Tot 1 kandidaat binnen 1 dag"
+  "reallife_ui_dialog_cost_candidate_day": "Tot 1 kandidaat binnen 1 dag",
+  "reallife_opt_sec_socialtexts": "Berichten van mensen",
+  "reallife_opt_sec_knowing": "Mensen leren kennen"
 }

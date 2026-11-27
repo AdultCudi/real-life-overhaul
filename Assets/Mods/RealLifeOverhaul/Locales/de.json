@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "Das Schild dieses Arbeitgebers ist noch nicht aufgestellt. Bewirb dich über den Arbeitskontakt auf deinem Handy, bis es so weit ist.",
   "reallife_ui_dialog_cost_candidates_day": "Bis zu {count} Bewerber innerhalb von 1 Tag",
   "reallife_ui_dialog_cost_candidate": "Bis zu 1 Bewerber innerhalb von {days} Tagen",
-  "reallife_ui_dialog_cost_candidate_day": "Bis zu 1 Bewerber innerhalb von 1 Tag"
+  "reallife_ui_dialog_cost_candidate_day": "Bis zu 1 Bewerber innerhalb von 1 Tag",
+  "reallife_opt_sec_socialtexts": "Nachrichten von anderen",
+  "reallife_opt_sec_knowing": "Menschen kennenlernen"
 }

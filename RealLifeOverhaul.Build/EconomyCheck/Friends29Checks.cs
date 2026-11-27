@@ -788,10 +788,14 @@ internal static partial class Program
               && mod.Contains("AddSlider(Settings.RomanceOlderId, \"reallife_romance_older\", RomanceRules.WindowLeast, RomanceRules.WindowMost, Settings.RomanceOlder,")
               && mod.Contains("AddToggle(Settings.FriendsQuizId, \"reallife_friends_quiz\", Settings.FriendsQuiz,") && mod.Contains("AddToggle(Settings.FirstImpressionsId, \"reallife_social_first_impressions\", Settings.FirstImpressions,"),
             "friends: the four options are rows of the options page, the sliders from 2 to 25 years");
-        int social = tree.IndexOf("S(\"social\")", StringComparison.Ordinal), networking = tree.IndexOf("S(\"networking\")", StringComparison.Ordinal);
-        string section = social >= 0 && networking > social ? tree.Substring(social, networking - social) : string.Empty;
-        Check(section.Contains("FreeOpts(\"romance_younger\", \"romance_older\")") && section.Contains("Opts(\"friends_quiz\", \"social_first_impressions\")") && section.Contains("FreeOpts(\"family_interest\")"),
-            "friends: the options stand under Friends and social life, the age sliders beside 'Who you are interested in'");
+        // The social section holds ten rows at most, so the quiz and first impressions stand in their own section after it.
+        int social = tree.IndexOf("S(\"social\")", StringComparison.Ordinal), texts = tree.IndexOf("S(\"socialtexts\")", StringComparison.Ordinal);
+        int knowing = tree.IndexOf("S(\"knowing\")", StringComparison.Ordinal), love = tree.IndexOf("S(\"love\")", StringComparison.Ordinal);
+        string section = social >= 0 && texts > social ? tree.Substring(social, texts - social) : string.Empty;
+        string know = knowing >= 0 && love > knowing ? tree.Substring(knowing, love - knowing) : string.Empty;
+        Check(section.Contains("FreeOpts(\"romance_younger\", \"romance_older\")") && section.Contains("FreeOpts(\"family_interest\")")
+              && know.Contains(".Guide(\"social\").Need(\"social\")") && know.Contains("Opts(\"friends_quiz\", \"social_first_impressions\")"),
+            "friends: the age sliders stand under Friends and social life beside 'Who you are interested in', the quiz and first impressions under Getting to know people");
         int socialFeature = features.IndexOf("Features.Add(\"social\"", StringComparison.Ordinal), ledgerFeature = features.IndexOf("Features.Add(\"ledger\"", StringComparison.Ordinal);
         string feature = socialFeature >= 0 && ledgerFeature > socialFeature ? features.Substring(socialFeature, ledgerFeature - socialFeature) : string.Empty;
         Check(feature.Contains("Owns(Settings.RomanceYoungerId, Settings.RomanceOlderId)") && feature.Contains("Owns(Settings.FriendsQuizId, Settings.FirstImpressionsId)"),

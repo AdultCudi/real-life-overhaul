@@ -41111,5 +41111,7 @@
   "reallife_career_why_board_late": "O quadro de vagas deste empregador ainda não foi colocado. Candidate-se pelo contato Trabalho no seu celular até que ele apareça.",
   "reallife_ui_dialog_cost_candidates_day": "Até {count} candidatos em 1 dia",
   "reallife_ui_dialog_cost_candidate": "Até 1 candidato em {days} dias",
-  "reallife_ui_dialog_cost_candidate_day": "Até 1 candidato em 1 dia"
+  "reallife_ui_dialog_cost_candidate_day": "Até 1 candidato em 1 dia",
+  "reallife_opt_sec_socialtexts": "Mensagens de pessoas",
+  "reallife_opt_sec_knowing": "Conhecendo as pessoas"
 }

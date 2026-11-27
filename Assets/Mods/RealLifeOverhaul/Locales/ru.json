@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "Доска этого работодателя ещё не выставлена. Подайте заявку через контакт «Работа» в телефоне, пока её нет.",
   "reallife_ui_dialog_cost_candidates_day": "До {count} кандидатов в течение 1 дня",
   "reallife_ui_dialog_cost_candidate": "До 1 кандидата в течение {days} дней",
-  "reallife_ui_dialog_cost_candidate_day": "До 1 кандидата в течение 1 дня"
+  "reallife_ui_dialog_cost_candidate_day": "До 1 кандидата в течение 1 дня",
+  "reallife_opt_sec_socialtexts": "Сообщения от людей",
+  "reallife_opt_sec_knowing": "Знакомство с людьми"
 }

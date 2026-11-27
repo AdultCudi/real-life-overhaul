@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "El tablón de este empleador todavía no está puesto. Solicita desde el contacto de Trabajo de tu teléfono hasta que lo esté.",
   "reallife_ui_dialog_cost_candidates_day": "Hasta {count} candidatos en 1 día",
   "reallife_ui_dialog_cost_candidate": "Hasta 1 candidato en {days} días",
-  "reallife_ui_dialog_cost_candidate_day": "Hasta 1 candidato en 1 día"
+  "reallife_ui_dialog_cost_candidate_day": "Hasta 1 candidato en 1 día",
+  "reallife_opt_sec_socialtexts": "Mensajes de otros",
+  "reallife_opt_sec_knowing": "Conocer gente"
 }

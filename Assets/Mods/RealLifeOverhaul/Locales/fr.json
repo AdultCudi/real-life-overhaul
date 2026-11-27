@@ -41047,5 +41047,7 @@
   "reallife_career_why_board_late": "Le panneau de cet employeur n'est pas encore affiché. Postulez depuis le contact Travail de votre téléphone en attendant.",
   "reallife_ui_dialog_cost_candidates_day": "Jusqu'à {count} candidats en 1 jour",
   "reallife_ui_dialog_cost_candidate": "Jusqu'à 1 candidat en {days} jours",
-  "reallife_ui_dialog_cost_candidate_day": "Jusqu'à 1 candidat en 1 jour"
+  "reallife_ui_dialog_cost_candidate_day": "Jusqu'à 1 candidat en 1 jour",
+  "reallife_opt_sec_socialtexts": "Messages des autres",
+  "reallife_opt_sec_knowing": "Faire connaissance"
 }

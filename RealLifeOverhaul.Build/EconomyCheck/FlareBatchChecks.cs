@@ -573,7 +573,7 @@ internal static partial class Program
         Check(WhatsNewHas(en, "Answer all on Flare's Business page, and in the old Flare app, answers every waiting review") && WhatsNewHas(en, "A manager can take the new duty Answers reviews"), "Flare bulk texts: What's new tells of both");
         string mod = ModSource(@"Core\RealLifeOverhaulMod.cs"), settings = ModSource(@"Core\Settings.cs"), features = ModSource(@"Meta\FeatureList.Life.cs"), tree = ModSource(@"Meta\OptionsTree.cs");
         Check(mod.Contains("Settings.FlareManagerRepliesId, \"reallife_flare_opt_manager_replies\"") && settings.Contains("public static bool FlareManagerReplies = true;") && settings.Contains("FlareManagerReplies = Bool(modId, FlareManagerRepliesId, FlareManagerReplies);")
-              && features.Contains("Settings.FlareCityPhotosId, Settings.FlareManagerRepliesId)") && tree.Contains("\"flare_city_photos\", \"flare_manager_replies\"") && mod.Contains("reallife_flare_test_reviews_many"),
+              && features.Contains("Settings.FlareCityPhotosId, Settings.FlareManagerRepliesId)") && tree.Contains(".Opt(\"living_flare\", \"living_population\").Opts(\"flare_manager_replies\")") && mod.Contains("reallife_flare_test_reviews_many"),
             "Flare bulk texts: the option has its label, tip, place on the options page, in the tree and in the feature list, on by default, and its test button");
         string docs = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features\flare-city.md")));
         string mdocs = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features\economy-managers.md")));
