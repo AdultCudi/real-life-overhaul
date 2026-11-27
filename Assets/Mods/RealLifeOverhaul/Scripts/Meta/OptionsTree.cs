@@ -327,10 +327,10 @@ namespace RealLifeOverhaul.Meta
                     .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering")
                     .Also("car_handling_modded", "vehicle vehicles mod mods modded add-on stiff wobble wobbly"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
-                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale")
+                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale", "garage_mod_cars")
                     .Buttons("reallife_garage_test_vehicles")
 
-                    .Also("tuning paint parts custom dyno figures gearbox resale sell"),
+                    .Also("tuning paint parts custom dyno figures gearbox resale sell cars hatchback dealer"),
 
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Opt("garage_scooter_hold", "garage")
                     .Also("bicycle bicycles motorbike motorbikes motorcycle scooter rented rental two-wheelers"),

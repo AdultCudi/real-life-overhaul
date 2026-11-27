@@ -305,6 +305,7 @@
         public const string GarageSoundsId = "garage_sounds";
         public const string GarageResaleId = "garage_resale";
         public const string GarageScooterHoldId = "garage_scooter_hold";
+        public const string GarageModCarsId = "garage_mod_cars";
         public const string TwoWheelersId = "two_wheelers";
         public const string HomeLifeId = "home_life";
         public const string HomeNeedsId = "home_needs";
@@ -770,6 +771,7 @@
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
         public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
         public static bool GarageScooterHold = true;     // a scooter rented from the game's stands is kept while the player is indoors until midnight, then taken back
+        public static bool GarageModCars = true;         // dealers' stands sell the cars made for the mod; a car owned stays whatever this says
         public static bool GarageResale = true;          // a car sold with custom shop work on it fetches the work's worth on top of the game's price
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
         public static bool HomeLife = true;              // home life and health as a whole
@@ -1259,6 +1261,7 @@
             GarageSounds = Bool(modId, GarageSoundsId, GarageSounds);
             GarageResale = Bool(modId, GarageResaleId, GarageResale);
             GarageScooterHold = Bool(modId, GarageScooterHoldId, GarageScooterHold);
+            GarageModCars = Bool(modId, GarageModCarsId, GarageModCars);
 
             TwoWheelers = Bool(modId, TwoWheelersId, TwoWheelers);
             HomeLife = Bool(modId, HomeLifeId, HomeLife);

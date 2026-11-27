@@ -26,6 +26,8 @@ internal static partial class Program
         ("Careers/AcademyType.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the academy's business type, registered with the game for the whole run"),
         ("Tech/Firms/TechTypes.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the tech sector's business types, registered with the game for the whole run"),
         ("Economy/Dealer/DealerType.cs", "_type", "ModdingAPI.RegisterModBusinessType(_type)", "the dealership's business type, registered with the game for the whole run"),
+        ("Garage/ModCars.cs", "type", "ModdingAPI.RegisterModVehicleType(type)", "a vehicle type of a car of the mod's, registered with the game for the whole run"),
+        ("Garage/ModCars.cs", "mesh", "Meshes[name] = mesh", "a car's mesh built from a plain file while its bundle is not built, once a run: every car of the model shares it"),
         ("Economy/OwnBank/Branch/BranchType.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the bank branch's business type, registered with the game for the whole run"),
         ("Construction/ConstructionType.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the construction company's business type, registered with the game for the whole run"),
         ("Shops/ShopsGame.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the new kinds of shop's business types, registered with the game for the whole run (made again only when their option is switched)"),

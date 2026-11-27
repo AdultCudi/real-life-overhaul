@@ -947,6 +947,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusZoneRules.cs" Link="Mod\BusZoneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeLaneRules.cs" Link="Mod\BikeLaneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\ScooterHoldRules.cs" Link="Mod\ScooterHoldRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\ModCarCatalogue.cs" Link="Mod\ModCarCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\ScooterRentals.cs" Link="Mod\ScooterRentals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />

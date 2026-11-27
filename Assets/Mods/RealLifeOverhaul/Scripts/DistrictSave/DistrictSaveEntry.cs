@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.DistrictSave
                 }
                 _running = null;
                 DistrictSaveDirector.Early();   // a save has just been read: its kept records go back before its city is built
+                Guard.Step("the mod's cars turned back before the city", () => ModCars.Ready(SaveGameManager.Current, true));
                 return Task.CompletedTask;
             }
             catch (Exception e)

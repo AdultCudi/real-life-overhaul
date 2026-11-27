@@ -60,6 +60,15 @@ namespace RealLifeOverhaul
                     : GarageText.T("reallife_bike_facts_bicycle", "speed", def.CruiseKmh.ToString("F0"));
                 Row(list, GarageText.T(def.Name), GarageText.T("reallife_bike_list_price", "price", GarageText.Money(def.Cost)) + " " + facts, "reallife_bike_button_buy", true, () => Buy(model));
             }
+            for (int i = 0; motor && i < ModCarCatalogue.All.Length; i++)   // the mod's own cars, handed over in the dealer's bay
+            {
+                ModCarDef car = ModCarCatalogue.All[i];
+                if (ModCars.Offered(car, place))
+                {
+                    Row(list, GarageText.T(car.TypeName), GarageText.T("reallife_bike_list_price", "price", GarageText.Money(car.Price)) + " "
+                        + GarageText.T("reallife_cars_facts", "kind", GarageText.T(car.KindKey), "cargo", car.Cargo.ToString()), "reallife_bike_button_buy", true, () => BuyCar(car));
+                }
+            }
             if (motor)
             {
                 Row(list, GarageText.T("reallife_bike_helmet"), GarageState.Helmet ? GarageText.T("reallife_bike_list_helmet_owned")
@@ -159,6 +168,16 @@ namespace RealLifeOverhaul
             if (def.Motor && !GarageBridges.Licensed())
             {
                 Notifications.Show(NotificationType.Warning, "reallife_bike_no_licence", null, 12f);   // the sale stands; the dealer says what riding it needs
+            }
+        }
+
+        private void BuyCar(ModCarDef car)
+        {
+            BikePlace place = _panelPlace;
+            if (place != null && ModCars.Buy(car, place))
+            {
+                _listClosing = "a " + car.Id + " was bought";
+                ClosePanel();
             }
         }
 

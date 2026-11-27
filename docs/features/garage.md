@@ -29,6 +29,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `BikeBody` | the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker) |
 | `BikePlaces` | bike-share docks, bicycle racks, motorbike stands: where they go and what stands there |
 | `ScooterHold`, `ScooterHoldRules`, `ScooterRentals` | a scooter rented from the game's stands kept while the player is indoors until midnight of its rental day, then taken back once out of sight: the game's own away-clock put back once a second, the rental day kept in modData (ScooterHoldRules and ScooterRentals game-free; EconomyCheck `--scooter-hold`) |
+| `ModCars`, `ModCarCatalogue` | the cars made for the mod: their vehicle types, their prefabs made from a game car at each load, the sale at a dealer's stand, and the save written as that game car (see "The mod's own cars"; the catalogue and the save's line are game-free) |
 | `BikeClearRules` | where a bike may be left: what it may not be left in, the places tried round it, whose may be moved (game-free) |
 
 ## How it talks to other features
@@ -311,6 +312,30 @@ Not done: carrying a bicycle; a phone entry of its own for "My vehicles" (it is 
 The item panel still calls a two-wheeler an electric scooter, because to the game it is one.
 
 Not verified in the game (it could not be run): that the v0.35.0 motorbike was behind the wall (the code allows it and nothing else found does; the log line above settles it), whether the pavement's ground collider is on a layer the ground ray sees (hence `StandHeight`), and how the scooter's physics settles one that is made with nobody on it. That a frozen scooter reads an inertia of zero is from Unity's own documentation of `Rigidbody.inertiaTensor` (rotation constraints are made by zeroing the inertia about the frozen axes), not measured in the game; the turning check's line says what a bike got on has.
+
+## The mod's own cars
+
+A car made for the mod is a vehicle type of its own, registered through the game's mod interface (`ModdingAPI.RegisterModVehicleType`) at the game's start, so the game names it, prices it, sells it on, taxes, tows, parks, paints, dirties and dents it as one of its own. The first is the **Halden Pip**, a small city hatchback (`ModCarCatalogue.HaldenPip`).
+
+**The prefab.** The game makes a vehicle from `Prefabs/Vehicles/PlayerVehicles/<the type's name after its underscore>.prefab` (`VehicleHelper.CreateAndSpawnVehicle`, `GameManager.SpawnPlayerVehicles`, through `PrefabHelper`). `ModCars.Prefabs` makes that prefab at every load: a copy of the game car the model is built on (`ModCarDef.Donor`, the Honza Mimic for the Pip), kept under an object that is switched off so it never wakes, with the mod's body, wheels, collision shape and the eight textures of the game's vehicle shader in place of the game's, and the wheels, wheel controllers, the doors' approach points, the loading and refuelling points, the head lamps' light, the smoke, the car wash's sprays, the obstacle box and the parking helper moved to the model's measures. It is then put into the game's own lookup (`PrefabHelper.PrefabCache`, a line of the game contract, `mod_car_prefabs`). Engine sound, gearbox, lights, indicators, damage, dirt and washing are the game car's own, untouched. The engine's power, the brakes' torque and the limiter take the model's figures.
+
+**The files.** Meshes and textures only, exported from Blender (the scripts are kept outside the repository) into `GarageAssets/cars/<id>/` and built into `Bundles/reallife_cars` by `GarageAssets/build.ps1` (Unity 2022.3.62f2, nothing of the game's needed; `GarageAssets/contents/reallife_cars.json` lists what it holds). While that bundle is not built, the mod reads the same files as they are from `Bundles/cars_newer/<id>/` (textures then uncompressed); `build.ps1` removes that folder once the bundle stands. The first time the bundle is built, its name goes into `Core/BundleShaderRules.Bundles` in the same commit (StandardCheck RLO-PLT-003 holds the shipped files and that list together, and `EconomyCheck --mod-cars` fails until both agree). The paint's mask (the colour texture's alpha) is a ramp through the shader's own window at every edge (`ModCarCatalogue.PaintFrom`, `PaintTo`, set on the material), which is what keeps a window's edge clean of the texels' steps. One atlas of 1024 a car: colour with the paint's mask in its alpha, metal, occlusion and smoothness, normal, the lamps' glow with its two masks, and the dirt.
+
+**The save.** The game reads a vehicle's type without asking whether it is there (`PlayerHelper.GetTotalAssetsWorth`, `TaxHelper.ForcePayCurrentTaxes`, `BuildingHelper`, `MovingServiceHelper`), so a save that named a type of the mod's would fault on a machine without the mod. In the game's save event every car of the mod's therefore takes the name of the game car it is built on, and `reallife:garage_cars` in modData says which vehicles to turn back (`id|type|game car` a line); the names go back the moment the game logs that its file is written, or the frame after. At a load the cars are turned back before the city is built (`DistrictSaveEntry`, the main menu's unload), or in the city for a load that did not pass the main menu, where a car the game already made is made again in place (the one the player sits in waits for the next load). Without the mod, with an older one, without the files, after a game update that moves the lookup, or in a Going Public session, the player has that game car, and the line is kept for the load that can turn it back.
+
+**The sale.** At the stands outside car dealerships (`TwoWheelers.Shop`), below the motorbikes, where the dealership has a bay of its own (the game's first custom position of the building, where it stands a car bought inside): paid as the game's cars are (`ba:transaction_vehiclebought`), stood in that bay in a colour of the game's chart, refused while a vehicle stands there. Selling one on is the game's own (the item panel, 80 % of the list price less the repair).
+
+| model | price | built on | figures (the game's own units) |
+|---|---|---|---|
+| Halden Pip, city hatchback | 6 500 | Honza Mimic | top speed 65, power 52, brakes 3 000, turn radius 30, tank 42, cargo 6 |
+
+Option `garage_mod_cars` (on): off, none is sold; the types stay registered, so a car already owned stays what it is.
+
+With "Developer diagnostics" on: `Cars check (load, ...)` at each load (how many cars the save names, turned back, left), `Cars check (prefab)` for each model made (triangles, wheels, track and wheelbase, whether the collision shape was found).
+
+Offline: `EconomyCheck --mod-cars` (figures inside the game's ranges, no must-buy, the exported model against the code's measures, every asset the code asks for by name in what ships, the size a car adds, the save's line and its round trip, the quiet failure).
+
+Not verified in the game: everything that needs the car on the road (see the test list of its release).
 
 ## Wish-list (assets that replace a stand-in with no code change)
 

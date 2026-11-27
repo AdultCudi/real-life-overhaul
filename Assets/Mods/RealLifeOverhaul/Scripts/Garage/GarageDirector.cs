@@ -93,6 +93,10 @@ namespace RealLifeOverhaul
             try
             {
                 _bikes.Frame(gm);
+                if (ModCars.Waiting)
+                {
+                    ModCars.Frame();   // a save's written line did not come: the cars' names go back now
+                }
                 float now = Time.unscaledTime;
                 if (now >= _nextQuick)
                 {
@@ -156,6 +160,7 @@ namespace RealLifeOverhaul
                     return;   // LifeEvents makes the save's modData ready first
                 }
                 GarageState.Load(save.modData);
+                ModCars.Ready(save, false);   // nothing left to do after a load that passed the main menu, where the cars were turned back before the city
                 Logger?.Info("Garage: ready. " + GarageState.Builds.Count + " car build(s), " + GarageState.Bikes.Count + " two-wheeler(s) in this save"
                              + (GarageState.Helmet ? ", a helmet." : "."));
             }
