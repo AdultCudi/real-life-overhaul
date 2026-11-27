@@ -105,8 +105,8 @@ namespace RealLifeOverhaul.Tech
                 w.End = day + 12 * FirmsCatalogue.MonthDays;
                 return 0;
             }
-            w.Due = day + ClientRules.Days(w, FirmsCatalogue.WorkDays[TalentCatalogue.Clamp(w.Kind, 0, (int)WorkKind.Count - 1)]);
-            long upfront = w.Value * ClientRules.UpfrontOf(w) / 1000;
+            w.Due = day + TechClientRules.Days(w, FirmsCatalogue.WorkDays[TalentCatalogue.Clamp(w.Kind, 0, (int)WorkKind.Count - 1)]);
+            long upfront = w.Value * TechClientRules.UpfrontOf(w) / 1000;
             w.Paid = upfront;
             return upfront;
         }
@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (w.Deal != 0)
             {
-                return ClientRules.Project(w, firm, points, day, notes);   // a department's, an individual's or a company's project: its own terms and risks
+                return TechClientRules.Project(w, firm, points, day, notes);   // a department's, an individual's or a company's project: its own terms and risks
             }
             w.Done = Math.Min(w.Points, w.Done + Math.Max(0, points));
             if (w.Done >= w.Points)

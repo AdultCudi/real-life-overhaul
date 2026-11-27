@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Tech
             int k = System.Math.Max(0, System.Math.Min((int)ClientKind.Count - 1, w.Deal));
             into.Add(new DealLine { Key = RolesKey(w.K) });
             bool needSec = w.NeedSecurity > 0, needRel = w.NeedReliability > 0;
-            int missing = crewKnown ? ClientRules.Short(w, crew) : 0;
+            int missing = crewKnown ? TechClientRules.Short(w, crew) : 0;
             if (needSec || needRel)
             {
                 into.Add(new DealLine

@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Tech
     public static partial class FirmsRules
     {
         public const int NoteDone = 1, NoteFailed = 2, NoteBilled = 3, NoteOffered = 4, NoteWon = 5, NoteLostTender = 6, NoteTender = 7, NoteLapsed = 8;
-        public const int NoteChange = 9, NoteOwed = 10, NotePaid = 11, NoteScrutiny = 12;   // new kinds of client (ClientRules): a change asked, owed, paid, an audit
+        public const int NoteChange = 9, NoteOwed = 10, NotePaid = 11, NoteScrutiny = 12;   // new kinds of client (TechClientRules): a change asked, owed, paid, an audit
 
         /// <summary>What the city's cycle does to spending on software, thousandths, boom to recession.</summary>
         public static readonly int[] CycleSpend = { 1100, 1000, 920, 820 };

@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Tech
     /// rules (FirmsRules.Offers, SectorRules.Offers) and <see cref="Mix"/> then gives each offer its client, so the number of offers and the work the city puts out do not
     /// change, only who asks and on what terms. Every roll is this part's own (streams 201 to 213 of <see cref="TechRandom"/>), so no older roll moves.
     /// </summary>
-    public static class ClientRules
+    public static class TechClientRules
     {
         private const int StreamKind = 201, StreamTrade = 202, StreamBrief = 203, StreamName = 204, StreamSpread = 205, StreamLag = 206, StreamLate = 207, StreamCreep = 208, StreamWeigh = 209;
 
@@ -21,13 +21,13 @@ namespace RealLifeOverhaul.Tech
         public static void Shares(int reputation, WorkKind work, bool governmentOpen, out int government, out int individual, out int company)
         {
             int name = Math.Max(0, Math.Min(1000, reputation));
-            individual = Math.Max(ClientCatalogue.IndividualLeast, Math.Min(ClientCatalogue.IndividualMost, ClientCatalogue.IndividualBase - name / 2));
-            government = Math.Min(ClientCatalogue.GovernmentMost, ClientCatalogue.GovernmentBase + name / 6);
-            if (!governmentOpen || Count(ClientKind.Government, work, Trade.None, false) == 0)
+            individual = Math.Max(ClientCatalogue.IndividualLeast, Math.Min(ClientCatalogue.IndividualMost, ClientCatalogue.IndividualBase - name / 5));
+            government = Math.Min(ClientCatalogue.GovernmentMost, ClientCatalogue.GovernmentBase + name / 8);
+            if (!governmentOpen || Count(ClientKind.Government, work, ClientTrade.None, false) == 0)
             {
                 government = 0;
             }
-            if (work == WorkKind.Managed || Count(ClientKind.Individual, work, Trade.None, false) == 0)
+            if (work == WorkKind.Managed || Count(ClientKind.Individual, work, ClientTrade.None, false) == 0)
             {
                 individual = 0;   // a monthly service is no small client's: it needs a team on call, which a baker's site never pays for
             }
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>How many briefs a kind of client has for a kind of work (of one trade where one is given; of tenders or of direct offers for a department).</summary>
-        public static int Count(ClientKind kind, WorkKind work, Trade trade, bool tender)
+        public static int Count(ClientKind kind, WorkKind work, ClientTrade trade, bool tender)
         {
             int n = 0;
             for (int i = 0; i < ClientCatalogue.Briefs.Length; i++)
@@ -45,17 +45,17 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        private static bool Fits(ClientBrief b, ClientKind kind, WorkKind work, Trade trade, bool tender) =>
-            b.Kind == kind && b.Work == work && (kind != ClientKind.Company || trade == Trade.None || b.Trade == trade) && (kind != ClientKind.Government || b.Tender == tender)
+        private static bool Fits(ClientBrief b, ClientKind kind, WorkKind work, ClientTrade trade, bool tender) =>
+            b.Kind == kind && b.Work == work && (kind != ClientKind.Company || trade == ClientTrade.None || b.Trade == trade) && (kind != ClientKind.Government || b.Tender == tender)
             && (kind != ClientKind.Company || ClientFilter.Pool(b.Trade).Length > 0);
 
         // The trades with a brief for a kind of work and a company to write it; the nth of them when into is given a place to say which.
         private static int Trades(WorkKind work, int[] into)
         {
             int n = 0;
-            for (int t = 0; t < (int)Trade.Count; t++)
+            for (int t = 0; t < (int)ClientTrade.Count; t++)
             {
-                if (Count(ClientKind.Company, work, (Trade)t, false) > 0)
+                if (Count(ClientKind.Company, work, (ClientTrade)t, false) > 0)
                 {
                     if (into != null && n < into.Length)
                     {
@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        private static ClientBrief Pick(ClientKind kind, WorkKind work, Trade trade, bool tender, int roll)
+        private static ClientBrief Pick(ClientKind kind, WorkKind work, ClientTrade trade, bool tender, int roll)
         {
             int n = Count(kind, work, trade, tender);
             if (n == 0)
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
-        private static readonly int[] TradeList = new int[(int)Trade.Count];
+        private static readonly int[] TradeList = new int[(int)ClientTrade.Count];
 
         // ------------------------------------------------------------------------------- the day's offers
 
@@ -111,10 +111,10 @@ namespace RealLifeOverhaul.Tech
                         f.Contracts.RemoveAt(i--);   // an audit of a late public job holds the next tender back
                         continue;
                     }
-                    ClientBrief tender = Pick(ClientKind.Government, w.K, Trade.None, true, TechRandom.Mille(f.Seed, w.Id, StreamBrief));
+                    ClientBrief tender = Pick(ClientKind.Government, w.K, ClientTrade.None, true, TechRandom.Mille(f.Seed, w.Id, StreamBrief));
                     if (tender != null)
                     {
-                        Apply(f, w, tender, tender.Names[TechRandom.Range(f.Seed, w.Id, StreamName, 0, 0, tender.Names.Length - 1)], Trade.None);
+                        Apply(f, w, tender, tender.Names[TechRandom.Range(f.Seed, w.Id, StreamName, 0, 0, tender.Names.Length - 1)], ClientTrade.None);
                         made++;
                     }
                     continue;
@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Tech
             WorkKind work = w.K;
             if (!string.IsNullOrEmpty(w.OwnPlace))
             {
-                Trade trade = Trade.None;
+                ClientTrade trade = ClientTrade.None;
                 for (int o = 0; o < (own != null ? own.Count : 0) && ownTypes != null && o < ownTypes.Count; o++)
                 {
                     if (own[o].Key == w.OwnPlace)
@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Tech
                         break;
                     }
                 }
-                ClientBrief mine = trade == Trade.None ? null : Pick(ClientKind.Company, work, trade, false, TechRandom.Mille(f.Seed, w.Id, StreamBrief));
+                ClientBrief mine = trade == ClientTrade.None ? null : Pick(ClientKind.Company, work, trade, false, TechRandom.Mille(f.Seed, w.Id, StreamBrief));
                 if (mine == null)
                 {
                     return false;
@@ -160,11 +160,11 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            Trade of = Trade.None;
+            ClientTrade of = ClientTrade.None;
             if (kind == ClientKind.Company)
             {
                 int trades = Trades(work, TradeList);
-                of = (Trade)TradeList[Math.Min(trades - 1, TechRandom.Mille(f.Seed, w.Id, StreamTrade) * trades / 1000)];
+                of = (ClientTrade)TradeList[Math.Min(trades - 1, TechRandom.Mille(f.Seed, w.Id, StreamTrade) * trades / 1000)];
             }
             ClientBrief b = Pick(kind, work, of, false, TechRandom.Mille(f.Seed, w.Id, StreamBrief));
             if (b == null)
@@ -185,10 +185,10 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        private static readonly string[][] PoolNames = new string[(int)Trade.Count][];
+        private static readonly string[][] PoolNames = new string[(int)ClientTrade.Count][];
 
         // The names of a trade's companies that may be clients (ClientFilter.Pool), made once.
-        private static string[] Pool(Trade trade)
+        private static string[] Pool(ClientTrade trade)
         {
             string[] names = PoolNames[(int)trade];
             if (names == null)
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>Gives a contract the client, the terms and the risks of a brief: points and pay worked from what the old rules drew, payment, scope creep and what the firm must hold.</summary>
-        public static void Apply(FirmsFile f, Contract w, ClientBrief b, string client, Trade trade)
+        public static void Apply(FirmsFile f, Contract w, ClientBrief b, string client, ClientTrade trade)
         {
             int k = (int)b.Kind;
             bool tender = w.Council && w.Stage == (int)WorkStage.Tender;
@@ -260,7 +260,7 @@ namespace RealLifeOverhaul.Tech
         public static Contract Make(FirmsFile f, string place, ClientKind kind, WorkKind work, bool tender, int day, int roll)
         {
             ClientBrief b;
-            Trade trade = Trade.None;
+            ClientTrade trade = ClientTrade.None;
             if (kind == ClientKind.Company)
             {
                 int trades = Trades(work, TradeList);
@@ -268,7 +268,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     return null;
                 }
-                trade = (Trade)TradeList[Math.Min(trades - 1, Math.Max(0, Math.Min(999, roll)) * trades / 1000)];
+                trade = (ClientTrade)TradeList[Math.Min(trades - 1, Math.Max(0, Math.Min(999, roll)) * trades / 1000)];
             }
             b = Pick(kind, work, trade, tender, roll);
             if (b == null)

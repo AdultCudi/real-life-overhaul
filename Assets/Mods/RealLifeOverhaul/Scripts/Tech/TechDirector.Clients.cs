@@ -5,7 +5,7 @@ using UI.Notification;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The new kinds of client in the firms' day (ClientRules): who each day's offers come from, what a delivered contract is still owed, the posture a contract asks of the firm,
+    /// The new kinds of client in the firms' day (TechClientRules): who each day's offers come from, what a delivered contract is still owed, the posture a contract asks of the firm,
     /// the notices, and the offers of a software or design business withdrawn. The rules are game-free; this part only gathers the facts and tells the player.
     /// </summary>
     public sealed partial class TechDirector
@@ -26,14 +26,14 @@ namespace RealLifeOverhaul.Tech
         {
             if (Settings.TechDealKinds)
             {
-                int made = ClientRules.Mix(_firmsFile, day, from, _clients, _clientTypes);
+                int made = TechClientRules.Mix(_firmsFile, day, from, _clients, _clientTypes);
                 if (Verbose && made > 0)
                 {
                     Logger?.Info("Tech check (clients, day " + day + "): " + made + " offer(s) given a department, an individual or a company as client: PASS");
                 }
             }
             _typeAt = _typeAt ?? TypeAt;
-            int gone = ClientRules.Withdraw(_firmsFile, _typeAt, day);
+            int gone = TechClientRules.Withdraw(_firmsFile, _typeAt, day);
             if (gone > 0)
             {
                 TellTech(NotificationType.Info, "reallife_deal_note_withdrawn", Data("count", gone.ToString()), TabContracts, null);
@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
-                long due = ClientRules.Due(w, day);
+                long due = TechClientRules.Due(w, day);
                 if (due > 0)
                 {
                     Paid(firm, w, due * level / 1000);
@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Tech
         // True, with a notice, when the firm falls short of the security posture or the reliability the contract asks for: it cannot take or bid for the work yet.
         private bool NeedRefused(Contract w, FirmPlace firm)
         {
-            if (w == null || firm == null || ClientRules.Short(w, firm.Crew) == 0)
+            if (w == null || firm == null || TechClientRules.Short(w, firm.Crew) == 0)
             {
                 return false;
             }
@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Tech
                         {
                             continue;
                         }
-                        Contract w = ClientRules.Make(_firmsFile, firm.Place, (ClientKind)c, (WorkKind)k, false, Save.Day, (Save.Day * 37 + c * 211 + k * 71) % 1000);
+                        Contract w = TechClientRules.Make(_firmsFile, firm.Place, (ClientKind)c, (WorkKind)k, false, Save.Day, (Save.Day * 37 + c * 211 + k * 71) % 1000);
                         if (w != null)
                         {
                             _firmsFile.Contracts.Add(w);
@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
                 WorkKind tender = (kinds & (1 << (int)WorkKind.Integration)) != 0 ? WorkKind.Integration : WorkKind.Managed;
-                Contract t = (kinds & (1 << (int)tender)) != 0 ? ClientRules.Make(_firmsFile, firm.Place, ClientKind.Government, tender, true, Save.Day, (Save.Day * 53) % 1000) : null;
+                Contract t = (kinds & (1 << (int)tender)) != 0 ? TechClientRules.Make(_firmsFile, firm.Place, ClientKind.Government, tender, true, Save.Day, (Save.Day * 53) % 1000) : null;
                 if (t != null)
                 {
                     _firmsFile.Contracts.Add(t);

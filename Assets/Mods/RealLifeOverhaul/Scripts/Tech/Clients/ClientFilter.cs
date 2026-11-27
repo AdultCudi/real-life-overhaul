@@ -73,22 +73,22 @@ namespace RealLifeOverhaul.Tech
         private static CompanyDef[][] _pools;
 
         /// <summary>The listed companies of a trade that may be clients of a tech firm, in the catalogue's order. Made once.</summary>
-        public static CompanyDef[] Pool(Trade trade)
+        public static CompanyDef[] Pool(ClientTrade trade)
         {
-            if (trade < 0 || trade >= Trade.Count)
+            if (trade < 0 || trade >= ClientTrade.Count)
             {
                 return System.Array.Empty<CompanyDef>();
             }
             if (_pools == null)
             {
-                _pools = new CompanyDef[(int)Trade.Count][];
+                _pools = new CompanyDef[(int)ClientTrade.Count][];
                 for (int t = 0; t < _pools.Length; t++)
                 {
                     var list = new List<CompanyDef>(16);
                     for (int i = 0; i < MarketCatalogue.All.Length; i++)
                     {
                         CompanyDef c = MarketCatalogue.All[i];
-                        if (Allows(c) && !c.Holding && !c.Pipeline && ClientCatalogue.InTrade(c, (Trade)t))
+                        if (Allows(c) && !c.Holding && !c.Pipeline && ClientCatalogue.InTrade(c, (ClientTrade)t))
                         {
                             list.Add(c);
                         }

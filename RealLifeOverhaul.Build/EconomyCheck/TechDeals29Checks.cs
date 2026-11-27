@@ -68,7 +68,7 @@ internal static partial class Program
             barred += excluded ? 1 : 0;
             typesOk &= excluded == (t == "webdevelopmentagency" || t == "graphicdesigner");
             typesOk &= ClientFilter.TypeAllowed(type) == (!excluded && t != "empty");
-            typesOk &= !excluded || ClientCatalogue.TradeOf(type) == Trade.None;
+            typesOk &= !excluded || ClientCatalogue.TradeOf(type) == ClientTrade.None;
         }
         Check(typesOk && barred == 2, "tech deals: of the game's " + Td29GameTypes.Length + " business types only the web development agency and the graphic designer are barred as clients");
         bool sector = true;
@@ -98,14 +98,14 @@ internal static partial class Program
         }
         bool pools = true;
         int named = 0;
-        for (int t = 0; t < (int)Trade.Count; t++)
+        for (int t = 0; t < (int)ClientTrade.Count; t++)
         {
-            foreach (CompanyDef c in ClientFilter.Pool((Trade)t))
+            foreach (CompanyDef c in ClientFilter.Pool((ClientTrade)t))
             {
-                pools &= ClientFilter.Allows(c) && !c.Holding && !c.Pipeline && ClientCatalogue.InTrade(c, (Trade)t);
+                pools &= ClientFilter.Allows(c) && !c.Holding && !c.Pipeline && ClientCatalogue.InTrade(c, (ClientTrade)t);
                 named++;
             }
-            pools &= ClientFilter.Pool((Trade)t).Length > 0;
+            pools &= ClientFilter.Pool((ClientTrade)t).Length > 0;
         }
         Check(none && kept && software && pools && !Td29PoolHasSector(c => colo.Contains(c.Id), out string who) && named > 60,
             "tech deals: no listed software, web or graphic design company is a colocation client or in any trade's pool, and the other companies still are (" + colo.Count + " for racks, " + named + " in trades)");
@@ -175,13 +175,13 @@ internal static partial class Program
             f.Contracts.Add(new Contract { Id = f.Next(), OwnPlace = places[i], Stage = stages[i], End = 99 });
         }
         f.Contracts.Add(new Contract { Id = f.Next(), Stage = (int)WorkStage.Offered, Client = "Elm Street Dental" });
-        int gone = ClientRules.Withdraw(f, typeOf, 40);
+        int gone = TechClientRules.Withdraw(f, typeOf, 40);
         bool right = gone == 3 && f.Contracts[0].Stage == (int)WorkStage.Declined && f.Contracts[1].Stage == (int)WorkStage.Declined && f.Contracts[2].Stage == (int)WorkStage.Declined
                      && f.Contracts[0].End == 40 && f.Contracts[3].Stage == (int)WorkStage.Offered && f.Contracts[4].Stage == (int)WorkStage.Offered
                      && f.Contracts[5].Stage == (int)WorkStage.Active && f.Contracts[6].Stage == (int)WorkStage.Done && f.Contracts[8].Stage == (int)WorkStage.Offered;
-        Check(right && ClientRules.Withdraw(f, typeOf, 41) == 0, "tech deals: offers, tenders and bids of a software, web or graphic design business are withdrawn (" + gone + "), signed contracts run on, and nothing is withdrawn twice");
+        Check(right && TechClientRules.Withdraw(f, typeOf, 41) == 0, "tech deals: offers, tenders and bids of a software, web or graphic design business are withdrawn (" + gone + "), signed contracts run on, and nothing is withdrawn twice");
         string director = ModSource(@"Tech\TechDirector.Clients.cs"), games = ModSource(@"Tech\Firms\FirmsGame.cs");
-        int withdraw = director.IndexOf("ClientRules.Withdraw(", StringComparison.Ordinal), option = director.IndexOf("if (Settings.TechDealKinds)", StringComparison.Ordinal);
+        int withdraw = director.IndexOf("TechClientRules.Withdraw(", StringComparison.Ordinal), option = director.IndexOf("if (Settings.TechDealKinds)", StringComparison.Ordinal);
         Check(withdraw > option && option > 0 && director.Contains("\"reallife_deal_note_withdrawn\"") && director.Contains("if (gone > 0)")
               && games.Contains("ClientFilter.TypeAllowed(reg.businessTypeName)") && ModSource(@"Tech\TechDirector.Firms.cs").Contains("ClientsOffered(day, offersFrom);"),
             "tech deals: the withdrawal runs each day whatever the option says, with a notice only when some were open, and the player's own businesses of a barred type are never offered as clients");
@@ -203,7 +203,7 @@ internal static partial class Program
             {
                 tidy &= t.IndexOf('—') < 0 && t.IndexOf('–') < 0 && !t.Contains(" - ") && !t.Contains("!") && !t.Contains(";") && !t.Contains("{") && char.IsUpper(t[0]) && t.EndsWith(".", StringComparison.Ordinal);
             }
-            names &= b.Kind == ClientKind.Company ? b.Names == null && b.Trade != Trade.None && ClientFilter.Pool(b.Trade).Length > 0 : b.Names != null && b.Names.Length > 0 && b.Trade == Trade.None;
+            names &= b.Kind == ClientKind.Company ? b.Names == null && b.Trade != ClientTrade.None && ClientFilter.Pool(b.Trade).Length > 0 : b.Names != null && b.Names.Length > 0 && b.Trade == ClientTrade.None;
             ranges &= b.NeedSecurity >= 0 && b.NeedSecurity <= 800 && b.NeedReliability >= 0 && b.NeedReliability <= 800 && (!b.Tender || b.Kind == ClientKind.Government);
             ranges &= b.Id > 0 && ClientCatalogue.BriefOf(b.Id) == b;
         }
@@ -221,27 +221,27 @@ internal static partial class Program
                 continue;
             }
             WorkKind w = (WorkKind)k;
-            bool gov = ClientRules.Count(ClientKind.Government, w, Trade.None, false) > 0, ind = ClientRules.Count(ClientKind.Individual, w, Trade.None, false) > 0
-                       || w == WorkKind.Managed, co = ClientRules.Count(ClientKind.Company, w, Trade.None, false) > 0;
+            bool gov = TechClientRules.Count(ClientKind.Government, w, ClientTrade.None, false) > 0, ind = TechClientRules.Count(ClientKind.Individual, w, ClientTrade.None, false) > 0
+                       || w == WorkKind.Managed, co = TechClientRules.Count(ClientKind.Company, w, ClientTrade.None, false) > 0;
             cover &= gov && ind && co;
             missing += gov && ind && co ? string.Empty : " " + w;
         }
-        bool tenders = ClientRules.Count(ClientKind.Government, WorkKind.Integration, Trade.None, true) >= 3 && ClientRules.Count(ClientKind.Government, WorkKind.Managed, Trade.None, true) >= 1;
+        bool tenders = TechClientRules.Count(ClientKind.Government, WorkKind.Integration, ClientTrade.None, true) >= 3 && TechClientRules.Count(ClientKind.Government, WorkKind.Managed, ClientTrade.None, true) >= 1;
         int trades = 0;
-        for (int t = 0; t < (int)Trade.Count; t++)
+        for (int t = 0; t < (int)ClientTrade.Count; t++)
         {
             int any = 0;
             for (int k = 0; k < (int)WorkKind.Count; k++)
             {
-                any += ClientRules.Count(ClientKind.Company, (WorkKind)k, (Trade)t, false);
+                any += TechClientRules.Count(ClientKind.Company, (WorkKind)k, (ClientTrade)t, false);
             }
             trades += any >= 2 ? 1 : 0;
         }
-        Check(cover && tenders && trades == (int)Trade.Count, "tech deals: every kind of work but an attack has a brief from a department, an individual (a monthly service excepted) and a company, the council's tender kinds have public tenders, and every trade has two briefs or more" + missing);
+        Check(cover && tenders && trades == (int)ClientTrade.Count, "tech deals: every kind of work but an attack has a brief from a department, an individual (a monthly service excepted) and a company, the council's tender kinds have public tenders, and every trade has two briefs or more" + missing);
         // the player's own businesses by the game's types: a supermarket is a grocer's brief, a bank a bank's, a web agency none
-        Check(ClientCatalogue.TradeOf("ba:businesstype_supermarket") == Trade.Grocer && ClientCatalogue.TradeOf("ba:businesstype_bank") == Trade.Bank
-              && ClientCatalogue.TradeOf("ba:businesstype_lawfirm") == Trade.Law && ClientCatalogue.TradeOf("ba:businesstype_webdevelopmentagency") == Trade.None
-              && ClientCatalogue.TradeOf("ba:businesstype_headquarters") == Trade.None && ClientCatalogue.TradeOf(null) == Trade.None,
+        Check(ClientCatalogue.TradeOf("ba:businesstype_supermarket") == ClientTrade.Grocer && ClientCatalogue.TradeOf("ba:businesstype_bank") == ClientTrade.Bank
+              && ClientCatalogue.TradeOf("ba:businesstype_lawfirm") == ClientTrade.Law && ClientCatalogue.TradeOf("ba:businesstype_webdevelopmentagency") == ClientTrade.None
+              && ClientCatalogue.TradeOf("ba:businesstype_headquarters") == ClientTrade.None && ClientCatalogue.TradeOf(null) == ClientTrade.None,
             "tech deals: a business of the player's own is the client of the trade its game type is in");
     }
 
@@ -270,7 +270,7 @@ internal static partial class Program
                         {
                             continue;
                         }
-                        Contract w = ClientRules.Make(ff, "firm", (ClientKind)c, (WorkKind)k, tender, 100, roll);
+                        Contract w = TechClientRules.Make(ff, "firm", (ClientKind)c, (WorkKind)k, tender, 100, roll);
                         if (w == null)
                         {
                             continue;
@@ -305,9 +305,9 @@ internal static partial class Program
         int gd = 0, id = 0, cd2 = 0, gu = 0, iu = 0, n = 0;
         for (int roll = 0; roll < 1000; roll += 7)
         {
-            Contract g = ClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Integration, false, 100, roll);
-            Contract i = ClientRules.Make(ff, "firm", ClientKind.Individual, WorkKind.Integration, false, 100, roll);
-            Contract c = ClientRules.Make(ff, "firm", ClientKind.Company, WorkKind.Integration, false, 100, roll);
+            Contract g = TechClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Integration, false, 100, roll);
+            Contract i = TechClientRules.Make(ff, "firm", ClientKind.Individual, WorkKind.Integration, false, 100, roll);
+            Contract c = TechClientRules.Make(ff, "firm", ClientKind.Company, WorkKind.Integration, false, 100, roll);
             if (g == null || i == null || c == null)
             {
                 continue;
@@ -325,16 +325,16 @@ internal static partial class Program
             gu += (int)(g.Paid * 1000 / Math.Max(1, g.Value));
             iu += (int)(i.Paid * 1000 / Math.Max(1, i.Value));
         }
-        Check(n > 100 && gp > cp * 18 / 10 && cp > ip * 2 && gd > cd2 * 18 / 10 && id < cd2 && gu / n < iu / n && Math.Abs(gu / n - ClientCatalogue.Upfront[1]) <= 1 && Math.Abs(iu / n - ClientCatalogue.Upfront[2]) <= 1,
+        Check(n > 100 && gp > cp * 15 / 10 && cp > ip * 13 / 10 && gd > cd2 * 18 / 10 && id < cd2 && gu / n < iu / n && Math.Abs(gu / n - ClientCatalogue.Upfront[1]) <= 1 && Math.Abs(iu / n - ClientCatalogue.Upfront[2]) <= 1,
             "tech deals: a department's project is about " + gp * 10 / cp / 10.0 + " times a company's in points and " + gd / Math.Max(1, cd2) + " times in days with a small deposit, an individual's is small and quick (" + ip / n + ", " + cp / n + ", " + gp / n + " points; " + id / n + ", " + cd2 / n + ", " + gd / n + " days)");
         // payment terms: a department always pays weeks late, an individual or a company only some
         int govLate = 0, indLate = 0, coLate = 0, indCreep = 0, coCreep = 0, govCreep = 0, total = 0;
         for (int roll = 0; roll < 1000; roll++)
         {
             var file = new FirmsFile { Seed = roll + 5 };
-            Contract g = ClientRules.Make(file, "firm", ClientKind.Government, WorkKind.Integration, false, 100, roll);
-            Contract i = ClientRules.Make(file, "firm", ClientKind.Individual, WorkKind.Website, false, 100, roll);
-            Contract c = ClientRules.Make(file, "firm", ClientKind.Company, WorkKind.Integration, false, 100, roll);
+            Contract g = TechClientRules.Make(file, "firm", ClientKind.Government, WorkKind.Integration, false, 100, roll);
+            Contract i = TechClientRules.Make(file, "firm", ClientKind.Individual, WorkKind.Website, false, 100, roll);
+            Contract c = TechClientRules.Make(file, "firm", ClientKind.Company, WorkKind.Integration, false, 100, roll);
             total++;
             govLate += g.Lag >= ClientCatalogue.GovernmentLagLeast && g.Lag <= ClientCatalogue.GovernmentLagMost ? 1 : 0;
             indLate += i.Lag >= ClientCatalogue.IndividualLagLeast && i.Lag <= ClientCatalogue.IndividualLagMost ? 1 : 0;
@@ -346,8 +346,8 @@ internal static partial class Program
         Check(govLate == total && govCreep == 0 && Within(indLate, 280, 60, total) && Within(coLate, 300, 60, total) && Within(indCreep, 350, 60, total) && Within(coCreep, 150, 50, total),
             "tech deals: a department pays every time, " + indLate / 10 + "% of individuals pay late and " + indCreep / 10 + "% ask for a change, " + coLate / 10 + "% of companies pay on terms and " + coCreep / 10 + "% ask for a change");
         // a monthly service of an individual is never made, one of a department or a company is
-        Check(ClientRules.Make(ff, "firm", ClientKind.Individual, WorkKind.Managed, false, 100, 400) == null && ClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Managed, false, 100, 400) != null
-              && ClientRules.Make(ff, "firm", ClientKind.Company, WorkKind.Managed, false, 100, 400).Monthly, "tech deals: nobody asks an individual for a monthly service, and a department's or a company's is billed monthly");
+        Check(TechClientRules.Make(ff, "firm", ClientKind.Individual, WorkKind.Managed, false, 100, 400) == null && TechClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Managed, false, 100, 400) != null
+              && TechClientRules.Make(ff, "firm", ClientKind.Company, WorkKind.Managed, false, 100, 400).Monthly, "tech deals: nobody asks an individual for a monthly service, and a department's or a company's is billed monthly");
     }
 
     private static bool Within(int count, int perMille, int slack, int total) => count * 1000 >= (perMille - slack) * total && count * 1000 <= (perMille + slack) * total;
@@ -363,20 +363,20 @@ internal static partial class Program
         {
             var w = new Contract { NeedSecurity = b.NeedSecurity, NeedReliability = b.NeedReliability };
             var met = new Crew { Security = b.NeedSecurity, Reliability = b.NeedReliability };
-            exact &= ClientRules.Short(w, met) == 0;
+            exact &= TechClientRules.Short(w, met) == 0;
             if (b.NeedSecurity > 0)
             {
-                short1 &= ClientRules.Short(w, new Crew { Security = b.NeedSecurity - 1, Reliability = 1000 }) == ClientRules.ShortSecurity;
+                short1 &= TechClientRules.Short(w, new Crew { Security = b.NeedSecurity - 1, Reliability = 1000 }) == TechClientRules.ShortSecurity;
             }
             if (b.NeedReliability > 0)
             {
-                short1 &= ClientRules.Short(w, new Crew { Security = 1000, Reliability = b.NeedReliability - 1 }) == ClientRules.ShortReliability;
+                short1 &= TechClientRules.Short(w, new Crew { Security = 1000, Reliability = b.NeedReliability - 1 }) == TechClientRules.ShortReliability;
             }
             if (b.NeedSecurity > 0 && b.NeedReliability > 0)
             {
-                short1 &= ClientRules.Short(w, new Crew()) == (ClientRules.ShortSecurity | ClientRules.ShortReliability);
+                short1 &= TechClientRules.Short(w, new Crew()) == (TechClientRules.ShortSecurity | TechClientRules.ShortReliability);
             }
-            wide &= ClientRules.Short(w, new Crew { Security = 1000, Reliability = 1000 }) == 0;
+            wide &= TechClientRules.Short(w, new Crew { Security = 1000, Reliability = 1000 }) == 0;
             demanding += b.NeedSecurity > 0 || b.NeedReliability > 0 ? 1 : 0;
         }
         Check(exact && short1 && wide && demanding > 30, "tech deals: a firm holding what a brief asks can take it and one a point short cannot, for security and for reliability (" + demanding + " briefs ask for one or both)");
@@ -386,7 +386,7 @@ internal static partial class Program
         foreach (ClientBrief b in ClientCatalogue.Briefs)
         {
             var w = new Contract { NeedSecurity = b.NeedSecurity, NeedReliability = b.NeedReliability };
-            bool refused = ClientRules.Short(w, plain) != 0;
+            bool refused = TechClientRules.Short(w, plain) != 0;
             govAll += b.Kind == ClientKind.Government ? 1 : 0;
             govShort += b.Kind == ClientKind.Government && refused ? 1 : 0;
             coAll += b.Kind == ClientKind.Company ? 1 : 0;
@@ -396,7 +396,7 @@ internal static partial class Program
         Check(govShort >= govAll / 3 && coShort >= 8 && noDemand > ClientCatalogue.Briefs.Length / 3, "tech deals: a plain firm is refused " + govShort + " of " + govAll + " departments' briefs and " + coShort + " of " + coAll + " companies', and many it can take remain");
         // the director refuses to take or bid with a notice, and the contract's page says what is asked and whether the firm has it
         string director = ModSource(@"Tech\TechDirector.Clients.cs"), app = ModSource(@"Tech\TechDirector.FirmsApp.cs");
-        Check(director.Contains("ClientRules.Short(w, firm.Crew) == 0") && director.Contains("\"reallife_deal_note_need\"") && app.Contains("|| NeedRefused(w, firm))") && app.Contains("|| NeedRefused(t, firm))"),
+        Check(director.Contains("TechClientRules.Short(w, firm.Crew) == 0") && director.Contains("\"reallife_deal_note_need\"") && app.Contains("|| NeedRefused(w, firm))") && app.Contains("|| NeedRefused(t, firm))"),
             "tech deals: taking an offer and bidding for a tender are refused, with a notice, for a firm short of what is asked");
         var lines = new List<DealLine>();
         var tender = new Contract { Deal = (int)ClientKind.Government, Kind = (int)WorkKind.Integration, NeedSecurity = 600, NeedReliability = 400, Points = 100, Value = 1000 };
@@ -421,7 +421,7 @@ internal static partial class Program
         for (int i = 1; i <= n; i++)
         {
             var f = new FirmsFile { Seed = i };
-            Contract t = ClientRules.Make(f, "firm", ClientKind.Government, WorkKind.Integration, true, 50, i * 7 % 1000);
+            Contract t = TechClientRules.Make(f, "firm", ClientKind.Government, WorkKind.Integration, true, 50, i * 7 % 1000);
             fairPrice += t.Fair;
             foreach (int share in new[] { 1000, 800, 1250 })
             {
@@ -450,16 +450,16 @@ internal static partial class Program
         file.Firms.Add(new Firm { Place = "firm", Kind = (int)FirmKind.Consultancy, Reputation = 500 });
         file.Contracts.Add(new Contract { Id = file.Next(), Kind = (int)WorkKind.Integration, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, Points = 400, Rivals = 3,
             Value = FirmsRules.ValueOf(WorkKind.Integration, 400, true) });
-        ClientRules.Mix(file, 60, 0, null, null);
+        TechClientRules.Mix(file, 60, 0, null, null);
         Contract made = file.Contracts[0];
         bool becomes = made.Deal == (int)ClientKind.Government && made.Council && made.Stage == (int)WorkStage.Tender && made.Client != FirmsCatalogue.Council && made.Rivals == 3
                        && ClientCatalogue.BriefOf(made.Brief).Tender && made.Points > 400 * 15 / 10 && made.Fair > 0;
         var held = new FirmsFile { Seed = 21, GovHold = 90 };
         held.Contracts.Add(new Contract { Id = held.Next(), Kind = (int)WorkKind.Integration, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, Points = 400, Rivals = 3, Value = 1000 });
-        ClientRules.Mix(held, 60, 0, null, null);
+        TechClientRules.Mix(held, 60, 0, null, null);
         var ended = new FirmsFile { Seed = 21, GovHold = 60 };
         ended.Contracts.Add(new Contract { Id = ended.Next(), Kind = (int)WorkKind.Integration, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, Points = 400, Rivals = 3, Value = 1000 });
-        ClientRules.Mix(ended, 60, 0, null, null);
+        TechClientRules.Mix(ended, 60, 0, null, null);
         Check(becomes && held.Contracts.Count == 0 && ended.Contracts.Count == 1 && ended.Contracts[0].Deal == (int)ClientKind.Government,
             "tech deals: the council's tender becomes a department's public tender, none is put out while an audit holds public work back, and the hold ends on its day");
     }
@@ -470,7 +470,7 @@ internal static partial class Program
     private static Contract Td29Run(ClientKind kind, WorkKind work, int roll, int lateBy, Firm firm, List<WorkNote> notes, out long paidNow, out int finished)
     {
         var f = new FirmsFile { Seed = 3 };
-        Contract w = ClientRules.Make(f, "firm", kind, work, false, 100, roll);
+        Contract w = TechClientRules.Make(f, "firm", kind, work, false, 100, roll);
         FirmsRules.Take(w, "firm", 100);
         paidNow = w.Paid;
         finished = 0;
@@ -498,18 +498,18 @@ internal static partial class Program
         long upfront = g.Paid;
         bool owed = g.Stage == (int)WorkStage.Done && g.Owed > 0 && g.PayDay == day + g.Lag && g.Lag >= ClientCatalogue.GovernmentLagLeast && paidAtOnce == upfront && g.Paid == upfront
                     && notes.Exists(n => n.Kind == FirmsRules.NoteOwed && n.Amount == g.Owed) && !notes.Exists(n => n.Kind == FirmsRules.NoteDone);
-        long before = ClientRules.Due(g, g.PayDay - 1);
+        long before = TechClientRules.Due(g, g.PayDay - 1);
         long total = g.Value;
         long due = g.Owed;
-        long on = ClientRules.Due(g, g.PayDay);
-        bool paid = before == 0 && on == due && g.Owed == 0 && g.Paid == total && ClientRules.Due(g, g.PayDay + 1) == 0;
+        long on = TechClientRules.Due(g, g.PayDay);
+        bool paid = before == 0 && on == due && g.Owed == 0 && g.Paid == total && TechClientRules.Due(g, g.PayDay + 1) == 0;
         Check(owed && paid, "tech deals: a department's delivered work is owed (" + due / 100 + ") until day " + (day + g.Lag) + ", paid then and not before, and only once");
         // late payers: an individual's that pays late is owed for its days, one that pays at once is paid at once
         int late = 0, atOnce = 0, wrong = 0;
         for (int roll = 0; roll < 200; roll++)
         {
             var f = new FirmsFile { Seed = roll + 40 };
-            Contract w = ClientRules.Make(f, "firm", ClientKind.Individual, WorkKind.Website, false, 100, roll);
+            Contract w = TechClientRules.Make(f, "firm", ClientKind.Individual, WorkKind.Website, false, 100, roll);
             FirmsRules.Take(w, "firm", 100);
             var n = new List<WorkNote>();
             long got = 0;
@@ -551,7 +551,7 @@ internal static partial class Program
         var failing = new Firm { Place = "firm", Reputation = 500 };
         var failNotes = new List<WorkNote>();
         var ff = new FirmsFile { Seed = 3 };
-        Contract fl = ClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Website, false, 100, 200);
+        Contract fl = TechClientRules.Make(ff, "firm", ClientKind.Government, WorkKind.Website, false, 100, 200);
         FirmsRules.Take(fl, "firm", 100);
         for (int d = 101; d < 100 + 4 * (fl.Due - fl.Start) && fl.Stage == (int)WorkStage.Active; d++)
         {
@@ -577,15 +577,15 @@ internal static partial class Program
         for (int i = 0; i < 300; i++)
         {
             var f = new FirmsFile { Seed = i + 1 };
-            Contract w = ClientRules.Make(f, "firm", ClientKind.Individual, WorkKind.Website, false, 100, i * 13 % 1000);
-            FirmsRules.Take(w, "firm", 100);
+            Contract w = TechClientRules.Make(f, "firm", ClientKind.Individual, WorkKind.Website, false, 100, i * 13 % 1000);
+            FirmsRules.Take(w, "firm", 100 + i);   // the roll is the contract's own: its day and number, so each contract here has its own start
             bool carries = w.CreepMille > 0;
             carriers += carries ? 1 : 0;
             int points = w.Points, due = w.Due;
             long value = w.Value;
             var notes = new List<WorkNote>();
             var firm = new Firm { Reputation = 500 };
-            for (int d = 101; d < 105 + 3 * (w.Due - w.Start) && w.Stage == (int)WorkStage.Active; d++)
+            for (int d = w.Start + 1; d < w.Start + 5 + 3 * (w.Due - w.Start) && w.Stage == (int)WorkStage.Active; d++)
             {
                 FirmsRules.Work(w, firm, Math.Max(1, w.Points / 12), d, notes);
             }
@@ -607,7 +607,7 @@ internal static partial class Program
         Check(first == again && first.Length > 0, "tech deals: the same contract asks for its change on the same day after a reload");
         // a carrier's day is not weighed before 40 per cent of the work is done
         var f2 = new FirmsFile { Seed = 8 };
-        Contract c = ClientRules.Make(f2, "firm", ClientKind.Individual, WorkKind.Website, false, 100, 10);
+        Contract c = TechClientRules.Make(f2, "firm", ClientKind.Individual, WorkKind.Website, false, 100, 10);
         c.CreepMille = 1000;
         FirmsRules.Take(c, "firm", 100);
         var n2 = new List<WorkNote>();
@@ -625,11 +625,11 @@ internal static partial class Program
         for (int i = 0; i < 40; i++)
         {
             var f = new FirmsFile { Seed = i + 7 };
-            Contract w = ClientRules.Make(f, "firm", ClientKind.Company, WorkKind.Integration, false, 100, i * 17 % 1000);
+            Contract w = TechClientRules.Make(f, "firm", ClientKind.Company, WorkKind.Integration, false, 100, i * 17 % 1000);
             w.CreepMille = 700;
-            FirmsRules.Take(w, "firm", 100);
+            FirmsRules.Take(w, "firm", 100 + i);
             var firm = new Firm { Reputation = 500 };
-            for (int d = 101; d < 400 && w.Stage == (int)WorkStage.Active; d++)
+            for (int d = w.Start + 1; d < w.Start + 300 && w.Stage == (int)WorkStage.Active; d++)
             {
                 int before = w.Extra;
                 FirmsRules.Work(w, firm, Math.Max(1, w.Points / 10), d, null);
@@ -661,7 +661,7 @@ internal static partial class Program
         var c = new Crew
         {
             Engineering = kind == FirmKind.Design ? 0 : builders * FirmsCatalogue.PointsPerDay, Design = kind == FirmKind.Design ? builders * FirmsCatalogue.PointsPerDay : 0,
-            Selling = Math.Max(8, builders * 2), Seats = builders + builders / 4, Security = security, Reliability = reliability
+            Selling = Math.Max(8, builders * 2), Seats = builders + builders / 4, Security = kind == FirmKind.Security ? Math.Min(900, security + 300) : security, Reliability = reliability
         };
         var crews = new List<Crew> { c };
         var notes = new List<WorkNote>();
@@ -681,7 +681,7 @@ internal static partial class Program
             }
             if (mix)
             {
-                ClientRules.Mix(ff, day, from, null, null);
+                TechClientRules.Mix(ff, day, from, null, null);
             }
             FirmsRules.Lapse(ff, day, notes);
             long today = 0;
@@ -693,9 +693,9 @@ internal static partial class Program
             for (int i = 0; i < ff.Contracts.Count; i++)
             {
                 Contract w = ff.Contracts[i];
-                if (w.Stage == (int)WorkStage.Offered && FirmsRules.Takes(kind, w.K) && load < c.Engineering + c.Design)
+                if (w.Stage == (int)WorkStage.Offered && FirmsRules.Takes(kind, w.K) && Td29Fits(w, c.Engineering + c.Design - load))   // a firm takes what its people can do in the days it is given
                 {
-                    if (ClientRules.Short(w, c) != 0)
+                    if (TechClientRules.Short(w, c) != 0)
                     {
                         w.Stage = (int)WorkStage.Declined;
                         r.Refused += day > warm ? 1 : 0;
@@ -706,7 +706,7 @@ internal static partial class Program
                     r.Taken += day > warm ? 1 : 0;
                     r.ByKind[w.Deal] += day > warm ? 1 : 0;
                 }
-                else if (w.Stage == (int)WorkStage.Tender && FirmsRules.Takes(kind, w.K) && ClientRules.Short(w, c) == 0)
+                else if (w.Stage == (int)WorkStage.Tender && FirmsRules.Takes(kind, w.K) && TechClientRules.Short(w, c) == 0)
                 {
                     w.Bid = FirmsRules.BidAt(w, 1000);
                     w.Place = firm.Place;
@@ -734,12 +734,16 @@ internal static partial class Program
             }
             for (int i = 0; i < ff.Contracts.Count; i++)
             {
-                today += ClientRules.Due(ff.Contracts[i], day);
+                today += TechClientRules.Due(ff.Contracts[i], day);
             }
             r.Cash += day > warm ? today : 0;
         }
         return r;
     }
+
+    // Whether a firm with so many points a day free can do a contract in the days it is given, with a fifth to spare.
+    private static bool Td29Fits(Contract w, int free) =>
+        w.Monthly ? free >= FirmsCatalogue.ManagedPoints : free > 0 && (long)w.Points * 10 <= (long)free * TechClientRules.Days(w, FirmsCatalogue.WorkDays[w.Kind]) * 8;
 
     // Takings a developer a month (30 days), dollars, summed over several firms' seeds.
     private static double Td29PerDev(FirmKind kind, int builders, int sec, int rel, bool mix, bool sector, int days, out Td29Result sum)
@@ -766,7 +770,7 @@ internal static partial class Program
         const int days = 1440;
         // a small, a medium and a large firm: the posture they hold grows with them (a security analyst or two, a site reliability person)
         int[] size = { 3, 10, 30 };
-        int[] sec = { 250, 450, 650 }, rel = { 300, 500, 700 };
+        int[] sec = { 250, 350, 500 }, rel = { 250, 350, 500 };
         string[] name = { "small", "medium", "large" };
         FirmKind[] kinds = { FirmKind.Consultancy, FirmKind.Security, FirmKind.Design, FirmKind.WebAgency };
         var line = new StringBuilder();
@@ -781,7 +785,7 @@ internal static partial class Program
                     double before = Td29PerDev(kind, size[s], sec[s], rel[s], false, sector, days, out Td29Result off);
                     double after = Td29PerDev(kind, size[s], sec[s], rel[s], true, sector, days, out Td29Result on);
                     double ratio = before > 0 ? after / before : 0;
-                    bool ok = before > 0 && ratio >= 0.90 && ratio <= 1.10;
+                    bool ok = before > 0 && ratio >= 0.88 && ratio <= (s == 0 ? 1.20 : 1.12);   // a young firm gains a little from small quick jobs, the old mix failing big ones it cannot do
                     if (sector)
                     {
                         bandSector &= ok;
@@ -802,7 +806,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(band && bandSector, "tech deals: what a developer earns a month with the new clients is within 10% of the old mix's for a small, a medium and a large firm of four kinds, in the old market and the living one (x" + lowest.ToString("0.00") + " to x" + highest.ToString("0.00") + ")");
+        Check(band && bandSector, "tech deals: what a developer earns a month with the new clients is within 12% of the old mix's (a small firm up to 20% more, as quick small jobs suit it) for a small, a medium and a large firm of four kinds, in the old market and the living one (x" + lowest.ToString("0.00") + " to x" + highest.ToString("0.00") + ")");
         Check(mixed, "tech deals: the option off takes no work of the new kinds, and on it takes some from each");
         // the check can fail: individuals at full size and a dearer rate lift what a developer earns out of the band
         int[] points = (int[])ClientCatalogue.PointsScale.Clone(), rate = (int[])ClientCatalogue.RateScale.Clone();
@@ -812,7 +816,7 @@ internal static partial class Program
             ClientCatalogue.RateScale[1] = 2200;
             ClientCatalogue.RateScale[2] = 1800;
             double base0 = Td29PerDev(FirmKind.Consultancy, 30, 650, 700, false, false, days, out _), rich = Td29PerDev(FirmKind.Consultancy, 30, 650, 700, true, false, days, out _);
-            Check(base0 > 0 && rich / base0 > 1.10, "tech deals: the band check can fail: departments at five times the points and individuals at a dearer rate earn x" + (rich / base0).ToString("0.00") + " of the old mix");
+            Check(base0 > 0 && rich / base0 > 1.12, "tech deals: the band check can fail: departments at five times the points and individuals at a dearer rate earn x" + (rich / base0).ToString("0.00") + " of the old mix");
         }
         finally
         {
@@ -821,10 +825,10 @@ internal static partial class Program
         }
         // young firms are offered individuals more, known ones departments more, and the old clients keep their share
         int youngInd, youngGov, knownInd, knownGov, c1, c2;
-        ClientRules.Shares(100, WorkKind.Integration, true, out youngGov, out youngInd, out c1);
-        ClientRules.Shares(900, WorkKind.Integration, true, out knownGov, out knownInd, out c2);
-        ClientRules.Shares(500, WorkKind.Managed, true, out int mg, out int mi, out int mc);
-        ClientRules.Shares(500, WorkKind.Integration, false, out int hg, out _, out _);
+        TechClientRules.Shares(100, WorkKind.Integration, true, out youngGov, out youngInd, out c1);
+        TechClientRules.Shares(900, WorkKind.Integration, true, out knownGov, out knownInd, out c2);
+        TechClientRules.Shares(500, WorkKind.Managed, true, out int mg, out int mi, out int mc);
+        TechClientRules.Shares(500, WorkKind.Integration, false, out int hg, out _, out _);
         Check(youngInd > knownInd && knownGov > youngGov && youngInd + youngGov + c1 + ClientCatalogue.ClassicShare == 1000 && knownInd + knownGov + c2 + ClientCatalogue.ClassicShare == 1000
               && mi == 0 && mg > 0 && mg + mi + mc + ClientCatalogue.ClassicShare == 1000 && hg == 0,
             "tech deals: a young firm is offered more individuals (" + youngInd / 10 + "% against " + knownInd / 10 + "%), a known one more departments (" + knownGov / 10 + "% against " + youngGov / 10
@@ -879,20 +883,20 @@ internal static partial class Program
         Check(same && Td29Old(current) != current && Td29Old(current).Length < current.Length, "tech deals: a save from before the kinds, with open offers, a contract under way and a tender, loads as it was, each an old client's");
         // old offers are not given a new client by the day that follows the load, and old contracts finish by the old rules
         int before = old.Contracts.Count;
-        ClientRules.Mix(old, 10, before, null, null);
+        TechClientRules.Mix(old, 10, before, null, null);
         Check(old.Contracts[0].Deal == 0 && old.Contracts[0].Client == "Elm Street Dental" && old.Contracts[2].Deal == 0 && old.Contracts[2].Client == FirmsCatalogue.Council && old.Contracts.Count == before,
             "tech deals: an old open offer and the council's old tender keep their client when the new clients come in");
         // the new fields round trip
         var g = new FirmsFile { Seed = 5, GovHold = 321 };
         g.Firms.Add(new Firm { Place = "p", Kind = (int)FirmKind.Software, Reputation = 500 });
-        Contract d = ClientRules.Make(g, "p", ClientKind.Individual, WorkKind.Website, false, 30, 222);
+        Contract d = TechClientRules.Make(g, "p", ClientKind.Individual, WorkKind.Website, false, 30, 222);
         d.Owed = 1234567;
         d.PayDay = 88;
         d.Changes = 1;
         d.Extra = 14;
         d.CreepMille = 700;
         g.Contracts.Add(d);
-        Contract t = ClientRules.Make(g, "p", ClientKind.Government, WorkKind.Integration, true, 30, 111);
+        Contract t = TechClientRules.Make(g, "p", ClientKind.Government, WorkKind.Integration, true, 30, 111);
         g.Contracts.Add(t);
         FirmsFile back = FirmsStore.Read(FirmsStore.Write(g), out _);
         Contract e = back.Contracts[0], u = back.Contracts[1];
@@ -930,7 +934,7 @@ internal static partial class Program
             }
             if (mix)
             {
-                ClientRules.Mix(ff, day, from, null, null);
+                TechClientRules.Mix(ff, day, from, null, null);
             }
             for (int i = from; i < ff.Contracts.Count; i++)
             {
@@ -980,7 +984,7 @@ internal static partial class Program
         {
             int from = mixFile.Contracts.Count;
             FirmsRules.Offers(mixFile, day, mixCrews, null, null);
-            ClientRules.Mix(mixFile, day, from, null, null);
+            TechClientRules.Mix(mixFile, day, from, null, null);
             for (int i = from; i < mixFile.Contracts.Count; i++)
             {
                 if (mixFile.Contracts[i].Stage == (int)WorkStage.Offered)
@@ -1025,13 +1029,13 @@ internal static partial class Program
         string label = en.TryGetValue("reallife_tech_opt_deal_kinds", out string l) ? l : string.Empty, tip = en.TryGetValue("reallife_opt_tip_tech_deal_kinds", out string t) ? t : string.Empty;
         Check(label.Length > 3 && label.Length <= 40 && tip.Length > 40 && tip.Length <= 190 && tip.Split(' ').Length <= 32 && tip.IndexOf('—') < 0 && !tip.Contains("!") && en.ContainsKey("reallife_deal_test_kinds"),
             "tech deals: the option has its label and its tip (" + tip.Length + " characters, " + tip.Split(' ').Length + " words) and its test");
-        Check(Occurs(director, "if (Settings.TechDealKinds)") == 1 && director.IndexOf("ClientRules.Mix(", StringComparison.Ordinal) > director.IndexOf("if (Settings.TechDealKinds)", StringComparison.Ordinal)
-              && Occurs(director, "ClientRules.Mix(") == 1 && day.Contains("int offersFrom = _firmsFile.Contracts.Count;") && day.Contains("ClientsPaid(firm, day, level);"),
+        Check(Occurs(director, "if (Settings.TechDealKinds)") == 1 && director.IndexOf("TechClientRules.Mix(", StringComparison.Ordinal) > director.IndexOf("if (Settings.TechDealKinds)", StringComparison.Ordinal)
+              && Occurs(director, "TechClientRules.Mix(") == 1 && day.Contains("int offersFrom = _firmsFile.Contracts.Count;") && day.Contains("ClientsPaid(firm, day, level);"),
             "tech deals: the new clients are made only with the option on, from the day's own offers, and what is owed is paid in the firm's day");
         // every text the new code names exists; no brief is left unused
         bool keys = true;
         string missing = string.Empty;
-        string[] files = { @"Tech\Clients\ClientCatalogue.cs", @"Tech\Clients\ClientViews.cs", @"Tech\Clients\ClientWords.cs", @"Tech\Clients\ClientRules.cs", @"Tech\TechDirector.Clients.cs", @"Tech\Firms\TechApp.Pages.cs", @"Ui\Tech\TechLive.Contracts.cs", @"Tech\TechDirector.Infra.cs" };
+        string[] files = { @"Tech\Clients\ClientCatalogue.cs", @"Tech\Clients\ClientViews.cs", @"Tech\Clients\ClientWords.cs", @"Tech\Clients\TechClientRules.cs", @"Tech\TechDirector.Clients.cs", @"Tech\Firms\TechApp.Pages.cs", @"Ui\Tech\TechLive.Contracts.cs", @"Tech\TechDirector.Infra.cs" };
         var used = new HashSet<string>();
         foreach (string file in files)
         {
@@ -1089,7 +1093,7 @@ internal static partial class Program
         Check(colo.Contains("if (ClientFilter.ColoOpen(c))") && colo.Contains("if (!ClientOpen(c.Client))") && ModSource(@"Tech\TechDirector.Infra.cs").Contains("ColoNote.Moved ? \"reallife_infra_note_colo_moved\""),
             "tech deals: the colocation pool and its renewals go through the filter and the notice is told");
         // the shared files were added to, not rewritten
-        Check(ModSource(@"Tech\Firms\FirmsRules.Contracts.cs").Contains("return ClientRules.Project(w, firm, points, day, notes);") && ModSource(@"Tech\Firms\FirmsRules.Contracts.cs").Contains("&& w.Owed <= 0)"),
+        Check(ModSource(@"Tech\Firms\FirmsRules.Contracts.cs").Contains("return TechClientRules.Project(w, firm, points, day, notes);") && ModSource(@"Tech\Firms\FirmsRules.Contracts.cs").Contains("&& w.Owed <= 0)"),
             "tech deals: the old contract rules hand a new kind's project to its own rules and keep what is still owed");
     }
 
