@@ -190,7 +190,7 @@ namespace RealLifeOverhaul
                     talks = n;
                 }
             }
-            if (!WageShown.Paid(e, out _, out int paid))
+            if (!WageShown.Paid(e, out _, out int paid, true))
             {
                 return;
             }

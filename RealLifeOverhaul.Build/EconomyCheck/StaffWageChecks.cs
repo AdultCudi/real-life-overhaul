@@ -113,7 +113,7 @@ internal static partial class Program
         string root = WageScripts();
         string Read(string path) => System.IO.File.ReadAllText(System.IO.Path.Combine(root, path));
         string shown = Read(System.IO.Path.Combine("Core", "WageShown.cs")), watch = Read(System.IO.Path.Combine("Core", "WageShownWatch.cs"));
-        Check(shown.Contains("PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null)") && shown.Contains("row.hourlyWage = paid / 100f;") && !shown.Contains("e.hourlyWage =")
+        Check(shown.Contains("PaidWage.Now(e.hourlyWage, e.id)") && shown.Contains("row.hourlyWage = paid / 100f;") && !shown.Contains("e.hourlyWage =")
               && shown.Contains("scroller.Delegate = this;") && shown.Contains("_table.scroller.Delegate = _table;"),
             "one wage: the game's tables are written at the paid wage on the screen's own copy of each row, never the employee's saved wage, and the scroller is given back");
         foreach (string table in new[] { "EmployeeCellView, EmployeeModel", "CandidateCellView, CandidateModel", "HrManagerEmployeeModel>", "ScheduleEmployeeCellView, ScheduleEmployeeModel" })

@@ -156,7 +156,9 @@ namespace RealLifeOverhaul.Ui
             e.assignedAddress = business.Address;   // as the game's action does, then its own hire
             try
             {
+                float asked = PaidWage.AskMoney(e.hourlyWage);
                 EmployeeHelper.HireCandidate(e);
+                AskedHire.After(e, asked);   // the figure the review showed
                 MyEmployees app = App();
                 app?.candidateScrollerController.RemoveCandidate(e);
             }

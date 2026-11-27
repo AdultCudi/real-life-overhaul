@@ -191,7 +191,7 @@ namespace RealLifeOverhaul
         /// The game's figure for an employee and what is paid, hundredths an hour; false where the game's own figure stands:
         /// nobody, the same figure, or (Going Public) another player's employee, whose wage this machine neither pays nor knows.
         /// </summary>
-        internal static bool Paid(EmployeeInstance e, out int baseCents, out int paidCents)
+        internal static bool Paid(EmployeeInstance e, out int baseCents, out int paidCents, bool negotiating = false)
         {
             baseCents = paidCents = 0;
             if (!Ours(e))
@@ -199,7 +199,8 @@ namespace RealLifeOverhaul
                 return false;
             }
             baseCents = PaidWage.Base(e.hourlyWage);
-            paidCents = PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null);   // a candidate at what the negotiation asks (5 cents up), so the list and the chat say one figure
+            paidCents = PaidWage.Now(e.hourlyWage, e.id, negotiating && e.candidateInfo != null);
+            // in a negotiation a candidate is at what it asks (5 cents up), as the chat says; the game's own Hire pays the stored wage
             return PaidWage.Differs(baseCents, paidCents);
         }
 
@@ -355,7 +356,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            int paid = PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null);
+            int paid = PaidWage.Now(e.hourlyWage, e.id);   // the game's own table: its Hire pays the stored wage, so a candidate shows that
             if (PaidWage.Base(row.hourlyWage) != paid)
             {
                 row.hourlyWage = paid / 100f;

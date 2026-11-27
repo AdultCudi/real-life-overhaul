@@ -112,10 +112,18 @@ internal static partial class Program
             PaidWage.Raise = raise;
         }
         string shown = ModSource(@"Core\WageShown.cs"), watch = ModSource(@"Core\WageShownWatch.cs");
-        Check(MemberText(shown, "internal static bool Paid(").Contains("PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null)")
-              && MemberText(shown, "private void Write(int index)").Contains("PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null)")
-              && shown.Contains("PaidWage.Shown(e.hourlyWage, e.id, Ours(e), e.candidateInfo != null)"),
-            "asking wage: the game's candidate table and the contact's card (old interface) and the mod's lists and card (kit) all take the asked wage for a candidate");
+        // The kit shows the asked wage and its own Hire pays it (the negotiation's AcceptOffer sets the wage to the offer's); the game's own Hire pays the
+        // stored wage, so the game's own table (WageTable) and its box show that.
+        Check(shown.Contains("PaidWage.Shown(e.hourlyWage, e.id, Ours(e), e.candidateInfo != null)") && MemberText(shown, "internal static bool Paid(").Contains("negotiating && e.candidateInfo != null"),
+            "asking wage: the kit's lists and card take the asked wage for a candidate, the game's contact card in a negotiation too");
+        Check(MemberText(shown, "private void Write(int index)").Contains("PaidWage.Now(e.hourlyWage, e.id);") && !MemberText(shown, "private void Write(int index)").Contains("candidateInfo")
+              && MemberText(watch, "private void Box()").Contains("WageShown.Paid(app.SelectedEmployeeInstance, out _, out int paid)") && watch.Contains("WageShown.Paid(e, out _, out int paid, true)"),
+            "asking wage: the game's own candidate table and box show the stored wage, which the game's Hire pays");
+        string hire = ModSource(@"Core\AskedHire.cs");
+        Check(hire.Contains("e.candidateInfo == null && asked > e.hourlyWage && WageShown.Ours(e)") && hire.Contains("e.hourlyWage = asked;")
+              && ModSource(@"Ui\Employees\EmployeesScreen.cs").Contains("AskedHire.After(hiring, asked);")
+              && ModSource(@"Ui\Employees\StaffBatchHire.cs").Contains("AskedHire.After(e, asked);"),
+            "asking wage: the kit's Hire and its review's hire pay the asked wage, after the game's hire, for a person this machine pays");
         Check(watch.Contains("(WageShown.AskCents(e) / 100f).ToCurrencyFormat()"), "asking wage: the notice that tells the price of a hire names the asked wage");
     }
 }

@@ -45,12 +45,13 @@ namespace RealLifeOverhaul
         /// </summary>
         public static int Ask(float hourlyWage)
         {
-            if (!(hourlyWage > 0f))
-            {
-                return 0;
-            }
-            float rounded = (float)Math.Ceiling(hourlyWage * 20f) / 20f;
-            return Base(rounded);
+            return Base(AskMoney(hourlyWage));
+        }
+
+        /// <summary>The asked wage as the game holds it (money an hour, the very float its offer carries); 0 for none.</summary>
+        public static float AskMoney(float hourlyWage)
+        {
+            return hourlyWage > 0f ? (float)Math.Ceiling(hourlyWage * 20f) / 20f : 0f;
         }
 
         /// <summary>The raise agreed for an employee, hundredths an hour; 0 for none, or while nothing hands one in.</summary>
