@@ -315,6 +315,13 @@ def main():
         if (key == 'reallife_changes_next' or CHANGES.match(key)) and v != NOTHING['en'] and v.startswith(NOTHING['en']):
             print("en.json: %s: What's new's row begins with the empty row's words before its own" % key)
             faults += 1
+    # A merge of two jobs' copies of one Guide page can put a section in twice, and the page then reads it twice.
+    for key, v in en.items():
+        heads = [x.strip() for x in v.split('\n') if x.startswith('# ')] if key.startswith('reallife_guide_') else []
+        twice = sorted({x for x in heads if heads.count(x) > 1})
+        if twice:
+            print('en.json: %s: the Guide page has %s more than once' % (key, ', '.join(twice)))
+            faults += 1
     for code, language in LANGUAGES[1:]:
         name = code + '.json'
         path = os.path.join(LOC, name)
