@@ -134,7 +134,18 @@ namespace RealLifeOverhaul
             HalfWidth = 0.94f, Front = 2.60f, Rear = -2.60f, Height = 1.82f, BonnetHeight = 1.17f
         };
 
-        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover };
+        public static readonly ModCarDef HaldenCarrier = new ModCarDef
+        {
+            Id = "haldencarrier", TypeName = Prefix + "haldencarrier", Donor = GamePrefix + "umcdesert", KindKey = "reallife_cars_kind_van",
+            // The van between the old UMC Desert (8,000: 14 boxes, slow) and the Mersaidi Dash (48,500: 24 boxes, faster): 20 boxes for
+            // under half the Dash's money, slower than any saloon.
+            Price = 21000, MaxFuel = 120f, Cargo = 20, MaxSpeed = 60, EnginePower = 68f, BrakeForce = 3000f, TurnRadius = 38, DamageIntensity = 0.32f,
+            FitsHandTruck = true, Luxury = false, FitsFlatbed = true, TaxDeductible = true, Destinations = 2,
+            AxleFront = 1.80f, AxleRear = -1.65f, TrackHalf = 0.83f, WheelRadius = 0.40f, WheelWidth = 0.26f,
+            HalfWidth = 0.985f, Front = 2.65f, Rear = -2.65f, Height = 2.05f, BonnetHeight = 1.17f
+        };
+
+        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier };
 
         /// <summary>True for a vehicle type of the mod's own.</summary>
         public static bool IsOurs(string typeName)

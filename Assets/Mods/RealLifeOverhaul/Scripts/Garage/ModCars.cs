@@ -452,7 +452,9 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                draw.sharedMaterial = paint;
+                // One material, whatever the game car had: a mod car's mesh is one part, and Unity draws the last part again with every
+                // material left over (the UMC Desert's body has a second, clear one for its glass, which would lie over the whole car).
+                draw.sharedMaterials = new[] { paint };
                 if (draw == bodyDraw)
                 {
                     filter.sharedMesh = body;

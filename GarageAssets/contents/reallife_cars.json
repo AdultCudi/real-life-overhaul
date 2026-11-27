@@ -1,8 +1,12 @@
 {
  "bundle": "reallife_cars",
- "bytes": 4012918,
+ "bytes": 4877789,
  "meshes": [
-  {"name": "haldendrover_body", "vertices": 5742, "triangles": 6156, "size": [2.175, 1.547, 5.216], "centre": [0.000, 1.093, 0.002]},
+  {"name": "haldencarrier_body", "vertices": 5294, "triangles": 5712, "size": [2.384, 1.801, 5.317], "centre": [0.000, 1.198, 0.002]},
+  {"name": "haldencarrier_collider", "vertices": 644, "triangles": 216, "size": [1.966, 1.746, 5.308], "centre": [0.000, 1.174, -0.001]},
+  {"name": "haldencarrier_wheel_left", "vertices": 539, "triangles": 558, "size": [0.252, 0.800, 0.800], "centre": [-0.001, 0.000, 0.000]},
+  {"name": "haldencarrier_wheel_right", "vertices": 539, "triangles": 558, "size": [0.252, 0.800, 0.800], "centre": [0.001, 0.000, 0.000]},
+  {"name": "haldendrover_body", "vertices": 5746, "triangles": 6156, "size": [2.175, 1.547, 5.216], "centre": [0.000, 1.093, 0.002]},
   {"name": "haldendrover_collider", "vertices": 654, "triangles": 219, "size": [1.871, 1.460, 5.199], "centre": [0.000, 1.092, 0.000]},
   {"name": "haldendrover_wheel_left", "vertices": 551, "triangles": 564, "size": [0.262, 0.800, 0.800], "centre": [-0.001, 0.000, 0.000]},
   {"name": "haldendrover_wheel_right", "vertices": 551, "triangles": 564, "size": [0.262, 0.800, 0.800], "centre": [0.001, 0.000, 0.000]},
@@ -20,6 +24,14 @@
   {"name": "haldenpip_wheel_right", "vertices": 539, "triangles": 558, "size": [0.194, 0.600, 0.600], "centre": [0.001, 0.000, 0.000]}
  ],
  "textures": [
+  {"name": "haldencarrier_d", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
+  {"name": "haldencarrier_dirt", "width": 512, "height": 512, "format": "BC7", "mips": 10},
+  {"name": "haldencarrier_dirtmask", "width": 256, "height": 256, "format": "BC7", "mips": 9},
+  {"name": "haldencarrier_e", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldencarrier_em", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldencarrier_im", "width": 512, "height": 512, "format": "DXT1", "mips": 10},
+  {"name": "haldencarrier_mask", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
+  {"name": "haldencarrier_n", "width": 1024, "height": 1024, "format": "BC5", "mips": 11},
   {"name": "haldendrover_d", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
   {"name": "haldendrover_dirt", "width": 512, "height": 512, "format": "BC7", "mips": 10},
   {"name": "haldendrover_dirtmask", "width": 256, "height": 256, "format": "BC7", "mips": 9},

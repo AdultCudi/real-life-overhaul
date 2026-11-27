@@ -161,6 +161,8 @@ internal static partial class Program
             Check(width == 1024 && height == 1024 && full > width * height / 5 && none > width * height / 5, "mod cars: " + d.Id + "'s colour texture is 1024 square with paint (" + full + " texels) and unpainted parts");
             Check(window > 2000 && steps < window / 50, "mod cars: " + d.Id + "'s paint edges are ramps through the shader's window (" + window + " texels inside it, " + steps + " bare steps), so the game's shader smooths them");
         }
+        Check(ModSource(@"Garage\ModCars.cs").Contains("draw.sharedMaterials = new[] { paint };") && !ModSource(@"Garage\ModCars.cs").Contains("draw.sharedMaterial = paint;"),
+            "mod cars source: a made car's renderers carry one material each, so a game car's second material (the UMC Desert's clear glass) is not drawn over the whole body");
         Check(ModCarCatalogue.TextureSlots.Length == ModCarCatalogue.TextureParts.Length && ModCarCatalogue.TextureLinear.Length == ModCarCatalogue.TextureParts.Length,
             "mod cars: every slot of the game's vehicle shader has its texture and its colour space");
         Check(ModCarCatalogue.AssetNames().Count == ModCarCatalogue.All.Length * (ModCarCatalogue.MeshParts.Length + ModCarCatalogue.TextureParts.Length), "mod cars: the list of what the code asks for is whole");
