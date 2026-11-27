@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Tech
                 ColoNote n = _coloNotes[i];
                 string rival = n.Rival >= 0 ? HiringCatalogue.RivalFirms[n.Rival] : string.Empty;
                 string key = n.Kind == ColoNote.Offer ? "reallife_infra_note_colo_offer" : n.Kind == ColoNote.Renewed ? "reallife_infra_note_colo_renewed"
-                    : n.Kind == ColoNote.Lost ? "reallife_infra_note_colo_lost" : "reallife_infra_note_colo_left";
+                    : n.Kind == ColoNote.Lost ? "reallife_infra_note_colo_lost" : n.Kind == ColoNote.Moved ? "reallife_infra_note_colo_moved" : "reallife_infra_note_colo_left";
                 TellTech(n.Kind == ColoNote.Renewed ? NotificationType.Success : NotificationType.Warning, key,
                     Data("client", ColoRules.NameOf(n.Client), "racks", n.Racks.ToString(), "name", d.Name, "rival", rival), TabInfra, TechApp.CentreRow + d.Place);
             }

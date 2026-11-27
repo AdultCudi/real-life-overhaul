@@ -399,8 +399,9 @@ namespace RealLifeOverhaul.Tech
                 FirmPlace place = FirmOf(_firmsFile.Firms[i].Place);
                 _crews.Add(place != null ? place.Crew : default(Crew));
             }
-            FirmsGame.Clients(_clients);
+            FirmsGame.Clients(_clients, _clientTypes);
             _work.Clear();
+            int offersFrom = _firmsFile.Contracts.Count;   // the day's new offers are appended from here (the kinds of client, ClientsOffered)
             if (_sectorOn)
             {
                 SectorRules.Offers(_firmsFile, _sector, day, cycle, _crews, _clients, _work);   // the city's IT work shared with the rival IT firms
@@ -410,6 +411,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmsRules.Offers(_firmsFile, day, _crews, _clients, _work);
             }
+            ClientsOffered(day, offersFrom);
             FirmsRules.Lapse(_firmsFile, day, _work);
             for (int i = 0; i < _firmsFile.Contracts.Count; i++)
             {
@@ -478,6 +480,7 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
                 firm.Contracted = c.Engineering - engineering;
+                ClientsPaid(firm, day, level);   // what delivered contracts are owed, on their day
                 int shares = 0;
                 for (int i = 0; i < _firmsFile.Products.Count; i++)
                 {
@@ -731,6 +734,9 @@ namespace RealLifeOverhaul.Tech
                     break;
                 case FirmsRules.NoteFailed:
                     TellTech(NotificationType.Warning, "reallife_tech_note_failed", Data("client", w.Client), TabContracts, row);
+                    break;
+                default:
+                    ClientNote(note, w);   // one more change asked, delivered and owed, paid at last, an audit (Tech/Clients)
                     break;
             }
         }

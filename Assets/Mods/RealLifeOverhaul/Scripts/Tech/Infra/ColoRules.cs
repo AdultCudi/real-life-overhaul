@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>What happened to a colocation contract on a day, for the notices: a rival's offer, a renewal, a loss, a client that left.</summary>
     public struct ColoNote
     {
-        public const int Offer = 0, Renewed = 1, Lost = 2, Left = 3;
+        public const int Offer = 0, Renewed = 1, Lost = 2, Left = 3, Moved = 4;   // Moved: a client the sector no longer lets racks to (ClientFilter) ended its term and did not renew
         public int Kind, Client, Racks, Rival, Day;
         public string Place;
     }
@@ -25,19 +25,35 @@ namespace RealLifeOverhaul.Tech
         public const int OfferChance = 450;          // per mille a client with a term ending is bid for, where a rival can host it
         public const int RivalSqm = 2400, RivalMbps = 60000;
 
-        /// <summary>The company ids a client may be: the listed companies of the city that are not a tycoon's holding, in the catalogue's order.</summary>
+        /// <summary>
+        /// The company ids a client may be: the listed companies of the city that are not a tycoon's holding and no firm in a tech firm's own line of work (software, web or graphic
+        /// design: <see cref="ClientFilter.ColoOpen"/>), in the catalogue's order.
+        /// </summary>
         public static int[] Pool()
         {
             var ids = new List<int>(64);
             for (int i = 0; i < MarketCatalogue.All.Length; i++)
             {
                 CompanyDef c = MarketCatalogue.All[i];
-                if (!c.Holding && !c.Pipeline && c.Size != MarketSize.Small)
+                if (ClientFilter.ColoOpen(c))
                 {
                     ids.Add(c.Id);
                 }
             }
             return ids.ToArray();
+        }
+
+        /// <summary>Whether a company may still let racks from a hall: a contract of one that may not (signed before the filter) runs to its term's end and is not renewed.</summary>
+        public static bool ClientOpen(int client)
+        {
+            for (int i = 0; i < MarketCatalogue.All.Length; i++)
+            {
+                if (MarketCatalogue.All[i].Id == client)
+                {
+                    return ClientFilter.Allows(MarketCatalogue.All[i]);
+                }
+            }
+            return true;
         }
 
         public static string NameOf(int client)
@@ -158,6 +174,12 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (day < c.End)
                 {
+                    continue;
+                }
+                if (!ClientOpen(c.Client))
+                {
+                    f.Colo.RemoveAt(i);   // its racks stay let in the centre's settings, so Sync lets them to a client the sector serves
+                    notes?.Add(new ColoNote { Kind = ColoNote.Moved, Client = c.Client, Racks = c.Racks, Rival = -1, Place = d.Place, Day = day });
                     continue;
                 }
                 bool stays = c.Rival < 0 || TechRandom.Hash(f.Seed, c.Id, c.End, 29) % 1000 < SectorRules.RackShare(d.Tier, Math.Max(0, Math.Min(1000, uptime)));

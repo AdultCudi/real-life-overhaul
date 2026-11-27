@@ -755,7 +755,7 @@ namespace RealLifeOverhaul.Tech
                 bool waiting = w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender || w.Stage == (int)WorkStage.Bid;
                 row.Pinned = w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender;
                 row.Set(0, w.Client);
-                row.Set(1, TechText.Work(w.K));
+                row.Set(1, ClientWords.WorkTag(w));   // the kind of client after the work, for a department, an individual or a company
                 row.Set(2, firm != null ? firm.File.Name : "-");
                 Cents(row, 3, Level(w.Stage == (int)WorkStage.Bid ? w.Bid : w.Value));
                 int progress = w.Monthly ? -1 : w.Points > 0 ? w.Done * 1000 / w.Points : 0;
@@ -782,15 +782,23 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Contracts;
         }
 
+        private readonly List<DealLine> _dealLines = new List<DealLine>(10);
+
         private void WriteContract(InfoBox box, FirmsFile f, Contract w, int day)
         {
             FirmPlace firm = _director.FirmOf(w.Place);
             int id = w.Id;
             Idle idle = Idle.None;
             box.Title(w.Client);
-            box.Subtitle(TechText.Work(w.K));
+            box.Subtitle(ClientWords.WorkTag(w));
             box.Chip(TechText.StageName(w.At),
                 w.At == WorkStage.Offered || w.At == WorkStage.Active ? CellTone.Green : w.At == WorkStage.Tender || w.At == WorkStage.Bid ? CellTone.Plain : CellTone.Yellow);
+            string brief = ClientWords.Brief(w);
+            if (brief.Length > 0)
+            {
+                box.Section("reallife_deal_sec_brief");   // the client's own words
+                box.Line(brief);
+            }
             box.Section("reallife_ibox_sec_now");
             switch (w.At)
             {
@@ -826,6 +834,16 @@ namespace RealLifeOverhaul.Tech
             if (!string.IsNullOrEmpty(w.OwnPlace))
             {
                 box.Line(TechText.T("reallife_tech_contract_own"));
+            }
+            _dealLines.Clear();
+            ClientViews.Lines(_dealLines, w, firm != null, firm != null ? firm.Crew : default(Crew), firm != null ? firm.File.Name : string.Empty);
+            if (_dealLines.Count > 0)
+            {
+                box.Section("reallife_deal_sec_asks");   // what the client asks of the firm and what it risks
+                for (int i = 0; i < _dealLines.Count; i++)
+                {
+                    box.Line(ClientWords.Say(_dealLines[i], Prices.Level), _dealLines[i].Warn ? CellTone.Yellow : CellTone.Plain);
+                }
             }
             string bidPlace = null;
             int bidShare = 0;

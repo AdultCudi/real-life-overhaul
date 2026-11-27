@@ -1424,6 +1424,9 @@ namespace RealLifeOverhaul
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
                     v => Settings.TechOfferNotes = v)
+                .AddToggle(Settings.TechDealKindsId, "reallife_tech_opt_deal_kinds", Settings.TechDealKinds,
+                    v => Settings.TechDealKinds = v)
+                .AddButton("reallife_deal_test_kinds", () => Tech.TechDirector.Instance?.TestDealKinds())
                 .AddToggle(Settings.TechInfraOfferId, "reallife_infra_opt_offer", Settings.TechInfraOffer,
                     v => Settings.TechInfraOffer = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())

@@ -7,6 +7,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly UiIcon[] Firm = { UiIcon.Code, UiIcon.GameController, UiIcon.Handshake, UiIcon.ShieldCheck, UiIcon.Brain, UiIcon.Globe, UiIcon.PaintBrush };
         public static readonly UiIcon[] Product = { UiIcon.Cloud, UiIcon.Phone, UiIcon.Key, UiIcon.GameController, UiIcon.Brain };
         public static readonly UiIcon[] Work = { UiIcon.Globe, UiIcon.Arrows, UiIcon.Gear, UiIcon.ClipboardText, UiIcon.ShieldCheck, UiIcon.Fire, UiIcon.PaintBrush };
+        public static readonly UiIcon[] Client = { UiIcon.Handshake, UiIcon.Bank, UiIcon.Person, UiIcon.Store };   // ClientKind: an old client, a department, an individual, a company
         public static readonly UiIcon[] Genre =
         {
             UiIcon.GenreAction, UiIcon.GenreAdventure, UiIcon.GenreRpg, UiIcon.GenreStrategy, UiIcon.GenreSimulation, UiIcon.GenreSports, UiIcon.GenreRacing, UiIcon.GenrePuzzle,

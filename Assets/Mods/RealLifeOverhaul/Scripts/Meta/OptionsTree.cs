@@ -468,6 +468,7 @@ namespace RealLifeOverhaul.Meta
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Opt("tech_search_rush", "tech_jobs")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates rush rushed faster sooner quicker expedite days saved"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
+                    .Opt("tech_deal_kinds", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
                     .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),

@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Tech
         public static string Write(FirmsFile f)
         {
             var w = new TechWriter(Version);
-            w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.NextId).Add(f.LastTender);
+            w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.NextId).Add(f.LastTender).Add(f.GovHold);
             w.Part('f');
             var days = new StringBuilder(256);
             var selfDays = new StringBuilder(256);
@@ -51,7 +51,8 @@ namespace RealLifeOverhaul.Tech
             foreach (Contract c in f.Contracts)
             {
                 w.Record().Add(c.Id).Place(c.Place).Add(c.Kind).Add(c.Client).Place(c.OwnPlace).Add(c.Council).Add(c.Points).Add(c.Done).Add(c.Value).Add(c.Paid).Add(c.Start).Add(c.Due).Add(c.End)
-                    .Add(c.Satisfaction).Add(c.Stage).Add(c.Bid).Add(c.Rivals).Add(c.LastBilled).Add(c.Told);
+                    .Add(c.Satisfaction).Add(c.Stage).Add(c.Bid).Add(c.Rivals).Add(c.LastBilled).Add(c.Told)
+                    .Add(c.Deal).Add(c.Brief).Add(c.NeedSecurity).Add(c.NeedReliability).Add(c.Lag).Add(c.Owed).Add(c.PayDay).Add(c.CreepMille).Add(c.Changes).Add(c.Extra).Add(c.Fair);
             }
             return w.ToString();
         }
@@ -67,6 +68,7 @@ namespace RealLifeOverhaul.Tech
             f.LastDay = h.Int(-1);
             f.NextId = Math.Max(1, h.Int(1));
             f.LastTender = h.Int();
+            f.GovHold = Math.Max(0, h.Int());   // appended last: a save from before the kinds of client holds no public work back
             foreach (Fields x in r.Records('f'))
             {
                 var m = new Firm
@@ -128,6 +130,18 @@ namespace RealLifeOverhaul.Tech
                     Done = x.Int(), Value = x.Long(), Paid = x.Long(), Start = x.Int(), Due = x.Int(), End = x.Int(), Satisfaction = x.Int(700), Stage = x.Int(), Bid = x.Long(), Rivals = x.Int(),
                     LastBilled = x.Int(), Told = x.Int()
                 };
+                // who is asking and on what terms, appended last: a contract saved before the kinds has none of them and is a classic client's
+                c.Deal = TalentCatalogue.Clamp(x.Int(), 0, (int)ClientKind.Count - 1);
+                c.Brief = Math.Max(0, x.Int());
+                c.NeedSecurity = TalentCatalogue.Clamp(x.Int(), 0, 1000);
+                c.NeedReliability = TalentCatalogue.Clamp(x.Int(), 0, 1000);
+                c.Lag = Math.Max(0, x.Int());
+                c.Owed = Math.Max(0, x.Long());
+                c.PayDay = Math.Max(0, x.Int());
+                c.CreepMille = TalentCatalogue.Clamp(x.Int(), 0, 1000);
+                c.Changes = Math.Max(0, x.Int());
+                c.Extra = Math.Max(0, x.Int());
+                c.Fair = Math.Max(0, x.Long());
                 if (f.Contracts.Count < FirmsCatalogue.ContractsMost + FirmsCatalogue.OffersMost)
                 {
                     f.Contracts.Add(c);

@@ -387,6 +387,7 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
                 .Owns(Settings.TechSectorId, Settings.TechOfferNotesId, Settings.TechInfraOfferId)
+                .Owns(Settings.TechDealKindsId).Test("reallife_deal_test_kinds")
                 .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down",
                     "reallife_infra_test_price_war", "reallife_infra_test_offer", "reallife_tech_test_net", "reallife_tech_test_own_desk", "reallife_tech_test_desk_seat")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key, Tech.FirmsKeep.BackupKey, Tech.FirmsRepair.Key)
