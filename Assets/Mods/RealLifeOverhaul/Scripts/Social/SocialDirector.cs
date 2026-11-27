@@ -46,6 +46,7 @@ namespace RealLifeOverhaul
         public Vector3 PlayerPosition { get; private set; }
         public Vector3 PlayerForward { get; private set; } = Vector3.forward;
         public float PlayerSpeed { get; private set; }
+        public float PlayerPace { get; private set; }   // the speed the game has set on the player's agent, m/s: what they walk at, not how fast they moved this second
         public bool OnFoot { get; private set; }
         public CarController Car { get; private set; }
         public bool Driving => Car != null;

@@ -1302,6 +1302,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--date-timing")
+        {
+            DateTiming();   // (a greeting that fits the days apart, lateness judged on the player, a walking companion's pace and place, alone: DateTimingChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--child-year")
         {
             ChildYear();   // (a child's year of 1 to 52 weeks alone, while working on it: ChildYearChecks.cs, with the Calendar's check of a child's birthday and of its sources: CalendarAppChecks.cs)
@@ -2055,6 +2061,7 @@ internal static partial class Program
         StartDebtChecks(); // the student loan a new game starts with: the amounts held to the courses' fees, a payment the loans page leaves alone, which game is new, what a missed payment does, the save, the option and its texts (StartDebtChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
+        DateTiming();   // a greeting fits the days apart, lateness is the player's own, a walking companion keeps the player's pace and starts at a sight (DateTimingChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, nobody made on the edge of the gap, the age a face brings, the city's couples, the option, the People page's texts (RomanceChecks.cs)

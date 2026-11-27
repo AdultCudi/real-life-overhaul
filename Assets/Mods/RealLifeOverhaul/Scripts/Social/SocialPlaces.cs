@@ -140,6 +140,17 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool Find(PlanKind kind, Vector3 around, float minDistance, float maxDistance, out Venue venue, CityBuildingController not = null, float openAt = -1f)
         {
+            // A walk starts at one of the city's sights (Leisure's list: its parks, squares and waterfronts) when a place near one will do, else anywhere.
+            if (kind == PlanKind.Walk && SocialLinks.SightCount != null && SocialLinks.NearSight != null && SocialLinks.SightCount() > 0
+                && Search(kind, around, minDistance, maxDistance, out venue, not, openAt, true))
+            {
+                return true;
+            }
+            return Search(kind, around, minDistance, maxDistance, out venue, not, openAt, false);
+        }
+
+        private static bool Search(PlanKind kind, Vector3 around, float minDistance, float maxDistance, out Venue venue, CityBuildingController not, float openAt, bool atSight)
+        {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
             CityBuildingController[] buildings = GameDlc.Open(city);
@@ -165,7 +176,7 @@ namespace RealLifeOverhaul
                 }
                 Vector3 offset = door.position - around;
                 float sqr = offset.x * offset.x + offset.z * offset.z;
-                if (sqr < minSqr || sqr > maxSqr || Mathf.Abs(offset.y) > 8f)
+                if (sqr < minSqr || sqr > maxSqr || Mathf.Abs(offset.y) > 8f || (atSight && !SocialLinks.NearSight(door.position)))
                 {
                     continue;
                 }

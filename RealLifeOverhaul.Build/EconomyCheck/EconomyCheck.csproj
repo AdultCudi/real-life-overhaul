@@ -422,6 +422,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialState.cs" Link="Mod\SocialState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialCatalogue.cs" Link="Mod\SocialCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowRules.cs" Link="Mod\SocialFollowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialDateRules.cs" Link="Mod\SocialDateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowCatalogue.cs" Link="Mod\SocialFollowCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.TextsMemoryFacts.cs" Link="Mod\Wiring.TextsMemoryFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventCatalogue*.cs" Link="Mod\%(Filename)%(Extension)" />

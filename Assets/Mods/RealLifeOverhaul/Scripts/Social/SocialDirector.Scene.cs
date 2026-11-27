@@ -236,6 +236,7 @@ namespace RealLifeOverhaul
             Vector3 at = player.transform.position;
             float dt = now - _lastContextAt;
             PlayerSpeed = dt > 0.01f && dt < 1f ? JobSpots.Flat(at, _lastOnFoot) / dt : 0f;
+            PlayerPace = player.Character != null && player.Character.navmeshAgent != null ? player.Character.navmeshAgent.speed : 0f;
             _lastOnFoot = at;
             _lastContextAt = now;
             PlayerPosition = car != null ? car.transform.position : at;
