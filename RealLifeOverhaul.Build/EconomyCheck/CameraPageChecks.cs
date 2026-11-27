@@ -99,11 +99,7 @@ internal static partial class Program
                 }
                 looked++;
                 string folder = System.IO.Path.GetDirectoryName(path);
-                string all = string.Empty;
-                foreach (string sibling in Directory.GetFiles(folder, "*.cs", folder == scripts ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories))
-                {
-                    all += File.ReadAllText(sibling);
-                }
+                string all = JoinedText(Directory.GetFiles(folder, "*.cs", folder == scripts ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories), string.Empty);
                 bool draws = Regex.IsMatch(all, @"Key = UiAction\.Back\s*\}");   // a button of Back with no command of its own
                 if (draws && !all.Contains("ButtonCommand"))
                 {
