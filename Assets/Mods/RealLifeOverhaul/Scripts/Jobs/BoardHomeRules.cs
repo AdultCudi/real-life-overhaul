@@ -50,6 +50,34 @@ namespace RealLifeOverhaul
             return kind != null && premise != null && kind.IndexOf(premise, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>
+        /// Whether an employer's board is yet to come (true) or can never be (false), for the words that say so. Until the search has seen the whole city
+        /// nothing is settled, so the board is still to come; after it, only an employer one of whose premises is a kind in <paramref name="late"/> (every
+        /// building of it failed its asks, and it is asked again near the player) is waiting. <paramref name="kind"/> is that late kind, or null while unsettled.
+        /// An employer with no premises (the building trades) has no board to wait for.
+        /// </summary>
+        public static bool Pending(string[] premises, IList<string> late, bool searched, out string kind)
+        {
+            kind = null;
+            if (premises == null || premises.Length == 0)
+            {
+                return false;
+            }
+            if (!searched)
+            {
+                return true;
+            }
+            for (int k = 0; late != null && k < late.Count; k++)
+            {
+                if (MatchesAny(late[k], premises))
+                {
+                    kind = late[k];
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>True when the kind is any of the employer's premises.</summary>
         public static bool MatchesAny(string kind, string[] premises)
         {

@@ -104,6 +104,10 @@ namespace RealLifeOverhaul.Ui
             {
                 _view.Offset = _page.Cards.Offset;
             }
+            if (_page.Scroll != null)
+            {
+                _view.DetailOffset = _page.Scroll.Offset;   // as the layout clamped it
+            }
             _view.Reveal = -1;
             _dirty = false;
         }
@@ -596,6 +600,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
+            WorkScroll detail = _page != null ? _page.Scroll : null;
+            if (detail != null && detail.Clip >= 0 && clip == detail.Clip)
+            {
+                _view.DetailOffset = Math.Max(0f, detail.Offset - notches * UiTokens.S16);   // the wheel over the detail scrolls the detail, not the list
+                _stale = true;
+                _dirty = true;
+                return;
+            }
             _view.Offset = Math.Max(0f, _view.Offset - notches * UiTokens.S16);
             _stale = true;
             _dirty = true;

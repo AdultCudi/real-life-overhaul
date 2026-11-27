@@ -358,6 +358,8 @@ namespace RealLifeOverhaul.Careers
         public string Name;      // the employer's name
         public string Address;   // where its board, its practice's floor or its nearest works site stands, or null: nothing stands for it and the phone is the only way
         public string Place;     // the shop or service the board stands outside (its door is not the office), or null with no board
+        public bool Pending;     // no board yet but one is to come (<see cref="Kind"/>), so the line says that and not that the city has none
+        public string Kind;      // the game's name for the kind of building that board will stand outside, or null where that is not settled yet
         public bool Works;       // a building trades' employer (no board): the practice's floor or the works sites, with a line of its own
         public string Line;      // that line's text key: its practice, its works sites or that nothing stands (null for an employer with a board)
     }

@@ -75,7 +75,7 @@ internal static partial class Program
         Check(app.Contains("MapButton(buttons, _director.ShowWork);") && !app.Contains("common_setdestination"),
             "employers fix: the job held has Show on map where it had the game's Set destination (it now also closes the phone and says where)");
         Check(start.Contains("WriteBoards(box);") && careers.Contains("CareersBridges.Boards") && careers.Contains("_director.ShowBoard(board)")
-              && careers.Contains("reallife_career_boards_phone"),
+              && careers.Contains("CareersText.NoBoard(board)") && ModSource(@"Careers\CareersText.cs").Contains("reallife_career_boards_phone"),
             "employers fix: the Professions tab lists each employer at a board with its address and Show on map, and says when the city has no board for one");
         string director = ModSource(@"Careers\CareersDirector.Map.cs");
         string place = MemberText(director, "private string ShowPlace(");

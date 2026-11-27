@@ -120,10 +120,12 @@ namespace RealLifeOverhaul
                     {
                         Employer employer = CareerCatalogue.All[e];
                         bool works = employer.Place != EmployerPlace.Board;
+                        string address = career.OfficeAddress(e), kind = null;
                         into.Add(new BoardEmployer
                         {
-                            Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e), Works = works,
-                            Line = works ? CareerOfficeRules.WorksListKey(employer.Place, career.WhereOf(e)) : null
+                            Index = e, Name = JobText.T(employer.NameKey), Address = address, Place = career.OfficePlace(e), Works = works,
+                            Line = works ? CareerOfficeRules.WorksListKey(employer.Place, career.WhereOf(e)) : null,
+                            Pending = !works && address == null && career.BoardPending(e, out kind), Kind = kind
                         });
                     }
                 }
@@ -147,7 +149,8 @@ namespace RealLifeOverhaul
                     if (!career.ShowOffice(employer))
                     {
                         bool works = CareerCatalogue.All[employer].Place != EmployerPlace.Board;
-                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : works ? "reallife_career_why_works_busy" : "reallife_career_why_board_busy";
+                        return career.OfficeAddress(employer) == null ? works || !career.BoardPending(employer, out _) ? "reallife_career_why_no_board" : "reallife_career_why_board_late"
+                            : works ? "reallife_career_why_works_busy" : "reallife_career_why_board_busy";
                     }
                     return null;
                 }

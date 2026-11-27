@@ -22,6 +22,17 @@ namespace RealLifeOverhaul.Careers
 
         public static string Fill(string key, params string[] pairs) => FinanceText.Fill(key, pairs);
 
+        /// <summary>
+        /// What the Career app says of an employer with nowhere to go: that its board is not up yet (and at what kind of building it will be) where one is
+        /// to come, and that the city has no board for it where none can be. Either way the Work contact on the phone hires for it.
+        /// </summary>
+        public static string NoBoard(BoardEmployer board)
+        {
+            return board.Pending && board.Kind != null ? Fill("reallife_career_boards_late", "employer", board.Name, "kind", board.Kind)
+                : board.Pending ? Fill("reallife_career_boards_soon", "employer", board.Name)
+                : Fill("reallife_career_boards_phone", "employer", board.Name);
+        }
+
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
         /// <summary>Whole money, as the Finance app writes it.</summary>

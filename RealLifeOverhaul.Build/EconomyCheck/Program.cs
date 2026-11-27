@@ -1695,6 +1695,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--careers33")
+        {
+            Careers33();   // (the Career app's boards before the first walk outside, a late board's words, the detail's selector and long names: Careers33Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-off")
         {
             UiOff();   // (the RLO interface off by default and switched off once, alone: UiOffChecks.cs)
