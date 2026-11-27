@@ -24,6 +24,9 @@ namespace RealLifeOverhaul.Health
         /// <summary>How the player is living, from Home's needs. Null: the game's own needs alone.</summary>
         public static Func<HealthFactors, HealthFactors> Living;
 
+        /// <summary>Fills the player's fitness for the You page: the figure, the fourteen days, what moved it (Home/HomeFitness.Fill). Null: nothing is shown.</summary>
+        public static Action<FitnessView> Fitness;
+
         /// <summary>True if a doctor's sick note (Home's) covers a day. Null: no.</summary>
         public static Func<int, bool> DoctorNote;
 

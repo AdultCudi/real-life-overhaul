@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Careers
     ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on|its week
     ///      the job: the vacancy, then hired|rank day|pay|mode|boss|settled|today|today's minutes|clocked in|due|worked|late|absent|week|week's
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
-    ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until|its week|shut day
+    ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until|its week|shut day|fitness warning day|fitness strike day
     ///      a week: the post's working week fitted to its workplace's opening hours (OpenHoursRules.Pack), at the end of each record so a
     ///      save from before it loads (0: fitted again at load) and an older build reads the rest
     ///   y  profession|top rank|kind|employer|from|to|reference|leaving|earned
@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Careers
                 Post(w.Record(), j.Post).Add(j.Hired).Add(j.RankDay).Add(j.Pay).Add(j.Work).Add(j.Boss).Add(j.SettledDay).Add(j.TodayDay).Add(j.TodayMinutes).Add(j.ClockIn)
                     .Add(j.Due).Add(j.Worked).Add(j.Late).Add(j.Absent).Add(j.WeekOf).Add(j.WeekMinutes).Add(j.Overtime).Add(j.Burnout).Add(j.Rating).Add(j.ReviewDay).Add(j.LowRuns)
                     .Add(j.Warnings).Add(j.Raises).Add(j.Politics).Add(j.PoliticsDay).Add(j.Favour).Add(j.Options).Add(j.VestDay).Add(j.NonCompete).Add(j.Exclusive).Add(j.NoticeEnd)
-                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus).Add(j.AskDay).Add(j.OffUntil).Add(j.Post.Shift).Add(j.ShutDay);
+                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus).Add(j.AskDay).Add(j.OffUntil).Add(j.Post.Shift).Add(j.ShutDay).Add(j.FitWarnDay).Add(j.FitStrikeDay);
             }
             w.Part('y');
             for (int i = 0; i < f.History.Count; i++)
@@ -208,6 +208,8 @@ namespace RealLifeOverhaul.Careers
                 j.OffUntil = x.Int();
                 j.Post.Shift = Week(x);
                 j.ShutDay = x.Int(-1);
+                j.FitWarnDay = Math.Max(0, x.Int());     // appended with the fitness meter: a save from before it reads 0 (no warning given)
+                j.FitStrikeDay = Math.Max(0, x.Int());
                 f.Job = j;
                 break;
             }

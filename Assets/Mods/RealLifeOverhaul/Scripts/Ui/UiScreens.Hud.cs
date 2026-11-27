@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Ui
                     "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_close", "reallife_ui_shell_all_apps",
                     "reallife_driver_tool_call", "reallife_driver_tool_choose", "reallife_driver_tool_none", "reallife_driver_tool_coming", "reallife_driver_tool_waiting",
                     "reallife_driver_tool_driving", "common_energy", "common_hunger", "common_happiness", "reallife_home_strip_hygiene", "reallife_home_strip_stress",
-                    "reallife_home_strip_home", "common_casino", "daily_summary", "daily_summary_businesses", "daily_summary_details", "menu_continue", "personalgoal_achieved",
+                    "reallife_home_strip_home", "reallife_home_strip_fitness", "common_casino",
+                    "daily_summary", "daily_summary_businesses", "daily_summary_details", "menu_continue", "personalgoal_achieved",
                     "personalgoal_bank_balance", "playerhud_skip_bridge_button", "reallife_ui_hud_best_earner", "reallife_ui_hud_bridge", "reallife_ui_hud_bridge_title",
                     "reallife_ui_hud_goal_next", "reallife_ui_hud_hospital", "reallife_ui_hud_hospital_bill", "reallife_ui_hud_hospital_energy", "reallife_ui_hud_hospital_missed",
                     "reallife_ui_hud_hospital_title", "reallife_ui_hud_hospital_where", "total_profit"

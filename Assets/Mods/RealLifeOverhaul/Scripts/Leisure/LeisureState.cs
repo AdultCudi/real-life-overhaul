@@ -219,10 +219,14 @@ namespace RealLifeOverhaul.Leisure
             return left > 0f ? left : 0f;
         }
 
+        /// <summary>A drink is poured for the player (its units): Home counts a night of drinks for fitness (Wiring/Wiring.FitnessLinks). Null: nothing is told.</summary>
+        public static System.Action<float> Drank;
+
         public static void AddDrink(float nowMinutes, float units)
         {
             Drinks = DrinksAt(nowMinutes) + units;
             DrinkTime = nowMinutes;
+            Drank?.Invoke(units);
         }
 
         private static void ReadCounts(Dictionary<string, string> data, string key, Dictionary<string, int> into)

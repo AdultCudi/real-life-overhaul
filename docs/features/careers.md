@@ -203,6 +203,21 @@ Reviews and the time at a rank are written for a year of 365 days and kept to th
 
 **A timetable against the working days** (`Study/StudyRules.Clash.cs`, `StudyRules.Fit`): a class counts once three quarters of it is sat, and a working day once three quarters of it is worked, with 45 game minutes for the way between. A course's page in Campus says, for the player's job, whether it fits, when to leave class for work or work for class, or on which days it clashes; a vacancy's page in Career says the same of the courses being followed; a class's panel says how much of it counts ("Runs for 4h 00m; counts after 3h 00m"). A degree from 10:00 to 14:00 and a bar from 14:00 fit, leaving class at 13:00.
 
+## Fitness for the physical jobs
+
+The player's fitness (Home, [home.md](home.md)) opens and shuts a few doors. `Work/FitnessJobRules` (game-free, `EconomyCheck --fitness29`) holds them, `CareersDirector.Fitness` applies them, and the figure comes through `CareersBridges.Fitness` (`HomeFitness.Level`; -1 when fitness is not kept, which asks nothing). Option **Fitness needed for physical jobs** (`careers_fitness`, on; the options page's professional jobs section): off, applications are judged as before and nobody is warned.
+
+| Profession | Fitness asked |
+| --- | --- |
+| Police | 45 (the academy's fitness test, [careers-police.md](careers-police.md)) |
+| Warehouse, security guard | 20 |
+| Carpenter, plumber, electrician | 15 |
+| Every other profession | nothing |
+
+A new game starts at 30, so every post but the police is open from the first day and stays open through a fortnight of doing nothing past the grace. **Applying and accepting**: `DutyEntryWhy` (the one place every path asks: the list of posts open to the player, the application, an offer's acceptance and the reason the Career app shows) ends in `FitnessWhy`, a refusal with the number asked, the player's and one of four wordings of how to get there, picked from the gap (a few runs, a week or two, a few weeks of three sessions a week at 18 points a week) by a hash of the job, the figure and the day.
+
+**Already in the job**: each working day's turn (`FitnessDay`, with the job's other looks) compares the job's minimum with the player's fitness. More than 10 under it is **far under**: the boss warns once (a text, or a notification where it cannot be sent) with 14 days to put it right; still far under after that, each further 14 days puts one warning on the ladder of warnings (`Job.Warnings`, three to the sack), but a fitness strike is only given while the worker has fewer than the sack's minus one, so **fitness alone never loses anyone their job**; it can put them on the last warning, where a missed day then costs the job. Back within reach lifts the warning (the warnings already given go as they always do, with a good review). The job keeps `FitWarnDay` and `FitStrikeDay` at the end of its record in the save (a save without them reads 0). Options > Tests: **Fitness: the job check now**.
+
 ## Marks, homework and final grades
 
 `Study/StudyRules.Marks.cs` holds the one sum an exam is marked by (`StudyRules.Mark`, whole points, so every line a page shows adds up to the mark): 20 for turning up, up to 40 by the share of the counted classes attended, 25 by the pieces of homework done, 15 by how far the course's first skill has come (against the points the course teaches plus 20), 2 a piece of revision (four at most), 5 off for sitting it tired, the tutor's edge (two at most either way) and the sitting's luck (`StudyCatalogue.ExamNoise`, 5 either way). Pass marks and grades are `StudyRules.Grade`. A result sat is never touched again: nothing in the day's pass, the fading of skills, a save or a load reads it back or redraws it, and a retake whose days go by unsat costs the retake but keeps the last mark (`ExamMissed`).

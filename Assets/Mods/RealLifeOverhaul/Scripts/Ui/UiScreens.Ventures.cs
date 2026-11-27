@@ -174,8 +174,15 @@ namespace RealLifeOverhaul.Ui
                 "reallife_hc_take_plan", "reallife_hc_wave_high", "reallife_hc_wave_low", "reallife_hc_wave_none",
                 "reallife_hc_wave_round", "reallife_hc_why_people", "reallife_hc_why_session", "reallife_hc_you_hospital",
                 "reallife_hc_you_ill", "reallife_hc_you_ill_treated", "reallife_hc_you_injury", "reallife_hc_you_injury_treated",
-                "reallife_hc_you_serious", "reallife_hc_you_well", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
-                "reallife_ui_prompt_select"
+"reallife_hc_you_serious", "reallife_hc_you_well", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
+                "reallife_ui_prompt_select",
+                "reallife_fitness_band_0", "reallife_fitness_band_1", "reallife_fitness_band_2", "reallife_fitness_band_3", "reallife_fitness_band_4",
+                "reallife_fitness_band_5", "reallife_fitness_how", "reallife_fitness_how_diet", "reallife_fitness_row", "reallife_fitness_row_trend",
+                "reallife_fitness_sec", "reallife_fitness_sec_why", "reallife_fitness_trend_none", "reallife_fitness_trend_value", "reallife_fitness_value",
+                "reallife_fitness_why_drinks", "reallife_fitness_why_drinks_one", "reallife_fitness_why_home", "reallife_fitness_why_home_one",
+                "reallife_fitness_why_idle", "reallife_fitness_why_idle_one", "reallife_fitness_why_junk", "reallife_fitness_why_junk_one",
+                "reallife_fitness_why_none", "reallife_fitness_why_run_one", "reallife_fitness_why_runs", "reallife_fitness_why_work",
+                "reallife_fitness_why_work_one"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
             screens.Add(new UiScreenDef("suppliers", UiTemplate.AppWindow, "VentScreen", new[]

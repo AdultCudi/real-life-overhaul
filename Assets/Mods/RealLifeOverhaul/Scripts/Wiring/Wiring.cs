@@ -101,6 +101,7 @@ namespace RealLifeOverhaul
             Step("giving", GivingLinks.Connect);   // after the schools' and the rivals': its piece of the paper goes on top of theirs
             Step("health", HealthLinks.Connect);   // after giving's, the careers', the economy's and Home's: it wraps their doors
             Step("the police career", PoliceLinks.Connect);   // after the careers', law's, health's and permadeath's: it wraps nothing
+            Step("the fitness meter", FitnessLinks.Connect);   // wraps nothing: Home's one reading of fitness for Health, the careers and the bar's drinks
             Step("insurance", InsuranceLinks.Connect);   // after health's and the rivals': it wraps what a tycoon pays of a hospital bill
             Step("the smaller business asks", BizAsksLinks.Connect);   // parking spaces and the showroom's suppliers: wraps nothing
             Step("taxi and delivery shifts", SideJobLinks.Connect);   // wraps nothing: it asks the jobs' director and the pump's price
@@ -183,6 +184,7 @@ namespace RealLifeOverhaul
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
             Step("networking", NetworkLinks.Disconnect);
+            Step("the fitness meter", FitnessLinks.Disconnect);
             Step("the police career", PoliceLinks.Disconnect);
             Step("education and careers", CareersLinks.Disconnect);
             Step("the tech sector", TechLinks.Disconnect);

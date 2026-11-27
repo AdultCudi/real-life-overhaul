@@ -567,7 +567,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static int NeedCount(UiStatusModel m) =>
-            (m.Energy >= 0 ? 1 : 0) + (m.Hunger >= 0 ? 1 : 0) + (m.Happiness >= 0 ? 1 : 0) + (m.Hygiene >= 0 ? 1 : 0) + (m.Stress >= 0 ? 1 : 0) + (m.HomeNeed >= 0 ? 1 : 0);
+            (m.Energy >= 0 ? 1 : 0) + (m.Hunger >= 0 ? 1 : 0) + (m.Happiness >= 0 ? 1 : 0) + (m.Hygiene >= 0 ? 1 : 0) + (m.Stress >= 0 ? 1 : 0) + (m.HomeNeed >= 0 ? 1 : 0)
+            + (m.Fitness >= 0 ? 1 : 0);
 
         // The player's needs in one pill, each a glyph over a meter as wide, both in the need's own colour: the meter says
         // how full. Stress fills as it rises, as the mod's own bar has it.
@@ -586,7 +587,8 @@ namespace RealLifeOverhaul.Ui
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.SmileyHappy, m.Happiness);
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.Drop, m.Hygiene);
             cx = Need(s, inside, cx, y, cell, gap, UiIcon.Brain, m.Stress);
-            Need(s, inside, cx, y, cell, gap, UiIcon.Home, m.HomeNeed);
+            cx = Need(s, inside, cx, y, cell, gap, UiIcon.Home, m.HomeNeed);
+            Need(s, inside, cx, y, cell, gap, UiIcon.Heartbeat, m.Fitness);
             PillTarget(s, at, x, y, w, NeedsPillCommand, face, m);
         }
 

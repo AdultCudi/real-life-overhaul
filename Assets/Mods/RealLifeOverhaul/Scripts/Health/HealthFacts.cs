@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Health
         public int Wave;                 // thousandths of an average wave's top
         public int IllAtHome;
         public int Lifestyle = 1000;     // thousandths
+        public readonly FitnessView Fit = new FitnessView();   // the fitness meter, its trend and what moved it (Home, through HealthBridges.Fitness)
 
         // the doctor
         public bool Booked;

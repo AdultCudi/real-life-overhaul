@@ -30,7 +30,11 @@ namespace RealLifeOverhaul.Meta
                 .Fact("doctor_note_days", () => (HomeBalance.SickNoteHours / 24).ToString(CultureInfo.InvariantCulture))
                 .Fact("home_coffees", () => HomeBalance.CoffeesADay.ToString(CultureInfo.InvariantCulture))
                 .Fact("home_run_legs", () => JogRun.Checkpoints.ToString(CultureInfo.InvariantCulture))
-                .Owns(Settings.HomeLifeId)
+                .Fact("fit_idle", () => Guide.Number(-HomeBalance.FitIdlePerDay))
+                .Fact("fit_diet_most", () => Guide.Number(-FitnessRules.DietDayLeast))
+                .Fact("fit_notice", () => FitnessRules.NoticePoints.ToString(CultureInfo.InvariantCulture))
+                .Fact("fit_days", () => FitnessView.Days.ToString(CultureInfo.InvariantCulture))
+                .Owns(Settings.HomeLifeId, Settings.HomeDietId)
                 .Preset(Settings.HomeEasyId, 1, 0, 0)
                 .OnFrom(Settings.HomeIllnessId, Intensity.Standard)
                 .Data(HomeState.Key)
@@ -469,8 +473,8 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
                 .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
-                .Owns(Settings.CareersJobsId, Settings.CareersAgencyNoteId, Settings.CareersRejectReasonId)
-                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies", "reallife_police_test_patrol", "reallife_police_test_hurt")
+                .Owns(Settings.CareersJobsId, Settings.CareersAgencyNoteId, Settings.CareersRejectReasonId, Settings.CareersFitnessId)
+                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies", "reallife_police_test_patrol", "reallife_police_test_hurt", "reallife_test_fitness_job")
                 .Data(Careers.CareersStore.Key, Careers.DutyStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));

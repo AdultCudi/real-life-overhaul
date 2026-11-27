@@ -440,6 +440,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeBalance.cs" Link="Mod\HomeBalance.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeState.cs" Link="Mod\HomeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeBarRules.cs" Link="Mod\HomeBarRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\FitnessRules.cs" Link="Mod\FitnessRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdRules.cs" Link="Mod\HouseholdRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdState.cs" Link="Mod\HouseholdState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdStore.cs" Link="Mod\HouseholdStore.cs" />
@@ -929,6 +930,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\PeoplePool.cs" Link="Mod\PeoplePool.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersDirector.People.cs" Link="Mod\CareersDirector.People.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Police\PoliceRules.cs" Link="Mod\PoliceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\FitnessJobRules.cs" Link="Mod\FitnessJobRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Police\DutyFile.cs" Link="Mod\DutyFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Police\CaseRules.cs" Link="Mod\CaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Police\DutyStore.cs" Link="Mod\DutyStore.cs" />

@@ -157,6 +157,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 else if (w.Job == j)
                 {
+                    FitnessDay(j, day);   // far under what the job asks of the body: a warning with time to put it right, never the sack by itself
                     DutyConduct(j, day);   // a stay in a cell or a conviction since they joined ends an officer's service at the day's turn as it does at the hour's
                 }
             }

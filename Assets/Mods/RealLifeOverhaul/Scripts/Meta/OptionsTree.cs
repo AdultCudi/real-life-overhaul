@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Meta
                 S("needs").For("home").Main("home_life").Opts("home_needs", "home_strip", "home_easy", "home_sleep", "home_morning")
                     .Opt("home_morning_news", "home_morning").Opts("home_illness")
                     .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
-                S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
+                S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog").Opt("home_diet", "home_fitness")
                     .Also("cooking cook food kitchen exercise gym run diet"),
                 S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
                     .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
@@ -366,6 +366,7 @@ namespace RealLifeOverhaul.Meta
                 S("familystudy").For("careers_family").Opt("careers_family", "careers_study")
                     .Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs")
+                    .Opt("careers_fitness", "careers_jobs")
                     .Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
                     .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "

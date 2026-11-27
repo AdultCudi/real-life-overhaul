@@ -174,7 +174,8 @@ namespace RealLifeOverhaul.Ui
                     _needWords = new[]
                     {
                         UiText.T("common_energy"), UiText.T("common_hunger"), UiText.T("common_happiness"),
-                        UiText.T("reallife_home_strip_hygiene"), UiText.T("reallife_home_strip_stress"), UiText.T("reallife_home_strip_home")
+                        UiText.T("reallife_home_strip_hygiene"), UiText.T("reallife_home_strip_stress"), UiText.T("reallife_home_strip_home"),
+                        UiText.T("reallife_home_strip_fitness")
                     };
                 }
                 return _needWords;
@@ -205,6 +206,7 @@ namespace RealLifeOverhaul.Ui
                 m.Hygiene = Whole(HomeState.Hygiene);
                 m.Stress = Whole(HomeState.Stress);
                 m.HomeNeed = HomeTidy.HasHome ? Whole(HomeState.Tidy) : -1;   // with no home of their own there is no home to keep
+                m.Fitness = HomeFitness.On ? Whole(HomeState.Fitness) : -1;   // beside the mod's other needs, while fitness is kept
             }
         }
 
@@ -388,6 +390,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + (int)Math.Round(save.Money * 100.0);
                 h = h * 31 + Whole(save.Energy) * 10201 + Whole(save.Hunger) * 101 + Whole(HappinessHelper.Happiness);
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
+                h = h * 31 + Whole(HomeState.Fitness);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
                 h = h * 31 + (save.notifications != null ? save.notifications.Count : 0) * 7 + _noticesSeen;
                 h = h * 31 + Settings.UiNeedsSize * 5 + Settings.UiNeedsPlace * 3 + (UiMinimapBox.Dock ? 1 : 0);   // the needs' option applies at the next look, no reload

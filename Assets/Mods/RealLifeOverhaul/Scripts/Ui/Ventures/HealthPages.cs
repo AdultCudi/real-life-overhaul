@@ -122,6 +122,7 @@ namespace RealLifeOverhaul.Ui
             left.Add(VentBlock.Row(w.T("reallife_hc_row_home", "Ill at home"), f.IllAtHome.ToString()));
             left.Add(VentBlock.Row(w.T("reallife_hc_row_living", "Your way of living"), w.T(LivingKey(f.Lifestyle), LivingEnglish(f.Lifestyle)),
                 f.Lifestyle >= 1500 ? UiRole.Warn : f.Lifestyle <= 750 ? UiRole.Ok : UiRole.Text));
+            Fitness(left, f.Fit, w);
             var right = new List<VentBlock>(6);
             right.Add(VentBlock.Section(w.T("reallife_hc_sec_doctor", "The doctor")));
             if (f.Booked)
@@ -145,6 +146,63 @@ namespace RealLifeOverhaul.Ui
             }
             m.Left = left.ToArray();
             m.Right = right.ToArray();
+        }
+
+        // The fitness meter on the You page: the figure with its words, the fourteen days as a line and in a row, and what moved it this week in a sentence each. Nothing
+        // while fitness is not kept (Home's option off, or no save read yet).
+        private static void Fitness(List<VentBlock> into, FitnessView fit, VentWords w)
+        {
+            if (!fit.Known)
+            {
+                return;
+            }
+            into.Add(VentBlock.Section(w.T("reallife_fitness_sec", "Your fitness")));
+            string band = w.T(FitnessRules.BandKeys[fit.Band], FitnessRules.BandEnglish[fit.Band]);
+            into.Add(VentBlock.Meter(w.T("reallife_fitness_row", "Your fitness"), fit.Level,
+                w.F("reallife_fitness_value", "{fitness} of 100, {band}", "fitness", fit.Level.ToString(), "band", band)));
+            if (fit.TrendCount >= 2)
+            {
+                int dir = FitnessRules.Direction(fit.Change);
+                into.Add(VentBlock.Row(w.T("reallife_fitness_row_trend", "Over the last two weeks"),
+                    w.F("reallife_fitness_trend_value", "{from} to {to}", "from", fit.Trend[0].ToString(), "to", fit.Level.ToString()),
+                    dir == FitnessRules.Rising ? UiRole.Ok : dir == FitnessRules.Slipping ? UiRole.Warn : UiRole.Text));
+                int n = fit.TrendCount;
+                var values = new float[n];
+                var names = new string[n];
+                for (int i = 0; i < n; i++)
+                {
+                    values[i] = i < n - 1 ? fit.Trend[i] : fit.Level;   // the days' first figures, then today's live one
+                    names[i] = (fit.Day - (n - 1 - i)).ToString();
+                }
+                into.Add(new VentBlock
+                {
+                    Kind = VentBlockKind.Chart, ChartHeight = 152f,
+                    Chart = new UiChartModel
+                    {
+                        Kind = UiChartKind.Line, Points = names, Series = new[] { new UiSeries { Label = w.T("reallife_fitness_row", "Your fitness"), Values = values, Tint = UiRole.None } },
+                        Format = x => ((int)Math.Round(x)).ToString(), AxisFormat = x => ((int)Math.Round(x)).ToString(), Still = true, Whole = true, EvenAxis = true, LeastSpan = 10f
+                    }
+                });
+            }
+            else
+            {
+                into.Add(VentBlock.Row(w.T("reallife_fitness_row_trend", "Over the last two weeks"), w.T("reallife_fitness_trend_none", "Too early to tell")));
+            }
+            into.Add(VentBlock.Section(w.T("reallife_fitness_sec_why", "What moved it this week")));
+            if (fit.WhyCount == 0)
+            {
+                into.Add(VentBlock.Note(w.T("reallife_fitness_why_none", "Nothing moved your fitness this week.")));
+            }
+            for (int i = 0; i < fit.WhyCount; i++)
+            {
+                WhyLine line = fit.Why[i];
+                into.Add(VentBlock.Note(w.F(FitnessRules.WhyKey(line), FitnessRules.WhyEnglish(line), "n", line.N.ToString(), "amount", FitnessRules.Signed(line.Amount)),
+                    line.Amount < 0 ? UiRole.Warn : UiRole.None));
+            }
+            into.Add(VentBlock.Note(w.T(fit.DietCounts ? "reallife_fitness_how_diet" : "reallife_fitness_how",
+                fit.DietCounts ? "Exercise is what builds fitness: a run, a session at the gym, floor exercises at home. A few days with none, meals bought out and nights of drinks"
+                + " wear it down a little, and meals at home hold it up."
+                : "Exercise is what builds fitness: a run, a session at the gym, floor exercises at home. A few days with none wear it down. The police and some other jobs ask for a fitness.")));
         }
 
         private static void Cover(VentModel m, VentView v, HealthFacts f, IHealthActions act, VentWords w, VentRuns runs)
