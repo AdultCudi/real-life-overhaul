@@ -183,6 +183,21 @@ namespace RealLifeOverhaul
                     }
                 }
 
+                public int FitnessLevel => HomeState.Loaded && Settings.HomeLife && Settings.HomeFitness ? (int)System.Math.Round(HomeState.Fitness) : -1;
+
+                public int DietBand
+                {
+                    get
+                    {
+                        if (!HomeState.Loaded || !Settings.HomeLife || !Settings.HomeFitness)
+                        {
+                            return -1;
+                        }
+                        float diet = HomeState.DietScore;
+                        return diet >= HomeBalance.DietGood ? 2 : diet <= HomeBalance.DietPoor ? 0 : 1;
+                    }
+                }
+
                 public void Ate()
                 {
                     if (HomeState.Loaded && Settings.HomeLife)

@@ -34,13 +34,12 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    if (HomeState.Loaded && Settings.HomeFitness)
-                    {
-                        facts.FitnessKnown = true;
-                        facts.Fitness = (int)Math.Round(HomeState.Fitness);
-                        float diet = HomeState.DietScore;
-                        facts.Diet = diet >= HomeBalance.DietGood ? 1 : diet <= HomeBalance.DietPoor ? -1 : 0;
-                    }
+                    ISocialWellbeing home = SocialLinks.Wellbeing;   // Home's fitness and diet, through the bridge; -1 is not known, and reads as nothing
+                    int level = home != null ? home.FitnessLevel : -1;
+                    facts.FitnessKnown = level >= 0;
+                    facts.Fitness = Math.Max(0, level);
+                    int band = home != null ? home.DietBand : -1;
+                    facts.Diet = band < 0 ? 0 : band - 1;
                 }
                 catch (Exception e)
                 {

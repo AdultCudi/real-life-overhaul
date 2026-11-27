@@ -28,6 +28,12 @@ namespace RealLifeOverhaul
         void Stress(float change);
 
         void Ate();
+
+        /// <summary>The player's fitness, 0 to 100; -1 when it is not known (home life or the fitness option is off): a passion then reads nothing of it.</summary>
+        int FitnessLevel { get; }
+
+        /// <summary>How the player's meals have been lately: 0 poor, 1 fair, 2 good; -1 when not known.</summary>
+        int DietBand { get; }
     }
 
     /// <summary>Fills in what a neighbouring feature knows of the player (<see cref="SocialLinks.FillFacts"/>).</summary>

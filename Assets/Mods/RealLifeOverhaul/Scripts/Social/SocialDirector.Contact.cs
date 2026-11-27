@@ -85,6 +85,10 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            if (MomentEchoText(day, hour))
+            {
+                return;
+            }
             if (Random.value > SocialRules.TextChance(CircleCount(day)))
             {
                 return;
@@ -108,7 +112,7 @@ namespace RealLifeOverhaul
             {
                 AskFavour(person, real, -1);
             }
-            else if (roll < 0.58f && person.Stage >= SocialStage.Friend && Settings.SocialMeetings && day - SocialState.LastMeetDay >= SocialRules.MeetGapDays
+            else if (roll < 0.58f + SocialPassionRules.IntroExtra(person) && person.Stage >= SocialStage.Friend && Settings.SocialMeetings && day - SocialState.LastMeetDay >= SocialRules.MeetGapDays
                      && _introStranger == null && AnyStranger())
             {
                 SocialPerson stranger = NextStranger();
@@ -116,6 +120,10 @@ namespace RealLifeOverhaul
                 {
                     QueueIntroduction(person, stranger);
                 }
+            }
+            else if (PassionHint(person, day) is string hint && SendHint(person, hint, day))
+            {
+                return;   // what they live for slipped into a text (SocialDirector.Passion)
             }
             else
             {
@@ -181,7 +189,7 @@ namespace RealLifeOverhaul
 
         private static float Keenness(SocialPerson p)
         {
-            return 1f + p.Closeness / 25f + (p.Together ? 3f : 0f);
+            return 1f + p.Closeness / 25f + (p.Together ? 3f : 0f) + SocialPassionRules.Keenness(p);
         }
 
         // The day after an outing, one of them texts about how it went (SocialFollowRules.NextDay): Mom's, the partner's after a

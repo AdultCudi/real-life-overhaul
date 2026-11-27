@@ -26,6 +26,10 @@ namespace RealLifeOverhaul
 
         private void Wrap(float now, bool wentWell)
         {
+            if (StartMoment(now, wentWell))
+            {
+                return;   // a moment on the outing first (OutingScene.Moments); it calls Wrap again
+            }
             Prompt = null;
             Line = null;
             Unmark();

@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed partial class OutingScene : SocialScene
     {
-        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting, Bench }
+        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting, Bench, Moment }
 
         private readonly SocialPerson _who;
         private readonly bool _test;
@@ -194,6 +194,9 @@ namespace RealLifeOverhaul
                     break;
                 case Step.Wrap:
                     Wrapping(now);
+                    break;
+                case Step.Moment:
+                    TickMoment(now);
                     break;
                 case Step.Parting:
                     if (!TickLeaving(now))

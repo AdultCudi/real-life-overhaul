@@ -9,7 +9,7 @@ namespace RealLifeOverhaul
     /// <summary>What a face-to-face conversation is about, handed to the dialog by the scene, and what came of it.</summary>
     public sealed class SceneTalk
     {
-        public const int Meet = 0, Outing = 1, DropBy = 2, Introduction = 3;   // Mode
+        public const int Meet = 0, Outing = 1, DropBy = 2, Introduction = 3, Moment = 4;   // Mode
         public const int Treat = 1, Split = 2, Theirs = 3;                     // Pay; 0: not answered
 
         public SocialPerson Person;
@@ -21,6 +21,8 @@ namespace RealLifeOverhaul
         public int Cost;                // per head; 0 = nothing to pay
         public bool TheyOffer;          // they would pay for both
         public string GoLabel;          // what the button that gets on with it says
+
+        public MomentPlay Play;         // a moment on an outing (SocialMomentTalk)
 
         public bool PersonSpeaks;       // an introduction: the friend has had their say and the new person is talking
         public bool Warm, Swapped, Brushed, Chatted;
@@ -48,7 +50,9 @@ namespace RealLifeOverhaul
                 return;
             }
             npcNameKey = SocialPhone.IdOf(_p);
-            DialogController.current.ShowEntry(Guard.Entry(_talk.Mode == SceneTalk.Introduction ? Introduced() : _talk.Mode == SceneTalk.Meet ? MeetFirst() : Greeting()));
+            DialogEntry first = _talk.Mode == SceneTalk.Moment ? SocialMomentTalk.Open(_talk, _p)
+                : _talk.Mode == SceneTalk.Introduction ? Introduced() : _talk.Mode == SceneTalk.Meet ? MeetFirst() : Greeting();
+            DialogController.current.ShowEntry(Guard.Entry(first));
         }
 
         private static void Leave()

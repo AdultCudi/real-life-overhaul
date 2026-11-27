@@ -272,6 +272,31 @@ namespace RealLifeOverhaul
             TellPerson(SocialState.Get(SocialState.TestPerson));
         }
 
+        /// <summary>Finds out the chosen person's passion at once, as clues would, and says what the People page now reads (Options, Tests).</summary>
+        public void TestPassion()
+        {
+            const string test = "Find out a passion";
+            if (!TestReady(test, false))
+            {
+                return;
+            }
+            SocialPerson p = TestTarget(true);
+            if (p == null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.NobodyKnown);
+                return;
+            }
+            string name = SocialPassionGame.Reveal(p);
+            if (name == null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
+                return;
+            }
+            string page = SocialPassionGame.PageLine(p);
+            Logger?.Info("Social check (passion): the test found out " + p.Name + "'s passion, " + name + "; their People page reads \"" + page + "\": "
+                         + (p.PassionFound && !string.IsNullOrEmpty(page) ? "PASS" : "FAIL"));
+        }
+
         private static void TellPerson(SocialPerson person)
         {
             if (person == null)

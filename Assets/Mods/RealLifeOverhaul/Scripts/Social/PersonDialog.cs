@@ -632,8 +632,15 @@ namespace RealLifeOverhaul
                 {
                     return Close("reallife_social_gift_short");
                 }
-                SocialLife.Change(_p, 0f, 4f, 1f);
-                return Close("reallife_social_gift_thanks");
+                float tilt = SocialPassionRules.Gift(_p, out int clue, out bool lands);   // a romantic is moved by it, a gold digger finds it small
+                SocialLife.Change(_p, 0f, 4f + tilt, 1f);
+                SocialPassionGame.Clue(_p, clue, "a gift");
+                if (tilt == 0f && !lands)
+                {
+                    return Close("reallife_social_gift_thanks");
+                }
+                string[] reply = tilt < 0f ? SocialPassionCatalogue.GiftFlops : SocialPassionCatalogue.GiftLands;
+                return Close(reply[SocialPassionRules.Variant(_p, SocialLife.Day, reply.Length, 37)]);
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_bye";
             entry.OnSecondOption = () => Close(SocialLines.Pick(_p.IsFamily ? SocialCatalogue.ChatByeMom : SocialCatalogue.ChatBye));
