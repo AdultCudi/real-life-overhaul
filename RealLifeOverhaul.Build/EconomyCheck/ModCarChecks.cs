@@ -161,6 +161,21 @@ internal static partial class Program
             Check(width == 1024 && height == 1024 && full > width * height / 5 && none > width * height / 5, "mod cars: " + d.Id + "'s colour texture is 1024 square with paint (" + full + " texels) and unpainted parts");
             Check(window > 2000 && steps < window / 50, "mod cars: " + d.Id + "'s paint edges are ramps through the shader's window (" + window + " texels inside it, " + steps + " bare steps), so the game's shader smooths them");
         }
+        // The Car Showroom deals in them: its model list lets the mod's own through, and its promise takes a car standing as its game car.
+        string dealer = ModSource(@"Economy\Dealer\DealerGame.cs");
+        Check(dealer.Contains("(VehicleTypeHelper.IsModVehicleType(names[i]) && !ModCars.Stocked(names[i]))")
+              && dealer.Contains("(!ModCarCatalogue.IsOurs(type) || ModCars.Stocked(type))")
+              && Block(ModSource(@"Garage\ModCars.cs"), "public static bool Stocked(string typeName)").Contains("Settings.GarageModCars && !GoingPublic.InSession && !_stoodDown"),
+              "mod cars: the Car Showroom lists the mod's own cars while they are sold, and none in a Going Public session or with the sale off");
+        for (int i = 0; i < ModCarCatalogue.All.Length; i++)
+        {
+            ModCarDef d = ModCarCatalogue.All[i];
+            Check(RealLifeOverhaul.Economy.Dealership.CarStandRules.Verdict(d.TypeName, d.TypeName) == RealLifeOverhaul.Economy.Dealership.CarMaking.Made
+                  && RealLifeOverhaul.Economy.Dealership.CarStandRules.Verdict(d.TypeName, d.Donor) == RealLifeOverhaul.Economy.Dealership.CarMaking.Made
+                  && RealLifeOverhaul.Economy.Dealership.CarStandRules.Verdict(d.TypeName, "ba:vehicletype_nosuchcar") == RealLifeOverhaul.Economy.Dealership.CarMaking.WrongModel
+                  && RealLifeOverhaul.Economy.Dealership.CarStandRules.Verdict(d.Donor, d.TypeName) == RealLifeOverhaul.Economy.Dealership.CarMaking.WrongModel,
+                  "mod cars: a " + d.Id + " on a showroom's lot is the car paid for as itself and as the game car it is saved as, and no other way round");
+        }
         Check(ModSource(@"Garage\ModCars.cs").Contains("draw.sharedMaterials = new[] { paint };") && !ModSource(@"Garage\ModCars.cs").Contains("draw.sharedMaterial = paint;"),
             "mod cars source: a made car's renderers carry one material each, so a game car's second material (the UMC Desert's clear glass) is not drawn over the whole body");
         Check(ModCarCatalogue.TextureSlots.Length == ModCarCatalogue.TextureParts.Length && ModCarCatalogue.TextureLinear.Length == ModCarCatalogue.TextureParts.Length,

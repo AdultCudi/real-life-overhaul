@@ -118,6 +118,16 @@ namespace RealLifeOverhaul
                    && Types.ContainsKey(d.TypeName) && Templates.TryGetValue(d.TypeName, out GameObject made) && made != null;
         }
 
+        /// <summary>
+        /// True when the Car Showroom may deal in this model now: the sale is on, the game took the type, and this is not a Going
+        /// Public session (where no name the other game lacks may be made). Not asked of the prefab, which is made at each load
+        /// and may come after the showroom reads its models; a car that then cannot be made is paid back by the showroom's own promise.
+        /// </summary>
+        public static bool Stocked(string typeName)
+        {
+            return Settings.GarageModCars && !GoingPublic.InSession && !_stoodDown && typeName != null && Types.ContainsKey(typeName);
+        }
+
         // ---------------------------------------------------------------- a load
 
         /// <summary>

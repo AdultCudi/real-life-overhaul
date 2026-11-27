@@ -298,6 +298,16 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// True when a car paid for as <paramref name="paid"/> may stand as <paramref name="stood"/>: a car of the mod's is the game car
+        /// it is built on while its own model cannot be made (a Going Public session, the car the player sat in at a load). The Car
+        /// Showroom's promise reads this, so it does not pay such a car back as the wrong model.
+        /// </summary>
+        public static bool StandsAs(string paid, string stood)
+        {
+            return IsOurs(paid) && !string.IsNullOrEmpty(stood) && OnDisk(paid) == stood;
+        }
+
+        /// <summary>
         /// The type name a loaded vehicle gets: the mod's, when the save's line names this vehicle, the vehicle is still the game
         /// car it was written as, and that model can be made now (<paramref name="ready"/>); otherwise what the save says.
         /// </summary>

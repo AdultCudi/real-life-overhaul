@@ -152,7 +152,8 @@ namespace RealLifeOverhaul
                 case "umcdesert": case "umcdesertdeliveryjob": case "mersaididash": case "deliverytruck": return 3;
                 case "reallife:vehicletype_haldencarrier": return 3;
                 case "honzamimic": case "vordtiaravic": case "bima320": case "mersaidis500": case "missamvillian": case "petrollsfanton": case "vordv150": return 5;
-                case "reallife:vehicletype_haldenpip": case "reallife:vehicletype_haldenmarlow": case "reallife:vehicletype_haldenmarlowestate": case "reallife:vehicletype_haldendrover": case "reallife:vehicletype_haldentarn": return 5;
+                case "reallife:vehicletype_haldenpip": case "reallife:vehicletype_haldenmarlow": case "reallife:vehicletype_haldenmarlowestate":
+                case "reallife:vehicletype_haldendrover": case "reallife:vehicletype_haldentarn": return 5;
                 case "umcnunavut": return 7;
                 case "ferdinand112": case "mersaidimgagt": case "anselmoaf90": case "freighttruckt1": return 2;
                 default: return 0;

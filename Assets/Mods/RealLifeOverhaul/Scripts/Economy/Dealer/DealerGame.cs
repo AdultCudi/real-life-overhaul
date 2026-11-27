@@ -108,8 +108,9 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The cars a showroom deals in (the game's cars, vans and off-roaders with a price) and the game's colours. Other mods'
-        /// vehicles are left out: the game spawns them again without their shaders. Made once a city.
+        /// The cars a showroom deals in (the game's cars, vans and off-roaders with a price, and the mod's own cars while they are
+        /// sold) and the game's colours. Other mods' vehicles are left out: the game spawns them again without their shaders. The
+        /// mod's own are made on a game car's prefab with the game's shader, so they come back whole. Made once a city.
         /// </summary>
         public static void Models(List<MarketModel> into, List<string> colours)
         {
@@ -120,7 +121,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; i < names.Count; i++)
             {
                 VehicleType t = VehicleTypeHelper.GetVehicleType(names[i]);
-                if (t == null || t.price < 1000f || !t.IsMotorVehicle || t.spawnInPlayerObject || t.usePedestrianCam || VehicleTypeHelper.IsModVehicleType(names[i])
+                if (t == null || t.price < 1000f || !t.IsMotorVehicle || t.spawnInPlayerObject || t.usePedestrianCam
+                    || (VehicleTypeHelper.IsModVehicleType(names[i]) && !ModCars.Stocked(names[i]))
                     || names[i].IndexOf("deliveryjob", StringComparison.Ordinal) >= 0)
                 {
                     continue;
@@ -175,7 +177,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>True when the game has this model: a listing of a car it does not have (a car mod taken out, a changed game) is refused before any money moves.</summary>
         public static bool Knows(string type)
         {
-            return !string.IsNullOrEmpty(type) && VehicleTypeHelper.GetVehicleType(type) != null;
+            // a car of the mod's own is not to be had while its sale is off or in a Going Public session: no new one is made under its name then
+            return !string.IsNullOrEmpty(type) && VehicleTypeHelper.GetVehicleType(type) != null && (!ModCarCatalogue.IsOurs(type) || ModCars.Stocked(type));
         }
 
         /// <summary>What a showroom's hour has to go on, read from the game: open, customer count, promotion, satisfaction and staff on shift.</summary>

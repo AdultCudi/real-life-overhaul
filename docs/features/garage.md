@@ -339,9 +339,11 @@ A car made for the mod is a vehicle type of its own, registered through the game
 
 Option `garage_mod_cars` (on): off, none is sold; the types stay registered, so a car already owned stays what it is.
 
+The player's Car Showroom deals in them too: while the sale is on and outside a Going Public session they are in the list its market draws from (the wholesaler's new cars, owners' offers, the auction, the rivals), at their list price like any game car (`ModCars.Stocked`, `DealerGame.Models`). With the sale off or in a session no new one is listed or made, and a listing of one is refused before any money moves. A car of the mod's on a lot that stands as the game car it is saved as (a session, a load in the driving seat) is still the car paid for (`ModCarCatalogue.StandsAs`, read by `CarStandRules.Verdict`).
+
 With "Developer diagnostics" on: `Cars check (load, ...)` at each load (how many cars the save names, turned back, left), `Cars check (prefab)` for each model made (triangles, wheels, track and wheelbase, whether the collision shape was found).
 
-Offline: `EconomyCheck --mod-cars` (figures inside the game's ranges, no must-buy, the exported model against the code's measures, every asset the code asks for by name in what ships, the size a car adds, the save's line and its round trip, the quiet failure).
+Offline: `EconomyCheck --mod-cars` (figures inside the game's ranges, no must-buy, the exported model against the code's measures, every asset the code asks for by name in what ships, the size a car adds, the save's line and its round trip, the quiet failure, the showroom's list and its verdict on a car standing as its game car).
 
 Not verified in the game: everything that needs the car on the road (see the test list of its release).
 
