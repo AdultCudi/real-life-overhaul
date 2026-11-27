@@ -331,13 +331,42 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- a product of the player's on sale
 
         /// <summary>
+        /// The companies a firm's withdrawn licences of a market sold to, still counted as served for a new licence of the same market: a licence is bought once and kept
+        /// for its upkeep, so a firm that withdraws one and launches another does not find its buyers again. They fade over the game's year after the withdrawal (a licence's
+        /// term), a withdrawal of before the day was kept counts for none. COST: a pass over the firm's products, once a day for each licence on sale.
+        /// </summary>
+        public static long Former(FirmsFile f, Product p, int day, int yearDays)
+        {
+            if (f == null || p == null || p.K != ProductKind.Licence)
+            {
+                return 0L;
+            }
+            int year = Math.Max(1, yearDays);
+            long served = 0;
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                Product o = f.Products[i];
+                if (ReferenceEquals(o, p) || o.Place != p.Place || o.K != ProductKind.Licence || o.Stage < 2 || o.Ended <= 0 || MarketOf(o) != MarketOf(p))
+                {
+                    continue;
+                }
+                int age = Math.Max(0, day - o.Ended);
+                if (age < year)
+                {
+                    served += Math.Max(0L, o.Users) * (year - age) / year;
+                }
+            }
+            return served;
+        }
+
+        /// <summary>
         /// A day on sale in a shared market (the place of FirmsRules.Sell under Living population): the product's customers
         /// move towards its share of the market's buyers (people faster, companies slower, sellers speeding businesses and
         /// companies), a licence's deals close at its pace while it is under its share, and those past their share drift to
         /// the products that took it; churn, takings, hosting and the risks (an outage, a breach) by the firms' own rules.
         /// The share is the only cap: no product has a market of its own.
         /// </summary>
-        public static ProductDay SellDay(FirmsFile f, Firm firm, Product p, in Crew c, int support, int day, SectorMarketDay m, int appeal, int awareness, int hostingRate)
+        public static ProductDay SellDay(FirmsFile f, Firm firm, Product p, in Crew c, int support, int day, SectorMarketDay m, int appeal, int awareness, int hostingRate, long former = 0)
         {
             var r = new ProductDay();
             int seg = Clamp(p.Segment, 0, 2), who = Clamp(m.Who, 0, (int)SectorBuyers.Count - 1);
@@ -347,7 +376,7 @@ namespace RealLifeOverhaul.Tech
             r.Marketing = FirmsCatalogue.MarketingDay[Clamp(p.Marketing, 0, FirmsCatalogue.MarketingDay.Length - 1)];
             if (p.K == ProductKind.Licence)
             {
-                long open = Math.Max(0L, target - p.Users);
+                long open = Math.Max(0L, target - p.Users - Math.Max(0L, former));   // the companies a withdrawn licence of the firm's already sold to are not buyers again
                 p.Carry = open > 0 ? p.Carry + LicenceRate(appeal, m.Spend, c.Selling) : Math.Min(p.Carry, 999999L);   // nothing is banked while its share is full
                 long deals = Math.Min(open, p.Carry / 1000000);
                 p.Carry -= deals * 1000000;

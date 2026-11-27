@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Ui
                 BoardPack p = _d.PackOf(c, firm, _d.Today);
                 card.Say(AccountLine(p));
                 card.Say(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
-                if (c.Acc.Taken > 0)
+                if (StartupMoney.OwedBack(c))
                 {
                     card.Say(TechText.T("reallife_vc_cap_taken", "taken", Cents(p.Taken)), UiRole.WarnText);
                 }
@@ -53,7 +53,8 @@ namespace RealLifeOverhaul.Ui
                 var books = new TechCard(_runs, TechText.T("reallife_ui_tech_books"));
                 books.Say(AccountLine(p));
                 books.Row(TechText.T("reallife_ui_tech_books_wallet"), Cents(p.Wallet));
-                if (c.Acc.Taken > 0)
+                books.Say(TechText.T("reallife_vc_acct_counts"));
+                if (StartupMoney.OwedBack(c))
                 {
                     MisuseLine last = c.Acc.Misuse.Count > 0 ? c.Acc.Misuse[c.Acc.Misuse.Count - 1] : null;
                     books.Say(TechText.Fill("reallife_vc_acct_taken", "taken", Cents(p.Taken), "what", last != null ? TechDirector.Describe(last.Key, last.Name) : "-",
@@ -98,7 +99,7 @@ namespace RealLifeOverhaul.Ui
                     _m.Right = new[] { out1.Build() };
                     return;
                 }
-                if (c.Acc.Taken > 0)
+                if (StartupMoney.OwedBack(c))
                 {
                     out1.Button(TechText.T("reallife_vc_button_repay"), UiButtonKind.Primary, UiAction.Count, Do(() => _d.Repay(place)));
                 }
@@ -132,7 +133,7 @@ namespace RealLifeOverhaul.Ui
                     TechRun Pick(int i) => Go(v => _siblingStep = i);
                     TechRun Tier(int i) => Go(v => _tierStep = i);
                     out1.Step(TechText.T("reallife_ui_tech_books_from"), TalentGame.NameOf(work[_siblingStep]), null, n > 1, n > 1, Pick((_siblingStep + n - 1) % n), Pick((_siblingStep + 1) % n));
-                    long price = fair * (_tierStep == 0 ? 1000 : _tierStep == 1 ? 1500 : 2000) / 1000;
+                    long price = StartupMoney.TierPrice(fair, _tierStep);
                     out1.Step(TechText.T("reallife_ui_tech_books_price"), TechText.T(VentureCatalogue.TierKeys[_tierStep], "price", Cents(price)),
                         null, true, true, Tier((_tierStep + 2) % 3), Tier((_tierStep + 1) % 3));
                     int business = _siblingStep, tier = _tierStep;

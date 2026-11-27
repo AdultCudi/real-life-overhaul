@@ -12,6 +12,9 @@ namespace RealLifeOverhaul.Tech
         /// before it. Fewer, and the page says the firm is new.</summary>
         public const int ChangeFromDays = 60;
 
+        /// <summary>The days the third month of a firm's takings (the one before the month before) must have gathered before a growth is read over three months.</summary>
+        public const int ThirdFromDays = 30;
+
         /// <summary>The days of takings a month holds.</summary>
         public const int MonthDays = 30;
 
@@ -68,9 +71,12 @@ namespace RealLifeOverhaul.Tech
         /// the 30 after them are the month before exactly), then loses a thirtieth of itself a day as it takes the next, so it stays about a month's worth. One number a firm, never a
         /// second ring.
         /// </summary>
-        public static void Age(ref long before, ref int beforeDays, long leaving)
+        public static void Age(ref long before, ref int beforeDays, long leaving) => Age(ref before, ref beforeDays, leaving, ChangeFromDays);
+
+        /// <summary>As above with the days the number gathers for before it starts to lose a thirtieth of itself: <paramref name="fill"/>.</summary>
+        public static void Age(ref long before, ref int beforeDays, long leaving, int fill)
         {
-            if (beforeDays < ChangeFromDays)
+            if (beforeDays < fill)
             {
                 before += leaving;
                 beforeDays++;

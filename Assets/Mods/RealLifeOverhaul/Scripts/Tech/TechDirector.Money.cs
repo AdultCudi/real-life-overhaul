@@ -37,7 +37,8 @@ namespace RealLifeOverhaul.Tech
         private Action<string> _onMoney, _moneySeen;
         private double _wallet;
         private long _floorNow;      // what the wallet must keep for the firms' investors, at today's prices
-        private int _scanDay = -1, _scans;
+        private int _scanDay = -1, _scans, _spentScans;
+        private bool _funded;        // some firm of the player's has a firm account open: a purchase at its address lowers it whatever the wallet holds
         private readonly List<Cap> _winding = new List<Cap>(2);
 
         private long Base(long cents) => cents * 1000 / Math.Max(1, Prices.Level);
@@ -48,12 +49,17 @@ namespace RealLifeOverhaul.Tech
             EventHold.Keep(ref GameEvent.onGameEventTriggered, _onMoney, ref _moneySeen);
             _wallet = Save.Money;
             _scanDay = -1;
-            int opened = 0;
+            int opened = 0, mended = 0;
             for (int i = 0; i < _venture.Caps.Count; i++)
             {
                 opened += StartupMoney.OpenOld(_venture.Caps[i], Save.Day, Year) ? 1 : 0;
+                mended += StartupMoney.Settle(_venture.Caps[i]) ? 1 : 0;
             }
             RefreshFloor(Save.Day);
+            if (mended > 0)
+            {
+                Logger?.Info("Tech: " + mended + " firm(s) of the player's had a board matter standing with nothing counted as taken: cleared, so the bankers and the board's votes are open.");
+            }
             TechBridges.BoardSessionsNow(true);
             if (opened > 0)
             {
@@ -66,6 +72,7 @@ namespace RealLifeOverhaul.Tech
             GameEvent.onGameEventTriggered -= _onMoney;
             _moneySeen = null;
             _floorNow = 0;
+            _funded = false;
             TechBridges.BoardSessionsNow(false);
         }
 
@@ -81,6 +88,11 @@ namespace RealLifeOverhaul.Tech
         private void RefreshFloor(int day)
         {
             _floorNow = Level(StartupMoney.FloorOf(_venture.Caps, day));
+            _funded = false;
+            for (int i = 0; i < _venture.Caps.Count && !_funded; i++)
+            {
+                _funded = StartupMoney.Has(_venture.Caps[i]);
+            }
             RefreshProvision();
         }
 
@@ -101,21 +113,24 @@ namespace RealLifeOverhaul.Tech
             {
                 WatchProvision(save, (long)((was - now) * 100.0));
             }
-            if (_floorNow <= 0 || now >= was)
+            if (!_funded || now >= was)
             {
                 return;
             }
             long wallet = (long)(Math.Max(0.0, now) * 100.0), drop = (long)((was - now) * 100.0);
-            if (wallet >= _floorNow || drop < Level(MoneyCatalogue.NoiseCents))
+            if (drop < Level(MoneyCatalogue.NoiseCents))
             {
                 return;
             }
+            bool under = wallet < _floorNow;
             if (save.Day != _scanDay)
             {
                 _scanDay = save.Day;
                 _scans = 0;
+                _spentScans = 0;
             }
-            if (++_scans > MoneyCatalogue.ScansPerDay)
+            // Above the floor only the firm's own purchases matter, so they have a budget of their own and never starve the floor's.
+            if (under ? ++_scans > MoneyCatalogue.ScansPerDay : ++_spentScans > MoneyCatalogue.ScansPerDay)
             {
                 return;
             }
@@ -132,6 +147,10 @@ namespace RealLifeOverhaul.Tech
                     StartupMoney.Spent(own, Base(drop));   // spent on the firm itself: it lowers the account, and with it the floor
                     RefreshFloor(save.Day);
                 }
+                return;
+            }
+            if (!under)
+            {
                 return;
             }
             // The measure is the gap itself: wallet under floor, however it came about. Rent, wages and loan payments elsewhere count too,
@@ -364,6 +383,7 @@ namespace RealLifeOverhaul.Tech
                 StartupMoney.Profit(c, Base(sum), day);
             }
             StartupMoney.LoanLapsed(c, day);
+            StartupMoney.Settle(c);
             int accounting = TechBridges.SkillNow(TalentCatalogue.Accounting), leadership = TechBridges.SkillNow(TalentCatalogue.Leadership);
             bool packDay = StartupMoney.PackDue(c, day);
             if (packDay)
@@ -634,7 +654,7 @@ namespace RealLifeOverhaul.Tech
         internal bool Repay(string place)
         {
             Cap c = CapFor(place, false);
-            if (c == null || !StartupMoney.Has(c) || Save == null || c.Acc.Taken <= 0)
+            if (c == null || !StartupMoney.OwedBack(c) || Save == null)
             {
                 return false;
             }
@@ -780,7 +800,7 @@ namespace RealLifeOverhaul.Tech
             }
             BuildingRegistration other = others[business];
             string name = TalentGame.NameOf(other);
-            long fair = StartupMoney.Fair(c), paid = fair * (tier <= 0 ? 1000 : tier == 1 ? 1500 : 2000) / 1000;
+            long fair = StartupMoney.Fair(c), paid = StartupMoney.TierPrice(fair, tier);
             int allowed = StartupMoney.RelatedCheck(c, name, paid, Save.Day);
             if (allowed == StartupMoney.RelatedSoon || allowed == StartupMoney.RelatedNo)
             {

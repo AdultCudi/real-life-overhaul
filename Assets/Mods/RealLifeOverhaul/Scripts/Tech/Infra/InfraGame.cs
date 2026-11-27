@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Tech
         public const string WriteDownKey = "reallife_transaction_tech_write_down";
         public const string UpkeepKey = "reallife_transaction_tech_upkeep";          // at the end game's scale: racks' support and the building's upkeep and insurance
         public const string CrewsKey = "reallife_transaction_tech_crew_wages";       // ...the data centres' crews and the cloud's operations people
+        public const string SaleKey = "reallife_transaction_tech_investment_racks_sale";   // a closed centre's racks sold back
+        public const string EndedKey = "reallife_transaction_tech_colo_ended";   // clients paid for their terms ended early when a centre closes
         private const string WriteDownDeduct = "reallife_tech_write_down_deduct";
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -60,6 +62,22 @@ namespace RealLifeOverhaul.Tech
         }
 
         public static string District(BuildingRegistration reg) => GameRegistrations.District(reg) ?? string.Empty;
+
+        /// <summary>
+        /// What the game pays back of an item's worth when a lease ends and its furniture is sold (ItemHelper.sellingMultiplier, set by the save's difficulty), thousandths, 0 to 1000.
+        /// 0 when the game cannot say, so nothing is paid back that the game would not.
+        /// </summary>
+        public static int SellingMillis()
+        {
+            try
+            {
+                return Mathf.Clamp(Mathf.RoundToInt(ItemHelper.sellingMultiplier * 1000f), 0, 1000);
+            }
+            catch (System.Exception)
+            {
+                return 0;
+            }
+        }
 
         /// <summary>A charge the player chose (racks, fitting out, a licence), cents: refused if the cash does not cover it.</summary>
         public static bool Pay(long cents, string key, BuildingRegistration at, string name, bool deductible)

@@ -341,7 +341,7 @@ namespace RealLifeOverhaul.Ui
             {
                 // The wage as it is paid, in the words the offer's own form uses; an open offer's answer carries it instead.
                 float paid = WageShown.PaidMoney(employee);
-                details.Add(new UiPairModel { Key = ContactsRules.Label(UiText.T("dialog_candidate_salary_offer_input_hourly_wage")), Value = UiText.Money(paid) });
+                details.Add(new UiPairModel { Key = ContactsRules.Label(UiText.T("dialog_candidate_salary_offer_input_hourly_wage")), Value = UiText.Wage(paid) });
             }
             _m.DetailsTitle = UiText.T("reallife_ui_contacts_details");
             _m.Details = details.ToArray();
@@ -584,7 +584,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     return null;
                 }
-                string terms = ContactsRules.Plain(LocalizorManager.GetLocalization("dialog_candidate_salary_offer_hourly_wage", (object)new { price = UiText.Money(n.hourlyWage) }));
+                string terms = ContactsRules.Plain(LocalizorManager.GetLocalization("dialog_candidate_salary_offer_hourly_wage", (object)new { price = UiText.Wage(n.hourlyWage) }));
                 open = !n.completed;
                 return n.completed ? terms + " \u00b7 " + UiText.T(n.accepted ? "common_accepted" : "common_declined") : terms;
             }
@@ -1002,7 +1002,7 @@ namespace RealLifeOverhaul.Ui
         private static string Figure(TMP_InputField input)
         {
             string text = input != null ? input.text : string.Empty;
-            return float.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out float v) ? UiText.Money(v) : text;
+            return float.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out float v) ? UiText.Wage(v) : text;
         }
 
         private static TextMessage Last(Contact c)

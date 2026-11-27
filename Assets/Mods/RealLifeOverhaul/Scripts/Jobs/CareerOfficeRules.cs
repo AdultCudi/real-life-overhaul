@@ -177,10 +177,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Gives the boards from <paramref name="from"/> on, put up after the employers were given theirs, to employers left with none: each
-        /// takes the one at its kind of building (the first of its premises that matches), and an employer that has premises at all takes
-        /// any other one nobody has. Whoever has an office keeps it, so nothing the player has seen moves; an employer with no premises
-        /// (the building trades) never takes a board. <paramref name="depot"/> is each employer's board, or -1.
+        /// Gives the boards from <paramref name="from"/> on, put up after the employers were given theirs, to employers that need one: each
+        /// takes the one at its kind of building (the first of its premises that matches), then any other nobody has. An employer needs one
+        /// with no office, or with a <see cref="Leftover"/> (its own kind had no board then): that goes to its own kind's board once it is up.
+        /// An office at the employer's own kind never moves; the building trades (no premises) take none. <paramref name="depot"/> is each employer's board, or -1.
         /// </summary>
         public static void Extend(string[][] premises, string[] kinds, int from, int[] depot)
         {
@@ -195,12 +195,16 @@ namespace RealLifeOverhaul
             }
             for (int e = 0; e < depot.Length; e++)
             {
-                for (int p = 0; p < premises[e].Length && depot[e] < 0; p++)
+                for (int p = 0; p < premises[e].Length && (depot[e] < 0 || Leftover(premises[e], kinds, depot[e])); p++)
                 {
                     for (int b = from; b < count; b++)
                     {
-                        if (!taken[b] && kinds[b] != null && kinds[b].IndexOf(premises[e][p], System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (!taken[b] && BoardHomeRules.Matches(kinds[b], premises[e][p]))
                         {
+                            if (depot[e] >= 0 && depot[e] < count)
+                            {
+                                taken[depot[e]] = false;
+                            }
                             depot[e] = b;
                             taken[b] = true;
                             break;
@@ -219,6 +223,12 @@ namespace RealLifeOverhaul
                     }
                 }
             }
+        }
+
+        /// <summary>True when an employer's board is a kind of none of its premises: the one left over when its own kind had no board.</summary>
+        public static bool Leftover(string[] premises, string[] kinds, int board)
+        {
+            return board >= 0 && board < kinds.Length && premises.Length > 0 && !BoardHomeRules.MatchesAny(kinds[board], premises);
         }
     }
 }

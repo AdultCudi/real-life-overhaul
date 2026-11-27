@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Tech
         public int Idle;                 // FirmsRules.Why now (Idle)
         public string IdleWords;         // ...in words
         public bool Desks = true;        // desk sessions run
+        public string Address = string.Empty;   // where the office stands, in words; empty when the game's list does not have it
         public string Manager;           // its manager's name, or null
         public readonly List<SectorDue> Due = new List<SectorDue>(4);
     }
@@ -103,6 +104,11 @@ namespace RealLifeOverhaul.Tech
             if (s.Due.Count > 0)
             {
                 Desk(v.Section(P + "sec_desk"), s, fmt);
+            }
+            // The way to the desk is always on the page while sessions are held here, not only when it is the next step: a firm with a hire or a product first never offered it.
+            if (s.Due.Count > 0 && s.Desks && (primary == null || primary.Act != SectorAct.Desk))
+            {
+                v.Others.Add(new ViewAction { Key = P + "button_desk", Act = SectorAct.Desk });
             }
             ViewSection limits = v.Section(P + "sec_limits");
             if (makes)
@@ -257,6 +263,10 @@ namespace RealLifeOverhaul.Tech
         // The firm's desk sessions: due or when, who takes them, or why not now.
         private static void Desk(ViewSection sec, SectorPlace s, IStudioFormat fmt)
         {
+            if (s.Desks)
+            {
+                Line(sec, string.IsNullOrEmpty(s.Address) ? P + "desk_where_plain" : P + "desk_where", ViewTone.Plain, "firm", s.Name, "address", s.Address ?? string.Empty);
+            }
             for (int i = 0; i < s.Due.Count; i++)
             {
                 SectorDue d = s.Due[i];
@@ -288,6 +298,30 @@ namespace RealLifeOverhaul.Tech
         }
 
         // ---------------------------------------------------------------- a product's market
+
+        /// <summary>
+        /// Where a firm's engineers' day went, for a product that gains no feature to say why: its own points, the client contracts' and its other products' of the firm's
+        /// <paramref name="total"/>, or (a warning) that no engineer worked, since only engineering, data, security and infrastructure roles build a product.
+        /// </summary>
+        public static ViewLine Points(int put, int total, int contracts, IStudioFormat fmt)
+        {
+            if (total <= 0)
+            {
+                return new ViewLine { Key = P + "product_points_none", Tone = ViewTone.Warn };
+            }
+            int took = Math.Max(0, contracts), mine = Math.Max(0, put);
+            return new ViewLine
+            {
+                Key = P + "product_points", Tone = mine <= 0 ? ViewTone.Warn : ViewTone.Plain,
+                Pairs = new[] { "put", fmt.Whole(mine), "total", fmt.Whole(total), "contracts", fmt.Whole(took), "others", fmt.Whole(Math.Max(0, total - took - mine)) }
+            };
+        }
+
+        /// <summary>The companies a firm's withdrawn licences already sold to, still counted as served for a new licence (<see cref="SectorRules.Former"/>).</summary>
+        public static ViewLine Former(long count, IStudioFormat fmt)
+        {
+            return new ViewLine { Key = P + "product_former", Tone = ViewTone.Plain, Pairs = new[] { "count", fmt.Whole(count) } };
+        }
 
         /// <summary>
         /// A product's market as a section of its page: who buys and how many, the share it holds and the share its pull earns it (where its customers are heading),

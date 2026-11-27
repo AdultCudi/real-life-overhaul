@@ -324,8 +324,8 @@ internal static partial class Program
         var exit = new FirmExit();
         Check(!ExitRules.ListReady(ExitRules.ListMonth(0, FirmsRules.Steady(launch)), exit) && ExitRules.ListReady(ExitRules.ListMonth(0, launch.Revenue30), exit),
             "stock extras fix: so one good month no longer opens the way to the market (the gate on the old month was open)");
-        long oneMonth = FirmsRules.Value(launch, 0, 0), steady = FirmsRules.Value(launch, 0, 0, FirmsRules.Steady(launch));
-        Check(steady * 4 < oneMonth && steady == FirmsRules.Steady(launch) * 3,
+        long oneMonth = FirmsRules.Value(launch, 0, 0, launch.Revenue30), steady = FirmsRules.Value(launch, 0, 0, FirmsRules.Steady(launch));   // the month priced on its own, as the value once was
+        Check(steady * 4 < oneMonth && steady == FirmsRules.Steady(launch) * 3 && FirmsRules.Value(launch, 0, 0) == steady,
             "stock extras fix: nor is the firm priced at three times that month (" + oneMonth + " on the month, " + steady + " on the steady one)");
         var sound = new Firm();
         for (int day = 1; day <= 200; day++)

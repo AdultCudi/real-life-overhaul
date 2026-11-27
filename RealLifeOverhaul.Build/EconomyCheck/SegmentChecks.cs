@@ -159,8 +159,12 @@ internal static partial class Program
         var records = new List<string>(2);
         foreach (string record in (stop < 0 ? text.Substring(part + 3) : text.Substring(part + 3, stop - part - 3)).Split(';'))
         {
-            int cut = record.LastIndexOf('|');
-            records.Add(record.Substring(0, record.LastIndexOf('|', cut - 1)));   // without the last two figures: the move's day and its work
+            string kept = record;
+            for (int k = 0; k < 3; k++)
+            {
+                kept = kept.Substring(0, kept.LastIndexOf('|'));   // without the last three figures: the move's day, its work and the day it was withdrawn
+            }
+            records.Add(kept);
         }
         FirmsFile older = FirmsStore.Read(text.Substring(0, part + 3) + string.Join(";", records) + (stop < 0 ? string.Empty : text.Substring(stop)), out _);
         Product oldGot = older != null && older.Products.Count == 1 ? older.Products[0] : null;

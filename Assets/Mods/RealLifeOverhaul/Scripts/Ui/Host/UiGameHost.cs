@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Ui
     /// just above the screen it covers, below the game's boxes, notices and other mods' canvases. Cost: nothing while the
     /// screen is closed; while it shows, the host's input reads and one box test a frame.
     /// </summary>
-    public sealed class UiGameHost
+    public sealed partial class UiGameHost
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiGameHost", typeof(UiGameHost));
         private static readonly List<UiGameHost> Hosts = new List<UiGameHost>(8);

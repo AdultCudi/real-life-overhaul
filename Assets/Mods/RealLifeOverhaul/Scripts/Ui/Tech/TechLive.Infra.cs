@@ -382,6 +382,21 @@ namespace RealLifeOverhaul.Ui
                 }
                 card.Button(TechText.T("reallife_infra_button_hire"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.OpenRoles(TechDirector.TabJobs, null)));
                 card.Button(TechText.T("reallife_crew_button_brief"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.BriefCrew(place)));
+                card.Button(TechText.T("reallife_infra_button_close"), UiButtonKind.Destructive, UiAction.Count, () =>
+                {
+                    if (_d.CloseAsk(place, out string closeTitle, out string closeBody))
+                    {
+                        GameConfirm.Show(closeTitle, closeBody, () => UiClone.Safe(() =>
+                        {
+                            if (_d.CloseCentre(place))
+                            {
+                                _v.Pick = null;
+                            }
+                            _live.Touch();
+                        }), null, null, null, true, true);
+                    }
+                    return true;
+                });
                 return new[] { card.Build() };
             }
 

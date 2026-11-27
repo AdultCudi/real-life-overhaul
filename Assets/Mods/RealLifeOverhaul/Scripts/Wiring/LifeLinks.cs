@@ -23,6 +23,8 @@ namespace RealLifeOverhaul
             {
                 SocialLinks.Law = new RecordForFriends();
                 SocialLinks.Wellbeing = new HomeForFriends();
+                SocialLinks.SightCount = SightCount;
+                SocialLinks.NearSight = NearSight;
                 CareerLinks.Law = new RecordForEmployers();
                 CareerLinks.Health = new SickNote();
                 Justice.Bridges.Social = new FriendsForCourt();
@@ -46,6 +48,8 @@ namespace RealLifeOverhaul
             {
                 SocialLinks.Law = null;
                 SocialLinks.Wellbeing = null;
+                SocialLinks.SightCount = null;
+                SocialLinks.NearSight = null;
                 CareerLinks.Law = null;
                 CareerLinks.Health = null;
                 Justice.Bridges.Social = null;
@@ -59,6 +63,41 @@ namespace RealLifeOverhaul
                 LifeAccounts.Home = null;
                 LineNeeds.Read = null;
                 Events.Weather.Wardrobe = null;
+            }
+
+            // Leisure's list of sights, found once behind the loading screen: a walk is set near one when it can be.
+            private static int SightCount()
+            {
+                try
+                {
+                    return Settings.Leisure ? Leisure.LeisureVenues.Landmarks.Count : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("LifeLinks.SightCount", e);
+                    return 0;
+                }
+            }
+
+            private static bool NearSight(UnityEngine.Vector3 at)
+            {
+                try
+                {
+                    var sights = Leisure.LeisureVenues.Landmarks;
+                    for (int i = 0; i < sights.Count; i++)
+                    {
+                        Leisure.Landmark sight = sights[i];
+                        if (SocialDateRules.PleasantSight(sight.Id) && SocialDateRules.NearSight(sight.Position.x - at.x, sight.Position.z - at.z, sight.Radius))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("LifeLinks.NearSight", e);
+                }
+                return false;
             }
 
             private static readonly Events.IWardrobe PlayerWardrobe = new WornForWeather();

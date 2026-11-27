@@ -10,17 +10,20 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Help-wanted boards beside the door of the first building of each kind of special service, the same places in every game;
-    /// at one, the interact key opens the Gig Line's list. Looked for once a city load, a few buildings a second; a kind whose buildings all
-    /// failed their asks (a car parked at the door, the pavement full of people, the street not streamed in yet) is asked again every
+    /// Help-wanted boards beside the door of the first building of each kind of special service (the kinds being each employer's own, see
+    /// <see cref="BoardHomeRules.Kinds"/>), the same places in every game; at one, the interact key opens the Gig Line's list. Looked for once
+    /// a city load, a few buildings a second, the boards put up when the whole list has been seen. A kind whose buildings all failed their
+    /// asks (a car parked at the door, the pavement full of people, the street not streamed in yet) is asked again every
     /// <see cref="RetryEvery"/> seconds while the player is within <see cref="RetryReach"/> of one of its buildings, a board at a time.
+    /// A board that was put up at a spare building because the first of its kind failed its asks is only there for a while: it is asked at the
+    /// better buildings again every <see cref="RetryEvery"/> seconds and taken down and put up at the first that takes it, out of the player's sight.
     /// </summary>
     public sealed class JobBoards
     {
         private const int Most = 6;              // boards at most
         private const int Spares = 6;            // buildings kept per kind, to fall back on when the first can never take a board
         private const int Tries = 3;             // asks of one building (a second apart) before the next of its kind is used
-        private const int PerTick = 30;          // buildings looked at a second while searching
+        private const int PerTick = 150;         // buildings looked at a second while searching (a null check for most)
         private const float RetryEvery = 10f;    // seconds between two asks for a board no building of its kind could take
         private const float RetryReach = 120f;   // metres from the player a building is asked again: its street is in play, its parked cars and people real
         private const float FromWall = 0.30f;    // metres from the wall the board's middle stands
@@ -41,7 +44,14 @@ namespace RealLifeOverhaul
         private readonly List<string> _places = new List<string>(Most);        // the name of the shop or service each board stands outside
         private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);   // the building each board stands at
         private readonly Dictionary<string, List<CityBuildingController>> _candidates = new Dictionary<string, List<CityBuildingController>>();   // a kind's buildings, in the city's list order
-        private readonly List<string> _order = new List<string>();   // the kinds in the order the city's list first shows them: the order the boards are put up in
+        private readonly List<string> _seen = new List<string>();    // the kinds in the order the city's list first shows them
+        private readonly List<string> _order = new List<string>();   // the kinds a board is put up for, each employer's own first (BoardHomeRules.Kinds): the order the boards are put up in
+        private readonly List<int> _rank = new List<int>(Most);       // which of its kind's buildings each board stands at: 0 is the first, its home
+        private readonly List<int> _farFails = new List<int>(Most);   // asks of a better building the player was far from that failed, for each board
+        private readonly List<string> _chosen = new List<string>(Most);
+        private float _mendAt;               // when the next spare board is asked at a better building (unscaled seconds)
+        private int _mendCursor;             // which board is looked at next
+        private bool _ordered;
         private readonly List<string> _late = new List<string>(Most);   // kinds every building of which failed its asks: no board yet, asked again near the player
         private float _retryAt;              // when the next of those is asked (unscaled seconds)
         private int _lateCursor;             // which building of them is asked next, so the first one near is not asked every time
@@ -61,6 +71,12 @@ namespace RealLifeOverhaul
         public bool InReach { get; private set; }
 
         public int Count => _boards.Count;
+
+        /// <summary>How many times a board was taken down and put up at its home again.</summary>
+        public int Moves { get; private set; }
+
+        /// <summary>Changes whenever a board is put up or moves: what the city map and the offices list wait on to be drawn again.</summary>
+        public int Stamp => 1 + _boards.Count + 64 * Moves;
 
         /// <summary>True once every building has been looked at: no more boards will be put up.</summary>
         public bool Searched => _searched || _failed;
@@ -116,9 +132,13 @@ namespace RealLifeOverhaul
                 {
                     Search();
                 }
-                else if (_late.Count > 0 && _boards.Count < Most)
+                else
                 {
-                    Retry(player);
+                    if (_late.Count > 0 && _boards.Count < Most)
+                    {
+                        Retry(player);
+                    }
+                    Mend(player);
                 }
                 bool near = false;
                 Near = -1;
@@ -162,7 +182,10 @@ namespace RealLifeOverhaul
             _buildings.Clear();
             _outward.Clear();
             _candidates.Clear();
+            _seen.Clear();
             _order.Clear();
+            _rank.Clear();
+            _farFails.Clear();
             _late.Clear();
             InReach = false;
             Near = -1;
@@ -206,31 +229,42 @@ namespace RealLifeOverhaul
                 {
                     list = new List<CityBuildingController>(Spares);
                     _candidates[kind] = list;
-                    _order.Add(kind);
+                    _seen.Add(kind);
                 }
                 if (list.Count < Spares)
                 {
                     list.Add(building);
                 }
             }
-            bool scanned = _next >= buildings.Length;
+            if (_next < buildings.Length)
+            {
+                return;   // the kinds an employer wants are chosen from the whole list, so nothing is put up before it has been seen
+            }
+            if (!_ordered)
+            {
+                _ordered = true;
+                Employer[] all = CareerCatalogue.All;
+                var premises = new string[all.Length][];
+                for (int e = 0; e < all.Length; e++)
+                {
+                    premises[e] = all[e].Premises;
+                }
+                BoardHomeRules.Kinds(premises, _seen, Most, _chosen);
+                _order.AddRange(_chosen);
+            }
             while (_head < _order.Count && _boards.Count < Most)
             {
                 string kind = _order[_head];
                 List<CityBuildingController> list = _candidates[kind];
                 if (_spare >= list.Count)
                 {
-                    if (!scanned && list.Count < Spares)
-                    {
-                        break;   // the next of its kind may still be found
-                    }
                     _late.Add(kind);   // every building of this kind failed its asks: it has no board for now, and is asked again near the player (Retry)
                     _head++;
                     _spare = 0;
                     _tries = 0;
                     continue;
                 }
-                if (Place(list[_spare], kind))
+                if (Place(list[_spare], kind, _spare))
                 {
                     _kinds.Add(kind);
                     _head++;
@@ -247,7 +281,7 @@ namespace RealLifeOverhaul
                 }
                 break;
             }
-            if (_boards.Count >= Most || (scanned && _head >= _order.Count))
+            if (_boards.Count >= Most || _head >= _order.Count)
             {
                 _searched = true;
                 _logger?.Info("Jobs: " + _boards.Count + " help-wanted board(s) stand outside service buildings (" + string.Join(", ", _kinds) + ")"
@@ -286,7 +320,7 @@ namespace RealLifeOverhaul
                 }
                 _lateCursor = (_lateCursor + n + 1) % total;
                 string name = _late[kind];
-                if (Place(building, name))
+                if (Place(building, name, at))
                 {
                     _kinds.Add(name);
                     _late.RemoveAt(kind);
@@ -307,9 +341,12 @@ namespace RealLifeOverhaul
             return LocalizorManager.IsLocalizedKey(name) ? name.GetLocalization() : name;
         }
 
-        // Against the wall a step to one side of the door, facing the pavement, where nothing else stands.
-        private bool Place(CityBuildingController building, string kind)
+        // Against the wall a step to one side of the door, facing the pavement, where nothing else stands. False where no side has room now.
+        private bool Find(CityBuildingController building, out Vector3 at, out Vector3 stand, out Vector3 outward)
         {
+            at = default;
+            stand = default;
+            outward = default;
             if (!JobSpots.Front(building, out Vector3 front) || !CitySpots.Along(front, out Vector3 along))
             {
                 return false;
@@ -317,32 +354,114 @@ namespace RealLifeOverhaul
             for (int side = -1; side <= 1; side += 2)
             {
                 // Measured 0.75 m out from the wall with 0.6 m of room, so the board's strip is inside what was found clear.
-                if (!CitySpots.Shopfront(front + along * (side * Aside), FromWall + 0.45f, 0.6f, out Vector3 stand, out Vector3 outward))
+                if (!CitySpots.Shopfront(front + along * (side * Aside), FromWall + 0.45f, 0.6f, out stand, out outward))
                 {
                     continue;
                 }
-                Vector3 at = stand - outward * 0.45f;
+                at = stand - outward * 0.45f;
                 if (!CitySpots.Ground(at, out float ground) || Mathf.Abs(ground - stand.y) > 0.25f || JobSpots.Flat(at, front) < 1.2f)
                 {
                     continue;
                 }
                 at.y = ground;
-                Transform board = _props.Stand(PropId, at, outward);
-                if (board == null)
-                {
-                    return false;
-                }
-                _boards.Add(board);
-                _culls.Add(ModCulling.Add(CullRules.Kind.JobBoard, board, at, CullRadius));
-                _fronts.Add(stand + outward * 0.5f);
-                _kindOf.Add(kind);
-                _names.Add(building.building.Address.ToFormattedString());
-                _places.Add(PlaceName(building.building.SpecialService, kind));
-                _buildings.Add(building);
-                _outward.Add(outward);
                 return true;
             }
             return false;
+        }
+
+        // <paramref name="rank"/> is the building's place in its kind's list: above 0 the board is a spare one, to go back to a better building (Mend).
+        private bool Place(CityBuildingController building, string kind, int rank)
+        {
+            if (!Find(building, out Vector3 at, out Vector3 stand, out Vector3 outward))
+            {
+                return false;
+            }
+            Transform board = _props.Stand(PropId, at, outward);
+            if (board == null)
+            {
+                return false;
+            }
+            _boards.Add(board);
+            _culls.Add(ModCulling.Add(CullRules.Kind.JobBoard, board, at, CullRadius));
+            _fronts.Add(stand + outward * 0.5f);
+            _kindOf.Add(kind);
+            _names.Add(building.building.Address.ToFormattedString());
+            _places.Add(PlaceName(building.building.SpecialService, kind));
+            _buildings.Add(building);
+            _outward.Add(outward);
+            _rank.Add(rank);
+            _farFails.Add(0);
+            return true;
+        }
+
+        // Once a RetryEvery, one board that stands at a spare building: the better buildings of its kind, in the city's list order, are asked
+        // again, since what blocked the first (a parked car, people, a street not yet in play) was never a reason for it to be anywhere else.
+        // A better building is asked from any distance a few times and then only with the player near; the board moves only out of his sight.
+        private void Mend(Vector3 player)
+        {
+            float now = Time.unscaledTime;
+            if (now < _mendAt || _boards.Count == 0)
+            {
+                return;
+            }
+            _mendAt = now + RetryEvery;
+            for (int step = 0; step < _boards.Count; step++)
+            {
+                int board = (_mendCursor + step) % _boards.Count;
+                if (_rank[board] <= 0)
+                {
+                    continue;
+                }
+                _mendCursor = (board + 1) % _boards.Count;
+                List<CityBuildingController> list = _candidates[_kindOf[board]];
+                for (int c = 0; c < _rank[board] && c < list.Count; c++)
+                {
+                    CityBuildingController home = list[c];
+                    if (home == null || !JobSpots.DoorOf(home, out Vector3 door))
+                    {
+                        continue;
+                    }
+                    bool near = JobSpots.Flat(door, player) <= RetryReach;
+                    if (!BoardHomeRules.Mends(_rank[board], _farFails[board], near))
+                    {
+                        continue;
+                    }
+                    if (!Find(home, out Vector3 at, out Vector3 stand, out Vector3 outward))
+                    {
+                        _farFails[board] += near ? 0 : 1;
+                        continue;
+                    }
+                    if (BoardHomeRules.MayMove(JobSpots.Flat(_fronts[board], player), JobSpots.Flat(stand, player)))
+                    {
+                        Move(board, home, c, at, stand, outward);
+                    }
+                    return;   // found a better home: moved now, or when the player is away from both
+                }
+                return;
+            }
+        }
+
+        private void Move(int board, CityBuildingController home, int rank, Vector3 at, Vector3 stand, Vector3 outward)
+        {
+            Transform made = _props.Stand(PropId, at, outward);
+            if (made == null)
+            {
+                return;
+            }
+            string was = _names[board];
+            ModCulling.Remove(_culls[board]);
+            _props.Return(_boards[board]);
+            _boards[board] = made;
+            _culls[board] = ModCulling.Add(CullRules.Kind.JobBoard, made, at, CullRadius);
+            _fronts[board] = stand + outward * 0.5f;
+            _names[board] = home.building.Address.ToFormattedString();
+            _places[board] = PlaceName(home.building.SpecialService, _kindOf[board]);
+            _buildings[board] = home;
+            _outward[board] = outward;
+            _rank[board] = rank;
+            _farFails[board] = 0;
+            Moves++;
+            _logger?.Info("Jobs: the help-wanted board for " + _kindOf[board] + " went back from " + was + " to " + _names[board] + ", the building the city's list gives it first.");
         }
     }
 }

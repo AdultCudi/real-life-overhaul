@@ -38,14 +38,14 @@ namespace RealLifeOverhaul.Tech
                 }
                 w.Record().Place(m.Place).Add(m.Kind).Add(m.Founded).Add(m.Focus).Add(m.Debt).Add(m.Reputation).Add(m.RegisteredUntil).Add(m.Breaches).Add(m.Outages).Add(m.RnD).Add(m.ReliefDay)
                     .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes).Add(m.Prev30).Add(m.PrevDays)
-                    .Add(selfDays.ToString()).Add(m.Self30).Add(m.SelfPrev30).Add(m.Assign);
+                    .Add(selfDays.ToString()).Add(m.Self30).Add(m.SelfPrev30).Add(m.Assign).Add(m.Prev60).Add(m.Prev60Days);
             }
             w.Part('p');
             foreach (Product p in f.Products)
             {
                 w.Record().Add(p.Id).Place(p.Place).Add(p.Name).Add(p.Kind).Add(p.Segment).Add(p.Stage).Add(p.Features).Add(p.Progress).Add(p.Bugs).Add(p.Users).Add(p.Free).Add(p.Tier)
                     .Add(p.Marketing).Add(p.Share).Add(p.Launched).Add(p.Hype).Add(p.Scope).Add(p.Revenue).Add(p.RivalFeatures).Add(p.RivalTier).Add(p.LastRelease)
-                    .Add(p.Carry).Add(p.Compute).Add(p.Train).Add(p.Moving).Add(p.Owe);
+                    .Add(p.Carry).Add(p.Compute).Add(p.Train).Add(p.Moving).Add(p.Owe).Add(p.Ended);
             }
             w.Part('c');
             foreach (Contract c in f.Contracts)
@@ -96,6 +96,8 @@ namespace RealLifeOverhaul.Tech
                 m.Self30 = Math.Max(0, x.Long());
                 m.SelfPrev30 = Math.Max(0, x.Long());
                 m.Assign = x.Bool();   // appended last: a save from before it has no firm assigned by its manager
+                m.Prev60 = Math.Max(0, x.Long());   // the third month, appended last: a save from before it has none, and counts no growth until a month of it has gathered
+                m.Prev60Days = Math.Max(0, Math.Min(TechStatusRules.ThirdFromDays, x.Int()));
                 if (f.Firms.Count < 32)
                 {
                     f.Firms.Add(m);
@@ -110,7 +112,8 @@ namespace RealLifeOverhaul.Tech
                     Stage = x.Int(), Features = x.Int(), Progress = x.Int(), Bugs = x.Int(), Users = x.Long(), Free = x.Long(), Tier = TalentCatalogue.Clamp(x.Int(1), 0, 2), Marketing = x.Int(),
                     Share = x.Int(100), Launched = x.Int(), Hype = x.Int(), Scope = x.Int(), Revenue = x.Long(), RivalFeatures = x.Int(), RivalTier = TalentCatalogue.Clamp(x.Int(1), 0, 2),
                     LastRelease = x.Int(), Carry = x.Long(), Compute = x.Long(), Train = x.Int(2),
-                    Moving = Math.Max(0, x.Int()), Owe = Math.Max(0, x.Int())   // the re-launch's two last: an older record has none
+                    Moving = Math.Max(0, x.Int()), Owe = Math.Max(0, x.Int()),   // the re-launch's two, then the day it was withdrawn: an older record has none
+                    Ended = Math.Max(0, x.Int())
                 };
                 if (f.Products.Count < FirmsCatalogue.ProductsStored * 4)   // every record up to a sane size: the withdrawn are trimmed below, so a live one late in the list is not lost
                 {

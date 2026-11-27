@@ -61,8 +61,41 @@ internal static partial class Program
         return screen;
     }
 
+    // A page's body is laid again at every redraw with the lists the page was built with, so a body that adds to them stacks its buttons: a cadet's My job
+    // showed Hand in notice and Walk out twice after the second draw. Every action of a job's page is drawn once, however often the page is laid.
+    private static void WorkEachActionOnce()
+    {
+        foreach (string state in new[] { "my_job", "my_job_desk", "my_job_police" })
+        {
+            WorkScreen screen = WorkScreenOf("career", WorkEnglish, state);
+            var counts = new Dictionary<string, int>();
+            for (int draw = 1; draw <= 3; draw++)
+            {
+                var scene = new UiScene();
+                screen.Lay(scene, UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
+                counts.Clear();
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    string text = scene.Items[i].Text;
+                    if (text == "Hand in notice" || text == "Walk out" || text == "Ask for a rise" || text == "End your shift" || text == "Start the working day" || text == "Work late")
+                    {
+                        counts[text] = counts.TryGetValue(text, out int n) ? n + 1 : 1;
+                    }
+                }
+                bool once = counts.Count >= 3, doubled = false;
+                foreach (KeyValuePair<string, int> pair in counts)
+                {
+                    doubled |= pair.Value != 1;
+                }
+                Check(once && !doubled, "work my job (" + state + ", draw " + draw + "): every action is drawn once ("
+                    + string.Join(" ", counts) + ")");
+            }
+        }
+    }
+
     private static void WorkUiChecks()
     {
+        WorkEachActionOnce();
         string[] ids = { "career", "campus", "open_roles", "marketplace" };
         var dead = new StringBuilder();
         var numbers = new StringBuilder();

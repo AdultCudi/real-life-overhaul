@@ -753,7 +753,27 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What a firm is worth, cents: a year's recurring revenue by a multiple for growth and debt, plus three months' other takings.</summary>
         public static long Value(Firm firm, long arr, int growthBp)
         {
-            return Value(firm, arr, growthBp, firm.Revenue30);
+            return Value(firm, arr, growthBp, Steady(firm));
+        }
+
+        /// <summary>
+        /// A firm's growth a month, basis points, as a sale or a round may count it: the last month against the one before, and no more than the one before
+        /// against the one before that. A launch, a run of one-off licence deals or one big contract lifts the last month alone, so it moves the second reading
+        /// not at all and a spike buys no growth; steady growth shows in both. A firm without three months behind it has no growth to count, only a fall.
+        /// </summary>
+        public static int Growth(Firm firm)
+        {
+            if (firm == null || !TechStatusRules.Change(firm.Revenue30, firm.Prev30, firm.PrevDays, out int last))
+            {
+                return 0;
+            }
+            int bp = TalentCatalogue.Clamp(last * 100, -5000, 20000);
+            if (firm.Prev60Days >= TechStatusRules.ThirdFromDays && firm.Prev60 > 0)
+            {
+                long before = (firm.Prev30 - firm.Prev60) * 10000 / firm.Prev60;
+                return Math.Min(bp, (int)Math.Max(-5000L, Math.Min(20000L, before)));
+            }
+            return Math.Min(bp, 0);
         }
 
         /// <summary>
@@ -789,8 +809,13 @@ namespace RealLifeOverhaul.Tech
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
             int days = firm.PrevDays;
+            long shed = firm.PrevDays >= TechStatusRules.ChangeFromDays ? firm.Prev30 / TechStatusRules.MonthDays : 0L;   // what the month before loses today, as Age takes it
             TechStatusRules.Age(ref firm.SelfPrev30, ref days, firm.SelfDays[slot]);   // aged by the same days as the takings' month before
             TechStatusRules.Age(ref firm.Prev30, ref firm.PrevDays, firm.Days[slot]);
+            if (days >= TechStatusRules.ChangeFromDays)
+            {
+                TechStatusRules.Age(ref firm.Prev60, ref firm.Prev60Days, shed, TechStatusRules.ThirdFromDays);   // the third month gathers what the second sheds, once it sheds
+            }
             firm.Revenue30 += takings - firm.Days[slot];
             firm.Days[slot] = takings;
             firm.Self30 += Math.Min(takings, Math.Max(0L, self)) - firm.SelfDays[slot];

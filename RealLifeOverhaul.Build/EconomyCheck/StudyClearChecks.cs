@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Tech;
@@ -324,12 +325,8 @@ internal static partial class Program
               && desks.Contains("_mark.Hide()") && desks.Contains("_marks.Clear()") && guard.Contains("_examDesks?.Clear()") && study.Contains("_examDesks?.Clear()"),
             "study clear: an exam desk carries the game's mark, its name and the destination marker, and all are given back when the exam is over, the player leaves or study stops");
         // the figures reach the player: every refusal that names them is returned through its one producer, never as a bare key
-        string all = string.Empty;
-        foreach (string file in new[] { "CareersDirector.cs", "CareersDirector.ClassPlay.cs", "CareersDirector.DeskDay.cs", "CareersDirector.Prompt.cs", "CareersDirector.Coursework.cs",
-                     "CareersDirector.Study.cs", "CareersDirector.Family.cs", "CareersDirector.Degrees.cs", "CareersDirector.Applying.cs" })
-        {
-            all += ModSource(@"Careers\" + file);
-        }
+        string all = string.Concat(new[] { "CareersDirector.cs", "CareersDirector.ClassPlay.cs", "CareersDirector.DeskDay.cs", "CareersDirector.Prompt.cs", "CareersDirector.Coursework.cs",
+                     "CareersDirector.Study.cs", "CareersDirector.Family.cs", "CareersDirector.Degrees.cs", "CareersDirector.Applying.cs" }.Select(file => ModSource(@"Careers\" + file)));
         Check(!all.Contains("return \"reallife_study_why_tired\"") && !all.Contains("return \"reallife_study_why_fee_owed\"") && !all.Contains("return \"reallife_study_why_money\"")
               && !all.Contains("return \"reallife_work_why_unqualified\"") && !all.Contains("return \"reallife_work_why_skills\"") && !all.Contains("return \"reallife_study_why_floor\"")
               && !all.Contains("return \"reallife_study_why_ceremony_hour\"") && !all.Contains("return \"reallife_study_why_loan_full\""),

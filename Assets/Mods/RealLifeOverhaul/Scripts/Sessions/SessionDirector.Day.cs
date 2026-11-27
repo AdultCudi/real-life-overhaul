@@ -77,7 +77,10 @@ namespace RealLifeOverhaul.Sessions
                 _file.Reminded = day;
                 Note("reminder on day " + day + ": " + waiting + " session(s) wait, first " + firstKind.Id + " at " + firstFirm.Name);
                 SessionGame.Tell(NotificationType.Info, waiting > 1 ? "reallife_session_note_waiting_many" : "reallife_session_note_waiting",
-                    new Dictionary<string, string>(3) { { "session", SessionText.T(firstKind.TitleKey) }, { "business", firstFirm.Name }, { "count", SessionText.Whole(waiting) } }, 10f);
+                    new Dictionary<string, string>(4)
+                    {
+                        { "session", SessionText.T(firstKind.TitleKey) }, { "business", firstFirm.Name }, { "count", SessionText.Whole(waiting) }, { "address", SessionGame.AddressOf(firstFirm) }
+                    }, 10f);
             }
             if (Verbose && (held > 0 || waiting > 0))
             {

@@ -17,6 +17,7 @@ internal static partial class Program
     private static void ScrollHints()
     {
         ScrollWheelChecks();
+        WheelSignChecks();
         PhoneFoldChecks();
         HintChipChecks();
         // What's new: in every language, in any row of it.
@@ -37,6 +38,54 @@ internal static partial class Program
               && WhatsNewHas(LocaleFile("ko"), "수정: 휴대폰이 다시 닫힙니다") && WhatsNewHas(LocaleFile("ko"), "수정: 바 위의 키 안내"),
             "scroll and hints: What's new describes the three fixes in Polish and Korean");
     }
+
+    // The wheel's notches are positive up (IUiScreen.Wheel), so a list moves down by the offset minus the notches. A screen
+    // that added them ran the list the wrong way: the items list of an order at a supplier and the tool screens' drop-downs
+    // did (a player's report). Every Wheel body of the kit is read, so a new screen cannot bring it back.
+    private static void WheelSignChecks()
+    {
+        int bodies = 0, wrong = 0;
+        string first = "none";
+        foreach (string path in System.IO.Directory.GetFiles(System.IO.Path.Combine(ModScripts(), "Ui"), "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            string text = System.IO.File.ReadAllText(path);
+            int at = 0;
+            while ((at = text.IndexOf("void Wheel(int clip, float notches)", at, StringComparison.Ordinal)) >= 0)
+            {
+                string body = WheelBody(text, at);
+                bodies++;
+                if (WheelAddsNotches(body))
+                {
+                    wrong++;
+                    first = first == "none" ? System.IO.Path.GetFileName(path) : first;
+                }
+                at += 10;
+            }
+        }
+        Check(bodies >= 50 && wrong == 0, "scroll: no screen's Wheel adds the notches to its offset, which would run the list the wrong way (" + bodies + " read, first at fault " + first + ")");
+        Check(WheelAddsNotches("{ _m.Offset = Math.Max(0f, _m.Offset + notches * UiItemsList.RowHeight); }") && WheelAddsNotches("{ M.OptionOffset += notches * 3f; }")
+              && !WheelAddsNotches("{ _m.Offset = Math.Max(0f, _m.Offset - notches * UiItemsList.RowHeight); }") && !WheelAddsNotches("{ float by = -notches * UiTokens.S16; }"),
+            "scroll: a Wheel that adds its notches is found, one that takes them off is not");
+        string items = ModSource(@"Ui\World\ItemsListKit.cs");
+        Check(!WheelAddsNotches(WheelBody(items, items.IndexOf("void Wheel(int clip, float notches)", StringComparison.Ordinal))) && items.Contains("_m.Offset - notches * UiItemsList.RowHeight"),
+            "scroll: the items list of an order at a supplier moves down when the wheel turns down");
+    }
+
+    private static string WheelBody(string text, int from)
+    {
+        int open = text.IndexOf('{', from), depth = 0, i = open;
+        for (; i >= 0 && i < text.Length; i++)
+        {
+            depth += text[i] == '{' ? 1 : text[i] == '}' ? -1 : 0;
+            if (depth == 0)
+            {
+                break;
+            }
+        }
+        return open >= 0 ? text.Substring(open, Math.Min(i, text.Length - 1) - open + 1) : string.Empty;
+    }
+
+    private static bool WheelAddsNotches(string body) => System.Text.RegularExpressions.Regex.IsMatch(body, @"\+=?\s*notches|notches\s*\*[^;]*\+=");
 
     // The wheel over a target in a list reaches the list.
     private static void ScrollWheelChecks()

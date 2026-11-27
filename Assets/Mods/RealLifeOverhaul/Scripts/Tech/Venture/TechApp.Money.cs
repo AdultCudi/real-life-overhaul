@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Tech
             BoardPack p = _director.PackOf(c, firm, day);
             box.Line(AccountLine(p));
             box.Line(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? CellTone.Yellow : CellTone.Plain);
-            if (c.Acc.Taken > 0)
+            if (StartupMoney.OwedBack(c))
             {
                 box.Line(TechText.T("reallife_vc_cap_taken", "taken", TechText.Cents(p.Taken)), CellTone.Yellow);
             }
@@ -48,7 +48,8 @@ namespace RealLifeOverhaul.Tech
             BoardPack p = _director.PackOf(c, firm, day);
             box.Line(AccountLine(p));
             box.Line(TechText.T("reallife_vc_acct_wallet", "wallet", TechText.Cents(p.Wallet)));
-            if (c.Acc.Taken > 0)
+            box.Line(TechText.T("reallife_vc_acct_counts"));
+            if (StartupMoney.OwedBack(c))
             {
                 MisuseLine last = c.Acc.Misuse.Count > 0 ? c.Acc.Misuse[c.Acc.Misuse.Count - 1] : null;
                 box.Line(TechText.Fill("reallife_vc_acct_taken", "taken", TechText.Cents(p.Taken), "what", last != null ? TechDirector.Describe(last.Key, last.Name) : "-",
@@ -85,7 +86,7 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(answer, InfoBox.Additional, "reallife_vc_button_answer_stonewall", () => Do(() => _director.AnswerBoard(place, 2)));
             }
             Transform out1 = box.ButtonRow();
-            if (c.Acc.Taken > 0)
+            if (StartupMoney.OwedBack(c))
             {
                 InfoBox.Button(out1, InfoBox.Positive, "reallife_vc_button_repay", () => Do(() => _director.Repay(place)));
             }
@@ -124,7 +125,7 @@ namespace RealLifeOverhaul.Tech
             if (box.HasSelector)
             {
                 box.Selector(_siblings.Count, _siblingStep, i => TechText.T("reallife_vc_related_pick", "name", TalentGame.NameOf(_siblings[i])), i => Set(() => _siblingStep = i));
-                box.Selector(3, _tierStep, i => TechText.T(VentureCatalogue.TierKeys[i], "price", TechText.Cents(fair * (i == 0 ? 1000 : i == 1 ? 1500 : 2000) / 1000)),
+                box.Selector(3, _tierStep, i => TechText.T(VentureCatalogue.TierKeys[i], "price", TechText.Cents(StartupMoney.TierPrice(fair, i))),
                 i => Set(() => _tierStep = i));
             }
             int business = _siblingStep, tier = _tierStep;

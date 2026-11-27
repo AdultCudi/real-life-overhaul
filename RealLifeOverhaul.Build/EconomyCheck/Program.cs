@@ -14,6 +14,14 @@ internal static partial class Program
     private static void Check(bool ok, string what)
     {
         _run++;
+        if (MemMode != 0)
+        {
+            _memWhat = what;
+            if (_run % 100 == 0)
+            {
+                MemSample();
+            }
+        }
         if (!ok)
         {
             _failed++;
@@ -342,6 +350,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--selftest")
+        {
+            SelfTestAll();   // the in-game self-test: the plan's reading, the step table, the results file, and nothing running, read or made without the trigger file (SelfTestChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--board-places")
         {
             BoardPlaces();   // a help-wanted board kept where it was, a meeting place told by its address, nobody thrown down by a bicycle mounted (BoardPlaceChecks.cs)
@@ -545,6 +559,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--next-class")
         {
             NextClasses();   // the next class, the classes held and the Campus diary's classes alone (NextClassChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--day-result")
+        {
+            DayResults();   // the day's result on the top bar and the money card: the counting rules, the label, the option and the texts (DayResultChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1308,6 +1328,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--date-timing")
+        {
+            DateTiming();   // (a greeting that fits the days apart, lateness judged on the player, a walking companion's pace and place, alone: DateTimingChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--child-year")
         {
             ChildYear();   // (a child's year of 1 to 52 weeks alone, while working on it: ChildYearChecks.cs, with the Calendar's check of a child's birthday and of its sources: CalendarAppChecks.cs)
@@ -1621,6 +1647,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech28")
+        {
+            Tech28();   // (the tech fixes of 27 Nov alone: a subscription game's pay and month, a firm's price on its steady months, a licence's relaunch, a product's points: Tech28Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech-points")
         {
             TechPoints();   // (a model's wait for its training and a product's reason for no customers alone: TechPointsChecks.cs)
@@ -1813,6 +1845,7 @@ internal static partial class Program
         AiModels();   // Your own AI and the model names: each default held to the documentation, an unknown model told to the player (AiModelChecks.cs)
         Titles();       // products and games have names: typed ones cleaned and kept, made-up ones of their kind or genre, the rivals' too, none shared (TitleChecks.cs)
         Tech23();   // the tech fixes of 23 Nov (Tech23Checks.cs)
+        Tech28();   // the tech fixes of 27 Nov (Tech28Checks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
@@ -2062,6 +2095,7 @@ internal static partial class Program
         StartDebtChecks(); // the student loan a new game starts with: the amounts held to the courses' fees, a payment the loans page leaves alone, which game is new, what a missed payment does, the save, the option and its texts (StartDebtChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
+        DateTiming();   // a greeting fits the days apart, lateness is the player's own, a walking companion keeps the player's pace and starts at a sight (DateTimingChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, nobody made on the edge of the gap, the age a face brings, the city's couples, the option, the People page's texts (RomanceChecks.cs)
@@ -2220,6 +2254,8 @@ internal static partial class Program
         OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
         UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
         UiOldSide();        // what only the kit had, given an equal on the game's widgets: the Economy app's People tab, a firm's whole page in the Tech app, the Mods page's switch that reads a fault (UiOldSideChecks.cs)
+        SelfTestAll();      // the in-game self-test: the plan's reading, the step table, the results file, and nothing running, read or made without the trigger file (SelfTestChecks.cs)
+        MemLine(true);
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

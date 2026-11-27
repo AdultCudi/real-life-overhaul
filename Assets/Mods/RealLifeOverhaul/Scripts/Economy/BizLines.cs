@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_hosting", P + "tech_software", P + "tech_compute", P + "tech_util_power", P + "tech_util_water", P + "tech_marketing",
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
+            P + "tech_colo_ended",   // what a closed data centre's clients are paid for their terms ended early
             P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
             P + "tech_founding_fees", P + "tech_founding_expand", P + "tech_founding_reseller",   // a startup's incorporation, a neighbouring niche opened, a partner's cut of what it resells
             P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] CapitalKeys =
         {
             P + "tech_investment_racks", P + "tech_investment_fitout", P + "tech_relief", P + "tech_write_down",
+            P + "tech_investment_racks_sale",   // a closed data centre's racks sold back
             P + "tech_refund",   // training paid twice after a firm was lost at a load, paid back once: no sale, so not in the statement
             P + "tech_game_advance", P + "tech_game_crowdfund",   // a publisher's advance against royalties and pledges: money in, never sales
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",

@@ -265,8 +265,21 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Walks or jogs to a point on the navigation mesh, ending any clip first: nobody slides in a working pose.</summary>
-        public bool WalkTo(Vector3 destination, bool jog = false)
+        /// <summary>The game's own speeds for people on foot (GlobalReferences, m/s): its walk, jog and run. Its stock figures when no city is up.</summary>
+        public static void PaceFigures(out float walk, out float jog, out float run)
+        {
+            GlobalReferences g = InstanceBehavior<GlobalReferences>.Instance;
+            walk = g != null ? g.walkingSpeedWalk : 1.2f;
+            jog = g != null ? g.walkingSpeedJog : 4f;
+            run = g != null ? g.walkingSpeedRun : 6f;
+        }
+
+        /// <summary>
+        /// Walks or jogs to a point on the navigation mesh, ending any clip first: nobody slides in a working pose. With a
+        /// <paramref name="pace"/> (m/s) the agent goes at that speed instead of the game's walk or jog: the animation follows the
+        /// agent's velocity, so it plays at the right rate.
+        /// </summary>
+        public bool WalkTo(Vector3 destination, bool jog = false, float pace = 0f)
         {
             if (Lost)
             {
@@ -282,6 +295,10 @@ namespace RealLifeOverhaul
             }
             CityLifeDirector.StopFacing(this);
             Character.SetWalkingSpeed(jog ? ThirdPersonCharacter.WalkingSpeed.Jog : ThirdPersonCharacter.WalkingSpeed.Walk);
+            if (pace > 0f)
+            {
+                agent.speed = pace;
+            }
             agent.avoidancePriority = _walkingPriority;
             agent.isStopped = false;
             return agent.SetDestination(destination);

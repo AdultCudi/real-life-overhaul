@@ -26,11 +26,7 @@ internal static partial class Program
         {
             CultureInfo.CurrentCulture = was;
         }
-        string fame = string.Empty;
-        foreach (string file in Directory.GetFiles(System.IO.Path.Combine(PhotoScripts, "Fame"), "*.cs"))
-        {
-            fame += File.ReadAllText(file);
-        }
+        string fame = JoinedText(Directory.GetFiles(System.IO.Path.Combine(PhotoScripts, "Fame"), "*.cs"), string.Empty);
         Check(fame.Length > 0 && !Regex.IsMatch(fame, @"\.ToString\(""[^""]*[0#][.,][^""]*""\)"),
             "Standing: no figure with a decimal is written in the machine's culture (FameRules.Tenths, or InvariantCulture)");
     }
@@ -44,12 +40,8 @@ internal static partial class Program
 
         // Every DeskList the mod makes is destroyed: in its own file, or through its owner's field elsewhere.
         var made = new Regex(@"\b(\w+)\s*=\s*new DeskList\(");
-        string all = string.Empty;
         string[] files = Directory.GetFiles(PhotoScripts, "*.cs", SearchOption.AllDirectories);
-        foreach (string file in files)
-        {
-            all += File.ReadAllText(file) + "\n";
-        }
+        string all = JoinedText(files, "\n");
         int windows = 0;
         string kept = string.Empty;
         foreach (string file in files)

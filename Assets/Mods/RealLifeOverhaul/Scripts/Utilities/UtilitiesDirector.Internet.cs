@@ -482,6 +482,13 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
+        /// <summary>The leased line of a building given up where a data centre closed: as <see cref="CancelLine"/>, for a place known by its registration. Nothing when it has none.</summary>
+        public void DropLineAt(BuildingRegistration reg)
+        {
+            var place = new PlaceInfo { Reg = reg, Place = UtilitiesGame.Place(reg), Name = string.IsNullOrEmpty(reg.BusinessName) ? reg.StreetName : reg.BusinessName };
+            CancelLine(place, out _);
+        }
+
         /// <summary>A connection cut for an unpaid bill, with nothing owed now, reconnected the next morning.</summary>
         public bool ReconnectNet(PlaceInfo place, out string why)
         {

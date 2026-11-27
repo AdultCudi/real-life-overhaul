@@ -67,6 +67,7 @@ ba:controls_hint_placement_cancel
 ba:controls_hint_rotate_left
 ba:controls_hint_rotate_right
 ba:difficulty_customize
+ba:happinessmodifier_no_home
 ba:investmentfund_alliancestechnologya
 ba:investmentfund_franklinus
 ba:investmentfund_hgchinabonds
@@ -689,6 +690,7 @@ common_sales_price
 common_saturday
 common_save_changes
 common_search
+common_select
 common_select_option
 common_select_type
 common_sellable_products
