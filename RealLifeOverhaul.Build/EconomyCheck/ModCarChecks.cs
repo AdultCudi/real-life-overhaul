@@ -65,6 +65,9 @@ internal static partial class Program
             Check(ModSource(@"Driving\CarCatalogue.cs").Contains("case \"" + d.TypeName + "\": return ") && CarCatalogue.SeatsKnown(d.TypeName), "mod cars: " + d.Id + "'s seats are known");
             Check(GarageFit.TryGet(d.TypeName, out CarFit fit) && System.Math.Abs(fit.Front - d.Front) < 0.03f && System.Math.Abs(fit.Rear - d.Rear) < 0.03f && System.Math.Abs(fit.Top - d.Height) < 0.03f,
                 "mod cars: " + d.Id + " has its measured row for fitted parts (Garage/GarageFit), of the same body the code describes");
+            Check(Block(ModSource(@"Garage\ModCars.cs"), "private static void Register(ModCarDef d)").Contains("type.fitsFlatbed = d.FitsFlatbed;")
+                  && Block(ModSource(@"Garage\ModCars.cs"), "private static void Register(ModCarDef d)").Contains("type.destinationsThatCanDeliver = d.Destinations;")
+                  && (d.Destinations == 2) == d.FitsFlatbed, "mod cars: " + d.Id + "'s working switches reach the game's type, and two delivery stops go with a flatbed as on the game's vans and pickups");
             string unfair = ModCarCatalogue.Unfair(d, CarsOfTheGame);
             Check(unfair == null, "mod cars: " + d.Id + " at " + d.Price + " neither is nor makes a must-buy" + (unfair != null ? " (" + unfair + ")" : string.Empty));
             Check(ModCarCatalogue.PrefabKey(d.TypeName) == "Prefabs/Vehicles/PlayerVehicles/" + d.Id + ".prefab",

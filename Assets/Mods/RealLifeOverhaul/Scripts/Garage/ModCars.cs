@@ -96,7 +96,9 @@ namespace RealLifeOverhaul
             type.damageIntensity = d.DamageIntensity;
             type.fitsHandTruck = d.FitsHandTruck;
             type.isLuxuryCar = d.Luxury;
-            type.destinationsThatCanDeliver = 1;
+            type.fitsFlatbed = d.FitsFlatbed;
+            type.taxDeductible = d.TaxDeductible;
+            type.destinationsThatCanDeliver = d.Destinations;
             type.enclosed = true;
             if (ModdingAPI.RegisterModVehicleType(type))
             {

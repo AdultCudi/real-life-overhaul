@@ -21,6 +21,9 @@ namespace RealLifeOverhaul
         public float DamageIntensity;  // 0.16 to 0.64 on the game's cars
         public bool FitsHandTruck;
         public bool Luxury;
+        public bool FitsFlatbed;       // takes the game's flatbed trolley, as its vans and pickups do
+        public bool TaxDeductible;     // a working vehicle to the game's tax, as its vans and pickups are
+        public int Destinations = 1;   // how many stops a delivery in it may make: 1 on the game's cars, 2 on its vans and pickups
         public float AxleFront, AxleRear;   // metres along the car from its middle (Unity z)
         public float TrackHalf;             // a wheel's centre from the middle line
         public float WheelRadius, WheelWidth;
@@ -120,7 +123,18 @@ namespace RealLifeOverhaul
             HalfWidth = 0.915f, Front = 2.35f, Rear = -2.35f, Height = 1.44f, BonnetHeight = 0.86f
         };
 
-        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate };
+        public static readonly ModCarDef HaldenDrover = new ModCarDef
+        {
+            Id = "haldendrover", TypeName = Prefix + "haldendrover", Donor = GamePrefix + "vordv150", KindKey = "reallife_cars_kind_pickup",
+            // A working pickup under the Vord V150 (44,000: faster, stronger, 20 boxes): 18 boxes in an open bed, a flatbed trolley and two stops
+            // a delivery as a van has, for two thirds of the money. Its power stays under the BIMA 320's so that saloon keeps its buyers.
+            Price = 29000, MaxFuel = 80f, Cargo = 18, MaxSpeed = 70, EnginePower = 98f, BrakeForce = 4500f, TurnRadius = 40, DamageIntensity = 0.32f,
+            FitsHandTruck = true, Luxury = false, FitsFlatbed = true, TaxDeductible = true, Destinations = 2,
+            AxleFront = 1.70f, AxleRear = -1.40f, TrackHalf = 0.79f, WheelRadius = 0.40f, WheelWidth = 0.27f,
+            HalfWidth = 0.94f, Front = 2.60f, Rear = -2.60f, Height = 1.82f, BonnetHeight = 1.17f
+        };
+
+        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover };
 
         /// <summary>True for a vehicle type of the mod's own.</summary>
         public static bool IsOurs(string typeName)
@@ -208,6 +222,7 @@ namespace RealLifeOverhaul
                    ?? Outside(d.Wheelbase, GameWheelbaseLeast, GameWheelbaseMost, "its wheelbase")
                    ?? Outside(d.HalfWidth, GameHalfWidthLeast, GameHalfWidthMost, "its width")
                    ?? Outside(d.WheelRadius, 0.25f, 0.45f, "its wheel's radius")
+                   ?? (d.Destinations < 1 || d.Destinations > 2 ? "its delivery stops are not the game's 1 or 2" : null)
                    ?? (d.TrackHalf + d.WheelWidth * 0.5f > d.HalfWidth + 0.02f ? "its wheels stand out of its body" : null)
                    ?? (d.AxleFront + d.WheelRadius > d.Front || d.AxleRear - d.WheelRadius < d.Rear ? "a wheel is past a bumper" : null);
         }
