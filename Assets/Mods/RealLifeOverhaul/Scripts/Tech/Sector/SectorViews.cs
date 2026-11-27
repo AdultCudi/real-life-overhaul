@@ -290,6 +290,30 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- a product's market
 
         /// <summary>
+        /// Where a firm's engineers' day went, for a product that gains no feature to say why: its own points, the client contracts' and its other products' of the firm's
+        /// <paramref name="total"/>, or (a warning) that no engineer worked, since only engineering, data, security and infrastructure roles build a product.
+        /// </summary>
+        public static ViewLine Points(int put, int total, int contracts, IStudioFormat fmt)
+        {
+            if (total <= 0)
+            {
+                return new ViewLine { Key = P + "product_points_none", Tone = ViewTone.Warn };
+            }
+            int took = Math.Max(0, contracts), mine = Math.Max(0, put);
+            return new ViewLine
+            {
+                Key = P + "product_points", Tone = mine <= 0 ? ViewTone.Warn : ViewTone.Plain,
+                Pairs = new[] { "put", fmt.Whole(mine), "total", fmt.Whole(total), "contracts", fmt.Whole(took), "others", fmt.Whole(Math.Max(0, total - took - mine)) }
+            };
+        }
+
+        /// <summary>The companies a firm's withdrawn licences already sold to, still counted as served for a new licence (<see cref="SectorRules.Former"/>).</summary>
+        public static ViewLine Former(long count, IStudioFormat fmt)
+        {
+            return new ViewLine { Key = P + "product_former", Tone = ViewTone.Plain, Pairs = new[] { "count", fmt.Whole(count) } };
+        }
+
+        /// <summary>
         /// A product's market as a section of its page: who buys and how many, the share it holds and the share its pull earns it (where its customers are heading),
         /// how many know of it, the market's going features and price, and the three rivals with the most customers. The share is the only limit there is, and the
         /// section says so. The heading and a licence's deals (given the firm's selling points, <paramref name="selling"/>; none when not given) are said only of a market

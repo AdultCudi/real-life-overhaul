@@ -212,6 +212,7 @@ namespace RealLifeOverhaul.Tech
             if (p != null && p.Stage < 2)
             {
                 p.Stage = 2;
+                p.Ended = Save != null ? Save.Day : 0;   // a licence's customers are remembered from this day (SectorRules.Former)
                 WithdrawGame(id);
                 FirmsRules.TrimWithdrawn(_firmsFile, p);
                 ChangedTech();

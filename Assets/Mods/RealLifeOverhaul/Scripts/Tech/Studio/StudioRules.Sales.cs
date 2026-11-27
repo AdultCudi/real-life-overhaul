@@ -339,7 +339,9 @@ namespace RealLifeOverhaul.Tech
             {
                 int take = StudioCatalogue.SubscribeTake[StudioCatalogue.Online[Clamp(g.Genre, 0, (int)Genre.Count - 1)] ? 1 : 0];
                 long churn = Math.Max(0, StudioCatalogue.ChurnBase * 1000 - StudioCatalogue.ChurnPerScore * score) / 1000;   // thousandths a month
-                g.Subscribers = Math.Max(0L, g.Subscribers + units * take / 1000 - g.Subscribers * churn / 30000);
+                // the subscribers a day's copies bring, as the difference of the running total's share so that a day of a few copies is not rounded to none every day
+                long gained = g.Sold * take / 1000 - (g.Sold - units) * take / 1000;
+                g.Subscribers = Math.Max(0L, g.Subscribers + gained - g.Subscribers * churn / 30000);
             }
             for (int p = 0; p < StudioCatalogue.GamePlatforms; p++)
             {
@@ -393,6 +395,7 @@ namespace RealLifeOverhaul.Tech
             g.Gross += r.Gross;
             g.Net += r.Payout;
             g.NetMonth += r.Payout;
+            g.Daily = g.M == GameModel.Subscription ? r.Payout : 0L;
             return r;
         }
 

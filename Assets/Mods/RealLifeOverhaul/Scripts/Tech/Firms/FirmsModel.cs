@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Tech
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
         public long Prev30;              // the month before the ring's, cents: aged a day at a time (TechStatusRules.Age), so the table can say how takings moved
         public int PrevDays;             // the days Prev30 has gathered, up to a month
+        public long Prev60;              // the month before Prev30, cents: what Prev30 sheds a day, gathered then aged the same way, so a growth can be read over three months
+        public int Prev60Days;           // the days Prev60 has gathered, up to a month (TechStatusRules.ThirdFromDays)
         // Of the takings above, what the player's own other businesses paid the firm (a contract with a client that is theirs): money from one pocket to the other, so a
         // listing never counts it. The same three figures as the takings' own, rolled by the same day.
         public long Self30;
@@ -63,6 +65,8 @@ namespace RealLifeOverhaul.Tech
         public int Train;                     // how hard an AI model is trained, a level of InfraRules.TrainLevels: past 4 only with the player's own AI racks (InfraRules.TrainMost)
         public int Moving;                    // an AI model re-launched for another segment (SegmentRules): off sale until this day, 0 never
         public int Owe;                       // ...and the work points of that re-launch its engineers have still to put in before the next feature
+        public int Ended;                     // the day it was withdrawn; 0 not withdrawn, or withdrawn before the day was kept
+        public int Put = -1;                  // the engineering points the firm's day gave it, as its last day gave them; -1 until a day has; not saved
         public ProductDay Last;               // its last day on sale under the sector, for the page; not saved (empty until the next day after a load)
         public int LastDay = -1;              // the day Last is of
 

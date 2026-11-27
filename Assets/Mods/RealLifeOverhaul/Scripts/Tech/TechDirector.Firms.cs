@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Tech
         public int OwnMinutes;        // the owner's minutes at a desk here yesterday (OwnDeskRules), as the day's crew read them
         public int OwnPoints;         // ...the points they gave the crew, before its connection
         public int OwnRole = -1;      // ...and the role they worked as; -1 when they did not work here or could not count
+        public int Contracted;        // the engineering points the client contracts took of its last day, before its products had theirs
     }
 
     /// <summary>The firms part: each of the player's tech businesses is a firm, worked through each game day after the people's.</summary>
@@ -476,6 +477,7 @@ namespace RealLifeOverhaul.Tech
                         Paid(firm, w, paid * level / 1000);
                     }
                 }
+                firm.Contracted = c.Engineering - engineering;
                 int shares = 0;
                 for (int i = 0; i < _firmsFile.Products.Count; i++)
                 {
@@ -494,6 +496,7 @@ namespace RealLifeOverhaul.Tech
                     }
                     int points = shares > 0 ? (int)((long)engineering * Math.Max(0, p.Share) / shares) : 0;
                     int testing = shares > 0 ? (int)((long)c.Testing * Math.Max(0, p.Share) / shares) : 0;
+                    p.Put = points;
                     rndPoints += points;
                     int before = p.Features;
                     if (_sectorOn && SectorRules.MarketOf(p) >= 0)

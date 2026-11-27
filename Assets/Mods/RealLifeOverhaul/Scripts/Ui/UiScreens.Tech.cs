@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_tech_firm_unregistered", "reallife_tech_mkt_product_build", "reallife_tech_mkt_product_quality", "reallife_tech_needs_app",
                 "reallife_tech_needs_game", "reallife_tech_needs_licence", "reallife_tech_needs_model", "reallife_tech_needs_saas", "reallife_tech_new_full_all",
                 "reallife_tech_new_full_firm", "reallife_tech_new_niche_made", "reallife_tech_mkt_product_niche_off",
+                "reallife_tech_mkt_product_points", "reallife_tech_mkt_product_points_none", "reallife_tech_mkt_product_former",
                 "reallife_tech_new_segment_model", "reallife_tech_segment_means_consumer", "reallife_tech_segment_means_business", "reallife_tech_segment_means_enterprise",
                 "reallife_tech_move_section", "reallife_tech_move_about", "reallife_tech_move_label", "reallife_tech_move_work", "reallife_tech_move_days",
                 "reallife_tech_move_customers", "reallife_tech_move_aware", "reallife_tech_move_under_way", "reallife_tech_button_move",
