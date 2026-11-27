@@ -93,18 +93,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The text that names the people of a kind of work on the production card.</summary>
-        public static string GroupKey(Feed feed)
-        {
-            switch (feed)
-            {
-                case Feed.Engineering: return "reallife_studio_group_engineering";
-                case Feed.Design: return "reallife_studio_group_design";
-                case Feed.Product: return "reallife_studio_group_product";
-                case Feed.Testing: return "reallife_studio_group_testing";
-                default: return "reallife_studio_group_none";
-            }
-        }
 
         /// <summary>The text of who builds a part, written for the card (the whole of it, so the part's makers are named in one sentence).</summary>
         public static string MakersKey(int part)

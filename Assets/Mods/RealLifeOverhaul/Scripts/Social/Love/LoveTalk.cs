@@ -30,8 +30,9 @@ namespace RealLifeOverhaul
 
         private static DialogEntry Built(SocialPerson p, string text)
         {
-            SocialLife.Said(p, "reallife_social_text_only", null);
-            return new DialogEntry { messageData = SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", text } }), OnCancel = PhoneContacts.HangUp };
+            var data = new Dictionary<string, string> { { "text", text } };
+            SocialLife.Said(p, SocialLinks.WordsKey, data);   // the person's last words are these, not a key nothing defines
+            return new DialogEntry { messageData = SocialLinks.WordsKey.Localize(data), OnCancel = PhoneContacts.HangUp };
         }
 
         private static DialogEntry Last(SocialPerson p, string key, Dictionary<string, string> data)
