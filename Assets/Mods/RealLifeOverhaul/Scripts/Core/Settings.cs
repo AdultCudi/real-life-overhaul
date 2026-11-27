@@ -249,6 +249,7 @@
         public const string TechSeatHiresId = "tech_seat_hires";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
+        public const string TechDealKindsId = "tech_deal_kinds";
         public const string TechInfraOfferId = "tech_infra_offer";
         public const string TechStartupsId = "tech_startups";
         public const string TechSiteRoomsId = "tech_site_rooms";
@@ -691,6 +692,7 @@
         public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
+        public static bool TechDealKinds = true;         // ...clients that are city departments, individuals and the city's companies, beside the old ones (off: the old clients and the council's tenders)
         public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters
@@ -1200,6 +1202,7 @@
             TechSeatHires = Bool(modId, TechSeatHiresId, TechSeatHires);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
+            TechDealKinds = Bool(modId, TechDealKindsId, TechDealKinds);
             TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
             TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);

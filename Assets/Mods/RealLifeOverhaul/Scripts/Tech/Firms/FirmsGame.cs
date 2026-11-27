@@ -129,18 +129,23 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The player's businesses that are not tech firms, as clients: place and name.</summary>
-        public static void Clients(List<KeyValuePair<string, string>> into)
+        /// <summary>
+        /// The player's businesses that are not in a tech firm's own line of work, as clients: place and name, and in <paramref name="types"/> (when given) the business type of each,
+        /// in the same order. A software, IT, web or graphic design business is never a client (ClientFilter).
+        /// </summary>
+        public static void Clients(List<KeyValuePair<string, string>> into, List<string> types = null)
         {
             into.Clear();
+            types?.Clear();
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count && into.Count < 24; i++)
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != "ba:businesstype_empty" && KindOf(reg.businessTypeName) < 0 && GameRegistrations.Found(reg))
+                    && ClientFilter.TypeAllowed(reg.businessTypeName) && KindOf(reg.businessTypeName) < 0 && GameRegistrations.Found(reg))
                 {
                     into.Add(new KeyValuePair<string, string>(TalentGame.Place(reg), TalentGame.NameOf(reg)));
+                    types?.Add(reg.businessTypeName);
                 }
             }
         }
