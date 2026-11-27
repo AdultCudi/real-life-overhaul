@@ -439,7 +439,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
                     .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes")
                     .With("population_demand"),   // the Guide's page on where the businesses' customers come from
-                S("studio").For("studio").Opt("living_studio", "living_population")
+                S("studio").For("studio").Opt("living_studio", "living_population").Opt("tech_game_pace", "living_studio")
                     .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
                 S("firms").For("firms").Opt("living_firms", "living_population")
                     .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "

@@ -104,7 +104,8 @@ namespace RealLifeOverhaul.Tech
     public sealed class StudioPlace
     {
         public string Place = string.Empty, Name = string.Empty;
-        public long PointsADay;          // the studio's work points a day for its games, as the last day's crew gave them
+        public long PointsADay;          // the studio's work points a day for its games, as the last day's crew gave them, at the pace chosen (StudioPace)
+        public int Pace;                 // the option's pace (StudioPace)
         public int People;
         public bool OwnEngine;           // its own engine is built
         public bool Room = true;         // it may start another product (FirmsRules.Room)
@@ -380,7 +381,7 @@ namespace RealLifeOverhaul.Tech
             v.Primary = primary;
             if (g.Building || g.Phase == (int)GamePhase.Ready)
             {
-                Build(v, g, s, share, day, fmt);
+                Build(v, g, s, share, day, yearDays, fmt);
             }
             if (g.OnSale)
             {
@@ -460,13 +461,22 @@ namespace RealLifeOverhaul.Tech
             return g.Project != StudioRules.ProjectNone ? Words(P + "next_project", ViewTone.Plain) : Words(P + "next_selling", ViewTone.Plain);
         }
 
-        private static void Build(StudioScreen v, GameDev g, StudioPlace s, int share, int day, IStudioFormat fmt)
+        private static void Build(StudioScreen v, GameDev g, StudioPlace s, int share, int day, int yearDays, IStudioFormat fmt)
         {
             ViewSection b = v.Section(P + "sec_build");
             long points = s.PointsADay * share / 1000 * StudioRules.Boost(g, day) / 1000;
             int days = StudioRules.DaysLeft(g.Work - g.Done, points);
             Line(b, days > 0 ? P + "build_progress" : P + "build_progress_still", ViewTone.Plain, "phase", fmt.Text(PhaseKey(g.Phase)), "done", fmt.Mille(StudioRules.Progress(g)),
                 "days", fmt.Whole(days));
+            if (days > 0)
+            {
+                // the pace chosen, in game years of the save's own length, and what a faster one costs a day (StudioPace)
+                Line(b, P + "build_pace", ViewTone.Plain, "pace", fmt.Text(StudioPace.NameKey(s.Pace)), "years", StudioPace.Years(days, yearDays), "year", fmt.Whole(yearDays));
+                if (s.Pace != StudioPace.Normal)
+                {
+                    Line(b, P + "build_pace_cost", ViewTone.Plain, "more", fmt.Mille(StudioPace.DearerBy(s.Pace)), "shorter", fmt.Mille(1000 - StudioPace.TakesShare(s.Pace)));
+                }
+            }
             Line(b, P + "build_parts", ViewTone.Plain, "design", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Design)), "tech", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Tech)),
                 "art", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Art)), "content", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Content)),
                 "polish", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Polish)), "quality", fmt.Whole(StudioRules.Quality(g)));

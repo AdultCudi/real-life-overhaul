@@ -899,23 +899,58 @@ namespace RealLifeOverhaul.Tech
             return TrainingViews.Racks(racks, _modelsDay, _infra != null ? _infra.Cloud.GpuSold : 0);
         }
 
-        /// <summary>The steps of the way up after the firms' own (a data centre, a cloud, a hyperscaler, an AI lab), for the Firms tab.</summary>
-        internal void PathMore(InfoBox box)
+        /// <summary>How many steps of the way up the screens show: the firms' own three, and the data centres, cloud, hyperscaler and AI model once the infrastructure part is there.</summary>
+        internal int PathShown => _infra == null ? 3 : TechPathViews.Steps;
+
+        /// <summary>
+        /// What the way up reads of the player's business today, for <see cref="TechPathViews.Build"/>: counted from the firms, the data centres, the people and the cash by the same
+        /// rules the day judges the steps by (the firms' recurring revenue, <see cref="InfraRules.CloudNeeds"/>, <see cref="InfraRules.HyperNeeds"/>). COST: a pass over the firms, the
+        /// products, the data centres and the people, once when the Firms tab is drawn.
+        /// </summary>
+        internal PathFacts PathNow()
         {
+            var f = new PathFacts { Share = BuyScale };
+            for (int i = 0; i < _firms.Count; i++)
+            {
+                f.Firms += _firms[i].File.Kind <= (int)FirmKind.AiLab ? 1 : 0;
+                f.People += _firms[i].People;
+                f.Monthly += _firmsFile != null ? FirmsRules.Arr(_firmsFile, _firms[i].File.Place) / 12 : 0;
+            }
+            for (int i = 0; _firmsFile != null && i < _firmsFile.Products.Count; i++)
+            {
+                f.LiveProducts += _firmsFile.Products[i].Live ? 1 : 0;
+                f.Models += _firmsFile.Products[i].K == ProductKind.Model && _firmsFile.Products[i].Live ? 1 : 0;
+            }
             if (_infra == null)
             {
-                return;
+                return f;
             }
-            int cloud = CloudNeeds(), hyper = HyperNeeds();
-            TechApp.Step(box, _infra.Centres.Count > 0, "reallife_tech_path_centre", null);
-            TechApp.Step(box, _infra.Cloud.Open, "reallife_tech_path_cloud", _infra.Cloud.Open ? null : Needs(cloud, true));
-            TechApp.Step(box, _infra.Cloud.Hyper, "reallife_tech_path_hyper", _infra.Cloud.Hyper ? null : Needs(hyper, false));
-            bool lab = false;
-            for (int i = 0; _firmsOn && i < _firmsFile.Products.Count; i++)
+            var districts = new System.Collections.Generic.HashSet<string>();
+            for (int i = 0; i < _infra.Centres.Count; i++)
             {
-                lab |= _firmsFile.Products[i].K == ProductKind.Model && _firmsFile.Products[i].Live;
+                DataCentre c = _infra.Centres[i];
+                f.Centres++;
+                f.Racks += c.Racks;
+                f.RacksAll += c.Racks + c.GpuRacks;
+                f.TierTwo += c.Tier >= InfraCatalogue.CloudTierLeast ? 1 : 0;
+                f.Net += c.Net ? 1 : 0;
+                if (c.Racks + c.GpuRacks > 0 && c.District.Length > 0)
+                {
+                    districts.Add(c.District);
+                }
             }
-            TechApp.Step(box, lab, "reallife_tech_path_ai", null);
+            f.Districts = districts.Count;
+            f.Engineers = Engineers();
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Profile p = _people[i].File;
+                f.Cto |= p.Role == TalentCatalogue.Cto;
+                f.StaffInfra += p.Def.Family == Family.Infrastructure && p.Level >= InfraCatalogue.HyperStaffLevel ? 1 : 0;
+            }
+            f.Cash = VentureGame.Cash * 1000 / Math.Max(1, Prices.Level);
+            f.CloudOpen = _infra.Cloud.Open;
+            f.Hyper = _infra.Cloud.Hyper;
+            return f;
         }
 
         private static readonly string[] CloudNeedKeys =

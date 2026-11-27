@@ -858,6 +858,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorBridges.cs" Link="Mod\Sector\SectorBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorViews.cs" Link="Mod\Sector\SectorViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorViews.Page.cs" Link="Mod\Sector\SectorViews.Page.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\TeamNeedRules.cs" Link="Mod\Sector\TeamNeedRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioPace.cs" Link="Mod\StudioPace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\TechPathViews.cs" Link="Mod\TechPathViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyCatalogue.cs" Link="Mod\StudyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.cs" Link="Mod\StudyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Learning.cs" Link="Mod\StudyRules.Learning.cs" />

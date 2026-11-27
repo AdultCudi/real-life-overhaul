@@ -44,6 +44,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True while the options want the studio: the overhaul's master switch and the studio's own.</summary>
         public static bool StudioWanted => Settings.LivingPopulation && Settings.LivingStudio;
 
+        /// <summary>The option "Game development pace" as a <see cref="StudioPace"/>; Normal while the studio is off, so the rules read the same figures as before.</summary>
+        internal static int GamePace => StudioWanted ? StudioPace.Clamp(Settings.TechGamePace) : StudioPace.Normal;
+
         /// <summary>True while the studio runs the games of firms of this kind.</summary>
         internal bool StudioRuns(FirmKind kind) => _studioOn && kind == FirmKind.Games;
 
@@ -358,7 +361,7 @@ namespace RealLifeOverhaul.Tech
         private void StudioFirm(FirmPlace firm, int day, int cycle, ref long hosting, ref long marketing, ref long rndPoints, ref int quality, ref int rated)
         {
             Firm file = firm.File;
-            int level = Prices.Level, dated = day - 1, year = GameCalendar.DaysPerYear;
+            int level = Prices.Level, dated = day - 1, year = GameCalendar.DaysPerYear, pace = GamePace;
             int hands = StudioHands(firm, day);
             Array.Clear(_crewRead, 0, _crewRead.Length);
             int shares = 0;
@@ -396,7 +399,7 @@ namespace RealLifeOverhaul.Tech
                 long built = 0;
                 if (g.Building)
                 {
-                    built = StudioRules.Build(g, crew, share, day);
+                    built = StudioRules.Build(g, crew, share, day, pace);
                     Learn(file.Place, g.Genre, hands, share);
                     StudioPhase(firm, g, p, StudioRules.Advance(g, day), day);
                 }
@@ -429,8 +432,18 @@ namespace RealLifeOverhaul.Tech
                     g.Spent += wages * share / 1000;   // the team's time on it
                     built += g.Building ? 0 : (long)crew.Engineering * share / 1000;   // patches and projects are research and development too
                 }
+                if (share > 0 && g.Building && pace != StudioPace.Normal)
+                {
+                    // the days a faster pace saves are paid for as tools, contractors and overtime, so a game costs what it did (StudioPace)
+                    long extra = StudioPace.Overhead(wages * share / 1000, pace);
+                    if (extra > 0)
+                    {
+                        FirmsGame.Cost(extra * level / 1000, StudioGame.PaceKey, firm.Reg, file.Name, dated);
+                        g.Spent += extra;
+                    }
+                }
                 rndPoints += built;
-                long campaign = StudioRules.HypeDay(g, day, StudioRules.LaunchIn(g, day, points * share / 1000));
+                long campaign = StudioRules.HypeDay(g, day, StudioRules.LaunchIn(g, day, StudioPace.Points(points * share / 1000, pace)));
                 marketing += campaign;
                 g.Spent += campaign;
                 if (day < g.BoostUntil && g.Building)
@@ -497,7 +510,7 @@ namespace RealLifeOverhaul.Tech
                 Profile p = _people[i].File;
                 if (p.Place == place && _people[i].HoursYesterday > 0)
                 {
-                    p.Burnout = MeetingRules.Day(p.Burnout, _people[i].HoursYesterday, StudioCatalogue.CrunchBurnout);
+                    p.Burnout = MeetingRules.Day(p.Burnout, _people[i].HoursYesterday, StudioPace.CrunchBurnout(GamePace));
                 }
             }
         }

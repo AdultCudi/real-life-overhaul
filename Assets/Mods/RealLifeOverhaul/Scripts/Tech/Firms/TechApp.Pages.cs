@@ -78,29 +78,29 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Firms;
         }
 
-        /// <summary>The way from a studio up, one line a step: done, or what it still needs.</summary>
+        /// <summary>
+        /// The way from a studio up, a step at a time: what it is and where to do it, what it gave once done, and what it still asks for with each
+        /// figure and whether it is met (TechPathViews, which the RLO interface draws too).
+        /// </summary>
         private void Path(InfoBox box, FirmsFile f)
         {
-            int studios = 0, live = 0, people = 0;
-            long monthly = 0;
-            IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
-            for (int i = 0; i < firms.Count; i++)
+            PathStep[] steps = TechPathViews.Build(_director.PathNow(), _studioWords);
+            for (int i = 0; i < _director.PathShown; i++)
             {
-                studios += firms[i].File.Kind <= (int)FirmKind.AiLab ? 1 : 0;
-                people += firms[i].People;
-                monthly += Level(FirmsRules.Arr(f, firms[i].File.Place) / 12);
+                PathStep s = steps[i];
+                Step(box, s.Done, s.TitleKey, null);
+                box.Line(TechText.T(s.WhatKey));
+                if (s.Done)
+                {
+                    box.Line(TechText.T(s.GaveKey));
+                    continue;
+                }
+                for (int r = 0; r < s.Reqs.Count; r++)
+                {
+                    PathReq q = s.Reqs[r];
+                    box.Line(TechText.T(q.Met ? "reallife_tech_path_req_met" : "reallife_tech_path_req_unmet", "what", TechText.Fill(q.Key, q.Pairs)), q.Met ? CellTone.Plain : CellTone.Yellow);
+                }
             }
-            for (int i = 0; i < f.Products.Count; i++)
-            {
-                live += f.Products[i].Live ? 1 : 0;
-            }
-            long scale = Level(TechPath.ScaleUpMonthly);
-            Step(box, studios > 0, "reallife_tech_path_studio", null);
-            Step(box, live > 0, "reallife_tech_path_product", null);
-            Step(box, monthly >= scale && people >= TechPath.ScaleUpPeople, "reallife_tech_path_scale",
-                TechText.Fill("reallife_tech_path_scale_needs", "monthly", TechText.Cents(monthly), "target", TechText.Cents(scale), "people", people.ToString(),
-                    "least", TechPath.ScaleUpPeople.ToString()));
-            _director.PathMore(box);
         }
 
         // The office's connection and what it does to the firm's work, as the morning's work read it (or as it reads now,

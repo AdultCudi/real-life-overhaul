@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Tech
         public int Contracts, Offers;    // contracts under way and offers or tenders waiting at it
         public string OfferClient;       // the first offer's client
         public long OffersMonth;         // thousandths of an offer a month its share of the city's IT work brings
+        public int Focus;                // the firm's focus (Focus): its share of builders' time for features, fixes and debt, which the testers' need reads
         public int Idle;                 // FirmsRules.Why now (Idle)
         public string IdleWords;         // ...in words
         public bool Desks = true;        // desk sessions run
@@ -246,18 +247,91 @@ namespace RealLifeOverhaul.Tech
             int builders = kind == (int)FirmKind.Design ? t.Designers : kind == (int)FirmKind.AiLab ? t.Builders + t.Ml : t.Builders;
             Line(sec, P + "team_builders_" + ((FirmKind)kind).ToString().ToLowerInvariant(), builders == 0 ? ViewTone.Bad : ViewTone.Plain, "count", fmt.Whole(builders),
                 "points", fmt.Whole(kind == (int)FirmKind.Design ? s.Crew.Design : s.Crew.Engineering));
+            Line(sec, P + "need_builders", ViewTone.Plain, "each", fmt.Whole(TeamNeedRules.BuilderEach(kind == (int)FirmKind.Design ? s.Crew.Design : s.Crew.Engineering, builders)));
             if (makes)
             {
                 Line(sec, P + "team_testers", t.Testers == 0 && t.Builders >= 4 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Testers));
+                NeedTesters(sec, s, fmt);
                 int designLift = SectorRules.Lift(s.Crew.Design, s.Crew.Engineering + 1, SectorCatalogue.DesignGain);
                 Line(sec, P + "team_designers", ViewTone.Plain, "count", fmt.Whole(t.Designers), "lift", fmt.Mille(designLift));
+                NeedCurve(sec, TeamNeedRules.Designers(s.Crew, t), true, fmt);
                 Line(sec, P + "team_product", ViewTone.Plain, "count", fmt.Whole(t.Product), "boost", fmt.Mille(SectorRules.ProductBoost(s.Crew)));
+                NeedCurve(sec, TeamNeedRules.Product(s.Crew, t), true, fmt);
                 Line(sec, P + "team_support", s.SupportNeeded > t.Support ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Support), "need", fmt.Whole(s.SupportNeeded));
+                NeedSupport(sec, TeamNeedRules.Support(s.SupportNeeded, t.Support), fmt);
                 Line(sec, P + "team_reliability", t.Reliability == 0 && s.Customers > 0 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Reliability),
                     "posture", fmt.Mille(s.Crew.Reliability));
+                NeedCurve(sec, TeamNeedRules.Reliability(s.Crew, t), false, fmt);
             }
             Line(sec, P + "team_security", t.Security == 0 && s.Customers > 1000 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Security), "posture", fmt.Mille(s.Crew.Security));
+            NeedCurve(sec, TeamNeedRules.Security(s.Crew, t), false, fmt);
             Line(sec, P + "team_sellers", ViewTone.Plain, "count", fmt.Whole(t.Sellers), "lift", fmt.Mille(SectorRules.Lift(s.Crew.Selling, SectorCatalogue.SellingHalf, SectorCatalogue.SellingGain)));
+            NeedCurve(sec, TeamNeedRules.Sellers(s.Crew, t), true, fmt);
+        }
+
+        // The need lines' whole keys by NeedRole: the people the figure's curve is made of, in the words of the line.
+        private static readonly string[] NeedWho =
+        {
+            "reallife_tech_mkt_need_who_designers", "reallife_tech_mkt_need_who_product", "reallife_tech_mkt_need_who_sellers", "reallife_tech_mkt_need_who_reliability",
+            "reallife_tech_mkt_need_who_security"
+        };
+
+        /// <summary>A share of a thousand as a per cent, with one decimal under ten per cent (an added person gives tenths): "0.2%", "1.7%".</summary>
+        public static string Pct(int thousandths, IStudioFormat fmt)
+        {
+            if (thousandths > 0 && thousandths < 100)
+            {
+                return (thousandths / 10).ToString(System.Globalization.CultureInfo.InvariantCulture) + "." + (thousandths % 10).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
+            }
+            return fmt.Mille(thousandths);
+        }
+
+        // What a role with a curve can give, under its line: the most, the people for half and for nine tenths of it, and what one more adds now. A lift reads "+36%", a posture "92%".
+        private static void NeedCurve(ViewSection sec, TeamNeed n, bool lift, IStudioFormat fmt)
+        {
+            string plus = lift ? "+" : string.Empty;
+            string each = n.EachFigure > 0 ? plus + Pct(n.EachFigure, fmt) : fmt.Text(P + "need_tiny");
+            Line(sec, n.Past ? P + "need_gain_past" : P + "need_gain", ViewTone.Plain, "who", fmt.Text(NeedWho[n.Role]), "top", plus + fmt.Mille(n.Top), "half_fig", plus + Pct(n.HalfFigure, fmt),
+                "half_count", fmt.Whole(n.HalfPeople), "full_fig", plus + Pct(n.FullFigure, fmt), "full_count", fmt.Whole(n.FullPeople), "more", fmt.Whole(n.More), "count", fmt.Whole(n.Have), "each", each);
+        }
+
+        // Support has a ceiling: the people its customers' tickets need.
+        private static void NeedSupport(ViewSection sec, SupportNeed n, IStudioFormat fmt)
+        {
+            if (n.Need == 0)
+            {
+                Line(sec, P + "need_support_none", ViewTone.Plain);
+            }
+            else if (n.More > 0)
+            {
+                Line(sec, P + "need_support_more", ViewTone.Warn, "more", fmt.Whole(n.More), "need", fmt.Whole(n.Need));
+            }
+            else
+            {
+                Line(sec, P + "need_support_met", ViewTone.Plain, "need", fmt.Whole(n.Need), "spare", fmt.Whole(n.Spare));
+            }
+        }
+
+        // Testers who keep up with the bugs the builders make: a ceiling too, once there are builders.
+        private static void NeedTesters(ViewSection sec, SectorPlace s, IStudioFormat fmt)
+        {
+            if (s.Crew.Engineering <= 0)
+            {
+                return;
+            }
+            TesterNeed n = TeamNeedRules.Testers(s.Crew, s.Team, s.Focus);
+            if (n.Points <= 0)
+            {
+                Line(sec, P + "need_testers_none", ViewTone.Plain);
+            }
+            else if (n.More > 0)
+            {
+                Line(sec, P + "need_testers_more", ViewTone.Plain, "made", fmt.Whole(n.Made), "fixed", fmt.Whole(n.Fixed), "people", fmt.Whole(n.People), "more", fmt.Whole(n.More));
+            }
+            else
+            {
+                Line(sec, P + "need_testers_met", ViewTone.Plain, "made", fmt.Whole(n.Made), "fixed", fmt.Whole(n.Fixed));
+            }
         }
 
         // The firm's desk sessions: due or when, who takes them, or why not now.

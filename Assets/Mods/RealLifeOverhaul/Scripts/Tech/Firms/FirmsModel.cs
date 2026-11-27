@@ -157,6 +157,9 @@ namespace RealLifeOverhaul.Tech
         public int Seats;            // professionals at the firm (the software they use is paid by the seat)
         public int Faults;           // thousandths: how often their work needs doing again, on average (TalentRules.Faults)
         public long Wages;           // their day's pay, cents (for the research and development relief)
+        public long SecurityBrought; // what the security people at work bring, thousandths summed with no per person top (the sector's curve; TeamNeedRules reads it)
+        public long ReliabilityBrought;   // ...and the site reliability and DevOps people at work
+        public int SecurityWorking, ReliabilityWorking;   // how many of them worked yesterday (those the sums above are of)
     }
 
     /// <summary>Why nobody at a firm can work, or worked yesterday (FirmsRules.Why). The last two are of yesterday only.</summary>
