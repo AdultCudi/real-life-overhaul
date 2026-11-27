@@ -79,7 +79,7 @@ internal static partial class Program
         TalentFile tb = TalentStore.Read(TalentStore.Write(t), out _);
         Check(tb.People.Count == 2 && tb.People[0].Pinned && !tb.People[1].Pinned, "tech23 saves: a role pinned by hand is kept");
         string src = ModSource("Tech/TechDirector.Roles.cs");
-        Check(MemberText(src, "internal void SetRole(string id, int role)").Contains("Pinned = true"), "tech23 saves: a role the player sets by hand is pinned");
+        Check(MemberText(src, "internal void SetRole(string id, int role)").Contains("Reassign(person, role, true)") && ModSource("Tech/TechDirector.RoleMoves.cs").Contains("person.File.Pinned = byHand;"), "tech23 saves: a role the player sets by hand is pinned");
         string dir = ModSource("Tech/TechDirector.Assign.cs");
         Check(dir.Contains("if (!file.Assign)") && dir.Contains("Assigner(file.Place)") && ModSource("Tech/TechDirector.Firms.cs").Contains("AssignDay(day);"),
             "tech23 assign: only a firm that has it on, with a manager or the operations executive in post, is assigned, in the firms' morning");

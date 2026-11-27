@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Tech
             return skill;
         }
 
-        private int PeopleAt(string place)
+        private int FirmPeopleAt(string place)
         {
             int n = 0;
             for (int i = 0; i < _people.Count; i++)
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return "reallife_tech_mgr_already";
             }
-            return PeopleAt(person.File.Place) < 2 ? "reallife_tech_mgr_alone" : null;
+            return FirmPeopleAt(person.File.Place) < 2 ? "reallife_tech_mgr_alone" : null;
         }
 
         /// <summary>What naming somebody manager would do, read now; nothing is changed. False where they cannot be named.</summary>
@@ -145,7 +145,19 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>Names somebody the firm's manager, relieving the one before: the pay rise that comes with it (when they were not raised lately), the duties as they were set, and one notice.</summary>
+        /// <summary>The words of the question naming somebody asks: the rise, their skill, what it takes from their own work, and who is relieved.</summary>
+        internal string NameBody(ManagerPlan plan)
+        {
+            string skill = plan.Skill.ToString(CultureInfo.InvariantCulture), span = plan.Span.ToString(CultureInfo.InvariantCulture), own = TechText.Mille(1000 - FirmManagerCatalogue.OwnWorkShare);
+            string body = plan.Rise
+                ? TechText.Fill("reallife_tech_mgr_confirm_name_body", "name", plan.Name, "percent", TechText.Bp(FirmManagerCatalogue.RiseBp), "before", TechText.Rate(plan.PaidBefore),
+                    "after", TechText.Rate(plan.PaidAfter), "skill", skill, "span", span, "own", own)
+                : TechText.Fill("reallife_tech_mgr_confirm_name_rested", "name", plan.Name, "skill", skill, "span", span, "own", own);
+            return plan.Replaces.Length > 0 ? body + " " + TechText.Fill("reallife_tech_mgr_confirm_name_replaces", "old", plan.Replaces) : body;
+        }
+
+        /// <summary>Names somebody the firm's manager, relieving the one before: the pay rise that comes with it (when they were not raised lately), the duties as they were set, and one
+        /// notice.</summary>
         internal bool NameManager(string id)
         {
             if (!PlanManager(id, out ManagerPlan plan))
@@ -321,7 +333,8 @@ namespace RealLifeOverhaul.Tech
                 ManagerReport(post, boss, day);
                 if (Verbose)
                 {
-                    Logger?.Info("Tech check (manager, " + boss.Business + ", day " + day + "): skill " + skill + ", " + span + " role move(s) a day, " + moved + " moved, " + post.WRaises + " raise(s) and "
+                    Logger?.Info("Tech check (manager, " + boss.Business + ", day " + day + "): skill " + skill + ", " + span + " role move(s) a day, " + moved + " moved, " + post.WRaises
+                        + " raise(s) and "
                                  + post.WAds + " ad(s) and " + post.WOffers + " offer(s) this week, " + post.Worn.Count + " wearing thin and " + post.Idle.Count + " idle named: "
                                  + (moved <= span ? "PASS" : "FAIL"));
                 }
@@ -332,7 +345,8 @@ namespace RealLifeOverhaul.Tech
             }
             if (Verbose && runs > 0)
             {
-                Logger?.Info("Tech check (managers' morning, day " + day + "): " + runs + " firm(s) run in " + ((UnityEngine.Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
+                Logger?.Info("Tech check (managers' morning, day " + day + "): " + runs + " firm(s) run in " + ((UnityEngine.Time.realtimeSinceStartup - started) * 1000f).ToString("0.0",
+                    CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
 
@@ -463,7 +477,8 @@ namespace RealLifeOverhaul.Tech
                         {
                             int why = _mPlan.Why[RoleMovePlan.WhyProduct] > 0 ? RoleMovePlan.WhyProduct : _mPlan.Why[RoleMovePlan.WhyContract] > 0 ? RoleMovePlan.WhyContract
                                 : _mPlan.Why[RoleMovePlan.WhyBranding] > 0 ? RoleMovePlan.WhyBranding : _mPlan.Why[RoleMovePlan.WhyCloud] > 0 ? RoleMovePlan.WhyCloud : RoleMovePlan.WhyHyper;
-                            post.Last = TechText.Fill("reallife_tech_mgr_held", "role", TechText.Role(to), "why", TechText.Fill(RoleMoveRules.WhyKey(why), "firm", _mPlan.WhyPlace[why] ?? string.Empty));
+                            post.Last = TechText.Fill("reallife_tech_mgr_held", "role", TechText.Role(to), "why", TechText.Fill(RoleMoveRules.WhyKey(why), "firm",
+                                _mPlan.WhyPlace[why] ?? string.Empty));
                         }
                         continue;
                     }
@@ -618,7 +633,8 @@ namespace RealLifeOverhaul.Tech
             if (!post.QuietWeek)
             {
                 Tell(NotificationType.Info, "reallife_tech_mgr_week", Data("name", boss.Name, "firm", boss.Business, "moves", post.WMoves.ToString(CultureInfo.InvariantCulture),
-                    "raises", post.WRaises.ToString(CultureInfo.InvariantCulture), "ads", post.WAds.ToString(CultureInfo.InvariantCulture), "offers", post.WOffers.ToString(CultureInfo.InvariantCulture),
+                    "raises", post.WRaises.ToString(CultureInfo.InvariantCulture), "ads", post.WAds.ToString(CultureInfo.InvariantCulture), "offers",
+                        post.WOffers.ToString(CultureInfo.InvariantCulture),
                     "worn", post.WWorn.ToString(CultureInfo.InvariantCulture), "idle", post.WIdle.ToString(CultureInfo.InvariantCulture)), TabTeam, Row(boss.File));
             }
             post.ClearWeek();
@@ -637,7 +653,7 @@ namespace RealLifeOverhaul.Tech
             {
                 StudioViews.Fact(page, "reallife_tech_mgr_fact", line);
             }
-            else if (PeopleAt(firm.File.Place) >= 2)
+            else if (FirmPeopleAt(firm.File.Place) >= 2)
             {
                 StudioViews.Fact(page, "reallife_tech_mgr_fact", TechText.T("reallife_tech_mgr_fact_none"));
             }

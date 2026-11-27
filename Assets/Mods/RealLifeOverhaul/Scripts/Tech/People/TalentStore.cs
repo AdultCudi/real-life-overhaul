@@ -157,7 +157,8 @@ namespace RealLifeOverhaul.Tech
                 int vacancies = TalentCatalogue.Clamp(x.Int(), 0, FirmManagerCatalogue.VacanciesMost);
                 for (int v = 0; v < vacancies; v++)
                 {
-                    g.Vacancies.Add(new Vacancy { Role = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.RoleCount - 1), Level = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.Levels - 1), Day = x.Int() });
+                    g.Vacancies.Add(new Vacancy { Role = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.RoleCount - 1), Level = TalentCatalogue.Clamp(x.Int(), 0,
+                        TalentCatalogue.Levels - 1), Day = x.Int() });
                 }
                 int ads = TalentCatalogue.Clamp(x.Int(), 0, FirmManagerCatalogue.AdsMost);
                 for (int a = 0; a < ads; a++)

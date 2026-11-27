@@ -689,7 +689,8 @@
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSearchRush = true;        // ...a search firm's search can be rushed for a share of its fee for each day saved (off: it takes its days)
-        public static bool TechManager = true;           // a tech firm's named manager acts (balances roles to targets, re-hires, agrees routine raises, flags burnout; off: no manager acts, the posts are kept)
+        // a tech firm's named manager acts (balances roles to targets, re-hires, agrees routine raises, flags burnout; off: no manager acts, the posts are kept)
+        public static bool TechManager = true;
         public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender

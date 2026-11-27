@@ -79,7 +79,8 @@ namespace RealLifeOverhaul.Ui
             var labels = new List<string>(6);
             var values = new List<string>(6);
             labels.Add(TechText.T("reallife_roles_move_lbl_plan"));
-            values.Add(plan.Moved > 0 ? TechText.Fill("reallife_roles_move_plan", "count", plan.Moved.ToString(Inv), "from", fromName, "to", toName, "going", going) : TechText.T("reallife_roles_move_none"));
+            values.Add(plan.Moved > 0 ? TechText.Fill("reallife_roles_move_plan", "count", plan.Moved.ToString(Inv), "from", fromName, "to", toName, "going", going)
+                : TechText.T("reallife_roles_move_none"));
             labels.Add(TechText.T("reallife_roles_move_lbl_game"));
             Feed feed = StudioFeeds.Of(TalentCatalogue.Role(to));
             values.Add(TechText.Fill(StudioFeeds.RoleKey(feed), "parts", RolesApp.PartsLine(feed), "role", toName));
@@ -88,7 +89,8 @@ namespace RealLifeOverhaul.Ui
                 if (plan.Why[k] > 0)
                 {
                     labels.Add(TechText.T("reallife_roles_move_lbl_left"));
-                    values.Add(TechText.Fill("reallife_roles_move_refused", "count", plan.Why[k].ToString(Inv), "why", TechText.Fill(RoleMoveRules.WhyKey(k), "firm", plan.WhyPlace[k] ?? string.Empty)));
+                    values.Add(TechText.Fill("reallife_roles_move_refused", "count", plan.Why[k].ToString(Inv), "why", TechText.Fill(RoleMoveRules.WhyKey(k), "firm",
+                        plan.WhyPlace[k] ?? string.Empty)));
                 }
             }
             if (plan.Away + plan.CannotHold > 0)
@@ -252,7 +254,8 @@ namespace RealLifeOverhaul.Ui
                 set.More.Add(Act(ClearTargets, 0, TechText.T("reallife_tech_mgr_button_clear"), UiButtonKind.Secondary, UiIcon.Close));
                 band.Rows.Add(set);
             }
-            band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(RemoveManager, 0, TechText.T("reallife_tech_mgr_button_remove"), UiButtonKind.Destructive, UiIcon.SignOut) });
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(RemoveManager, 0, TechText.T("reallife_tech_mgr_button_remove"),
+                UiButtonKind.Destructive, UiIcon.SignOut) });
             form.Right.Add(band);
         }
 
@@ -263,16 +266,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            string id = person.File.Id, name = plan.Name, firm = plan.Firm, skill = plan.Skill.ToString(Inv), span = plan.Span.ToString(Inv), own = TechText.Mille(1000 - FirmManagerCatalogue.OwnWorkShare);
-            string body = plan.Rise
-                ? "reallife_tech_mgr_confirm_name_body".Localize(new { name, firm, percent = TechText.Bp(FirmManagerCatalogue.RiseBp), before = TechText.Rate(plan.PaidBefore), after = TechText.Rate(plan.PaidAfter),
-                    skill, span, own })
-                : "reallife_tech_mgr_confirm_name_rested".Localize(new { name, firm, skill, span, own });
-            if (plan.Replaces.Length > 0)
-            {
-                body += " " + "reallife_tech_mgr_confirm_name_replaces".Localize(new { old = plan.Replaces });
-            }
-            GameConfirm.Show("reallife_tech_mgr_confirm_name_title".Localize(new { name, firm }), body, () =>
+            string id = person.File.Id, name = plan.Name, firm = plan.Firm;
+            string body = d.NameBody(plan);
+            GameConfirm.Show("reallife_tech_mgr_confirm_name_title".Localize(new { name, firm }), "reallife_tech_mgr_confirm_name_text".Localize(new { body }), () =>
             {
                 d.NameManager(id);
                 _local++;

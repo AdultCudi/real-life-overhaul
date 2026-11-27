@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _people.Count; i++)
             {
                 string at = _people[i].File.Place;
-                int n = at.Length > 0 ? PeopleAt(at) : 0;
+                int n = at.Length > 0 ? FirmPeopleAt(at) : 0;
                 if (n > most)
                 {
                     most = n;

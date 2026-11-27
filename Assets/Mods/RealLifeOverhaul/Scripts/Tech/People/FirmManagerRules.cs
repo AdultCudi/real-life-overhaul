@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Tech
         public const int VacancyDays = 45;          // days a vacancy is kept before the manager lets it go
         public const int AdsMost = 2;               // ads the manager keeps open at once
         public const int RetryDays = 5;             // days before the manager tries again after an ad could not be paid for
-        public const int RaiseCeilingBp = 600;      // the routine raise a manager agrees alone: what a review of rating 4 or 5 asks for. Above it, or the player's own limit when higher, it waits for the player
+        // the routine raise a manager agrees alone: what a review of rating 4 or 5 asks for. Above it, or the player's own limit when higher, it waits for the player
+        public const int RaiseCeilingBp = 600;
         public const int HaggleMost = 150;          // thousandths a top manager takes off the raise a person asked for
         public const int WornFrom = 500;            // burnout, thousandths, from which a skilled manager flags somebody as wearing thin
         public const int WornSlack = 5;             // thousandths of burnout a manager is slower to see for each point of skill under SeesThroughAt
@@ -205,7 +206,8 @@ namespace RealLifeOverhaul.Tech
         public static bool TakeCounter(int counter, int going) => going > 0 && (long)counter * 10000 <= (long)going * FirmManagerCatalogue.ChoiceCeilingBp;
 
         /// <summary>The burnout, in thousandths, from which a manager of this skill sees somebody wearing thin: from 500 for a skilled one, later for a weaker.</summary>
-        public static int WornLine(int skill) => FirmManagerCatalogue.WornFrom + Math.Max(0, FirmManagerCatalogue.SeesThroughAt - TalentCatalogue.Clamp(skill, 0, 100)) * FirmManagerCatalogue.WornSlack;
+        public static int WornLine(int skill) => FirmManagerCatalogue.WornFrom + Math.Max(0, FirmManagerCatalogue.SeesThroughAt - TalentCatalogue.Clamp(skill, 0,
+            100)) * FirmManagerCatalogue.WornSlack;
 
         /// <summary>True if somebody is wearing thin by a manager's eye: burnout, in thousandths, at their line.</summary>
         public static bool WearingThin(int burnout, int skill) => burnout >= WornLine(skill);

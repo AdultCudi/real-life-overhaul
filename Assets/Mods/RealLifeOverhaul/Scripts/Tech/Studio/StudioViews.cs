@@ -468,7 +468,7 @@ namespace RealLifeOverhaul.Tech
             int days = StudioRules.DaysLeft(g.Work - g.Done, points);
             Line(b, days > 0 ? P + "build_progress" : P + "build_progress_still", ViewTone.Plain, "phase", fmt.Text(PhaseKey(g.Phase)), "done", fmt.Mille(StudioRules.Progress(g)),
                 "days", fmt.Whole(days));
-            Makers(b, g, s, fmt);   // which roles make each part, and what the team lacks
+            Makers(v.Section(P + "sec_makers"), g, s, fmt);   // which roles make each part, and what the team lacks, in a section of its own
             Line(b, P + "build_parts", ViewTone.Plain, "design", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Design)), "tech", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Tech)),
                 "art", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Art)), "content", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Content)),
                 "polish", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Polish)), "quality", fmt.Whole(StudioRules.Quality(g)));

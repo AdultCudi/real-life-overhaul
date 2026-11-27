@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Tech;
+using TPart = RealLifeOverhaul.Tech.Part;
 
 // The tech staff of 27 Nov 2026 (a player's three asks): the roles of several people changed together from the Team page (who goes first, what it costs, what it will not
 // break), which roles build which part of a game and what the studio lacks (the production card, the Team and hiring pages, held to the studio's own rules), and a firm's named
@@ -102,31 +103,31 @@ internal static partial class Program
         {
             GameDev g = Ts29Game((int)GamePhase.Production);
             StudioRules.Build(g, Ts29Crew(kind), 1000, 10);
-            for (int p = 0; p < (int)Part.Count; p++)
+            for (int p = 0; p < (int)TPart.Count; p++)
             {
                 bool got = g.PartDone[p] > 0, wanted = StudioFeeds.Feeds(kind, p);
                 if (got != wanted)
                 {
                     each = false;
-                    why += " " + kind + "/" + (Part)p;
+                    why += " " + kind + "/" + (TPart)p;
                 }
             }
         }
         Check(each, "tech staff: in production a crew of engineers, of designers or of product people builds exactly the parts StudioFeeds says it feeds, and no other (" + why.Trim() + ")");
         GameDev testers = Ts29Game((int)GamePhase.Production);
         StudioRules.Build(testers, Ts29Crew(Feed.Testing), 1000, 10);
-        Check(testers.PartDone.All(x => x == 0) && StudioFeeds.Share(Feed.Testing, (int)Part.Polish) == 1000 && StudioFeeds.Share(Feed.Testing, (int)Part.Tech) == 0,
+        Check(testers.PartDone.All(x => x == 0) && StudioFeeds.Share(Feed.Testing, (int)TPart.Polish) == 1000 && StudioFeeds.Share(Feed.Testing, (int)TPart.Tech) == 0,
             "tech staff: testers build no part before the polish phase (they fix the bugs found), so polish stays at 0 until then");
         GameDev polish = Ts29Game((int)GamePhase.Polish);
         StudioRules.Build(polish, Ts29Crew(Feed.Testing), 1000, 10);
-        Check(polish.PartDone[(int)Part.Polish] > 0 && polish.PartDone.Take((int)Part.Polish).All(x => x == 0), "tech staff: in the polish phase testers build polish and nothing else");
+        Check(polish.PartDone[(int)TPart.Polish] > 0 && polish.PartDone.Take((int)TPart.Polish).All(x => x == 0), "tech staff: in the polish phase testers build polish and nothing else");
         GameDev halved = Ts29Game((int)GamePhase.Polish);
         GameDev whole = Ts29Game((int)GamePhase.Production);
         StudioCrew engineers = Ts29Crew(Feed.Engineering);
         StudioRules.Build(halved, engineers, 1000, 10);
         StudioRules.Build(whole, engineers, 1000, 10);
         long total = whole.PartDone.Sum();
-        Check(StudioCatalogue.PolishPhaseShare == 500 && halved.PartDone[(int)Part.Polish] > 0 && halved.PartDone[(int)Part.Polish] == total * StudioCatalogue.PolishPhaseShare / 1000
+        Check(StudioCatalogue.PolishPhaseShare == 500 && halved.PartDone[(int)TPart.Polish] > 0 && halved.PartDone[(int)TPart.Polish] == total * StudioCatalogue.PolishPhaseShare / 1000
               && halved.PartDone.Sum() == total,
             "tech staff: in the polish phase half of an engineering crew's work goes into polish (the card's 'half of everyone else's work' is the catalogue's " + StudioCatalogue.PolishPhaseShare + " thousandths)");
         // the gaps the card names are what the rules leave at nothing
@@ -141,22 +142,22 @@ internal static partial class Program
         people[(int)Feed.Engineering] = 3;
         people[(int)Feed.Testing] = 1;
         StudioFeeds.Gaps(people, (int)GamePhase.Production, gaps);
-        bool design = gaps.Contains("reallife_studio_gap_design") && !gaps.Contains("reallife_studio_gap_art") && noDesign.PartDone[(int)Part.Design] == 0 && noDesign.PartDone[(int)Part.Art] == 0;
+        bool design = gaps.Contains("reallife_studio_gap_design") && !gaps.Contains("reallife_studio_gap_art") && noDesign.PartDone[(int)TPart.Design] == 0 && noDesign.PartDone[(int)TPart.Art] == 0;
         people[(int)Feed.Product] = 1;
         StudioFeeds.Gaps(people, (int)GamePhase.Production, gaps);
-        bool art = gaps.Contains("reallife_studio_gap_art") && !gaps.Contains("reallife_studio_gap_design") && noArt.PartDone[(int)Part.Art] == 0 && noArt.PartDone[(int)Part.Design] > 0;
+        bool art = gaps.Contains("reallife_studio_gap_art") && !gaps.Contains("reallife_studio_gap_design") && noArt.PartDone[(int)TPart.Art] == 0 && noArt.PartDone[(int)TPart.Design] > 0;
         people[(int)Feed.Engineering] = 0;
         people[(int)Feed.Design] = 1;
         StudioFeeds.Gaps(people, (int)GamePhase.Production, gaps);
-        bool tech = gaps.Contains("reallife_studio_gap_engineering") && noTech.PartDone[(int)Part.Tech] == 0;
+        bool tech = gaps.Contains("reallife_studio_gap_engineering") && noTech.PartDone[(int)TPart.Tech] == 0;
         Check(design && art && tech, "tech staff: 'no designers or product people' leaves design and art at nothing, 'no designers' alone leaves art, 'no engineers' leaves tech, each as the rules do it ("
             + design + ", " + art + ", " + tech + ")");
         GameDev noTesters = Ts29Game((int)GamePhase.Polish);
         StudioRules.Build(noTesters, Ts29Crew(Feed.Engineering, Feed.Design), 1000, 10);
         people = new[] { 0, 3, 2, 0, 0, 0 };
         StudioFeeds.Gaps(people, (int)GamePhase.Polish, gaps);
-        Check(gaps.Contains("reallife_studio_gap_testing") && !gaps.Contains("reallife_studio_gap_polish_wait") && noTesters.PartDone[(int)Part.Polish] > 0
-              && noTesters.PartDone[(int)Part.Polish] < noTesters.PartDone.Sum(),
+        Check(gaps.Contains("reallife_studio_gap_testing") && !gaps.Contains("reallife_studio_gap_polish_wait") && noTesters.PartDone[(int)TPart.Polish] > 0
+              && noTesters.PartDone[(int)TPart.Polish] < noTesters.PartDone.Sum(),
             "tech staff: 'no testers' does not leave polish at nothing in the polish phase (it gets half of everyone's work), so the card says half, and says polish waits only before that phase");
         people = new[] { 0, 3, 2, 1, 1, 0 };
         StudioFeeds.Gaps(people, (int)GamePhase.Production, gaps);
@@ -181,8 +182,8 @@ internal static partial class Program
               && keys.Contains("reallife_studio_gap_design") && keys.Contains("reallife_studio_gap_testing") && keys.Contains("reallife_studio_gap_polish_wait"),
             "tech staff: the card of a game with an empty team names who builds what and every lack (" + string.Join(" ", keys.Where(k => k.Contains("gap") || k.Contains("makers") || k.Contains("groups"))) + ")");
         ViewLine makers = none.Sections.SelectMany(s => s.Lines).First(l => l.Key == "reallife_studio_build_makers");
-        Check(makers.Pairs.Length == 10 && makers.Pairs[1] == StudioFeeds.MakersKey((int)Part.Design) && makers.Pairs[3] == StudioFeeds.MakersKey((int)Part.Tech) && makers.Pairs[5] == StudioFeeds.MakersKey((int)Part.Art)
-              && makers.Pairs[7] == StudioFeeds.MakersKey((int)Part.Content) && makers.Pairs[9] == StudioFeeds.MakersKey((int)Part.Polish),
+        Check(makers.Pairs.Length == 10 && makers.Pairs[1] == StudioFeeds.MakersKey((int)TPart.Design) && makers.Pairs[3] == StudioFeeds.MakersKey((int)TPart.Tech) && makers.Pairs[5] == StudioFeeds.MakersKey((int)TPart.Art)
+              && makers.Pairs[7] == StudioFeeds.MakersKey((int)TPart.Content) && makers.Pairs[9] == StudioFeeds.MakersKey((int)TPart.Polish),
             "tech staff: the card's line on who builds what carries the five makers' texts in the parts' own order");
         place.FeedPeople[(int)Feed.Engineering] = 2;
         place.FeedPeople[(int)Feed.Design] = 1;
@@ -212,8 +213,8 @@ internal static partial class Program
         var plan = new RoleMovePlan();
         RoleMoveRules.Plan(folks, TalentCatalogue.QaTester, 0, floors, default, plan);
         // QA tester is Testing + Coding: Coding is an engineer's first skill (A) and a front end engineer's second (B)
-        Check(string.Join(",", plan.Ids) == "e2,e4,e3,f1,e1" && plan.Able == 5 && plan.Moved == 5 && plan.Left == 0,
-            "tech staff: all who can move go best fit first (Coding 80, 80, 60, then the front end engineer's 75 as theirs, then 40) with the newest of equal fit first (" + string.Join(",", plan.Ids) + ")");
+        Check(string.Join(",", plan.Ids) == "e2,e4,f1,e3,e1" && plan.Able == 5 && plan.Moved == 5 && plan.Left == 0,
+            "tech staff: all who can move go best fit first (Coding 80, 80, then the front end engineer's 75 as theirs, 60, 40) with the newest of equal fit first (" + string.Join(",", plan.Ids) + ")");
         Check(RoleMoveRules.Fit(TalentCatalogue.Role(0), 40000, 90000, TalentCatalogue.Role(10)) == 40000 && RoleMoveRules.Fit(TalentCatalogue.Role(1), 10000, 75000, TalentCatalogue.Role(10)) == 75000
               && RoleMoveRules.Fit(TalentCatalogue.Role(0), 40000, 90000, TalentCatalogue.Role(9)) == 0,
             "tech staff: fit is the scores held in the skills the two roles share, nothing for a role that shares none");
@@ -228,8 +229,7 @@ internal static partial class Program
             even.Add(Ts29Folk("p" + (5 - i), "P", 0, 1, 50000, 50000, 10 + i / 2));
         }
         RoleMoveRules.Plan(even, TalentCatalogue.QaTester, 0, floors, default, plan);
-        Check(string.Join(",", plan.Ids) == "p0,p1,p2,p3,p4,p5".Replace("p0,p1,p2,p3,p4,p5", "p1,p0,p3,p2,p5,p4").Replace("p1,p0,p3,p2,p5,p4", "p0,p1,p2,p3,p4,p5") == false.ToString() ? string.Empty : string.Join(",", plan.Ids),
-            string.Empty);
+        Check(string.Join(",", plan.Ids) == "p0,p1,p2,p3,p4,p5", "tech staff: of equal fit the newest hire goes first and the id breaks a tie (" + string.Join(",", plan.Ids) + ")");
         // who is left out, by name
         var mixed = new List<MoveFolk>
         {
@@ -315,7 +315,7 @@ internal static partial class Program
         var brand = new List<PlaceFloor> { new PlaceFloor { Place = "A", Name = "Kestrel", Builders = 2, Designers = 1, NeedDesigners = 1 } };
         RoleMoveRules.Plan(new List<MoveFolk> { Ts29Folk("w1", "A", web, 1, 1, 1, 1) }, swe, 0, brand, default, plan);
         Check(plan.Moved == 0 && plan.Why[RoleMovePlan.WhyBranding] == 1, "tech staff: the last designer of a firm with a branding contract stays");
-        RoleMoveRules.Plan(new List<MoveFolk> { Ts29Folk("w1", "A", web, 1, 1, 1, 1) }, TalentCatalogue.UxDesigner, 0, brand, default, plan);
+        RoleMoveRules.Plan(new List<MoveFolk> { Ts29Folk("w1", "A", web, 1, 1, 1, 1, holds: false) }, TalentCatalogue.UxDesigner, 0, brand, default, plan);
         Check(plan.Moved == 0 && plan.Able == 0 && plan.Why[RoleMovePlan.WhyBranding] == 0, "tech staff: a web designer cannot be moved to a role their skill does not hold, and that is not counted as a refusal");
         // the cloud and the hyperscaler
         var cloud = new CityFloor { CloudOpen = true, Reliability = InfraCatalogue.CloudEngineersLeast };
@@ -623,9 +623,9 @@ internal static partial class Program
             "tech staff sources: the kit's new action numbers and the amounts its steppers keep are their own");
         Check(Occurs(hiring, "StudioFeeds.RoleKey(StudioFeeds.Of(r))") == 2 && liveHead.Contains("StudioFeeds.RoleKey(StudioFeeds.Of(r))"),
             "tech staff sources: the new ad and the search page of both interfaces say what the role does for a game");
-        Check(Occurs(hiring + team + live + liveHead + oldMoves + liveMoves, "reallife_tech_assign_by_balance") == 3, "tech staff sources: a role the manager's balancing moved a person to says so on both interfaces (the file's line and the kit's)");
+        Check(Occurs(hiring + team + live + liveHead + oldMoves + liveMoves, "reallife_tech_assign_by_balance") == 2, "tech staff sources: a role the manager's balancing moved a person to says so on both interfaces (the file's line and the kit's)");
         // the studio's sort is the one place
-        Check(crew.Contains("switch (StudioFeeds.Of(h.Family, h.Tester))") && studio.Contains("StudioFeeds.Builds(StudioFeeds.Of(r))") && views.Contains("Makers(b, g, s, fmt);")
+        Check(crew.Contains("switch (StudioFeeds.Of(h.Family, h.Tester))") && studio.Contains("StudioFeeds.Builds(StudioFeeds.Of(r))") && views.Contains("Makers(v.Section(P + \"sec_makers\"), g, s, fmt);")
               && views.Contains("StudioFeeds.Gaps(s.FeedPeople, g.Phase, GapKeys);") && studioDesk.Contains("StudioFeeds.Of(p.Def)"),
             "tech staff sources: the studio's crew, its hands and the card all sort roles by StudioFeeds, so the card's words cannot part from the rules");
         // the manager in the day
@@ -681,7 +681,7 @@ internal static partial class Program
             "reallife_roles_move_why_branding", "reallife_roles_move_why_cloud", "reallife_roles_move_why_hyper", "reallife_roles_move_left_out", "reallife_roles_move_rule", "reallife_roles_move_button",
             "reallife_roles_button_move", "reallife_roles_move_stat", "reallife_roles_confirm_move_title", "reallife_roles_confirm_move_body", "reallife_roles_moved_all", "reallife_tech_assign_by_balance",
             "reallife_studio_role_engineering", "reallife_studio_role_design", "reallife_studio_role_product", "reallife_studio_role_testing", "reallife_studio_role_support", "reallife_studio_role_none",
-            "reallife_studio_build_makers", "reallife_studio_makers_design", "reallife_studio_makers_tech", "reallife_studio_makers_art", "reallife_studio_makers_content", "reallife_studio_makers_polish",
+            "reallife_studio_sec_makers", "reallife_studio_build_makers", "reallife_studio_makers_design", "reallife_studio_makers_tech", "reallife_studio_makers_art", "reallife_studio_makers_content", "reallife_studio_makers_polish",
             "reallife_studio_build_groups", "reallife_studio_gap_engineering", "reallife_studio_gap_design", "reallife_studio_gap_art", "reallife_studio_gap_testing", "reallife_studio_gap_polish_wait",
             "reallife_tech_mgr_title", "reallife_tech_mgr_about", "reallife_tech_mgr_none_label", "reallife_tech_mgr_label_post", "reallife_tech_mgr_firm_line", "reallife_tech_mgr_line", "reallife_tech_mgr_tally",
             "reallife_tech_mgr_fact", "reallife_tech_mgr_fact_none", "reallife_tech_mgr_firm_has", "reallife_tech_mgr_button_name", "reallife_tech_mgr_button_remove", "reallife_tech_mgr_button_target",
@@ -690,7 +690,7 @@ internal static partial class Program
             "reallife_tech_mgr_duty_balance_on", "reallife_tech_mgr_duty_balance_off", "reallife_tech_mgr_duty_hire_on", "reallife_tech_mgr_duty_hire_off", "reallife_tech_mgr_duty_raises_on",
             "reallife_tech_mgr_duty_raises_off", "reallife_tech_mgr_duty_watch_on", "reallife_tech_mgr_duty_watch_off", "reallife_tech_mgr_worn_names", "reallife_tech_mgr_idle_names",
             "reallife_tech_mgr_moved", "reallife_tech_mgr_held", "reallife_tech_mgr_posted", "reallife_tech_mgr_offered", "reallife_tech_mgr_someone", "reallife_tech_mgr_gone", "reallife_tech_mgr_named",
-            "reallife_tech_mgr_named_rested", "reallife_tech_mgr_removed", "reallife_tech_mgr_week", "reallife_tech_mgr_confirm_name_title", "reallife_tech_mgr_confirm_name_body",
+            "reallife_tech_mgr_named_rested", "reallife_tech_mgr_removed", "reallife_tech_mgr_week", "reallife_tech_mgr_confirm_name_title", "reallife_tech_mgr_confirm_name_text", "reallife_tech_mgr_confirm_name_body",
             "reallife_tech_mgr_confirm_name_rested", "reallife_tech_mgr_confirm_name_replaces", "reallife_tech_mgr_confirm_remove_title", "reallife_tech_mgr_confirm_remove_body",
             "reallife_tech_mgr_no_firm", "reallife_tech_mgr_leaving", "reallife_tech_mgr_already", "reallife_tech_mgr_alone"
         };
@@ -720,7 +720,7 @@ internal static partial class Program
         };
         bool makers = true;
         string off = string.Empty;
-        for (int p = 0; p < (int)Part.Count; p++)
+        for (int p = 0; p < (int)TPart.Count; p++)
         {
             string text = en[StudioFeeds.MakersKey(p)];
             foreach (KeyValuePair<Feed, string> kind in names)
@@ -729,7 +729,7 @@ internal static partial class Program
                 if (says != feeds)
                 {
                     makers = false;
-                    off += " " + (Part)p + ":" + kind.Value;
+                    off += " " + (TPart)p + ":" + kind.Value;
                 }
             }
         }
@@ -741,7 +741,7 @@ internal static partial class Program
               && groups.Contains("product managers, technical writers and business analysts") && groups.Contains("QA testers"),
             "tech staff texts: the groups line names the roles of each kind as the sort gives them (the roles checked above)");
         // a role's line: the parts it feeds, from the catalogue
-        Func<int, string> part = p => ((Part)p).ToString().ToLowerInvariant();
+        Func<int, string> part = p => ((TPart)p).ToString().ToLowerInvariant();
         Func<int, string> share = s => (s / 10) + "%";
         string eng = StudioFeeds.PartsLine(Feed.Engineering, part, share), des = StudioFeeds.PartsLine(Feed.Design, part, share), prod = StudioFeeds.PartsLine(Feed.Product, part, share);
         Check(eng == "tech 40%, content 60%" && des == "design 30%, art 50%, content 20%" && prod == "design 100%" && StudioFeeds.PartsLine(Feed.Testing, part, share) == string.Empty

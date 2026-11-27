@@ -144,7 +144,8 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < places.Length; i++)
             {
                 PlaceFloor f = floors[i];
-                places[i] = new PlaceFloor { Place = f.Place, Name = f.Name, Builders = f.Builders, Designers = f.Designers, Building = f.Building, NeedBuilders = f.NeedBuilders, NeedDesigners = f.NeedDesigners };
+                places[i] = new PlaceFloor { Place = f.Place, Name = f.Name, Builders = f.Builders, Designers = f.Designers, Building = f.Building, NeedBuilders = f.NeedBuilders,
+                    NeedDesigners = f.NeedDesigners };
             }
             int limit = plan.Asked > 0 ? plan.Asked : int.MaxValue;
             for (int k = 0; k < able.Count && plan.Ids.Count < limit; k++)

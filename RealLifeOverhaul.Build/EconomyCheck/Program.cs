@@ -1647,6 +1647,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--techstaff29")
+        {
+            TechStaff29();   // (the roles changed together, which roles build a game and what a studio lacks, and a firm's named manager, alone: TechStaff29Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech-points")
         {
             TechPoints();   // (a model's wait for its training and a product's reason for no customers alone: TechPointsChecks.cs)

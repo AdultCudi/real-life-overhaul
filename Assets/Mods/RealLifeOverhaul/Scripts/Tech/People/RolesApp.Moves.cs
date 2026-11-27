@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Tech
             RoleMovePlan plan = asked == 0 ? all : _director.PlanRoleMoves(_raiseIds, from, to, asked, out figures);
             if (box.HasSelector)
             {
-                box.Selector(nFrom, _moveFrom, i => TechText.Fill("reallife_roles_move_from_pick", "role", TechText.Role(_fromRoles[i]), "count", _heldBy[_fromRoles[i]].ToString(CultureInfo.InvariantCulture)), i =>
+                box.Selector(nFrom, _moveFrom, i => TechText.Fill("reallife_roles_move_from_pick", "role", TechText.Role(_fromRoles[i]), "count",
+                    _heldBy[_fromRoles[i]].ToString(CultureInfo.InvariantCulture)), i =>
                 {
                     _moveFrom = i;
                     _moveTo = 0;
@@ -216,7 +217,8 @@ namespace RealLifeOverhaul.Tech
                     _targetAt = i;
                     Refresh();
                 });
-                box.Selector(20, System.Math.Max(0, System.Math.Min(19, _targetCount - 1)), i => TechText.Fill("reallife_tech_mgr_target_count", "count", (i + 1).ToString(CultureInfo.InvariantCulture)), i =>
+                box.Selector(20, System.Math.Max(0, System.Math.Min(19, _targetCount - 1)), i => TechText.Fill("reallife_tech_mgr_target_count", "count", (i
+                    + 1).ToString(CultureInfo.InvariantCulture)), i =>
                 {
                     _targetCount = i + 1;
                     Refresh();
@@ -227,7 +229,8 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(row, InfoBox.Additional, "reallife_tech_mgr_button_clear", () => Do(() => _director.ClearManagerTargets(place)));
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_tech_mgr_button_remove", () => GameConfirm.Show("reallife_tech_mgr_confirm_remove_title".Localize(new { name = person.Name }),
-                "reallife_tech_mgr_confirm_remove_body".Localize(new { name = person.Name, firm = person.Business }), () => UiClone.Safe(() => Do(() => _director.RemoveManager(place))), null, null, null, true, true));
+                "reallife_tech_mgr_confirm_remove_body".Localize(new { name = person.Name, firm = person.Business }), () => UiClone.Safe(() => Do(() => _director.RemoveManager(place))),
+                    null, null, null, true, true));
         }
 
         private void Duty(InfoBox box, ManagerPost post, string place, int duty, string key)
@@ -246,16 +249,9 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             string id = person.File.Id, name = plan.Name, firm = plan.Firm;
-            string body = plan.Rise
-                ? "reallife_tech_mgr_confirm_name_body".Localize(new { name, firm, percent = TechText.Bp(FirmManagerCatalogue.RiseBp), before = TechText.Rate(plan.PaidBefore), after = TechText.Rate(plan.PaidAfter),
-                    skill = plan.Skill.ToString(CultureInfo.InvariantCulture), span = plan.Span.ToString(CultureInfo.InvariantCulture), own = TechText.Mille(1000 - FirmManagerCatalogue.OwnWorkShare) })
-                : "reallife_tech_mgr_confirm_name_rested".Localize(new { name, firm, skill = plan.Skill.ToString(CultureInfo.InvariantCulture), span = plan.Span.ToString(CultureInfo.InvariantCulture),
-                    own = TechText.Mille(1000 - FirmManagerCatalogue.OwnWorkShare) });
-            if (plan.Replaces.Length > 0)
-            {
-                body += " " + "reallife_tech_mgr_confirm_name_replaces".Localize(new { old = plan.Replaces });
-            }
-            GameConfirm.Show("reallife_tech_mgr_confirm_name_title".Localize(new { name, firm }), body, () => UiClone.Safe(() => Do(() => _director.NameManager(id))), null, null, null, true, false);
+            string body = _director.NameBody(plan);
+            GameConfirm.Show("reallife_tech_mgr_confirm_name_title".Localize(new { name, firm }), "reallife_tech_mgr_confirm_name_text".Localize(new { body }),
+                () => UiClone.Safe(() => Do(() => _director.NameManager(id))), null, null, null, true, false);
         }
     }
 }

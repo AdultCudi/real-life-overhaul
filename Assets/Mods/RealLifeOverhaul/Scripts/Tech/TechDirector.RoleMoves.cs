@@ -244,7 +244,8 @@ namespace RealLifeOverhaul.Tech
                     ok &= person != null && person.File.Role == to && person.File.Pinned && PaidNow(person) > 0;
                 }
                 Logger?.Info("Tech check (roles moved together, day " + Save.Day + "): " + plan.Moved + " " + TalentCatalogue.Role(from).Key + " to " + TalentCatalogue.Role(to).Key + " of "
-                             + plan.Able + " who could (" + plan.Refused + " refused for what it would break, " + plan.Left + " left as the count asked): every one holds the new role and keeps their pay: "
+                             + plan.Able + " who could (" + plan.Refused + " refused for what it would break, " + plan.Left
+                                 + " left as the count asked): every one holds the new role and keeps their pay: "
                              + (ok ? "PASS" : "FAIL"));
             }
             Changed();
