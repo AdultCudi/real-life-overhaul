@@ -181,7 +181,8 @@ internal static partial class Program
                 int[] split = FirmsCatalogue.FocusSplit[focus];
                 long made = (long)e * split[0] / 1000 * (1000 + SectorRules.ProductBoost(c)) / 1000 * 150 / 1000, self = (long)e * split[1] / 1000 / FirmsCatalogue.PointsPerFix;
                 long each = c.Testing > 0 ? c.Testing : TeamNeedRules.DefaultPoints;
-                bool closes = n.Points <= 0 ? n.More == 0 : (long)n.People * each >= n.Points && (n.More == 0 || (long)(n.People - 1) * each < n.Points);
+                bool closes = n.Points <= 0 ? n.More == 0 : c.Testing + n.More * each >= n.Points && (n.More == 0 || c.Testing + (n.More - 1) * each < n.Points) && n.People == t.Testers + n.More;
+                if (!(n.Made == made && n.Fixed == self && n.Points == Math.Max(0, made - self) && closes)) Console.WriteLine("TECHPLAN testers focus " + focus + " e " + e + ": made " + n.Made + "/" + made + " fixed " + n.Fixed + "/" + self + " points " + n.Points + " more " + n.More + " people " + n.People + " have " + n.Have + " testing " + c.Testing + " each " + each);
                 ok &= n.Made == made && n.Fixed == self && n.Points == Math.Max(0, made - self) && closes;
             }
         }
