@@ -197,9 +197,9 @@ internal static partial class Program
             "social, open hours: an outing of no length needs only the hour it starts in to be open");
 
         string places = ModSource(@"Social\SocialPlaces.cs"), life = ModSource(@"Social\SocialLife.cs"), dialog = ModSource(@"Social\PersonDialog.cs");
-        string find = MemberText(places, "public static bool Find(PlanKind kind");
+        string find = MemberText(places, "private static bool Search(PlanKind kind");   // Find asks Search, near a sight first for a walk, with the same hour
         string openFor = MemberText(places, "public static bool OpenFor(CityBuildingController building");
-        Check(find.Contains("(openAt >= 0f && !OpenFor(building, def, openAt))") && openFor.Contains("def.Match == null") && openFor.Contains("registration.temporarilyClosed")
+        Check(find.Contains("(openAt >= 0f && !OpenFor(building, def, openAt))") && places.Contains("return Search(kind, around, minDistance, maxDistance, out venue, not, openAt, false);") && openFor.Contains("def.Match == null") && openFor.Contains("registration.temporarilyClosed")
               && openFor.Contains("SocialRules.OpenThrough(at, def.Minutes, OpenAtHour)"),
             "social, open hours: a place is looked for open for the whole outing at the hour asked, by its business's own week of hours, and an outing with no business is never held up");
         string both = MemberText(life, "public static PlanFind PlaceAndHour(");

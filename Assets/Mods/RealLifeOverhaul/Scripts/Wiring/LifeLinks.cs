@@ -68,7 +68,15 @@ namespace RealLifeOverhaul
             // Leisure's list of sights, found once behind the loading screen: a walk is set near one when it can be.
             private static int SightCount()
             {
-                return Settings.Leisure ? Leisure.LeisureVenues.Landmarks.Count : 0;
+                try
+                {
+                    return Settings.Leisure ? Leisure.LeisureVenues.Landmarks.Count : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("LifeLinks.SightCount", e);
+                    return 0;
+                }
             }
 
             private static bool NearSight(UnityEngine.Vector3 at)

@@ -61,7 +61,7 @@ internal static partial class Program
             if (parts[i].StartsWith("f:", StringComparison.Ordinal))
             {
                 string[] fields = parts[i].Substring(2).Split(';')[0].Split('|');
-                parts[i] = "f:" + string.Join("|", fields, 0, fields.Length - 6);   // the line as it was before the two fields (and the three of what the owner's own businesses paid, and the manager-assigns switch, after them)
+                parts[i] = "f:" + string.Join("|", fields, 0, fields.Length - 8);   // the line as it was before the two fields, and without the six after them: what the owner's own businesses paid, the manager-assigns switch and the third month
             }
         }
         FirmsFile old = FirmsStore.Read(string.Join("~", parts), out _);
@@ -73,7 +73,7 @@ internal static partial class Program
             if (parts3[i].StartsWith("f:", StringComparison.Ordinal))
             {
                 string[] fields = parts3[i].Substring(2).Split(';')[0].Split('|');
-                parts3[i] = "f:" + string.Join("|", fields, 0, fields.Length - 4);   // the line as it was before what the owner's own businesses paid (and the manager-assigns switch after it)
+                parts3[i] = "f:" + string.Join("|", fields, 0, fields.Length - 6);   // the line as it was before what the owner's own businesses paid (and the manager-assigns switch and the third month after it)
             }
         }
         Firm o3 = FirmsStore.Read(string.Join("~", parts3), out _).FirmAt("Long Rd~7");
