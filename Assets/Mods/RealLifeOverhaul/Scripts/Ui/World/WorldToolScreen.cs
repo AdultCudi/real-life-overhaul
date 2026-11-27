@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (M.Open >= 0)
             {
-                M.OptionOffset = Math.Max(0f, M.OptionOffset + notches * UiTokens.ControlSmall * 3f);
+                M.OptionOffset = Math.Max(0f, M.OptionOffset - notches * UiTokens.ControlSmall * 3f);
                 _dirty = true;
             }
         }

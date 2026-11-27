@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            TripsPage.Begin();
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
@@ -100,6 +101,7 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Error(e);
                 _running = false;
             }
+            TripsPage.End();
             Instance = null;
         }
 
@@ -139,6 +141,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     StandDown(!trips && !spoil ? "the options are off" : "the credit side is not running");
                 }
+                TripsPage.Keep(false);   // the old page's Departures button goes with the trips
                 return;
             }
             if (!_running)
@@ -151,6 +154,7 @@ namespace RealLifeOverhaul.Economy
             }
             _tripsOn = trips;
             _spoilOn = spoil;
+            TripsPage.Keep(trips);   // the old interface's page of the route's departures
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GameEvent.onGameEventTriggered, _onEvent, ref _eventSeen);
             int now = LogisticsGame.Now;

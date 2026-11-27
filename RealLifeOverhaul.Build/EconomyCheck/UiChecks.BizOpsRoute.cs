@@ -9,6 +9,7 @@ internal static partial class Program
     {
         UiWords t = UiWords("en");
         BizOpsSlotChecks(t);
+        BizOpsStopRemoveChecks(t);
         float[] aspects = { 16f / 9f, 16f / 10f, 4f / 3f, 21f / 9f };
         string fault = null;
         int most = 0, least = int.MaxValue;
@@ -187,5 +188,57 @@ internal static partial class Program
         Check(choices == 20 && scrolls && lost == null && unreached == 0,
             "bizops: twenty vehicle slots are all cards of a region that scrolls, each driver's choice can be brought into view and the pad reaches every one ("
             + (choices != 20 ? choices + " of 20 laid" : !scrolls ? "it did not scroll" : lost ?? first ?? "all") + ")");
+    }
+
+    // A stop's Remove (the game's own button of a destination, whose question the game asks): every stop of a route has its trash button drawn with its glyph and
+    // a target that runs the remove for that stop, the chosen stop's and any other's, as cards and as the list a long route becomes. A player's picture showed the
+    // room kept for it and no button: an icon alone in a square button was dropped as if it were a word that did not fit.
+    private static void BizOpsStopRemoveChecks(UiWords t)
+    {
+        string fault = null;
+        foreach (int stops in new[] { 3, 7 })
+        {
+            foreach (int chosen in new[] { 0, 1 })
+            {
+                BizManModel m = UiSamples.OpsRoute(t, 12);
+                BizOpsStop[] three = m.Ops.Stops;
+                var many = new BizOpsStop[stops];
+                for (int i = 0; i < stops; i++)
+                {
+                    many[i] = three[i % three.Length];
+                    many[i].Open = i == chosen;
+                    many[i].Removable = true;
+                }
+                m.Ops.Stops = many;
+                var s = new UiScene();
+                BizManPages.Lay(s, m, UiFrame.FullMenu(16f / 9f, "BizMan"), true, UiDefaultKeys.Keyboard);
+                for (int i = 0; i < stops && fault == null; i++)
+                {
+                    int node = -1;
+                    for (int k = 0; k < s.NodeCount && node < 0; k++)
+                    {
+                        node = s.Nodes[k].Command == BizManPages.OpsStopRemove && s.Nodes[k].Arg == i ? k : -1;
+                    }
+                    int glyphs = 0;
+                    for (int k = 0; node >= 0 && k < s.ItemCount; k++)
+                    {
+                        glyphs += s.Items[k].Kind == UiKind.Icon && s.Items[k].Icon == UiIcon.Trash && s.Items[k].Node == node ? 1 : 0;
+                    }
+                    fault = node < 0 ? stops + " stops, stop " + (chosen + 1) + " chosen: stop " + (i + 1) + " has no remove target"
+                        : glyphs != 1 ? stops + " stops, stop " + (chosen + 1) + " chosen: stop " + (i + 1) + "'s remove shows " + glyphs + " glyphs" : null;
+                }
+            }
+        }
+        Check(fault == null, "bizops: every stop of a route, chosen or not, in cards or in a list, has a Remove that shows its trash glyph and runs the stop's remove (" + (fault ?? "all") + ")");
+        // A square icon button keeps its glyph whatever its size.
+        var u = new UiScene();
+        UiDraw.Button(u, UiAt.Screen, 0f, 0f, UiTokens.ControlSmall, UiTokens.ControlSmall, UiButtonKind.Quiet, null, UiIcon.Trash, UiAction.Count, UiDefaultKeys.Keyboard, 1, 0);
+        UiDraw.Button(u, UiAt.Screen, 0f, 100f, UiTokens.PairRow, UiTokens.PairRow, UiButtonKind.Quiet, null, UiIcon.Info, UiAction.Count, UiDefaultKeys.Keyboard, 2, 0);
+        int icons = 0;
+        for (int k = 0; k < u.ItemCount; k++)
+        {
+            icons += u.Items[k].Kind == UiKind.Icon ? 1 : 0;
+        }
+        Check(icons == 2, "ui: an icon alone in a button the size of a control or a row keeps its glyph (" + icons + " of 2 drawn)");
     }
 }

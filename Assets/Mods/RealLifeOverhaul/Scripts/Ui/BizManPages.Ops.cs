@@ -1074,7 +1074,8 @@ namespace RealLifeOverhaul.Ui
                 UiAt inside = at.In(card);
                 if (!st.Open)
                 {
-                    UiDraw.Node(s, at, cx, y, cw, ch, OpsStop, i, card);   // another stop: the whole card opens it
+                    // another stop: its card opens it, up to the remove at its right (two targets over one place left the pad no way to the remove)
+                    UiDraw.Node(s, at, cx, y, cw - (st.Removable ? pad + removeW + UiTokens.S1 : 0f), ch, OpsStop, i, card);
                 }
                 float ix = cx + pad, iw = cw - pad * 2f, hy = y + pad;
                 int t = UiDraw.Tile(s, inside, ix, hy + (head - tile) / 2f, tile, st.Warn ? UiRole.Warn : UiRole.None, false);
@@ -1092,7 +1093,12 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    UiDraw.TextMiddle(s, inside, tx, hy, head, tw, UiStyle.Title, UiRole.Text, st.Name, UiFlags.Truncate);
+                    // Another stop: its remove stands where the chosen one's does, so every stop can be taken out without opening it first.
+                    UiDraw.TextMiddle(s, inside, tx, hy, head, tw - (st.Removable ? removeW + UiTokens.S1 : 0f), UiStyle.Title, UiRole.Text, st.Name, UiFlags.Truncate);
+                    if (st.Removable)
+                    {
+                        UiDraw.Button(s, inside, ix + iw - removeW, hy + (head - removeW) / 2f, removeW, removeW, UiButtonKind.Quiet, null, UiIcon.Trash, UiAction.Count, keys, OpsStopRemove, i);
+                    }
                 }
                 float gy = hy + head + UiTokens.S2;
                 int shown = st.Goods != null ? Math.Min(StopCardGoods, st.Goods.Length) : 0;
@@ -1190,7 +1196,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     // Another stop: its place in words where the chosen one's choice stands, the whole row the target that opens it.
                     UiDraw.TextMiddle(s, inside, cx + UiTokens.S4, y, StopRow, choiceW - UiTokens.S4, UiStyle.Body, UiRole.Text, st.Name, UiFlags.Truncate);
-                    UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, StopRow, OpsStop, i, row);
+                    UiDraw.Node(s, at, x - UiTokens.S2, y, st.Removable ? rx - UiTokens.S1 - x + UiTokens.S2 : w + UiTokens.S4, StopRow, OpsStop, i, row);   // the row opens it, up to its remove
+                    if (st.Removable)
+                    {
+                        UiDraw.Button(s, inside, rx, y + (StopRow - removeW) / 2f, removeW, removeW, UiButtonKind.Quiet, null, UiIcon.Trash, UiAction.Count, keys, OpsStopRemove, i);
+                    }
                 }
                 if (st.Warn)
                 {

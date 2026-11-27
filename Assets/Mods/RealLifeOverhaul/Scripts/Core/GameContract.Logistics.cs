@@ -31,6 +31,13 @@ namespace RealLifeOverhaul
         public static readonly GameMember RivalDays = Field(TripsPart, Game, "BuildingRegistration", "dailyIncomes", "List<Single>");
         public static readonly GameMember RivalValuing = StaticMethod(TripsPart, Game, "Helpers.CompetitionHelper", "AreRecalculationsPending", "Boolean");
 
+        // Economy/Logistics/TripsPage: the game's own logistics page (the old interface) the route's departures are put on. Without them the old page has none and the kit's has.
+        private const string LogisticsUi = "UI.Smartphone.Apps.BizMan.LogisticsManagers.LogisticsManagerPlanUI";
+        public static readonly GameMember TripUiShow = Optional(Field(TripsPart, Game, LogisticsUi, "showWarehouseButton", "Button"));
+        public static readonly GameMember TripUiShowLabel = Optional(Field(TripsPart, Game, LogisticsUi, "showWarehouseLabel", "TextLocalizationComponent"));
+        public static readonly GameMember TripUiAdd = Optional(Field(TripsPart, Game, LogisticsUi, "addDestinationButton", "Button"));
+        public static readonly GameMember TripUiPlan = Optional(Field(TripsPart, Game, LogisticsUi, "_currentPlan", "LogisticsManagerPlan"));
+
         // Economy/Logistics/LogisticsGame.PumpCents: without it the rule's own price, the game's of today (1.30 a litre)
         public static readonly GameMember PumpPrice = Optional(StaticField(TripsPart, Game, "UI.Overlays.GasStationOverlay", "PricePerLiter", "Single"));
     }

@@ -178,6 +178,25 @@ namespace RealLifeOverhaul.Economy
             return made;
         }
 
+        /// <summary>
+        /// Send now as trips for the route with this id, once a game day for each route (SendNowLimit): -1 when it was sent today already, else the trips begun
+        /// (0 when the route is gone or no vehicle could leave). The one call both interfaces' Send now runs once the game's question is answered.
+        /// </summary>
+        public int SendNowOnce(string id)
+        {
+            LogisticsManagerPlan plan = LogisticsGame.Plan(id);
+            if (plan != null && !SendNowLimit.Allowed(id, LogisticsGame.Day))
+            {
+                return -1;   // sent while the question stood
+            }
+            int sent = plan != null ? SendNow(plan) : 0;
+            if (sent > 0)
+            {
+                SendNowLimit.Sent(id, LogisticsGame.Day);   // the day is used only when a vehicle left
+            }
+            return sent;
+        }
+
         // ------------------------------------------------------------------------------------------------- the trips' events
 
         // The earliest event due: a trip leaving, arriving at a stop or back at its warehouse. False when none is due.
