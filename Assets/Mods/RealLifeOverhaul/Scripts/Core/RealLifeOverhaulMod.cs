@@ -690,6 +690,10 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddToggle(Settings.SocialPassionsId, "reallife_social_passions", Settings.SocialPassions,
+                    v => Settings.SocialPassions = v)
+                .AddToggle(Settings.SocialMomentsId, "reallife_social_moments", Settings.SocialMoments,
+                    v => Settings.SocialMoments = v)
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
@@ -706,6 +710,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
+                .AddButton("reallife_social_test_passion", () => SocialDirector.Instance?.TestPassion())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
                 .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())

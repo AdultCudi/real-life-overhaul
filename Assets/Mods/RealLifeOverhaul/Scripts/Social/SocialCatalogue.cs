@@ -255,6 +255,10 @@ namespace RealLifeOverhaul
                 people[i] = p;
             }
             OneTrainer(people, jobs);
+            for (int i = 0; i < count; i++)
+            {
+                _ = people[i].Passion;   // each one's passion, from their own seed on a stream of its own: no roll of the cast above is touched
+            }
         }
 
         // A gym person who trains people is the one trainer: whoever else was dealt it has the job the gym person was dealt.
@@ -328,6 +332,7 @@ namespace RealLifeOverhaul
             p.LastContactDay = day;
             p.StageDay = day;
             p.AgeDay = day;
+            _ = p.Passion;   // their passion, from their own seed on a stream of its own (SocialPassionRules.Roll)
             return p;
         }
 
@@ -580,6 +585,10 @@ namespace RealLifeOverhaul
                 case MemoryCode.Party: return "reallife_social_memory_party";
                 case MemoryCode.PartyBad: return "reallife_social_memory_party_bad";
                 case MemoryCode.PartyTheirs: return "reallife_social_memory_party_theirs";
+                case MemoryCode.MomentSweet: return SocialMomentCatalogue.MemorySweet;
+                case MemoryCode.MomentTense: return SocialMomentCatalogue.MemoryTense;
+                case MemoryCode.MomentSilly: return SocialMomentCatalogue.MemorySilly;
+                case MemoryCode.PassionFound: return SocialMomentCatalogue.MemoryPassion;
                 default: return LoveCatalogue.MemoryKey(code) ?? "reallife_social_memory_met";
             }
         }

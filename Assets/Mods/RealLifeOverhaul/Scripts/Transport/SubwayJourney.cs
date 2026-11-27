@@ -335,6 +335,7 @@ namespace RealLifeOverhaul
             }
             Notifications.Show(NotificationType.Info, "reallife_subway_arrived",
                 new Dictionary<string, string>(2) { { "name", name }, { "minutes", Mathf.RoundToInt(_minutes).ToString() } }, 7f);
+            SocialHooks.RodeTransit();   // the people they meet next read that they came by the subway (Scripts/Social)
         }
 
         // Delays go to the phone when they begin, once a window.

@@ -1348,6 +1348,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--traits29")
+        {
+            Traits29();   // (people's passions and the moments on outings, alone: TraitChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--romance")
         {
             Romance();   // (who the player can fall for: their sex and age, nobody made on the edge of the gap, the age a face brings, the street's flirt, the city's couples, the People page in every language and the checks of other features that read it, alone: RomanceChecks.cs)

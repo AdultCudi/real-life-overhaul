@@ -278,7 +278,7 @@ namespace RealLifeOverhaul
         public static SocialWorth Worth(SocialPerson person, SocialTopic topic, bool warm, bool inPerson, bool firstOfTalk)
         {
             bool textedLately = person.LastTextDay > 0 && person.LastTextDay >= SocialLife.Day - 1;
-            return SocialRules.Chat(FirstOfDay(person, inPerson, firstOfTalk), inPerson, textedLately, warm, topic.BothFine);
+            return SocialPassionRules.Talk(person, SocialRules.Chat(FirstOfDay(person, inPerson, firstOfTalk), inPerson, textedLately, warm, topic.BothFine));
         }
 
         // The talk's first exchange counts the talk itself: on a call once a day, face to face every time.

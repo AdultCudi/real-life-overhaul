@@ -1652,6 +1652,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveRules.cs" Link="Mod\Love\LoveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveState.cs" Link="Mod\Love\LoveState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveCatalogue.cs" Link="Mod\Love\LoveCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialPassionRules.cs" Link="Mod\SocialPassionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialMomentRules.cs" Link="Mod\SocialMomentRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialPassionCatalogue.cs" Link="Mod\SocialPassionCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialMomentCatalogue.cs" Link="Mod\SocialMomentCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\SiteGroundRules.cs" Link="Mod\SiteGroundRules.cs" />
   </ItemGroup>
 </Project>

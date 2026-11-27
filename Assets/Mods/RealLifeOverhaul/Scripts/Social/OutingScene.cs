@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed partial class OutingScene : SocialScene
     {
-        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting, Bench, Late }
+        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting, Bench, Late, Moment }
 
         private readonly SocialPerson _who;
         private readonly bool _test;
@@ -107,6 +107,7 @@ namespace RealLifeOverhaul
                 Refusal = TestRefusal.NoVenue;
                 return false;
             }
+            SocialArrivalNote.Forget();
             _spot = _venue.Front;
             _first = SocialLife.First(_who);
             Dictionary<string, string> data = SocialLife.Data(_who, "outing", SocialLife.T(_def.Name));
@@ -199,6 +200,9 @@ namespace RealLifeOverhaul
                     {
                         LoveAnswered(now);
                     }
+                    break;
+                case Step.Moment:
+                    TickMoment(now);
                     break;
                 case Step.Parting:
                     if (!TickLeaving(now))

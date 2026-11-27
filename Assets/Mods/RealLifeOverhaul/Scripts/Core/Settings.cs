@@ -376,6 +376,8 @@
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialComposerId = "social_composer";
+        public const string SocialPassionsId = "social_passions";
+        public const string SocialMomentsId = "social_moments";
         public const string SocialNetworkingId = "social_networking";
         public const string LoveSeeingId = "love_seeing";
         public const string LoveHookupsId = "love_hookups";
@@ -852,6 +854,8 @@
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
         public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words
+        public static bool SocialPassions = true;        // everybody has a hidden passion that tilts how they react, found out by playing (Social/SocialPassionRules); off: only their two traits count
+        public static bool SocialMoments = true;         // about one outing in three has a small moment the player reacts to (Social/SocialMomentRules); off: outings run straight through
         public static bool SocialNetworking = true;      // some people met hold a position and, as they grow closer, do the player a favour each
         public static bool LoveSeeing = true;            // the player may ask somebody out while with somebody: a second, secret relationship that can be found out (Social/Love)
         public static bool LoveHookups = true;           // an evening can end at theirs or the player's: a night, and what comes of it (Social/Love)
@@ -1350,6 +1354,8 @@
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialComposer = Bool(modId, SocialComposerId, SocialComposer);
+            SocialPassions = Bool(modId, SocialPassionsId, SocialPassions);
+            SocialMoments = Bool(modId, SocialMomentsId, SocialMoments);
             SocialNetworking = Bool(modId, SocialNetworkingId, SocialNetworking);
             LoveSeeing = Bool(modId, LoveSeeingId, LoveSeeing);
             LoveHookups = Bool(modId, LoveHookupsId, LoveHookups);

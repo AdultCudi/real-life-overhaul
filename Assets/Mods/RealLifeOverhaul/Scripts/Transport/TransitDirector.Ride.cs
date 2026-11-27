@@ -251,6 +251,7 @@ namespace RealLifeOverhaul
             DressNear(to.Sign);
             ModState.AddModifier(ModState.MoodUp);
             Notifications.Show(NotificationType.Info, "reallife_transit_ride_arrived", new Dictionary<string, string>(1) { { "name", StopName(to) } }, 6f);
+            SocialHooks.RodeTransit();   // the people they meet next read that they came by bus (Scripts/Social)
             if (_rider.ArrivalBus != null)
             {
                 Logger?.Info("Transit check (arrival aboard): the bus stands at " + StopLabel(to) + (_rider.ArrivalBus.InBay ? " in its bay" : " in the lane") + " with the player "

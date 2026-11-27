@@ -26,6 +26,10 @@ namespace RealLifeOverhaul
 
         private void Wrap(float now, bool wentWell)
         {
+            if (StartMoment(now, wentWell))
+            {
+                return;   // a moment on the outing first (OutingScene.Moments); it calls Wrap again
+            }
             Prompt = null;
             Line = null;
             Unmark();
@@ -227,6 +231,14 @@ namespace RealLifeOverhaul
             {
                 trust -= 4f;
             }
+            // Their passion tilts what the outing was worth (SocialPassionRules): a cinephile at a film, a clubber at the bar, a gold digger
+            // when the player pays; and what the player may notice of it is a clue to what it is.
+            float untilted = affection;
+            SocialTilt tilt = SocialPassionRules.Outing(_who, _kind, OutingFacts(), pay);
+            affection = SocialPassionRules.Tilted(affection, tilt, quality);
+            trust = SocialPassionRules.TiltedTrust(trust, tilt, quality);
+            familiarity += tilt.FamAdd * quality;
+            float passionDelta = affection - untilted;
             int gift = 0;
             if (wentWell && (_kind == PlanKind.Lift || _kind == PlanKind.Moving) && !_who.Has(SocialTrait.Careful))
             {
@@ -251,6 +263,8 @@ namespace RealLifeOverhaul
                 _who.Wants = (PlanKind)(((int)_who.Wants + 1 + Random.Range(0, 3)) % ((int)PlanKind.Walk + 1));
                 _who.WantsDay = SocialLife.Day;
                 SocialLife.Change(_who, familiarity, affection, trust);
+                SocialPassionGame.Clue(_who, tilt.Clue, "an outing: " + _kind);
+                _who.MomentRow = _momentShown;   // (the next outing with them has none if this one had)
                 // Kept for a text the day after about how it went (SocialFollowRules.NextDay, in the save).
                 _who.AfterDay = SocialLife.Day;
                 _who.AfterKind = _kind;
@@ -309,10 +323,11 @@ namespace RealLifeOverhaul
                 CardLine("reallife_social_card_familiarity", Signed(familiarity) + NextOf(SocialMeter.Familiarity));
                 CardLine("reallife_social_card_affection", Signed(affection) + NextOf(SocialMeter.Affection));
                 CardLine("reallife_social_card_trust", Signed(trust) + NextOf(SocialMeter.Trust));
-                if (_lateBy > SocialRules.LateMinutes && !_who.Has(SocialTrait.Late))
+                if (_lateBy > SocialRules.LateMinutes && !LateIsFine)
                 {
                     _text.Append(SocialLife.T("reallife_social_card_late")).Append('\n');
                 }
+                PassionCardLines(passionDelta, tilt);
                 _text.Append('\n').Append(SocialLife.T(_who.Stage != before ? "reallife_social_card_now" : "reallife_social_card_still")).Append("   <b>")
                     .Append(SocialLife.StageName(_who)).Append("</b>");
             }

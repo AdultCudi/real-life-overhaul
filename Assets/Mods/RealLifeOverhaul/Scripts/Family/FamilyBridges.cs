@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Family
         public int FreeTo;
         public bool NightOwl;        // they keep late hours: up late, asleep in the morning
         public int Leaning;          // how they take the player's money: PartnerWealthRules.Neither, Supportive or Envious
+        public bool CareerFocused;   // their passion is their work: they will not step back, or stop, for a successful partner (PartnerWorkRules.CareerScale)
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>

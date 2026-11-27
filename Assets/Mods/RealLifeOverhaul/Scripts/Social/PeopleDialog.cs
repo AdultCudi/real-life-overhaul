@@ -131,6 +131,11 @@ namespace RealLifeOverhaul
             {
                 extra = extra == null ? next : extra + "\n" + next;
             }
+            string passion = SocialPassionGame.PageLine(p);   // what they live for, or that there is more to them than the player knows
+            if (passion != null)
+            {
+                extra = extra == null ? passion : extra + "\n" + passion;
+            }
             var entry = new DialogEntry
             {
                 messageData = extra != null
@@ -167,7 +172,8 @@ namespace RealLifeOverhaul
             }
             Dictionary<string, string> data = SocialLife.Data(p);
             data["memories"] = text.Length > 0 ? text.ToString() : SocialLife.T("reallife_social_people_no_memories");
-            data["traits"] = traits.ToString();
+            string passionPart = SocialPassionGame.HistoryPart(p);
+            data["traits"] = passionPart != null ? traits + ". " + passionPart : traits.ToString();
             data["days"] = Mathf.Max(0, day - p.MetDay).ToString();
             data["money"] = p.Debt > 0 ? SocialLife.T("reallife_social_people_you_owe").Replace("{amount}", SocialLife.Money(p.Debt))
                 : p.Loan > 0 ? SocialLife.T("reallife_social_people_owes_you").Replace("{amount}", SocialLife.Money(p.Loan))
