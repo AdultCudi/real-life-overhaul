@@ -147,8 +147,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (recruitment.candidatesAmountSlider != null && recruitment.deadlineSlider != null)
                 {
-                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_candidates", "count", Mathf.RoundToInt(recruitment.candidatesAmountSlider.value).ToString(CultureInfo.CurrentCulture),
-                        "days", Mathf.RoundToInt(recruitment.deadlineSlider.value).ToString(CultureInfo.CurrentCulture)), 1);
+                    Line(entry, CandidatesLine(Mathf.RoundToInt(recruitment.candidatesAmountSlider.value), Mathf.RoundToInt(recruitment.deadlineSlider.value)), 1);
                 }
                 Line(entry, UiText.Fill("reallife_ui_dialog_cost_now", "amount", Money(recruitment.totalPrice)), -1, -1);
                 return;
@@ -195,6 +194,18 @@ namespace RealLifeOverhaul.Ui
                 entry.NoCosts(DialogButton.Confirm);
                 Invest(investment, entry, heading);
             }
+        }
+
+        // "Up to 4 candidates within 1 day": one text for each of a single candidate and a single day, so the line never reads "1 days" or "1 candidates".
+        internal static string CandidatesLine(int count, int days)
+        {
+            string key = count == 1
+                ? (days == 1 ? "reallife_ui_dialog_cost_candidate_day" : "reallife_ui_dialog_cost_candidate")
+                : (days == 1 ? "reallife_ui_dialog_cost_candidates_day" : "reallife_ui_dialog_cost_candidates");
+            return key == "reallife_ui_dialog_cost_candidate_day" ? UiText.T(key)
+                : key == "reallife_ui_dialog_cost_candidates_day" ? UiText.Fill(key, "count", count.ToString(CultureInfo.CurrentCulture))
+                : key == "reallife_ui_dialog_cost_candidate" ? UiText.Fill(key, "days", days.ToString(CultureInfo.CurrentCulture))
+                : UiText.Fill(key, "count", count.ToString(CultureInfo.CurrentCulture), "days", days.ToString(CultureInfo.CurrentCulture));
         }
 
         // The bank's investment: no fund offered here, the cash under the bank's least (the form keeps each sum to the cash),

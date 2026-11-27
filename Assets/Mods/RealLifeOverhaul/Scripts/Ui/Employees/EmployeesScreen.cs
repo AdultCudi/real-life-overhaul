@@ -367,7 +367,11 @@ namespace RealLifeOverhaul.Ui
                     return candidate ? Done(UiWidgets.Press(_additional), "negotiate with " + Who() + ": handed to the game")
                         : Done(UiWidgets.Press(_bonus), "pay a bonus to " + Who() + ": handed to the game");
                 case 2:
-                    return Done(UiWidgets.Press(_positive), (candidate ? "hire " : "manage the schedule of ") + Who() + ": handed to the game");
+                    EmployeeInstance hiring = candidate ? _app.SelectedEmployeeInstance : null;
+                    float asked = hiring != null ? PaidWage.AskMoney(hiring.hourlyWage) : 0f;
+                    bool pressed = Done(UiWidgets.Press(_positive), (candidate ? "hire " : "manage the schedule of ") + Who() + ": handed to the game");
+                    AskedHire.After(hiring, asked);   // the kit's Hire pays what the list and the negotiation ask
+                    return pressed;
                 case 3:
                     return !candidate && HrManager();
                 default:
