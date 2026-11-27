@@ -685,6 +685,24 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>The ids of the mod's apps that are on the phone, with the kit screen each is drawn by (or null), for the self-test's walk (Diagnostics/SelfTest).</summary>
+        internal static void SelfTestList(List<KeyValuePair<string, string>> into)
+        {
+            foreach (KeyValuePair<string, PhoneApp> pair in ById)
+            {
+                if (pair.Value != null && pair.Value.Installed)
+                {
+                    into.Add(new KeyValuePair<string, string>(pair.Key, pair.Value._def.KitScreen));
+                }
+            }
+        }
+
+        /// <summary>True while the mod's app of that id has its own panel showing (for the self-test: an app that takes the whole screen counts as shown).</summary>
+        internal static bool SelfTestShowing(string id)
+        {
+            return id != null && ById.TryGetValue(id, out PhoneApp app) && app != null && app.Showing;
+        }
+
         /// <summary>Opens the mod's app of that id as its button does; false, with nothing done, when it is not on the phone.</summary>
         public static bool OpenById(string id)
         {
