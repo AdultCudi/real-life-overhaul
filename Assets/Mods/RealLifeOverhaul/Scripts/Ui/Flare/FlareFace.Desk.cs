@@ -22,12 +22,19 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, at, x + UiTokens.S8, cy + UiTokens.S8, w - UiTokens.S16, bottom - cy - UiTokens.S16, UiIcon.Store, m.List.EmptyTitle, m.List.EmptyBody);
                 return;
             }
-            float promoteW = string.IsNullOrEmpty(b.Promote) ? 0f : IconPillWidth(b.Promote);
+            float promoteW = string.IsNullOrEmpty(b.Promote) ? 0f : IconPillWidth(b.Promote), answerW = string.IsNullOrEmpty(b.AnswerAll) ? 0f : IconPillWidth(b.AnswerAll);
+            float edge = x + w - UiTokens.S4;   // the buttons stand at the right, the businesses to pick take what they leave
             if (promoteW > 0f)
             {
-                Pill(s, at, x + w - UiTokens.S4 - promoteW, cy, promoteW, b.Promote, PillKind.Orange, PromoteCommand, b.Chosen, UiIcon.Megaphone);
+                Pill(s, at, edge - promoteW, cy, promoteW, b.Promote, PillKind.Orange, PromoteCommand, b.Chosen, UiIcon.Megaphone);
+                edge -= promoteW + UiTokens.S2;
             }
-            cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8 - (promoteW > 0f ? promoteW + UiTokens.S2 : 0f), b.Picker, b.Chosen) + UiTokens.S4;
+            if (answerW > 0f)
+            {
+                Pill(s, at, edge - answerW, cy, answerW, b.AnswerAll, PillKind.Cyan, AnswerAllCommand, b.Chosen, UiIcon.Check);
+                edge -= answerW + UiTokens.S2;
+            }
+            cy += Picks(s, at, x + UiTokens.S4, cy, edge - (x + UiTokens.S4), b.Picker, b.Chosen) + UiTokens.S4;
             float cx = x + UiTokens.S4, inner = w - UiTokens.S8, gap = UiTokens.S4;
             float cw = UiDraw.SnapDown((inner - gap * 2f) / 3f);
             RatingCard(s, at, b, cx, cy, cw);

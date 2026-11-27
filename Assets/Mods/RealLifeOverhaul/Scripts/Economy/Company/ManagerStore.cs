@@ -73,6 +73,17 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(d.Place)).Append('|').Append(Clean(d.Subject)).Append('|').Append(Clean(d.Who)).Append('|').Append(Clean(d.Detail));
                 t.Append('|').Append(d.G.ToString(Inv));   // after the detail: a newer figure goes at the end, an older line has none
             }
+            if (s.Week.From > 0 && s.Week.Answered > 0)
+            {
+                // The week's answers to reviews: a part of its own, which an older reader skips and an older line does not have.
+                t.Append("^w:");
+                Join(t, s.Week.From, s.Week.Thanks, s.Week.Sorry, s.Week.Mixed);
+                t.Append('|');
+                for (int k = 0; k < s.Week.Places.Count && k < ManagerReviews.PlacesMost; k++)
+                {
+                    t.Append(k > 0 ? "/" : string.Empty).Append(Word(s.Week.Places[k].Place)).Append('*').Append(s.Week.Places[k].Before.ToString(Inv));
+                }
+            }
             return t.ToString();
         }
 
@@ -122,6 +133,24 @@ namespace RealLifeOverhaul.Economy
                                 }
                             }
                             break;
+                        case 'w':
+                        {
+                            string[] c = body.Split('|');
+                            s.Week.From = Math.Max(0, I(c, 0));
+                            s.Week.Thanks = CompanyCatalogue.Clamp(I(c, 1), 0, ManagerReviews.CountMost);
+                            s.Week.Sorry = CompanyCatalogue.Clamp(I(c, 2), 0, ManagerReviews.CountMost);
+                            s.Week.Mixed = CompanyCatalogue.Clamp(I(c, 3), 0, ManagerReviews.CountMost);
+                            foreach (string one in Records(c.Length > 4 ? c[4] : string.Empty, '/'))
+                            {
+                                string[] f = one.Split('*');
+                                int before;
+                                if (f.Length >= 2 && f[0].Length > 0 && int.TryParse(f[1], NumberStyles.Integer, Inv, out before) && s.Week.Places.Count < ManagerReviews.PlacesMost)
+                                {
+                                    s.Week.Places.Add(new ReviewPlace { Place = f[0], Before = Math.Max(0, before) });
+                                }
+                            }
+                            break;
+                        }
                         case 'd':
                             foreach (string record in Records(body))
                             {

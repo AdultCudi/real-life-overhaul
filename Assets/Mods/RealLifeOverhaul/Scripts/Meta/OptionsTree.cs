@@ -250,7 +250,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media")
-                    .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
+                    .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos", "flare_manager_replies")
                     .Also("social media app followers posts likes selfie influencer"),
                 S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population")
                     .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull"),

@@ -25,6 +25,7 @@ internal static partial class Program
         FlareCompleteReplies();
         FlareCompleteRivals();
         FlareReplyFitChecks();   // each answer fits a review, stands or costs, by one rule in both interfaces, bounded, saved and told (FlareReplyFitChecks.cs)
+        FlareBatchChecks();      // the same answers in bulk and by a manager: the rule, the caps, the words, the daily round and the save (FlareBatchChecks.cs)
         FlareCompleteHandlers();
         FlareCompleteCost();
         FlareCompleteCaret();
