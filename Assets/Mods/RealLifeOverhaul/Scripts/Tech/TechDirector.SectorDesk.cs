@@ -633,6 +633,18 @@ namespace RealLifeOverhaul.Tech
                     Pairs = new[] { "niche", TechText.T(NicheCatalogue.NameKey(founded.Niche)), "who", TechText.SegmentName(p.S) }
                 });
             }
+            if (firm != null && p.Stage < 2 && p.Put >= 0)
+            {
+                section.Lines.Insert(0, SectorViews.Points(p.Put, firm.Crew.Engineering, firm.Contracted, fmt));
+            }
+            if (p.K == ProductKind.Licence && p.Stage < 2)
+            {
+                long former = SectorRules.Former(_firmsFile, p, Save.Day, _sector.YearDays);
+                if (former > 0)
+                {
+                    section.Lines.Add(SectorViews.Former(former, fmt));
+                }
+            }
             return section;
         }
 

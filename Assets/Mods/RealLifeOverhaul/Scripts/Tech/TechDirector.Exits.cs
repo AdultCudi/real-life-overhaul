@@ -280,14 +280,10 @@ namespace RealLifeOverhaul.Tech
         // The firm's burn a day at the start's prices: what it loses a day, nothing for a firm that makes a profit.
         private long BurnOf(FirmPlace firm) => Math.Max(0L, Base(-FirmProfit(firm)));
 
-        /// <summary>A firm's worth by its books (FirmsRules.Value) and how its takings grew over the month before, basis points; cents at the start's prices.</summary>
+        /// <summary>A firm's worth by its books on its steady month (FirmsRules.Value) and how its takings have grown (FirmsRules.Growth), basis points; cents at the start's prices.</summary>
         internal void FirmValue(FirmPlace firm, out long value, out int growthBp)
         {
-            growthBp = 0;
-            if (TechStatusRules.Change(firm.File.Revenue30, firm.File.Prev30, firm.File.PrevDays, out int percent))
-            {
-                growthBp = TalentCatalogue.Clamp(percent * 100, -5000, 20000);
-            }
+            growthBp = FirmsRules.Growth(firm.File);   // over three months, so one spike buys none
             long arr = FirmsRules.Arr(_firmsFile, firm.File.Place);
             value = FirmsRules.Value(firm.File, arr, growthBp);
         }

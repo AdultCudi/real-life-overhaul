@@ -474,7 +474,7 @@ namespace RealLifeOverhaul.Tech
                     : TechText.T("reallife_tech_row_features", "ours", p.Features.ToString(), "theirs", p.RivalFeatures.ToString()), p.Features,
                         p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
                 row.Set(5, TechText.Whole(p.Users), p.Users);
-                Cents(row, 6, Level(FirmsRules.MonthlyRevenue(p)));
+                Cents(row, 6, Level(_director.MonthOf(p)));
                 int studio = p.K == ProductKind.Game ? _director.StudioQualityOf(p.Id) : -1;
                 int q = studio >= 0 ? studio * 10 : FirmsRules.Quality(p);   // a studio game's quality is its parts', 0 to 100
                 row.Set(7, TechText.Mille(q), q, q < 600 ? TableRow.Red : TableRow.Plain);
@@ -562,7 +562,7 @@ namespace RealLifeOverhaul.Tech
                 // under the sector a product has no rival of its own and no top on its features: its market's section below names the rivals
                 SayIf(box, TechText.NextFeature(p, true));
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
-                    "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
+                    "monthly", TechText.Cents(Level(_director.MonthOf(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
                 SayIf(box, TechText.OffSale(p));
             }
@@ -574,7 +574,7 @@ namespace RealLifeOverhaul.Tech
                     box.Line(TechText.Fill("reallife_tech_product_features_full", "most", FirmsCatalogue.FeaturesMost.ToString()), CellTone.Yellow);
                 }
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
-                    "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
+                    "monthly", TechText.Cents(Level(_director.MonthOf(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
                 SayIf(box, TechText.OffSale(p));
                 if (p.K == ProductKind.Licence && p.Stage < 2 && firm != null)

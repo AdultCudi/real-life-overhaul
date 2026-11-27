@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Ui
                     : TechText.T("reallife_tech_row_features", "ours", p.Features.ToString(Inv), "theirs", p.RivalFeatures.ToString(Inv));
                 row.Cells[4] = TechText.Whole(p.Users);
                 row.Values[4] = (int)Math.Min(int.MaxValue, p.Users);
-                row.Cells[5] = Cents(Level(FirmsRules.MonthlyRevenue(p)));
+                row.Cells[5] = Cents(Level(_d.MonthOf(p)));
                 int studio = p.K == ProductKind.Game ? _d.StudioQualityOf(p.Id) : -1;
                 int quality = studio >= 0 ? studio : FirmsRules.Quality(p) / 10;
                 row.Cells[6] = quality.ToString(Inv);
@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Figures = new[]
                 {
                     new UiFigureModel { Label = TechText.T("reallife_tech_col_customers"), Value = TechText.Whole(p.Users) },
-                    new UiFigureModel { Label = TechText.T("reallife_ui_tech_col_month"), Value = Cents(Level(FirmsRules.MonthlyRevenue(p))) },
+                    new UiFigureModel { Label = TechText.T("reallife_ui_tech_col_month"), Value = Cents(Level(_d.MonthOf(p))) },
                     new UiFigureModel { Label = TechText.T("reallife_ui_tech_col_quality"), Value = TechText.Mille(FirmsRules.Quality(p)) },
                     new UiFigureModel { Label = TechText.T("reallife_tech_col_bugs"), Value = p.Bugs.ToString(Inv) }
                 };
@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     string support = TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free), "monthly",
-                        Cents(Level(FirmsRules.MonthlyRevenue(p))),
+                        Cents(Level(_d.MonthOf(p))),
                         "support", FirmsRules.SupportNeeded(p).ToString(Inv), "have", firm != null ? firm.Crew.Support.ToString(Inv) : "0");
                     if (_d.SectorOn)
                     {

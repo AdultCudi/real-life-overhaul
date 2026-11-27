@@ -27,6 +27,17 @@ namespace RealLifeOverhaul.Tech
         private readonly Dictionary<string, long> _studioTickets = new Dictionary<string, long>(4);  // a studio's support tickets a day, as its last day gave them
         private StudioHand[] _hands = new StudioHand[32];
 
+        /// <summary>
+        /// What a product takes a month, cents at the start's prices, for the lists and the pages: its recurring revenue, or for a game on a subscription what the
+        /// studio kept on its last day on sale over a month's days (a game bought once earns by the copy, so none). The valuation's recurring revenue
+        /// (<see cref="FirmsRules.Arr"/>) stays what it was: a subscription game's takings reach a firm's worth through its steady months.
+        /// </summary>
+        internal long MonthOf(Product p)
+        {
+            GameDev g = p.K == ProductKind.Game && _studioOn ? _studio.GameOf(p.Id) : null;
+            return g != null ? g.Daily * FirmsCatalogue.MonthDays : FirmsRules.MonthlyRevenue(p);
+        }
+
         /// <summary>The studio's file; null while the part is off.</summary>
         public StudioFile Studio => _studioOn ? _studio : null;
 
