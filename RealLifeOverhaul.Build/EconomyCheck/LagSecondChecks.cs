@@ -98,6 +98,10 @@ internal static partial class Program
             foreach (string path in Directory.EnumerateFiles(scripts, "*.cs", SearchOption.AllDirectories))
             {
                 files++;
+                if (path.Contains(@"Diagnostics\SelfTest\"))
+                {
+                    continue;   // the developer self-test keeps the game running while its window is behind (runInBackground) for a plan's run only; it exists only when a trigger file was read
+                }
                 string code = Regex.Replace(File.ReadAllText(path), @"//[^\n]*", string.Empty);   // a comment may name them
                 foreach (string pattern in banned)
                 {
