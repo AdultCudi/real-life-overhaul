@@ -157,7 +157,18 @@ namespace RealLifeOverhaul
             HalfWidth = 0.98f, Front = 2.45f, Rear = -2.66f, Height = 1.90f, BonnetHeight = 1.22f
         };
 
-        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier, HaldenTarn };
+        public static readonly ModCarDef HaldenEmber = new ModCarDef
+        {
+            Id = "haldenember", TypeName = Prefix + "haldenember", Donor = GamePrefix + "vordpony", KindKey = "reallife_cars_kind_coupe",
+            // The sports car far under the Ferdinand 112 (130,000: faster, stronger): quicker than anything under it, and room for four boxes,
+            // one fewer than the Vord Pony (187,000) it is built on, so the Pony keeps something of its own.
+            Price = 58000, MaxFuel = 60f, Cargo = 4, MaxSpeed = 85, EnginePower = 140f, BrakeForce = 6000f, TurnRadius = 34, DamageIntensity = 0.48f,
+            FitsHandTruck = true, Luxury = true,
+            AxleFront = 1.38f, AxleRear = -1.27f, TrackHalf = 0.785f, WheelRadius = 0.33f, WheelWidth = 0.24f,
+            HalfWidth = 0.915f, Front = 2.25f, Rear = -2.25f, Height = 1.30f, BonnetHeight = 0.84f
+        };
+
+        public static readonly ModCarDef[] All = { HaldenPip, HaldenMarlow, HaldenMarlowEstate, HaldenDrover, HaldenCarrier, HaldenTarn, HaldenEmber };
 
         /// <summary>True for a vehicle type of the mod's own.</summary>
         public static bool IsOurs(string typeName)
