@@ -580,6 +580,8 @@ namespace RealLifeOverhaul
                 case MemoryCode.Party: return "reallife_social_memory_party";
                 case MemoryCode.PartyBad: return "reallife_social_memory_party_bad";
                 case MemoryCode.PartyTheirs: return "reallife_social_memory_party_theirs";
+                case MemoryCode.QuizAced: return "reallife_social_memory_quiz_aced";
+                case MemoryCode.QuizFlop: return "reallife_social_memory_quiz_flop";
                 default: return "reallife_social_memory_met";
             }
         }

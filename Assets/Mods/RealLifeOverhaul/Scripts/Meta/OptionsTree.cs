@@ -244,8 +244,14 @@ namespace RealLifeOverhaul.Meta
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
                     .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
+                    .FreeOpts("romance_younger", "romance_older")
+                    .Opts("friends_quiz", "social_first_impressions")
                     .Also("friends dating date people calls typing staff gossip")
-                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
+                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special")
+                    .Also("romance_younger", "age range gap younger partner dating romance window years limit too broad too narrow")
+                    .Also("romance_older", "age range gap older partner dating romance window years limit too broad too narrow")
+                    .Also("friends_quiz", "meet their friends introduction quiz questions hints listen know them best trust")
+                    .Also("social_first_impressions", "reputation name fame record trust first impression newly met stranger"),
                 S("networking").For("networking").Need("social").Opts("social_networking")
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),

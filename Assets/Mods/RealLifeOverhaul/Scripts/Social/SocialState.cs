@@ -55,6 +55,7 @@ namespace RealLifeOverhaul
             }
             Count = 0;
             KeptMore.Clear();
+            SocialFriendsStore.Reset();
             Plan.Clear();
             Offer.Clear();
             CastSeed = 0;
@@ -228,6 +229,10 @@ namespace RealLifeOverhaul
                 Count = SocialRules.BaseCast;
                 Day = day;
             }
+            else
+            {
+                SocialFriendsStore.Load(data, People, Count);   // what they let slip and the quizzes (a save before it has none)
+            }
             Loaded = true;
         }
 
@@ -274,6 +279,7 @@ namespace RealLifeOverhaul
             data[KeyOffer] = !offer.Active
                 ? string.Empty
                 : string.Join(Field.ToString(), offer.Person.ToString(inv), offer.Kind.ToString(inv), offer.Amount.ToString(inv), offer.Expires.ToString("F0", inv));
+            SocialFriendsStore.Save(data, People, Count);
         }
 
         // One line a person of slots from to to, by slot.

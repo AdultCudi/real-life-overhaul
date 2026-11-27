@@ -175,6 +175,10 @@
         public const string FamilyWealthMoodId = "family_wealth_mood";
         public const string FamilyExpectId = "family_expect";
         public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
+        public const string RomanceYoungerId = "romance_younger";   // years younger than the player that somebody they could fall for may be
+        public const string RomanceOlderId = "romance_older";       // ...and years older
+        public const string FriendsQuizId = "friends_quiz";         // friends drop hints about themselves, and quiz the player when they bring them to meet their friends
+        public const string FirstImpressionsId = "social_first_impressions";   // somebody newly met has heard of the player's name: their first trust moves with it
         public const string FamilyYearWeeksId = "family_year_weeks";
         public const string FamilyMomContactId = "family_mom_contact";
         public const string CivicId = "civic";
@@ -618,6 +622,10 @@
         public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
         public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
+        public static int RomanceYounger = RomanceRules.AgeGap;   // years under their own age that somebody they could fall for may be, 2 to 25 (RomanceRules.Window)
+        public static int RomanceOlder = RomanceRules.AgeGap;     // ...and years over it
+        public static bool FriendsQuiz = true;           // hints from people, and the quiz when they introduce their friends (off: an introduction is as it was)
+        public static bool FirstImpressions = true;      // the player's name goes before them: a new person's first trust is a little higher or lower for it
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
         public static bool FamilyMomContact = true;      // Mom gets in touch by herself: texts, calls, visits, introductions (off: she is only ever called), and at most one such contact a day
         public static bool Civic = true;                 // civic life: a city government and a construction programme
@@ -1126,6 +1134,11 @@
             FamilyWealthMood = Bool(modId, FamilyWealthMoodId, FamilyWealthMood);
             FamilyExpect = Bool(modId, FamilyExpectId, FamilyExpect);
             FamilyInterest = Int(modId, FamilyInterestId, FamilyInterest);
+            RomanceYounger = Int(modId, RomanceYoungerId, RomanceYounger);
+            RomanceOlder = Int(modId, RomanceOlderId, RomanceOlder);
+            FriendsQuiz = Bool(modId, FriendsQuizId, FriendsQuiz);
+            FirstImpressions = Bool(modId, FirstImpressionsId, FirstImpressions);
+            RomanceRules.Window(RomanceYounger, RomanceOlder);
             FamilyYearWeeks = Int(modId, FamilyYearWeeksId, FamilyYearWeeks);
             FamilyMomContact = Bool(modId, FamilyMomContactId, FamilyMomContact);
             Civic = Bool(modId, CivicId, Civic);

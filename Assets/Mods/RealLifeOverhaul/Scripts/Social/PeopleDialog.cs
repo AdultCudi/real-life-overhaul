@@ -121,6 +121,11 @@ namespace RealLifeOverhaul
             {
                 extra = extra == null ? network : extra + "\n" + network;
             }
+            string known = SocialHintGame.KnownLines(p);   // what they have let slip (the quiz's hints), once any is on
+            if (known != null)
+            {
+                extra = extra == null ? known : extra + "\n" + known;
+            }
             var entry = new DialogEntry
             {
                 messageData = extra != null

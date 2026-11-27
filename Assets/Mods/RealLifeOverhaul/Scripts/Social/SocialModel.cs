@@ -39,7 +39,9 @@ namespace RealLifeOverhaul
         Posted,    // tagged in a post of the player's on Flare
         Party,     // came to a party the player hosted (Parties)
         PartyBad,  // ...one that went badly
-        PartyTheirs   // the player came to a party of theirs
+        PartyTheirs,  // the player came to a party of theirs
+        QuizAced,     // answered all three of the friends' questions about them right (SocialFriendsRules)
+        QuizFlop      // ...and got all three wrong
     }
 
     /// <summary>
@@ -109,6 +111,12 @@ namespace RealLifeOverhaul
         public string LastLine;      // the key of the line they last sent by text: never sent twice running (SocialAskRules.Next); null none yet
         public int TourAskDay;       // the game day they last asked for the tour of the player's business; 0 never
         public int TourDay;          // the game day they were shown round it, after which they do not ask; 0 not yet
+        public int InterestSeed;     // the seed their things come from (SocialInterests), kept the first time it was needed so a new look never changes them; 0 not yet
+        public int Heard;            // the bits of InterestKind the player has heard them let slip: what People shows, and what the quiz counts as known
+        public int HintDay;          // the game day they last let something slip; 0 never
+        public int IntroDay;         // the game day they last brought friends to be met (the quiz, when it is on); 0 never
+        public int Quizzes;          // quizzes about them the player has sat
+        public int QuizBest;         // the most answers right in one of them, 0 to 3; read only while Quizzes is above 0
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;

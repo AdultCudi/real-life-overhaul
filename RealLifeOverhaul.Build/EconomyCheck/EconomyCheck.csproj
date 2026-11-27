@@ -409,6 +409,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialRules.cs" Link="Mod\SocialRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\RomanceRules.cs" Link="Mod\RomanceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialInterests.cs" Link="Mod\SocialInterests.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialInterests.Keys.cs" Link="Mod\SocialInterests.Keys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFriendsRules.cs" Link="Mod\SocialFriendsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFriendsStore.cs" Link="Mod\SocialFriendsStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialImpression.cs" Link="Mod\SocialImpression.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerWorkRules.cs" Link="Mod\PartnerWorkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\IncomeRules.cs" Link="Mod\IncomeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerVoiceRules.cs" Link="Mod\PartnerVoiceRules.cs" />

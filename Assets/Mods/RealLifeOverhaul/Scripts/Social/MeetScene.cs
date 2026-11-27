@@ -263,6 +263,14 @@ namespace RealLifeOverhaul
                 Person = _who, Introducer = brought ? _friend : null, Via = _kind == Kind.Introduction ? _friend : null,
                 Mode = _kind == Kind.DropBy ? SceneTalk.DropBy : brought ? SceneTalk.Introduction : SceneTalk.Meet
             };
+            if (talk.Mode == SceneTalk.Introduction && Settings.FriendsQuiz && _friend != null && _friend.Met)
+            {
+                // Their friends will quiz the player on the one who brought them: three questions made from that person's own things.
+                int seed = SocialInterests.SeedOf(_friend);
+                talk.Quiz = SocialFriendsRules.Make(seed, _friend.Heard, _friend.Quizzes);
+                SocialDirector.Logger?.Info("Social: " + _who.Name + " will quiz the player on " + _friend.Name + " (" + SocialInterests.Count(_friend.Heard) + " of " + SocialInterests.Kinds
+                                            + " things heard, " + _friend.Quizzes + " earlier quiz(zes)).");
+            }
             if (_kind == Kind.DropBy)
             {
                 bool shop = SocialTalk.Shop(out string name, out float sales, out _);
@@ -303,7 +311,7 @@ namespace RealLifeOverhaul
             }
             else if (talk != null && talk.Swapped)
             {
-                SocialLife.Meet(_who, talk.Warm, _kind == Kind.Introduction ? _friend : null);
+                SocialLife.Meet(_who, talk.Warm, _kind == Kind.Introduction ? _friend : null, talk.QuizRight);
                 D.Cast.Emoji(_a, CharacterEmojiName.CommonGreenHappy, 3f);
                 if (_friend != null)
                 {
@@ -311,9 +319,11 @@ namespace RealLifeOverhaul
                     SocialLife.Remember(_friend, MemoryCode.Introduced);
                     SocialLife.Change(_friend, 1f, 2f, 1f);
                 }
+                QuizCard(talk, true);
             }
             else if (talk != null && talk.Brushed)
             {
+                QuizCard(talk, false);
                 SocialState.LastMeetDay = SocialLife.Day;   // nobody else tries for a while either
                 D.Cast.Emoji(_a, CharacterEmojiName.CommonYellowNeutral, 3f);
                 SocialLife.Toast(NotificationType.Info, SocialLines.Pick(SocialCatalogue.MeetBrushed), null, 6f);
@@ -325,11 +335,48 @@ namespace RealLifeOverhaul
             }
             else
             {
+                QuizCard(talk, false);
                 SocialState.LastMeetDay = SocialLife.Day;
                 SocialLife.Toast(NotificationType.Info, "reallife_social_meet_no_numbers", null, 6f);
             }
             Gesture(_a, D.Props, ClipLibrary.Has("job_thank") ? "job_thank" : "wave_hello");
             Go(Step.After, now);
+        }
+
+        // After the quiz, a card in the way an outing's is: the answers right, what they did to the person's figures with how far each is from its next step,
+        // and, when the numbers were swapped, the first standing the new person gave the player for it. Nothing when the quiz was not played.
+        private void QuizCard(SceneTalk talk, bool met)
+        {
+            SocialQuiz quiz = talk != null ? talk.Quiz : null;
+            if (quiz == null || quiz.Asked == 0 || _friend == null)
+            {
+                return;
+            }
+            var text = new System.Text.StringBuilder(256);
+            text.Append(SocialLife.T("reallife_friends_card_score", new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "right", quiz.Right.ToString() }, { "total", SocialFriendsRules.Questions.ToString() }
+            })).Append('\n');
+            SocialCardText.Line(text, "reallife_social_card_familiarity", SocialCardText.Signed(quiz.Familiarity) + SocialCardText.NextOf(_friend, SocialMeter.Familiarity));
+            SocialCardText.Line(text, "reallife_social_card_affection", SocialCardText.Signed(quiz.Affection) + SocialCardText.NextOf(_friend, SocialMeter.Affection));
+            SocialCardText.Line(text, "reallife_social_card_trust", SocialCardText.Signed(quiz.Trust) + SocialCardText.NextOf(_friend, SocialMeter.Trust));
+            if (met && quiz.Over)
+            {
+                string figures = SocialCardText.Figures(SocialFriendsRules.Standing(quiz.Right));
+                if (figures.Length > 0)
+                {
+                    text.Append(SocialLife.T("reallife_friends_card_standing", SocialLife.Data(_who, "figures", figures))).Append('\n');
+                }
+            }
+            if (quiz.Over && quiz.Right >= SocialFriendsRules.Questions)
+            {
+                text.Append(SocialLife.T("reallife_friends_card_perfect")).Append('\n');
+            }
+            else if (quiz.Over && quiz.Right == 0)
+            {
+                text.Append(SocialLife.T("reallife_friends_card_disaster")).Append('\n');
+            }
+            D.ShowCard(SocialLife.T("reallife_friends_card_title", SocialLife.Data(_friend)), text.ToString().TrimEnd('\n'));
         }
 
         private void GiveUp(float now)
