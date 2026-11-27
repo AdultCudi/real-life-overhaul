@@ -364,10 +364,10 @@ namespace RealLifeOverhaul.Ui
             // what it gave once done, and what it still asks for with each figure ticked or not.
             private void PathLines(TechCard card)
             {
-                PathStep[] steps = TechPathViews.Build(_d.PathNow(), W);
+                TechPathStep[] steps = TechPathViews.Build(_d.PathNow(), W);
                 for (int i = 0; i < _d.PathShown; i++)
                 {
-                    PathStep s = steps[i];
+                    TechPathStep s = steps[i];
                     card.Tick(TechText.T(s.TitleKey) + " " + TechText.T(s.Done ? "reallife_tech_path_done" : "reallife_tech_path_not_yet"), s.Done);
                     card.Say(TechText.T(s.WhatKey), UiRole.Muted);
                     if (s.Done)

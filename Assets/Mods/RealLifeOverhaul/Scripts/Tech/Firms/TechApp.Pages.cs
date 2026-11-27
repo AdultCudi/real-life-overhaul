@@ -84,10 +84,10 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         private void Path(InfoBox box, FirmsFile f)
         {
-            PathStep[] steps = TechPathViews.Build(_director.PathNow(), _studioWords);
+            TechPathStep[] steps = TechPathViews.Build(_director.PathNow(), _studioWords);
             for (int i = 0; i < _director.PathShown; i++)
             {
-                PathStep s = steps[i];
+                TechPathStep s = steps[i];
                 Step(box, s.Done, s.TitleKey, null);
                 box.Line(TechText.T(s.WhatKey));
                 if (s.Done)
@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 for (int r = 0; r < s.Reqs.Count; r++)
                 {
-                    PathReq q = s.Reqs[r];
+                    TechPathReq q = s.Reqs[r];
                     box.Line(TechText.T(q.Met ? "reallife_tech_path_req_met" : "reallife_tech_path_req_unmet", "what", TechText.Fill(q.Key, q.Pairs)), q.Met ? CellTone.Plain : CellTone.Yellow);
                 }
             }

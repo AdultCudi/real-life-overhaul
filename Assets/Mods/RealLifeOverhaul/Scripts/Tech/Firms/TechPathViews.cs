@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>One thing a step asks for: its text, the figures in it, and whether it is met.</summary>
-    public struct PathReq
+    public struct TechPathReq
     {
         public string Key;
         public string[] Pairs;
@@ -28,11 +28,11 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>One step of the way up: what it means and where to do it, what it gave once done, and what it asks for with what is met.</summary>
-    public sealed class PathStep
+    public sealed class TechPathStep
     {
         public string TitleKey, WhatKey, GaveKey;
         public bool Done;
-        public readonly List<PathReq> Reqs = new List<PathReq>(5);
+        public readonly List<TechPathReq> Reqs = new List<TechPathReq>(5);
     }
 
     /// <summary>
@@ -53,26 +53,26 @@ namespace RealLifeOverhaul.Tech
 
         private static string[] Money(IStudioFormat fmt, long have, long need) => new[] { "have", fmt.Money(have), "need", fmt.Money(need) };
 
-        private static PathReq Req(string key, bool met, string[] pairs) => new PathReq { Key = key, Met = met, Pairs = pairs };
+        private static TechPathReq Req(string key, bool met, string[] pairs) => new TechPathReq { Key = key, Met = met, Pairs = pairs };
 
         /// <summary>The seven steps in order, each with its needs while not done.</summary>
-        public static PathStep[] Build(PathFacts f, IStudioFormat fmt)
+        public static TechPathStep[] Build(PathFacts f, IStudioFormat fmt)
         {
-            var steps = new PathStep[Steps];
+            var steps = new TechPathStep[Steps];
             long scale = TechPath.ScaleUpMonthly;
-            steps[0] = new PathStep { TitleKey = P + "studio", WhatKey = P + "studio_what", GaveKey = P + "studio_gave", Done = f.Firms > 0 };
+            steps[0] = new TechPathStep { TitleKey = P + "studio", WhatKey = P + "studio_what", GaveKey = P + "studio_gave", Done = f.Firms > 0 };
             steps[0].Reqs.Add(Req(P + "req_studio", f.Firms > 0, Pairs(fmt, f.Firms, 1)));
-            steps[1] = new PathStep { TitleKey = P + "product", WhatKey = P + "product_what", GaveKey = P + "product_gave", Done = f.LiveProducts > 0 };
+            steps[1] = new TechPathStep { TitleKey = P + "product", WhatKey = P + "product_what", GaveKey = P + "product_gave", Done = f.LiveProducts > 0 };
             steps[1].Reqs.Add(Req(P + "req_product", f.LiveProducts > 0, Pairs(fmt, f.LiveProducts, 1)));
             bool scaled = f.Monthly >= scale && f.People >= TechPath.ScaleUpPeople;
-            steps[2] = new PathStep { TitleKey = P + "scale", WhatKey = P + "scale_what", GaveKey = P + "scale_gave", Done = scaled };
+            steps[2] = new TechPathStep { TitleKey = P + "scale", WhatKey = P + "scale_what", GaveKey = P + "scale_gave", Done = scaled };
             steps[2].Reqs.Add(Req(P + "req_scale_monthly", f.Monthly >= scale, Money(fmt, f.Monthly, scale)));
             steps[2].Reqs.Add(Req(P + "req_scale_people", f.People >= TechPath.ScaleUpPeople, Pairs(fmt, f.People, TechPath.ScaleUpPeople)));
-            steps[3] = new PathStep { TitleKey = P + "centre", WhatKey = P + "centre_what", GaveKey = P + "centre_gave", Done = f.Centres > 0 };
+            steps[3] = new TechPathStep { TitleKey = P + "centre", WhatKey = P + "centre_what", GaveKey = P + "centre_gave", Done = f.Centres > 0 };
             steps[3].Reqs.Add(Req(P + "req_centre", f.Centres > 0, Pairs(fmt, f.Centres, 1)));
             int racksNeed = InfraRules.CloudRacksLeast(f.Share);
             long cloudCash = InfraRules.CloudCashLeast(f.Share);
-            steps[4] = new PathStep { TitleKey = P + "cloud", WhatKey = P + "cloud_what", GaveKey = P + "cloud_gave", Done = f.CloudOpen };
+            steps[4] = new TechPathStep { TitleKey = P + "cloud", WhatKey = P + "cloud_what", GaveKey = P + "cloud_gave", Done = f.CloudOpen };
             steps[4].Reqs.Add(Req(P + "req_cloud_racks", f.Racks >= racksNeed, Pairs(fmt, f.Racks, racksNeed)));
             steps[4].Reqs.Add(Req(P + "req_cloud_tier", f.TierTwo > 0, Pairs(fmt, f.TierTwo, 1)));
             steps[4].Reqs.Add(Req(P + "req_cloud_engineers", f.Engineers >= InfraCatalogue.CloudEngineersLeast, Pairs(fmt, f.Engineers, InfraCatalogue.CloudEngineersLeast)));
@@ -81,13 +81,13 @@ namespace RealLifeOverhaul.Tech
                 new[] { "have", fmt.Whole(f.Net), "need", fmt.Whole(f.Centres), "mbps", fmt.Whole(InfraCatalogue.NetNeeded) }));
             int hyperRacks = InfraRules.HyperRacks(f.Share);
             long hyperCash = InfraRules.HyperCash(f.Share);
-            steps[5] = new PathStep { TitleKey = P + "hyper", WhatKey = P + "hyper_what", GaveKey = P + "hyper_gave", Done = f.Hyper };
+            steps[5] = new TechPathStep { TitleKey = P + "hyper", WhatKey = P + "hyper_what", GaveKey = P + "hyper_gave", Done = f.Hyper };
             steps[5].Reqs.Add(Req(P + "req_hyper_regions", f.Districts >= InfraCatalogue.HyperRegions, Pairs(fmt, f.Districts, InfraCatalogue.HyperRegions)));
             steps[5].Reqs.Add(Req(P + "req_hyper_racks", f.RacksAll >= hyperRacks, Pairs(fmt, f.RacksAll, hyperRacks)));
             steps[5].Reqs.Add(Req(P + "req_hyper_cto", f.Cto, Pairs(fmt, f.Cto ? 1 : 0, 1)));
             steps[5].Reqs.Add(Req(P + "req_hyper_staff", f.StaffInfra >= InfraCatalogue.HyperStaffInfra, Pairs(fmt, f.StaffInfra, InfraCatalogue.HyperStaffInfra)));
             steps[5].Reqs.Add(Req(P + "req_hyper_cash", f.Cash >= hyperCash, Money(fmt, f.Cash, hyperCash)));
-            steps[6] = new PathStep { TitleKey = P + "ai", WhatKey = P + "ai_what", GaveKey = P + "ai_gave", Done = f.Models > 0 };
+            steps[6] = new TechPathStep { TitleKey = P + "ai", WhatKey = P + "ai_what", GaveKey = P + "ai_gave", Done = f.Models > 0 };
             steps[6].Reqs.Add(Req(P + "req_ai", f.Models > 0, Pairs(fmt, f.Models, 1)));
             return steps;
         }
