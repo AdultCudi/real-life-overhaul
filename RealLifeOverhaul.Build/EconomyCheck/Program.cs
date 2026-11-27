@@ -14,6 +14,14 @@ internal static partial class Program
     private static void Check(bool ok, string what)
     {
         _run++;
+        if (MemMode != 0)
+        {
+            _memWhat = what;
+            if (_run % 100 == 0)
+            {
+                MemSample();
+            }
+        }
         if (!ok)
         {
             _failed++;
@@ -2213,6 +2221,7 @@ internal static partial class Program
         OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
         UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
         UiOldSide();        // what only the kit had, given an equal on the game's widgets: the Economy app's People tab, a firm's whole page in the Tech app, the Mods page's switch that reads a fault (UiOldSideChecks.cs)
+        MemLine(true);
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
