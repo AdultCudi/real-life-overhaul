@@ -330,6 +330,12 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The manager of a place, as the mockup has it: their facts, the question waiting, what they decide, their limits, how they do, their log and their crew.
+        // A manager's count of decisions: "1 decision" has a text of its own.
+        private static string Decisions(Words w, int n)
+        {
+            return n == 1 ? w.T("reallife_co_f_decisions_one", "1 decision") : w.F("reallife_co_f_decisions", "{count} decisions", "count", n.ToString());
+        }
+
         private CompanyProfile ManagerProfile(CompanyDirector d, ManagedPlace mp, Words w)
         {
             ManagerFile m = mp.Own;
@@ -345,7 +351,7 @@ namespace RealLifeOverhaul.Ui
             Face(m.Name, m.Id);
             p.FactLabels = new[] { w.T("reallife_co_f_manager_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked",
                 "Asked you") };
-            p.FactValues = new[] { CompanyText.Day(m.From), w.PerHour(d.PayOf(m)), w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString()), asked.ToString() };
+            p.FactValues = new[] { CompanyText.Day(m.From), w.PerHour(d.PayOf(m)), Decisions(w, m.Decided), asked.ToString() };
             // The question waiting for the owner, if there is one.
             if (asked > 0)
             {
@@ -873,8 +879,7 @@ namespace RealLifeOverhaul.Ui
                 Status = CompanyText.T(x.Seen ? "reallife_mgr_in_post" : "reallife_hier_seat_waits"), StatusTone = x.Seen ? UiRole.Ok : UiRole.Warn,
                 FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_allowance", "Allowance"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_open_area",
                     "Open in their area") },
-                FactValues = new[] { CompanyText.Day(x.From), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(CompanyDirector.AllowanceOf(x))), w.F("reallife_co_f_decisions",
-                    "{count} decisions", "count", x.Decided.ToString()),
+                FactValues = new[] { CompanyText.Day(x.From), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(CompanyDirector.AllowanceOf(x))), Decisions(w, x.Decided),
                     d.OpenOfSeat(seat).ToString() }
             };
             Face(x.Name, x.Id);

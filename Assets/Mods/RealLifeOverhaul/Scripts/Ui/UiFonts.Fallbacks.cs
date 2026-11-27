@@ -357,6 +357,28 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Whether a character beyond the letters can be drawn: the faces' chain has it, or TextMeshPro's sheet of emoji (the game
+        /// ships its EmojiOne) does. For the text model's words as they come back, never a frame.
+        /// </summary>
+        public static bool Draws(int code)
+        {
+            try
+            {
+                TMP_FontAsset face = FirstFace();
+                if (code <= 0xFFFF && face != null && face.HasCharacter((char)code, true, false))
+                {
+                    return true;
+                }
+                TMP_SpriteAsset sheet = TMP_Settings.defaultSpriteAsset;
+                return sheet != null && TMP_SpriteAsset.SearchForSpriteByUnicode(sheet, (uint)code, true, out _) != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         // The first face read, whose line every copy is cut to: the three weights share one line.
         private static TMP_FontAsset FirstFace()
         {

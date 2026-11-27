@@ -206,6 +206,21 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>
+        /// The set for a business of this niche and game type. A gift shop, a florist and a hairdresser share fashion's niche
+        /// for the influencers, but fashion's words of fit, stitching and wardrobe read wrong under a souvenir: they take the shops' set.
+        /// </summary>
+        public static int SetOf(FlareNiche niche, string type)
+        {
+            if (niche == FlareNiche.Fashion && type != null
+                && (type.IndexOf("giftshop", System.StringComparison.Ordinal) >= 0 || type.IndexOf("florist", System.StringComparison.Ordinal) >= 0
+                    || type.IndexOf("hairdresser", System.StringComparison.Ordinal) >= 0))
+            {
+                return SetOf(FlareNiche.LocalNews);
+            }
+            return SetOf(niche);
+        }
+
         /// <summary>How many variants a way has.</summary>
         public static int Count(FlareBatchWay way)
         {

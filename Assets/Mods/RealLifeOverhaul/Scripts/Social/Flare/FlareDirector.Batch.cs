@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Flare
                 return 0;
             }
             FlareBatchRules.Plan(StarsWithPosts(shop.Place, Now), _batchStars, room, _batchPlan);
-            int set = FlareReplyWords.SetOf(shop.Niche), previous = -1, made = 0;
+            int set = FlareReplyWords.SetOf(shop.Niche, shop.Type), previous = -1, made = 0;
             for (int i = 0; i < _batchPlan.Ways.Count; i++)
             {
                 FlareBatchWay way = _batchPlan.Ways[i];
@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 else
                 {
-                    string words = FlareText.Fill(key, "name", FlareBatchRules.FirstName(AuthorName(it.Post)), "business", shop.Name ?? "?");
+                    string words = FlareText.Fill(key, "name", ReviewerFirst(it.Post), "business", shop.Name ?? "?");
                     done = ReplyToReview(it.Post.Id, option, words, FlareReplyWords.Tone(way, variant));
                 }
                 if (done)
@@ -420,6 +420,16 @@ namespace RealLifeOverhaul.Flare
         {
             Tell(NotificationType.Info, all ? "reallife_flare_batch_done_all" : "reallife_flare_batch_done", _openBusinessTab,
                 "business", s.Name ?? "?", "count", s.Answers.ToString(CultureInfo.InvariantCulture), "parts", BatchParts(s, false), "rating", BatchRating(s), "left", BatchLeftLine(s.Left));
+        }
+
+        // A resident's post carries their handle ("ravi_baines92"), so a reply would greet the handle: it takes their own first name instead.
+        private string ReviewerFirst(FlarePost p)
+        {
+            if (p.Author == FlareAuthor.Citizen && p.Who >= 0 && p.Who < _citizens.Count && !string.IsNullOrEmpty(_citizens[p.Who].First))
+            {
+                return _citizens[p.Who].First;
+            }
+            return FlareBatchRules.FirstName(AuthorName(p));
         }
     }
 }

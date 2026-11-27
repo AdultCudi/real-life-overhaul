@@ -271,6 +271,15 @@ internal static partial class Program
             inRange &= FlareReplyWords.SetOf(niche) >= 0 && FlareReplyWords.SetOf(niche) < FlareReplyWords.Sets;
         }
         Check(inRange, "Flare words: every niche has a set");
+        // Found by playing: a souvenir shop thanked a reviewer with "proud to be part of your wardrobe".
+        int shops = FlareReplyWords.SetOf(FlareNiche.LocalNews), fashion = FlareReplyWords.SetOf(FlareNiche.Fashion);
+        Check(FlareReplyWords.SetOf(FlareNiche.Fashion, "ba:businesstype_giftshop") == shops && FlareReplyWords.SetOf(FlareNiche.Fashion, "ba:businesstype_florist") == shops
+              && FlareReplyWords.SetOf(FlareNiche.Fashion, "ba:businesstype_hairdresser") == shops && FlareReplyWords.SetOf(FlareNiche.Fashion, "ba:businesstype_clothingstore") == fashion
+              && FlareReplyWords.SetOf(FlareNiche.Fashion, "ba:businesstype_jewelrystore") == fashion && FlareReplyWords.SetOf(FlareNiche.Fashion, null) == fashion
+              && FlareReplyWords.SetOf(FlareNiche.Food, "ba:businesstype_coffeeshop") == FlareReplyWords.SetOf(FlareNiche.Food),
+            "Flare words: a gift shop, a florist and a hairdresser answer in the shops' words, clothes and jewellery in fashion's");
+        Check(ModSource(@"Social\Flare\FlareDirector.Batch.cs").Contains("FlareReplyWords.SetOf(shop.Niche, shop.Type)") && ModSource(@"Social\Flare\FlareGame.cs").Contains("Type = all[i].businessTypeName"),
+            "Flare words: the bulk and the managers' answers pick their words by the business's own type");
         // The variant: all of them come up, none is rare, and a run never says the same twice running.
         FlareBatchWay[] kinds = { FlareBatchWay.Thanks, FlareBatchWay.Sorry, FlareBatchWay.Mixed };
         bool spread = true, repeats = false, deterministic = true;
@@ -527,6 +536,10 @@ internal static partial class Program
         Check(app.Contains("_director.BatchPreview(place)") && app.Contains("_director.BatchAnswer(place)") && app.Contains("GameConfirm.Show(") && appBusiness.Contains("\"answerall\"") && appBusiness.Contains("reallife_flare_answer_all_every"),
             "Flare bulk: the old panel's Business screen has the same, behind the game's own question box");
         Check(ModSource(@"Ui\Flare\FlareScreen.Desk.cs").Contains("FlareBatchRules.FirstName(r.Name)"), "Flare bulk: a kept answer is shown with the reviewer's and the business's names filled in");
+        // Found by playing: a resident's review was answered "We are sorry ravi_baines92", their handle where their first name belongs.
+        string batchSrc = ModSource(@"Social\Flare\FlareDirector.Batch.cs");
+        Check(batchSrc.Contains("\"name\", ReviewerFirst(it.Post)") && batchSrc.Contains("return _citizens[p.Who].First;") && !batchSrc.Contains("FirstName(AuthorName(it.Post))"),
+            "Flare bulk: a resident's review is answered with their own first name, not their handle");
     }
 
     private static void FlareBatchTexts()
