@@ -31,6 +31,11 @@ namespace RealLifeOverhaul
         // A topic by what really happened, weighted, never the one this person talked about last; quiet if nothing fits.
         private static SocialTopic Fitted(SocialPerson person)
         {
+            SocialTopic love = LoveTalk.Topic(person);   // a night, a forgiven catch or a child they bring up (Social/Love)
+            if (love != null)
+            {
+                return love;
+            }
             Fitting.Clear();
             Weights.Clear();
             float total = 0f;

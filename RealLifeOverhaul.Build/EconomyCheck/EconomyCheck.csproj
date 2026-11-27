@@ -1630,6 +1630,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Graphics\GraphicsPicture.cs" Link="Mod\GraphicsPicture.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Graphics\GraphicsModel.cs" Link="Mod\GraphicsModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialAskRules.cs" Link="Mod\SocialAskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveFile.cs" Link="Mod\Love\LoveFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveStore.cs" Link="Mod\Love\LoveStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveRules.cs" Link="Mod\Love\LoveRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveState.cs" Link="Mod\Love\LoveState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Love\LoveCatalogue.cs" Link="Mod\Love\LoveCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\SiteGroundRules.cs" Link="Mod\SiteGroundRules.cs" />
   </ItemGroup>
 </Project>

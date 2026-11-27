@@ -31,6 +31,7 @@ namespace RealLifeOverhaul
         private readonly List<string> _actions = new List<string>(8);
         private int _topics;
         private float _moodRoll = -1f;   // the call's one draw of whether a rough day says no to plans (SocialRules.MoodSaysNo); -1 until plans come up
+        private bool _warned;           // the player has been warned that they are with somebody and asked anyway
         private int _testTopic;          // a test's topic for this call's first chat; -1 for the topic by what happened
 
         public string TalkWho => _p != null && _p.Met ? _p.Name : null;
@@ -72,6 +73,10 @@ namespace RealLifeOverhaul
                     entry.OnConfirm = () => offer.Active && offer.Person == _p.Index ? Asked() : Chat();
                     return entry;
                 };
+            }
+            else if (LoveTalk.Calling(_p) is Func<DialogEntry> love)
+            {
+                open = love;   // somebody who found out, a child of a night, an offer to date (Social/Love)
             }
             else if (offer.Active && offer.Person == _p.Index)
             {
@@ -223,7 +228,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("repay");
             }
-            if (!_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && SocialLife.Romantic(_p))
+            if (LoveHooks.MayAskOut(_p))
             {
                 _actions.Add("askout");   // only somebody the player could fall for: of the sex they are interested in, near their age
             }
@@ -231,7 +236,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("official");
             }
-            if (_p.Stage == SocialStage.Partner && !_p.MovedIn)
+            if (_p.Stage == SocialStage.Partner && !_p.MovedIn && !LoveState.IsSecond(_p.Index))
             {
                 _actions.Add("movein");
             }
@@ -712,9 +717,21 @@ namespace RealLifeOverhaul
                 // Asked again too soon: nothing is lost and nothing is remembered, and the answer says when to ask.
                 return Wait("reallife_social_askout_wait", wait);
             }
-            SocialLife.Remember(_p, MemoryCode.AskedOut);
-            if (SocialRules.WouldDate(_p, SocialLife.Romantic(_p)) && SocialState.Partner == null)
+            if (LoveHooks.NeedsWarning && !_warned)
             {
+                return LoveTalk.Warn(_p, () =>
+                {
+                    _warned = true;
+                    return AskOut();
+                });   // "You are with Sam. Ask Jo out anyway?" (Social/Love)
+            }
+            SocialLife.Remember(_p, MemoryCode.AskedOut);
+            if (SocialRules.WouldDate(_p, SocialLife.Romantic(_p)) && LoveHooks.CanDate)
+            {
+                if (LoveHooks.Taken)
+                {
+                    LoveHooks.BeginSecond(_p);   // before the stage: Family goes on seeing the first as the partner
+                }
                 SocialLife.SetStage(_p, SocialStage.Dating);
                 return Close(SocialLines.Pick(SocialCatalogue.AskOutYes));
             }

@@ -116,10 +116,20 @@ namespace RealLifeOverhaul
             data["birthday"] = birthday == 0 ? SocialLife.T("reallife_social_people_birthday_today")
                 : SocialLife.T("reallife_social_people_birthday_in").Replace("{days}", birthday.ToString());
             string network = SocialPhone.NetworkLine != null ? SocialPhone.NetworkLine(p) : null;   // their position, and what they could do next
-            string extra = !p.Together && SocialState.Partner == null && SocialLife.Romantic(p) ? SocialLife.T("reallife_social_people_romance") : null;   // who Ask them out is for
+            string extra = LoveHooks.MayAskOut(p) ? SocialLife.T("reallife_social_people_romance") : null;   // who Ask them out is for
             if (network != null)
             {
                 extra = extra == null ? network : extra + "\n" + network;
+            }
+            string love = LoveTalk.PeopleLine(p);   // whose second they are, a child, an offer to date (Social/Love)
+            string next = p == SocialState.Partner && LoveLinks.NextStep != null ? LoveLinks.NextStep(p) : null;   // the ring, the wedding, hard times
+            if (love != null)
+            {
+                extra = extra == null ? love : extra + "\n" + love;
+            }
+            if (next != null)
+            {
+                extra = extra == null ? next : extra + "\n" + next;
             }
             var entry = new DialogEntry
             {

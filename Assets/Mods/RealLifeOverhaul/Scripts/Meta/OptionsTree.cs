@@ -246,6 +246,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
                     .Also("friends dating date people calls typing staff gossip")
                     .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
+                S("love").Guide("social").Need("social").Opts("love_seeing", "love_hookups").Opt("love_surprise", "love_hookups", "family_children")
+                    .Also("second partner double date affair cheating caught confront one night stand hook up drunk pregnancy baby child support scandal secret"),
                 S("networking").For("networking").Need("social").Opts("social_networking")
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),

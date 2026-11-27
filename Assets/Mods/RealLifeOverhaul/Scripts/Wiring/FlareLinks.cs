@@ -198,6 +198,7 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
+                    LoveHooks.Tagged(person);   // the other of two people may see the post (Social/Love)
                     if (!wentWell)
                     {
                         SocialLife.Change(p, 0f, 0f, BadTrust);

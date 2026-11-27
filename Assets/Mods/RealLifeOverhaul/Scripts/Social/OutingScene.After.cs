@@ -78,6 +78,10 @@ namespace RealLifeOverhaul
             }
             if (!_parted)
             {
+                if (LoveAfterwards(now))
+                {
+                    return;   // an evening that may go on: its offer is on the panel (Social/Love)
+                }
                 _parted = true;
                 _stepEnd = now + 1.5f;
                 D.Body.Rest();
@@ -253,6 +257,7 @@ namespace RealLifeOverhaul
                 _who.AfterWell = wentWell;
                 _who.AfterPlace = _venue.Valid ? _venue.Name : null;
             }
+            LoveSettled();
             if (gift > 0)
             {
                 SocialLife.Give(gift, _def.Transaction);
@@ -326,7 +331,7 @@ namespace RealLifeOverhaul
         // Where the code has a next figure for it (SocialRules.Next), how far the figure now stands from it: "(74 of 90 for dating)". Nothing for a figure with no step ahead.
         private string NextOf(SocialMeter meter)
         {
-            if (!SocialRules.Next(_who, meter, SocialLife.Romantic(_who), SocialState.Partner == null, out float need, out SocialGoal goal))
+            if (!SocialRules.Next(_who, meter, SocialLife.Romantic(_who), LoveHooks.CanDate, out float need, out SocialGoal goal))
             {
                 return string.Empty;
             }

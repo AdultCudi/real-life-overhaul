@@ -181,14 +181,20 @@ namespace RealLifeOverhaul
         {
             get
             {
+                SocialPerson second = null;   // the second of two (Social/Love) is the partner only while there is nobody else
                 for (int i = 0; Loaded && i < Count; i++)
                 {
                     if (People[i] != null && People[i].Together)
                     {
+                        if (LoveState.IsSecond(i))
+                        {
+                            second = People[i];
+                            continue;
+                        }
                         return People[i];
                     }
                 }
-                return null;
+                return second;
             }
         }
 

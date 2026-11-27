@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Family
                         c.Closeness = Mathf.Min(100f, c.Closeness + 1f);
                     }
                 }
-                for (int k = 0; k < CheckupAges.Length; k++)
+                for (int k = 0; k < CheckupAges.Length && !c.Away; k++)
                 {
                     if (c.Age >= CheckupAges[k] && c.LastCheckup < CheckupAges[k])
                     {
@@ -79,6 +79,15 @@ namespace RealLifeOverhaul.Family
                         }
                         break;
                     }
+                }
+                if (c.Away)
+                {
+                    c.Birthdays = Mathf.Max(c.Birthdays, Mathf.FloorToInt(c.Age));   // with the other parent: no check-up, school run, play or party of ours
+                    if (c.Age >= FamilyBalance.GrownUp)
+                    {
+                        GrowUp(c);
+                    }
+                    continue;
                 }
                 if (before < FamilyBalance.SchoolFrom && c.Age >= FamilyBalance.SchoolFrom && c.School == 0)
                 {

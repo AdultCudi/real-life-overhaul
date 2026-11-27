@@ -98,6 +98,10 @@ namespace RealLifeOverhaul.Family
                 string close = c.Closeness >= 75f ? "reallife_family_close_very" : c.Closeness >= 50f ? "reallife_family_close_close"
                     : c.Closeness >= 30f ? "reallife_family_close_distant" : "reallife_family_close_far";
                 text.Append('\n').Append(FamilyText.T(key, new Args { Child = c.Name, Text = FamilyText.Age(c.Age), Name = FamilyText.T(close), Amount = FamilyText.Money(c.Fund) }));
+                if (c.OtherParent != null)
+                {
+                    text.Append('\n').Append(FamilyText.T(c.Away ? "reallife_love_family_with_away" : "reallife_love_family_with_shared", new Args { Child = c.Name, Name = c.OtherParent }));
+                }
             }
             if (PhoneContacts.Mom != null)
             {

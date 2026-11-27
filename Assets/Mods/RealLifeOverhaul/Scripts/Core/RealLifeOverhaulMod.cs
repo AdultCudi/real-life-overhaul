@@ -690,6 +690,12 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyInterest = v)
                 .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
                     v => Settings.SocialNetworking = v)
+                .AddToggle(Settings.LoveSeeingId, "reallife_love_seeing", Settings.LoveSeeing,
+                    v => Settings.LoveSeeing = v)
+                .AddToggle(Settings.LoveHookupsId, "reallife_love_hookups", Settings.LoveHookups,
+                    v => Settings.LoveHookups = v)
+                .AddToggle(Settings.LoveSurpriseId, "reallife_love_surprise", Settings.LoveSurprise,
+                    v => Settings.LoveSurprise = v)
                 .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
                 .AddButton("reallife_social_net_test_favour", Networking.NetworkDirector.TestFavour)
                 .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)

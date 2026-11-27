@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Family
         public float LastEvening;    // age at the last parents' evening
         public float LastDrawing;    // age at the last drawing on the fridge
         public bool Grown;           // left home
+        public string OtherParent;   // the child's other parent, when that is not the player's partner (a child of a night, Social/Love); null for the partner's
+        public int OtherIndex = -1;  // ...and their place in the social life's cast
+        public bool Away;            // lives with the other parent, the player pays support: not at home, never cared for, schooled or driven by the family's routines
     }
 
     /// <summary>One line of the memories timeline.</summary>
@@ -384,7 +387,7 @@ namespace RealLifeOverhaul.Family
             int count = 0;
             for (int i = 0; i < S.Children.Count; i++)
             {
-                if (!S.Children[i].Grown)
+                if (!S.Children[i].Grown && !S.Children[i].Away)
                 {
                     count++;
                 }
@@ -399,7 +402,7 @@ namespace RealLifeOverhaul.Family
             for (int i = 0; i < S.Children.Count; i++)
             {
                 ChildRecord c = S.Children[i];
-                if (!c.Grown && c.Age < FamilyBalance.PushchairUntil && (best == null || c.Age < best.Age))
+                if (!c.Grown && !c.Away && c.Age < FamilyBalance.PushchairUntil && (best == null || c.Age < best.Age))
                 {
                     best = c;
                 }
@@ -411,7 +414,7 @@ namespace RealLifeOverhaul.Family
         {
             for (int i = 0; i < S.Children.Count; i++)
             {
-                if (!S.Children[i].Grown && S.Children[i].Age < years)
+                if (!S.Children[i].Grown && !S.Children[i].Away && S.Children[i].Age < years)
                 {
                     return true;
                 }
