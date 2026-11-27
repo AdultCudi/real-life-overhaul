@@ -128,6 +128,8 @@ namespace RealLifeOverhaul.Family
         public static ISchoolBridge School;
         /// <summary>Who carries on after the player, in a sentence (the dynasty's will or the law's order); null or empty while there is none to say.</summary>
         public static Func<string> WillLine;
+        /// <summary>The talk with the partner who found out about somebody else (Social/Love): opens when the player speaks to them at home; null for none.</summary>
+        public static Func<DialogEntry> LoveTalk;
 
         public static void Reset()
         {
@@ -138,6 +140,7 @@ namespace RealLifeOverhaul.Family
             Law = null;
             School = null;
             WillLine = null;
+            LoveTalk = null;
         }
     }
 
@@ -255,7 +258,7 @@ namespace RealLifeOverhaul.Family
             List<ChildRecord> kids = FamilyState.S.Children;
             for (int i = 0; i < kids.Count; i++)
             {
-                if (!kids[i].Grown && !string.IsNullOrEmpty(kids[i].Name))
+                if (!kids[i].Grown && !kids[i].Away && !string.IsNullOrEmpty(kids[i].Name))
                 {
                     children.Add(kids[i].Name);
                 }

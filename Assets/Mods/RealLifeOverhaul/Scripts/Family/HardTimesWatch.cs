@@ -353,7 +353,7 @@ namespace RealLifeOverhaul.Family
             for (int i = 0; i < s.Children.Count; i++)
             {
                 ChildRecord c = s.Children[i];
-                if (c != null && !c.Grown && c.ArrivedDay > newest)
+                if (c != null && !c.Grown && !c.Away && c.ArrivedDay > newest)
                 {
                     newest = c.ArrivedDay;
                 }

@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
             Step("everyday life", LifeLinks.Connect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Connect);
             Step("family life", FamilyLinks.Connect);
+            Step("the love life", LoveBridges.Connect);
             Step("family life's difficult moments", HardTimesLinks.Connect);
             Step("the minimap and the GPS", NavLinks.Connect);
             Step("the taxi by phone", TaxiLinks.Connect);
@@ -202,6 +203,7 @@ namespace RealLifeOverhaul
             Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);
             Step("family life's difficult moments", HardTimesLinks.Disconnect);
+            Step("the love life", LoveBridges.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);

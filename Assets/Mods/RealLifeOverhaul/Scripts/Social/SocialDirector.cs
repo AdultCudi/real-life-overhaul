@@ -107,6 +107,7 @@ namespace RealLifeOverhaul
             Cast.Dispose();
             SocialState.Reset();
             News.Reset();
+            LoveState.Reset();
             Talk = null;
             SocialPhone.Incoming = -1;
             if (Instance == this)
@@ -204,6 +205,8 @@ namespace RealLifeOverhaul
                 }
                 SocialState.Load(save.modData, save.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts, Random.Range(1, int.MaxValue), SocialLife.PlayerYears(), SocialLife.Interest);
                 News.Load(save.modData);
+                LoveState.Load(save.modData);
+                LoveLinks.PartyGuest = PartyGuest;
                 SocialLines.Forget();
                 if (SocialState.Plan.Active && (SocialState.Get(SocialState.Plan.Person) == null || !SocialState.Get(SocialState.Plan.Person).Met))
                 {
@@ -257,6 +260,7 @@ namespace RealLifeOverhaul
             if (SocialState.Day != day && hour >= 7 && !skipping)
             {
                 Daily(day);
+                LoveLife.Daily(day);
             }
             if (skipping)
             {
@@ -289,6 +293,7 @@ namespace RealLifeOverhaul
             Doors(real);
             Plan();
             Pending(real, gm);
+            LoveSlow(real);
         }
 
         private void OnSaveGame()
@@ -304,6 +309,7 @@ namespace RealLifeOverhaul
                     }
                     SocialState.Save(save.modData);
                     News.Save(save.modData);
+                    LoveState.Save(save.modData);
                 }
             }
             catch (Exception e)

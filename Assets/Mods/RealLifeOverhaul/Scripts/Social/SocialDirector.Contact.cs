@@ -43,6 +43,10 @@ namespace RealLifeOverhaul
         private void Hourly(float real, int day, int hour, bool skipping)
         {
             News.NoteWeather();
+            if (!skipping)
+            {
+                LoveLife.Hourly(day, hour);   // the next day's texts about a night (Social/Love)
+            }
             if (skipping || !Settings.SocialContact || SocialState.MetCount == 0 || !SocialLife.MayText())
             {
                 return;
@@ -161,7 +165,7 @@ namespace RealLifeOverhaul
 
         private static bool Reachable(SocialPerson p, int hour, int day, int bar)
         {
-            return !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day && SocialRules.InCircle(p, day, bar) && (!p.IsFamily || MomContact.MayOn(day));
+            return !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day && SocialRules.InCircle(p, day, bar) && (!p.IsFamily || MomContact.MayOn(day)) && !LoveHooks.Quiet(p, day);
         }
 
         // The closeness the closest people of the cast have (SocialRules.CircleBar). One pass; nothing allocated.

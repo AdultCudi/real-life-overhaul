@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_", P + "estate_agency_", P + "love_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
@@ -92,7 +92,8 @@ namespace RealLifeOverhaul.Economy
             P + "bld_demolition", P + "bld_demolition_back", P + "bld_fees_back", P + "bld_insurance", P + "bld_investor_in", P + "bld_investor_out",
             P + "bld_land", P + "bld_land_auction", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
             P + "bld_materials", P + "bld_plant_buy", P + "bld_plant_sale", P + "bld_refit", P + "bld_refit_back", P + "bld_repay",
-            P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land"
+            P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land",
+            P + "love_support", P + "love_mishap"   // a child's monthly support and a night's small mishap: the player's own money, never a business's
         };
 
         private static readonly Dictionary<string, BizLine> Lines = Build();

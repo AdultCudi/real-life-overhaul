@@ -659,6 +659,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--love29")
+        {
+            Love29();   // seeing two people and being found out, nights, a child of a night, scandals, the path from dating to marriage (LoveChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--age-driver")
         {
             AgeDriver();   // the age in a talk's header, and the private driver's button on the bar (AgeDriverChecks.cs)

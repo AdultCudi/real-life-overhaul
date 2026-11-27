@@ -580,7 +580,7 @@ namespace RealLifeOverhaul
                 case MemoryCode.Party: return "reallife_social_memory_party";
                 case MemoryCode.PartyBad: return "reallife_social_memory_party_bad";
                 case MemoryCode.PartyTheirs: return "reallife_social_memory_party_theirs";
-                default: return "reallife_social_memory_met";
+                default: return LoveCatalogue.MemoryKey(code) ?? "reallife_social_memory_met";
             }
         }
 

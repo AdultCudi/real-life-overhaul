@@ -190,8 +190,11 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
                 .Owns(Settings.FamilyInterestId)   // who the player is interested in: the people who can fall for them, who they can ask out; no preset sets it, it is their own
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
+                .OnFrom(Settings.LoveSeeingId, Intensity.Standard)    // a second, secret relationship that can be found out (Social/Love)
+                .OnFrom(Settings.LoveHookupsId, Intensity.Standard)   // an evening that can end at theirs or the player's, and what comes of it
+                .OnFrom(Settings.LoveSurpriseId, Intensity.Standard)  // a night that can bring a child
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)
-                .Data("reallife:social", "reallife:social_*")
+                .Data("reallife:social", "reallife:social_*", "reallife:love")
                 .Contact(SocialPhone.PeopleId)
                 .Objects("RealLifeOverhaul Shift Card")
                 .Fact("social_cast", () => SocialRules.MaxCast.ToString(CultureInfo.InvariantCulture))
@@ -235,6 +238,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() =>
                 {
                     SocialState.Reset();   // the director reads the (now empty) save again on its next second
+                    LoveState.Reset();
                     News.Reset();
                 })
                 .Repair(() => SocialPhone.Setup(SocialDirector.Logger));

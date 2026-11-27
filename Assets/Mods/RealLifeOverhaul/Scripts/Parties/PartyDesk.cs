@@ -346,6 +346,7 @@ namespace RealLifeOverhaul.Parties
                 int gain = PartyRules.Give(f.Of(who.Index, true), day, PartyCatalogue.WindowDays, PartyRules.Worth(p.Tier, p.Quality, who, p.Place));
                 gained += Gain(w, who, gain, day) ? 1 : 0;
                 w.Remember(who, MemoryCode.Party);
+                LoveLinks.PartyGuest?.Invoke(who, p.Quality);   // an evening that may go on (Social/Love)
             }
             if (p.Place == PartyPlace.Home && came > 0)
             {

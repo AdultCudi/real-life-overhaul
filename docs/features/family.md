@@ -337,6 +337,10 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
   The children stay with the player and spend every other weekend, or every weekend, with the other parent, who then pays half of what the children cost.
   Nothing in any of this harms a child.
 
+## Children of a night
+
+A child that came of a night (Social/Love, see [Social life](social.md#seeing-more-than-one-person-nights-scandals-scriptssociallove)) is a real child of the family whose other parent is not the partner: `ChildRecord.OtherParent` and `OtherIndex`. If the player is involved the child is at home and `WeekCharges` charges the player half (`1 - SupportShare`) of what it costs, the other parent the rest; a partner's children keep going by the bond. If the player pays support the child is `Away`: it lives with the other parent and is on the Family page, has birthdays and milestones as dated memories, but is not counted at home (`AtHome`, `Smallest`, `AnyUnder`), has no check-up, school run, play, party, cot or high chair, and no care cost. `Children.ArriveFromNight` adds it inside `MaxChildren` and `Settings.FamilyChildren`; `Children.Room` says how many more a night may bring. Separation and divorce are Family's own: a partner caught with somebody else who lives with the player, is engaged or married leaves through `HardTimes.Separate` (`FamilyAffairs.Separate`), and the partner at home waits through the ask `confront` (`PartnerVoice`, `FamilyAffairs.Raise`).
+
 ## Mom's own contact (`MomRules`, `MomContact`)
 
 - The option **Mom gets in touch by herself** (`family_mom_contact`, on by default, in the family area but not grey with the family switch: she is the social life's too) decides whether Mom ever starts a contact.

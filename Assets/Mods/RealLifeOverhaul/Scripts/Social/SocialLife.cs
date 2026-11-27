@@ -380,6 +380,7 @@ namespace RealLifeOverhaul
             Toast(NotificationType.Error, "reallife_social_broke_up", Data(person), 12f);
             ModState.AddModifier(ModState.MoodDownBig);
             TellPartnerChanged();
+            LoveHooks.Changed();
             if (SocialState.Plan.Active && SocialState.Plan.Person == person.Index)
             {
                 SocialState.Plan.Clear();

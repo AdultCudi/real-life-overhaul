@@ -39,7 +39,14 @@ namespace RealLifeOverhaul
         Posted,    // tagged in a post of the player's on Flare
         Party,     // came to a party the player hosted (Parties)
         PartyBad,  // ...one that went badly
-        PartyTheirs   // the player came to a party of theirs
+        PartyTheirs,  // the player came to a party of theirs
+        Night,        // a night together (Social/Love)
+        NightAwkward, // ...that was awkward after
+        NightRegret,  // ...that one of them regretted
+        CaughtOut,    // found out about somebody else
+        Forgave,      // forgave it
+        Denied,       // the player denied it and it held
+        CoParent      // the other parent of the player's child
     }
 
     /// <summary>
