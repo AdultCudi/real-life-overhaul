@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Ui
                 _facts.Add(new UiPauseFact { Icon = UiIcon.Clock, Label = UiText.T("reallife_ui_pause_played"), Value = UiPauseMenu.Played(Words, played) });
             }
             _m.Facts = _facts.ToArray();
-            int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek())));
+            int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek()) - (int)DayOfWeekOrdered.Monday));   // the game counts Monday as 1
             _m.CityNote = UiText.T(DayKeys[day]);
         }
 
