@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "说出来",
   "reallife_social_typed_you": "你：{text}",
   "reallife_social_test_composer": "现在给所选的人打电话并输入聊天内容",
-  "reallife_social_test_composer_off": "社交测试：通话时输入已关闭（朋友与社交生活，通话时输入你自己的话）。",
+  "reallife_social_test_composer_off": "社交测试：通话时输入已关闭（收到的消息，通话时输入你自己的话）。",
   "reallife_social_test_composer_nopack": "社交测试：通话时输入需要安装并运行 RLO Texts 文本包，游戏语言为英语，并开启来自他人的消息。",
   "reallife_social_test_composer_nobody": "社交测试：现在没有人可以进行输入聊天。妈妈暂时还不支持，你认识的其他人今天都已经聊过了。",
   "reallife_changes_034_0_title": "0.34.0",

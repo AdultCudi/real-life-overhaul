@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Söyle",
   "reallife_social_typed_you": "Siz: {text}",
   "reallife_social_test_composer": "Şimdi seçilen kişiyi arayın ve sohbeti yazın",
-  "reallife_social_test_composer_off": "Sosyal test: Çağrılarda yazma özelliği kapalı (Arkadaşlar ve sosyal yaşam, \"Çağrılarda kendi kelimelerinizi yazın\").",
+  "reallife_social_test_composer_off": "Sosyal test: Çağrılarda yazma özelliği kapalı (İnsanlardan mesajlar, \"Çağrılarda kendi kelimelerinizi yazın\").",
   "reallife_social_test_composer_nopack": "Sosyal test: Çağrılarda yazma özelliği için bir RLO Texts paketinin yüklü ve çalışır olması, oyunun İngilizce olması ve kişilerden gelen mesajların açık olması gerekir.",
   "reallife_social_test_composer_nobody": "Sosyal test: Şu an yazılı sohbeti kabul edebilecek kimse yok. Anne'nin henüz yazılı sohbeti yok ve tanıdığınız diğer herkes bugünkü sohbetini yaptı.",
   "reallife_changes_034_0_title": "0.34.0",

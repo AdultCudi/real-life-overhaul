@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Le dire",
   "reallife_social_typed_you": "Vous : {text}",
   "reallife_social_test_composer": "Appeler la personne choisie maintenant et taper la discussion",
-  "reallife_social_test_composer_off": "Test social : taper dans les appels est désactivé (Amis et vie sociale, Taper vos propres mots dans les appels).",
+  "reallife_social_test_composer_off": "Test social : taper dans les appels est désactivé (Messages des autres, Taper vos propres mots dans les appels).",
   "reallife_social_test_composer_nopack": "Test social : taper dans les appels exige un pack RLO Texts installé et en marche, le jeu en anglais, et les messages des gens activés.",
   "reallife_social_test_composer_nobody": "Test social : personne ne peut prendre une discussion tapée maintenant. Maman n'a pas encore de discussion tapée, et toute autre personne que vous connaissez a eu sa discussion du jour.",
   "reallife_changes_034_0_title": "0.34.0",

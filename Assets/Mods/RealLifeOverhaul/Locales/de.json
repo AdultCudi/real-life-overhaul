@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Sagen",
   "reallife_social_typed_you": "Du: {text}",
   "reallife_social_test_composer": "Die gewählte Person jetzt anrufen und den Chat tippen",
-  "reallife_social_test_composer_off": "Gesellschaftstest: Tippen in Anrufen ist ausgeschaltet (Freunde und Gesellschaftsleben, Eigene Worte in Anrufen tippen).",
+  "reallife_social_test_composer_off": "Gesellschaftstest: Tippen in Anrufen ist ausgeschaltet (Nachrichten von anderen, Eigene Worte in Anrufen tippen).",
   "reallife_social_test_composer_nopack": "Gesellschaftstest: Tippen in Anrufen braucht ein installiertes und laufendes Paket von RLO Texts, das Spiel auf Englisch und eingeschaltete Nachrichten von Leuten.",
   "reallife_social_test_composer_nobody": "Gesellschaftstest: Niemand kann jetzt einen getippten Chat annehmen. Mama hat noch keinen getippten Chat, und alle anderen, die du kennst, hatten den heutigen Chat.",
   "reallife_changes_034_0_title": "0.34.0",

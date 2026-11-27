@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Decirlo",
   "reallife_social_typed_you": "Tú: {text}",
   "reallife_social_test_composer": "Llamar ahora a la persona elegida y escribir la charla",
-  "reallife_social_test_composer_off": "Prueba social: escribir en las llamadas está desactivado (Amigos y vida social, Escribir tus propias palabras en las llamadas).",
+  "reallife_social_test_composer_off": "Prueba social: escribir en las llamadas está desactivado (Mensajes de otros, Escribir tus propias palabras en las llamadas).",
   "reallife_social_test_composer_nopack": "Prueba social: escribir en las llamadas necesita un paquete de RLO Texts instalado y en marcha, el juego en inglés, y los mensajes de las personas activados.",
   "reallife_social_test_composer_nobody": "Prueba social: ahora nadie puede atender una charla escrita. Mamá aún no tiene charla escrita, y cualquier otra persona que conoces ya ha tenido la charla de hoy.",
   "reallife_changes_034_0_title": "0.34.0",

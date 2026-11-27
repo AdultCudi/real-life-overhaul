@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "말하기",
   "reallife_social_typed_you": "나: {text}",
   "reallife_social_test_composer": "고른 사람에게 지금 전화해서 대화를 입력하기",
-  "reallife_social_test_composer_off": "사회 테스트: 통화에서 입력이 꺼져 있습니다 (친구와 사회생활, 통화에서 직접 말 입력).",
+  "reallife_social_test_composer_off": "사회 테스트: 통화에서 입력이 꺼져 있습니다 (사람들이 보낸 문자, 통화에서 직접 말 입력).",
   "reallife_social_test_composer_nopack": "사회 테스트: 통화에서 입력하려면 RLO 문자 팩이 설치되어 실행 중이어야 하고, 게임이 영어여야 하며, 사람들의 메시지가 켜져 있어야 합니다.",
   "reallife_social_test_composer_nobody": "사회 테스트: 지금은 입력된 대화를 받을 사람이 없습니다. 어머니는 아직 입력된 대화가 없고, 아는 다른 사람은 오늘의 대화를 이미 했습니다.",
   "reallife_changes_034_0_title": "0.34.0",

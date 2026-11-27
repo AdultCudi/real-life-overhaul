@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Say it",
   "reallife_social_typed_you": "You: {text}",
   "reallife_social_test_composer": "Call the chosen person now and type the chat",
-  "reallife_social_test_composer_off": "Social test: typing in calls is switched off (Friends and social life, Type your own words in calls).",
+  "reallife_social_test_composer_off": "Social test: typing in calls is switched off (Texts from people, Type your own words in calls).",
   "reallife_social_test_composer_nopack": "Social test: typing in calls needs an RLO Texts pack installed and running, the game in English, and messages from people switched on.",
   "reallife_social_test_composer_nobody": "Social test: nobody can take a typed chat now. Mom has no typed chat yet, and anybody else you know has had today's chat.",
   "reallife_changes_034_0_title": "0.34.0",

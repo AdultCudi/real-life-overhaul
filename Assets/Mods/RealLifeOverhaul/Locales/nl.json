@@ -19631,7 +19631,7 @@
   "reallife_social_type_send": "Zeg het",
   "reallife_social_typed_you": "Jij: {text}",
   "reallife_social_test_composer": "Bel nu de gekozen persoon en typ de chat",
-  "reallife_social_test_composer_off": "Sociale test: typen in oproepen is uitgeschakeld (\"Vrienden en sociaal leven\", \"Typ je eigen woorden in oproepen\").",
+  "reallife_social_test_composer_off": "Sociale test: typen in oproepen is uitgeschakeld (\"Berichten van mensen\", \"Typ je eigen woorden in oproepen\").",
   "reallife_social_test_composer_nopack": "Sociale test: typen in oproepen vereist een geïnstalleerd en actief RLO Texts-pack, de game in het Engels, en dat berichten van mensen zijn ingeschakeld.",
   "reallife_social_test_composer_nobody": "Sociale test: niemand kan nu een getypte chat ontvangen. Mama heeft nog geen getypte chat, en iedereen die je anders kent heeft de chat van vandaag al gehad.",
   "reallife_changes_034_0_title": "0.34.0",
