@@ -1,0 +1,51 @@
+{
+ "id": "haldenpip",
+ "meshes": [
+  "haldenpip_body",
+  "haldenpip_wheel_left",
+  "haldenpip_wheel_right",
+  "haldenpip_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldenpip_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldenpip_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldenpip_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldenpip_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldenpip_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenpip_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenpip_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldenpip_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}
