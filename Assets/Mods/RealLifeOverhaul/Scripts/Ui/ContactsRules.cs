@@ -21,6 +21,9 @@ namespace RealLifeOverhaul.Ui
         // The conversations the game runs in the thread from an offer's Negotiate button: an offer's talk, not a call.
         private static readonly string[] ThreadTalks = { "CandidateSalaryNegotiationDialog", "HealthInsuranceNegotiationDialog" };
 
+        /// <summary>Whether a wage has cents once rounded to the cent, the way the game's offer fields hold it (an offer is two decimals, 27.90).</summary>
+        public static bool HasCents(float amount) => Math.Abs(Math.Round(amount * 100.0) % 100.0) > 0.5;
+
         /// <summary>
         /// Whether a contact stands in the list: the waiting filter shows every contact with unread messages, whatever group is open,
         /// so a sender in another group is never hidden behind the count; otherwise the open group and the search decide.

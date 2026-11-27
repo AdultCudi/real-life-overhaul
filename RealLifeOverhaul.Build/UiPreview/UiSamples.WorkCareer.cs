@@ -149,6 +149,13 @@ internal static partial class UiSamples
                 j.CanLate = true;
                 j.LateWhy = w.T("reallife_life_why_day_first", "Work today's day first.");
             }
+            if (state == "my_job_police")
+            {
+                // a cadet on shift: the page's button is the one that ends the shift, beside the leaving buttons every job has
+                j.Employer = "City police";
+                j.CanStart = true;
+                j.StartKey = "reallife_police_button_end";
+            }
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_next_review"), SDay(w, 421)));
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_boss"), Sx(w, "reallife_life_boss_mentor")));
             j.Life.Add(new KeyValuePair<string, string>(Sx(w, "reallife_ibox_overtime"), Sf(w, "reallife_study_hours_minutes", "hours", "6", "minutes", "00")));

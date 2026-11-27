@@ -34,8 +34,39 @@ internal static partial class Program
         return tally.Figure(12, game);
     }
 
+    // The figure under the money is yesterday's whole day, not today's running profit: a day of 5,000 from the businesses with 5,621 spent on the rest of the
+    // player's money reads -621 the next morning. The card over the money says the same figure, in words that name the day and what the figure holds.
+    private static void DayFigureLabelChecks()
+    {
+        const string P = "reallife_transaction_", G = "ba:transaction_";
+        DayFigure day = DayOf(5000f, new (string type, float amount, bool held)[]
+        {
+            (G + "wage", -900f, true),         // a business's wage: in the game's 5,000 already
+            (P + "util_power", -121f, false),  // the rest of the money: counted
+            (G + "tuitionfee", -5500f, false),
+            (G + "loanpayout", 20000f, false)  // a loan's payout: no profit
+        });
+        Check(Math.Abs(day.Mod - -621f) < 0.001f && day.Counted == 2 && day.Held == 1 && day.Left == 1,
+            "day figure: 5,000 from the businesses less 5,621 of the rest of the money is -621, the wage not taken twice and the loan not counted (" + day.Mod + ")");
+        string tip = DaySource("Ui/Tooltips/TooltipWorth.cs");
+        string keys = DaySource("Ui/UiScreens.Tooltips.cs");
+        Check(tip.Contains("DayResult.Compute(today - 1,") && tip.Contains("figure.Mod") && tip.Contains("reallife_ui_tip_money_yesterday_note") && tip.Contains("reallife_ui_tip_money_yesterday_game")
+              && keys.Contains("reallife_ui_tip_money_yesterday_note") && keys.Contains("reallife_ui_tip_money_yesterday_game"),
+            "day figure: the money card's Yesterday row is the figure the bar shows (the day's result with the mod's money when the option is on) and a line says it is the whole of yesterday");
+        string[] codes;
+        Dictionary<string, string>[] langs = LanguageWords(out codes);
+        if (LanguagesRead("day figure", langs, codes))
+        {
+            string whole = langs[0].TryGetValue("reallife_ui_tip_money_yesterday_note", out string a) ? a : string.Empty;
+            string game = langs[0].TryGetValue("reallife_ui_tip_money_yesterday_game", out string b) ? b : string.Empty;
+            Check(whole.Contains("Yesterday") && game.Contains("Yesterday") && whole.Contains("tomorrow") && game.Contains("tomorrow") && whole != game,
+                "day figure: the card's two lines say the figure is yesterday's, the whole day with the mod's money or the game's profit, and that today's comes tomorrow");
+        }
+    }
+
     private static void DayResults()
     {
+        DayFigureLabelChecks();
         const string P = "reallife_transaction_", G = "ba:transaction_";
         var day = new (string type, float amount, bool held)[]
         {

@@ -41,8 +41,17 @@ namespace RealLifeOverhaul.Ui
             float[] line = s.Points >= 2 ? Fit(_line, s.Points) : null;
             FinancialSummary yesterday = save.financialSummaries != null ? save.financialSummaries.Find(x => x.dayNumber == today - 1) : null;   // as Topbar.SetMoneyChangeValue finds it
             float result = yesterday != null ? yesterday.totalProfit : 0f;
+            // The figure under the money is yesterday's result with the mod's money when that option is on (DayResult), so the card says that one: the game's
+            // own figure beside it would be a second "yesterday" that the bar does not show.
+            DayFigure figure = default;
+            bool whole = Settings.EconomyDayResult && DayResult.Compute(today - 1, out figure, out string _);
+            if (whole)
+            {
+                result = figure.Mod;
+            }
             UiTooltipModel made = UiNetWorthTip.Model(UiText.Words, s, today, line, Short, save.Money.ToShortCurrencyFormat(),
                 result.ToShortCurrencyFormat(), result > 0f ? 1 : result < 0f ? -1 : 0);
+            made.Text(whole ? UiText.T("reallife_ui_tip_money_yesterday_note") : UiText.T("reallife_ui_tip_money_yesterday_game"), UiRole.Text2);
             into.Clear();
             into.Blocks.AddRange(made.Blocks);
             return true;
