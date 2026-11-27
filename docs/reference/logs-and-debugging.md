@@ -282,6 +282,10 @@ under 0.5 ms a frame and under 8 ms for its open and each press: PASS.
 
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
+## The self-test
+
+A developer diagnostic (`Scripts/Diagnostics/SelfTest`) runs a plan of steps in the game with nobody at the keyboard: it loads a save, waits for the city and the mod's load chain, opens apps and kit screens, presses, types and scrolls through the kit host's own paths, skips time through the game's time machine, takes pictures and asserts that the guards recorded no fault and the log took no error. It does nothing unless the file `RealLifeOverhaul/selftest.json` is in the game's data folder (`<persistentDataPath>`) when the game starts: one `File.Exists` at the start, no hook, no object, nothing per frame. The file is read and removed at once; one older than three hours is removed unread. A plan writes `results.json` after every step, ends with the line `SELFTEST DONE passed N failed M` in Player.log, and quits the game when its `quit` says so. It has no option, no text and no Guide entry. `EconomyCheck --selftest` holds its plan reader, its step table, its results file and the rule that nothing runs without the file.
+
 ## Clicks and moving furniture
 
 `Diagnostics/ClickWatch` writes a line for a click, with Developer diagnostics on, at most two a second. It reads the game and changes nothing.

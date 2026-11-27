@@ -22,7 +22,11 @@ internal static partial class Program
         Check(callers.Length == 1 && callers[0] == "NewsLive.cs" && Regex.Matches(news, @"PermadeathGame\.(QuitDesktop|LoadSaves)\(").Count == 2
               && Regex.Matches(news, @"\bEndChoice\(").Count == 2,
             "quit guard: leaving the game and the save list are called from the death card's choice alone (found in: " + string.Join(", ", callers) + ")");
-        int quits = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).Sum(f => Regex.Matches(File.ReadAllText(f), @"Application\.Quit\(").Count);
+        // The developer self-test (Diagnostics/SelfTest) quits the game when a plan says so, and only then: its runner exists only when a trigger file was read.
+        string[] outside = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"Diagnostics\SelfTest\")).ToArray();
+        int quits = outside.Sum(f => Regex.Matches(File.ReadAllText(f), @"Application\.Quit\(").Count);
         Check(quits == 1, "quit guard: the mod has one Application.Quit, the death card's (found " + quits + ")");
+        string runner = File.ReadAllText(System.IO.Path.Combine(root, @"Diagnostics\SelfTest\SelfTestRunner.cs"));
+        Check(Regex.Matches(runner, @"Application\.Quit\(").Count == 1 && runner.Contains("if (_plan.Quit)"), "quit guard: the self-test's one Application.Quit is the end of a plan that says quit");
     }
 }

@@ -41,6 +41,10 @@ internal static partial class Program
             {
                 continue;   // the pause menu's recent saves: it starts a load as the funeral does and reads nothing of one (checked below)
             }
+            if (source.Key.StartsWith("Diagnostics/SelfTest/", StringComparison.Ordinal))
+            {
+                continue;   // the developer self-test loads a save by the load screen's own path, hands it over as the pause menu does, and reads nothing of how a city was reached (inert without its trigger file)
+            }
             if (source.Key == "Ui/Activity/FuneralScreen.cs" || source.Key == "Core/GameContract.Activity.cs")
             {
                 continue;   // the funeral card reads the day and time of the backup the game found (its record), and starts no load of its own beyond the game's three keys
@@ -94,7 +98,8 @@ internal static partial class Program
                 introWork = source.Key;   // any other intro entry is new: it must be looked at for what a city needs of it
             }
         }
-        Check(cityEntries == 2 && initEntries == 2 && introEntries == 1 && introWork == null,
+        // The three at the game's start are the mod's own, the character lab's and the self-test's, which does nothing unless its trigger file exists (Diagnostics/SelfTest).
+        Check(cityEntries == 2 && initEntries == 3 && introEntries == 1 && introWork == null,
             "load paths: the mod's entry points are the known ones (" + initEntries + " at the game's start, " + cityEntries + " for each city, " + introEntries + " for character creation"
             + (introWork != null ? "; a new intro entry in " + introWork : string.Empty) + "): a new one is judged for what it leaves out of a loaded city");
 
