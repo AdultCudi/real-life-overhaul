@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using BAModAPI;
@@ -567,8 +568,9 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Cars check (prefab): " + d.Id + " made on " + donor.name + ": body " + body.triangles.Length / 3 + " triangles, " + wheels.Length
-                             + " wheels at track " + (d.TrackHalf * 2f).ToString("F2") + " m and wheelbase " + d.Wheelbase.ToString("F2") + " m, collision shape "
-                             + (meshShape != null ? "set" : "NOT FOUND") + ", the game car was " + (wasFront - wasRear).ToString("F2") + " m long: "
+                             + " wheels at track " + (d.TrackHalf * 2f).ToString("F2", CultureInfo.InvariantCulture)
+                             + " m and wheelbase " + d.Wheelbase.ToString("F2", CultureInfo.InvariantCulture) + " m, collision shape "
+                             + (meshShape != null ? "set" : "NOT FOUND") + ", the game car was " + (wasFront - wasRear).ToString("F2", CultureInfo.InvariantCulture) + " m long: "
                              + (wheels.Length == 4 && meshShape != null && nwh != null ? "PASS." : "FAIL."));
             }
             return made;
@@ -602,8 +604,14 @@ namespace RealLifeOverhaul
                 return false;
             }
             cache[ModCarCatalogue.PrefabKey(d.TypeName)] = Templates[d.TypeName];   // put again: the game empties its lookup now and then
+            // The handover spot is the dealership's, but a stop the mod laid can reach it, and no car of the mod's is stood in a stop's kerb.
+            if (BusZones.Refuses(bay))
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_cars_unready", null, 7f);
+                return false;
+            }
             var bill = new TransactionInfo("ba:transaction_vehiclebought", new Dictionary<string, string>(1) { { "vehicleName", d.TypeName } });
-            if (!GameManager.ChangeMoneySafe(-d.Price, bill, null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-d.Price, bill, null, null, force: false, showNotification: true))
             {
                 return false;   // the game has said the account is short
             }
@@ -612,7 +620,8 @@ namespace RealLifeOverhaul
             VehicleController car = VehicleHelper.CreateAndSpawnVehicle(new VehicleInstance(d.TypeName) { vehicleColorName = colour, fuel = d.MaxFuel * NewFuel },
                 bay, place.Bay.rotation);
             Notifications.Show(NotificationType.Success, "reallife_cars_bought", new Dictionary<string, string>(1) { { "name", d.TypeName.GetLocalization() } }, 10f);
-            Logger?.Info("Cars: a " + d.Id + " was bought for " + d.Price + " and stands in the dealer's bay at " + bay.ToString("F1") + (car != null ? "." : ", but the game returned no car."));
+            Logger?.Info("Cars: a " + d.Id + " was bought for " + d.Price + " and stands in the dealer's bay at "
+                         + bay.ToString("F1", CultureInfo.InvariantCulture) + (car != null ? "." : ", but the game returned no car."));
             return true;
         }
 

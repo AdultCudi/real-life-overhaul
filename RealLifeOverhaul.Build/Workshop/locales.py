@@ -61,6 +61,9 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 28 Nov 2026, the cars made for the mod: model names, kept in Latin letters as car makers keep them
+    'reallife:vehicletype_haldenpip', 'reallife:vehicletype_haldenmarlow', 'reallife:vehicletype_haldenmarlowestate', 'reallife:vehicletype_haldendrover',
+    'reallife:vehicletype_haldencarrier', 'reallife:vehicletype_haldentarn', 'reallife:vehicletype_haldenember',
     # 23 Nov 2026, the own bank's top card: a card's name, kept in Latin letters as banks do
     'reallife_ob_card_black',
     # 19 Nov 2026, the city's six landlords whose blocks the estate agency manages, and the leased lines' unit: names and a unit, kept in Latin letters

@@ -482,6 +482,7 @@ internal static partial class Program
             { "Economy/Dealer/DealerGame.cs", "a lot's own bay, off the street" },
             { "Economy/Estate/EstateGame.Trade.cs", "a car yard's own bay, off the street" },
             { "Family/PartnerCar.cs", "a repair shop's bay, indoors" },
+            { "Garage/ModCars.cs", "a car bought at a dealer's stand, at the dealership's handover spot, BusZones.Refuses" },
             { "Garage/TwoWheelers.Making.cs", "a bike or scooter, not a car" },
             { "Hustles/HustleGame.cs", "a car bought, at the kerb place of HustleBridges.KerbSpot (SceneParking.Stands)" },
             { "Jobs/JobRental.cs", "the rented car, SceneParking.Stands" },
@@ -520,7 +521,7 @@ internal static partial class Program
             }
         }
         Check(found.Count == 0, "bus kerb source: no path that stands a vehicle at a kerb is off the list" + (found.Count > 0 ? " (" + string.Join("; ", found.ToArray()) + ")" : ""));
-        Check(spawners.Count == 11, "bus kerb source: the list of paths that spawn a vehicle names how each keeps out of a stop's kerb (" + spawners.Count + " listed)");
+        Check(spawners.Count == 12, "bus kerb source: the list of paths that spawn a vehicle names how each keeps out of a stop's kerb (" + spawners.Count + " listed)");
     }
 
     private static void BusKerbTexts()
