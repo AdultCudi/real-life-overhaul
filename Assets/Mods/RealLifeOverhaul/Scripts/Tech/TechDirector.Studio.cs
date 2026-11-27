@@ -314,10 +314,9 @@ namespace RealLifeOverhaul.Tech
                 Profile p = person.File;
                 RoleDef r = p.Place == firm.File.Place ? p.Def : null;
                 int h = person.HoursYesterday;
-                if (r == null || h <= 0 || r.Id == TalentCatalogue.Technician
-                    || !(r.Family <= Family.Infrastructure || r.Family == Family.Design || r.Family == Family.Product))
+                if (r == null || h <= 0 || !StudioFeeds.Builds(StudioFeeds.Of(r)))
                 {
-                    continue;
+                    continue;   // technicians, support, sales and the firm's business roles build no game (StudioFeeds: the one sort of roles)
                 }
                 int points = MeetingRules.Points(TalentRules.Output(p, person.MainPoints, day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000, week);
                 if (r.Family != Family.Product)

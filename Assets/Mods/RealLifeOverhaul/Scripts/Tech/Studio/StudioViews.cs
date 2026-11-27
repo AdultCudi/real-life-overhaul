@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Tech
         public bool Desks = true;        // desk sessions run: the pitch is held at the desk; off, the concept is greenlit on its page
         public long Tickets, Answered;   // support tickets a day from its games' players, and those its support people answer
         public int Support;              // its support people at work: the figure Answered is made of
+        public readonly int[] FeedPeople = new int[(int)Feed.Count];   // its people by the kind of work they do for a game (StudioFeeds), those not working a notice
         public string Title = string.Empty;   // what the concept's game will be called; empty where no page asks (the firm's page)
         public int TitleFrom;            // how that name came: StudioViews.TitleSuggested, TitleTyped or TitleSequel
         public Func<int, string> GameName;   // a game's name by its product's id (the firms' list keeps it); null: its genre and score stand for it
@@ -467,6 +468,7 @@ namespace RealLifeOverhaul.Tech
             int days = StudioRules.DaysLeft(g.Work - g.Done, points);
             Line(b, days > 0 ? P + "build_progress" : P + "build_progress_still", ViewTone.Plain, "phase", fmt.Text(PhaseKey(g.Phase)), "done", fmt.Mille(StudioRules.Progress(g)),
                 "days", fmt.Whole(days));
+            Makers(v.Section(P + "sec_makers"), g, s, fmt);   // which roles make each part, and what the team lacks, in a section of its own
             Line(b, P + "build_parts", ViewTone.Plain, "design", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Design)), "tech", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Tech)),
                 "art", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Art)), "content", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Content)),
                 "polish", fmt.Whole(StudioRules.PartQuality(g, (int)Part.Polish)), "quality", fmt.Whole(StudioRules.Quality(g)));
@@ -478,6 +480,22 @@ namespace RealLifeOverhaul.Tech
                     "day", fmt.Day(Math.Max(g.CrunchUntil, g.BoostUntil)));
             }
             Line(b, P + "build_spent", ViewTone.Plain, "spent", fmt.Money(g.Spent), "budget", fmt.Money(g.Budget));
+        }
+
+        private static readonly List<string> GapKeys = new List<string>(5);
+
+        // Under the parts: who builds each of them, taken from the studio's rules (StudioFeeds), and a line for each thing the team lacks that leaves a part at nothing.
+        private static void Makers(ViewSection b, GameDev g, StudioPlace s, IStudioFormat fmt)
+        {
+            Line(b, P + "build_makers", ViewTone.Plain, "design", fmt.Text(StudioFeeds.MakersKey((int)Part.Design)), "tech", fmt.Text(StudioFeeds.MakersKey((int)Part.Tech)),
+                "art", fmt.Text(StudioFeeds.MakersKey((int)Part.Art)), "content", fmt.Text(StudioFeeds.MakersKey((int)Part.Content)), "polish", fmt.Text(StudioFeeds.MakersKey((int)Part.Polish)));
+            Line(b, P + "build_groups", ViewTone.Plain);
+            StudioFeeds.Gaps(s.FeedPeople, g.Phase, GapKeys);
+            for (int i = 0; i < GapKeys.Count; i++)
+            {
+                bool wait = GapKeys[i] == "reallife_studio_gap_polish_wait";
+                Line(b, GapKeys[i], wait ? ViewTone.Plain : ViewTone.Warn, "studio", s.Name, "share", fmt.Mille(StudioCatalogue.PhaseShare[(int)GamePhase.Polish]));
+            }
         }
 
         private static void Marketing(StudioScreen v, StudioFile f, GameDev g, int day, int yearDays, int beatPick, IStudioFormat fmt)

@@ -160,6 +160,10 @@ namespace RealLifeOverhaul.Tech
             o = o * (600 + skill * 8 / 1000) / 1000;
             o = o * (700 + p.Morale * 400 / 1000) / 1000;
             o = o * (2000 - p.Burnout) / 2000;
+            if (p.Managing)
+            {
+                o = o * FirmManagerCatalogue.OwnWorkShare / 1000;   // a firm's manager spends part of their hours running the team
+            }
             return (int)Math.Max(0, o);
         }
 

@@ -449,6 +449,11 @@ namespace RealLifeOverhaul.Tech
             s.Desks = TechBridges.DesksNow();
             s.Tickets = StudioTicketsAt(s.Place);
             s.Support = firm.Crew.Support;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Profile p = _people[i].File;
+                s.FeedPeople[(int)StudioFeeds.Of(p.Def)] += p.Place == s.Place && p.NoticeEnd == 0 ? 1 : 0;   // who the card can say it lacks (StudioFeeds.Gaps)
+            }
             s.Answered = StudioRules.Answers(firm.Crew.Support);
             s.GameName = NameOf;
             return s;
@@ -497,7 +502,7 @@ namespace RealLifeOverhaul.Tech
         internal FirmPage StudioFirmPage(FirmPlace firm, IStudioFormat fmt)
         {
             return !_studioOn || firm == null || firm.File.K != FirmKind.Games || Save == null ? null
-                : StudioViews.Page(_studio, _firmsFile, StudioPlaceOf(firm), ReadFirm(firm), Save.Day, fmt);
+                : WithManager(StudioViews.Page(_studio, _firmsFile, StudioPlaceOf(firm), ReadFirm(firm), Save.Day, fmt), firm);
         }
 
         // What a firm's page reads from the game: its last 30 days' takings, oldest first and back at the start's prices as

@@ -41,6 +41,11 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Who assigns at a firm: its manager at work, else the operations executive in post; null for nobody, and then nothing is assigned.</summary>
         internal string Assigner(string place)
         {
+            string named = ManagerNameAt(place);   // the manager the player named at the firm (Manager.cs) first
+            if (named != null)
+            {
+                return named;
+            }
             if (RealLifeOverhaul.Sessions.SessionBridges.ManagerAt(place, out string manager, out _) && !string.IsNullOrEmpty(manager))
             {
                 return manager;

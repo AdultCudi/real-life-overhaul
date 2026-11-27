@@ -1406,6 +1406,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechSeatHiresId, "reallife_hire_opt_seat", Settings.TechSeatHires,
                     v => Settings.TechSeatHires = v)
+                .AddToggle(Settings.TechManagerId, "reallife_tech_mgr_enabled", Settings.TechManager,
+                    v => Settings.TechManager = v)
+                .AddButton("reallife_tech_mgr_test", () => Tech.TechDirector.Instance?.TestManager())
                 .AddButton("reallife_hire_test_seat", () => Tech.TechDirector.Instance?.TestSeatHires())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)

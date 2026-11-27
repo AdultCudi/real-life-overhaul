@@ -219,28 +219,24 @@ namespace RealLifeOverhaul.Tech
                     continue;
                 }
                 int craft = Craft(h.Skill, h.Level, ExperienceDays(f, h.Id, genre));
-                if (h.Family <= (int)Family.Infrastructure)
+                switch (StudioFeeds.Of(h.Family, h.Tester))   // the one sort of roles into kinds of work: what the card and the hiring pages tell the player
                 {
-                    if (h.Tester)
-                    {
+                    case Feed.Testing:
                         c.Testing += h.Points;
                         ct += (long)craft * h.Points;
-                    }
-                    else
-                    {
+                        break;
+                    case Feed.Engineering:
                         c.Engineering += h.Points;
                         ce += (long)craft * h.Points;
-                    }
-                }
-                else if (h.Family == (int)Family.Design)
-                {
-                    c.Design += h.Points;
-                    cd += (long)craft * h.Points;
-                }
-                else if (h.Family == (int)Family.Product)
-                {
-                    c.Product += h.Points;
-                    cp += (long)craft * h.Points;
+                        break;
+                    case Feed.Design:
+                        c.Design += h.Points;
+                        cd += (long)craft * h.Points;
+                        break;
+                    case Feed.Product:
+                        c.Product += h.Points;
+                        cp += (long)craft * h.Points;
+                        break;
                 }
             }
             c.CraftEngineering = Weighed(ce, c.Engineering);

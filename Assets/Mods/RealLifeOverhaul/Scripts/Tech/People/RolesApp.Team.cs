@@ -93,6 +93,8 @@ namespace RealLifeOverhaul.Tech
             box.Row("reallife_roles_sum_morale", people.Count > 0 ? TechText.Mille(morale / people.Count) : "-");
             box.Note(TechText.T("reallife_roles_team_about"));
             WriteRaiseAll(box);
+            WriteMoveRoles(box);   // roles changed together (Moves.cs)
+            WriteManagers(box);    // the firms' named managers
             Meta.Guide.Point(box, PeopleGuide);
             return RolesColumns.Team;
         }
@@ -264,6 +266,8 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill(seat == Seat.NoDesk ? "reallife_roles_file_no_desk" : "reallife_roles_file_no_shift", "name", person.Name, "business", person.Business));
             }
+            Feed feed = StudioFeeds.Of(r);   // what the role does for a game: the production card's own sort of roles
+            box.Line(TechText.Fill(StudioFeeds.RoleKey(feed), "parts", PartsLine(feed), "role", TechText.Role(p.Role)));
             box.Line(TechText.Fill("reallife_roles_file_skills", "a", TechText.Skill(r.SkillA), "a_score", TechText.Score(p.A), "b", TechText.Skill(r.SkillB), "b_score", TechText.Score(p.B)));
             box.Line(TechText.Fill("reallife_roles_file_background", "years", TechText.Years(p.YearsDays + (day - p.Joined) * 365 / System.Math.Max(60, year)), "school", TechText.School(p.School),
                 "certs", TechText.Certs(p)));
@@ -331,10 +335,12 @@ namespace RealLifeOverhaul.Tech
             }
             if (_director.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
             {
-                box.Line(TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support", "by", assignedBy, "day", assignedDay.ToString()));
+                box.Line(TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : assignedWhy == AssignRules.WhyBalance ? "reallife_tech_assign_by_balance"
+                    : "reallife_tech_assign_by_support", "by", assignedBy, "day", assignedDay.ToString()));
             }
             bool pinned = p.Pinned;
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off", () => Do(() => _director.SetPinned(key, !pinned)));
+            WriteManagerPage(box, person);   // naming them the firm's manager, or their duties and targets (Moves.cs)
             bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
             box.Line(promote
                 ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))

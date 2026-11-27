@@ -371,8 +371,8 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
                 .Group("reallife_talent_header")
                 .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
-                .Owns(Settings.TechPeopleId, Settings.TechSeatHiresId)
-                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test", "reallife_hire_test_seat")
+                .Owns(Settings.TechPeopleId, Settings.TechSeatHiresId, Settings.TechManagerId)
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test", "reallife_hire_test_seat", "reallife_tech_mgr_test")
                 .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

@@ -45,7 +45,14 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_wage_cap", () => (WageRules.CapBp / 10000f).ToString("0.#", Inv))
                 .Fact("talent_degree_days", () => Whole(TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, GameCalendar.DaysPerYear)))
                 .Fact("talent_degree_gain", () => Whole(TalentCatalogue.DegreeGain))
-                .Fact("talent_certs", Certs);
+                .Fact("talent_certs", Certs)
+                .Fact("mgr_rise", () => Bp(FirmManagerCatalogue.RiseBp))
+                .Fact("mgr_own", () => Mille(1000 - FirmManagerCatalogue.OwnWorkShare))
+                .Fact("mgr_sees", () => Whole(FirmManagerCatalogue.SeesThroughAt))
+                .Fact("mgr_targets", () => Whole(FirmManagerCatalogue.TargetsMost))
+                .Fact("mgr_vacancy", () => Whole(FirmManagerCatalogue.VacancyDays))
+                .Fact("mgr_ceiling", () => Bp(FirmManagerCatalogue.RaiseCeilingBp))
+                .Fact("mgr_report", () => Whole(FirmManagerCatalogue.ReportDays));
         }
 
         public static void AddSectorFacts(Feature f)
