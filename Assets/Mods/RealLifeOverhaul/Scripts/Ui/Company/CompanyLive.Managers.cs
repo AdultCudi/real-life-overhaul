@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Ui
         // Each kind of manager's decision has its own glyph (one glyph, one role).
         private static readonly UiIcon[] TaskIcons =
         {
-            UiIcon.Coin, UiIcon.Handshake, UiIcon.Clock, UiIcon.ShieldCheck, UiIcon.Package, UiIcon.Tag, UiIcon.Calendar, UiIcon.People, UiIcon.Megaphone, UiIcon.Key
+            UiIcon.Coin, UiIcon.Handshake, UiIcon.Clock, UiIcon.ShieldCheck, UiIcon.Package, UiIcon.Tag, UiIcon.Calendar, UiIcon.People, UiIcon.Megaphone, UiIcon.Key, UiIcon.Star
         };
 
         private void ReadManagers(CompanyFacts f, CompanyDirector d, CompanyView v, Words w)
@@ -478,7 +478,7 @@ namespace RealLifeOverhaul.Ui
             return p;
         }
 
-        private const int ManagerTaskCount = 10;
+        private const int ManagerTaskCount = 11;
 
         private static void Grade(List<string> labels, List<int> values, string label, int value)
         {
@@ -689,7 +689,7 @@ namespace RealLifeOverhaul.Ui
                     string line = CompanyApp.TaskLine(start, (ManagerTask)t);
                     every.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = string.IsNullOrEmpty(line) ? null : line, Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
                 }
-                // The ten stand in two columns, five and five, under the note and beside the levels: one long column left a third of the page empty.
+                // The kinds stand in two columns, half and half, under the note and beside the levels: one long column left a third of the page empty.
                 int half = (every.Count + 1) / 2;
                 left.Add(Sec(w.T("reallife_co_hand_over", "What you can hand over"), every.Count.ToString()));
                 left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.GetRange(0, half).ToArray() });

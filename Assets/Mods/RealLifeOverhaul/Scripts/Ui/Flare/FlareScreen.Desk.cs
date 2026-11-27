@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Ui
             b.Chosen = _shop;
             _m.HeadLine = BusinessLine(shop);
             b.Promote = _flare.CityOn ? FlareText.T("reallife_flare_kit_promote_ad") : null;
+            b.AnswerAll = AnswerAllWords();
             b.ReachTitle = FlareText.T("reallife_flare_kit_reach_title");
             b.ReachEmpty = FlareText.T("reallife_flare_kit_reach_empty");
             b.Reach = ReachLine(file);
@@ -224,7 +225,9 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(n.Answer))
             {
                 r.Flags |= FlareRowFlags.Answered;
-                string words = n.Answer.StartsWith("reallife_", StringComparison.Ordinal) ? FlareText.T(n.Answer) : n.Answer;
+                // a kept key is shown with the reviewer and the business filled in
+                string words = n.Answer.StartsWith("reallife_", StringComparison.Ordinal)
+                    ? FlareText.Fill(n.Answer, "name", FlareBatchRules.FirstName(r.Name), "business", shop.Name ?? "?") : n.Answer;
                 r.Line = FlareText.Fill("reallife_flare_kit_your_reply", "words", words) + ResultLine(FlareReplyRules.ResultOf(n.Quality, r.Stars));
             }
             else

@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Flare
         /// the answer goes up under it, and the rating and the talk move as FlareReplyRules says (<see cref="ReviewAnswered"/>, which a reply
         /// typed in the old panel reaches too). False when it cannot be answered.
         /// </summary>
-        public bool ReplyToReview(int postId, FlareReplyOption option, string words)
+        public bool ReplyToReview(int postId, FlareReplyOption option, string words, FlareTone? tone = null)
         {
             FlarePost review = Running ? _file.Post(postId) : null;
             if (review == null || review.Source != FlareSource.Review || string.IsNullOrEmpty(words) || review.Place == null || FlareGame.Business(review.Place) == null
@@ -238,7 +238,7 @@ namespace RealLifeOverhaul.Flare
             int stars = FlareRules.Clamp(review.Arg, 1, 5);
             var c = new FlareCompose
             {
-                Kind = FlareSource.Reply, ReplyTo = postId, Text = words, Tone = FlareReplyRules.Tone(option), ToneChosen = true, Quality = QualityFor(option, stars, review.Place)
+                Kind = FlareSource.Reply, ReplyTo = postId, Text = words, Tone = tone ?? FlareReplyRules.Tone(option), ToneChosen = true, Quality = QualityFor(option, stars, review.Place)
             };
             return Compose(c, out _);
         }
@@ -283,7 +283,10 @@ namespace RealLifeOverhaul.Flare
             AnswerTalk(place, result, null, CurrentDay);
             FlareStarRow now = StarsWithPosts(place, Now);
             Told(NameOfPlace(place), stars, result, before, FlareReplyRules.Average(now), now);
-            Logger?.Info("Flare in the city: the player answers a " + stars + " star review (" + option + ", " + result + ", worth " + quality + ").");
+            if (!_batchQuiet)
+            {
+                Logger?.Info("Flare in the city: the player answers a " + stars + " star review (" + option + ", " + result + ", worth " + quality + ").");
+            }
             Changed();
             return true;
         }

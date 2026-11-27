@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_flare_header")
                 .About("reallife_guide_flare_about").Help("reallife_guide_flare")
                 .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId, Settings.FlareBusyId, Settings.FlareCityOfficeId, Settings.FlareSharePostsId, Settings.FlareSharePicturesId,
-                    Settings.FlareFilterId, Settings.FlareThemeId, Settings.FlarePicturesId, Settings.FlareCityPhotosId)
+                    Settings.FlareFilterId, Settings.FlareThemeId, Settings.FlarePicturesId, Settings.FlareCityPhotosId, Settings.FlareManagerRepliesId)
                 .Preset(Settings.FlareBusyId, 0, 2, 2)
                 .Data(Flare.FlareStore.Keys)
                 .Fact("flare_local", () => Whole(Flare.FlareRules.TierFrom[1]))
@@ -309,6 +309,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("flare_dark_until", () => Flare.FlareThemeRules.DarkUntil.ToString("00", CultureInfo.InvariantCulture) + ":00")
                 .Fact("flare_comments_most", () => Whole(Flare.FlareCommentRules.WrittenMost))
                 .Fact("flare_review_days", () => Whole(Flare.FlareLiveRules.ReviewDays))
+                .Fact("flare_batch_most", () => Whole(Flare.FlareBatchRules.Most))
+                .Fact("flare_auto_days", () => Whole(Flare.FlareBatchRules.AutoDays))
+                .Fact("flare_manager_hour", () => Economy.ManagerCatalogue.StaffHour.ToString("00", System.Globalization.CultureInfo.InvariantCulture))
                 .Fact("flare_false_cost", () => Whole(Flare.FlareLiveRules.FalseReportCost))
                 .Fact("flare_crews_patrol", () => Whole(Flare.FlareLiveRules.CrewsPerWeek[(int)Flare.FlareOrder.Patrol]))
                 .Fact("flare_crews_cleanup", () => Whole(Flare.FlareLiveRules.CrewsPerWeek[(int)Flare.FlareOrder.Cleanup]))

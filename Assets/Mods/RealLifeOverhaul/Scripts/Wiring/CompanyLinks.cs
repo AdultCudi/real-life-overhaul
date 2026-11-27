@@ -61,6 +61,10 @@ namespace RealLifeOverhaul
                 BusinessDirector.Held = Offered;
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;
+                CompanyBridges.ReviewsOn = () => Flare.FlareDirector.Instance != null && Flare.FlareDirector.Instance.Running;
+                CompanyBridges.ReviewsAnswer = ReviewsAnswer;
+                CompanyBridges.ReviewsRating = place => Flare.FlareDirector.Instance != null ? Flare.FlareDirector.Instance.RatingOf(place) : 0;
+                CompanyBridges.ReviewsFlagged = place => Flare.FlareDirector.Instance != null ? Flare.FlareDirector.Instance.FlaggedAt(place) : 0;
                 Justice.Bridges.TaxSettled = TaxSettled;
                 CompanyBridges.Inspect = Inspect;
                 CompanyBridges.IssueFootfall = IssueFootfall;
@@ -202,6 +206,31 @@ namespace RealLifeOverhaul
                 {
                     Fault("CompanyLinks.Rival", e);
                     return null;
+                }
+            }
+
+            private static readonly Flare.FlareBatchSummary ReviewScratch = new Flare.FlareBatchSummary();
+
+            // A manager's round at a business: Flare answers its waiting reviews by the rule "Answer all" uses (never standing your ground), and says what it did.
+            private static ReviewRun ReviewsAnswer(string place, bool slip)
+            {
+                try
+                {
+                    Flare.FlareDirector flare = Flare.FlareDirector.Instance;
+                    if (flare == null || !flare.ManagerAnswers(place, slip, ReviewScratch))
+                    {
+                        return default(ReviewRun);
+                    }
+                    return new ReviewRun
+                    {
+                        Ok = true, Thanks = ReviewScratch.Thanks, Sorry = ReviewScratch.Sorry, Mixed = ReviewScratch.Mixed, Left = ReviewScratch.Left, Skipped = ReviewScratch.Skipped,
+                        Before = ReviewScratch.Before, After = ReviewScratch.After
+                    };
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.ReviewsAnswer", e);
+                    return default(ReviewRun);
                 }
             }
 

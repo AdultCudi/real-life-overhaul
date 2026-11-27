@@ -169,6 +169,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.PhotosSheet: FillPicker(); break;
                 case FlareFace.AdSheet: AdSheet(k); break;
                 case FlareFace.EditSheet: EditSheet(k); break;
+                case FlareFace.BatchSheet: BatchSheet(k); break;
             }
         }
 
@@ -408,6 +409,9 @@ namespace RealLifeOverhaul.Ui
                 case GroupBanner:
                     done = BannerChip(chip);
                     break;
+                case GroupBatch:
+                    done = BatchChip(chip);
+                    break;
                 default:
                     done = ComposeChip(kind, chip);
                     break;
@@ -436,6 +440,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.ReplySheet: return ReplyNow();
                 case FlareFace.AdSheet: return AdNow();
                 case FlareFace.EditSheet: return EditNow();
+                case FlareFace.BatchSheet: return BatchNow();
                 default: return false;
             }
         }

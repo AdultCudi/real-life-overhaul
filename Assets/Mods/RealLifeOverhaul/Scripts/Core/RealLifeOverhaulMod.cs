@@ -766,6 +766,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
                     new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
                     v => Settings.FlareCityPhotos = v)
+                .AddToggle(Settings.FlareManagerRepliesId, "reallife_flare_opt_manager_replies", Settings.FlareManagerReplies,
+                    v => Settings.FlareManagerReplies = v)
                 .AddButton("reallife_flare_test_kit", () => Flare.FlareDirector.Instance?.TestKit(0))
                 .AddButton("reallife_flare_test_compose", () => Flare.FlareDirector.Instance?.TestKit(7))
                 .AddButton("reallife_flare_test_city_kit", () => Flare.FlareDirector.Instance?.TestKit(6))
@@ -783,6 +785,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
                 .AddButton("reallife_flare_test_review_now", () => Flare.FlareDirector.Instance?.TestReviewNow())
+                .AddButton("reallife_flare_test_reviews_many", () => Flare.FlareDirector.Instance?.TestReviewsMany())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())

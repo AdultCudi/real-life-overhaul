@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Ui
         public float[] Reach;                            // ...the account's reach a day, only the days that exist
         public string Rival;                             // the business of its kind across the street and its rating; null when none is rated
         public string Promote;                           // the button that runs an ad for this business; null when it cannot
+        public string AnswerAll;                         // the button that answers the waiting reviews in bulk; null when none wait
         public string[] Picker2 = new string[0];         // Hire: the niches to pick from, the first all of them...
         public int Chosen2;
         public string[] Sort = new string[0];            // ...and the orders: by followers, by fit
@@ -287,7 +288,7 @@ namespace RealLifeOverhaul.Ui
         public const int Pages = 9;
 
         // The sheets.
-        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3, PhotosSheet = 4, AdSheet = 5, EditSheet = 6;
+        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3, PhotosSheet = 4, AdSheet = 5, EditSheet = 6, BatchSheet = 7;
 
         // The text fields (FieldCommand's argument): which one typing fills.
         public const int ComposeField = 0, SearchField = 1, InboxField = 2, ReplyField = 3, ThreadField = 4, PickerField = 5, BioField = 6;
@@ -300,7 +301,7 @@ namespace RealLifeOverhaul.Ui
             PickerPhotoCommand = 332, PickerAlbumCommand = 333;
 
         // The audit's block (340 to 359; 300 to 333 are the face's own, 400 up are other parts'): none is a number another part of the window uses.
-        public const int MarkAllCommand = 340, SortCommand = 341, NicheCommand = 342, PromoteCommand = 343, EditCommand = 344, ProfileActCommand = 345;
+        public const int MarkAllCommand = 340, SortCommand = 341, NicheCommand = 342, PromoteCommand = 343, EditCommand = 344, ProfileActCommand = 345, AnswerAllCommand = 346;
 
         /// <summary>What a profile's further buttons do (ProfileActCommand's argument).</summary>
         public const int ActMessage = 0, ActMute = 1, ActHide = 2;
@@ -312,7 +313,7 @@ namespace RealLifeOverhaul.Ui
             LikeCommand, CommentCommand, RepostCommand, ShareCommand, TagCommand, FollowCommand, ButtonCommand, SearchCommand, StudioLinkCommand,
             TrendCommand, WhoCommand, WhoFollowCommand, PickCommand, OptionCommand, SheetChipCommand, SheetConfirmCommand, SheetCancelCommand,
             SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand, PickerPhotoCommand, PickerAlbumCommand, MarkAllCommand, SortCommand, NicheCommand,
-            PromoteCommand, EditCommand, ProfileActCommand
+            PromoteCommand, EditCommand, ProfileActCommand, AnswerAllCommand
         };
 
         public const int MostTargets = 48;          // a layer's targets at most (UiCheckRules.MostTargets): rows past them wait for the scroll
