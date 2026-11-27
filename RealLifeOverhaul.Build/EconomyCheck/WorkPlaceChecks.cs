@@ -174,9 +174,10 @@ internal static partial class Program
         string map = ModSource(@"Careers\CareersDirector.Map.cs");
         string rules = ModSource(@"Jobs\CareerOfficeRules.cs");
         string mark = MemberText(director, "private void OfficeMark(Vector3 player, JobBoards boards)");
-        Check(mark.Contains("CareerOfficeRules.MarkOff(Time.unscaledTime, _officeUntil, CareerOfficeRules.BoardGone(_officeBoard, boards.Count), FlatSqr(_officeAt - player), _officeReach)")
+        Check(mark.Contains("bool boardGone = CareerOfficeRules.BoardGone(_officeBoard, boards.Count) || (_officeBoard >= 0 && boards.Moves != _officeMoves);")
+              && mark.Contains("CareerOfficeRules.MarkOff(Time.unscaledTime, _officeUntil, boardGone, FlatSqr(_officeAt - player), _officeReach)")
               && !mark.Contains("_officeBoard < 0") && !mark.Contains("boards.Front("),
-            "work place: the marker comes off by the rule, from where it stands, and an employer with no board is not taken for one whose board has gone");
+            "work place: the marker comes off by the rule, from where it stands, when its board has gone or moved, and an employer with no board is not taken for one whose board has gone");
         string show = MemberText(director, "public bool ShowOffice(int employer)");
         Check(show.Contains("_officeAt = place;") && show.Contains("_officeReach = CareerOfficeRules.MarkReach(WhereOf(employer));") && show.Contains("_officeMark.Show("),
             "work place: Show me the office keeps where the marker stands and how near the player must come, for a board, the practice's door and a works site alike");
