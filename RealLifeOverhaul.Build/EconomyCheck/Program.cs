@@ -1767,6 +1767,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ui33")
+        {
+            Ui33();   // (All apps never scrolls past its last app, a district in words on the supplier's call card, "1 day", a candidate's asking wage as the negotiation asks it: Ui33Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-guard")
         {
             UiGuard();   // (a part switched off by the guard and what it leaves behind: the bug report, the holds, the interface's pieces, alone: UiGuardChecks.cs)
@@ -2076,6 +2082,7 @@ internal static partial class Program
         UiShaders();    // the pink text on a Mac: the faces given a text shader of the running game's on every system, a face without one left out, the check's line (UiShaderChecks.cs)
         HostPlatform(); // the mod on a Mac: the log's place, the report's paths, the packs aside, a session's key, the bundles' check and its line, the sources (PlatformChecks.cs)
         FontFallbacks(); // the Korean and Chinese text that was not drawn: the game's fallback fonts copied with the face's line and ordered by language, room in every text's box, every character of every language against the census of the game's fonts (FontFallbackChecks.cs)
+        Ui33();         // 27 Nov fixes: All apps' scroll end, a district in words, "1 day", a candidate's asked wage (Ui33Checks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)

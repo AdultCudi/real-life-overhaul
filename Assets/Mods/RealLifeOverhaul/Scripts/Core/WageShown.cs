@@ -199,7 +199,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             baseCents = PaidWage.Base(e.hourlyWage);
-            paidCents = PaidWage.Now(e.hourlyWage, e.id);
+            paidCents = PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null);   // a candidate at what the negotiation asks (5 cents up), so the list and the chat say one figure
             return PaidWage.Differs(baseCents, paidCents);
         }
 
@@ -213,13 +213,19 @@ namespace RealLifeOverhaul
         /// <summary>What an employee or a candidate is paid an hour, hundredths, as the game's screens now show it; the game's own figure for another player's.</summary>
         internal static int PaidCents(EmployeeInstance e)
         {
-            return e == null ? 0 : PaidWage.Shown(e.hourlyWage, e.id, Ours(e));
+            return e == null ? 0 : PaidWage.Shown(e.hourlyWage, e.id, Ours(e), e.candidateInfo != null);
         }
 
         /// <summary>The same in money an hour: the one figure the mod's own employee screens name (the list, the card and the panel at the station).</summary>
         internal static float PaidMoney(EmployeeInstance e)
         {
             return PaidCents(e) / 100f;
+        }
+
+        /// <summary>The game's wage for an employee, hundredths an hour, before the city's prices: a candidate's as the negotiation asks it.</summary>
+        internal static int AskCents(EmployeeInstance e)
+        {
+            return e.candidateInfo != null ? PaidWage.Ask(e.hourlyWage) : PaidWage.Base(e.hourlyWage);
         }
 
         /// <summary>True the first time in this save that a negotiation is told what its wage costs.</summary>
@@ -349,7 +355,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            int paid = PaidWage.Now(e.hourlyWage, e.id);
+            int paid = PaidWage.Now(e.hourlyWage, e.id, e.candidateInfo != null);
             if (PaidWage.Base(row.hourlyWage) != paid)
             {
                 row.hourlyWage = paid / 100f;

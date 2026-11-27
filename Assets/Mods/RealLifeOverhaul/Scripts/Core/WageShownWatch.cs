@@ -190,19 +190,19 @@ namespace RealLifeOverhaul
                     talks = n;
                 }
             }
-            if (!WageShown.Paid(e, out int game, out int paid))
+            if (!WageShown.Paid(e, out _, out int paid))
             {
                 return;
             }
             Write(CardWord, paid);
-            if (talks != null && !talks.completed && PaidWage.City(game, Prices.Level) != 0 && WageShown.FirstTell(talks.id))
+            if (talks != null && !talks.completed && PaidWage.City(WageShown.AskCents(e), Prices.Level) != 0 && WageShown.FirstTell(talks.id))
             {
                 Notifications.Show(NotificationType.Info, "reallife_wage_hire_city", new Dictionary<string, string>
                 {
                     { "percent", (Prices.Level / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "%" },
                     { "name", contact.id },
-                    { "ask", (game / 100f).ToCurrencyFormat() },
-                    { "cost", (PaidWage.Cents(game, Prices.Level, 0) / 100f).ToCurrencyFormat() }
+                    { "ask", (WageShown.AskCents(e) / 100f).ToCurrencyFormat() },
+                    { "cost", (PaidWage.Cents(WageShown.AskCents(e), Prices.Level, 0) / 100f).ToCurrencyFormat() }
                 }, TellSeconds, "reallife_wage_hire_city", null, true, false);
             }
         }

@@ -790,7 +790,7 @@ internal static partial class Program
             "reallife_ui_dialog_figure_unset", "reallife_ui_dialog_cost_unchosen", "reallife_ui_dialog_cost_supplied", "reallife_ui_dialog_cost_each_delivery",
             "reallife_ui_dialog_cost_agent", "reallife_ui_dialog_cost_discount", "reallife_ui_dialog_cost_items", "reallife_ui_dialog_cost_no_goods", "reallife_ui_dialog_cost_on_delivery",
             "reallife_ui_dialog_cost_now", "reallife_ui_dialog_cost_move", "reallife_ui_dialog_cost_on_the_day", "reallife_ui_dialog_cost_refit", "reallife_ui_dialog_cost_discontinued",
-            "reallife_ui_dialog_cost_candidates", "reallife_ui_dialog_cost_a_day", "reallife_ui_dialog_cost_no_campaign", "reallife_ui_dialog_cost_insurer_next",
+            "reallife_ui_dialog_cost_candidates", "reallife_ui_dialog_cost_candidates_day", "reallife_ui_dialog_cost_candidate", "reallife_ui_dialog_cost_candidate_day", "reallife_ui_dialog_cost_a_day", "reallife_ui_dialog_cost_no_campaign", "reallife_ui_dialog_cost_insurer_next",
             "reallife_ui_dialog_cost_per_employee", "reallife_ui_dialog_cost_wage", "reallife_ui_dialog_cost_asked", "reallife_ui_dialog_cost_invest", "reallife_ui_dialog_cost_pay",
             "reallife_ui_dialog_cost_in", "reallife_ui_dialog_cost_ask_in", "reallife_ui_dialog_cost_owe", "reallife_ui_dialog_cost_owe_day", "reallife_ui_dialog_cost_month",
             "reallife_ui_dialog_cost_month_first", "reallife_ui_dialog_cost_get_in", "reallife_ui_dialog_cost_deposit", "reallife_ui_dialog_cost_hospital_bill",

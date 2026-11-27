@@ -221,7 +221,7 @@ namespace RealLifeOverhaul
                         total++;
                         if (b != null && ledger.Holds(b.StreetName, b.StreetNumber))
                         {
-                            offered.Add(b.Address.ToFormattedString() + " (" + b.Neighbourhood + ")");
+                            offered.Add(b.Address.ToFormattedString() + " (" + GameRegistrations.DistrictWords(b.Neighbourhood) + ")");
                         }
                     }
                 }

@@ -38,6 +38,21 @@ namespace RealLifeOverhaul
             return hourlyWage > 0f ? (int)Math.Min(int.MaxValue / 2, Math.Round(hourlyWage * 100f)) : 0;
         }
 
+        /// <summary>
+        /// What a candidate asks in hundredths an hour when the player negotiates: the game opens a negotiation at the candidate's wage rounded up to the
+        /// next 5 cents (CandidateSalaryNegotiation.SendOffer: Ceil(wage x 20) / 20, in single precision as the game does it), and accepting that offer
+        /// hires at it. A candidate's wage of 17.23 is asked as 17.25.
+        /// </summary>
+        public static int Ask(float hourlyWage)
+        {
+            if (!(hourlyWage > 0f))
+            {
+                return 0;
+            }
+            float rounded = (float)Math.Ceiling(hourlyWage * 20f) / 20f;
+            return Base(rounded);
+        }
+
         /// <summary>The raise agreed for an employee, hundredths an hour; 0 for none, or while nothing hands one in.</summary>
         public static int RaiseOf(string id)
         {
@@ -51,6 +66,12 @@ namespace RealLifeOverhaul
             return Cents(Base(hourlyWage), Prices.Level, RaiseOf(id));
         }
 
+        /// <summary>What somebody costs an hour today, hundredths, a candidate at the wage the negotiation asks (<see cref="Ask"/>) and an employee at the game's wage.</summary>
+        public static int Now(float hourlyWage, string id, bool candidate)
+        {
+            return Cents(candidate ? Ask(hourlyWage) : Base(hourlyWage), Prices.Level, RaiseOf(id));
+        }
+
         /// <summary>The same in money an hour, as the game's own screens write a wage.</summary>
         public static float NowMoney(float hourlyWage, string id)
         {
@@ -61,9 +82,9 @@ namespace RealLifeOverhaul
         /// What a screen shows somebody costs an hour, hundredths: the paid wage of somebody this machine pays, and the game's own figure for another player's
         /// (Going Public), whose wage and raise this machine neither pays nor knows.
         /// </summary>
-        public static int Shown(float hourlyWage, string id, bool ours)
+        public static int Shown(float hourlyWage, string id, bool ours, bool candidate = false)
         {
-            return ours ? Now(hourlyWage, id) : Base(hourlyWage);
+            return ours ? Now(hourlyWage, id, candidate) : Base(hourlyWage);
         }
 
         /// <summary>True when what is paid differs from the game's own figure, so a screen showing the game's figure is wrong.</summary>
