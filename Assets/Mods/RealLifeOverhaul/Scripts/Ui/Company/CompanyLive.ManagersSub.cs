@@ -1481,7 +1481,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    item.Figure = w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString());
+                    item.Figure = Decisions(w, m.Decided);
                 }
                 rows.Add(item);
             }

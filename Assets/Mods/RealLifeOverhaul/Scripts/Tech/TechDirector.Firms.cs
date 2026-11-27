@@ -311,6 +311,7 @@ namespace RealLifeOverhaul.Tech
                 var c = new Crew();
                 TechBridges.TeamWeekAt(firm.File.Place, Save.Day, out int week, out _);   // the week its team meeting set, if any
                 int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
+                int securityWorking = 0, reliabilityWorking = 0;
                 long faultWeighted = 0, securityBrought = 0, reliabilityBrought = 0;   // what the people bring before the old per person and firm tops (the sector's curve)
                 firm.People = 0;
                 for (int i = 0; i < _people.Count; i++)
@@ -337,12 +338,14 @@ namespace RealLifeOverhaul.Tech
                         int cert = p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
                         security += (r.Id == TalentCatalogue.DataProtection ? brought : Math.Min(FirmsCatalogue.SecurityEach, brought)) + cert;
                         securityBrought += brought + cert;
+                        securityWorking++;
                     }
                     if ((r.Id == TalentCatalogue.Sre || r.Id == TalentCatalogue.DevOps) && h > 0)
                     {
                         int brought = (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint;
                         reliability += Math.Min(FirmsCatalogue.ReliabilityEach, brought);
                         reliabilityBrought += brought;
+                        reliabilityWorking++;
                     }
                 }
                 var own = new Crew();
@@ -353,6 +356,10 @@ namespace RealLifeOverhaul.Tech
                     c.Security = SectorRules.Posture(FirmsCatalogue.SecurityBase, securityBrought, SectorCatalogue.SecurityHalf);   // each analyst adds less than the last, with no top of 950
                     int reliable = SectorRules.Posture(FirmsCatalogue.ReliabilityBase, reliabilityBrought, SectorCatalogue.ReliabilityHalf);
                     c.Reliability = SectorRules.Reliable(_sector.FirmAt(firm.File.Place), reliable, Save.Day);
+                    c.SecurityBrought = securityBrought;
+                    c.ReliabilityBrought = reliabilityBrought;
+                    c.SecurityWorking = securityWorking;
+                    c.ReliabilityWorking = reliabilityWorking;
                 }
                 else
                 {
@@ -399,8 +406,9 @@ namespace RealLifeOverhaul.Tech
                 FirmPlace place = FirmOf(_firmsFile.Firms[i].Place);
                 _crews.Add(place != null ? place.Crew : default(Crew));
             }
-            FirmsGame.Clients(_clients);
+            FirmsGame.Clients(_clients, _clientTypes);
             _work.Clear();
+            int offersFrom = _firmsFile.Contracts.Count;   // the day's new offers are appended from here (the kinds of client, ClientsOffered)
             if (_sectorOn)
             {
                 SectorRules.Offers(_firmsFile, _sector, day, cycle, _crews, _clients, _work);   // the city's IT work shared with the rival IT firms
@@ -410,6 +418,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmsRules.Offers(_firmsFile, day, _crews, _clients, _work);
             }
+            ClientsOffered(day, offersFrom);
             FirmsRules.Lapse(_firmsFile, day, _work);
             for (int i = 0; i < _firmsFile.Contracts.Count; i++)
             {
@@ -478,6 +487,7 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
                 firm.Contracted = c.Engineering - engineering;
+                ClientsPaid(firm, day, level);   // what delivered contracts are owed, on their day
                 int shares = 0;
                 for (int i = 0; i < _firmsFile.Products.Count; i++)
                 {
@@ -731,6 +741,9 @@ namespace RealLifeOverhaul.Tech
                     break;
                 case FirmsRules.NoteFailed:
                     TellTech(NotificationType.Warning, "reallife_tech_note_failed", Data("client", w.Client), TabContracts, row);
+                    break;
+                default:
+                    ClientNote(note, w);   // one more change asked, delivered and owed, paid at last, an audit (Tech/Clients)
                     break;
             }
         }

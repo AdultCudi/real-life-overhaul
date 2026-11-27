@@ -27,6 +27,10 @@ namespace RealLifeOverhaul
             if (!onFoot)
             {
                 _boards.Away();
+                if (Settings.Jobs && JobState.Loaded && !Transit())
+                {
+                    _boards.Survey();   // where the boards stand is settled from the city's list whatever the player is doing, so the Career app can say it before the first walk outside
+                }
             }
             else
             {
@@ -57,6 +61,13 @@ namespace RealLifeOverhaul
                 }
             }
             _boardPanel.Show();
+        }
+
+        // Being taken through a door: the street is changing under the player, so nothing is asked of it for those seconds.
+        private static bool Transit()
+        {
+            var premises = InstanceBehavior<BuildingManager>.Instance;
+            return premises != null && (premises.enteringBuilding || premises.exitingBuilding);
         }
 
         private void HideBoardPanel()

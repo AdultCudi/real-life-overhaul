@@ -92,6 +92,69 @@ namespace RealLifeOverhaul.Economy
         public static Func<int, int> TaxCase;
 
         /// <summary>
+        /// Flare answers the waiting reviews of one of the player's businesses for its manager, by the rule "Answer all" uses: the place, and whether the manager's
+        /// mistake today leaves them all unanswered. Ok is false where Flare cannot (it is off, or the place is not the player's). Null: the duty does nothing.
+        /// </summary>
+        public static Func<string, bool, ReviewRun> ReviewsAnswer;
+
+        /// <summary>A business's rating on Flare, thousandths; 0 for none. Null: 0.</summary>
+        public static Func<string, int> ReviewsRating;
+
+        /// <summary>How many waiting reviews of a business the rule leaves to the player (a poor one out of line with the rating). Null: 0.</summary>
+        public static Func<string, int> ReviewsFlagged;
+
+        /// <summary>True while Flare is running and can answer reviews. Null: no.</summary>
+        public static Func<bool> ReviewsOn;
+
+        internal static bool ReviewsReady()
+        {
+            try
+            {
+                return ReviewsOn != null && ReviewsAnswer != null && ReviewsOn();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        internal static ReviewRun AnswerReviews(string place, bool slip)
+        {
+            try
+            {
+                return ReviewsAnswer != null ? ReviewsAnswer(place, slip) : default(ReviewRun);
+            }
+            catch (Exception)
+            {
+                return default(ReviewRun);
+            }
+        }
+
+        internal static int RatingAt(string place)
+        {
+            try
+            {
+                return ReviewsRating != null ? Math.Max(0, ReviewsRating(place)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        internal static int FlaggedAt(string place)
+        {
+            try
+            {
+                return ReviewsFlagged != null ? Math.Max(0, ReviewsFlagged(place)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// Another feature's quiet second choice on a page of the company's: the words of its button for a matter (a policy 0, the return 1, a business's
         /// books 2, a campaign 3), a place and a figure, or null for no button; and its press. Default: no button anywhere.
         /// </summary>

@@ -484,7 +484,7 @@ namespace RealLifeOverhaul.Tech
         internal FirmPage SectorFirmPage(FirmPlace firm, IStudioFormat fmt)
         {
             SectorPlace s = SectorPlaceOf(firm);
-            return s != null ? SectorViews.Page(_sector, _firmsFile, s, ReadFirm(firm), Save.Day, fmt) : null;
+            return s != null ? WithManager(SectorViews.Page(_sector, _firmsFile, s, ReadFirm(firm), Save.Day, fmt), firm) : null;
         }
 
         // What the firm's screens know of it from the game today; null while the sector is off.
@@ -502,6 +502,7 @@ namespace RealLifeOverhaul.Tech
                 ProductsAll = FirmsRules.LiveCount(_firmsFile, null), Products = FirmsRules.LiveCount(_firmsFile, place)
             };
             s.Team = TeamAt(place);
+            s.Focus = firm.File.Focus;
             s.Address = FirmsGame.Where(place, out string street, out int number, out _) ? FirmsGame.AddressWords(street, number) : string.Empty;
             for (int i = 0; i < _firmsFile.Products.Count; i++)
             {

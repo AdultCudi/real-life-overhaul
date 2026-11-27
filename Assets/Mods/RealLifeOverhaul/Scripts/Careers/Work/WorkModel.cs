@@ -159,6 +159,8 @@ namespace RealLifeOverhaul.Careers
         public int AskDay = -1000;    // the last time the player asked for a rise between reviews
         public int OffUntil;          // signed off for burnout until this day: its working days are excused
         public int ShutDay = -1;      // a working day the workplace was shut at its start: excused, never a warning
+        public int FitWarnDay;        // the day a warning for fitness far below what the job asks was given; 0 none (Careers/Work/FitnessJobRules)
+        public int FitStrikeDay;      // the day of the latest fitness strike on the ladder of warnings; 0 none
 
         public Profession Def => Post.Def;
 

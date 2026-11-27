@@ -96,6 +96,11 @@ namespace RealLifeOverhaul.Careers
         public static void AddWorkFacts(Feature f)
         {
             f.Fact("work_professions", Professions)
+                .Fact("fit_police", () => Whole(FitnessJobRules.PoliceMinimum))
+                .Fact("fit_heavy", () => Whole(FitnessJobRules.HeavyMinimum))
+                .Fact("fit_trade", () => Whole(FitnessJobRules.TradeMinimum))
+                .Fact("fit_far", () => Whole(FitnessJobRules.FarBelow))
+                .Fact("fit_warn_days", () => Whole(FitnessJobRules.WarnDays))
                 .Fact("work_self_taught", () => Whole(ProRules.SelfTaughtExtra))
                 .Fact("work_live", () => Whole(CareersDirector.ApplicationsLive))
                 .Fact("work_screen", () => Whole(ProRules.ScreenPass))

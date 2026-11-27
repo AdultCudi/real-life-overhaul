@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Flare
         public string Place;
         public string Name;
         public FlareNiche Niche;
+        public string Type;          // the game's type name: a review is answered in the words of the kind of shop, not only its niche
         public string District;
         public int OpenedDay;        // the day the business opened (a launch is for a business in its first fortnight)
     }

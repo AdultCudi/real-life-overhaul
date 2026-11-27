@@ -38,12 +38,19 @@ namespace RealLifeOverhaul.Careers
         /// </summary>
         private string DutyEntryWhy(Profession p)
         {
-            if (p == null || p.Id != ProCatalogue.Police)
+            if (p == null)
             {
                 return null;
             }
-            string why = PoliceRules.EntryWhy(CareersBridges.ConductOver(int.MaxValue), Year, out int days);
-            return why == null ? null : CareersWhy.With(why, "days", days.ToString());
+            if (p.Id == ProCatalogue.Police)
+            {
+                string why = PoliceRules.EntryWhy(CareersBridges.ConductOver(int.MaxValue), Year, out int days);
+                if (why != null)
+                {
+                    return CareersWhy.With(why, "days", days.ToString());
+                }
+            }
+            return FitnessWhy(p);   // the body's ask of a physical job (the police's fitness test first of all), after the record's
         }
 
         // ------------------------------------------------------------------------------------------------- the shift

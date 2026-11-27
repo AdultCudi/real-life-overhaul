@@ -17,8 +17,8 @@ namespace RealLifeOverhaul
         private const float TickInterval = 0.25f;   // seconds
         private const float CrewRange = 160f;       // metres: a unit parked further from the scene keeps its crew aboard
         private const float SecondCrewChance = 0.6f;
-        private const float JogSpeed = 2.4f;        // m/s, cautious guesses used only to plan the crew's time
-        private const float WheelSpeed = 1.1f;
+        private const float JogSpeed = 3.5f;        // m/s, cautious guesses used only to plan the crew's time (the game's jog is about 4, its run about 6)
+        private const float WheelSpeed = 1.6f;      // ...and the stretcher's (it is wheeled at SceneClips.CrewPace, 1.8)
         private const float Detour = 1.35f;         // routes go round vehicles and through the entry: this much longer than a straight line
         private const float ReachMinimum = 26f;     // seconds a crew is given to reach the people, at least
         private const float LiftAllowance = 9f;     // seconds to get to the ends of the stretcher, round the casualty's head or feet

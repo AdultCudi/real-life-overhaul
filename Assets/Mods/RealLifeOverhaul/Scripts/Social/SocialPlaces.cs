@@ -67,7 +67,12 @@ namespace RealLifeOverhaul
                 var all = NeighborhoodHelper.Neighborhoods;
                 if (all != null && all.Count > 0)
                 {
-                    return all[Mathf.Abs(index) % all.Count].GetLocalization();
+                    int at = Mathf.Abs(index) % all.Count;
+                    if (all[at] == CityDistricts.Global && all.Count > 1)
+                    {
+                        at = (at + 1) % all.Count;   // the game's district of nowhere is no place to live ("lives in Global"): the next one, everyone else keeps theirs
+                    }
+                    return all[at].GetLocalization();
                 }
             }
             catch (Exception)
@@ -461,6 +466,34 @@ namespace RealLifeOverhaul
         }
 
         private static readonly List<BuildingRegistration> Own = new List<BuildingRegistration>(8);
+
+        /// <summary>
+        /// How many days the player has had the business they opened last; -1 with none of their own (a passion that is glad of a new
+        /// business reads it, SocialPassionRules). Asked once an outing, never per frame.
+        /// </summary>
+        public static int NewestBusinessDays(int day)
+        {
+            int newest = -1;
+            try
+            {
+                Economy.Books.Businesses(Own);
+                for (int i = 0; i < Own.Count; i++)
+                {
+                    int since = FoundingGame.Of(Own[i]);
+                    if (since > 0)
+                    {
+                        int days = Mathf.Max(0, day - since);
+                        newest = newest < 0 ? days : Mathf.Min(newest, days);
+                    }
+                }
+                Own.Clear();
+            }
+            catch (Exception)
+            {
+                newest = -1;   // what cannot be read is not there
+            }
+            return newest;
+        }
 
         /// <summary>
         /// How many days the player has had the business they have had longest; -1 with no business of their own (the test

@@ -228,14 +228,16 @@ internal static partial class Program
         // The screen presses as the Tech app does: the director's own acts with the act and value the page carried, the page worked out again, the table's wheel and keys reaching its tables.
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string screen = File.ReadAllText(System.IO.Path.Combine(root, @"Ui\Pages\StudioPageScreen.cs")), live = File.ReadAllText(System.IO.Path.Combine(root, @"Ui\Tech\TechLive.FirmPage.cs"));
-        bool reaches = screen.Contains("d.StudioDo(act, _place, 0, value)") && screen.Contains("d.SectorDo(act, _place, value)") && live.Contains("_d.StudioDo(act, place, id, arg)")
+        // the screen hands its act to the director's PageAct (Tech/TechDirector.FirmPage.cs), which is the one place that reaches StudioDo and SectorDo or opens the Tech app
+        string dirPage = File.ReadAllText(System.IO.Path.Combine(root, @"Tech\TechDirector.FirmPage.cs"));
+        bool reaches = screen.Contains("d.PageAct(_place, act, value)") && dirPage.Contains("StudioDo(act, place, 0, value);") && dirPage.Contains("return SectorDo(act, place, value);") && live.Contains("_d.StudioDo(act, place, id, arg)")
                        && live.Contains("_d.SectorDo(act, place, arg)") && screen.Contains("Do(a.Act, a.Arg)") && screen.Contains("_acts[arg]") && screen.Contains("StudioPages.Page(page, UiText.Words, _acts, TechLive.Extras(_place))");
         string doBody = screen.Substring(screen.IndexOf("private bool Do(", StringComparison.Ordinal));
         bool rewritten = doBody.Contains("_dirty = true;") && screen.Contains("public bool Dirty => _dirty;") && screen.Contains("_m.Lists[i]") && screen.Contains("_m.Clips[i]")
                      && screen.Contains("_reveal[i] = index") && screen.Contains("_offset[i]");
         Check(reaches && rewritten, "studio page: each action reaches the director's own act (StudioDo, SectorDo) as the Tech app presses it, and the page is written again after a press (" + reaches + ", " + rewritten + ")");
         string extraSource = File.ReadAllText(System.IO.Path.Combine(root, @"Ui\Tech\TechLive.FirmExtras.cs"));
-        bool opens = screen.Contains("d.OpenTech(act == SectorAct.Contracts ? TechDirector.TabContracts : TechDirector.TabProducts") && screen.Contains("TechApp.NewProductRow + _place")
+        bool opens = dirPage.Contains("OpenTech(act == SectorAct.Contracts ? TabContracts : TabProducts") && dirPage.Contains("TechApp.NewProductRow + place") && dirPage.Contains("StudioPages.Opens(act)")
                      && live.Contains("act == StudioAct.Concept || (!studio && act == SectorAct.NewProduct)") && live.Contains("v.Open(\"newprod:\" + place)")
                      && live.Contains("v.Open(\"tab:\" + TabContracts)") && screen.Contains("d.OpenRoles(TechDirector.TabTeam, null)") && live.Contains("_d.OpenRoles(TechDirector.TabTeam, null)")
                      && extraSource.Contains("HeroOf(place, Studio)") && extraSource.Contains("PeopleOf(place)") && extraSource.Contains("reallife_ui_tech_note_support");

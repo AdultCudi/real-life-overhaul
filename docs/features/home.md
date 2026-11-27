@@ -25,6 +25,8 @@ Three needs the game does not have (hygiene, stress and a tidy home), sleep debt
 Scripts/Home/
   HomeState      per-save state: the three needs, fitness, sleep debt, five days of meals, the illness, a few dates: one line in modData (game-free)
   HomeBalance    every number (rates per game hour, thresholds, fees, odds), the game's food items by kind, the dishes (game-free)
+  FitnessRules   what moves fitness besides exercise (diet, drinks, idle days), the morning's one move, the fourteen days' trend, the "why" lines, the first notice, what being fit saves (game-free)
+  HomeFitness    the one place the rest of the mod reads fitness and diet (Level, Band, DietBand, Fill), with the options applied
   Cooking        what can be made from a list of what the fridges hold: a plan per dish, what is one unit short (game-free)
   HomeCookList   the cooking list, in the game's list window: the size, the leftovers, the dishes that can be made now, what is one ingredient short
   HomeOffers     "Click to cook" on cookers and "Click to make a coffee" on coffee machines: one entry in the game's list of click actions
@@ -105,6 +107,16 @@ The director looks at the game's own panel once a second (`ReadDoing`) and takes
   What a meal was is told from where it was eaten: the game says only that something was.
 - **Fitness** (0 to 100): 9 an hour on a machine, 11 running, 6 for floor exercises and sports, with the second hour of a day worth half the first; -0.7 a day from the third day without exercise.
   It is stamina: an energy spender of +0.006 a game minute at 0 to -0.010 at 100 (the game's own "living" drain is 0.04).
+
+  **Idle days** (`FitnessRules.IdleDays`): the day of the last exercise and the two after it cost nothing and the third without it is the first that costs 0.7 (halved on easy needs). When several days pass at once (a time skip) only the days past that grace are charged; the rule used to charge every one of them whatever the grace, which showed only after a long skip.
+
+  **Diet** (option **Diet moves fitness**, `home_diet`, on; `FitnessRules.DietDay`, run each morning for the day that ended by `FitnessRules.Morning`): a meal cooked or eaten at home +0.20, something out of the fridge +0.05, a meal bought ready to eat -0.30 (half as much again once junk is 60 % of the last five days' meals), a night of drinks (2 units in a day, a beer is 0.8 and a cocktail 1.2) -0.25 and a heavy one (4 units) -0.50, from Leisure's bar through `LeisureState.Drank` and `HomeState.DrinksToday`. A day's diet is held between -1.0 and +0.4, so it is always less than half an hour of floor exercises (3.0), a week of the best is less than an hour on a machine (9) and a week of the worst is undone by an hour's run (11): exercise stays the main lever. With the option off the morning is exactly the idle days' move (`EconomyCheck --fitness29` sweeps it against the old formula).
+
+  **What being fit saves** (under the fitness option): a run's and an exercise's extra energy cost is up to a quarter less at 100 (`FitnessRules.EffortShare`; walking and everything else are already cheaper through the stamina spender above), and Home's own chances of a cold (rain, run down, unwashed), the flu and a bad back from a night in the car are a tenth more under 20, a tenth less from 50 and a fifth less from 70 (`FitnessRules.IllnessShare`). Health's way of living already took a quarter off its own chances from 70.
+
+  **Seen**: the fourth of the mod's needs bars (the old interface's tab `HomeNeedsBar`, in a copy of the game's own bar after home, in the home bar's place with no home; the kit's HUD as its seventh need `UiStatusModel.Fitness`, a heartbeat glyph), the Health app's **You** page in both interfaces (the figure and its words, a line over the last 14 days, the lines that say what moved it this week: "3 runs this week: Fitness +18", "5 fast food meals: Fitness -3") and one line of the same in the Wellbeing page. The history is 14 start-of-day figures and a ledger of 11 numbers a day (`HomeState`, saved in the same line under h1 after the old names, so a save from before it reads exactly as it did). The first time fitness has moved 4 points or more over at least three kept days the player gets one notice, explaining in a line what moves it (`HomeHealth.FirstNotice`, once a save). The game's own Persona app already lists the mod's moods (In good shape, Living on junk food); it is the game's app and is left as it is.
+
+  **For the rest of the mod**: `HomeFitness.Level` (0 to 100 or -1), `HomeFitness.Band` and `HomeFitness.DietBand` (0 poor, 1 fair, 2 good, or -1) are the members to read; Careers reads `Level` through `CareersBridges.Fitness`, Health reads `Fill` through `HealthBridges.Fitness` (`Wiring/Wiring.FitnessLinks.cs`).
 
   **The body** follows on waking, 0.02 a night at most and 0.35 in all from the body the player made: strength +0.012 an hour of weights or floor exercise, fatness -0.008 an active hour, +0.004 a day of bad food and no exercise, -0.003 a day of good food.
 

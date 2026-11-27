@@ -427,6 +427,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_moved", () => Careers.CareersDirector.Instance?.TestMoved())
                 .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
                     v => Settings.CareersAgencyNote = v)
+                .AddToggle(Settings.CareersFitnessId, "reallife_work_opt_fitness", Settings.CareersFitness,
+                    v => Settings.CareersFitness = v)
+                .AddButton("reallife_test_fitness_job", () => Careers.CareersDirector.Instance?.TestFitnessJob())
                 .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
                     v => Settings.CareersRejectReason = v)
                 .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
@@ -511,6 +514,8 @@ namespace RealLifeOverhaul
                     v => Settings.HomeIllness = v)
                 .AddToggle(Settings.HomeFitnessId, "reallife_home_fitness", Settings.HomeFitness,
                     v => Settings.HomeFitness = v)
+                .AddToggle(Settings.HomeDietId, "reallife_home_diet", Settings.HomeDiet,
+                    v => Settings.HomeDiet = v)
                 .AddToggle(Settings.HomeBodyId, "reallife_home_body", Settings.HomeBody,
                     v => Settings.HomeBody = v)
                 .AddToggle(Settings.HomeJogId, "reallife_home_jog", Settings.HomeJog,
@@ -685,16 +690,35 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddToggle(Settings.SocialPassionsId, "reallife_social_passions", Settings.SocialPassions,
+                    v => Settings.SocialPassions = v)
+                .AddToggle(Settings.SocialMomentsId, "reallife_social_moments", Settings.SocialMoments,
+                    v => Settings.SocialMoments = v)
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
+                .AddSlider(Settings.RomanceYoungerId, "reallife_romance_younger", RomanceRules.WindowLeast, RomanceRules.WindowMost, Settings.RomanceYounger,
+                    v => { Settings.RomanceYounger = v; SocialLife.ApplyWindow(); }, Meta.SettingsTable.SliderValue)
+                .AddSlider(Settings.RomanceOlderId, "reallife_romance_older", RomanceRules.WindowLeast, RomanceRules.WindowMost, Settings.RomanceOlder,
+                    v => { Settings.RomanceOlder = v; SocialLife.ApplyWindow(); }, Meta.SettingsTable.SliderValue)
+                .AddToggle(Settings.FriendsQuizId, "reallife_friends_quiz", Settings.FriendsQuiz,
+                    v => Settings.FriendsQuiz = v)
+                .AddToggle(Settings.FirstImpressionsId, "reallife_social_first_impressions", Settings.FirstImpressions,
+                    v => Settings.FirstImpressions = v)
                 .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
                     v => Settings.SocialNetworking = v)
+                .AddToggle(Settings.LoveSeeingId, "reallife_love_seeing", Settings.LoveSeeing,
+                    v => Settings.LoveSeeing = v)
+                .AddToggle(Settings.LoveHookupsId, "reallife_love_hookups", Settings.LoveHookups,
+                    v => Settings.LoveHookups = v)
+                .AddToggle(Settings.LoveSurpriseId, "reallife_love_surprise", Settings.LoveSurprise,
+                    v => Settings.LoveSurprise = v)
                 .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
                 .AddButton("reallife_social_net_test_favour", Networking.NetworkDirector.TestFavour)
                 .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
+                .AddButton("reallife_social_test_passion", () => SocialDirector.Instance?.TestPassion())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
                 .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())
@@ -766,6 +790,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
                     new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
                     v => Settings.FlareCityPhotos = v)
+                .AddToggle(Settings.FlareManagerRepliesId, "reallife_flare_opt_manager_replies", Settings.FlareManagerReplies,
+                    v => Settings.FlareManagerReplies = v)
                 .AddButton("reallife_flare_test_kit", () => Flare.FlareDirector.Instance?.TestKit(0))
                 .AddButton("reallife_flare_test_compose", () => Flare.FlareDirector.Instance?.TestKit(7))
                 .AddButton("reallife_flare_test_city_kit", () => Flare.FlareDirector.Instance?.TestKit(6))
@@ -783,6 +809,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
                 .AddButton("reallife_flare_test_review_now", () => Flare.FlareDirector.Instance?.TestReviewNow())
+                .AddButton("reallife_flare_test_reviews_many", () => Flare.FlareDirector.Instance?.TestReviewsMany())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
@@ -1280,6 +1307,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
                 .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
                 .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
+                .AddDropdown(Settings.TechGamePaceId, "reallife_game_pace", new[] { "reallife_game_pace_0", "reallife_game_pace_1", "reallife_game_pace_2" }, Settings.TechGamePace,
+                    v => Settings.TechGamePace = v)
                 .AddToggle(Settings.LivingFirmsId, "reallife_tech_mkt_enabled", Settings.LivingFirms,
                     v => Settings.LivingFirms = v)
                 .AddButton("reallife_tech_mkt_test_software", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Software))
@@ -1406,6 +1435,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechSeatHiresId, "reallife_hire_opt_seat", Settings.TechSeatHires,
                     v => Settings.TechSeatHires = v)
+                .AddToggle(Settings.TechManagerId, "reallife_tech_mgr_enabled", Settings.TechManager,
+                    v => Settings.TechManager = v)
+                .AddButton("reallife_tech_mgr_test", () => Tech.TechDirector.Instance?.TestManager())
                 .AddButton("reallife_hire_test_seat", () => Tech.TechDirector.Instance?.TestSeatHires())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
@@ -1424,6 +1456,9 @@ namespace RealLifeOverhaul
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
                     v => Settings.TechOfferNotes = v)
+                .AddToggle(Settings.TechDealKindsId, "reallife_tech_opt_deal_kinds", Settings.TechDealKinds,
+                    v => Settings.TechDealKinds = v)
+                .AddButton("reallife_deal_test_kinds", () => Tech.TechDirector.Instance?.TestDealKinds())
                 .AddToggle(Settings.TechInfraOfferId, "reallife_infra_opt_offer", Settings.TechInfraOffer,
                     v => Settings.TechInfraOffer = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())

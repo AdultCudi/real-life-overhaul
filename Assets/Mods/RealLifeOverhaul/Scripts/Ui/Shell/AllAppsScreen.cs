@@ -188,29 +188,26 @@ namespace RealLifeOverhaul.Ui
             return action == UiAction.Option && PinRow(_focusRow);
         }
 
+        // A row off the panel scrolls in by the least: up to the top when above, to the bottom when below.
         public void Reveal(int list, int index)
         {
-            int fit = Math.Max(1, _m.RowCount - _m.First);
-            if (index < _m.First)
+            if (index < 0 || index >= _m.RowCount)
             {
-                _m.First = Math.Max(0, index);
-                _dirty = true;
+                return;
             }
-            else if (index >= 0 && index < _m.RowCount && index >= _m.First + fit)
+            int fit = Math.Max(1, _m.Fit);
+            int first = index < _m.First ? index : index >= _m.First + fit ? index - fit + 1 : _m.First;
+            first = Math.Max(0, Math.Min(first, Math.Max(0, _m.RowCount - fit)));
+            if (first != _m.First)
             {
-                _m.First = index;
-                _dirty = true;
-            }
-            else if (index >= 0 && index < _m.RowCount)
-            {
-                _m.First = Math.Min(index, Math.Max(0, _m.RowCount - 1));
+                _m.First = first;
                 _dirty = true;
             }
         }
 
         public void Wheel(int clip, float notches)
         {
-            int next = Math.Max(0, Math.Min(Math.Max(0, _m.RowCount - 1), _m.First - (int)Math.Round(notches)));
+            int next = Math.Max(0, Math.Min(Math.Max(0, _m.RowCount - Math.Max(1, _m.Fit)), _m.First - (int)Math.Round(notches)));
             if (next != _m.First)
             {
                 _m.First = next;
@@ -352,7 +349,7 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             _m.RowCount = _rows.Count;
-            _m.First = Math.Min(_m.First, Math.Max(0, _m.RowCount - 1));
+            _m.First = Math.Min(_m.First, Math.Max(0, _m.RowCount - Math.Max(1, _m.Fit)));
             _m.Empty = UiText.T(_slot == FavSlot ? "reallife_ui_apps_none_fav" : _slot == UiShellApps.Other + 1 ? "reallife_ui_shell_none_other" : "reallife_ui_shell_none");
             if (_m.Prompts.Length != 6)
             {

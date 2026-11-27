@@ -659,6 +659,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--love29")
+        {
+            Love29();   // seeing two people and being found out, nights, a child of a night, scandals, the path from dating to marriage (LoveChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--age-driver")
         {
             AgeDriver();   // the age in a talk's header, and the private driver's button on the bar (AgeDriverChecks.cs)
@@ -865,6 +871,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--flare-people")
         {
             FlarePeopleChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--flarebatch29")
+        {
+            FlareBatchChecks();   // answering reviews in bulk and by a manager (FlareBatchChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1336,9 +1348,21 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--traits29")
+        {
+            Traits29();   // (people's passions and the moments on outings, alone: TraitChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--romance")
         {
             Romance();   // (who the player can fall for: their sex and age, nobody made on the edge of the gap, the age a face brings, the street's flirt, the city's couples, the People page in every language and the checks of other features that read it, alone: RomanceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--friends29")
+        {
+            Friends29();   // (meeting somebody's friends as a game: what each person is into, hints and the sure answer they give, the quiz and what it is worth, first impressions from the player's name, the save, the options off; Friends29Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1447,6 +1471,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--police")
         {
             Police();   // (the police career alone, while working on it: PoliceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--fitness29")
+        {
+            Fitness29();   // (the fitness meter, diet and fitness for jobs alone, while working on them: Fitness29Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1641,9 +1671,33 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--days33")
+        {
+            Days33();   // (the weekday names of the pause menu, the work card and a place's hours: Days33Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length >= 1 && args[0] == "--techplan29")
+        {
+            TechPlan29();   // (the tech firm's figures of 27 Nov alone: the team lines' people for the most, the way up explained, the game development pace: TechPlanChecks.cs; "print" after it prints the pace table)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech28")
         {
             Tech28();   // (the tech fixes of 27 Nov alone: a subscription game's pay and month, a firm's price on its steady months, a licence's relaunch, a product's points: Tech28Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--techdeals29")
+        {
+            TechDeals29();   // (the new kinds of client: departments, individuals and the city's companies, no software or design client, their terms, risks and income: TechDeals29Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--techstaff29")
+        {
+            TechStaff29();   // (the roles changed together, which roles build a game and what a studio lacks, and a firm's named manager, alone: TechStaff29Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1692,6 +1746,12 @@ internal static partial class Program
             RivalOffers();
             StartupRivalsChecks();
             TechMoves();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--careers33")
+        {
+            Careers33();   // (the Career app's boards before the first walk outside, a late board's words, the detail's selector and long names: Careers33Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1761,9 +1821,21 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--rescue29")
+        {
+            Rescue();   // (how fast the emergency services answer: the delays, the start, the drive, the words, the crews' pace, the scene's length, the self-check and the wiring: RescueChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--staff-looks")
         {
             StaffLooks();   // (the pool's people who stand for staff are the same people at every visit, alone: StaffLookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ui33")
+        {
+            Ui33();   // (All apps never scrolls past its last app, a district in words on the supplier's call card, "1 day", a candidate's asking wage as the negotiation asks it: Ui33Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1840,6 +1912,9 @@ internal static partial class Program
         Titles();       // products and games have names: typed ones cleaned and kept, made-up ones of their kind or genre, the rivals' too, none shared (TitleChecks.cs)
         Tech23();   // the tech fixes of 23 Nov (Tech23Checks.cs)
         Tech28();   // the tech fixes of 27 Nov (Tech28Checks.cs)
+        Days33();   // the weekday names of 27 Nov (Days33Checks.cs)
+        TechDeals29();   // the new kinds of client of a tech firm (TechDeals29Checks.cs)
+        TechPlan29();   // the team lines' people for the most, the way up explained and the game development pace (TechPlanChecks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
@@ -1925,6 +2000,7 @@ internal static partial class Program
         FlareCommentsAsked();   // every comment the count promises written and shown: each asked again after a miss, the open thread first, the budget not locked by what the queue held back, the times, the post's own words (FlareCommentAskChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
+        Rescue();   // the emergency services answer like an emergency, and say when: the delays, the start, the drive, the words, the crews' pace, the scene's length, the self-check and the wiring (RescueChecks.cs)
         StaffLooks();   // a showroom's salesperson, a data centre's technicians and a fitted floor's desk staff are the same people at every visit: the seed, the shelf, thirty visits, the sources (StaffLookChecks.cs)
         FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
         FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)
@@ -2076,6 +2152,7 @@ internal static partial class Program
         UiShaders();    // the pink text on a Mac: the faces given a text shader of the running game's on every system, a face without one left out, the check's line (UiShaderChecks.cs)
         HostPlatform(); // the mod on a Mac: the log's place, the report's paths, the packs aside, a session's key, the bundles' check and its line, the sources (PlatformChecks.cs)
         FontFallbacks(); // the Korean and Chinese text that was not drawn: the game's fallback fonts copied with the face's line and ordered by language, room in every text's box, every character of every language against the census of the game's fonts (FontFallbackChecks.cs)
+        Ui33();         // 27 Nov fixes: All apps' scroll end, a district in words, "1 day", a candidate's asked wage (Ui33Checks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
@@ -2092,6 +2169,7 @@ internal static partial class Program
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, nobody made on the edge of the gap, the age a face brings, the city's couples, the option, the People page's texts (RomanceChecks.cs)
+        Friends29();    // meeting somebody's friends as a game: what each person is into, hints, the quiz and its worth, first impressions from the player's name, the save, the options off (Friends29Checks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
         OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
@@ -2227,6 +2305,7 @@ internal static partial class Program
         Insurance();    // insurance: a car's tier and the driver's record on the Garage's premium, a home's premium, what a claim pays and never pays, the first days, the year's limits, the days of grace, the rivals' cover, the save, the pages, the sources, the texts (InsuranceChecks.cs)
         Giving();       // giving: the steps and caps, the charities' months on a city, the deduction, standing and warmth by the sum given, loans, asks, the rivals, the save, the pages, the sources, the texts (GivingChecks.cs)
         Police();       // the police career: who may join, the outcome table across ranks and dangers, injury and death only where the switches allow, the rating, pay, dismissal, the file, the sources and the texts (PoliceChecks.cs)
+        Fitness29();    // the fitness meter: diet and the idle days against exercise, the morning's one move, the jobs' minimums and the warning, the history, the save, the page, the options and the texts (Fitness29Checks.cs)
         Health();       // health: the draws and the wave, a case's days, plans and claims, bills and the debt, sick leave, the people's day, the staff, the rivals, the save, the option, the pages, the sources, the texts (HealthChecks.cs)
         Subway();       // the districts' subway stations: their place in the game's sorted list, the search, when they stand and when they may go, the people of the line, the campus's gates, the sources (fare, save, session, frame) and the texts (SubwayChecks.cs)
         Stockx();       // the stock market's extras: splits with nothing gained or lost, the fund against its parts, blocks, the bank's own books, the rivals, the save, the sources, the texts (StockxChecks.cs)

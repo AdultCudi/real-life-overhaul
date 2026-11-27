@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_co_emp_offer_what", "reallife_co_emp_raises_sec", "reallife_co_emp_refuse", "reallife_co_emp_work_sec",
                 "reallife_co_emp_works", "reallife_co_expand_all", "reallife_co_f_all", "reallife_co_f_all_districts", "reallife_co_f_allowance",
                 "reallife_co_f_asked", "reallife_co_f_best_skill", "reallife_co_f_businesses", "reallife_co_f_claims_open", "reallife_co_f_cost",
-                "reallife_co_f_customers", "reallife_co_f_decisions", "reallife_co_f_decisions_n", "reallife_co_f_effect", "reallife_co_f_excess",
+                "reallife_co_f_customers", "reallife_co_f_decisions", "reallife_co_f_decisions_n", "reallife_co_f_decisions_one", "reallife_co_f_effect", "reallife_co_f_excess",
                 "reallife_co_f_extra", "reallife_co_f_fee", "reallife_co_f_gaps", "reallife_co_f_going", "reallife_co_f_hired", "reallife_co_f_low",
                 "reallife_co_f_manager_since", "reallife_co_f_managers", "reallife_co_f_mood", "reallife_co_f_most", "reallife_co_f_open_area",
                 "reallife_co_f_paid", "reallife_co_f_pays", "reallife_co_f_pending", "reallife_co_f_places", "reallife_co_f_premium",

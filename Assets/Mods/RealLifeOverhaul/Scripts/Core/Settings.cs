@@ -175,6 +175,10 @@
         public const string FamilyWealthMoodId = "family_wealth_mood";
         public const string FamilyExpectId = "family_expect";
         public const string FamilyInterestId = "family_interest";   // who the player is interested in; saved under the id it had as Family's option
+        public const string RomanceYoungerId = "romance_younger";   // years younger than the player that somebody they could fall for may be
+        public const string RomanceOlderId = "romance_older";       // ...and years older
+        public const string FriendsQuizId = "friends_quiz";         // friends drop hints about themselves, and quiz the player when they bring them to meet their friends
+        public const string FirstImpressionsId = "social_first_impressions";   // somebody newly met has heard of the player's name: their first trust moves with it
         public const string FamilyYearWeeksId = "family_year_weeks";
         public const string FamilyMomContactId = "family_mom_contact";
         public const string CivicId = "civic";
@@ -247,8 +251,10 @@
         public const string TechJobsId = "tech_jobs";
         public const string TechSearchRushId = "tech_search_rush";
         public const string TechSeatHiresId = "tech_seat_hires";
+        public const string TechManagerId = "tech_manager";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
+        public const string TechDealKindsId = "tech_deal_kinds";
         public const string TechInfraOfferId = "tech_infra_offer";
         public const string TechStartupsId = "tech_startups";
         public const string TechSiteRoomsId = "tech_site_rooms";
@@ -273,6 +279,7 @@
         public const string UiNeedsSizeId = "ui_needs_size";     // the needs bars of the RLO interface's bar: how large
         public const string UiNeedsPlaceId = "ui_needs_place";   // ...and where they stand: in the bar, or a row of their own along the top
         public const string LivingStudioId = "living_studio";
+        public const string TechGamePaceId = "tech_game_pace";   // how fast a studio builds a game: 0 normal, 1 brisk (a third shorter), 2 fast (half)
         public const string LivingFlareId = "living_flare";
         public const string LivingFirmsId = "living_firms";
         public const string LivingSchemesId = "living_schemes";
@@ -318,6 +325,7 @@
         public const string HomeMorningNewsId = "home_morning_news";
         public const string HomeStripId = "home_strip";
         public const string HomeEasyId = "home_easy";
+        public const string HomeDietId = "home_diet";
         public const string LawPrecinctsId = "law_precincts";
         public const string LawCustodyId = "law_custody";
         public const string LawArrestsId = "law_arrests";
@@ -372,7 +380,12 @@
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialComposerId = "social_composer";
+        public const string SocialPassionsId = "social_passions";
+        public const string SocialMomentsId = "social_moments";
         public const string SocialNetworkingId = "social_networking";
+        public const string LoveSeeingId = "love_seeing";
+        public const string LoveHookupsId = "love_hookups";
+        public const string LoveSurpriseId = "love_surprise";
         public const string StreetTalkId = "street_talk";
         public const string StreetBrushId = "street_brush";
         public const string SocialNewspaperId = "social_newspaper";
@@ -386,6 +399,7 @@
         public const string FlareThemeId = "flare_theme";
         public const string FlarePicturesId = "flare_pictures";
         public const string FlareCityPhotosId = "flare_city_photos";
+        public const string FlareManagerRepliesId = "flare_manager_replies";
         public const string StandingId = "standing";
         public const string StandingStreetId = "standing_street";
         public const string StandingPressId = "standing_press";
@@ -416,6 +430,7 @@
         public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
+        public const string CareersFitnessId = "careers_fitness";
         public const string CareersClassStartId = "careers_class_start";
         public const string CareersSkillFadeId = "careers_skill_fade";
         public const string CareersRejectReasonId = "careers_reject_reason";
@@ -618,6 +633,10 @@
         public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
         public static int FamilyInterest = 0;            // who the player is interested in (RomanceRules): 0 anyone, 1 women, 2 men
+        public static int RomanceYounger = RomanceRules.AgeGap;   // years under their own age that somebody they could fall for may be, 2 to 25 (RomanceRules.Window)
+        public static int RomanceOlder = RomanceRules.AgeGap;     // ...and years over it
+        public static bool FriendsQuiz = true;           // hints from people, and the quiz when they introduce their friends (off: an introduction is as it was)
+        public static bool FirstImpressions = true;      // the player's name goes before them: a new person's first trust is a little higher or lower for it
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
         public static bool FamilyMomContact = true;      // Mom gets in touch by herself: texts, calls, visits, introductions (off: she is only ever called), and at most one such contact a day
         public static bool Civic = true;                 // civic life: a city government and a construction programme
@@ -688,9 +707,12 @@
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSearchRush = true;        // ...a search firm's search can be rushed for a share of its fee for each day saved (off: it takes its days)
+        // a tech firm's named manager acts (balances roles to targets, re-hires, agrees routine raises, flags burnout; off: no manager acts, the posts are kept)
+        public static bool TechManager = true;
         public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
+        public static bool TechDealKinds = true;         // ...clients that are city departments, individuals and companies, beside the old ones (off: the old ones only)
         public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters
@@ -716,6 +738,7 @@
         public static int UiNeedsPlace = 0;              // ...0 in the bar, 1 in a row of their own along the top of the screen
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
+        public static int TechGamePace = 1;              // ...how fast its games are built: 0 as before, 1 brisk (the default), 2 fast (Tech/Studio/StudioPace)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
         public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
         public static bool LivingSchemes = true;         // ...schemes that pay until they are found out: invented claims and expenses, dressed books, a sham club, washed cash, bought favour (Schemes)
@@ -783,6 +806,7 @@
         public static bool HomeMorning = true;           // the morning summary
         public static bool HomeMorningNews = true;       // ...with the city's news held while the player slept in it, one notification or few
         public static bool HomeStrip = true;             // the small needs strip on screen
+        public static bool HomeDiet = true;              // what is eaten (and drunk) moves fitness a little, a day at a time
         public static bool HomeEasy = false;             // needs wear down half as fast, illness is half as likely
         public static bool LawPrecincts = true;          // a police precinct in each district
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
@@ -838,7 +862,12 @@
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
         public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words
+        public static bool SocialPassions = true;        // everybody has a hidden passion that tilts how they react, found out by playing (Social/SocialPassionRules); off: only their two traits count
+        public static bool SocialMoments = true;         // about one outing in three has a small moment the player reacts to (Social/SocialMomentRules); off: outings run straight through
         public static bool SocialNetworking = true;      // some people met hold a position and, as they grow closer, do the player a favour each
+        public static bool LoveSeeing = true;            // the player may ask somebody out while with somebody: a second, secret relationship that can be found out (Social/Love)
+        public static bool LoveHookups = true;           // an evening can end at theirs or the player's: a night, and what comes of it (Social/Love)
+        public static bool LoveSurprise = true;          // a night can bring a child: its news, and the choice of how to be a parent (Social/Love; needs Family's children)
         public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk
         public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
         public static bool SocialMedia = true;           // Flare, the city's social media app
@@ -850,6 +879,7 @@
         public static int FlareFilter = 0;               // what other players type: 0 standard (Steam's filter, else the mod's list), 1 strict (both, and addresses starred)
         public static int FlareTheme = 0;                // Flare's look: 0 follows the phone (dark from 19:00 to 07:00), 1 light, 2 dark
         public static bool FlarePictures = true;         // every account shows its picture (off: the initials)
+        public static bool FlareManagerReplies = true;   // a manager given the duty answers the waiting reviews of their business (Company managers, FlareBatchRules)
         public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about half of the posts that could show one), 3 many
         public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
@@ -880,6 +910,7 @@
         public static bool CareersSkillFade = true;      // a skill left unused for weeks fades a little each day (off: nothing fades, and fading starts again from the day it is switched on)
         public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
+        public static bool CareersFitness = true;        // the physical jobs (the police first) ask for a fitness, and a worker far below it is warned (off: applications are judged as before)
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
         public static bool CareersOwnDesk = true;        // ...a contract's work started at a free desk of an office business of the player's, not from the Career app (off: the app starts it)
@@ -1126,6 +1157,11 @@
             FamilyWealthMood = Bool(modId, FamilyWealthMoodId, FamilyWealthMood);
             FamilyExpect = Bool(modId, FamilyExpectId, FamilyExpect);
             FamilyInterest = Int(modId, FamilyInterestId, FamilyInterest);
+            RomanceYounger = Int(modId, RomanceYoungerId, RomanceYounger);
+            RomanceOlder = Int(modId, RomanceOlderId, RomanceOlder);
+            FriendsQuiz = Bool(modId, FriendsQuizId, FriendsQuiz);
+            FirstImpressions = Bool(modId, FirstImpressionsId, FirstImpressions);
+            RomanceRules.Window(RomanceYounger, RomanceOlder);
             FamilyYearWeeks = Int(modId, FamilyYearWeeksId, FamilyYearWeeks);
             FamilyMomContact = Bool(modId, FamilyMomContactId, FamilyMomContact);
             Civic = Bool(modId, CivicId, Civic);
@@ -1198,8 +1234,10 @@
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSearchRush = Bool(modId, TechSearchRushId, TechSearchRush);
             TechSeatHires = Bool(modId, TechSeatHiresId, TechSeatHires);
+            TechManager = Bool(modId, TechManagerId, TechManager);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
+            TechDealKinds = Bool(modId, TechDealKindsId, TechDealKinds);
             TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
             TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
@@ -1226,6 +1264,7 @@
             UiNeedsPlace = System.Math.Max(0, System.Math.Min(1, Int(modId, UiNeedsPlaceId, UiNeedsPlace)));
             Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
+            TechGamePace = System.Math.Max(0, System.Math.Min(2, Int(modId, TechGamePaceId, TechGamePace)));
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
             LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);
             LivingSchemes = Bool(modId, LivingSchemesId, LivingSchemes);
@@ -1273,6 +1312,7 @@
             HomeMorningNews = Bool(modId, HomeMorningNewsId, HomeMorningNews);
             HomeStrip = Bool(modId, HomeStripId, HomeStrip);
             HomeEasy = Bool(modId, HomeEasyId, HomeEasy);
+            HomeDiet = Bool(modId, HomeDietId, HomeDiet);
             LawPrecincts = Bool(modId, LawPrecinctsId, LawPrecincts);
             LawCustody = Bool(modId, LawCustodyId, LawCustody);
             LawArrests = Bool(modId, LawArrestsId, LawArrests);
@@ -1327,7 +1367,12 @@
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialComposer = Bool(modId, SocialComposerId, SocialComposer);
+            SocialPassions = Bool(modId, SocialPassionsId, SocialPassions);
+            SocialMoments = Bool(modId, SocialMomentsId, SocialMoments);
             SocialNetworking = Bool(modId, SocialNetworkingId, SocialNetworking);
+            LoveSeeing = Bool(modId, LoveSeeingId, LoveSeeing);
+            LoveHookups = Bool(modId, LoveHookupsId, LoveHookups);
+            LoveSurprise = Bool(modId, LoveSurpriseId, LoveSurprise);
             StreetTalk = Bool(modId, StreetTalkId, StreetTalk);
             StreetBrush = Int(modId, StreetBrushId, StreetBrush);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
@@ -1341,6 +1386,7 @@
             FlareTheme = Int(modId, FlareThemeId, FlareTheme);
             FlarePictures = Bool(modId, FlarePicturesId, FlarePictures);
             FlareCityPhotos = Int(modId, FlareCityPhotosId, FlareCityPhotos);
+            FlareManagerReplies = Bool(modId, FlareManagerRepliesId, FlareManagerReplies);
             Standing = Bool(modId, StandingId, Standing);
             StandingStreet = Bool(modId, StandingStreetId, StandingStreet);
             StandingPress = Bool(modId, StandingPressId, StandingPress);
@@ -1371,6 +1417,7 @@
             CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
+            CareersFitness = Bool(modId, CareersFitnessId, CareersFitness);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);
             CareersSkillFade = Bool(modId, CareersSkillFadeId, CareersSkillFade);
             CareersRejectReason = Bool(modId, CareersRejectReasonId, CareersRejectReason);

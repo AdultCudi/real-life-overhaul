@@ -349,14 +349,24 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
+            // The pill is the usual width, but a long choice (an employer's name) takes more of the row: up to all of it where there is no label, else
+            // what the label leaves, so the words stand between the chevrons and never under one.
+            float arrows = (UiTokens.S2 + UiTokens.Icon) * 2f;
             float cw = SnapDown(Math.Min(w / 2f, UiTokens.S16 * 4f));
+            float want = Snap(UiTextRules.Width(choice, UiStyle.SmallStrong) + arrows + UiTokens.S2);
+            float room = string.IsNullOrEmpty(label) ? w - UiTokens.S3 * 2f : w - UiTokens.S3 * 3f - Snap(UiTextRules.Width(label, UiStyle.Body));
+            if (want > cw)
+            {
+                cw = SnapDown(Math.Max(cw, Math.Min(want, room)));
+            }
             float cx = x + w - UiTokens.S3 - cw;
             TextMiddle(s, inside, x + UiTokens.S3, y, h, cx - x - UiTokens.S6, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
             int box = Box(s, inside, cx, y + UiTokens.S1, cw, h - UiTokens.S2, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
             Icon(s, at.In(box), cx + UiTokens.S2, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Back, UiRole.AccentText, UiFlags.Middle);
             Icon(s, at.In(box), cx + cw - UiTokens.S2 - UiTokens.Icon, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText, UiFlags.Middle);
-            TextMiddle(s, at.In(box), cx + UiTokens.S2 + UiTokens.Icon, y, h, cw - (UiTokens.S2 + UiTokens.Icon) * 2f, UiStyle.SmallStrong, UiRole.Text, choice,
-                UiFlags.Centre | UiFlags.Label);
+            float between = cw - arrows;
+            TextMiddle(s, at.In(box), cx + UiTokens.S2 + UiTokens.Icon, y, h, between, UiStyle.SmallStrong, UiRole.Text, choice,
+                UiFlags.Centre | (UiTextRules.Width(choice, UiStyle.SmallStrong) <= between + 0.01f ? UiFlags.Label : UiFlags.Truncate));   // wider than the whole row: an ellipsis
             return Node(s, at, x, y, w, h, command, arg, face);
         }
 

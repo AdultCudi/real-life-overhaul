@@ -105,8 +105,8 @@ namespace RealLifeOverhaul.Tech
                 w.End = day + 12 * FirmsCatalogue.MonthDays;
                 return 0;
             }
-            w.Due = day + FirmsCatalogue.WorkDays[TalentCatalogue.Clamp(w.Kind, 0, (int)WorkKind.Count - 1)];
-            long upfront = w.Value * FirmsCatalogue.UpfrontShare / 1000;
+            w.Due = day + TechClientRules.Days(w, FirmsCatalogue.WorkDays[TalentCatalogue.Clamp(w.Kind, 0, (int)WorkKind.Count - 1)]);
+            long upfront = w.Value * TechClientRules.UpfrontOf(w) / 1000;
             w.Paid = upfront;
             return upfront;
         }
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>A council tender's fair price, cents: its value, or the council's price once the player's bid has won and become the value.</summary>
         public static long FairOf(Contract t) =>
-            t.Council && t.Stage >= (int)WorkStage.Active && t.Stage <= (int)WorkStage.Failed ? ValueOf(t.K, t.Points, true) : t.Value;
+            t.Council && t.Stage >= (int)WorkStage.Active && t.Stage <= (int)WorkStage.Failed ? (t.Fair > 0 ? t.Fair : ValueOf(t.K, t.Points, true)) : t.Value;
 
         /// <summary>A tender decided on its last day: bids weighed by reputation and office, the lowest wins. True if the player's firm won.</summary>
         public static bool Decide(FirmsFile f, Contract t, Firm bidder, int day, int office = 0)
@@ -168,6 +168,10 @@ namespace RealLifeOverhaul.Tech
                     notes?.Add(new WorkNote { Contract = w.Id, Kind = w.Satisfaction < 300 ? NoteFailed : NoteDone });
                 }
                 return billed;
+            }
+            if (w.Deal != 0)
+            {
+                return TechClientRules.Project(w, firm, points, day, notes);   // a department's, an individual's or a company's project: its own terms and risks
             }
             w.Done = Math.Min(w.Points, w.Done + Math.Max(0, points));
             if (w.Done >= w.Points)
@@ -219,7 +223,7 @@ namespace RealLifeOverhaul.Tech
                     w.End = day;
                     notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteLapsed });
                 }
-                else if (w.Stage >= (int)WorkStage.Done && day > w.End + FirmsCatalogue.MonthDays && day > w.Due + FirmsCatalogue.MonthDays)
+                else if (w.Stage >= (int)WorkStage.Done && day > w.End + FirmsCatalogue.MonthDays && day > w.Due + FirmsCatalogue.MonthDays && w.Owed <= 0)   // kept until paid
                 {
                     f.Contracts.RemoveAt(i);
                 }

@@ -172,7 +172,10 @@ namespace RealLifeOverhaul.Ui
         // Appended with the needs' bars option (23 Nov 2026).
         public int NeedsSize;         // the needs' bars' size, the player's option: 0 the small cells the bar always drew, 1 to 4 larger with their figures and from 3 their words (UiDraw.HudNeeds)
         public bool NeedsTop;         // the needs stand in a row of their own along the top of the screen (UiDraw.PlanNeedsRow), not in the bar: set on the HUD's own bar only
-        public string[] NeedLabels;   // the six needs' words in order (energy, hunger, happiness, hygiene, stress, home); null leaves the words out
+        public string[] NeedLabels;   // the needs' words in order (energy, hunger, happiness, hygiene, stress, home, fitness); null leaves the words out
+
+        // Appended with the fitness meter (27 Nov 2026).
+        public int Fitness = -1;      // the player's fitness, 0 to 100, the seventh need after home (Home/HomeFitness); -1 leaves it out
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>

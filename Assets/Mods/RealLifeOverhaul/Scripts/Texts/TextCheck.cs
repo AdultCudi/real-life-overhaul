@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Texts
             {
                 start++;
             }
-            return raw.Substring(start).Trim();
+            return NoEmoji(raw.Substring(start).Trim(), null);
         }
 
         /// <summary>The same for a reply of data v6 in a language, keeping the seven languages' opening marks.</summary>
@@ -67,7 +67,82 @@ namespace RealLifeOverhaul.Texts
             {
                 start++;
             }
-            return raw.Substring(start).Trim();
+            return NoEmoji(raw.Substring(start).Trim(), lang);
+        }
+
+        /// <summary>
+        /// Whether the game draws an emoji, by its code point: a font of the faces has it, or TextMeshPro's sheet of emoji does.
+        /// Set where the game runs. Null in the offline checks, where no emoji is kept.
+        /// </summary>
+        public static Func<int, bool> Drawable;
+
+        /// <summary>
+        /// The words with the emoji the game cannot draw taken out: a voice that "uses emoji" showed "I was let down ?" on Flare,
+        /// while a face the sheet has was drawn. A space left before a stop goes with a dropped emoji, except in French, which keeps
+        /// one before ? and !.
+        /// </summary>
+        public static string NoEmoji(string words, string lang)
+        {
+            int first = 0;
+            while (first < words.Length && !Emoji(words[first]))
+            {
+                first++;
+            }
+            if (first == words.Length)
+            {
+                return words;   // nearly every line: no copy made
+            }
+            var kept = new StringBuilder(words.Length);
+            bool dropped = false;   // an emoji was dropped and only spaces have come since
+            for (int i = 0; i < words.Length; i++)
+            {
+                char c = words[i];
+                if (Emoji(c))
+                {
+                    bool pair = char.IsHighSurrogate(c) && i + 1 < words.Length && char.IsLowSurrogate(words[i + 1]);
+                    int code = pair ? char.ConvertToUtf32(c, words[i + 1]) : c;
+                    if (Drawn(code))
+                    {
+                        kept.Append(words, i, pair ? 2 : 1);
+                        dropped = false;
+                    }
+                    else
+                    {
+                        dropped = true;
+                    }
+                    i += pair ? 1 : 0;
+                    continue;
+                }
+                bool gap = kept.Length > 0 && kept[kept.Length - 1] == ' ';
+                if (c == ' ' && gap)
+                {
+                    continue;   // the spaces either side of a dropped emoji become one
+                }
+                if (gap && dropped && lang != "fr" && (c == '.' || c == ',' || c == '!' || c == '?'))
+                {
+                    kept.Length--;
+                }
+                if (c != ' ')
+                {
+                    dropped = false;
+                }
+                kept.Append(c);
+            }
+            return kept.ToString().Trim();
+        }
+
+        // The picture and keycap marks and the joiner are never kept: they only join or restyle the emoji around them.
+        private static bool Drawn(int code)
+        {
+            return code != 0xFE0F && code != 0x200D && code != 0x20E3 && Drawable != null && Drawable(code);
+        }
+
+        // An emoji's code unit: either half of a pair beyond the first plane, the joiner, the picture and keycap marks, or the
+        // pictures of the misc symbols and dingbats, the stars and ticks the fonts do draw left in.
+        private static bool Emoji(char c)
+        {
+            return char.IsSurrogate(c) || c == '\uFE0F' || c == '\u200D' || c == '\u20E3'
+                   || (c >= '\u2600' && c <= '\u27BF' && c != '\u2605' && c != '\u2606' && c != '\u2713' && c != '\u2714');
         }
 
         /// <summary>An opening mark a line of data v6 may start with, or a sentence's first letter come after.</summary>

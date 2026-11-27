@@ -319,7 +319,7 @@ namespace RealLifeOverhaul
                 : (_severity == Severity.Minor ? "reallife_accident_minor"
                     : _severity == Severity.Moderate ? "reallife_accident_moderate"
                     : "reallife_accident_severe");
-            Notice(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, 8f);
+            NoticeHelp(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, 8f);
 
             // Some are hit-and-runs: the lead driver bolts as the police turn up (in place, only if the other car is not ahead).
             if (Settings.Police && !tumbled && _wrecks.Count > 1 && Random.value < HitAndRunChance
@@ -353,9 +353,7 @@ namespace RealLifeOverhaul
             // The timetable. With police attending, the smaller accidents run a little longer so the visit fits.
             float now = Time.time;
             bool police = Settings.Police;
-            float total = _severity == Severity.Minor ? (police ? Random.Range(70f, 100f) : Random.Range(35f, 65f))
-                : _severity == Severity.Moderate ? (police ? Random.Range(90f, 130f) : Random.Range(80f, 125f))
-                : Random.Range(125f, 170f);
+            float total = ResponseRules.SceneTotal((int)_severity, police, Random.value);
             if (planned)
             {
                 total = Mathf.Max(total, Random.Range(150f, 170f));
@@ -373,8 +371,8 @@ namespace RealLifeOverhaul
             }
 
             // Each unit is sent after its own delay, so who gets there first varies. A minor bump closes nothing.
-            PlanResponse(now, _severity != Severity.Minor, police, now + Random.Range(5f, 13f),
-                now + (planned ? Random.Range(3f, 10f) : Random.Range(3f, 22f)), null, shut: _severity != Severity.Minor);
+            PlanResponse(now, _severity != Severity.Minor, police, now + ResponseRules.Delay(false, Random.value),
+                now + ResponseRules.Delay(true, Random.value), null, shut: _severity != Severity.Minor);
 
             // Glass and plastic where the cars met (or where one met whatever stopped it), for the officers to mark.
             if (_severity == Severity.Severe)

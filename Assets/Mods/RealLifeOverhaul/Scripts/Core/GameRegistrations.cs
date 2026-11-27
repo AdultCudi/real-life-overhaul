@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using Buildings;
+using Localizor;
 
 namespace RealLifeOverhaul
 {
@@ -45,6 +46,16 @@ namespace RealLifeOverhaul
         {
             Building building = BuildingOf(reg);
             return building != null ? building.Neighbourhood : null;
+        }
+
+        /// <summary>
+        /// A district's name in words for the screen: the game's text for its key (ba:neighborhood_...), the key's own text when it
+        /// is no key of the game's, and nothing for none. Every place that prints a district goes through here (or a feature's own
+        /// twin of this), never writing the key.
+        /// </summary>
+        public static string DistrictWords(string district)
+        {
+            return string.IsNullOrEmpty(district) ? string.Empty : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
         }
 
         /// <summary>The type of the registration's building (ba:buildingtype_...); null if its building is not found.</summary>

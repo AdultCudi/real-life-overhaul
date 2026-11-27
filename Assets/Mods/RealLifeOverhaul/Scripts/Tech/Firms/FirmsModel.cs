@@ -94,6 +94,17 @@ namespace RealLifeOverhaul.Tech
         public int Rivals;                    // firms bidding against the player
         public int LastBilled;                // day
         public int Told;                      // bits: ToldNobody, ToldBehind
+        // Who is asking and on what terms (ClientRules). Appended to the saved record: a contract from before the kinds has 0 in each and is a classic client's.
+        public int Deal;                      // ClientKind
+        public int Brief;                     // the client's brief (ClientCatalogue.BriefOf); 0 none
+        public int NeedSecurity, NeedReliability;   // the posture the firm must hold to take it, thousandths
+        public int Lag;                       // days after delivery that the client pays; 0 on the day
+        public long Owed;                     // delivered and not yet paid, cents
+        public int PayDay;                    // the day Owed is paid
+        public int CreepMille;                // per mille chance that the client asks for one more change
+        public int Changes;                   // the points of the work at which a change was weighed (0, 1 or 2 of them passed)
+        public int Extra;                     // the points those changes added, unpaid
+        public long Fair;                     // a tender's fair price, cents; 0 for the council's old tenders, whose fair price is worked from their points
 
         public const int ToldNobody = 1;      // taken on with nobody able to work on it
         public const int ToldBehind = 2;      // a day went by with nobody working on it (cleared once somebody does again)
@@ -157,6 +168,9 @@ namespace RealLifeOverhaul.Tech
         public int Seats;            // professionals at the firm (the software they use is paid by the seat)
         public int Faults;           // thousandths: how often their work needs doing again, on average (TalentRules.Faults)
         public long Wages;           // their day's pay, cents (for the research and development relief)
+        public long SecurityBrought; // what the security people at work bring, thousandths summed with no per person top (the sector's curve; TeamNeedRules reads it)
+        public long ReliabilityBrought;   // ...and the site reliability and DevOps people at work
+        public int SecurityWorking, ReliabilityWorking;   // how many of them worked yesterday (those the sums above are of)
     }
 
     /// <summary>Why nobody at a firm can work, or worked yesterday (FirmsRules.Why). The last two are of yesterday only.</summary>
@@ -198,6 +212,7 @@ namespace RealLifeOverhaul.Tech
     public sealed class FirmsFile
     {
         public int Seed, FirstDay, LastDay = -1, NextId = 1, LastTender;
+        public int GovHold;                   // no public work is put out to the firms before this day (a department's audit of a late job); 0 none
         public readonly List<Firm> Firms = new List<Firm>(8);
         public readonly List<Product> Products = new List<Product>(FirmsCatalogue.ProductsMost);
         public readonly List<Contract> Contracts = new List<Contract>(FirmsCatalogue.ContractsMost);

@@ -38,6 +38,7 @@ Economy/Company/              the first three are game-free and compiled by Econ
 | Wages and raises | The mod's staff part: requests, rivals' offers, overtime | Answered inside a wage band and a monthly budget |
 | Insurance claims | The mod's cover part: a claim to put in within five days | Put in when it pays more than it adds to the next term |
 | Training, health insurance, cleaning | The game's HR Manager; the game's cleaners and the mod's cleaning service | Nothing |
+| Answering reviews on Flare | Nothing: the player answered each review by hand, or with Flare's Answer all | A business's waiting reviews answered each morning by the rule of Answer all (`ManagerTask.Reviews`, `CompanyDirector.Reviews.cs`, `ManagerReviews`) |
 
 ## Who decides
 
@@ -85,6 +86,10 @@ A player asked for the managers not to be one growing list. The tab opens on a d
 - A kind's page stayed open for a kind its place no longer had (a business become a factory), with a switch that did nothing.
 - A company has up to `ManagerCatalogue.ManagersMost` managers (256: one for each place or district, so a firm's own size is the real limit and the number only bounds the saved line; it was 64), and a store's policy for each of them (`PolicyCatalogue.StoresMost`, the same).
 - Places past the most the managers read (`CompanyCatalogue.PlacesMost`, 256; the books and the rota planner follow `ShopsMost`, 64) are left out; `RotaGame.LeftOut` counts them, `CompanyDirector.ManagerLeftOut` keeps the count of the managers' read, and the directory and the kit's tree say so. A place past the 64 has no books of its own, so it is managed as a place of works: stock, rota, hiring and leases. A Car Showroom founded late needs this, since its manager's Stock orders are the only way its standing order for new cars is filled.
+
+## The duty "Answers reviews"
+
+The eleventh kind (`ManagerTask.Reviews`, saved as bit 10: a manager saved before it does not have it until the player gives it, a newly appointed one has it with the rest), a business's only. At the staff hour (09:00) every day the manager answers the business's waiting reviews on Flare, none older than ten days, by Flare's batch rule ([Flare in the city](flare-city.md), "Answering all at once"): thanks for four and five stars, sorry for two and one, a word of thanks for a three, a poor review out of line with the rating left for the player, never standing your ground, the cap on the lift as for any answer. A mistake (`CompanyDirector.Slips`, by their skill) is a day they do not get to them. The duty costs the manager's allowance and no other money. Each round that answered or missed something is a decision (figures: thanks, sorry, in between, left, rating before, rating after, not got to; closed at once, as an answer once up cannot be taken back). On Sunday at 18:00 `ReviewsWeekly` tells the week in one notice from the week's record (`ReviewWeek`, the part "w" of the managers' line, appended after the others) and clears it. The option **Managers answer reviews** (`flare_manager_replies`, under Flare) and Flare running gate it (`ManagerReviews.May`): without them the kind shows as waiting in the manager's panel and nothing is answered, said or counted. Checks: `FlareBatchChecks.cs` (`--flarebatch29`).
 
 ## A switch for each task
 

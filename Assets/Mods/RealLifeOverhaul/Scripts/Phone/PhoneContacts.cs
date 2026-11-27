@@ -178,10 +178,12 @@ namespace RealLifeOverhaul
 
         private static DialogEntry ReportAccident()
         {
-            if (TrafficAccidents.Instance != null && TrafficAccidents.Instance.ReportAccident())
+            float arriveIn = 0f;
+            if (TrafficAccidents.Instance != null && TrafficAccidents.Instance.ReportAccident(out arriveIn))
             {
                 ModState.AddModifier(ModState.Helped);
-                return PhoneContacts.Closing("reallife_911_dispatched");
+                // Sent within a second, and told when it comes (ResponseRules: the drive, with half as long again to spare).
+                return PhoneContacts.Closing(ResponseWords.Pick(ResponseWords.Reported, 911), new { when = ResponseWords.When(arriveIn) });
             }
             return PhoneContacts.Closing("reallife_911_nothing");
         }
@@ -195,7 +197,7 @@ namespace RealLifeOverhaul
                 OnConfirm = () =>
                 {
                     LifeEvents.Instance?.SendToHospital();
-                    return PhoneContacts.Closing("reallife_911_ambulance_sent");
+                    return PhoneContacts.Closing(ResponseWords.Pick(ResponseWords.Yours, 912));
                 },
                 OnCancel = PhoneContacts.HangUp
             }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)LifeEvents.AmbulanceFee).ToCurrencyFormat())

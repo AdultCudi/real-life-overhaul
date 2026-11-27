@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Family
             for (int i = 0; i < s.Children.Count; i++)
             {
                 ChildRecord c = s.Children[i];
-                chair |= !c.Grown && c.Age >= FamilyBalance.HighChairFrom && c.Age < FamilyBalance.HighChairUntil;
+                chair |= !c.Grown && !c.Away && c.Age >= FamilyBalance.HighChairFrom && c.Age < FamilyBalance.HighChairUntil;
             }
             if (!cot && !chair)
             {

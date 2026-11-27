@@ -286,7 +286,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; reg.scheduleDays != null && i < reg.scheduleDays.Count; i++)
             {
                 ScheduleDay day = reg.scheduleDays[i];
-                int index = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(day.day)));
+                int index = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(day.day) - (int)DayOfWeekOrdered.Monday));   // the game counts Monday as 1
                 rows.Add(new MapPlaceRow { Label = UiText.T(DayKeys[index]), Value = HoursOf(day), Ink = Span(day, out _, out _) ? UiRole.None : UiRole.Muted });
             }
             return rows.ToArray();

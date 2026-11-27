@@ -302,16 +302,16 @@ namespace RealLifeOverhaul
                 Arms(other.animator, 3);
                 Stow(second);
                 // Their walk is the game's, played to the speed they are moved at; a clip of the mod's only where that cannot be had.
-                _rearPaced = !second.WalksUnaided && second.Gait(SceneClips.PullCart, SceneClips.WalkPace);
+                _rearPaced = !second.WalksUnaided && second.Gait(SceneClips.PullCart, SceneClips.CrewPace);
             }
             Stow(by);
-            _paced = by.Gait(SceneClips.PushCart, SceneClips.WalkPace);
+            _paced = by.Gait(SceneClips.PushCart, SceneClips.CrewPace);
             enabled = true;
             Step(0f);
             ActorPool.Logger?.Info("People: stretcher pushed from its " + (_handle > 0f ? "foot" : "head") + " end, both hands on that rail"
                                    + (_rear != null ? "; the second of the crew is walked beside its leading end, the near hand on that rail" : "; nobody at its other end")
                                    + (_barred ? "; hands on the push bar's grips" : "; no push bar (hands on the end rail)")
-                                   + (_paced ? "; pushing clip, " + SceneClips.WalkPace.ToString("F1", CultureInfo.InvariantCulture) + " m/s" : "; the game's walk (no pushing clip to be had)")
+                                   + (_paced ? "; pushing clip, " + SceneClips.CrewPace.ToString("F1", CultureInfo.InvariantCulture) + " m/s" : "; the game's walk (no pushing clip to be had)")
                                    + FormattableString.Invariant($"; wheeled along its line, {path.Travel:F1} m") + (_swinging ? ", swung round to it first" : "")
                                    + (_hasFinal ? ", swung into place at the end." : "."));
             return true;
@@ -411,7 +411,7 @@ namespace RealLifeOverhaul
             }
             else if (_along < travel)
             {
-                float pace = Mathf.Min(SceneClips.WalkPace, Mathf.Max(0.25f, (travel - _along) * 2.5f));
+                float pace = Mathf.Min(SceneClips.CrewPace, Mathf.Max(0.25f, (travel - _along) * 2.5f));
                 _speed = Mathf.MoveTowards(_speed, pace, Quicken * dt);
                 _along = Mathf.Min(travel, _along + _speed * dt);
                 if (travel - _along < 0.001f)

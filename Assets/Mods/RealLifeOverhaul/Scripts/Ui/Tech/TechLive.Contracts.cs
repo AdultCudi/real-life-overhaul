@@ -42,8 +42,8 @@ namespace RealLifeOverhaul.Ui
                     bool waiting = w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender || w.Stage == (int)WorkStage.Bid;
                     UiDataRow row = Row(7);
                     row.Cells[0] = w.Client;
-                    row.Sub = TechText.Work(w.K);
-                    row.Values[0] = (int)TechGlyphs.Of(TechGlyphs.Work, w.Kind);
+                    row.Sub = ClientWords.WorkTag(w);
+                    row.Values[0] = (int)(w.Deal != 0 ? TechGlyphs.Of(TechGlyphs.Client, w.Deal) : TechGlyphs.Of(TechGlyphs.Work, w.Kind));   // each new kind of client has its picture
                     row.Cells[1] = firm != null ? firm.File.Name : "-";
                     row.Cells[2] = Cents(Level(w.Stage == (int)WorkStage.Bid ? w.Bid : w.Value));
                     int progress = w.Monthly ? -1 : w.Points > 0 ? w.Done * 100 / w.Points : 0;
@@ -101,7 +101,8 @@ namespace RealLifeOverhaul.Ui
                 _m.Back = TechText.T("reallife_ui_tech_back_contracts");
                 _m.Head = new UiHeadModel
                 {
-                    Name = w.Client, Icon = TechGlyphs.Of(TechGlyphs.Work, w.Kind), Role = TechText.Work(w.K), Status = TechText.StageName(w.At),
+                    Name = w.Client, Icon = w.Deal != 0 ? TechGlyphs.Of(TechGlyphs.Client, w.Deal) : TechGlyphs.Of(TechGlyphs.Work, w.Kind),
+                    Role = ClientWords.WorkTag(w), Status = TechText.StageName(w.At),
                     StatusTone = StageTone(w.At)
                 };
                 var now = new TechCard(_runs, TechText.T("reallife_ibox_sec_now"));
@@ -141,6 +142,13 @@ namespace RealLifeOverhaul.Ui
                 {
                     terms.Say(TechText.T("reallife_tech_contract_own"));
                 }
+                var deal = new List<DealLine>(10);
+                ClientViews.Lines(deal, w, firm != null, firm != null ? firm.Crew : default(Crew), firm != null ? firm.File.Name : string.Empty);
+                var asks = new TechCard(_runs, TechText.T("reallife_deal_sec_asks"));
+                for (int i = 0; i < deal.Count; i++)
+                {
+                    asks.Say(ClientWords.Say(deal[i], Prices.Level), deal[i].Warn ? UiRole.WarnText : UiRole.None);   // what the client asks of the firm and what it risks
+                }
                 var actions = new List<UiActionModel>(3);
                 switch (w.At)
                 {
@@ -162,8 +170,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     WorkLinks(terms, firm, idle, false);
                 }
-                _m.Left = new[] { now.Build() };
-                _m.Right = new[] { terms.Build() };
+                string brief = ClientWords.Brief(w);
+                var briefCard = new TechCard(_runs, TechText.T("reallife_deal_sec_brief")).Say(brief);   // the client's own words first
+                _m.Left = brief.Length > 0 ? new[] { briefCard.Build(), now.Build() } : new[] { now.Build() };
+                _m.Right = asks.LineCount > 0 ? new[] { terms.Build(), asks.Build() } : new[] { terms.Build() };
             }
 
             // A tender: which firm bids and at what share of the fair price, as steps, and the bid as the main action.

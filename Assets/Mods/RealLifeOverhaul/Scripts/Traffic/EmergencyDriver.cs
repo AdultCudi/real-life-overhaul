@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         private const float Pickup = 6f;            // m/s2 it gathers speed with
         private const float Slowing = 24f;          // m/s2 it can lose speed with
 
-        /// <summary>A cruise speed above this (m/s, about 86 km/h) is a fast drive: see the summary.</summary>
+        /// <summary>A cruise speed above this (m/s, about 86 km/h) is a fast drive: see the summary. A unit answering a call drives so too (Urgent).</summary>
         public const float FastFrom = 24f;
         private const float FastPickupLeast = 1.2f; // m/s2 left near its top speed (0-100 km/h in about 5.5 s, 100-200 in about 13)
         private const float FastBraking = 9f;       // m/s2 it plans its slowing for a bend, or for the car it follows, with
@@ -149,6 +149,19 @@ namespace RealLifeOverhaul
         /// <summary>Speed on a clear, straight road, in m/s. Begin resets it to the default.</summary>
         public float CruiseSpeed { get; set; } = DefaultCruiseSpeed;
 
+        /// <summary>
+        /// True for a unit answering a call (Urgent): it plans the bends of its route and its braking like a fast drive, whatever its speed, so that a
+        /// city speed of 79 km/h is taken round corners and up to traffic as a fast car does it, not as a car at 50. Begin resets it.
+        /// </summary>
+        public bool Brisk { get; private set; }
+
+        /// <summary>Drives at the speed of an emergency, with the planning of a fast drive. Call after Begin, which undoes it.</summary>
+        public void Urgent(float speed)
+        {
+            CruiseSpeed = Mathf.Max(speed, DefaultCruiseSpeed + 1f);   // (the pick-up curve divides by what it is above the default)
+            Brisk = true;
+        }
+
         /// <summary>False keeps it in its own lane whatever is ahead: it closes up and waits. Begin sets it back to true.</summary>
         public bool MayPass { get; set; } = true;
 
@@ -262,6 +275,7 @@ namespace RealLifeOverhaul
             ResetWay();
             MayPass = true;
             CruiseSpeed = DefaultCruiseSpeed;
+            Brisk = false;
             Arrived = false;
             Active = true;
             TrafficTools.Touch(car, "driven by the mod");
@@ -450,7 +464,7 @@ namespace RealLifeOverhaul
                 _nextSense = Time.time + SenseInterval;
                 Sense(position, roadRight, goalSqr);
                 TellWay(position, roadRight);
-                _bend = CruiseSpeed > FastFrom || _bendGrip > 0f ? BendLimit(position) : float.MaxValue;
+                _bend = CruiseSpeed > FastFrom || Brisk || _bendGrip > 0f ? BendLimit(position) : float.MaxValue;
                 _hold = _holdAt >= 0 ? HoldLimit(toPoint) : float.MaxValue;
                 if (_blocked && !_following && _nearEnough > 0f && Time.time - _blockedSince > StopPatience
                     && (_routeOnly ? RouteLeft < _nearEnough : goalSqr < _nearEnough * _nearEnough))
@@ -472,7 +486,7 @@ namespace RealLifeOverhaul
             float turn = Quaternion.Angle(_body.rotation, look);
             _body.MoveRotation(Quaternion.RotateTowards(_body.rotation, look, TurnRate * Time.fixedDeltaTime));
 
-            bool fast = CruiseSpeed > FastFrom;
+            bool fast = CruiseSpeed > FastFrom || Brisk;
             float wanted = 0f;
             if (!_blocked && !_braking)
             {

@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.SelfTest
             BusinessHelper.GenerateMissingTodoTasksForBusiness(reg);
             GameEvent.Invoke("ba:gameevent_newbusiness");
             InstanceBehavior<CityManager>.Instance.FindCityBuildingController(reg.Address)?.UpdatePoi();
-            InstanceBehavior<UIs>.Instance.mapFilters.ApplyFilters();
+            MapPlaces.Refilter(InstanceBehavior<UIs>.Instance.mapFilters);
             GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);
             if (reg.businessTypeName != type || reg.BusinessName != name || !reg.RentedByPlayer)
             {

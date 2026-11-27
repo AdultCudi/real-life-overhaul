@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Hygiene, stress and home as three more of the game's needs bars, in a copy of its accessories tab under the top bar,
+    /// Hygiene, stress and home (and fitness, a fourth, while it is kept) as more of the game's needs bars, in a copy of its accessories tab under the top bar,
     /// so it goes wherever the top bar goes and shows whenever the top bar does (Home/HomeBarRules): the tab is never switched
     /// off for how the player is doing or where they are, and the game's own hiding of the top bar hides it and gives it back.
     /// The director calls <see cref="Show"/> once a second; a bar is touched only when its whole number changes, and the home
@@ -21,22 +21,25 @@ namespace RealLifeOverhaul
         private const float NoteWidth = 640f;   // the illness line beside the bars
         private const float Gap = 12f;          // from the open accessories tab
 
-        private static readonly string[] Names = { "Hygiene", "Stress", "Home" };
-        private static readonly string[] Words = { "reallife_home_strip_hygiene", "reallife_home_strip_stress", "reallife_home_strip_home" };
-        private static readonly string[] Pictures = { "Icon-Person", "Icon-Heart", "Icon-Building" };
-        private static readonly string[] PicturesElse = { "Icon-Info-32", "Icon-Info-32", "Icon-Address" };
+        private const int Bars = 4;            // hygiene, stress, home and fitness: the game's three bars and one more of the same, a step on
+        private static readonly string[] Names = { "Hygiene", "Stress", "Home", "Fitness" };
+        private static readonly string[] Words = { "reallife_home_strip_hygiene", "reallife_home_strip_stress", "reallife_home_strip_home", "reallife_home_strip_fitness" };
+        private static readonly string[] Pictures = { "Icon-Person", "Icon-Heart", "Icon-Building", "Icon-Condition" };
+        private static readonly string[] PicturesElse = { "Icon-Info-32", "Icon-Info-32", "Icon-Address", "Icon-Info-32" };
         private static readonly Color[] Colours =
         {
-            new Color(0.33f, 0.74f, 0.96f, 1f), new Color(0.73f, 0.55f, 0.96f, 1f), new Color(0.96f, 0.80f, 0.36f, 1f)
+            new Color(0.33f, 0.74f, 0.96f, 1f), new Color(0.73f, 0.55f, 0.96f, 1f), new Color(0.96f, 0.80f, 0.36f, 1f), new Color(0.93f, 0.42f, 0.40f, 1f)
         };
 
         public static IModLogger Logger;
 
-        private static readonly Image[] Fill = new Image[HomeBarRules.Most];
-        private static readonly int[] Shown = { -1, -1, -1 };
-        private static readonly float[] Reach = new float[HomeBarRules.Most];   // from the first bar's left edge to the right edge of the first, of the first two and of all three
+        private static readonly Image[] Fill = new Image[Bars];
+        private static readonly int[] Shown = { -1, -1, -1, -1 };
+        private static readonly float[] Reach = new float[Bars];   // from the first bar's left edge to the right edge of the first, of the first two, of all three and of the fourth
+        private static readonly float[] Slots = new float[Bars];   // where the bar in each place along the tab stands (its x in the copy), so fitness takes the home bar's place with no home
         private static GameObject _tab;
         private static GameObject _home;
+        private static GameObject _fit;
         private static RectTransform _tabRect;
         private static RectTransform _accessories;
         private static RectTransform _noteRect;
@@ -45,12 +48,16 @@ namespace RealLifeOverhaul
         private static float _alignedX;
         private static int _count = HomeBarRules.Most;   // how many bars stand now (Home/HomeBarRules.Count)
         private static bool _on;
+        private static bool _fitOn;
         private static bool _noteOn;
         private static bool _beside;
         private static bool _failed;
 
         /// <summary>True while the RLO interface's HUD shows these needs in its status bar: the tab stays down meanwhile.</summary>
         public static bool Held;
+
+        /// <summary>The player's fitness for the fourth bar, 0 to 100, or -1 to leave it out (fitness not kept): set by the director's Strip before each Show.</summary>
+        public static float Fitness = -1f;
 
         /// <param name="note">A line beside the bars (an illness and how long it has to run), or null. Pass the same string object while nothing changes.</param>
         public static void Show(float hygiene, float stress, float home, bool hasHome, string note)
@@ -82,9 +89,14 @@ namespace RealLifeOverhaul
                 {
                     Bar(2, home);
                 }
+                bool fitOn = Fitness >= 0f;
+                if (fitOn)
+                {
+                    Bar(3, Fitness);
+                }
                 bool noteOn = note != null;
                 bool beside = _accessories != null && _accessories.gameObject.activeSelf;
-                if (noteOn != _noteOn || beside != _beside || count != _count || !_on)
+                if (noteOn != _noteOn || beside != _beside || count != _count || fitOn != _fitOn || !_on)
                 {
                     if (_on && count != _count && Meta.Dev.Verbose)
                     {
@@ -94,6 +106,7 @@ namespace RealLifeOverhaul
                     _noteOn = noteOn;
                     _beside = beside;
                     _count = count;
+                    _fitOn = fitOn;
                     Place();
                 }
                 if (noteOn && !ReferenceEquals(note, _noteShown))
@@ -151,6 +164,8 @@ namespace RealLifeOverhaul
         {
             _tab = null;
             _home = null;
+            _fit = null;
+            _fitOn = false;
             _tabRect = null;
             _accessories = null;
             _noteRect = null;
@@ -159,7 +174,7 @@ namespace RealLifeOverhaul
             _on = false;
             _noteOn = false;
             _count = HomeBarRules.Most;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < Bars; i++)
             {
                 Fill[i] = null;
                 Shown[i] = -1;
@@ -202,13 +217,22 @@ namespace RealLifeOverhaul
             {
                 x = Mathf.Max(x, _accessories.localPosition.x + _accessories.rect.xMax + Gap);
             }
-            float bars = Reach[_count - 1];
+            float bars = _fitOn ? Reach[_count] : Reach[_count - 1];   // the fitness bar stands after the bars that stand before it
             _tabRect.anchoredPosition = new Vector2(x, _tabRect.anchoredPosition.y);
             _tabRect.sizeDelta = new Vector2(Pad + bars + Pad + (_noteOn ? NoteWidth : 0f), _tabRect.sizeDelta.y);
             bool homeOn = _count == HomeBarRules.Most;
             if (_home != null && _home.activeSelf != homeOn)
             {
                 _home.SetActive(homeOn);
+            }
+            if (_fit != null)
+            {
+                if (_fit.activeSelf != _fitOn)
+                {
+                    _fit.SetActive(_fitOn);
+                }
+                var fitRect = (RectTransform)_fit.transform;
+                fitRect.anchoredPosition = new Vector2(Slots[_count], fitRect.anchoredPosition.y);
             }
             if (_note != null)
             {
@@ -255,7 +279,21 @@ namespace RealLifeOverhaul
                     var game = (RectTransform)stats.GetChild(i);
                     Reach[i] = game.localPosition.x + game.rect.xMax - firstLeft;   // where the tab's bars end when this is the last that stands
                 }
-                for (int i = 0; i < 3; i++)
+                // The fourth bar is one more copy of the first, a bar's step on from the third: the steps between the game's own are the same all along, so the tab ends
+                // one step further when it stands. The copy's layout, if it has one, is stopped so the places the bars are put in are kept.
+                DisableLayout(copy);
+                var secondBar = (RectTransform)copy.transform.GetChild(1);
+                var thirdBar = (RectTransform)copy.transform.GetChild(HomeBarRules.Most - 1);
+                float stepOn = thirdBar.anchoredPosition.x - secondBar.anchoredPosition.x;
+                Reach[Bars - 1] = Reach[HomeBarRules.Most - 1] + (Reach[HomeBarRules.Most - 1] - Reach[HomeBarRules.Most - 2]);
+                var fourth = (RectTransform)UnityEngine.Object.Instantiate(copy.transform.GetChild(0).gameObject, copy.transform, false).transform;
+                for (int i = 0; i < HomeBarRules.Most; i++)
+                {
+                    Slots[i] = ((RectTransform)copy.transform.GetChild(i)).anchoredPosition.x;
+                }
+                Slots[Bars - 1] = Slots[HomeBarRules.Most - 1] + stepOn;
+                fourth.anchoredPosition = new Vector2(Slots[Bars - 1], thirdBar.anchoredPosition.y);
+                for (int i = 0; i < Bars; i++)
                 {
                     Transform one = copy.transform.GetChild(i);
                     one.name = Names[i];
@@ -341,6 +379,9 @@ namespace RealLifeOverhaul
                 _note = note.transform;
                 _noteRect = noteRect;
                 _home = copy.transform.GetChild(HomeBarRules.Most - 1).gameObject;
+                _fit = copy.transform.GetChild(Bars - 1).gameObject;
+                _fit.SetActive(false);
+                _fitOn = false;
                 _count = HomeBarRules.Most;
 
                 // Under the game's bars: the tab's first bar under the game's first.
@@ -385,6 +426,21 @@ namespace RealLifeOverhaul
             for (int i = copy.transform.childCount - 1; i >= 0; i--)
             {
                 UnityEngine.Object.DestroyImmediate(copy.transform.GetChild(i).gameObject);
+            }
+        }
+
+        // A copy whose children stand where they were put: the game's own layout components, if the bars' holder has any, would place the extra bar again.
+        private static void DisableLayout(GameObject copy)
+        {
+            var group = copy.GetComponent<LayoutGroup>();
+            if (group != null)
+            {
+                group.enabled = false;
+            }
+            var fitter = copy.GetComponent<ContentSizeFitter>();
+            if (fitter != null)
+            {
+                fitter.enabled = false;
             }
         }
 

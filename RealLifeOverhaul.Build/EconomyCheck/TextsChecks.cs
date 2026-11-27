@@ -285,6 +285,21 @@ internal static partial class Program
         Check(TextCheck.Judge("5th Ave? Glad you walked away from that one.", text, sheet, card, recent) == TextVerdict.Ok, "texts, the checker: different words from the same person pass");
         Check(TextCheck.Tidy(": .- Heard about 5th Ave.") == "Heard about 5th Ave." && TextCheck.Tidy("\"Quoted.\"") == "\"Quoted.\"" && TextCheck.Tidy("$5 off") == "$5 off",
             "texts, the checker: stray marks before the first word go (\":\", \".\", \"-\"), a quote or $ stays");
+        // Found by playing: no font draws emoji, so a voice that uses them showed "I was disappointed to be let down ?" on Flare.
+        Check(TextCheck.Tidy("I was let down \U0001F61E") == "I was let down" && TextCheck.Tidy("Go there \U0001F60D.") == "Go there." && TextCheck.Tidy("Love it \u2764\uFE0F so much") == "Love it so much"
+              && TextCheck.Tidy("\U0001F600 Hi there") == "Hi there" && TextCheck.Tidy("C'est nul \U0001F61E ?", "fr") == "C'est nul ?" && TextCheck.Tidy("Five \u2605 for them") == "Five \u2605 for them"
+              && ReferenceEquals(TextCheck.NoEmoji("No emoji here.", null), "No emoji here."),
+            "texts, the checker: emoji are taken out of a model's words with the space before a stop, French keeping its space, a star kept, and a line without any left as it is");
+        // In the game a face the emoji sheet has was drawn: only the ones nothing draws go.
+        TextCheck.Drawable = code => code == 0x263A || code == 0x1F600;
+        Check(TextCheck.Tidy("Fine \u263A\uFE0F.") == "Fine \u263A." && TextCheck.Tidy("Great day \U0001F600 \U0001F61E.") == "Great day \U0001F600."
+              && TextCheck.Tidy("Let down \U0001F61E. Again \U0001F600") == "Let down. Again \U0001F600",
+            "texts, the checker: an emoji the game draws is kept and one it cannot is taken out, its picture mark with it");
+        TextCheck.Drawable = null;
+        // A line kept in a save from before this, or shared by an older RLO, loses its undrawable emoji as it is kept.
+        var kept = new TextsStore();
+        kept.Keep("old", 3, null, "Not much more to share. \U0001F61E", false);
+        Check(kept.Words("old") == "Not much more to share.", "texts, the store: a kept line has the emoji nothing draws taken out, whichever way it came");
         var rs = new TextSheet();
         TextIntents.Build(reply, new TextWho { First = "Dana", Handle = "@dana", Age = 30, District = "Midtown", Style = "warm", When = "Monday 10:00" },
             new TextSlots().Set("reaction", "cheer"), new List<TextSaid> { new TextSaid("Alex", "Opened Bloom & Co today.") }, rs);

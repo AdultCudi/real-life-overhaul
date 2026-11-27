@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Ui
         private const int Shortlist = 100, Offer = 101, Counter = 102, Walk = 103, Close = 104, NewAd = 105, PostAd = 107, OpenApplicant = 110, OpenPerson = 111, Interview = 112,
             Refs = 113, Background = 114, Reject = 115, Buyout = 116, Rush = 117, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134,
             SetRole = 141, SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149,
-                RaiseAll = 150, MatchRivals = 151, AssignRoles = 152, PinRole = 153;
+                RaiseAll = 150, MatchRivals = 151, AssignRoles = 152, PinRole = 153, MoveRoles = 154, NameManager = 155, RemoveManager = 156, SetTarget = 157, ClearTargets = 158, ToggleDuty = 159;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const int RoleSlot = 1;   // the amount place a person's page keeps the role chosen to move them to in
         private static readonly int[] PayBands = { 900, 1000, 1100, 1200, 1350 };   // thousandths of the going rate an ad's top pay can be set at
@@ -409,6 +409,9 @@ namespace RealLifeOverhaul.Ui
             role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_posts", "Posts to fill"), Stepper = 8 });
             role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_arrangement", "Arrangement"), Stepper = 6 });
             role.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk(_places[place], r) : TechText.T("reallife_hire_seat_payroll") });
+            // what the role does for a game
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill(StudioFeeds.RoleKey(StudioFeeds.Of(r)), "parts", RolesApp.PartsLine(StudioFeeds.Of(r)), "role",
+                TechText.Role(r.Id)) });
             form.Left.Add(role);
             var terms = new WorkFormBand { Title = w.T("reallife_work_the_terms", "Pay and terms") };
             terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_pay_most", "Pay up to"), Stepper = 3 });

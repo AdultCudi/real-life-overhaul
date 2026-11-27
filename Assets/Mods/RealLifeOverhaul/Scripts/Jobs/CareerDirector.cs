@@ -138,6 +138,23 @@ namespace RealLifeOverhaul
             return DepotPlace(employer, out _, out string address) && CareerOfficeRules.Has(address) ? address : null;
         }
 
+        /// <summary>
+        /// True when an employer with no office is only waiting for its board (the search is still on, or its kind of building is asked again near the
+        /// player), and false when the city has no building of its kind: the words for the two differ. <paramref name="kind"/> is the game's name for the
+        /// kind of building the board will stand at, or null while that is not settled. An employer that has an office is never waiting.
+        /// </summary>
+        public bool BoardPending(int employer, out string kind)
+        {
+            kind = null;
+            JobBoards boards = _director.HelpBoards;
+            if (boards == null || employer < 0 || employer >= CareerCatalogue.All.Length || CareerCatalogue.All[employer].Place != EmployerPlace.Board
+                || (DepotOf(employer) >= 0 && DepotOf(employer) < boards.Count))
+            {
+                return false;
+            }
+            return boards.Pending(CareerCatalogue.All[employer].Premises, out kind);
+        }
+
         /// <summary>The name of the shop or service the employer's board stands outside, or null when the employer is not at a board.</summary>
         public string OfficePlace(int employer)
         {

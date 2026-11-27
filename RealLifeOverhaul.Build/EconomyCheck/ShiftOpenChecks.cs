@@ -196,7 +196,7 @@ internal static partial class Program
               && b.Applications.Count == 1 && b.Applications[0].Post.Shift == week
               && b.Job != null && b.Job.Post.Shift == week && b.Job.ShutDay == 777 && b.Job.Def.Hour == 8 && CareersStore.Write(back) == line,
             "shift open: a vacancy's lead and then its week, an application's and the job's week, and the job's shut day, are saved and read back the same");
-        string old = line.Replace("|lead-7|" + week + "~", "~").Replace("|" + week + "~", "~").Replace("|" + week + "|777", string.Empty);
+        string old = line.Replace("|lead-7|" + week + "~", "~").Replace("|" + week + "~", "~").Replace("|" + week + "|777|0|0", string.Empty);   // the shut day and the two fitness days the job record ends with
         StudyFile before = CareersStore.Read(old, out _);
         Check(old.IndexOf(week.ToString(), StringComparison.Ordinal) < 0 && old.IndexOf("lead-7", StringComparison.Ordinal) < 0 && before.Work.Openings.Count == 1
               && before.Work.Openings[0].Shift == 0 && before.Work.Openings[0].Lead.Length == 0 && before.Work.Openings[0].Pay == 7000 && before.Work.Openings[0].Level == -1

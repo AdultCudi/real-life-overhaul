@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Family
             int n = 0;
             for (int i = 0; i < FamilyState.S.Children.Count; i++)
             {
-                n += FamilyState.S.Children[i] != null && !FamilyState.S.Children[i].Grown ? 1 : 0;
+                n += FamilyState.S.Children[i] != null && !FamilyState.S.Children[i].Grown && !FamilyState.S.Children[i].Away ? 1 : 0;
             }
             return n;
         }

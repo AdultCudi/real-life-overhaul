@@ -252,6 +252,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     using var people = HotSpots.Time(HotDayPeople);   // the game's employees' moods and absences, before its own daily run of them
                     PeopleDay(Save.Day);
+                    ManagerDay(Save.Day);   // the firms' named managers run their firms, after the people's own day
                 }
                 if (_firmsOn)
                 {

@@ -58,6 +58,8 @@ namespace RealLifeOverhaul.Ui
             tm.Rows = new UiDataRow[shown.Count];
             tm.Selected = at;
             tm.Offset = v.Offset;
+            m.Scroll.Offset = v.DetailOffset;
+            b.Page.Scroll = m.Scroll;
             tm.Reveal = v.Reveal;
             tm.EmptyIcon = t.EmptyIcon;
             tm.EmptyTitle = t.EmptyTitle;
@@ -273,6 +275,8 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = byOrder ? t.SortByOrder : t.SortWord, Sorts = t.SortByOrder != null };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
             m.Below = BelowOf(t, shown);
+            m.Scroll.Offset = v.DetailOffset;
+            b.Page.Scroll = m.Scroll;
             var panelActs = new List<UiActionModel>(4);
             if (chosen != null)
             {

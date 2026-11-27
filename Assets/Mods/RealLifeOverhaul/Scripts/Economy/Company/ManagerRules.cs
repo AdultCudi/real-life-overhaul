@@ -15,7 +15,8 @@ namespace RealLifeOverhaul.Economy
         Hiring = 7,     // somebody from the place's own job board hired to keep the staff it had; somebody late three days running let go
         Marketing = 8,  // a campaign of the company's own kinds booked at a business with none, inside the month's marketing limit
         Leases = 9,     // the landlord's offer at a renewal, answered inside a rise limit
-        Count = 10
+        Reviews = 10,   // the waiting reviews of a business on Flare, answered by the same rule as "Answer all" (thanks, sorry, never standing your ground)
+        Count = 11
     }
 
     /// <summary>Where a decision stands. Saved as a number.</summary>
@@ -174,6 +175,7 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Hiring: return hour == ManagerCatalogue.HireHour;
                 case ManagerTask.Marketing: return hour == ManagerCatalogue.MarketHour;
                 case ManagerTask.Leases: return hour == ManagerCatalogue.StaffHour;
+                case ManagerTask.Reviews: return hour == ManagerCatalogue.StaffHour;
                 case ManagerTask.Stock: return sunday && hour == ManagerCatalogue.StockHour;
                 case ManagerTask.Rota: return sunday && hour == ManagerCatalogue.RotaHour;
                 default: return false;

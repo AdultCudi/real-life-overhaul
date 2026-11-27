@@ -150,8 +150,8 @@ namespace RealLifeOverhaul
             PutStretcherAway();
             _medicA.Drop();
             _medicB.Drop();
-            _medicA.Board(_ambulanceDoor, Pace.Walk, 40f);
-            _medicB.Board(_ambulanceDoor, Pace.Walk, 40f);
+            _medicA.Board(_ambulanceDoor, Pace.Jog, 40f);
+            _medicB.Board(_ambulanceDoor, Pace.Jog, 40f);
             _care = Care.Returning;
             return true;
         }
@@ -193,10 +193,10 @@ namespace RealLifeOverhaul
             _medicB.Drop();
             if (_stretcher == null || !_stretcher.Out)
             {
-                _medicA.Board(_ambulanceDoor, Pace.Walk, 40f);
-                _medicB.Board(_ambulanceDoor, Pace.Walk, 40f);
+                _medicA.Board(_ambulanceDoor, Pace.Jog, 40f);
+                _medicB.Board(_ambulanceDoor, Pace.Jog, 40f);
                 _care = Care.Returning;
-                Logger?.Info("People: paramedics done, walking back to the ambulance.");
+                Logger?.Info("People: paramedics done, jogging back to the ambulance.");
                 return;
             }
             _stretcher.Park();
@@ -287,7 +287,7 @@ namespace RealLifeOverhaul
                 + System.FormattableString.Invariant($"; way back {_way.Home.Travel:F1} m") + (_way.Swing ? ", swung out to it first" : "")
                 + (inWay == null ? "; nothing stands on it" : "; '" + inWay.name + "' (layer " + LayerMask.LayerToName(inWay.gameObject.layer) + ") stands on it and could not be moved"));
             _care = Care.Wheeling;
-            Phase(now, _way.Home.Travel / SceneClips.WalkPace + (_way.Swing ? 5f : 1f) + (final ? 5f : 1f));
+            Phase(now, _way.Home.Travel / SceneClips.CrewPace + (_way.Swing ? 5f : 1f) + (final ? 5f : 1f));
         }
 
         // A traffic car only standing on the way back (no wreck, unit or player's car) is taken off the road; anything else

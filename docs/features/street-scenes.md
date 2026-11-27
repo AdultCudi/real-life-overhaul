@@ -15,7 +15,9 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | File | What it is |
 | --- | --- |
 | `TrafficAccidents` | the orchestrator: what happens and when; owns the scene and clears it on every exit |
-| `ResponseUnit` | one ambulance or patrol car taken from traffic (always the real ambulance, always the police body) |
+| `ResponseUnit` | one ambulance or patrol car taken from traffic (always the real ambulance, always the police body); put on the road only at a start the camera cannot see |
+| `ResponseRules` | how fast help answers, as plain arithmetic (game-free; EconomyCheck's `--rescue29`): the delay before a unit is sent, how far off it starts, its speed, how long the drive takes, the crew's pace, how long a scene lasts, the words that say when help comes and the self-check's verdict |
+| `ResponseWords` | what the player is told when help is sent for: the line (one of four, by a seeded roll) and when it comes, from the rules |
 | `EmergencyDriver` | drives a unit along the road points: closes up and stops short of vehicles and people, never leaves the road or forces through; says what holds it up |
 | `RouteGates` | red lights and closed lane points for a vehicle the mod drives like anybody else (the bus's rules, for the called taxi) |
 | `SceneParking` | the free-space tests (what a pose touches; a unit's whole body against every solid layer; a strip of road), and where a unit pulls up when a scene has no lane for it to stand in |
@@ -91,6 +93,19 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 - `PolicePursuit` arrests and summons through Justice; see [Who does what at an arrest](../reference/wiring.md#who-does-what-at-an-arrest).
 
 ## Rules the street scenes keep
+
+- Help answers like an emergency, on every road path alike: a staged accident, a person knocked down by traffic or by the player, a 911 report, the fire engine and its patrol car, and an officer sent to an arrest (`Traffic/ResponseRules`; 27 Nov 2026, after a player wrote that the services got there at a saunter).
+  Until then a unit was sent 5 to 13 s after the accident (the patrol car 3 to 22), started up to 170 m of road away and drove at 14 m/s (50 km/h, the traffic's own pace, so no quicker than the cars it came up behind), and its crew carried the bag and wheeled the stretcher at the 1.2 m/s of a walking clip.
+  Now the ambulance is sent 3 to 6 s after the call and the patrol car 3 to 9 s (3 s behind the ambulance on a single lane); a 911 report sends whoever is waiting within a second.
+  A unit starts 100 to 130 m of road from its place (the patrol car 100 to 140), at a start the camera cannot see (`ResponseUnit.Spawn(..., unseen: true)`: a start that shows is walked again, and the unit is tried again 2 s later, twice, before it takes any start), and drives at 22 m/s (79 km/h; the fire engine 18) with the planning of a fast drive (`EmergencyDriver.Urgent`: bends slowed for before them, a car ahead stopped behind in room).
+  It does not stop at red lights (the mod's driver never asks `RouteGates`), passes in the lane beside when held up and has standing traffic moved on (`MakeWayRules`), as before.
+  A patrol car that will chase keeps the chase's own pace.
+  It takes about 16 s from the accident to the ambulance at the scene (about 26 s before), and the notice that says help is coming says so in words (`within half a minute`) that are kept even for the farthest start the road can give.
+  The crew carries the bag and pushes the stretcher at 1.8 m/s, the same clips played 1.5 times their own speed (an `ActivityAnimator.MatchSpeed` matches a clip to the ground up to 1.6 times); paramedics and officers with free hands run (the game's run) to a place more than 6 m off, and jog back to the ambulance without the stretcher; treatment takes 6 to 11 s over somebody hurt, a parked unit stays 14 to 50 s, and the scene clears sooner.
+  The game has no light bar, siren or priority of its own on its ambulance or police car (its decompiled code names none): the mod's lights and siren, fitted when the unit is put on the road, are what shows, and **Sirens on emergency vehicles** (on) is their one switch.
+  The player's own crash that ends in hospital is the black-screen ambulance, not a vehicle that is driven, and its text says it reaches them in moments.
+  One `Traffic check (response)` line is written as each unit parks: the unit, its road to the place, how long after the call it was sent, how long it took to be there against what its drive needs, its top speed, its lights and its siren, and PASS or `FAIL, why`.
+  In a Going Public session a guest's traffic is the host's: none of it runs there (`TrafficTools.Ready`), nothing is sent, and no other player's vehicle is touched.
 
 - People come from `People/ActorPool` only, through an `ActorRole`, and never more than twelve at once, of whom at most four are only there to be seen (`ActorRole.EnterPresence`: officers on the beat, by a parked car, at a junction).
   Those are taken back without warning the moment a scene needs a character, so whoever owns one must cope with finding nobody behind the role.
@@ -199,7 +214,8 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 
 - Nobody is laid down where the whole length of a body is not clear of every vehicle (`AccidentCast.BodyClear`); a casualty on the stretcher lies along it on their back (`SupinePose`).
 - A scene says in the log, once per transition and never per frame, what each unit and crew is doing (dispatched, held up, parked at N m, crew out, stretcher up, loaded, left), so that a run can be diagnosed from `Player.log` alone.
-  A scene is planned to clear inside three minutes; only a casualty still being seen to can take it past that, and never past five.
+  A scene is planned to clear inside two and a half minutes (a severe one 100 to 140 s, a person knocked down 90 to 130); only a casualty still being seen to can take it past that, and never past five.
+
 
 - A scene leaves the road and the traffic as it found them on every way out, traffic shut down included: a car the mod holds is handed back or taken off the road (the game's own clearing skips cars with a scripted route), and `TrafficAccidents.Recheck` looks again on the next tick out of doors and says so if anything was left.
 - Nobody gestures at nobody: conversational gestures play only while the person spoken to is standing with them.

@@ -70,6 +70,18 @@ namespace RealLifeOverhaul.Ui
         public string Lead;         // a note's bold first words
         public UiIcon NoteIcon = UiIcon.Info;
         public int Stepper = -1;    // an amount's place in the page's steppers
+        public bool Pinned;         // stands above the buttons whatever the room, the rest of the detail scrolling over it (a choice the button below acts on)
+    }
+
+    /// <summary>
+    /// The scroll of a detail panel whose sections do not all fit: the offset the view keeps (the wheel changes it), and what the last layout made of it,
+    /// the region's clip and the heights, so the screen knows which wheel is the panel's. Game-free.
+    /// </summary>
+    public sealed class WorkScroll
+    {
+        public float Offset;               // px the sections are scrolled up; written back clamped by the layout
+        public short Clip = -1;            // written by the layout: the scroll region, or -1 where every section fits
+        public float Content, View;        // written by the layout: the sections' height and the room they have
     }
 
     /// <summary>

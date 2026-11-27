@@ -128,5 +128,13 @@ internal static partial class Program
             marked &= at > 0 && row.LastIndexOf(FixMarks[code], at, StringComparison.Ordinal) >= 0;
         }
         Check(marked, "contacts talk: Polish and Korean have the line too, after their own fix marks");
+        // Opened on a candidate from My Employees' Negotiate, the list beside them said "No contact matches" under an old search.
+        string listSrc = TextsSource(@"Ui\Contacts\ContactsScreen.Read.cs");
+        int revealAt = listSrc.IndexOf("private void Reveal(Contact open)", StringComparison.Ordinal);
+        string revealBody = revealAt >= 0 ? listSrc.Substring(revealAt, Math.Min(700, listSrc.Length - revealAt)) : string.Empty;
+        int revealCall = listSrc.IndexOf("Reveal(_app.selectedContact);", StringComparison.Ordinal);
+        Check(revealCall >= 0 && revealCall < listSrc.IndexOf("Groups(all, shown);", StringComparison.Ordinal) && revealBody.Contains("if (open == _revealed)")
+              && revealBody.Contains("Name(open).IndexOf(_query, StringComparison.CurrentCultureIgnoreCase) < 0") && revealBody.Contains("_query = string.Empty;"),
+            "contacts: a contact opened from another app clears a search that would hide them, before the list is built; a pick from the list keeps it");
     }
 }

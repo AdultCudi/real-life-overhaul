@@ -216,7 +216,7 @@ internal static partial class Program
         string desk = ModSource(@"Ui\Flare\FlareScreen.Desk.cs"), screens = ModSource(@"Ui\UiScreens.Flare.cs");
         string noteUse = FlareMethod(use, "private void NoteUse(FlarePost p, FlareCompose c)");
         string reply = FlareMethod(posting, "private FlarePost Reply(FlareCompose c, string text, int day, out string why)");
-        string toReview = FlareMethod(kit, "public bool ReplyToReview(int postId, FlareReplyOption option, string words)");
+        string toReview = FlareMethod(kit, "public bool ReplyToReview(int postId, FlareReplyOption option, string words, FlareTone? tone = null)");
         string toNote = FlareMethod(kit, "public bool ReplyToNote(FlareReviewNote note, FlareReplyOption option, string words)");
         string answered = FlareMethod(replies, "private void ReviewAnswered(FlarePost reply, FlareCompose c)");
         string talk = FlareMethod(replies, "private void AnswerTalk(string place, FlareResult result, FlarePost reply, int day)");

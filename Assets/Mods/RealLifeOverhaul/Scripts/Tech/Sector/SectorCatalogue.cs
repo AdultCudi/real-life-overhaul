@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Tech
         public const int SupportGain = 1000;         // thousandths more churn with no support at all: the curve of the support short
         public const int ReliabilityHalf = 300;      // thousandths the people bring at which a service is half way from its base to sound: two engineers of average skill
         public const int SecurityHalf = 300;         // ...the same for analysts and security posture
+        public const int NeedHalf = 500, NeedFull = 900;   // thousandths of the way to a team figure's top that its lines name the people for (TeamNeedRules): half, and nine tenths
 
         /// <summary>
         /// A product's features have no cap under Living population: each costs more than the last (FirmsCatalogue.FeatureStep), so they grow slower as they go.

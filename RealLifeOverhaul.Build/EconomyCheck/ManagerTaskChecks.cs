@@ -101,9 +101,16 @@ internal static partial class Program
     private static void ManagerTaskHours()
     {
         // Each task at its own hour only: the daily ones every day, the Sunday ones once a week.
-        int[] want = { 28, 28, 28, 28, 4, 28, 4, 28, 28, 28 };
+        int[] want = { 28, 28, 28, 28, 4, 28, 4, 28, 28, 28, 28 };
         int[] at = { ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StaffHour, ManagerCatalogue.StockHour,
-                     ManagerCatalogue.PriceHour, ManagerCatalogue.RotaHour, ManagerCatalogue.HireHour, ManagerCatalogue.MarketHour, ManagerCatalogue.StaffHour };
+                     ManagerCatalogue.PriceHour, ManagerCatalogue.RotaHour, ManagerCatalogue.HireHour, ManagerCatalogue.MarketHour, ManagerCatalogue.StaffHour,
+                     ManagerCatalogue.StaffHour };
+        // One entry per task: a task added without its hour here fails this line instead of throwing.
+        Check(want.Length == (int)ManagerTask.Count && at.Length == (int)ManagerTask.Count, "managers: every task has its expected hour in this check (" + want.Length + " of " + (int)ManagerTask.Count + ")");
+        if (want.Length != (int)ManagerTask.Count || at.Length != (int)ManagerTask.Count)
+        {
+            return;
+        }
         bool right = true;
         var wrong = new List<string>();
         for (int t = 0; t < (int)ManagerTask.Count; t++)

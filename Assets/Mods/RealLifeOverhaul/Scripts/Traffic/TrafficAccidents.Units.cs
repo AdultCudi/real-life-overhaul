@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
     /// <summary>Traffic accidents: the ambulance and the patrol car, from being sent to their crews at work.</summary>
     public sealed partial class TrafficAccidents : MonoBehaviour
     {
-        private const float AmbulanceRouteLength = 170f;   // metres of road the ambulance comes in along
+        // (The road a unit comes in along, its speed and its delays are ResponseRules'.)
         private const float AmbulanceStopDistance = 13f;   // metres; only where the scene has no lane to stand in
         private const float AmbulanceBack = 10f;        // metres from the nearest wreck or casualty to the ambulance's middle, outside the tape
         private const float PatrolBack = 21f;           // ...and of the patrol car when it stands behind the ambulance
@@ -58,6 +58,11 @@ namespace RealLifeOverhaul
             public int GaveWay;                     // times the other unit was moved out of this one's way as it left
             public float SetOffAt;                  // when it set off to leave
             public bool SaidHeld;                   // it has been said that it is held up in view and is not taken off the road there
+            public float SentAt;                    // when it was put on the road (Time.time); 0 until it is
+            public int Tries;                       // times it has been tried for: a start that would have shown in the camera is tried again, twice
+            public float RouteMetres;               // metres of road it set off with to its place
+            public bool Quick;                      // it answers at the speed of an emergency (not a patrol car that will chase)
+            public bool CheckSaid;                  // its response's self-check line has been written
 
             public Attendance(ResponseUnit unit, bool police)
             {
@@ -79,6 +84,7 @@ namespace RealLifeOverhaul
         private void PlanResponse(float now, bool ambulance, bool police, float ambulanceAt, float policeAt, ICasualty casualty, bool shut)
         {
             _hardLimit = now + HardSceneTime;
+            _sceneAt = now;
             _extended = false;
             _clearLogged = false;
             _phase = Phase.Active;
@@ -94,9 +100,9 @@ namespace RealLifeOverhaul
             Schedule(_police, police, policeAt, Random.Range(19f, 25f));
             // The patrol car takes the far end where a lane runs up to it; on one lane the ambulance goes first, nearest the hurt.
             _police.FarEnd = police && _cordon.HasFarEnd;
-            if (police && ambulance && !_police.FarEnd && _chase != Chase.Planned)
+            if (police)
             {
-                _police.At = Mathf.Max(_police.At, _ambulance.At + 5f);
+                _police.At = ResponseRules.PoliceAt(_police.At, _ambulance.At, ambulance, _police.FarEnd, _chase == Chase.Planned);
             }
             PlanDeparture(ambulance, police);   // where the patrol car stands is settled against the ambulance's way out, now
         }
@@ -121,8 +127,14 @@ namespace RealLifeOverhaul
             attendance.GaveWay = 0;
             attendance.SetOffAt = 0f;
             attendance.SaidHeld = false;
+            attendance.SentAt = 0f;
+            attendance.Tries = 0;
+            attendance.RouteMetres = 0f;
+            attendance.Quick = false;
+            attendance.CheckSaid = false;
         }
 
+        private float _sceneAt;       // when the call was made (Time.time): the response's self-check counts from it
         private float _nextSweep;
         private bool _sweepSaid;
         private const float SweepWithin = 90f;   // metres round a scene in which no ordinary ambulance is left in traffic
@@ -372,6 +384,8 @@ namespace RealLifeOverhaul
                 : now >= attendance.At ? $"out of time, {left:F0} m short of its place"
                 : $"stopped {left:F0} m short of its place";
             bool crew = left < CrewWalkLimit;
+            bool lit = unit.Flashing && unit.Driver.Lit;   // (read before it is parked: parking puts the siren out)
+            bool sounding = unit.Sounding;
 
             unit.Park();
             SceneObstacles.Add(unit.Car, transform);
@@ -386,6 +400,8 @@ namespace RealLifeOverhaul
                          + (attendance.MovedOn > 0 ? $", {attendance.MovedOn} car(s) moved out of its way" : "")
                          + (crew ? ")." : "); too far to walk, its crew stays aboard."));
 
+            ResponseCheck(attendance, now, how, lit, sounding);
+
             // A self-check: a unit must never stand in anything solid, a sign overhanging the road included.
             Collider touching = SceneParking.Standing(unit.Car, unit.Car.transform.position, unit.Car.transform.forward, 0f);
             if (touching != null && !_clearLogged)
@@ -394,6 +410,33 @@ namespace RealLifeOverhaul
                 Logger?.Warn($"Accident: the {Name(attendance)} is parked touching '{touching.name}' (layer {LayerMask.LayerToName(touching.gameObject.layer)}).");
             }
             OnUnitParked(attendance, crew, now);
+        }
+
+        // The response's self-check, once a unit has parked: how long after the call it was sent, how far off it started, how long it took to be
+        // there and how fast it went, with its lights and siren. One line a unit; a run is judged from these (ResponseRules.Verdict). Not for a
+        // patrol car that will chase (the chase is staged for its own pace).
+        private void ResponseCheck(Attendance attendance, float now, string how, bool lights, bool sirenOn)
+        {
+            if (attendance.CheckSaid || !attendance.Quick || attendance.SentAt <= 0f)
+            {
+                return;
+            }
+            attendance.CheckSaid = true;
+            float sentAfter = attendance.SentAt - _sceneAt;
+            float arrivedAfter = now - _sceneAt;
+            string why = ResponseRules.Verdict(attendance.Police, sentAfter, attendance.Tries - 1, attendance.RouteMetres, arrivedAfter, ResponseRules.Speed, lights, sirenOn, Settings.Siren);
+            string line = $"Traffic check (response): {Name(attendance)} {attendance.RouteMetres:F0} m away by road, dispatched after {sentAfter:F0} s, on scene after {arrivedAfter:F0} s "
+                          + $"({ResponseRules.DriveSeconds(attendance.RouteMetres, ResponseRules.Speed):F0} s to drive expected, {how}), top {ResponseRules.Speed * 3.6f:F0} km/h, "
+                          + $"lights {(lights ? "on" : "OFF")}, siren {(sirenOn ? "on" : Settings.Siren ? "OFF" : "off by the option")}: "
+                          + (why == null ? "PASS." : "FAIL, " + why + ".");
+            if (why == null)
+            {
+                Logger?.Info(line);
+            }
+            else
+            {
+                Logger?.Warn(line);
+            }
         }
 
         // The patrol car stays while the road is taped off and the ambulance is still working: someone has to hold the traffic.
@@ -495,11 +538,9 @@ namespace RealLifeOverhaul
         {
             if (police)
             {
-                return _severity == Severity.Severe ? Random.Range(40f, 70f)
-                    : _severity == Severity.Moderate ? Random.Range(25f, 50f)
-                    : Random.Range(20f, 35f);
+                return ResponseRules.Stay(true, (int)_severity, Random.value);
             }
-            return _severity == Severity.Severe ? Random.Range(45f, 70f) : Random.Range(25f, 45f);
+            return ResponseRules.Stay(false, (int)_severity, Random.value);
         }
 
         private static readonly int HotParked = HotSpots.Slot("Traffic: TrafficAccidents.OnUnitParked");
@@ -556,9 +597,15 @@ namespace RealLifeOverhaul
             {
                 anchor = chasing ? _fleeAnchor : TrafficTools.ClosestWaypoint(_scene, 40f);
             }
+            // Near enough to be there in seconds, and out of the camera's sight: the first two tries take no start that would show.
+            // A patrol car that will chase comes up the suspect's own lane and keeps the long run-in that chase is staged for.
+            bool unseen = attendance.Tries < 2;
+            attendance.Tries++;
             bool spawned = attendance.Police
-                ? unit.Spawn(UnitKind.Police, anchor, Random.Range(140f, 200f), attendance.Retried ? 25f : 50f)
-                : unit.Spawn(UnitKind.Ambulance, anchor, AmbulanceRouteLength, attendance.Retried ? 30f : 60f);   // a second try settles for a shorter run-in
+                ? unit.Spawn(UnitKind.Police, anchor, chasing ? Random.Range(140f, 200f) : ResponseRules.RouteLength(true, Random.value),
+                    chasing ? (attendance.Retried ? 25f : 50f) : ResponseRules.RouteMinimum(true, attendance.Retried), unseen)
+                : unit.Spawn(UnitKind.Ambulance, anchor, ResponseRules.RouteLength(false, Random.value),
+                    ResponseRules.RouteMinimum(false, attendance.Retried), unseen);   // a second try settles for a shorter run-in
 
             if (spawned)
             {
@@ -578,18 +625,34 @@ namespace RealLifeOverhaul
                 {
                     unit.Driver.Begin(unit.Car, unit.Path, _scene, attendance.StopDistance, CrewWalk);
                 }
+                // At the speed of an emergency, planning its bends and its braking as a fast drive does; never at red lights, which the mod's driver
+                // does not stop for. A patrol car that will chase drives as before: the chase is staged for that pace.
+                attendance.Quick = !chasing;
+                if (attendance.Quick)
+                {
+                    unit.Driver.Urgent(ResponseRules.Speed);
+                }
+                attendance.SentAt = now;
+                attendance.RouteMetres = unit.Driver.RouteLeft;
                 attendance.Stage = Stage.EnRoute;
                 attendance.At = Mathf.Min(now + DriveAllowance, _hardLimit - 60f);
-                Logger?.Info($"Accident: {unit.Car.prefab.name} dispatched as {unit.Kind}, {unit.Path.Count} road points, "
+                Logger?.Info($"Accident: {unit.Car.prefab.name} dispatched as {unit.Kind} {now - _sceneAt:F0} s after the call, {attendance.RouteMetres:F0} m of road from its place, "
+                             + $"{(attendance.Quick ? ResponseRules.Speed * 3.6f : EmergencyDriver.DefaultCruiseSpeed * 3.6f):F0} km/h, {unit.Path.Count} road points, "
                              + (hasStand ? $"to stand {back:F0} m from the wrecks at the {(attendance.FarEnd ? "far" : "near")} end."
                                  : chasing ? "up the lane of the driver who will run."
                                  : "no lane to stand in here: it pulls up where it can."));
+            }
+            else if (unit.StartShown && attendance.Tries < 3)
+            {
+                // Every start found would have shown in the camera: another is looked for in a moment, never an ambulance that appears in view.
+                attendance.At = now + ResponseRules.RetryUnseenAfter;
+                Logger?.Info($"Accident: the {Name(attendance)}'s start would have shown in the camera ({unit.Refusal}); another is looked for in {ResponseRules.RetryUnseenAfter:F0} s.");
             }
             else if (!attendance.Retried)
             {
                 // The spawn point may just have been occupied (often by the other unit): try once more on another route.
                 attendance.Retried = true;
-                attendance.At = now + 6f;
+                attendance.At = now + ResponseRules.RetryAfter;
                 Logger?.Info($"Accident: no {Name(attendance)} could be put on the road ({unit.Refusal}); trying once more, with a shorter run-in.");
             }
             else

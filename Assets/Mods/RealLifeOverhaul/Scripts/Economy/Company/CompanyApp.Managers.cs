@@ -25,19 +25,21 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] TaskKeys =
         {
             "reallife_mgr_task_raises", "reallife_mgr_task_offers", "reallife_mgr_task_overtime", "reallife_mgr_task_claims",
-            "reallife_mgr_task_stock", "reallife_mgr_task_prices", "reallife_mgr_task_rota", "reallife_mgr_task_hiring", "reallife_mgr_task_marketing", "reallife_mgr_task_leases"
+            "reallife_mgr_task_stock", "reallife_mgr_task_prices", "reallife_mgr_task_rota", "reallife_mgr_task_hiring", "reallife_mgr_task_marketing", "reallife_mgr_task_leases",
+            "reallife_mgr_task_reviews"
         };
         private static readonly string[] TaskWhatKeys =
         {
             "reallife_mgr_task_raises_what", "reallife_mgr_task_offers_what", "reallife_mgr_task_overtime_what", "reallife_mgr_task_claims_what",
             "reallife_mgr_task_stock_what", "reallife_mgr_task_prices_what", "reallife_mgr_task_rota_what", "reallife_mgr_task_hiring_what",
-            "reallife_mgr_task_marketing_what", "reallife_mgr_task_leases_what"
+            "reallife_mgr_task_marketing_what", "reallife_mgr_task_leases_what", "reallife_mgr_task_reviews_what"
         };
         // Why a kind given waits, by kind; none for the two nothing else stops.
         private static readonly string[] TaskWaitKeys =
         {
             "reallife_mgr_task_staff_waits", "reallife_mgr_task_staff_waits", "reallife_mgr_task_staff_waits", "reallife_mgr_task_claims_waits",
-            null, "reallife_mgr_task_prices_waits", "reallife_mgr_task_rota_waits", null, "reallife_mgr_task_marketing_waits", "reallife_mgr_task_leases_waits"
+            null, "reallife_mgr_task_prices_waits", "reallife_mgr_task_rota_waits", null, "reallife_mgr_task_marketing_waits", "reallife_mgr_task_leases_waits",
+            "reallife_mgr_task_reviews_waits"
         };
         private static readonly string[] KindKeys = { "reallife_mgr_kind_shop", "reallife_mgr_kind_works", "reallife_mgr_kind_warehouse" };
         private static readonly string[] StateKeys = { "reallife_mgr_state_done", "reallife_mgr_state_undone", "reallife_mgr_state_overridden", "reallife_mgr_state_closed" };
@@ -262,6 +264,8 @@ namespace RealLifeOverhaul.Economy
                         ManagerCatalogue.Step(ManagerCatalogue.MarketingSteps, m.MarketingStep), CompanyDirector.Instance != null ? CompanyDirector.Instance.Index : CompanyCatalogue.IndexStart)));
                 case ManagerTask.Leases:
                     return CompanyText.T("reallife_mgr_limit_lease_value", "share", CompanyText.Share(ManagerCatalogue.Step(ManagerCatalogue.LeaseRises, m.LeaseStep)));
+                case ManagerTask.Reviews:
+                    return CompanyText.T("reallife_mgr_limit_reviews_value", "hour", ManagerCatalogue.StaffHour.ToString("00"));
                 default:
                     return string.Empty;
             }
@@ -545,6 +549,12 @@ namespace RealLifeOverhaul.Economy
                     return CompanyText.Fill("reallife_mgr_did_marketing", "campaign", CompanyText.Campaign(d.A), "amount", CompanyText.Money(d.B), "percent", d.C.ToString(), "days", d.D.ToString());
                 case ManagerTask.Leases:
                     return CompanyText.T(d.A == 1 ? "reallife_mgr_did_lease_accept" : "reallife_mgr_did_lease_decline", "rent", CompanyText.Money(d.C), "now", CompanyText.Money(d.B));
+                case ManagerTask.Reviews:
+                    return d.G > 0 ? CompanyText.T("reallife_mgr_did_reviews_missed", "count", d.G.ToString())
+                        : CompanyText.Fill(d.D > 0 ? "reallife_mgr_did_reviews_left" : "reallife_mgr_did_reviews",
+                            "count", (d.A + d.B + d.C).ToString(), "thanks", d.A.ToString(), "sorry", d.B.ToString(),
+                            "mixed", d.C.ToString(), "left", d.D.ToString(), "before", (d.E / 1000f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                            "after", (d.F / 1000f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
                 case ManagerTask.Hiring:
                     if (d.F == 1)
                     {

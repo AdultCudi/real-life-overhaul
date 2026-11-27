@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Tech
     public static class AssignRules
     {
         public const int MovesMost = 2;                 // moves in a morning: a team is not reshuffled in a day
-        public const int WhySupport = 0, WhySales = 1;
+        public const int WhySupport = 0, WhySales = 1, WhyBalance = 2;   // 2: a manager's balancing of the firm's roles to the targets the player set (Tech/People/FirmManagerRules)
 
         /// <summary>
         /// The moves for one firm. <paramref name="supportNeeded"/> is the support people its customers' tickets need, <paramref name="sellersWanted"/> the sellers its work wants.

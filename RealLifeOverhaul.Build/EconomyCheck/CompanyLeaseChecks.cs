@@ -363,6 +363,6 @@ internal static partial class Program
         ManagerState back2 = ManagerStore.Read(ManagerStore.Write(st), out version);
         Check(back2 != null && back2.Decisions.Count == 2 && back2.Decisions[0].Task == (int)ManagerTask.Leases && back2.Decisions[1].Task == (int)ManagerTask.Marketing && back2.Decisions[0].C == 108,
             "managers: a lease answer and a campaign they booked are kept in the log");
-        Check(ManagerCatalogue.MarketingSteps.Length == 6 && ManagerCatalogue.LeaseRises.Length == 6 && (int)ManagerTask.Count == 10, "managers: ten kinds of decision, six steps of each new limit");
+        Check(ManagerCatalogue.MarketingSteps.Length == 6 && ManagerCatalogue.LeaseRises.Length == 6 && (int)ManagerTask.Count == 11, "managers: eleven kinds of decision (the eleventh answers reviews), six steps of each new limit");
     }
 }
