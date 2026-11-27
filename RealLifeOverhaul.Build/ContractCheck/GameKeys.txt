@@ -689,6 +689,7 @@ common_sales_price
 common_saturday
 common_save_changes
 common_search
+common_select
 common_select_option
 common_select_type
 common_sellable_products

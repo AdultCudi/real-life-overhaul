@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Ui
         private Button _planAdd;
         private NoManagerAssignedPopUp _noManager;
         private int _stop;                          // the stop whose goods show
+        private int _stopsSeen = -1;                // how many stops the route had when the page was last laid
+        private int _stopRemoving = -1;             // the stop whose Remove was pressed, until the game's question is answered and the route is laid again
         private int _good = -1;                     // the good chosen: a purchasing agent's detail, a managed price or a stop's target being stepped
         private string _goodOf;                     // the kind of manager it was chosen on
         private readonly List<int> _priceRows = new List<int>(32);      // the goods' table as filtered: each row's place in the game's own list
@@ -784,31 +786,8 @@ namespace RealLifeOverhaul.Ui
         // Send now was used on this route today: it may be used once a game day for each route (Economy/SendNowLimit).
         private static bool SentToday(LogisticsManagerPlan route) => route != null && !Economy.SendNowLimit.Allowed(route.id, TimeHelper.CurrentDay);
 
-        // Send now may run: a manager on the route, its warehouse the player's own, no stop another player's, at least one
-        // stop it can serve, and no run of the game's under way (its nightly run goes through the same two queues).
-        private static bool CanSend(LogisticsManagerPlan route)
-        {
-            if (route == null || string.IsNullOrEmpty(route.assignedEmployeeId) || route.targetAddress == null || route.targetAddress.IsUndefined()
-                || route.destinations == null || route.destinations.Count == 0
-                || LogisticsManagerHelper.WarehouseDeliveriesWork.HasPendingWork || LogisticsManagerHelper.FactoryDeliveriesWork.HasPendingWork)
-            {
-                return false;
-            }
-            BuildingRegistration from = BuildingHelper.GetBuildingRegistration(route.targetAddress);
-            if (!(from is Entities.Warehouse) || !GoingPublic.Mine(from))
-            {
-                return false;
-            }
-            for (int i = 0; i < route.destinations.Count; i++)
-            {
-                Address to = route.destinations[i] != null ? route.destinations[i].deliveryTargetAddress : null;
-                if (to != null && !to.IsUndefined() && GoingPublic.Foreign(BuildingHelper.GetBuildingRegistration(to)))
-                {
-                    return false;
-                }
-            }
-            return route.MaxDestinations > 0;
-        }
+        // Send now may run: the one test of both interfaces (Economy/LogisticsGame.CanSendNow).
+        private static bool CanSend(LogisticsManagerPlan route) => Economy.LogisticsGame.CanSendNow(route);
 
         // Send now: the game's question box first, then the route's deliveries at once as the game runs them each night
         // (LogisticsManagerHelper.ProgressDelivery): the stops its own plan gives, each delivered by the plan, then the game's
@@ -920,6 +899,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             o.StopsTitle = UiText.T("reallife_ui_bizops_stops");
+            AfterStopsChanged(o);
             _stop = Mathf.Clamp(_stop, 0, Math.Max(0, _stops.Count - 1));
             o.Stops = new BizOpsStop[_stops.Count];
             // The game lays a row for each of the route's stops, in their order (LogisticsManagerPlanUI): each row's place.
@@ -1059,6 +1039,26 @@ namespace RealLifeOverhaul.Ui
                 into?.Add(r);
             }
             return n;
+        }
+
+        // The game laid the route's stops again with another count (it does after a Remove or an Add): the stops are numbered anew by the game, the
+        // chosen stop stays the same place where it can (a stop taken out above it moves it up one), and the goods row picked and the stop's open list
+        // belonged to the old rows.
+        private void AfterStopsChanged(BizOpsModel o)
+        {
+            int was = _stopsSeen;
+            _stopsSeen = _stops.Count;
+            if (was < 0 || was == _stops.Count)
+            {
+                return;
+            }
+            if (_stops.Count < was && _stopRemoving >= 0 && _stopRemoving < _stop)
+            {
+                _stop--;
+            }
+            _stopRemoving = -1;
+            _good = -1;
+            o.ListOpen = -1;
         }
 
         private UI.Elements.Dropdown StopChoice(int stop) => stop >= 0 && stop < _stops.Count ? Get<UI.Elements.Dropdown>(GameContract.StopTarget, _stops[stop]) : null;
@@ -1453,6 +1453,7 @@ namespace RealLifeOverhaul.Ui
                     _m.Ops.ListOpen = _m.Ops.ListOpen == BizManPages.OpsStopList + arg ? -1 : BizManPages.OpsStopList + arg;
                     return true;
                 case BizManPages.OpsStopRemove:
+                    _stopRemoving = arg;
                     return arg >= 0 && arg < _stops.Count && Click(Get<Button>(GameContract.StopRemove, _stops[arg]), "remove a stop (the game asks first)");
                 case BizManPages.OpsFilter:
                     if (_shown != BizManRules.PricingManagers)

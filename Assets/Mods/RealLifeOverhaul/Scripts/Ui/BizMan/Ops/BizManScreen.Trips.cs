@@ -185,14 +185,7 @@ namespace RealLifeOverhaul.Ui
                 "count", UiText.Whole(e.Boxes), "most", UiText.Whole(e.Room), "minutes", UiText.Whole(e.Minutes), "fuel", (e.FuelCents / 100f).ToCurrencyFormat());
 
         // An absolute game minute as the game writes a time, with the day when it is not today.
-        private static string When(int minute)
-        {
-            int day = minute >= 0 ? minute / TripRules.DayMinutes : 0, inDay = minute - day * TripRules.DayMinutes;
-            string at = (inDay / 60).GetFormattedTime(inDay % 60);
-            int today = TimeHelper.CurrentDay;
-            return day == today ? at : day == today + 1 ? UiText.Fill("reallife_trips_tomorrow", "time", at)
-                : UiText.Fill("reallife_trips_on_day", "day", UiText.Whole(day), "time", at);
-        }
+        private static string When(int minute) => Economy.TripsPage.When(minute);
 
         // A press of one of the departures' rows: the route's times changed, and kept by the trips.
         private bool TripPress(int code, int what)
@@ -224,17 +217,12 @@ namespace RealLifeOverhaul.Ui
             string id = route.id;
             GameConfirm.Show("reallife_ui_bizops_send_title", "reallife_trips_send_body", () =>
             {
-                LogisticsManagerPlan now = Economy.LogisticsDirector.Instance != null ? FindRoute(id) : null;
-                if (now != null && SentToday(now))
+                int sent = Economy.LogisticsDirector.Instance != null ? Economy.LogisticsDirector.Instance.SendNowOnce(id) : 0;
+                if (sent < 0)
                 {
                     return;   // sent while the question stood
                 }
-                int sent = now != null ? Economy.LogisticsDirector.Instance.SendNow(now) : 0;
-                if (sent > 0)
-                {
-                    Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay);   // the day is used only when a vehicle left
-                }
-                _sentOn = now;
+                _sentOn = FindRoute(id);
                 _sent = sent > 0 ? UiText.Fill("reallife_trips_sent", "count", UiText.Whole(sent)) : UiText.T("reallife_trips_sent_none");
             }, null, "reallife_ui_bizops_send_now", null, true, false);
             return true;

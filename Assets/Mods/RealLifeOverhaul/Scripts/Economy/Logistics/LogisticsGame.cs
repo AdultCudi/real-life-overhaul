@@ -102,6 +102,34 @@ namespace RealLifeOverhaul.Economy
             return m != null && m.IsEmployeeAvailable();
         }
 
+        /// <summary>
+        /// Send now may run: a manager on the route, its warehouse the player's own, no stop another player's, at least one stop it can serve, and no run of the
+        /// game's under way (its nightly run goes through the same two queues). One test for BizMan's page of either interface.
+        /// </summary>
+        public static bool CanSendNow(LogisticsManagerPlan route)
+        {
+            if (route == null || string.IsNullOrEmpty(route.assignedEmployeeId) || route.targetAddress == null || route.targetAddress.IsUndefined()
+                || route.destinations == null || route.destinations.Count == 0
+                || LogisticsManagerHelper.WarehouseDeliveriesWork.HasPendingWork || LogisticsManagerHelper.FactoryDeliveriesWork.HasPendingWork)
+            {
+                return false;
+            }
+            BuildingRegistration from = BuildingHelper.GetBuildingRegistration(route.targetAddress);
+            if (!(from is Warehouse) || !GoingPublic.Mine(from))
+            {
+                return false;
+            }
+            for (int i = 0; i < route.destinations.Count; i++)
+            {
+                Address to = route.destinations[i] != null ? route.destinations[i].deliveryTargetAddress : null;
+                if (to != null && !to.IsUndefined() && GoingPublic.Foreign(BuildingHelper.GetBuildingRegistration(to)))
+                {
+                    return false;
+                }
+            }
+            return route.MaxDestinations > 0;
+        }
+
         public static int MostStops(LogisticsManagerPlan plan) => plan != null ? Math.Max(0, plan.MaxDestinations) : 0;
 
         // ------------------------------------------------------------------------------------------------- the hold

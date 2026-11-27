@@ -313,7 +313,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
-            _m.Offset = Math.Max(0f, Math.Min(_m.Offset + notches * UiItemsList.RowHeight, UiItemsList.MostOffset(_m)));
+            _m.Offset = Math.Max(0f, Math.Min(_m.Offset - notches * UiItemsList.RowHeight, UiItemsList.MostOffset(_m)));
             _dirty = true;
         }
 

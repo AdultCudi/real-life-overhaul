@@ -38,19 +38,20 @@ namespace RealLifeOverhaul.Ui
             int firstItem = s.ItemCount;
             float capW = cap ? KeyCapWidth(key, keys) : 0f;
             float iconW = icon != UiIcon.None ? UiTokens.Icon : 0f;
+            bool iconOnly = iconW > 0f && string.IsNullOrEmpty(label);   // a square icon button (a stop's remove, a help mark): no words, so no gap after the glyph and no padding to keep
             float pad = kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5;
-            float content = inner + (cap ? capW + UiTokens.S2 : 0f) + (iconW > 0f ? iconW + UiTokens.S2 : 0f);
+            float content = inner + (cap ? capW + UiTokens.S2 : 0f) + (iconW > 0f ? iconW + (iconOnly ? 0f : UiTokens.S2) : 0f);
             if (w <= 0f)
             {
                 w = Snap(content + pad * 2f);
             }
-            else if (content > w - pad * 2f && iconW > 0f)
+            else if (content > w - pad * 2f && iconW > 0f && !iconOnly)
             {
                 iconW = 0f;   // a longer translation: the words keep their room, the icon goes first
                 icon = UiIcon.None;
                 content = inner + (cap ? capW + UiTokens.S2 : 0f);
             }
-            bool two = broken || content > w - pad * 2f;
+            bool two = !iconOnly && (broken || content > w - pad * 2f);   // an icon alone in a square button never drops its glyph for want of room for words it has not
             if (two)
             {
                 inner = w - pad * 2f - (cap ? capW + UiTokens.S2 : 0f);
@@ -70,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             float radius = kind == UiButtonKind.Chip ? UiTokens.RadiusMedium : UiTokens.RadiusLarge;   // a chip's corners crisper: a game's tag, not a pill
             int face = Box(s, at, x, y, w, h, fill, edge, radius, (disabled ? UiFlags.Disabled : UiFlags.None) | (kind == UiButtonKind.Chosen ? UiFlags.Selected : UiFlags.None));
             UiAt inside = at.In(face);
-            float cx = x + Math.Max(pad, (w - content) / 2f);
+            float cx = x + (iconOnly ? (w - content) / 2f : Math.Max(pad, (w - content) / 2f));   // a lone glyph stands in the middle of a button as small as its padding
             if (cap)
             {
                 bool onCyan = kind == UiButtonKind.Primary || kind == UiButtonKind.Chosen;   // a chosen button stands on the same cyan as the main one
@@ -92,7 +93,7 @@ namespace RealLifeOverhaul.Ui
                 Text(s, inside, cx, y + (h - lh * lines) / 2f, inner, UiStyle.Button, ink, label,
                     UiFlags.Label | UiFlags.Wrap | UiFlags.Centre | UiFlags.Middle | (disabled ? UiFlags.Disabled : UiFlags.None), lines);
             }
-            else
+            else if (!iconOnly)
             {
                 TextMiddle(s, inside, cx, y, h, inner + UiTokens.S1, UiStyle.Button, ink, label, UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
             }
