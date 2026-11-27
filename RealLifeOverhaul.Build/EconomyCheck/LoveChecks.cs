@@ -327,7 +327,7 @@ internal static partial class Program
             "love: with Surprise pregnancies off, or Family's children off, no child comes of a night");
         Check(life.Contains("if (!LoveHooks.SeeingOn || !LoveState.Loaded || who == null || !LoveRules.Public(kind))"), "love: with the second relationship off no outing is rolled against being found out");
         Check(state.Contains("if (LoveState.IsSecond(i))") && state.Contains("return second;"), "love: the partner Family sees is the first, and the second only when nobody else is together with the player");
-        Check(outing.Contains("LoveHooks.CanDate, out float need"), "love: the card's step for dating follows the same rule");
+        Check(ModSource(@"Social\SocialCardText.cs").Contains("LoveHooks.CanDate, out float need") && outing.Contains("SocialCardText.NextOf("), "love: the card's step for dating follows the same rule");
         // Option plumbing.
         Check(settings.Contains("LoveSeeingId = \"love_seeing\"") && settings.Contains("public static bool LoveSeeing = true;") && settings.Contains("public static bool LoveHookups = true;") && settings.Contains("public static bool LoveSurprise = true;")
               && settings.Contains("LoveSurprise = Bool(modId, LoveSurpriseId, LoveSurprise);"), "love: three options, on by default, read from the settings");

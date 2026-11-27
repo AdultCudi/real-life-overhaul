@@ -45,7 +45,7 @@ internal static partial class Program
         }
         Check(above && SocialPassionRules.All.Length == 10 && (int)SocialTrait.Envious == 2048 && (int)SocialTrait.Punctual == 1 && (int)SocialTrait.PassionMask > 4095,
             "traits: the ten passions are single bits above the twelve old traits, which keep theirs");
-        Check((int)MemoryCode.PartyTheirs == 30 && (int)MemoryCode.MomentSweet == 31 && (int)MemoryCode.PassionFound == 34,
+        Check((int)MemoryCode.PartyTheirs == 30 && (int)MemoryCode.Night == 31 && (int)MemoryCode.MomentSweet == (int)MemoryCode.CoParent + 1 && (int)MemoryCode.PassionFound == (int)MemoryCode.MomentSweet + 3,
             "traits: the new memory codes are added at the end of the enum, the old ones keep their numbers");
         var p = TraitPerson(SocialTrait.Cinephile);
         var cast = new SocialPerson[SocialRules.MaxCast];
