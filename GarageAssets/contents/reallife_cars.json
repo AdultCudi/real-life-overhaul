@@ -1,11 +1,11 @@
 {
  "bundle": "reallife_cars",
- "bytes": 895644,
+ "bytes": 1007695,
  "meshes": [
-  {"name": "haldenpip_body", "vertices": 1809, "triangles": 2304, "size": [2.098, 1.356, 3.900], "centre": [0.000, 0.875, 0.000]},
-  {"name": "haldenpip_collider", "vertices": 313, "triangles": 220, "size": [1.798, 1.356, 3.902], "centre": [0.000, 0.875, 0.000]},
-  {"name": "haldenpip_wheel_left", "vertices": 345, "triangles": 440, "size": [0.200, 0.600, 0.600], "centre": [0.000, 0.000, 0.000]},
-  {"name": "haldenpip_wheel_right", "vertices": 345, "triangles": 440, "size": [0.200, 0.600, 0.600], "centre": [0.000, 0.000, 0.000]}
+  {"name": "haldenpip_body", "vertices": 5830, "triangles": 6244, "size": [1.975, 1.330, 3.918], "centre": [0.000, 0.850, 0.007]},
+  {"name": "haldenpip_collider", "vertices": 618, "triangles": 206, "size": [1.761, 1.313, 3.897], "centre": [0.000, 0.843, -0.003]},
+  {"name": "haldenpip_wheel_left", "vertices": 539, "triangles": 558, "size": [0.194, 0.600, 0.600], "centre": [-0.001, 0.000, 0.000]},
+  {"name": "haldenpip_wheel_right", "vertices": 539, "triangles": 558, "size": [0.194, 0.600, 0.600], "centre": [0.001, 0.000, 0.000]}
  ],
  "textures": [
   {"name": "haldenpip_d", "width": 1024, "height": 1024, "format": "BC7", "mips": 11},
