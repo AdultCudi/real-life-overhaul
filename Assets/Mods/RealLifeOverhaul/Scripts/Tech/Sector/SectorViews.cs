@@ -292,7 +292,8 @@ namespace RealLifeOverhaul.Tech
             string plus = lift ? "+" : string.Empty;
             string each = n.EachFigure > 0 ? plus + Pct(n.EachFigure, fmt) : fmt.Text(P + "need_tiny");
             Line(sec, n.Past ? P + "need_gain_past" : P + "need_gain", ViewTone.Plain, "who", fmt.Text(NeedWho[n.Role]), "top", plus + fmt.Mille(n.Top), "half_fig", plus + Pct(n.HalfFigure, fmt),
-                "half_count", fmt.Whole(n.HalfPeople), "full_fig", plus + Pct(n.FullFigure, fmt), "full_count", fmt.Whole(n.FullPeople), "more", fmt.Whole(n.More), "count", fmt.Whole(n.Have), "each", each);
+                "half_count", fmt.Whole(n.HalfPeople), "full_fig", plus + Pct(n.FullFigure, fmt), "full_count", fmt.Whole(n.FullPeople), "more", fmt.Whole(n.More),
+                "count", fmt.Whole(n.Have), "each", each);
         }
 
         // Support has a ceiling: the people its customers' tickets need.

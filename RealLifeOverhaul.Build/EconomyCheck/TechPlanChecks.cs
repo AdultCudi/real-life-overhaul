@@ -155,6 +155,13 @@ internal static partial class Program
         // edges of the turned-round curve
         Check(TeamNeedRules.AmountFor(0, 40, 2000) == 0 && TeamNeedRules.AmountFor(2000, 40, 2000) == -1 && TeamNeedRules.AmountFor(1999, 40, 2000) == 79960 && SectorRules.Lift(79960, 40, 2000) == 1999 && SectorRules.Lift(79959, 40, 2000) == 1998,
             "techplan29 needs: the curve turned round: nothing for nothing, no amount reaches the top itself, and 1,999 of 2,000 takes exactly the amount whose lift is 1,999 and no less");
+        bool leastEverywhere = true;
+        for (int target = 1; target < 100; target++)
+        {
+            long at = TeamNeedRules.AmountFor(target, 40, 100);
+            leastEverywhere &= SectorRules.Lift(at, 40, 100) >= target && SectorRules.Lift(at - 1, 40, 100) < target;
+        }
+        Check(leastEverywhere, "techplan29 needs: for every target of a 100 gain the amount turned round is the least whose lift reaches it, rounded up and never down");
         Check(TeamNeedRules.PeopleToAdd(10, 10, 3) == 0 && TeamNeedRules.PeopleToAdd(10, 11, 3) == 1 && TeamNeedRules.PeopleToAdd(10, 19, 3) == 3 && TeamNeedRules.PeopleToAdd(10, 20, 0) == 10,
             "techplan29 needs: people to add are rounded up, none when already there, and never divide by a person who brings nothing");
         TeamNeed nobody = TeamNeedRules.Security(new Crew(), new SectorTeam());
@@ -182,7 +189,6 @@ internal static partial class Program
                 long made = (long)e * split[0] / 1000 * (1000 + SectorRules.ProductBoost(c)) / 1000 * 150 / 1000, self = (long)e * split[1] / 1000 / FirmsCatalogue.PointsPerFix;
                 long each = c.Testing > 0 ? c.Testing : TeamNeedRules.DefaultPoints;
                 bool closes = n.Points <= 0 ? n.More == 0 : c.Testing + n.More * each >= n.Points && (n.More == 0 || c.Testing + (n.More - 1) * each < n.Points) && n.People == t.Testers + n.More;
-                if (!(n.Made == made && n.Fixed == self && n.Points == Math.Max(0, made - self) && closes)) Console.WriteLine("TECHPLAN testers focus " + focus + " e " + e + ": made " + n.Made + "/" + made + " fixed " + n.Fixed + "/" + self + " points " + n.Points + " more " + n.More + " people " + n.People + " have " + n.Have + " testing " + c.Testing + " each " + each);
                 ok &= n.Made == made && n.Fixed == self && n.Points == Math.Max(0, made - self) && closes;
             }
         }
