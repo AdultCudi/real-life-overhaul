@@ -275,6 +275,7 @@
         public const string UiNeedsSizeId = "ui_needs_size";     // the needs bars of the RLO interface's bar: how large
         public const string UiNeedsPlaceId = "ui_needs_place";   // ...and where they stand: in the bar, or a row of their own along the top
         public const string LivingStudioId = "living_studio";
+        public const string TechGamePaceId = "tech_game_pace";   // how fast a studio builds a game: 0 normal, 1 brisk (a third shorter), 2 fast (half)
         public const string LivingFlareId = "living_flare";
         public const string LivingFirmsId = "living_firms";
         public const string LivingSchemesId = "living_schemes";
@@ -721,6 +722,7 @@
         public static int UiNeedsPlace = 0;              // ...0 in the bar, 1 in a row of their own along the top of the screen
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
+        public static int TechGamePace = 1;              // ...how fast its games are built: 0 as before, 1 brisk (the default), 2 fast (Tech/Studio/StudioPace)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
         public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
         public static bool LivingSchemes = true;         // ...schemes that pay until they are found out: invented claims and expenses, dressed books, a sham club, washed cash, bought favour (Schemes)
@@ -1233,6 +1235,7 @@
             UiNeedsPlace = System.Math.Max(0, System.Math.Min(1, Int(modId, UiNeedsPlaceId, UiNeedsPlace)));
             Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
+            TechGamePace = System.Math.Max(0, System.Math.Min(2, Int(modId, TechGamePaceId, TechGamePace)));
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
             LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);
             LivingSchemes = Bool(modId, LivingSchemesId, LivingSchemes);

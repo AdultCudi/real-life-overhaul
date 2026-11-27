@@ -1647,6 +1647,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 1 && args[0] == "--techplan29")
+        {
+            TechPlan29();   // (the tech firm's figures of 27 Nov alone: the team lines' people for the most, the way up explained, the game development pace: TechPlanChecks.cs; "print" after it prints the pace table)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--tech28")
         {
             Tech28();   // (the tech fixes of 27 Nov alone: a subscription game's pay and month, a firm's price on its steady months, a licence's relaunch, a product's points: Tech28Checks.cs)
@@ -1872,6 +1878,7 @@ internal static partial class Program
         Tech28();   // the tech fixes of 27 Nov (Tech28Checks.cs)
         Days33();   // the weekday names of 27 Nov (Days33Checks.cs)
         TechDeals29();   // the new kinds of client of a tech firm (TechDeals29Checks.cs)
+        TechPlan29();   // the team lines' people for the most, the way up explained and the game development pace (TechPlanChecks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)

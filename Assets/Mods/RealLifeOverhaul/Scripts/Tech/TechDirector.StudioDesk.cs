@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Tech
                     return step == 0 ? StudioRules.AsPlanned : step == 1 ? (big ? StudioRules.Publisher : StudioRules.SelfPublish) : StudioRules.NoDrm;   // a big game's risk shared
                 case StudioRules.SessionMilestone:
                     GameDev m = MilestoneGame(place);
-                    return m != null ? StudioRules.PickMilestone(m, step, Save.Day, StudioPointsAt(place)) : StudioRules.Hold;
+                    return m != null ? StudioRules.PickMilestone(m, step, Save.Day, StudioPace.Points(StudioPointsAt(place), GamePace)) : StudioRules.Hold;
                 case StudioRules.SessionPlaytest:
                     GameDev t = TestGame(place);
                     return t != null ? StudioRules.PickPlaytest(t, step) : 0;
@@ -162,7 +162,7 @@ namespace RealLifeOverhaul.Tech
                     return Pitch(firm, business, choices, day, out key, out pairs);
                 case StudioRules.SessionMilestone:
                     GameDev m = MilestoneGame(place);
-                    StudioRules.ApplyMilestone(m, StudioRules.Choice(choices, 0, 3, StudioRules.Hold), StudioRules.Choice(choices, 1, 3, StudioRules.Normal), day);
+                    StudioRules.ApplyMilestone(m, StudioRules.Choice(choices, 0, 3, StudioRules.Hold), StudioRules.Choice(choices, 1, 3, StudioRules.Normal), day, GamePace);
                     key = "reallife_studio_milestone_done";
                     pairs = new[] { "game", NameOf(m.Id) };
                     break;
@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Tech
                     StudioRules.MoveHype(g, StudioCatalogue.HypeAnnounce, day);   // its backers talk it up
                 }
             }
-            int days = StudioRules.DaysLeft(g.Work, StudioPointsAt(place) > 0 ? StudioPointsAt(place) : firm.Crew.Engineering + firm.Crew.Design + firm.Crew.Product + firm.Crew.Testing);
+            int days = StudioPace.Days(g.Work, StudioPointsAt(place) > 0 ? StudioPointsAt(place) : firm.Crew.Engineering + firm.Crew.Design + firm.Crew.Product + firm.Crew.Testing, GamePace);
             key = days > 0 ? "reallife_studio_pitch_done" : "reallife_studio_pitch_done_nobody";
             pairs = new[] { "game", name, "business", business ?? firm.File.Name, "genre", TechText.T(StudioViews.GenreKey(g.Genre)), "days", days.ToString(Inv) };
             if (Verbose)
@@ -440,7 +440,9 @@ namespace RealLifeOverhaul.Tech
             s.Place = firm.File.Place;
             s.Name = firm.File.Name;
             long points = StudioPointsAt(s.Place);
-            s.PointsADay = points > 0 ? points : firm.Crew.Engineering + firm.Crew.Design + firm.Crew.Product + firm.Crew.Testing;
+            // at the pace chosen, so every days-left figure reads it
+            s.PointsADay = StudioPace.Points(points > 0 ? points : firm.Crew.Engineering + firm.Crew.Design + firm.Crew.Product + firm.Crew.Testing, GamePace);
+            s.Pace = GamePace;
             s.People = firm.People;
             StudioEngine e = _studioOn ? _studio.EngineAt(s.Place) : null;
             s.OwnEngine = e != null && e.Ready;

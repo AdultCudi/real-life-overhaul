@@ -260,15 +260,16 @@ namespace RealLifeOverhaul.Tech
         /// A day of building one game with its share of the studio's points (thousandths): testers and then engineers fix found
         /// bugs at the playtest's share, the rest goes into the parts by family (half of it to polish in the polish phase,
         /// with what testers have left), each point with its family's craft; new bugs hide in the work by the crew's faults.
-        /// Returns the work points built.
+        /// Returns the work points built. <paramref name="pace"/> is the option's (<see cref="StudioPace"/>): the day's points are multiplied by its speed, and
+        /// nothing else changes, so the work a game needs, the parts' plan and the bugs a point of work hides are the same at every pace.
         /// </summary>
-        public static long Build(GameDev g, in StudioCrew c, int share, int day)
+        public static long Build(GameDev g, in StudioCrew c, int share, int day, int pace = StudioPace.Normal)
         {
             if (g == null || !g.Building)
             {
                 return 0;
             }
-            long boost = Boost(g, day);
+            long boost = Boost(g, day) * StudioPace.SpeedOf(pace) / 1000;
             int s = Clamp(share, 0, 1000);
             long eng = (long)c.Engineering * s / 1000 * boost / 1000;
             long des = (long)c.Design * s / 1000 * boost / 1000;
@@ -460,7 +461,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>The milestone review held: the plan (cut a feature, hold the course, delay) and the pace (crunch, normal, contractors).</summary>
-        public static void ApplyMilestone(GameDev g, int plan, int pace, int day)
+        public static void ApplyMilestone(GameDev g, int plan, int pace, int day, int gamePace = StudioPace.Normal)
         {
             if (plan == Cut)
             {
@@ -472,11 +473,11 @@ namespace RealLifeOverhaul.Tech
             }
             if (pace == Crunch)
             {
-                g.CrunchUntil = day + StudioCatalogue.CrunchDays;
+                g.CrunchUntil = day + StudioPace.CrunchDays(gamePace);
             }
             else if (pace == AddBudget)
             {
-                g.BoostUntil = day + StudioCatalogue.BoostDays;
+                g.BoostUntil = day + StudioPace.BoostDays(gamePace);
             }
             g.Milestone = -1;
         }

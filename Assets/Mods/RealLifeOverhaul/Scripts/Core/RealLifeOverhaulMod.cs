@@ -1280,6 +1280,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
                 .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
                 .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
+                .AddDropdown(Settings.TechGamePaceId, "reallife_game_pace", new[] { "reallife_game_pace_0", "reallife_game_pace_1", "reallife_game_pace_2" }, Settings.TechGamePace,
+                    v => Settings.TechGamePace = v)
                 .AddToggle(Settings.LivingFirmsId, "reallife_tech_mkt_enabled", Settings.LivingFirms,
                     v => Settings.LivingFirms = v)
                 .AddButton("reallife_tech_mkt_test_software", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Software))

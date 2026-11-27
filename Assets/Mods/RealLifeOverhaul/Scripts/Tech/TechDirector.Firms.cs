@@ -311,6 +311,7 @@ namespace RealLifeOverhaul.Tech
                 var c = new Crew();
                 TechBridges.TeamWeekAt(firm.File.Place, Save.Day, out int week, out _);   // the week its team meeting set, if any
                 int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
+                int securityWorking = 0, reliabilityWorking = 0;
                 long faultWeighted = 0, securityBrought = 0, reliabilityBrought = 0;   // what the people bring before the old per person and firm tops (the sector's curve)
                 firm.People = 0;
                 for (int i = 0; i < _people.Count; i++)
@@ -337,12 +338,14 @@ namespace RealLifeOverhaul.Tech
                         int cert = p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
                         security += (r.Id == TalentCatalogue.DataProtection ? brought : Math.Min(FirmsCatalogue.SecurityEach, brought)) + cert;
                         securityBrought += brought + cert;
+                        securityWorking++;
                     }
                     if ((r.Id == TalentCatalogue.Sre || r.Id == TalentCatalogue.DevOps) && h > 0)
                     {
                         int brought = (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint;
                         reliability += Math.Min(FirmsCatalogue.ReliabilityEach, brought);
                         reliabilityBrought += brought;
+                        reliabilityWorking++;
                     }
                 }
                 var own = new Crew();
@@ -353,6 +356,10 @@ namespace RealLifeOverhaul.Tech
                     c.Security = SectorRules.Posture(FirmsCatalogue.SecurityBase, securityBrought, SectorCatalogue.SecurityHalf);   // each analyst adds less than the last, with no top of 950
                     int reliable = SectorRules.Posture(FirmsCatalogue.ReliabilityBase, reliabilityBrought, SectorCatalogue.ReliabilityHalf);
                     c.Reliability = SectorRules.Reliable(_sector.FirmAt(firm.File.Place), reliable, Save.Day);
+                    c.SecurityBrought = securityBrought;
+                    c.ReliabilityBrought = reliabilityBrought;
+                    c.SecurityWorking = securityWorking;
+                    c.ReliabilityWorking = reliabilityWorking;
                 }
                 else
                 {

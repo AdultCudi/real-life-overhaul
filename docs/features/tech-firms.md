@@ -93,6 +93,10 @@ On the sector's first day the companies' products start as strong as the rivals 
 
 Only the player's own firms, products and professionals are touched. Every roll is seeded. The city, the companies, the rivals, the power price and the markets' anchors are the host's: a versioned part of the shared city (`SectorShare`, letter R) carries them to the guests, who apply it and never step the rivals; a message of another version of the mod is never applied. Each player's products stay on their own machine.
 
+## What the team's figures say
+
+A firm's page (the Tech app and the RLO interface draw the same sections, `SectorViews.Team`) puts a line under each team line saying what the role can give and how many people it takes (`TeamNeedRules`, game-free). Every figure a team gives grows by a curve that never quite reaches its top, so there is no head count for exactly 100%: the line gives the people for half and for nine tenths of the most, how many more than you have that is, and what one more person adds now. Support and testers have ceilings and are exact; builders have none and say what each adds. The way up (`TechPathViews`) explains each of its seven steps, lists what is met and what is not with the figures, and says what a finished step gave. Checks: `--techplan29`.
+
 ## Cost
 
 Nothing per frame. The markets run inside the firms' day: a pass over the eight markets and the rival products, and a product's day each (EconomyCheck: 48 products and the rivals under 0.5 ms a day; the save's line written and read in under 2 ms). The city is read once a game day. A page builds its screen when drawn.

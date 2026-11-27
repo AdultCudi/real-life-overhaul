@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Tech
         public const string EngineKey = "reallife_transaction_tech_game_engine";               // a licensed engine's fee for a game
         public const string CertificationKey = "reallife_transaction_tech_game_certification"; // a console's certification
         public const string ContractorsKey = "reallife_transaction_tech_game_contractors";     // contractors a milestone added
+        public const string PaceKey = "reallife_transaction_tech_game_pace";                   // the tools, contractors and overtime a brisk or fast pace builds with
         public const string BonusKey = "reallife_transaction_tech_game_bonus";                 // a release's bonus pool
         public const string RoyaltyKey = "reallife_transaction_tech_game_royalty";             // the leads' royalty
         public const string AdvanceKey = "reallife_transaction_tech_game_advance";             // a publisher's advance against royalties
