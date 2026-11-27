@@ -14,7 +14,7 @@ namespace RealLifeOverhaul
         {
             if (e != null && e.candidateInfo == null && asked > e.hourlyWage && WageShown.Ours(e))
             {
-                e.hourlyWage = asked;
+                BusinessGame.SetWage(e, asked);   // every wage the mod writes goes through WageRules' cap (WageChecks)
             }
         }
     }

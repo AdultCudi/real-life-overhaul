@@ -120,7 +120,7 @@ internal static partial class Program
               && MemberText(watch, "private void Box()").Contains("WageShown.Paid(app.SelectedEmployeeInstance, out _, out int paid)") && watch.Contains("WageShown.Paid(e, out _, out int paid, true)"),
             "asking wage: the game's own candidate table and box show the stored wage, which the game's Hire pays");
         string hire = ModSource(@"Core\AskedHire.cs");
-        Check(hire.Contains("e.candidateInfo == null && asked > e.hourlyWage && WageShown.Ours(e)") && hire.Contains("e.hourlyWage = asked;")
+        Check(hire.Contains("e.candidateInfo == null && asked > e.hourlyWage && WageShown.Ours(e)") && hire.Contains("BusinessGame.SetWage(e, asked);")
               && ModSource(@"Ui\Employees\EmployeesScreen.cs").Contains("AskedHire.After(hiring, asked);")
               && ModSource(@"Ui\Employees\StaffBatchHire.cs").Contains("AskedHire.After(e, asked);"),
             "asking wage: the kit's Hire and its review's hire pay the asked wage, after the game's hire, for a person this machine pays");
