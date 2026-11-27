@@ -172,16 +172,9 @@ namespace RealLifeOverhaul.Tech
         internal void SetRole(string id, int role)
         {
             Person person = PersonOf(id);
-            RoleDef r = TalentCatalogue.Role(role);
-            if (person != null && (person.Game == null ? !r.InGame || r.GameSkill == person.Skill : r.GameSkill == person.Skill))
+            if (person != null && CanHold(person, role))
             {
-                TalentRules.Move(person.File, role);
-                person.File.Pinned = true;   // put in their role by hand: the firm's manager leaves them there
-                _assigned.Remove(id);
-                if (!r.Remote && person.File.Work == (int)Arrangement.Remote)
-                {
-                    person.File.Work = (int)Arrangement.Hybrid;
-                }
+                Reassign(person, role, true);   // the move bulk changes make too (RoleMoves)
                 Changed();
             }
         }

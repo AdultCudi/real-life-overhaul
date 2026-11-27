@@ -805,6 +805,8 @@ namespace RealLifeOverhaul.Ui
                 t.Rows.Add(r);
             }
             AddRaiseAll(d, view, t, w);
+            AddMoveRoles(d, view, t, w);   // roles changed together, and the managers (Moves.cs)
+            AddManagerLines(d, t);
             if (d.People.Count > 0)
             {
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_payroll", "Payroll an hour"), TechText.Money((int)(payroll / 100))));
@@ -913,6 +915,8 @@ namespace RealLifeOverhaul.Ui
                 attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_skill_craft", "Craft"), Value = Math.Min(100, person.MainPoints) } });
                 attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_col_morale", "Morale"), Value = Math.Max(0, Math.Min(100, p.Morale / 10)) } });
                 attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = Math.Max(0, Math.Min(100, p.Burnout / 10)) } });
+                Feed feed = StudioFeeds.Of(r);   // what the role does for a game: the production card's own sort of roles
+                attrs.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill(StudioFeeds.RoleKey(feed), "parts", RolesApp.PartsLine(feed), "role", TechText.Role(p.Role)) });
                 form.Left.Add(attrs);
                 var now = new WorkFormBand { Title = w.T("reallife_work_now", "Now") };
                 if (offer)
@@ -969,8 +973,8 @@ namespace RealLifeOverhaul.Ui
                 if (d.AssignedLine(p.Id, out string assignedBy, out int assignedDay, out int assignedWhy))
                 {
                     career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_tech_assign_label", "Role assigned"),
-                        Value = TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : "reallife_tech_assign_by_support",
-                            "by", assignedBy, "day", assignedDay.ToString()) });
+                        Value = TechText.Fill(assignedWhy == AssignRules.WhySales ? "reallife_tech_assign_by_sales" : assignedWhy == AssignRules.WhyBalance ? "reallife_tech_assign_by_balance"
+                            : "reallife_tech_assign_by_support", "by", assignedBy, "day", assignedDay.ToString()) });
                 }
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_tech_pin_label", "Role"), Act = Act(PinRole, 0,
                     w.T(p.Pinned ? "reallife_tech_pin_on" : "reallife_tech_pin_off",
@@ -1041,6 +1045,7 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 form.Right.Add(learn);
+                AddManagerBand(d, view, t, form, person);   // naming them the firm's manager, or their duties and targets (Moves.cs)
             }
             else
             {
@@ -1177,6 +1182,20 @@ namespace RealLifeOverhaul.Ui
                 case Brief: return BriefSearch(d, view);
                 case BriefCrew: return BriefCrewSearch(d, view);
                 case RaiseAll: return AskRaiseAll(d, view);
+                case MoveRoles: return AskMoveRoles(d, view);
+                case NameManager: return AskNameManager(d, person);
+                case RemoveManager: return AskRemoveManager(d, person);
+                case SetTarget: if (person != null) { d.SetManagerTarget(person.File.Place, act.Arg / 100, act.Arg % 100); } return person != null;
+                case ClearTargets: if (person != null) { d.ClearManagerTargets(person.File.Place); } return person != null;
+                case ToggleDuty:
+                {
+                    ManagerPost post = person != null ? d.ManagerOf(person.File.Place) : null;
+                    if (post != null)
+                    {
+                        d.SetManagerDuty(person.File.Place, act.Arg, !post.Has(act.Arg));
+                    }
+                    return post != null;
+                }
                 case MatchRivals: Settings.SetMatchRivals(!Settings.EconomyCompanyMatchRivals); return true;
                 case AssignRoles:
                 {

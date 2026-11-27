@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
     {
         public const string Key = "reallife:tech_people";
         public const int Version = 1;
+        public const int ManagersMost = 256;    // named managers a line holds: a firm has one, so the player's own firms are the real bound
         public const int PayrollMost = 10000;   // files of the mod's own payroll (rack crews, remote staff, a startup's chief), each paid by a booking a day; the game's employees have no bound
 
         public static TalentFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
@@ -37,6 +38,31 @@ namespace RealLifeOverhaul.Tech
             {
                 MoveRecord m = f.Moves[i];
                 w.Record().Place(m.From).Place(m.To).Add(m.Day).Add(m.Hour).Add(m.Parts).Add(m.Whole).Add(m.Replaced);
+            }
+            if (f.Managers.Count > 0)
+            {
+                w.Part('g');   // the firms' named managers; a version from before passes the part over
+                for (int i = 0; i < f.Managers.Count && i < ManagersMost; i++)
+                {
+                    ManagerPost g = f.Managers[i];
+                    w.Record().Place(g.Place).Add(g.Id).Add(g.Since).Add(g.LastDay).Add(g.ReportDay).Add(g.Duties)
+                        .Add(g.WMoves).Add(g.WRaises).Add(g.WAds).Add(g.WOffers).Add(g.WWorn).Add(g.WIdle);
+                    w.Add(g.Targets.Count);
+                    for (int t = 0; t < g.Targets.Count; t++)
+                    {
+                        w.Add(g.Targets[t].Role).Add(g.Targets[t].Count);
+                    }
+                    w.Add(g.Vacancies.Count);
+                    for (int v = 0; v < g.Vacancies.Count; v++)
+                    {
+                        w.Add(g.Vacancies[v].Role).Add(g.Vacancies[v].Level).Add(g.Vacancies[v].Day);
+                    }
+                    w.Add(g.Ads.Count);
+                    for (int a = 0; a < g.Ads.Count; a++)
+                    {
+                        w.Add(g.Ads[a]);
+                    }
+                }
             }
             return w.ToString();
         }
@@ -110,6 +136,37 @@ namespace RealLifeOverhaul.Tech
                 if (m.From.Length > 0 && m.To.Length > 0 && m.From != m.To && f.Moves.Count < MoveRules.RecordsMost)
                 {
                     f.Moves.Add(m);
+                }
+            }
+            foreach (Fields x in r.Records('g'))
+            {
+                var g = new ManagerPost { Place = x.Place(), Id = x.Text(), Since = x.Int(), LastDay = x.Int(-1), ReportDay = x.Int() };
+                g.Duties = x.Int(FirmManagerCatalogue.DutiesAll) & FirmManagerCatalogue.DutiesAll;
+                g.WMoves = Math.Max(0, x.Int());
+                g.WRaises = Math.Max(0, x.Int());
+                g.WAds = Math.Max(0, x.Int());
+                g.WOffers = Math.Max(0, x.Int());
+                g.WWorn = Math.Max(0, x.Int());
+                g.WIdle = Math.Max(0, x.Int());
+                int targets = TalentCatalogue.Clamp(x.Int(), 0, FirmManagerCatalogue.TargetsMost);
+                for (int t = 0; t < targets; t++)
+                {
+                    int role = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.RoleCount - 1), count = TalentCatalogue.Clamp(x.Int(), 0, 999);
+                    g.SetTarget(role, count);
+                }
+                int vacancies = TalentCatalogue.Clamp(x.Int(), 0, FirmManagerCatalogue.VacanciesMost);
+                for (int v = 0; v < vacancies; v++)
+                {
+                    g.Vacancies.Add(new Vacancy { Role = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.RoleCount - 1), Level = TalentCatalogue.Clamp(x.Int(), 0, TalentCatalogue.Levels - 1), Day = x.Int() });
+                }
+                int ads = TalentCatalogue.Clamp(x.Int(), 0, FirmManagerCatalogue.AdsMost);
+                for (int a = 0; a < ads; a++)
+                {
+                    g.Ads.Add(x.Int());
+                }
+                if (g.Place.Length > 0 && g.Id.Length > 0 && f.ManagerAt(g.Place) == null && f.Managers.Count < ManagersMost)
+                {
+                    f.Managers.Add(g);
                 }
             }
             return f;

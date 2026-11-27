@@ -247,6 +247,7 @@
         public const string TechJobsId = "tech_jobs";
         public const string TechSearchRushId = "tech_search_rush";
         public const string TechSeatHiresId = "tech_seat_hires";
+        public const string TechManagerId = "tech_manager";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
         public const string TechInfraOfferId = "tech_infra_offer";
@@ -688,6 +689,7 @@
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSearchRush = true;        // ...a search firm's search can be rushed for a share of its fee for each day saved (off: it takes its days)
+        public static bool TechManager = true;           // a tech firm's named manager acts (balances roles to targets, re-hires, agrees routine raises, flags burnout; off: no manager acts, the posts are kept)
         public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
@@ -1198,6 +1200,7 @@
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSearchRush = Bool(modId, TechSearchRushId, TechSearchRush);
             TechSeatHires = Bool(modId, TechSeatHiresId, TechSeatHires);
+            TechManager = Bool(modId, TechManagerId, TechManager);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
             TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);

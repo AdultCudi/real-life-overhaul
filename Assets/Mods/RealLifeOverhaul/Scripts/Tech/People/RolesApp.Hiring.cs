@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
                 "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
             box.Line(SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk(_places[_adPlace], r) : TechText.T("reallife_hire_seat_payroll"));   // which workstation the role sits at
+            box.Line(TechText.Fill(StudioFeeds.RoleKey(StudioFeeds.Of(r)), "parts", PartsLine(StudioFeeds.Of(r)), "role", TechText.Role(r.Id)));   // what the role does for a game (the production card's own sort)
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {
@@ -564,6 +565,7 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_hire_rush_about", "share", TechText.Bp(HiringCatalogue.SearchRushBp)));   // told before the firm is briefed
             }
             box.Line(SeatRules.Needs(r) == Workstation.Desk ? TechText.SeatDesk(_places[_adPlace], r) : TechText.T("reallife_hire_seat_payroll"));   // which workstation the role sits at
+            box.Line(TechText.Fill(StudioFeeds.RoleKey(StudioFeeds.Of(r)), "parts", PartsLine(StudioFeeds.Of(r)), "role", TechText.Role(r.Id)));   // what the role does for a game (the production card's own sort)
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {

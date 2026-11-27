@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Tech
         public int Going;                // the going rate for the role and skill, cents an hour
         public int WeekHours;            // hours worked this week, as the game counts them
         public bool Seen;
+        public bool Managing;            // named a firm's manager (ManagerPost), read each time the people are read: part of their hours is the team's (TalentRules.Output)
 
         public bool Payroll => Id.StartsWith("pro:", System.StringComparison.Ordinal);
 
@@ -90,6 +91,19 @@ namespace RealLifeOverhaul.Tech
         public int NextPro = 1;          // the next id of the mod's own payroll
         public readonly List<Profile> People = new List<Profile>(64);
         public readonly List<MoveRecord> Moves = new List<MoveRecord>(4);   // businesses the moving company moved, and which parts have followed (MoveRules)
+        public readonly List<ManagerPost> Managers = new List<ManagerPost>(2);   // the firms' named managers (part g of the line; a save from before has none)
+
+        public ManagerPost ManagerAt(string place)
+        {
+            for (int i = 0; i < Managers.Count; i++)
+            {
+                if (Managers[i].Place == place)
+                {
+                    return Managers[i];
+                }
+            }
+            return null;
+        }
 
         public Profile Of(string id)
         {
