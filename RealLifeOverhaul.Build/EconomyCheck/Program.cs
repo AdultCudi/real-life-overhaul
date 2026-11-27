@@ -350,6 +350,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--selftest")
+        {
+            SelfTestAll();   // the in-game self-test: the plan's reading, the step table, the results file, and nothing running, read or made without the trigger file (SelfTestChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--board-places")
         {
             BoardPlaces();   // a help-wanted board kept where it was, a meeting place told by its address, nobody thrown down by a bicycle mounted (BoardPlaceChecks.cs)
@@ -2247,6 +2253,7 @@ internal static partial class Program
         OldBuild();         // the notice of the game's build: the question box's room at every zoom and screen, the notice as it was against it, the notice in every language with every part off and with one, the sources, the texts (OldBuildChecks.cs)
         UiGuard();          // a part the guard switched off and what it leaves behind: the bug report's way, the holds let go, the interface's pieces, every hold listed from the sources, the texts (UiGuardChecks.cs)
         UiOldSide();        // what only the kit had, given an equal on the game's widgets: the Economy app's People tab, a firm's whole page in the Tech app, the Mods page's switch that reads a fault (UiOldSideChecks.cs)
+        SelfTestAll();      // the in-game self-test: the plan's reading, the step table, the results file, and nothing running, read or made without the trigger file (SelfTestChecks.cs)
         MemLine(true);
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
