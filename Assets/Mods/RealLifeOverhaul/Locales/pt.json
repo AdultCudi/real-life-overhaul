@@ -22420,7 +22420,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Os carros próprios do mod estão à venda nos pontos lá fora das concessionárias de carros: o Halden Pip, um pequeno hatch urbano, o Halden Marlow, um sedã familiar de quatro portas, o Marlow Estate, o mesmo carro com porta de carga, o Halden Drover, uma picape de cabine dupla que puxa um carrinho de plataforma, o Halden Carrier, um furgão, o Halden Tarn, um off-road, e o Halden Ember, um cupê esportivo. Corrigido: a lista no ponto de motos, Meus veículos e a lista da oficina não ficam mais por cima dos objetivos e do minimapa, que escondiam as últimas linhas. Corrigido: carregar um jogo salvo pelo menu de pausa ou pelo obituário deixava essa cidade sem o mod. Agora o carregamento passa pelo menu principal, como faz o próprio jogo, e o mod volta a iniciar.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -41139,5 +41139,7 @@
   "reallife:vehicletype_haldentarn": "Halden Tarn",
   "reallife_cars_kind_offroad": "Off-road",
   "reallife:vehicletype_haldenember": "Halden Ember",
-  "reallife_cars_kind_coupe": "Cupê esportivo"
+  "reallife_cars_kind_coupe": "Cupê esportivo",
+  "reallife_changes_100_35_title": "1.0.35",
+  "reallife_changes_100_35": "Os carros próprios do mod estão à venda nos pontos lá fora das concessionárias de carros: o Halden Pip, um pequeno hatch urbano, o Halden Marlow, um sedã familiar de quatro portas, o Marlow Estate, o mesmo carro com porta de carga, o Halden Drover, uma picape de cabine dupla que puxa um carrinho de plataforma, o Halden Carrier, um furgão, o Halden Tarn, um off-road, e o Halden Ember, um cupê esportivo. Corrigido: a lista no ponto de motos, Meus veículos e a lista da oficina não ficam mais por cima dos objetivos e do minimapa, que escondiam as últimas linhas. Corrigido: carregar um jogo salvo pelo menu de pausa ou pelo obituário deixava essa cidade sem o mod. Agora o carregamento passa pelo menu principal, como faz o próprio jogo, e o mod volta a iniciar."
 }
