@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UI.Load;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -11,7 +12,7 @@ namespace RealLifeOverhaul.Ui
     /// This city's saves for the pause menu's recent saves card, read and loaded through the game's own calls: the list as
     /// the main menu's load screen reads it (SaveGamePathHelper.GetAllSaveGamesFromVersion), kept to this character's, the
     /// latest first; a save loaded after the game's own question box, by way of the main menu as the game leaves a city
-    /// (<see cref="Leaving"/>). Saving over one is
+    /// (<see cref="Load"/>). Saving over one is
     /// the menu's own Save with that name typed in, so the game's "it exists, save over it?" question asks first.
     /// COST: one read of the saves' folder as the menu opens (behind the paused game, as a game's load list reads it); nothing per frame.
     /// </summary>
@@ -79,9 +80,12 @@ namespace RealLifeOverhaul.Ui
         /// Whether a save may be loaded from the city now: not in a shared session (its host decides the city), not while
         /// the game is saving or loading, not while one is already on its way.
         /// </summary>
-        internal static bool CanLoad => !GoingPublic.InSession && !LoadScene.isLoading && _leaving == null;
+        internal static bool CanLoad => !GoingPublic.InSession && !LoadScene.isLoading && _pending == null;
 
-        private static Leaving _leaving;
+        private const float MenuWait = 120f;   // real seconds the main menu is given to stand; a slow disk takes most of a minute
+
+        private static SaveGameManager.SaveGameStruct _pending;   // the save chosen, from the question until the main menu's scene is in
+        private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
 
         /// <summary>Loads a save from the city after the game's own question: play since the last save is lost.</summary>
         internal static void AskLoad(SaveGameManager.SaveGameStruct s)
@@ -103,51 +107,59 @@ namespace RealLifeOverhaul.Ui
         // the new city ran without the mod.
         private static void Load(SaveGameManager.SaveGameStruct s)
         {
-            if (!CanLoad)
+            GameManager gm = InstanceBehavior<GameManager>.Instance;
+            if (!CanLoad || gm == null)
             {
                 return;
             }
             UiDirector.Logger?.Info("UI: loading the save \"" + s.name + "\" from the pause menu, by way of the main menu as the game leaves a city.");
-            var host = new GameObject("RealLifeOverhaul Leaving the city");
-            UnityEngine.Object.DontDestroyOnLoad(host);
-            _leaving = host.AddComponent<Leaving>();
-            _leaving.StartCoroutine(Guard.Routine(_leaving.Through(s)));
+            _pending = s;
+            _loaded = _loaded ?? Guard.Listener<Scene, LoadSceneMode>(OnSceneLoaded);
+            SceneManager.sceneLoaded -= _loaded;
+            SceneManager.sceneLoaded += _loaded;
+            gm.StartCoroutine(LoadScene.LoadMainMenuFromCity());   // on the game's own manager, as Permadeath and the self-test leave
         }
 
-        /// <summary>
-        /// Leaves the city as the pause menu's Main menu row does and, once the main menu stands, loads the save as the main
-        /// menu's load screen loads one. On an object of its own that outlives the city, as the self-test's runner is; gone
-        /// once the load is handed over. COST: nothing per frame; four looks a second at the main menu while it loads.
-        /// </summary>
-        private sealed class Leaving : MonoBehaviour
+        // The main menu's scene is in: the save waits on the menu's own controller, which stands until the save's load begins.
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            private const float MenuWait = 120f;   // real seconds the main menu is given to stand; a slow disk takes most of a minute
-
-            internal IEnumerator Through(SaveGameManager.SaveGameStruct s)
+            MainMenuController menu = InstanceBehavior<MainMenuController>.Instance;
+            if (menu == null)
             {
-                yield return LoadScene.LoadMainMenuFromCity();
-                float until = Time.realtimeSinceStartup + MenuWait;
-                while (!MenuStands())
+                return;   // another of the scenes coming and going
+            }
+            SceneManager.sceneLoaded -= _loaded;
+            SaveGameManager.SaveGameStruct s = _pending;
+            _pending = null;   // taken now: if the menu goes before it stands, nothing is left to block the next load
+            if (s != null)
+            {
+                menu.StartCoroutine(Guard.Routine(HandOver(menu, s)));
+            }
+        }
+
+        private static IEnumerator HandOver(MainMenuController menu, SaveGameManager.SaveGameStruct s)
+        {
+            float until = Time.realtimeSinceStartup + MenuWait;
+            while (!MenuStands(menu))
+            {
+                if (Time.realtimeSinceStartup > until)
                 {
-                    if (Time.realtimeSinceStartup > until)
-                    {
-                        UiDirector.Logger?.Warn("UI: the main menu did not stand within " + MenuWait + " s, so no save was loaded; the player loads one from it.");
-                        Destroy(gameObject);
-                        yield break;
-                    }
-                    yield return new WaitForSecondsRealtime(0.25f);
+                    UiDirector.Logger?.Warn("UI: the main menu did not stand within 120 s, so the save \"" + s.name + "\" was not loaded; the player loads it from the menu.");
+                    yield break;
                 }
-                TransitionToSave.saveToLoadData = s;
-                LoadScene.LoadTransitionToSave();
-                Destroy(gameObject);
+                yield return new WaitForSecondsRealtime(0.25f);
             }
+            UiDirector.Logger?.Info("UI: the main menu stands; the save \"" + s.name + "\" handed over as its load screen hands one.");
+            TransitionToSave.saveToLoadData = s;
+            LoadScene.LoadTransitionToSave();
+        }
 
-            // As the self-test waits for it: its start view up and no scene loading.
-            private static bool MenuStands()
-            {
-                MainMenuController menu = InstanceBehavior<MainMenuController>.Instance;
-                return menu != null && menu.startView != null && menu.startView.activeInHierarchy && !LoadScene.isLoading;
-            }
+        // Its start view up, no scene loading, and the menu's own loading screen gone: one made while that one still fades
+        // takes itself away as a second copy, and the load it carries never starts.
+        private static bool MenuStands(MainMenuController menu)
+        {
+            return menu != null && menu.startView != null && menu.startView.activeInHierarchy && !LoadScene.isLoading
+                   && !InstanceBehavior<LoadingScreen>.IsInitialized;
         }
     }
 }
