@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Ui
         public int CardCount;
         public float Offset;
         public int Reveal = -1;
+        public float Left;                                     // px: past the HUD's left column and the minimap while they show; 0 for the margin
         public string Leave;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
@@ -55,7 +56,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("garage_shop", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
-            Draw(s, m, UiTokens.S4, UiTokens.S4, UiDraw.SnapDown(frame.BandY - UiTokens.S4 * 2f), keys);
+            Draw(s, m, Math.Max(UiTokens.S4, UiDraw.Snap(m.Left)), UiTokens.S4, UiDraw.SnapDown(frame.BandY - UiTokens.S4 * 2f), keys);
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);

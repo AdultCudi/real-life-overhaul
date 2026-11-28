@@ -125,11 +125,11 @@ internal static partial class Program
 
     private static void PlatformBundleChecks()
     {
-        string[] six = { BundleStem + "_anim", BundleStem + "_character", BundleStem + "_props", BundleStem + "_props_2", BundleStem + "_props_site", BundleStem + "_ui" };
+        string[] six = { BundleStem + "_anim", BundleStem + "_cars", BundleStem + "_character", BundleStem + "_props", BundleStem + "_props_2", BundleStem + "_props_site", BundleStem + "_ui" };
         var listed = new List<string>(BundleShaderRules.Bundles);
         listed.Sort(StringComparer.Ordinal);
         Check(string.Join(",", listed) == string.Join(",", six) && Array.IndexOf(BundleShaderRules.Bundles, UiShaderRules.Bundle) >= 0,
-            "platform, bundles: the six bundles the mod ships are listed, the fonts' among them");
+            "platform, bundles: the seven bundles the mod ships are listed, the fonts' among them");
         string bundles = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Bundles"));
         var files = new List<string>();
         foreach (string path in Directory.Exists(bundles) ? Directory.GetFiles(bundles) : new string[0])

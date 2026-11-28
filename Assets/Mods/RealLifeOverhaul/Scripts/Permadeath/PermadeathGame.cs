@@ -400,10 +400,12 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>The game's own list of saves, so a backup can be loaded. Nothing of the dead save is written over.</summary>
+        /// <summary>The main menu, where the game's own list of saves holds the backups. Nothing of the dead save is written over.</summary>
+        // Not a save handed to TransitionToSave from here: that left the City mods counted as loaded, so the city it opened ran
+        // without the mod, and the save this session came from holds the death.
         public static void LoadSaves()
         {
-            LoadScene.LoadTransitionToSave();
+            MainMenu();
         }
 
         /// <summary>Leaves the game. The death is already saved.</summary>

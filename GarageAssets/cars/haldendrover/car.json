@@ -1,0 +1,51 @@
+{
+ "id": "haldendrover",
+ "meshes": [
+  "haldendrover_body",
+  "haldendrover_wheel_left",
+  "haldendrover_wheel_right",
+  "haldendrover_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldendrover_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldendrover_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldendrover_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldendrover_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldendrover_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldendrover_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldendrover_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldendrover_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}

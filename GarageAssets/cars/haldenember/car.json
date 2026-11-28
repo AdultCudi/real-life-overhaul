@@ -1,0 +1,51 @@
+{
+ "id": "haldenember",
+ "meshes": [
+  "haldenember_body",
+  "haldenember_wheel_left",
+  "haldenember_wheel_right",
+  "haldenember_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldenember_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldenember_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldenember_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldenember_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldenember_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenember_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenember_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldenember_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}

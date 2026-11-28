@@ -1,0 +1,51 @@
+{
+ "id": "haldencarrier",
+ "meshes": [
+  "haldencarrier_body",
+  "haldencarrier_wheel_left",
+  "haldencarrier_wheel_right",
+  "haldencarrier_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldencarrier_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldencarrier_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldencarrier_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldencarrier_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldencarrier_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldencarrier_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldencarrier_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldencarrier_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}

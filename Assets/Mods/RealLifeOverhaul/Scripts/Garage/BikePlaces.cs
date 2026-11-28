@@ -23,6 +23,7 @@ namespace RealLifeOverhaul
         public Vector3 Position;
         public Quaternion Rotation;
         public GameObject Dressing;     // built the first time the player comes near, then kept
+        public Transform Bay;           // a dealership's own spot where it hands a bought car over (the game's), or null
         public bool Shown;
     }
 
@@ -295,6 +296,8 @@ namespace RealLifeOverhaul
                     else if (type == "ba:businesstype_cardealership" && s.Motor < MaxStands && Outside(building, StandHalf, out spot, out facing))
                     {
                         Add(BikePlaceKind.MotorbikeStand, spot, facing);
+                        // The game stands a car bought inside at the building's first custom position (ShowcaseVehicleController.Purchase).
+                        _places[_places.Count - 1].Bay = building.customPositions != null && building.customPositions.Count > 0 ? building.customPositions[0] : null;
                         s.Motor++;
                     }
                 }

@@ -29,7 +29,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>
         /// What the game stood against what was paid for: <see cref="CarMaking.Made"/> when the model is the one paid for, or when the game
         /// does not say which it stood; <see cref="CarMaking.WrongModel"/> when it names another; <see cref="CarMaking.UnknownModel"/> when
-        /// there is no model to pay for. A model is told by its name exactly.
+        /// there is no model to pay for. A model is told by its name exactly, but for a car of the mod's own standing as the game car
+        /// it is saved as (<see cref="ModCarCatalogue.StandsAs"/>): that is the car paid for.
         /// </summary>
         public static CarMaking Verdict(string paid, string stood)
         {
@@ -37,7 +38,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return CarMaking.UnknownModel;
             }
-            return string.IsNullOrEmpty(stood) || string.Equals(paid, stood, StringComparison.Ordinal) ? CarMaking.Made : CarMaking.WrongModel;
+            return string.IsNullOrEmpty(stood) || string.Equals(paid, stood, StringComparison.Ordinal) || ModCarCatalogue.StandsAs(paid, stood)
+                ? CarMaking.Made : CarMaking.WrongModel;
         }
 
         /// <summary>True when the model is at fault, not the lot: the car is paid back and the player told, where a lot with no place only makes a car wait.</summary>

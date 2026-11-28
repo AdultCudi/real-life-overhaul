@@ -21,7 +21,7 @@ Checked by: CatalogueCheck (the keys the catalogues name), review.
 
 **MUST.** Name a new key `reallife_<feature>_<what>` and add it at the end of `en.json`, `pt.json` and `zh-cn.json`, in the same order, in the same commit, with a script rather than by hand. **MUST NOT** rename, move or reorder an existing key. Remove a key only when its option or text is gone and nothing reads it.
 
-Why: translations and merges are done by key order; a key moved or renamed loses its translations. 19,708 of the 19,748 keys begin `reallife_`; the others are the phone contacts' names (`reallife-<name>`) and business type names the game reads.
+Why: translations and merges are done by key order; a key moved or renamed loses its translations. 19,708 of the 19,748 keys begin `reallife_`; the others are the phone contacts' names (`reallife-<name>`) and the names of business types and vehicle types of the mod's, which the game reads by that name (`reallife:businesstype_<name>`, `reallife:vehicletype_<name>`).
 
 Checked by: StandardCheck (against the `en.json` your branch started from), `locales.py` (the same order in every file).
 

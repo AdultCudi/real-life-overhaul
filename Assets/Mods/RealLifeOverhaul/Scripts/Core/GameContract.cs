@@ -117,6 +117,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
+        public static readonly GamePart ModCarPrefabs = ContractBook.Part("mod_car_prefabs", "garage",
+            "the mod's own cars handed to the game under the names it looks its vehicles up by");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
         public static readonly GamePart SiteWrapFade = ContractBook.Part("site_wrap_fade", "civic",
             "the game's scaffolding round a building fading with it for the camera, and leaving the city map with it");
@@ -535,6 +537,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember NoticeError = Optional(StaticMethod(AppOpening, Game, "UI.Notification.Notifications", "ShowError", "Void", "String", "String", "Boolean"));
 
         // Garage/GarageWash: what the game's wash plays and shows, given a stand-in on a car that has none
+        public static readonly GameMember PrefabCache = Optional(StaticField(ModCarPrefabs, Game, "Helpers.PrefabHelper", "PrefabCache", "Dictionary<String,Object>"));
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
 

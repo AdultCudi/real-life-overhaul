@@ -20,7 +20,8 @@ namespace RealLifeOverhaul
         /// </summary>
         public static readonly string[] Bundles =
         {
-            "reallife" + "_ui", "reallife" + "_anim", "reallife" + "_character", "reallife" + "_props", "reallife" + "_props_2", "reallife" + "_props_site"
+            "reallife" + "_ui", "reallife" + "_anim", "reallife" + "_character", "reallife" + "_props", "reallife" + "_props_2", "reallife" + "_props_site",
+            "reallife" + "_cars"
         };
 
         // A shader a material may come with, and the game's shader that gives the same look where the game has not got the first.

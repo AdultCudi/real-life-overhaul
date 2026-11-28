@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
             Settings.Start(context.ModId);   // the copy's id only says where older versions kept the options
             Economy.Dealership.DealerType.Logger = log;
             Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // before any save is read
+            Guard.Step("the mod's own cars", () => ModCars.Start(context));   // their vehicle types, before any save is read
             Meta.Dev.Gated(context);   // the option has been read now
             Guard.Start(context.Logger);   // the game contract, the game's build and the notice for an older game
             Tech.TechTypes.Logger = context.Logger;
@@ -914,6 +915,8 @@ namespace RealLifeOverhaul
                     v => Settings.TwoWheelers = v)
                 .AddToggle(Settings.GarageScooterHoldId, "reallife_garage_scooter_hold", Settings.GarageScooterHold,
                     v => Settings.GarageScooterHold = v)
+                .AddToggle(Settings.GarageModCarsId, "reallife_garage_mod_cars", Settings.GarageModCars,
+                    v => Settings.GarageModCars = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())

@@ -37,8 +37,15 @@ internal static partial class Program
         string play = File.ReadAllText(System.IO.Path.Combine(scripts, @"Ui\Pause\PlayTime.cs"));
         string guide = File.ReadAllText(System.IO.Path.Combine(scripts, @"Ui\UiGuide.cs"));
         Check(saves.Contains("SaveGamePathHelper.GetAllSaveGamesFromVersion()") && saves.Contains("save.characterId"), "pause menu: the saves are the game's own list, kept to this city's character");
-        Check(saves.Contains("GameConfirm.Show(") && saves.Contains("SaveGameManager.JoinSaveGameThreads();") && saves.Contains("TransitionToSave.saveToLoadData = s;")
-              && saves.Contains("LoadScene.LoadTransitionToSave();"), "pause menu: a save loads after the game's question, as the game's funeral loads one");
+        // Out of the city as the game leaves one (the city marked as unloading, the City mods unloaded), then in as the main
+        // menu's load screen goes: handed over from the city itself, the new city ran without the mod.
+        int hooked = saves.IndexOf("SceneManager.sceneLoaded += _loaded;", StringComparison.Ordinal);
+        int leave = saves.IndexOf("gm.StartCoroutine(LoadScene.LoadMainMenuFromCity());", StringComparison.Ordinal);
+        int stands = saves.IndexOf("while (!MenuStands(menu))", StringComparison.Ordinal);
+        int handed = saves.IndexOf("TransitionToSave.saveToLoadData = s;", StringComparison.Ordinal);
+        Check(saves.Contains("GameConfirm.Show(") && saves.Contains("menu.StartCoroutine(Guard.Routine(HandOver(menu, s)));") && hooked >= 0 && leave > hooked
+              && stands > leave && handed > stands && saves.IndexOf("LoadScene.LoadTransitionToSave();", StringComparison.Ordinal) > handed,
+            "pause menu: a save loads after the game's question, by way of the main menu as the game leaves a city");
         Check(saves.Contains("!GoingPublic.InSession"), "pause menu: no save is loaded in a shared session");
         Check(screen.Contains("UiWidgets.Type(_name, s.name, false);") && screen.Contains("UiWidgets.Press(_buttons[0])") && screen.Contains("s.isRecoverSave"),
             "pause menu: saving over types the name into the game's field and presses its Save, never over an autosave");

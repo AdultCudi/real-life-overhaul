@@ -1,0 +1,51 @@
+{
+ "id": "haldenmarlowestate",
+ "meshes": [
+  "haldenmarlowestate_body",
+  "haldenmarlowestate_wheel_left",
+  "haldenmarlowestate_wheel_right",
+  "haldenmarlowestate_collider"
+ ],
+ "textures": [
+  {
+   "name": "haldenmarlowestate_d",
+   "type": "color",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlowestate_mask",
+   "type": "data",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlowestate_n",
+   "type": "normal",
+   "size": 1024
+  },
+  {
+   "name": "haldenmarlowestate_e",
+   "type": "glow",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlowestate_em",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlowestate_im",
+   "type": "switch",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlowestate_dirt",
+   "type": "color",
+   "size": 512
+  },
+  {
+   "name": "haldenmarlowestate_dirtmask",
+   "type": "data",
+   "size": 256
+  }
+ ]
+}
