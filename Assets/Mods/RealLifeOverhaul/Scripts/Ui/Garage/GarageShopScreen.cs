@@ -66,7 +66,23 @@ namespace RealLifeOverhaul.Ui
                 Read();
             }
             _dirty = false;
+            _m.Left = ClearOfHud();
             UiGarageStrip.Lay(s, _m, frame, dark, keys);
+        }
+
+        // A stand's rack and My vehicles open out in the street, where the HUD keeps its objectives and the minimap at the left: the
+        // strip stands right of them, or its last rows are under the minimap. With the HUD put away it keeps the margin.
+        private static float ClearOfHud()
+        {
+            HudHost host = HudHost.Instance;
+            if (host == null || !host.isActiveAndEnabled)
+            {
+                return 0f;
+            }
+            UiHudModel hud = host.Screen.Model;
+            UiHud.LeftColumn(hud, out float x, out _, out float w, out _);
+            float left = w > 0f ? x + w + UiTokens.S4 : 0f;
+            return hud.AvoidW > 0f ? System.Math.Max(left, hud.AvoidX + hud.AvoidW + UiTokens.S4) : left;
         }
 
         public bool Press(int command, int arg)
