@@ -39,7 +39,7 @@ internal static partial class Program
             }
             if (source.Key == "Ui/Pause/PauseSaves.cs" || source.Key == "Ui/Pause/PauseScreen.cs" || source.Key == "Core/GameContract.Pause.cs")
             {
-                continue;   // the pause menu's recent saves: it starts a load as the funeral does and reads nothing of one (checked below)
+                continue;   // the pause menu's recent saves: it starts a load by way of the main menu and reads nothing of one (checked below)
             }
             if (source.Key.StartsWith("Diagnostics/SelfTest/", StringComparison.Ordinal))
             {
@@ -63,7 +63,7 @@ internal static partial class Program
         Check(written >= 0 && pauseSaves.IndexOf("saveToLoadData", written + 30, StringComparison.Ordinal) < 0
               && pauseSaves.IndexOf("saveToLoadData", StringComparison.Ordinal) == written + "TransitionToSave.".Length
               && !sources["Ui/Pause/PauseScreen.cs"].Contains("TransitionToSave."),
-            "load paths: the pause menu only hands the game a save to load, as the funeral does; it never reads which way a city was loaded");
+            "load paths: the pause menu only hands the game a save to load, as the main menu does; it never reads which way a city was loaded");
 
         // 2. The entry points the game runs, by scope: a city entry runs for every city, an intro entry only for a new character's creation, so
         // an intro entry's setup that a city needs is repeated in the city entry (Continue and Load never go through the intro).
